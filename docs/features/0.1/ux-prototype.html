@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PersonaHub v0.1 Target Prototype (v0.1.0–v0.1.4)</title>
+  <style>
+    /* Design tokens: 决策 0004 / F001 design.md "视觉基础" 一节，与 F001 原型共用同一套 token */
+    :root {
+      color-scheme: light;
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.141 0.005 285.823);
+      --card: oklch(1 0 0);
+      --popover: oklch(1 0 0);
+      --primary: oklch(0.21 0.006 285.885);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.967 0.001 286.375);
+      --secondary-foreground: oklch(0.21 0.006 285.885);
+      --muted: oklch(0.967 0.001 286.375);
+      --muted-foreground: oklch(0.552 0.016 285.938);
+      --accent: oklch(0.967 0.001 286.375);
+      --destructive: oklch(0.577 0.245 27.325);
+      --success: oklch(0.55 0.16 145);
+      --warning: oklch(0.75 0.16 85);
+      --border: oklch(0.92 0.004 286.32);
+      --border-strong: oklch(0.85 0.006 286.32);
+      --input: oklch(0.92 0.004 286.32);
+      --ring: oklch(0.705 0.015 286.067);
+      --brand: oklch(0.55 0.16 195);
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) * 0.6);
+      --radius-md: calc(var(--radius) * 0.8);
+      --radius-lg: var(--radius);
+      --radius-xl: calc(var(--radius) * 1.4);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--background);
+      color: var(--foreground);
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    button, input, textarea, select { font: inherit; }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--foreground);
+      min-height: 32px;
+      padding: 6px 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) { background: var(--secondary); border-color: var(--border); }
+    button:disabled { color: var(--muted-foreground); cursor: not-allowed; }
+
+    button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-foreground);
+    }
+    button.primary:hover:not(:disabled) { opacity: 0.9; }
+
+    button.pill {
+      border-radius: 999px;
+      min-height: 28px;
+      padding: 4px 11px;
+      border-color: var(--border);
+      font-size: 12px;
+    }
+
+    button.pill.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-foreground);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--input);
+      background: var(--background);
+      color: var(--foreground);
+      border-radius: var(--radius-sm);
+      padding: 9px 10px;
+      outline: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 3px oklch(0.705 0.015 286.067 / 15%);
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 300px minmax(600px, 1fr) 340px;
+      overflow: hidden;
+    }
+
+    .left-nav {
+      background: var(--secondary);
+      border-right: 1px solid var(--border);
+      padding: 18px 16px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius-sm);
+      background: var(--background);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--foreground);
+      flex: 0 0 auto;
+    }
+
+    .avatar.sm { width: 22px; height: 22px; font-size: 11px; }
+
+    .small, .muted, .section-title, .event-meta {
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+
+    /* Project switcher（同 F001 原型） */
+    .switcher { position: relative; }
+    .switcher-trigger {
+      width: 100%;
+      justify-content: flex-start;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 6px 8px;
+    }
+    .switcher-trigger .chevron { color: var(--muted-foreground); }
+    .switcher-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0; right: 0;
+      z-index: 10;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 12px 32px oklch(0.141 0.005 285.823 / 14%);
+      padding: 6px;
+      display: grid;
+      gap: 2px;
+    }
+    .switcher-menu.open { display: grid; }
+    .switcher-label {
+      color: var(--muted-foreground);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 6px 8px 2px;
+    }
+    .switcher-item {
+      width: 100%;
+      justify-content: flex-start;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 8px;
+      text-align: left;
+    }
+    .switcher-item .check { color: var(--brand); }
+    .switcher-separator { height: 1px; background: var(--border); margin: 4px 2px; }
+
+    .quick-create {
+      width: 100%;
+      justify-content: flex-start;
+      color: var(--secondary-foreground);
+      padding: 8px 10px;
+      border: 1px dashed var(--border-strong);
+    }
+
+    .nav-section { display: grid; gap: 6px; }
+    .section-title { margin: 4px 10px; display: flex; align-items: center; justify-content: space-between; }
+
+    .nav-item {
+      width: 100%;
+      min-height: 38px;
+      justify-content: flex-start;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      text-align: left;
+      color: var(--secondary-foreground);
+      padding: 8px 10px;
+    }
+    .nav-item.active { background: var(--background); border-color: var(--border); }
+    .nav-item.placeholder { color: var(--muted-foreground); cursor: default; }
+    .nav-item.placeholder:hover { background: transparent; border-color: transparent; }
+    .nav-item strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    .count { color: var(--muted-foreground); font-size: 12px; }
+
+    .issue-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      text-align: left;
+      padding: 8px 10px;
+      color: var(--secondary-foreground);
+    }
+    .issue-row.active { background: var(--background); border-color: var(--border); }
+    .issue-row .issue-row-title {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 13px;
+    }
+
+    .workspace-path {
+      font-family: "SFMono-Regular", Consolas, ui-monospace, monospace;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+      padding: 8px 10px;
+      background: var(--background);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .center {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 58px 1fr auto;
+      overflow: hidden;
+      background: var(--background);
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 22px;
+    }
+
+    .thread-context { min-width: 0; display: flex; align-items: center; gap: 11px; }
+    .thread-context h1 {
+      margin: 0; font-size: 17px; line-height: 1.2;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .thread-context .subline { display: flex; align-items: center; gap: 7px; margin-top: 2px; }
+
+    .toolbar { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); }
+
+    .messages {
+      overflow: auto;
+      padding: 28px 46px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--background);
+    }
+
+    .empty-note {
+      align-self: center; color: var(--muted-foreground); font-size: 12px;
+      text-align: center; max-width: 420px;
+    }
+
+    .event {
+      max-width: 720px;
+      width: 100%;
+      align-self: center;
+      display: grid;
+      gap: 6px;
+    }
+
+    /* 用户手动 @ 指令：靠右，像发出的消息 */
+    .event.user-note {
+      align-self: flex-end;
+      max-width: 520px;
+    }
+    .event.user-note .bubble {
+      background: var(--secondary);
+      border-radius: var(--radius-lg);
+      padding: 10px 13px;
+      font-size: 13px;
+    }
+
+    /* trace event 卡片（run/validation/handoff/escalation 等） */
+    .trace-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      padding: 12px 14px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .trace-card.accent-brand { border-left: 3px solid var(--brand); }
+    .trace-card.accent-success { border-left: 3px solid var(--success); }
+    .trace-card.accent-warning { border-left: 3px solid var(--warning); }
+    .trace-card.accent-destructive { border-left: 3px solid var(--destructive); }
+
+    .trace-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+
+    .trace-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+    .trace-type {
+      font-family: "SFMono-Regular", Consolas, ui-monospace, monospace;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--foreground);
+    }
+
+    .trace-body { font-size: 13px; line-height: 1.55; color: var(--foreground); }
+    .trace-body ul { margin: 4px 0 0; padding-left: 18px; }
+    .trace-kv {
+      display: grid; grid-template-columns: auto 1fr; gap: 3px 10px;
+      font-size: 12px; font-family: "SFMono-Regular", Consolas, ui-monospace, monospace;
+    }
+    .trace-kv span:nth-child(odd) { color: var(--muted-foreground); }
+
+    .composer {
+      border-top: 1px solid var(--border);
+      background: var(--background);
+      padding: 12px 22px 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .composer-pickers {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .composer-pickers .label { color: var(--muted-foreground); font-size: 12px; margin-right: 4px; }
+
+    .composer-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .right-panel {
+      background: var(--background);
+      border-left: 1px solid var(--border);
+      padding: 15px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+    }
+
+    .right-panel h2 { margin: 0 0 8px; font-size: 14px; }
+
+    .side-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      padding: 13px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .side-row {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 8px;
+      align-items: start;
+      padding: 7px 0;
+      border-top: 1px solid var(--border);
+    }
+    .side-row:first-child { border-top: 0; padding-top: 0; }
+    .side-row span:first-child { color: var(--muted-foreground); font-size: 12px; }
+
+    .adapter-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 0;
+      border-top: 1px solid var(--border);
+    }
+    .adapter-row:first-child { border-top: 0; padding-top: 0; }
+    .adapter-row strong { font-size: 13px; }
+    .adapter-row .small { display: block; }
+
+    .run-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 7px 0;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .run-row:first-child { border-top: 0; padding-top: 0; }
+
+    .tag {
+      min-height: 22px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--background);
+      color: var(--secondary-foreground);
+      font-size: 12px;
+      padding: 2px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .tag.success { border-color: oklch(0.55 0.16 145 / 30%); background: oklch(0.55 0.16 145 / 10%); color: var(--success); }
+    .tag.warning { border-color: oklch(0.75 0.16 85 / 35%); background: oklch(0.75 0.16 85 / 12%); color: oklch(0.45 0.14 85); }
+    .tag.destructive { border-color: oklch(0.577 0.245 27.325 / 25%); background: oklch(0.577 0.245 27.325 / 8%); color: var(--destructive); }
+    .tag.brand { border-color: oklch(0.55 0.16 195 / 30%); background: oklch(0.55 0.16 195 / 10%); color: var(--brand); }
+
+    .modal-backdrop {
+      position: fixed; inset: 0; background: oklch(0.141 0.005 285.823 / 40%);
+      z-index: 20; display: none; align-items: center; justify-content: center; padding: 18px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      width: min(480px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 24px 80px oklch(0.141 0.005 285.823 / 18%);
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .modal h2 { margin: 0; font-size: 16px; }
+
+    @media (max-width: 1320px) {
+      .app { grid-template-columns: 260px minmax(560px, 1fr); }
+      .right-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 左侧导航 -->
+    <aside class="left-nav">
+      <div class="switcher">
+        <button class="switcher-trigger" id="switcherTrigger" type="button">
+          <div class="avatar" id="projectInitial">M</div>
+          <strong id="projectName" style="text-align:left;">main</strong>
+          <span class="chevron">⌄</span>
+        </button>
+        <div class="switcher-menu" id="switcherMenu">
+          <div class="switcher-label">Projects</div>
+          <div id="projectSwitcherList"></div>
+          <div class="switcher-separator"></div>
+          <button class="switcher-item" type="button" id="openProjectModal">
+            <span>+</span><span>新建 Project</span><span></span>
+          </button>
+        </div>
+      </div>
+
+      <button class="quick-create" id="quickIssue">+ 新建 coding issue</button>
+
+      <section class="nav-section">
+        <div class="section-title">Issues<span class="count" id="issueCount">2</span></div>
+        <div id="issueNavList" style="display:grid; gap:2px;"></div>
+      </section>
+
+      <section class="nav-section">
+        <div class="section-title">Workspace</div>
+        <div class="workspace-path" id="workspacePathLabel">D:\Projects\personahub</div>
+      </section>
+
+      <!-- Agents 现在有真实内容（v0.1.4 接入了 3 个 adapter），不再是占位项 -->
+      <section class="nav-section">
+        <div class="section-title">Agents<span class="count">3</span></div>
+        <button class="nav-item" type="button"><strong>已配置 Adapter</strong><span class="count">Codex / Claude Code / OpenCode</span></button>
+      </section>
+
+      <!-- Automations / Skills 仍然是 PRD 要求的占位入口，v0.4+/v0.6+ 才有功能 -->
+      <section class="nav-section">
+        <div class="section-title">即将推出</div>
+        <button class="nav-item placeholder" type="button" disabled><strong>Automations</strong></button>
+        <button class="nav-item placeholder" type="button" disabled><strong>Skills</strong></button>
+      </section>
+
+      <section class="nav-section">
+        <div class="section-title">配置</div>
+        <button class="nav-item" type="button"><strong>Settings</strong></button>
+      </section>
+    </aside>
+
+    <!-- 中间协作现场：primary Thread，展示 F002 Run lifecycle、F003 evidence/handoff、F004 validation loop、
+         v0.1.4 手动多 agent 路由（composer 里的 @ 选择器） -->
+    <main class="center">
+      <header class="topbar">
+        <div class="thread-context">
+          <div class="avatar" id="threadAvatar">TH</div>
+          <div>
+            <h1 id="threadTitle">选择一个 Issue</h1>
+            <div class="subline">
+              <span class="small" id="threadProject">—</span>
+              <span class="tag" id="issueStatusTag">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button title="Export">Export</button>
+        </div>
+      </header>
+
+      <section class="messages" id="messages"></section>
+
+      <form class="composer" id="messageForm">
+        <div class="composer-pickers" id="adapterPickerRow">
+          <span class="label">下一步交给：</span>
+        </div>
+        <div class="composer-row">
+          <input id="messageInput" placeholder="输入指令，或 @ 选择的 agent 会读取上一轮 Handoff 和证据自动继续…">
+          <button class="primary" type="submit">发送</button>
+        </div>
+      </form>
+    </main>
+
+    <!-- 右侧 Inspector -->
+    <aside class="right-panel">
+      <section>
+        <h2>Issue Inspector</h2>
+        <span class="small" id="statusLine">选择一个 Issue 查看详情</span>
+      </section>
+
+      <section class="side-card">
+        <strong>Issue</strong>
+        <div class="side-row"><span>Status</span><span id="inspectorStatus">—</span></div>
+        <div class="side-row"><span>Round</span><span id="inspectorRound">—</span></div>
+        <div class="side-row"><span>Workspace</span><span id="inspectorWorkspace">—</span></div>
+      </section>
+
+      <section class="side-card">
+        <strong>Adapters</strong>
+        <div id="adapterList"></div>
+      </section>
+
+      <section class="side-card" id="runHistoryCard">
+        <strong>Run 历史</strong>
+        <div id="runHistoryList"></div>
+      </section>
+
+      <section class="side-card" id="evidenceCard" style="display:none;">
+        <strong>Evidence Summary</strong>
+        <div id="evidenceBody"></div>
+      </section>
+
+      <section class="side-card" id="blockerCard" style="display:none;">
+        <strong>Blocker</strong>
+        <div id="blockerBody"></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="modal-backdrop" id="projectModal">
+    <form class="modal" id="projectForm">
+      <h2>Create Project</h2>
+      <input id="newProjectName" value="New Project">
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" id="closeProjectModal">Cancel</button>
+        <button class="primary" type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Adapter 配置：对应 v0.1.4 —— Codex/Claude Code 走 OAuth，OpenCode 支持单独配置 API key/模型
+    const adapters = [
+      { id: 'adp_codex', name: 'Codex', provider: 'codex', role: 'implementation', auth: 'oauth', status: 'available' },
+      { id: 'adp_claude', name: 'Claude Code', provider: 'claude-code', role: 'validator', auth: 'oauth', status: 'available' },
+      { id: 'adp_opencode', name: 'OpenCode', provider: 'opencode', role: 'researcher', auth: 'api_key', status: 'available' }
+    ];
+
+    const state = {
+      selectedProjectId: 'prj_main',
+      selectedIssueId: 'iss_credential_isolation',
+      selectedAdapterId: 'adp_claude',
+      projects: [
+        {
+          id: 'prj_main',
+          name: 'main',
+          workspace: { local_path: 'D:\\Projects\\personahub', git_branch: 'main' },
+          issues: [
+            {
+              id: 'iss_credential_isolation',
+              title: 'Implement workspace credential isolation',
+              status: 'Done',
+              round: '1 / 3',
+              runs: [
+                { adapter: 'Codex', role: 'implementation', status: 'completed' },
+                { adapter: 'Claude Code', role: 'validator', status: 'completed' },
+                { adapter: 'OpenCode', role: 'researcher', status: 'completed' }
+              ],
+              evidence: {
+                validation_result: 'passed',
+                validator_identity: 'Claude Code (claude-code)',
+                same_origin_validation: false,
+                policy_version: 'coding-v1'
+              },
+              events: [
+                { type: 'issue.created', accent: 'brand', body: '<div class="trace-kv"><span>issue_type</span><span>coding</span><span>status</span><span>Inbox</span></div>' },
+                { type: 'run.started', accent: 'brand', body: 'adapter = Codex (implementation)' },
+                { type: 'command.completed · test.completed', accent: 'success', body: '<code>pnpm test workspace-context</code> · exit 0 · 12 passed' },
+                { type: 'file.change_summary', accent: 'brand', body: '<ul><li>src/lib/workspace-context.ts（新增）</li><li>src/lib/env-filter.ts（新增）</li></ul>' },
+                { type: 'run.completed', accent: 'success', body: 'exit_code = 0' },
+                { type: 'handoff.created', accent: 'brand', body: '<div class="trace-body">summary: 已实现 push 凭据默认隔离（方案 c），新增 env-filter 单元测试。<br>next_suggested_action: 建议交叉检查 Windows 下的凭据继承行为。</div>' },
+                { kind: 'user', text: '@Claude Code 帮我 review 一下这段凭据隔离逻辑，顺便看看有没有遗漏的边界情况。' },
+                { type: 'run.started', accent: 'brand', body: 'adapter = Claude Code (validator)，读取上一轮 Handoff Packet + evidence_refs 作为上下文' },
+                { type: 'validation.finding', accent: 'warning', body: 'severity: minor · Windows 下路径大小写比较未覆盖 UNC 路径场景，建议补充用例。' },
+                { type: 'validation.passed', accent: 'success', body: 'same_origin_validation = false（Codex 实现 · Claude Code 验证，provider 不同）' },
+                { kind: 'user', text: '@OpenCode 顺便帮我调研一下有没有更适合 Windows 凭据检测的开源方案，下一轮可以参考。' },
+                { type: 'run.started', accent: 'brand', body: 'adapter = OpenCode (researcher)' },
+                { type: 'run.output', accent: 'brand', body: '调研到 2 个相关的 credential-helper 参考实现，已整理为一段简要笔记，供下一轮 Run 参考（不阻塞当前 Issue）。' },
+                { type: 'run.completed', accent: 'success', body: 'exit_code = 0' },
+                { type: 'issue.done', accent: 'success', body: '<div class="trace-body">Evidence Summary 已生成，见右侧 Inspector。</div>' }
+              ]
+            },
+            {
+              id: 'iss_push_hotfix',
+              title: 'Push hotfix branch to main',
+              status: 'Blocked',
+              round: '1 / 3',
+              runs: [
+                { adapter: 'Codex', role: 'implementation', status: 'failed' }
+              ],
+              blocker: {
+                reason: 'dangerous_git_operation',
+                blocked_by: 'credential_isolation',
+                note: 'push 因为该 Workspace 未开启 push_credentials_enabled 而失败；这是凭据隔离主动挡住的，不是前置拦截或事后检测。'
+              },
+              events: [
+                { type: 'issue.created', accent: 'brand', body: '<div class="trace-kv"><span>issue_type</span><span>coding</span><span>status</span><span>Inbox</span></div>' },
+                { type: 'run.started', accent: 'brand', body: 'adapter = Codex (implementation)' },
+                { type: 'run.output', accent: 'brand', body: '尝试执行 <code>git push origin main</code>…' },
+                { type: 'escalation.triggered', accent: 'destructive', body: '<div class="trace-kv"><span>blocked_by</span><span>credential_isolation</span><span>pre_execution_blocked</span><span>true</span><span>reason</span><span>dangerous_git_operation</span></div>' },
+                { type: 'run.failed', accent: 'destructive', body: 'failure_reason = credential_isolation_blocked' },
+                { type: 'issue.blocked', accent: 'destructive', body: '需要 operator 在 Project 设置里为该 Workspace 显式开启 push_credentials_enabled，或手动处理后回到 Ready。' }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const escapeHtml = (v) => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+
+    function currentProject() { return state.projects.find(p => p.id === state.selectedProjectId); }
+    function currentIssue() { return currentProject().issues.find(i => i.id === state.selectedIssueId) || null; }
+
+    function statusTagClass(status) {
+      if (status === 'Done') return 'tag success';
+      if (status === 'Blocked') return 'tag destructive';
+      if (status === 'Validating') return 'tag warning';
+      if (status === 'Running') return 'tag brand';
+      return 'tag';
+    }
+
+    function renderProjects() {
+      const list = $('projectSwitcherList');
+      list.innerHTML = '';
+      state.projects.forEach((project) => {
+        const isCurrent = project.id === state.selectedProjectId;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'switcher-item';
+        button.innerHTML = `<span class="avatar sm">${escapeHtml(project.name.slice(0,1).toUpperCase())}</span><strong>${escapeHtml(project.name)}</strong><span class="check">${isCurrent ? '✓' : ''}</span>`;
+        button.addEventListener('click', () => {
+          state.selectedProjectId = project.id;
+          state.selectedIssueId = project.issues[0]?.id || null;
+          closeSwitcher();
+          render();
+        });
+        list.appendChild(button);
+      });
+    }
+
+    function openSwitcher() { $('switcherMenu').classList.add('open'); }
+    function closeSwitcher() { $('switcherMenu').classList.remove('open'); }
+    $('switcherTrigger').addEventListener('click', (e) => { e.stopPropagation(); $('switcherMenu').classList.toggle('open'); });
+    document.addEventListener('click', (e) => {
+      if (!$('switcherMenu').contains(e.target) && e.target !== $('switcherTrigger')) closeSwitcher();
+    });
+    $('openProjectModal').addEventListener('click', () => { closeSwitcher(); $('projectModal').classList.add('open'); });
+    $('closeProjectModal').addEventListener('click', () => $('projectModal').classList.remove('open'));
+    $('projectForm').addEventListener('submit', (e) => { e.preventDefault(); $('projectModal').classList.remove('open'); });
+
+    function renderIssueNav() {
+      const project = currentProject();
+      const target = $('issueNavList');
+      target.innerHTML = '';
+      $('issueCount').textContent = project.issues.length;
+      project.issues.forEach((issue) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `issue-row${issue.id === state.selectedIssueId ? ' active' : ''}`;
+        button.innerHTML = `<span class="issue-row-title">${escapeHtml(issue.title)}</span><span class="${statusTagClass(issue.status)}">${escapeHtml(issue.status)}</span>`;
+        button.addEventListener('click', () => { state.selectedIssueId = issue.id; render(); });
+        target.appendChild(button);
+      });
+    }
+
+    function renderAdapterPicker() {
+      const row = $('adapterPickerRow');
+      row.querySelectorAll('button.pill').forEach((el) => el.remove());
+      adapters.forEach((adapter) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `pill${adapter.id === state.selectedAdapterId ? ' active' : ''}`;
+        btn.textContent = `@${adapter.name}`;
+        btn.addEventListener('click', () => { state.selectedAdapterId = adapter.id; renderAdapterPicker(); });
+        row.appendChild(btn);
+      });
+    }
+
+    function renderAdapterList() {
+      $('adapterList').innerHTML = adapters.map((a) => `
+        <div class="adapter-row">
+          <span class="avatar sm">${escapeHtml(a.name.slice(0,1))}</span>
+          <div>
+            <strong>${escapeHtml(a.name)}</strong>
+            <span class="small">${a.role} · ${a.auth === 'oauth' ? 'OAuth 已登录' : 'API key 已配置'}</span>
+          </div>
+          <span class="tag success">available</span>
+        </div>
+      `).join('');
+    }
+
+    function renderShell() {
+      const project = currentProject();
+      const issue = currentIssue();
+      const workspace = project.workspace;
+
+      $('projectName').textContent = project.name;
+      $('projectInitial').textContent = project.name.slice(0, 1).toUpperCase();
+      $('workspacePathLabel').textContent = workspace.local_path;
+
+      $('threadTitle').textContent = issue ? issue.title : '选择一个 Issue';
+      $('threadProject').textContent = `${project.name} · ${workspace.local_path}`;
+      $('issueStatusTag').textContent = issue?.status || '—';
+      $('issueStatusTag').className = statusTagClass(issue?.status);
+
+      $('statusLine').textContent = issue ? issue.title : '选择一个 Issue 查看详情';
+      $('inspectorStatus').textContent = issue?.status || '—';
+      $('inspectorRound').textContent = issue?.round || '—';
+      $('inspectorWorkspace').textContent = workspace.local_path + (workspace.git_branch ? ` (${workspace.git_branch})` : '');
+
+      $('runHistoryList').innerHTML = (issue?.runs || []).map((r) => `
+        <div class="run-row">
+          <span>${escapeHtml(r.adapter)} · ${escapeHtml(r.role)}</span>
+          <span class="${r.status === 'completed' ? 'tag success' : r.status === 'failed' ? 'tag destructive' : 'tag'}">${escapeHtml(r.status)}</span>
+        </div>
+      `).join('') || '<span class="small">暂无 Run</span>';
+
+      const evidenceCard = $('evidenceCard');
+      if (issue?.evidence) {
+        evidenceCard.style.display = 'grid';
+        $('evidenceBody').innerHTML = `
+          <div class="side-row"><span>Result</span><span class="tag success">${escapeHtml(issue.evidence.validation_result)}</span></div>
+          <div class="side-row"><span>Validator</span><span>${escapeHtml(issue.evidence.validator_identity)}</span></div>
+          <div class="side-row"><span>Same-origin</span><span>${issue.evidence.same_origin_validation ? '是' : '否（跨 provider）'}</span></div>
+          <div class="side-row"><span>Policy</span><span>${escapeHtml(issue.evidence.policy_version)}</span></div>
+        `;
+      } else {
+        evidenceCard.style.display = 'none';
+      }
+
+      const blockerCard = $('blockerCard');
+      if (issue?.blocker) {
+        blockerCard.style.display = 'grid';
+        $('blockerBody').innerHTML = `
+          <div class="side-row"><span>Reason</span><span class="tag destructive">${escapeHtml(issue.blocker.reason)}</span></div>
+          <div class="side-row"><span>Blocked by</span><span>${escapeHtml(issue.blocker.blocked_by)}</span></div>
+          <div class="side-row"><span>说明</span><span>${escapeHtml(issue.blocker.note)}</span></div>
+        `;
+      } else {
+        blockerCard.style.display = 'none';
+      }
+    }
+
+    function renderMessages() {
+      const issue = currentIssue();
+      const target = $('messages');
+      if (!issue) {
+        target.innerHTML = '<div class="empty-note">选择一个 Issue 查看 Thread</div>';
+        return;
+      }
+      target.innerHTML = issue.events.map((event) => {
+        if (event.kind === 'user') {
+          return `<div class="event user-note"><div class="bubble">${escapeHtml(event.text)}</div></div>`;
+        }
+        return `
+          <div class="event">
+            <div class="trace-card accent-${event.accent}">
+              <div class="trace-head"><span class="trace-type">${escapeHtml(event.type)}</span></div>
+              <div class="trace-body">${event.body}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function render() {
+      renderProjects();
+      renderIssueNav();
+      renderAdapterPicker();
+      renderAdapterList();
+      renderShell();
+      renderMessages();
+    }
+
+    $('messageForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = $('messageInput');
+      const text = input.value.trim();
+      const issue = currentIssue();
+      const adapter = adapters.find((a) => a.id === state.selectedAdapterId);
+      if (!text || !issue) return;
+      issue.events.push({ kind: 'user', text: `@${adapter.name} ${text}` });
+      issue.events.push({ type: 'run.queued', accent: 'brand', body: `adapter = ${adapter.name} (${adapter.role})，将读取上一轮 Handoff/evidence 作为上下文` });
+      input.value = '';
+      render();
+      $('messages').scrollTop = $('messages').scrollHeight;
+    });
+
+    render();
+  </script>
+</body>
+</html>
