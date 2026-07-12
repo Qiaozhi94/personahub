@@ -87,7 +87,10 @@ export class WorkspaceService {
 
   get(projectId: string): Workspace | null {
     const project = this.projectRepo.getById(projectId);
-    if (!project || !project.default_workspace_id) {
+    if (!project) {
+      throw new AppError(ErrorCode.PROJECT_NOT_FOUND, "Project not found.");
+    }
+    if (!project.default_workspace_id) {
       return null;
     }
     return this.workspaceRepo.getById(project.default_workspace_id);

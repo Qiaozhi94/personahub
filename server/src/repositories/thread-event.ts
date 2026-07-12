@@ -60,8 +60,8 @@ export class ThreadEventRepository {
   listByThread(threadId: string, afterEventId?: string): ThreadEvent[] {
     if (afterEventId) {
       const afterRow = this.db.prepare(
-        "SELECT event_sequence FROM thread_events WHERE id = ?"
-      ).get(afterEventId) as { event_sequence: number } | undefined;
+        "SELECT event_sequence FROM thread_events WHERE id = ? AND thread_id = ?"
+      ).get(afterEventId, threadId) as { event_sequence: number } | undefined;
 
       if (!afterRow) {
         return [];

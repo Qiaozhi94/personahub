@@ -8,6 +8,7 @@
     "web"
   ],
   "scripts": {
+    "predev": "npm -w @personahub/shared run build",
     "dev": "npm run dev:server & npm run dev:web",
     "dev:server": "npm -w @personahub/server run dev",
     "dev:web": "npm -w @personahub/web run dev",
@@ -15,7 +16,7 @@
     "build:shared": "npm -w @personahub/shared run build",
     "build:server": "npm -w @personahub/server run build",
     "build:web": "npm -w @personahub/web run build",
-    "test": "npm -w @personahub/server run test",
+    "test": "npm -w @personahub/server run test && npm -w @personahub/web run test",
     "typecheck": "npm -w @personahub/server run typecheck && npm -w @personahub/web run typecheck"
   },
   "engines": {

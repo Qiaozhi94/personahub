@@ -19,6 +19,10 @@ export class ThreadService {
   }
 
   getEvents(threadId: string, afterEventId?: string): ThreadEvent[] {
+    const thread = this.threadRepo.getById(threadId);
+    if (!thread) {
+      throw new AppError(ErrorCode.THREAD_NOT_FOUND, "Thread not found.");
+    }
     return this.threadEventRepo.listByThread(threadId, afterEventId);
   }
 }

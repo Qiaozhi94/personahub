@@ -154,6 +154,10 @@ export class IssueService {
   }
 
   list(projectId: string): Issue[] {
+    const project = this.projectRepo.getById(projectId);
+    if (!project) {
+      throw new AppError(ErrorCode.PROJECT_NOT_FOUND, "Project not found.");
+    }
     return this.issueRepo.list(projectId);
   }
 
