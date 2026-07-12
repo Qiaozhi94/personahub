@@ -600,20 +600,13 @@ escalation.triggered -> run.failed -> issue.blocked
 
 ## 12. 待确认问题
 
-- **Q1（高置信度，待本地 probe 最终确认）**：Codex CLI 是否提供可靠的执行前 approval / 权限钩子？  
-  **结论**：有。参考开源项目 multica（本机路径 `D:\Projects\multica`，实现见 `server/pkg/agent/codex.go`）对 Codex `app-server` JSON-RPC 协议的实现：multica 用 `codex app-server --listen stdio://` 启动 Codex 并建立 JSON-RPC 2.0 连接；Codex 在执行命令/改文件前会发送 `item/commandExecution/requestApproval`（旧协议 `execCommandApproval`）和 `item/fileChange/requestApproval`（旧协议 `applyPatchApproval`）请求，等待调用方回复 `{"decision": "accept"|"reject"}`。multica 选择无条件 `accept`（其定位是全自动执行，不做拦截），但协议本身已经支持真正的前置拦截。F002 应复用同一协议，在收到该请求时套用 escalation 策略（命中危险操作黑名单则回复 `reject`），从而实现真正的前置拦截，而不是退化到事后检测。这是二手证据，仍需在实现开始前用本地实际安装的 Codex CLI 版本验证协议字段和行为一致，不能替代本地 probe。
+目前没有遗留的开放问题，以下五项均已关闭：
 
-- **Q2（已关闭）**：P0 adapter 是每条 Thread 指令一次 one-shot invocation，还是复用长会话？  
-  **结论**：P0 默认采用 one-shot invocation；每条 Thread 指令创建一个可审计 Run。若后续 Codex CLI probe 证明 session resume 稳定，再在后续 feature 或设计修订中扩展。
-
-- **Q3（已关闭）**：Run logs 是全部存 ThreadEvent，还是 ThreadEvent 存摘要、完整日志另存？  
-  **结论**：F002 先以 ThreadEvent 存必要 chunks；单 Run stdout + stderr 合计最多持久化 1 MiB，超过后写 `run.output_truncated`，不另建完整日志存储。
-
-- **Q4（已关闭）**：workspace lock 是否需要 lease / heartbeat？  
-  **结论**：P0 不做 lease / heartbeat，采用 `locked_by_run_id` + backend 启动时 stale recovery。若后续出现长运行后台队列或 daemon 化，再引入 lease / heartbeat。
-
-- **Q5（已关闭）**：Git push 凭据隔离具体用什么机制实现？  
-  **结论**：方案 (c)——默认不在 Run 的进程环境里暴露任何 SSH agent socket / cached credential，让 push 因为缺少任何凭据源而失败。已排查 multica、clowder-ai 的子进程环境构造代码，确认两者都完整继承父进程环境、不做任何 git/SSH 凭据隔离，没有先例可循，(c) 是投入产出比最高的起点。Windows 环境下子进程是否会意外继承凭据缓存仍需在实现阶段验证（见 `tasks.md` T062），如验证失败再切换到方案 (a) `GIT_SSH_COMMAND` 覆盖或 (b) 专用 credential helper。
+- **Q1（已关闭，probe 作为实现任务跟踪）**：Codex approval 钩子高置信度存在（依据：multica `codex.go` 对 `app-server` 协议的实现），已不作为设计问题，实测验证见 `tasks.md` T001-T003。
+- **Q2（已关闭）**：P0 采用 one-shot invocation，不复用长会话；session resume 留作后续增量优化。
+- **Q3（已关闭）**：单 Run stdout+stderr 合计最多持久化 1 MiB，超限写 `run.output_truncated`，不建完整日志存储。
+- **Q4（已关闭）**：workspace lock 不做 lease/heartbeat，用 `locked_by_run_id` + 启动时 stale recovery。
+- **Q5（已关闭）**：Git push 凭据隔离采用方案 (c)（默认不暴露凭据源）。依据：multica、clowder-ai 的子进程环境构造均未做 git/SSH 隔离，没有更优先例。Windows 兼容性验证见 `tasks.md` T062，失败则切换方案 (a)/(b)。
 
 ## 13. 可追踪性
 
@@ -642,7 +635,7 @@ escalation.triggered -> run.failed -> issue.blocked
 - `docs/personahub-architecture.md`
 - `docs/personahub-architecture-review.md`
 - `docs/personahub-system-design.md`
-- `docs/features/F001-workspace-issue-foundation/spec.md`
+- `docs/features/0.1/F001-workspace-issue-foundation/spec.md`
 - `docs/features/README.md`
 - `D:\Projects\multica`（本机开源参考项目，`server/pkg/agent/codex.go` 等文件是 Codex/Claude/OpenCode 等 CLI adapter 的真实实现，用于验证 Q1 及 `design.md` 中的 Adapter Capability Probe 假设；Go 实现，不可直接复用代码，仅供协议/设计参考）
 - `D:\Projects\clowder-ai`（本机开源参考项目，用于交叉验证 Codex adapter 实现和"Hard Rails"安全机制的真实落地程度；发现其 Hard Rails 是纯 prompt 文本、无代码强制执行，直接促成了 `FR-013` 凭据隔离这一设计——两个参考项目都没有做到执行前拦截任意危险命令，凭据隔离是比二者都更可靠的防线）

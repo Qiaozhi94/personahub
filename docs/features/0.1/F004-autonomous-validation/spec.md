@@ -467,17 +467,12 @@ Blocked    -> Ready       operator handled blocker
 
 ## 12. 待确认问题
 
-- **Q1**：validator 输出 contract 使用严格 JSON，还是 Markdown + 约定区块？  
-  **推荐**：P0 优先严格 JSON；如果真实 CLI 不稳定，允许 Markdown fallback，但解析失败必须 Blocked。
+目前没有遗留的开放问题，以下四项均已关闭：
 
-- **Q2**：validation fail 后是否自动启动下一轮修复 Run？  
-  **推荐**：P0 不自动启动，只把 findings 放入下一轮上下文，等待用户触发，避免无人值守循环。
-
-- **Q3**：validator agent 配置来自独立 adapter 还是同 adapter 不同 model？  
-  **推荐**：P0 允许同 provider 不同 `default_model`，无法满足时标记同源验证。
-
-- **Q4**：Evidence Summary 是否复用 F003 Markdown export？  
-  **推荐**：复用 trace export 的 renderer，但 Evidence Summary 是 Done Issue 的结构化记录，不只是导出文件。
+- **Q1（已关闭）**：维持严格 JSON 优先、解析失败必须 Blocked 的现有设计，不采纳 clowder-ai 更宽松的做法——它真实的 review/merge-gate 流程其实是对自由格式 Markdown 用正则找 severity 标记，找不到就静默当无问题处理，不做硬性拒绝；这种宽松处理成立的前提是"始终有人或 agent 在读原始文本兜底解读"，而 F004 要做的是无人值守的自动 Done/Blocked 判定，不能假设有人兜底，所以更严格的 JSON contract 是对的选择，见 `FR-003`。
+- **Q2（已关闭）**：维持 validation fail 后不自动重跑、等待用户触发的现有设计；multica 的 `attempt`/`max_attempts` 重试机制被证实只覆盖基础设施类失败（进程崩溃、超时、runtime 离线），代码注释明确把 agent 自身错误排除在自动重试之外（"real problems the user should see, not infrastructure flakiness"），人工 rerun 还会强制重置 session 避免复现同样的坏状态——与本 feature"不自动开下一轮"的立场一致，见"状态、工作流或生命周期"一节。
+- **Q3（已关闭）**：P0 允许同 provider 不同 `default_model`，无法满足时标记同源验证；F005 引入 Claude Code / OpenCode 后可以配置真正跨 provider 的 validator，届时应优先使用真实跨 provider 而非同源 fallback，见 `FR-008`。
+- **Q4（已关闭）**：Evidence Summary 复用 F003 export 的 renderer，但作为 Done Issue 的独立结构化记录持久化，不只是一份导出文件；multica 和 clowder-ai 都没有等价的"Done 摘要"概念可比对，这条是 PersonaHub 自己的设计判断，非阻塞，见 `DR-004`。
 
 ## 13. 可追踪性
 

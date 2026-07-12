@@ -429,17 +429,12 @@ validation result event   -> no Issue Done change F003 不自动改变 Issue 到
 
 ## 12. 待确认问题
 
-- **Q1**：Command trace 的主要来源是 adapter structured event，还是从 stdout/stderr 推断？  
-  **推荐**：优先 adapter structured event；没有能力时允许 inferred trace，但必须显式标记来源。
+目前没有遗留的开放问题，以下四项均已关闭：
 
-- **Q2**：File change summary 是否强依赖 git？  
-  **推荐**：git workspace 使用 git status/diff summary；非 git workspace 使用 fallback scan，但只提供 path + change type 的保守摘要。
-
-- **Q3**：F003 是否创建 Artifact 表？  
-  **推荐**：如果 F001/F002 已有 Artifact 基础，则复用；否则先用 ThreadEvent.evidence_refs + inline/db record 轻量实现，不阻塞完整 Artifact manifest 到 v0.3。
-
-- **Q4**：Markdown export 是写入本地文件还是返回内容？  
-  **推荐**：P0 先由后端生成 Markdown 内容并由 UI 触发下载/保存；是否落本地文件由具体应用壳能力决定。
+- **Q1（已关闭）**：command trace 优先取 adapter structured event；multica（Codex `item/commandExecution` -> `Message{Type: MessageToolUse/MessageToolResult}`）和 clowder-ai（`toStoredToolEvent()`）都只从结构化事件转换，不靠 stdout/stderr 文本推断兜底，验证了 `TR-001` 现有设计；没有结构化能力时仍保留 `output_inferred` 作为显式标记的降级路径。
+- **Q2（已关闭）**：file change summary 在 Run 终态时持久化快照，维持 `FR-003`/`TR-004` 现有设计，不改用 clowder-ai 的"用户打开 diff 视图时实时计算"模式——后者不落盘，无法回答"这一轮 Run 具体改了什么"（下一轮 Run 改了同一文件后就无法复现）；git diff/status 仍是主要计算机制，具体命令序列见第 14 节实现备注。
+- **Q3（已关闭）**：采用 clowder-ai 的轻量引用模式（无独立存储的 artifact 指针），不采用 multica 的重型托管 Attachment（独立表 + S3/本地存储后端），维持 `DR-003` 现有设计。
+- **Q4（已关闭）**：Markdown 内容由后端在内存生成，通过 HTTP 响应 + `Content-Disposition: attachment` 触发下载，不做后端落盘，参考 clowder-ai export 接口的实现模式。
 
 ## 13. 可追踪性
 
@@ -462,6 +457,7 @@ validation result event   -> no Issue Done change F003 不自动改变 Issue 到
 - evidence refs 设计要避免绑定单一存储形态，为 v0.3 Artifact manifest 留扩展点。
 - file change summary P0 不要求完整 diff；完整 diff viewer 可以后置。
 - 不引入 multica 风格的 "sidecar manifest"（管理临时运行产物清理的 manifest 文件）：`clowder-multica-source-reference.md` 提到过这个概念，但它属于 v0.3 Artifact-Centered Collaboration 的范围，F003 的非目标已经明确"不实现复杂 Artifact manifest"，现在引入会直接违反这条边界，留到 v0.3 一并设计。
+- file change summary 的 git 计算路径可直接参考 clowder-ai 已验证的命令序列：`git status --porcelain -uall` 拿到变更文件列表，再对每个 path 跑 `git diff HEAD --unified=3 -- <path>`；staged 内容 fallback 到 `--cached`；untracked 文件 fallback 到 `git diff --no-index /dev/null <file>`。P0 只需要 path + change type，不必展示完整 diff，但计算方式可以直接复用这套已验证过的 fallback 顺序，design.md 阶段不需要重新摸索。
 
 ## 15. 参考
 

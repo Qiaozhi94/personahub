@@ -7,19 +7,28 @@ updated: 2026-07-12
 
 # Feature Specs Guide
 
-本目录用于记录 PersonaHub 的 feature-level SDD artifacts。后续所有需求都按“一 feature 一文件夹”的结构输出，不再使用 `Fxxx-feature-name.md` 单文件格式。
+本目录用于记录 PersonaHub 的 feature-level SDD artifacts。后续所有需求都按"一 feature 一文件夹"的结构输出，不再使用 `Fxxx-feature-name.md` 单文件格式；feature 文件夹按 PRD 第 15 节的大版本（`0.1`、`0.2`…）分层存放。
 
 ## Directory Shape
 
 ```text
 docs/features/
-  Fxxx-feature-name/
+  0.1/
+    ux-prototype.html          该大版本交付目标的 UX 原型（可选，体现该版本跑完后的整体页面/交互）
+    Fxxx-feature-name/
+      spec.md
+      design.md
+      tasks.md
+  0.2/
+    Fxxx-feature-name/
+      ...
+  TEMPLATE/
     spec.md
     design.md
     tasks.md
 ```
 
-创建新 feature 时，从 `docs/features/TEMPLATE/` 复制一份并重命名：
+创建新 feature 时，从 `docs/features/TEMPLATE/` 复制一份，放到对应版本目录下并重命名：
 
 ```text
 docs/features/TEMPLATE/
@@ -30,9 +39,10 @@ docs/features/TEMPLATE/
 
 命名规则：
 
-- Feature ID 使用 `F001`、`F002`、`F003` 递增。
-- 文件夹名使用 `Fxxx-kebab-case-feature-name`。
-- `BACKLOG.md` 中的链接指向该 feature 的 `spec.md`。
+- Feature ID 使用 `F001`、`F002`、`F003` 递增，跨版本连续编号，不按版本重新从 001 开始。
+- 文件夹名使用 `Fxxx-kebab-case-feature-name`，放在其所属大版本目录下（对照 PRD 第 15 节该 feature 对应的 `v{X.Y.Z}`，取整数大版本作为目录名，例如 v0.1.0-v0.1.4 都归在 `0.1/` 下）。
+- 单个 feature 级别的 UX 原型（如果需要）放在该 feature 文件夹内；体现某个大版本整体交付效果的原型放在该版本目录顶层（例如 `docs/features/0.1/ux-prototype.html`），不要和某一个具体 feature 的原型混在一起。
+- `BACKLOG.md` 中的链接指向该 feature 的 `spec.md`，并注明所属版本。
 
 ## Artifact Responsibilities
 
@@ -129,16 +139,22 @@ docs/features/TEMPLATE/
 
 ## Migration Note
 
-旧格式：
+第一次迁移（单文件 → 三件套）：
 
 ```text
 docs/features/F001-workspace-issue-foundation.md
-```
-
-新格式：
-
-```text
+  ->
 docs/features/F001-workspace-issue-foundation/spec.md
 docs/features/F001-workspace-issue-foundation/design.md
 docs/features/F001-workspace-issue-foundation/tasks.md
 ```
+
+第二次迁移（按大版本分层）：
+
+```text
+docs/features/F001-workspace-issue-foundation/
+  ->
+docs/features/0.1/F001-workspace-issue-foundation/
+```
+
+F001-F004 均对应 PRD 第 15 节 v0.1.0-v0.1.3，已归到 `docs/features/0.1/` 下；`docs/features/0.1/ux-prototype.html` 是体现 v0.1 全版本（含 v0.1.4）交付效果的原型，和 F001 单独的 feature-level 原型是两个东西。

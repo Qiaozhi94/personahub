@@ -463,14 +463,11 @@ Issue created   -> Ready                F001 不开放；后续 Agent 配置能�
 
 ## 12. 待确认问题
 
-- **Q1**：F001 是否应该选择最终 SQLite migration 工具，还是只定义初始 schema？  
-  **推荐**：F001 选择 migration 工具，因为这是第一个持久化 schema。选择结果记录到 `design.md`。
+目前没有遗留的开放问题，以下三项均已关闭：
 
-- **Q2**：Git metadata 检测应该 shell out 到 `git`，还是使用 library？  
-  **推荐**：优先在可用时 shell out 到 `git`，并提供 graceful fallback。这样 F001 保持简单，避免在没有实现压力前引入依赖。
-
-- **Q3**：F001 中是否允许 Issue 进入 `Ready`？  
-  **结论**：不允许。F001 尚未实现 owner agent / Agent 配置，因此新 Issue 默认进入 `Inbox`；`Ready` 状态留到 F002 或后续 Agent 配置能力出现后再开放。
+- **Q1（已关闭）**：SQLite migration 工具选型。结论见 `design.md` 第 3 节"Migration 工具与执行方式"（版本化内联 SQL + `schema_version` 表，参考 clowder-ai 同技术栈实现）。
+- **Q2（已关闭）**：Git metadata 检测方式。结论：shell out 到 `git`，不可用时 graceful fallback，不引入额外 library。
+- **Q3（已关闭）**：F001 是否允许 Issue 进入 `Ready`。结论：不允许，新 Issue 默认 `Inbox`；`Ready` 留到 owner agent 配置能力出现后开放，见 `design.md` 第 10 节设计决策。
 
 - **Q4**：ThreadEvent 是否需要独立 `event_sequence`？  
   **结论**：需要。公开 ID 使用带前缀 ULID，但 ThreadEvent 排序和 cursor 使用持久化 `event_sequence`，避免依赖同毫秒 ULID 单调性。
