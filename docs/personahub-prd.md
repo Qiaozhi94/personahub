@@ -867,7 +867,7 @@ P0 / P1 / P2 与第 15 节版本路线一一对应，不是独立的第二套排
 - Thread 消息流。
 - Agent Profile 配置。
 - Local runner。
-- Coding agent adapter registry: P0 首个接入的本地 coding CLI 是 Codex CLI（决策见 `docs/decisions/0002-first-agent-adapter.md`），registry 设计预留多 adapter 扩展点（Claude Code、OpenCode 等），但不要求 P0 同时支持三个。
+- Coding agent adapter registry: P0 首个接入的本地 coding CLI 是 Codex CLI（决策见 `docs/decisions/0002-first-agent-adapter.md`），registry 设计预留多 adapter 扩展点。
 - Agent command dispatch: 用户从 Thread 中下发实现、修复、验证等指令，由 PersonaHub 转发给对应 CLI agent。
 - Run events 持久化。
 - File change / command / test evidence 记录。
@@ -875,6 +875,7 @@ P0 / P1 / P2 与第 15 节版本路线一一对应，不是独立的第二套排
 - Evidence Summary。
 - 本地 SQLite 存储。
 - Markdown export。
+- Claude Code CLI adapter、OpenCode CLI adapter 接入，三者（含 Codex）均支持 OAuth 登录，OpenCode 额外支持单独配置 API key 等模型信息；Thread 内手动多 agent 路由（见第 15 节 v0.1.4）。
 
 ### P1（v0.2 Orchestrator Workflow + v0.3 Artifact-Centered Collaboration）
 
@@ -1140,15 +1141,34 @@ Issue -> primary Thread -> implementation agent -> validator agent -> Evidence S
 - Done Issue 自动生成 evidence summary。
 - Validation fail 后 findings 回流为下一轮修复输入。
 
+#### v0.1.4 手动多 Agent 路由
+
+目标：在不引入 Coordinator 自动编排、不引入 Room 协作现场的前提下，让用户可以在同一个 Issue 的 Thread 里手动调度多个不同的 CLI agent 协同完成一个任务，不必离开 PersonaHub、不必手动在多个工具间复制结论。协作拓扑仍然是 `sequential`——区别只是"下一步交给谁"从 Workflow Template 固定的角色顺序，变成用户在 Thread 里手动指定。
+
+范围：
+
+- 在 F002 已接入的 Codex CLI adapter 基础上，补齐 **Claude Code CLI adapter** 和 **OpenCode CLI adapter**，三者同时可用。
+- 三个 adapter 的鉴权方式：
+  - Codex、Claude Code、OpenCode 均支持 **OAuth 登录**方式（复用各 CLI 自身的登录机制，PersonaHub 负责引导用户完成登录、检测登录状态，不自建 OAuth 流程）。
+  - **OpenCode 额外支持单独配置 API key 等模型信息**（provider/model/api key），不强制走 OAuth——因为 OpenCode 定位是可对接多种模型 provider 的通用 CLI，用户可能需要直接指定 key 而不是走某个厂商的登录态。
+- Thread composer 增加 agent/角色选择器（例如 @ 提及或下拉），用户下发指令时手动指定由哪个已配置的 adapter 处理这一轮。
+- 上一轮的 Handoff Packet 和 evidence refs（F003 已有）自动成为下一个被指定 adapter 的上下文输入，用户不需要手动复制结论。
+- 不做：Coordinator 自动推荐该找谁、Workflow/Topology 自动选择、Room 可视化协作现场——这些是 v0.2/v0.3 的范围。
+
+完成判据：
+
+- 用户可以在一个 Issue 的 Thread 里，依次手动指定 Codex、Claude Code、OpenCode 中的任意一个处理某一轮指令，且下一个被指定的 agent 能读到上一轮的结论和证据，不需要用户手动复制。
+- 三个 adapter 都能完成登录/鉴权配置并显示可用状态。
+
 v0.1 完成判据：
 
 - 至少一个真实代码开发 Issue 可以端到端在 PersonaHub 内完成。
-- 用户不需要手动在多个 CLI 之间复制上下文。
+- 用户不需要手动在多个 CLI 之间复制上下文，包括手动在 Codex / Claude Code / OpenCode 之间切换角色协作时。
 - PersonaHub 成为该开发任务的唯一指令入口、状态入口和证据入口。
 
 ### v0.2 Orchestrator Workflow
 
-目标：引入 Coordinator Agent 作为可配置 agent role，让用户用自然语言目标启动工作，由系统推荐 Issue Type、Workflow Template、Agent Team 和协作拓扑。
+目标：引入 Coordinator Agent 作为可配置 agent role，让用户用自然语言目标启动工作，由系统推荐 Issue Type、Workflow Template、Agent Team 和协作拓扑，把 v0.1.4 里"用户手动 @ 指定下一个 agent"升级为"系统自动推荐/分派"。
 
 范围：
 
@@ -1159,7 +1179,7 @@ v0.1 完成判据：
 - Agent Team Template 推荐。
 - Structured Handoff Packet。
 - Workflow Template 管理 UI 初版。
-- 多 agent adapter 补齐。
+- Coordinator 根据 Issue Type / agent capability，在 v0.1.4 已接入的 Codex / Claude Code / OpenCode 之间自动推荐和分派，不再需要用户手动 @ 指定（adapter 接入本身已在 v0.1.4 完成）。
 - Runtime health check。
 
 完成判据：

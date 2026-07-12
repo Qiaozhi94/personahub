@@ -19,7 +19,7 @@
 
 ## 技术栈
 
-- Frontend: Vite + React + 本地 API（见 `docs/decisions/0001-frontend-stack.md`）
+- Frontend: Vite + React + 本地 API（见 `docs/decisions/0001-frontend-stack.md`）；样式栈 Tailwind CSS v4 + Base UI/shadcn/ui + OKLCH design token（参考 multica，见 `docs/decisions/0004-ui-styling-stack.md`）
 - Backend: Node.js + TypeScript（见 `docs/decisions/0003-backend-runtime.md`）
 - Storage: 本地 SQLite（见 `docs/personahub-architecture.md`）
 - Agent adapters: P0 = Codex CLI，Claude Code / OpenCode 为后续扩展（见 `docs/decisions/0002-first-agent-adapter.md`）

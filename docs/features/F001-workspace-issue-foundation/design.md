@@ -657,6 +657,73 @@ Ready  F001 不开放；后续 Agent 配置能力出现后再启用
 
 ## 6. UI 设计说明
 
+### 视觉基础（design tokens，决策 0004）
+
+参考 multica `packages/ui/styles/tokens.css` 的结构（不逐字复制文件本身），中性灰阶和 token 命名沿用其体系，品牌色相换成 PersonaHub 自己的颜色（青蓝色相，h≈195，区别于 multica 的蓝色 h=255），保持同一套"大量留白、极简边框、低饱和度"的简约效果，同时形成独立视觉身份：
+
+```css
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card: oklch(1 0 0);
+  --popover: oklch(1 0 0);
+  --primary: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0.001 286.375);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --destructive: oklch(0.577 0.245 27.325);
+  --success: oklch(0.55 0.16 145);
+  --warning: oklch(0.75 0.16 85);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
+  --brand: oklch(0.55 0.16 195);       /* PersonaHub 品牌色相：青蓝，区别于 multica 的蓝色 (h=255) */
+  --chart-1: oklch(0.55 0.16 195);
+  --chart-2: oklch(0.66 0.13 195);
+  --chart-3: oklch(0.76 0.10 195);
+  --chart-4: oklch(0.85 0.06 195);
+  --chart-5: oklch(0.92 0.03 195);
+  --radius: 0.625rem;                  /* --radius-sm/md/lg/xl/2xl 由此推导 */
+}
+
+.dark {
+  --background: oklch(0.18 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.006 285.885);
+  --border: oklch(1 0 0 / 10%);
+  --brand: oklch(0.65 0.16 195);
+  /* 其余同名变量按 multica 暗色模式的明度曲线镜像调整 */
+}
+```
+
+约定：
+
+- Tailwind v4 CSS-first 配置（不用单独 `tailwind.config.js`），token 通过 `@theme inline` 映射成 Tailwind 的 `color-*`/`radius-*` 工具类。
+- 交互原语用 shadcn/ui CLI 生成的组件代码，底层基于 Radix（不用 Base UI，也不手写封装），配 `class-variance-authority` + `clsx` + `tailwind-merge` 写变体样式；组件代码生成到当前项目 `src/components/ui/`，不建独立的 `@personahub/ui` 包（理由见决策 0004）。
+- 图标统一用 `lucide-react`。
+- 主题切换（light/dark）用 `data-theme` 属性 + 上述 CSS variable，不引入 Next.js 专用的 `next-themes`。
+- F001 范围内只需要 Project/Workspace/Issue/Thread 相关的基础组件（button、input、card、empty state、toast/inline error），不需要 F001 阶段就把所有可能用到的组件都建好。
+
+### 前端目录结构：业务逻辑与 UI 组件分离
+
+这是决策 0004 里为未来多端（尤其是桌面/移动）预留的低成本约定，F001 是第一个落地的 feature，之后所有前端 feature 都要遵守：
+
+```text
+src/
+  components/       UI 组件（含 components/ui/ 下 shadcn/ui 生成的基础组件）
+  lib/               API client（对本地 backend HTTP API 的封装，不含 React 依赖）
+  hooks/             数据获取/状态逻辑（例如 useProjects、useIssue，内部调用 lib/ 的 API client）
+  types/             领域类型（Project、Workspace、Issue、Thread、ThreadEvent 等，和 system-design.md 的实体对应）
+```
+
+规则：
+
+- 组件文件（`components/`）不直接写 `fetch`/API 调用；数据获取通过 `hooks/` 提供的 hook 完成。
+- `lib/` 和 `types/` 不 import 任何 React 组件，保持可以独立于 UI 层被复用或提取。
+- F001 只需要按这个结构把 Project/Workspace/Issue 相关的 API client、hooks、类型放对位置，不需要现在就搭建完整的多端抽象。
+
 ### 最小 UI Surface
 
 - 左侧导航中的 Project list / switcher。

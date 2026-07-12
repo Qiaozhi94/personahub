@@ -187,10 +187,11 @@ Artifact-centered collaboration 是 PRD v0.3 的既定范围，属于 v0.1–v0.
 
 ## 8. 前端
 
-前端技术选型已由决策 0001 确定，本文档不重复设计，只补充与后端交互相关的两点：
+前端技术选型已由决策 0001 确定，样式/组件技术栈由决策 0004 确定，本文档不重复设计，只补充与后端交互相关、以及跨 feature 都要遵守的结构约定：
 
 - 通过本地 HTTP API 做 CRUD，通过 SSE 订阅当前打开的 Issue/Thread 的事件流（含 cursor/replay，见第 4 节）。
 - 三栏信息架构（左侧导航 / 中间协作现场 / 右侧 Inspector）按 PRD "信息架构"小节实现，状态管理库等前端内部实现细节留给具体 feature 实现阶段决定，不在架构层预先约束。
+- **业务逻辑与 UI 组件目录分离**（决策 0004）：`src/lib`（API client）、`src/hooks`（数据获取/状态逻辑）、`src/types`（领域类型）与 `src/components` 分开存放，组件不直接内嵌 API 调用，`lib`/`types` 不 import React 组件。这是为未来多端（v0.7 桌面打包、v0.8 方向性设想里的 mobile/remote access）预留的低成本保险——桌面端（Tauri/Electron）打包的是同一份 Web 构建产物，不需要这条约定也能工作；真正的原生移动端无法复用任何基于 DOM 的 UI 组件，所以这条约定省不下 UI 组件重写的工作量，但能让业务逻辑层（API client、数据模型）在需要时被提取复用，而不必从耦合的组件代码里硬挖出来。不需要现在就搭建完整的多端抽象层，只需要从 F001 开始保持这个目录边界。
 
 ## 9. CLI Agent 执行权限模型与 Escalation 落地
 

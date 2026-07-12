@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PersonaHub F001 Workspace Prototype</title>
+  <style>
+    /* Design tokens: 决策 0004 / F001 design.md "视觉基础" 一节，原样引用，不再是独立配色 */
+    :root {
+      color-scheme: light;
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.141 0.005 285.823);
+      --card: oklch(1 0 0);
+      --popover: oklch(1 0 0);
+      --primary: oklch(0.21 0.006 285.885);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.967 0.001 286.375);
+      --secondary-foreground: oklch(0.21 0.006 285.885);
+      --muted: oklch(0.967 0.001 286.375);
+      --muted-foreground: oklch(0.552 0.016 285.938);
+      --accent: oklch(0.967 0.001 286.375);
+      --destructive: oklch(0.577 0.245 27.325);
+      --success: oklch(0.55 0.16 145);
+      --warning: oklch(0.75 0.16 85);
+      --border: oklch(0.92 0.004 286.32);
+      --border-strong: oklch(0.85 0.006 286.32);
+      --input: oklch(0.92 0.004 286.32);
+      --ring: oklch(0.705 0.015 286.067);
+      --brand: oklch(0.55 0.16 195);
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) * 0.6);
+      --radius-md: calc(var(--radius) * 0.8);
+      --radius-lg: var(--radius);
+      --radius-xl: calc(var(--radius) * 1.4);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--background);
+      color: var(--foreground);
+      font-size: 14px;
+      letter-spacing: 0;
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--foreground);
+      min-height: 32px;
+      padding: 6px 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--secondary);
+      border-color: var(--border);
+    }
+
+    button:disabled {
+      color: var(--muted-foreground);
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-foreground);
+    }
+
+    button.primary:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--input);
+      background: var(--background);
+      color: var(--foreground);
+      border-radius: var(--radius-sm);
+      padding: 9px 10px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 3px oklch(0.705 0.015 286.067 / 15%);
+    }
+
+    input:disabled,
+    textarea:disabled {
+      background: var(--secondary);
+      color: var(--muted-foreground);
+    }
+
+    /* 三栏信息架构（PRD"信息架构"小节）：左侧导航 / 中间协作现场 / 右侧 Inspector */
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 300px minmax(560px, 1fr) 320px;
+      overflow: hidden;
+    }
+
+    .left-nav {
+      background: var(--secondary);
+      border-right: 1px solid var(--border);
+      padding: 18px 16px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Project switcher：参考 multica app-sidebar.tsx 的 Workspace Switcher 模式，
+       头像+名字+chevron 触发一个下拉菜单（列表 + 当前项勾选 + 底部创建），不做删除。 */
+    .switcher {
+      position: relative;
+    }
+
+    .switcher-trigger {
+      width: 100%;
+      justify-content: flex-start;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 6px 8px;
+    }
+
+    .switcher-trigger .chevron {
+      color: var(--muted-foreground);
+    }
+
+    .switcher-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 10;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 12px 32px oklch(0.141 0.005 285.823 / 14%);
+      padding: 6px;
+      display: grid;
+      gap: 2px;
+    }
+
+    .switcher-menu.open {
+      display: grid;
+    }
+
+    .switcher-label {
+      color: var(--muted-foreground);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 6px 8px 2px;
+    }
+
+    .switcher-item {
+      width: 100%;
+      justify-content: flex-start;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 8px;
+      text-align: left;
+    }
+
+    .switcher-item .check {
+      color: var(--brand);
+    }
+
+    .switcher-separator {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 2px;
+    }
+
+    .project-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius-sm);
+      background: var(--background);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: var(--foreground);
+      flex: 0 0 auto;
+    }
+
+    .project-title strong,
+    .side-card strong {
+      display: block;
+      line-height: 1.25;
+    }
+
+    .small,
+    .muted,
+    .section-title,
+    .hint,
+    .event-meta {
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+
+    .quick-create {
+      width: 100%;
+      justify-content: flex-start;
+      color: var(--secondary-foreground);
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px dashed var(--border-strong);
+    }
+
+    .nav-section {
+      display: grid;
+      gap: 6px;
+    }
+
+    .section-title {
+      margin: 4px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-item {
+      width: 100%;
+      min-height: 38px;
+      justify-content: flex-start;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      text-align: left;
+      color: var(--secondary-foreground);
+      padding: 8px 10px;
+    }
+
+    .nav-item.active {
+      background: var(--background);
+      border-color: var(--border);
+    }
+
+    .nav-item.placeholder {
+      color: var(--muted-foreground);
+      cursor: default;
+    }
+
+    .nav-item.placeholder:hover {
+      background: transparent;
+      border-color: transparent;
+    }
+
+    .nav-item strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .count {
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+
+    .workspace-path {
+      font-family: "SFMono-Regular", Consolas, ui-monospace, monospace;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+      padding: 8px 10px;
+      background: var(--background);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .center {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 58px 1fr 74px;
+      overflow: hidden;
+      background: var(--background);
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 22px;
+    }
+
+    .thread-context {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .thread-context h1 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.2;
+      letter-spacing: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .thread-context .subline {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 2px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted-foreground);
+    }
+
+    .messages {
+      overflow: auto;
+      padding: 34px 46px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: var(--background);
+    }
+
+    .empty-note {
+      align-self: center;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      margin-bottom: 8px;
+      text-align: center;
+      max-width: 420px;
+    }
+
+    /* F001 的 primary Thread 只展示 trace event（issue.created），不是 agent 对话气泡 */
+    .trace-event {
+      max-width: 640px;
+      width: 100%;
+      align-self: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      padding: 14px 16px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .trace-event-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .trace-event-type {
+      font-family: "SFMono-Regular", Consolas, ui-monospace, monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--brand);
+    }
+
+    .trace-payload {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 10px;
+      font-size: 12px;
+      font-family: "SFMono-Regular", Consolas, ui-monospace, monospace;
+      color: var(--foreground);
+    }
+
+    .trace-payload span:nth-child(odd) {
+      color: var(--muted-foreground);
+    }
+
+    .composer {
+      border-top: 1px solid var(--border);
+      background: var(--background);
+      padding: 12px 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .composer-hint {
+      grid-column: 1 / -1;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      margin: -4px 0 2px;
+    }
+
+    .right-panel {
+      background: var(--background);
+      border-left: 1px solid var(--border);
+      padding: 15px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+    }
+
+    .right-panel h2 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .side-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      padding: 13px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .side-row {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 8px;
+      align-items: start;
+      padding: 7px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .side-row:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .side-row span:first-child {
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+
+    .tag {
+      min-height: 22px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--background);
+      color: var(--secondary-foreground);
+      font-size: 12px;
+      padding: 2px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .tag.success {
+      border-color: oklch(0.55 0.16 145 / 30%);
+      background: oklch(0.55 0.16 145 / 10%);
+      color: var(--success);
+    }
+
+    .tag.warning {
+      border-color: oklch(0.75 0.16 85 / 35%);
+      background: oklch(0.75 0.16 85 / 12%);
+      color: oklch(0.45 0.14 85);
+    }
+
+    .tag.destructive {
+      border-color: oklch(0.577 0.245 27.325 / 25%);
+      background: oklch(0.577 0.245 27.325 / 8%);
+      color: var(--destructive);
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: var(--secondary-foreground);
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 108px;
+      gap: 8px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toast {
+      display: none;
+      border: 1px solid oklch(0.577 0.245 27.325 / 25%);
+      background: oklch(0.577 0.245 27.325 / 8%);
+      color: var(--destructive);
+      border-radius: var(--radius-sm);
+      padding: 9px 10px;
+      font-size: 12px;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: oklch(0.141 0.005 285.823 / 40%);
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(520px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 24px 80px oklch(0.141 0.005 285.823 / 18%);
+      padding: 16px;
+      display: grid;
+      gap: 13px;
+    }
+
+    .modal h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    @media (max-width: 1280px) {
+      .app {
+        grid-template-columns: 260px minmax(520px, 1fr);
+      }
+
+      .right-panel {
+        display: none;
+      }
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+        display: block;
+      }
+
+      .left-nav {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .center {
+        min-height: 760px;
+      }
+
+      .messages {
+        padding: 22px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 左侧导航：Project 切换 / Issues / Agents·Automations·Skills(占位) / Settings，对应 PRD"信息架构"小节 -->
+    <aside class="left-nav">
+      <!-- Project switcher：参考 multica 的 workspace switcher（头像+名字+chevron 触发下拉），
+           菜单内列出所有 Project、当前项打勾、底部"新建 Project"；不含删除，理由见 F001 review 记录。 -->
+      <div class="switcher">
+        <button class="switcher-trigger" id="switcherTrigger" type="button">
+          <div class="avatar" id="projectInitial">M</div>
+          <strong id="projectName" style="text-align:left;">main</strong>
+          <span class="chevron">⌄</span>
+        </button>
+        <div class="switcher-menu" id="switcherMenu">
+          <div class="switcher-label">Projects</div>
+          <div id="projectSwitcherList"></div>
+          <div class="switcher-separator"></div>
+          <button class="switcher-item" type="button" id="openProjectModal">
+            <span>+</span><span>新建 Project</span><span></span>
+          </button>
+        </div>
+      </div>
+
+      <button class="quick-create" id="quickIssue">+ 新建 coding issue</button>
+
+      <section class="nav-section">
+        <div class="section-title">工作区</div>
+        <button class="nav-item active" type="button"><strong>Issues</strong><span class="count" id="issueCount">2</span></button>
+      </section>
+
+      <section class="nav-section">
+        <div class="section-title">Workspace</div>
+        <div class="workspace-path" id="workspacePathLabel">D:\Projects\personahub</div>
+      </section>
+
+      <!-- Agents / Automations / Skills 是 PRD 要求的导航占位入口，F001 阶段没有对应功能，显式置灰，不展示虚构数据 -->
+      <section class="nav-section">
+        <div class="section-title">即将推出</div>
+        <button class="nav-item placeholder" type="button" disabled><strong>Agents</strong></button>
+        <button class="nav-item placeholder" type="button" disabled><strong>Automations</strong></button>
+        <button class="nav-item placeholder" type="button" disabled><strong>Skills</strong></button>
+      </section>
+
+      <section class="nav-section">
+        <div class="section-title">配置</div>
+        <button class="nav-item" type="button"><strong>Settings</strong></button>
+      </section>
+    </aside>
+
+    <!-- 中间协作现场：primary Thread。F001 只写入 issue.created 一种 trace event，不是 agent 对话 -->
+    <main class="center">
+      <header class="topbar">
+        <div class="thread-context">
+          <div class="avatar">TH</div>
+          <div>
+            <h1 id="threadTitle">选择一个 Issue</h1>
+            <div class="subline">
+              <span class="small" id="threadProject">—</span>
+              <span class="tag" id="issueStatusTag">Inbox</span>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button title="Export" disabled>Export</button>
+        </div>
+      </header>
+
+      <section class="messages" id="messages"></section>
+
+      <form class="composer" id="messageForm">
+        <div class="composer-hint">Agent 指令下发在 F002（Agent Command Center）中启用，F001 阶段仅记录 Issue 创建 trace。</div>
+        <input id="messageInput" placeholder="Agent 指令下发暂未启用" disabled>
+        <button class="primary" type="submit" disabled>发送</button>
+      </form>
+    </main>
+
+    <!-- 右侧 Inspector：Issue 信息 / Project-Workspace 关系 / trace，对应 PRD"信息架构"小节 -->
+    <aside class="right-panel">
+      <section>
+        <h2>Issue Inspector</h2>
+        <span class="small" id="statusLine">选择一个 Issue 查看详情</span>
+      </section>
+
+      <section class="side-card">
+        <strong>Issue</strong>
+        <div class="side-row"><span>Status</span><span id="inspectorStatus">—</span></div>
+        <div class="side-row"><span>Type</span><span>coding</span></div>
+        <div class="side-row"><span>Priority</span><span id="inspectorPriority">—</span></div>
+        <div class="side-row"><span>Labels</span><span id="inspectorLabels">—</span></div>
+      </section>
+
+      <section class="side-card">
+        <strong>Project / Workspace</strong>
+        <div class="side-row"><span>Project</span><span id="inspectorProject">—</span></div>
+        <div class="side-row"><span>Workspace</span><span id="inspectorWorkspacePath">未绑定</span></div>
+        <div class="side-row"><span>Git branch</span><span id="inspectorGitBranch">—</span></div>
+      </section>
+
+      <section class="side-card">
+        <strong>Trace</strong>
+        <div class="side-row"><span>Thread</span><code id="sideThreadId">—</code></div>
+        <div class="side-row"><span>Events</span><span id="sideEventCount">0</span></div>
+      </section>
+
+      <section class="side-card">
+        <strong>Workspace Binding</strong>
+        <form class="form-grid" id="workspaceForm">
+          <div class="field">
+            <label for="workspaceInput">Local path</label>
+            <input id="workspaceInput" value="D:\Projects\personahub">
+          </div>
+          <div class="actions">
+            <button class="primary" type="submit">绑定</button>
+          </div>
+        </form>
+        <div class="toast" id="workspaceToast"><strong>WORKSPACE_PATH_NOT_FOUND</strong><br>Workspace path does not exist.</div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="modal-backdrop" id="projectModal">
+    <form class="modal" id="projectForm">
+      <h2>Create Project</h2>
+      <div class="field">
+        <label for="newProjectName">Name</label>
+        <input id="newProjectName" value="Personal Knowledge Lab">
+      </div>
+      <div class="field">
+        <label for="newProjectDescription">Description</label>
+        <textarea id="newProjectDescription">A local workspace for notes, code experiments, and agent-assisted maintenance.</textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="closeProjectModal">Cancel</button>
+        <button class="primary" type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-backdrop" id="issueModal">
+    <form class="modal" id="issueForm">
+      <h2>New coding Issue</h2>
+      <div class="field">
+        <label for="issueTitleInput">Title</label>
+        <input id="issueTitleInput" value="Implement project creation flow">
+      </div>
+      <div class="field">
+        <label for="issueGoalInput">Goal</label>
+        <textarea id="issueGoalInput">Add the minimum Project CRUD path, with persistence and a primary Thread created transactionally.</textarea>
+      </div>
+      <div class="split">
+        <div class="field">
+          <label for="issueLabelsInput">Labels</label>
+          <input id="issueLabelsInput" value="v0.1.0, foundation">
+        </div>
+        <div class="field">
+          <label for="issuePriorityInput">Priority</label>
+          <select id="issuePriorityInput">
+            <option>normal</option>
+            <option>high</option>
+            <option>low</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="small">Issue type is fixed to coding; status starts at Inbox.</span>
+        <button type="button" id="closeIssueModal">Cancel</button>
+        <button class="primary" type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // 数据形状对应 system-design.md 的 Project / Workspace / Issue / Thread / ThreadEvent
+    const state = {
+      selectedProjectId: 'prj_01J_FOUNDATION',
+      selectedIssueId: 'iss_01J_PROJECT_CREATE',
+      projects: [
+        {
+          id: 'prj_01J_FOUNDATION',
+          name: 'main',
+          description: 'Workspace & Issue Foundation',
+          workspace: {
+            id: 'wsp_01J_PERSONAHUB',
+            local_path: 'D:\\Projects\\personahub',
+            git_branch: 'main',
+            lock_state: 'idle'
+          },
+          issues: [
+            {
+              id: 'iss_01J_PROJECT_CREATE',
+              thread_id: 'thr_01J_PROJECT_CREATE',
+              title: 'Implement project creation flow',
+              goal: 'Add the minimum Project CRUD path, with persistence and a primary Thread created transactionally.',
+              status: 'Inbox',
+              priority: 'normal',
+              labels: ['v0.1.0', 'foundation'],
+              events: [
+                {
+                  type: 'issue.created',
+                  created_at: '2026-07-12T06:10:00.000Z',
+                  payload: {
+                    issue_id: 'iss_01J_PROJECT_CREATE',
+                    project_id: 'prj_01J_FOUNDATION',
+                    workspace_id: 'wsp_01J_PERSONAHUB',
+                    issue_type: 'coding',
+                    status: 'Inbox'
+                  }
+                }
+              ]
+            },
+            {
+              id: 'iss_01J_WORKSPACE_BIND',
+              thread_id: 'thr_01J_WORKSPACE_BIND',
+              title: 'Bind default workspace path',
+              goal: 'Validate a readable Windows path and persist it as the Project default Workspace.',
+              status: 'Inbox',
+              priority: 'high',
+              labels: ['workspace'],
+              events: [
+                {
+                  type: 'issue.created',
+                  created_at: '2026-07-12T06:26:00.000Z',
+                  payload: {
+                    issue_id: 'iss_01J_WORKSPACE_BIND',
+                    project_id: 'prj_01J_FOUNDATION',
+                    workspace_id: 'wsp_01J_PERSONAHUB',
+                    issue_type: 'coding',
+                    status: 'Inbox'
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'prj_01J_EMPTY',
+          name: 'research',
+          description: 'Empty Project state',
+          workspace: null,
+          issues: []
+        }
+      ]
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function currentProject() {
+      return state.projects.find((project) => project.id === state.selectedProjectId);
+    }
+
+    function currentIssue() {
+      return currentProject().issues.find((issue) => issue.id === state.selectedIssueId) || null;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    function renderProjects() {
+      const list = $('projectSwitcherList');
+      list.innerHTML = '';
+      state.projects.forEach((project) => {
+        const isCurrent = project.id === state.selectedProjectId;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'switcher-item';
+        button.innerHTML = `
+          <span class="avatar" style="width:22px;height:22px;font-size:11px;">${escapeHtml(project.name.slice(0, 1).toUpperCase())}</span>
+          <strong>${escapeHtml(project.name)}</strong>
+          <span class="check">${isCurrent ? '✓' : ''}</span>
+        `;
+        button.addEventListener('click', () => {
+          state.selectedProjectId = project.id;
+          state.selectedIssueId = project.issues[0]?.id || null;
+          closeSwitcher();
+          render();
+        });
+        list.appendChild(button);
+      });
+    }
+
+    function openSwitcher() {
+      $('switcherMenu').classList.add('open');
+    }
+
+    function closeSwitcher() {
+      $('switcherMenu').classList.remove('open');
+    }
+
+    $('switcherTrigger').addEventListener('click', (event) => {
+      event.stopPropagation();
+      $('switcherMenu').classList.toggle('open');
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!$('switcherMenu').contains(event.target) && event.target !== $('switcherTrigger')) {
+        closeSwitcher();
+      }
+    });
+
+    function renderShell() {
+      const project = currentProject();
+      const issue = currentIssue();
+      const workspace = project.workspace;
+
+      $('projectName').textContent = project.name;
+      $('projectInitial').textContent = project.name.slice(0, 1).toUpperCase();
+      $('workspacePathLabel').textContent = workspace ? workspace.local_path : '未绑定 workspace';
+      $('issueCount').textContent = project.issues.length;
+
+      $('threadTitle').textContent = issue ? issue.title : '选择一个 Issue';
+      $('threadProject').textContent = project.name + (workspace ? ` · ${workspace.local_path}` : ' · 未绑定 workspace');
+      $('issueStatusTag').textContent = issue?.status || '—';
+      $('issueStatusTag').className = 'tag' + (issue?.status === 'Inbox' ? ' warning' : '');
+
+      $('statusLine').textContent = issue ? `Issue: ${issue.title}` : '选择一个 Issue 查看详情';
+      $('inspectorStatus').textContent = issue?.status || '—';
+      $('inspectorPriority').textContent = issue?.priority || '—';
+      $('inspectorLabels').textContent = issue?.labels?.length ? issue.labels.join(', ') : '—';
+      $('inspectorProject').textContent = project.name;
+      $('inspectorWorkspacePath').textContent = workspace ? workspace.local_path : '未绑定';
+      $('inspectorGitBranch').textContent = workspace ? (workspace.git_branch || '（非 git 目录）') : '—';
+      $('sideThreadId').textContent = issue?.thread_id || '—';
+      $('sideEventCount').textContent = issue?.events?.length || 0;
+      $('workspaceInput').value = workspace?.local_path || 'D:\\Projects\\personahub';
+    }
+
+    function renderMessages() {
+      const project = currentProject();
+      const issue = currentIssue();
+      const target = $('messages');
+
+      if (!project.workspace) {
+        target.innerHTML = `
+          <div class="empty-note">当前 Project 还没有 Workspace。右侧绑定后才能创建 coding Issue 和 primary Thread。</div>
+        `;
+        return;
+      }
+
+      if (!issue) {
+        target.innerHTML = `
+          <div class="empty-note">没有 Issue。点击左侧"新建 coding issue"创建一个，系统会自动生成 primary Thread。</div>
+        `;
+        return;
+      }
+
+      target.innerHTML = issue.events.map((event) => `
+        <article class="trace-event">
+          <div class="trace-event-head">
+            <span class="trace-event-type">${escapeHtml(event.type)}</span>
+            <span class="event-meta">${escapeHtml(new Date(event.created_at).toLocaleString('zh-CN'))}</span>
+          </div>
+          <div class="trace-payload">
+            ${Object.entries(event.payload).map(([key, value]) => `
+              <span>${escapeHtml(key)}</span><span>${escapeHtml(value)}</span>
+            `).join('')}
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function render() {
+      renderProjects();
+      renderShell();
+      renderMessages();
+    }
+
+    $('openProjectModal').addEventListener('click', () => {
+      closeSwitcher();
+      $('projectModal').classList.add('open');
+    });
+    $('closeProjectModal').addEventListener('click', () => $('projectModal').classList.remove('open'));
+    $('projectModal').addEventListener('click', (event) => {
+      if (event.target === $('projectModal')) $('projectModal').classList.remove('open');
+    });
+
+    $('quickIssue').addEventListener('click', () => {
+      if (!currentProject().workspace) {
+        $('workspaceToast').classList.add('show');
+        return;
+      }
+      $('issueModal').classList.add('open');
+    });
+    $('closeIssueModal').addEventListener('click', () => $('issueModal').classList.remove('open'));
+    $('issueModal').addEventListener('click', (event) => {
+      if (event.target === $('issueModal')) $('issueModal').classList.remove('open');
+    });
+
+    $('projectForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = $('newProjectName').value.trim();
+      if (!name) return;
+      const id = `prj_${String(Date.now()).slice(-8)}`;
+      state.projects.unshift({
+        id,
+        name,
+        description: $('newProjectDescription').value.trim(),
+        workspace: null,
+        issues: []
+      });
+      state.selectedProjectId = id;
+      state.selectedIssueId = null;
+      $('projectModal').classList.remove('open');
+      render();
+    });
+
+    $('issueForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const project = currentProject();
+      if (!project.workspace) return;
+      const title = $('issueTitleInput').value.trim();
+      const goal = $('issueGoalInput').value.trim();
+      if (!title || !goal) return;
+      const suffix = String(Date.now()).slice(-8);
+      const labels = $('issueLabelsInput').value
+        .split(',')
+        .map((label) => label.trim())
+        .filter(Boolean)
+        .filter((label, index, array) => array.indexOf(label) === index);
+      const issue = {
+        id: `iss_${suffix}`,
+        thread_id: `thr_${suffix}`,
+        title,
+        goal,
+        status: 'Inbox',
+        priority: $('issuePriorityInput').value,
+        labels,
+        events: [
+          {
+            type: 'issue.created',
+            created_at: new Date().toISOString(),
+            payload: {
+              issue_id: `iss_${suffix}`,
+              project_id: project.id,
+              workspace_id: project.workspace.id,
+              issue_type: 'coding',
+              status: 'Inbox'
+            }
+          }
+        ]
+      };
+      project.issues.unshift(issue);
+      state.selectedIssueId = issue.id;
+      $('issueModal').classList.remove('open');
+      render();
+    });
+
+    $('workspaceForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const path = $('workspaceInput').value.trim();
+      if (!path) {
+        $('workspaceToast').classList.add('show');
+        return;
+      }
+      const project = currentProject();
+      project.workspace = {
+        id: project.workspace?.id || `wsp_${String(Date.now()).slice(-8)}`,
+        local_path: path,
+        git_branch: path.toLowerCase().includes('personahub') ? 'main' : null,
+        lock_state: 'idle'
+      };
+      $('workspaceToast').classList.remove('show');
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
