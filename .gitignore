@@ -1,6 +1,13 @@
 # Editor / tooling artifacts
 .history/
 .claude/settings.local.json
+.sisyphus/
+.playwright-mcp/
+
+# Local SQLite runtime files
+*.db
+*.db-shm
+*.db-wal
 
 # Dependencies
 node_modules/
@@ -13,6 +20,7 @@ node_modules/
 # Build output
 dist/
 build/
+*.tsbuildinfo
 
 # OS files
 .DS_Store
@@ -21,3 +29,5 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+server-stdout.txt
+server-stderr.txt

@@ -4,7 +4,7 @@
 
 ## 现状
 
-项目处于定位/设计阶段，尚无代码。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
+F001（Workspace & Issue Foundation）正在实现中，`shared/` / `server/` / `web/` 已有代码。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
 
 ## 当前结构
 
@@ -16,16 +16,19 @@
 - `docs/decisions/`：重要产品/技术决策记录目录。
 - `docs/research/`：前期调研和竞品分析归档，仅作背景材料。
 - `BACKLOG.md`：近期功能拆分和执行跟踪入口。
+- `shared/` / `server/` / `web/`：npm workspaces monorepo 代码，目录结构和分层约定见 `docs/decisions/0005-code-directory-structure.md`。
 
 ## 技术栈
 
-- Frontend: Vite + React + 本地 API（见 `docs/decisions/0001-frontend-stack.md`）；样式栈 Tailwind CSS v4 + Base UI/shadcn/ui + OKLCH design token（参考 multica，见 `docs/decisions/0004-ui-styling-stack.md`）
-- Backend: Node.js + TypeScript（见 `docs/decisions/0003-backend-runtime.md`）
+- Frontend: Vite + React + 本地 API（见 `docs/decisions/0001-frontend-stack.md`）；样式栈 Tailwind CSS v4 + shadcn/ui CLI（底层 Radix） + OKLCH design token（参考 multica，见 `docs/decisions/0004-ui-styling-stack.md`）
+- Backend: Node.js + TypeScript，Fastify + better-sqlite3（见 `docs/decisions/0003-backend-runtime.md`）
 - Storage: 本地 SQLite（见 `docs/personahub-architecture.md`）
 - Agent adapters: P0 = Codex CLI，Claude Code / OpenCode 为后续扩展（见 `docs/decisions/0002-first-agent-adapter.md`）
+- 代码目录结构：npm workspaces（`shared`/`server`/`web`），分层与命名约定见 `docs/decisions/0005-code-directory-structure.md`
 
 ## 开发约定
 
 - 开发流程见 `docs/SOP.md`。
 - Feature 记录见 `BACKLOG.md` 和 `docs/features/`。
-- 随着技术选型和代码规范落地，在此补充实际的目录结构、命令、lint/format 工具。
+- 代码目录结构、分层规则、命名约定见 `docs/decisions/0005-code-directory-structure.md`；新增代码前先看这份文档确定该放哪一层。
+- lint/format 工具尚未引入，落地后在此补充。

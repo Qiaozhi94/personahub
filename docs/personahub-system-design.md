@@ -34,6 +34,7 @@ Workspace
   id
   project_id
   local_path
+  local_path_normalized
   git_branch
   lock_state
   locked_by_run_id
@@ -96,6 +97,7 @@ WorkRoom
 
 ThreadEvent
   id
+  event_sequence
   thread_id
   type
   actor_type
@@ -137,6 +139,10 @@ WorkflowTemplate
   steps_json
   handoff_policy_json
   evidence_requirements_json
+  status
+  version
+  created_at
+  updated_at
 
 AgentTeamTemplate
   id
@@ -152,6 +158,11 @@ ValidationPolicy
   pass_conditions_json
   fail_conditions_json
   evidence_requirements_json
+  max_validation_rounds
+  status
+  version
+  created_at
+  updated_at
   max_validation_rounds
 
 Run
