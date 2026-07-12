@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PersonaHub 核心概念架构图</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #667487;
+      --line: #cbd5e1;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --teal: #0f766e;
+      --teal-soft: #ecfdf5;
+      --green: #2f855a;
+      --green-soft: #f0fdf4;
+      --orange: #c05621;
+      --orange-soft: #fff7ed;
+      --purple: #6d28d9;
+      --purple-soft: #f5f3ff;
+      --red: #b91c1c;
+      --red-soft: #fef2f2;
+      --slate: #475569;
+      --slate-soft: #f1f5f9;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(246, 248, 251, 0.92);
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    button,
+    a.button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 8px 11px;
+      font: inherit;
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--teal);
+      color: white;
+      border-color: var(--teal);
+    }
+
+    .page {
+      display: grid;
+      grid-template-columns: 310px minmax(0, 1fr);
+      min-height: calc(100vh - 66px);
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: #fbfcfe;
+      padding: 20px;
+      overflow: auto;
+    }
+
+    aside h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .legend-item {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 9px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      margin-top: 2px;
+      border-radius: 999px;
+      border: 2px solid currentColor;
+      background: currentColor;
+    }
+
+    .explain {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .explain section {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .explain h3 {
+      margin: 0 0 5px;
+      font-size: 14px;
+    }
+
+    .explain p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    main {
+      min-width: 0;
+      overflow: auto;
+      padding: 22px;
+    }
+
+    .canvas {
+      position: relative;
+      width: 1780px;
+      height: 1160px;
+      transform-origin: top left;
+      transition: transform 140ms ease;
+    }
+
+    svg.links {
+      position: absolute;
+      inset: 0;
+      width: 1780px;
+      height: 1160px;
+      pointer-events: none;
+    }
+
+    .box {
+      position: absolute;
+      display: grid;
+      gap: 7px;
+      width: 250px;
+      min-height: 112px;
+      padding: 14px;
+      border: 2px solid currentColor;
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .box.wide {
+      width: 330px;
+    }
+
+    .box.small {
+      width: 220px;
+      min-height: 92px;
+    }
+
+    .box h3 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .box .tag {
+      display: inline-flex;
+      width: fit-content;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      color: currentColor;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .box ul {
+      margin: 0;
+      padding-left: 17px;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .box p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .blue { color: var(--blue); background: var(--blue-soft); }
+    .teal { color: var(--teal); background: var(--teal-soft); }
+    .green { color: var(--green); background: var(--green-soft); }
+    .orange { color: var(--orange); background: var(--orange-soft); }
+    .purple { color: var(--purple); background: var(--purple-soft); }
+    .red { color: var(--red); background: var(--red-soft); }
+    .slate { color: var(--slate); background: var(--slate-soft); }
+
+    .swimlane {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.35);
+      pointer-events: none;
+    }
+
+    .swimlane label {
+      position: absolute;
+      top: -12px;
+      left: 18px;
+      padding: 2px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .note {
+      position: absolute;
+      left: 650px;
+      top: 1050px;
+      width: 520px;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      box-shadow: var(--shadow);
+    }
+
+    @media (max-width: 900px) {
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .page {
+        display: block;
+      }
+
+      aside {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+    }
+
+    @media print {
+      header,
+      aside {
+        display: none;
+      }
+
+      .page {
+        display: block;
+      }
+
+      main {
+        padding: 0;
+        overflow: visible;
+      }
+
+      .canvas {
+        transform: scale(0.55) !important;
+        transform-origin: top left;
+      }
+
+      body {
+        background: white;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>PersonaHub 核心概念架构图</h1>
+      <div class="subtitle">解释 Project、Workspace、Issue、Thread、Room、Agent、Workflow、Evidence、Memory/Skill 的关系</div>
+    </div>
+    <div class="actions">
+      <button type="button" id="zoom-out">缩小</button>
+      <button type="button" id="zoom-reset">重置</button>
+      <button type="button" id="zoom-in">放大</button>
+      <button type="button" class="primary" id="print">打印</button>
+      <a class="button" href="./personahub-prd.md">PRD</a>
+      <a class="button" href="./personahub-mindmap.md">思维导图</a>
+    </div>
+  </header>
+
+  <div class="page">
+    <aside>
+      <h2>图例</h2>
+      <div class="legend">
+        <div class="legend-item"><span class="dot" style="color: var(--blue)"></span><span>逻辑管理层：Project / Issue，用来组织工作。</span></div>
+        <div class="legend-item"><span class="dot" style="color: var(--teal)"></span><span>协作会话层：Thread / Room，用来承载对话和阶段协作。</span></div>
+        <div class="legend-item"><span class="dot" style="color: var(--purple)"></span><span>Agent 编排层：Coordinator 与其他 agents 都是 Agent role。</span></div>
+        <div class="legend-item"><span class="dot" style="color: var(--orange)"></span><span>执行与环境层：Workspace / Local Runner / Runtime。</span></div>
+        <div class="legend-item"><span class="dot" style="color: var(--green)"></span><span>结果与沉淀层：Artifacts / Evidence / Memory / Skill。</span></div>
+        <div class="legend-item"><span class="dot" style="color: var(--red)"></span><span>安全边界：Escalation / Provenance / Workspace Lock。</span></div>
+      </div>
+
+      <div class="explain">
+        <section>
+          <h3>Project vs Workspace</h3>
+          <p>Project 是 PersonaHub 的逻辑管理空间；Workspace 是 agent 真正读写文件、运行命令的位置。</p>
+        </section>
+        <section>
+          <h3>Issue vs Thread</h3>
+          <p>Issue 管目标和状态；Thread 记录围绕 Issue 发生的消息、事件、交接、验证和证据。</p>
+        </section>
+        <section>
+          <h3>Room</h3>
+          <p>Room 是阶段性的结构化协作室，归属 Issue，并绑定自己的 room thread。</p>
+        </section>
+        <section>
+          <h3>Coordinator Agent</h3>
+          <p>Coordinator 是一种 Agent role，不是主从结构。它负责理解目标、推荐 workflow/topology、拉群和汇总。</p>
+        </section>
+      </div>
+    </aside>
+
+    <main id="viewport">
+      <section class="canvas" id="canvas">
+        <div class="swimlane" style="top: 20px; height: 235px;"><label>逻辑管理层</label></div>
+        <div class="swimlane" style="top: 290px; height: 260px;"><label>协作会话层</label></div>
+        <div class="swimlane" style="top: 585px; height: 230px;"><label>执行 / Agent / Workflow 层</label></div>
+        <div class="swimlane" style="top: 850px; height: 230px;"><label>结果沉淀与安全边界</label></div>
+
+        <svg class="links" viewBox="0 0 1780 1160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L8,3 z" fill="#64748b" />
+            </marker>
+            <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L8,3 z" fill="#2563eb" />
+            </marker>
+            <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L8,3 z" fill="#0f766e" />
+            </marker>
+            <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L8,3 z" fill="#2f855a" />
+            </marker>
+          </defs>
+
+          <!-- top relations -->
+          <path d="M330 120 H500" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow-blue)"/>
+          <path d="M780 120 H960" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow-blue)"/>
+          <path d="M1210 120 H1405" stroke="#c05621" stroke-width="3" marker-end="url(#arrow)"/>
+          <text x="365" y="104" fill="#64748b" font-size="13">owns many</text>
+          <text x="815" y="104" fill="#64748b" font-size="13">binds</text>
+          <text x="1258" y="104" fill="#64748b" font-size="13">executes in</text>
+
+          <!-- issue to threads/groups -->
+          <path d="M620 245 C560 290 530 325 500 360" stroke="#0f766e" stroke-width="3" marker-end="url(#arrow-teal)"/>
+          <path d="M680 245 C765 290 830 325 900 360" stroke="#0f766e" stroke-width="3" marker-end="url(#arrow-teal)"/>
+          <path d="M710 245 C920 305 1050 340 1190 370" stroke="#0f766e" stroke-width="3" marker-end="url(#arrow-teal)"/>
+          <text x="555" y="302" fill="#64748b" font-size="13">primary_thread</text>
+          <text x="760" y="305" fill="#64748b" font-size="13">creates</text>
+          <text x="990" y="312" fill="#64748b" font-size="13">phase groups</text>
+
+          <!-- room to room thread -->
+          <path d="M1160 465 H1000" stroke="#0f766e" stroke-width="3" marker-end="url(#arrow-teal)"/>
+          <text x="1017" y="447" fill="#64748b" font-size="13">uses group thread</text>
+
+          <!-- workflow/agents to rooms -->
+          <path d="M395 700 H565" stroke="#6d28d9" stroke-width="3" marker-end="url(#arrow)"/>
+          <path d="M815 700 H985" stroke="#6d28d9" stroke-width="3" marker-end="url(#arrow)"/>
+          <path d="M1080 645 C1125 575 1170 520 1220 490" stroke="#6d28d9" stroke-width="3" marker-end="url(#arrow)"/>
+          <text x="422" y="683" fill="#64748b" font-size="13">role = coordinator</text>
+          <text x="846" y="683" fill="#64748b" font-size="13">selects roster</text>
+
+          <!-- runner workspace -->
+          <path d="M1380 700 C1455 610 1490 330 1510 210" stroke="#c05621" stroke-width="3" marker-end="url(#arrow)"/>
+          <text x="1436" y="535" fill="#64748b" font-size="13">runs commands</text>
+
+          <!-- outputs -->
+          <path d="M1190 500 C1085 630 1000 760 930 900" stroke="#2f855a" stroke-width="3" marker-end="url(#arrow-green)"/>
+          <path d="M910 465 C850 615 800 765 750 910" stroke="#2f855a" stroke-width="3" marker-end="url(#arrow-green)"/>
+          <path d="M500 465 C550 620 620 760 690 910" stroke="#2f855a" stroke-width="3" marker-end="url(#arrow-green)"/>
+          <path d="M1040 955 H1235" stroke="#2f855a" stroke-width="3" marker-end="url(#arrow-green)"/>
+          <path d="M1465 955 H1585" stroke="#b91c1c" stroke-width="3" marker-end="url(#arrow)"/>
+          <text x="965" y="865" fill="#64748b" font-size="13">produces</text>
+          <text x="1058" y="936" fill="#64748b" font-size="13">candidate</text>
+          <text x="1488" y="936" fill="#64748b" font-size="13">checks</text>
+        </svg>
+
+        <!-- logical layer -->
+        <article class="box blue" style="left: 80px; top: 70px;">
+          <span class="tag">Logical Space</span>
+          <h3>Project</h3>
+          <ul>
+            <li>逻辑管理空间</li>
+            <li>保存 Issues / Agents / Memory</li>
+            <li>default_coordinator_agent_id</li>
+          </ul>
+        </article>
+
+        <article class="box blue" style="left: 530px; top: 70px;">
+          <span class="tag">Work Item</span>
+          <h3>Issue</h3>
+          <ul>
+            <li>目标 / 状态 / 优先级</li>
+            <li>primary_thread_id</li>
+            <li>workflow / topology / validation</li>
+          </ul>
+        </article>
+
+        <article class="box orange" style="left: 1010px; top: 70px;">
+          <span class="tag">Execution Place</span>
+          <h3>Workspace</h3>
+          <ul>
+            <li>真实文件目录</li>
+            <li>命令和测试执行位置</li>
+            <li>workspace 写锁</li>
+          </ul>
+        </article>
+
+        <article class="box orange small" style="left: 1430px; top: 78px;">
+          <span class="tag">v0.1</span>
+          <h3>Local Path</h3>
+          <p>一个 Project 默认绑定一个本地 Workspace。</p>
+        </article>
+
+        <!-- conversation layer -->
+        <article class="box teal" style="left: 300px; top: 360px;">
+          <span class="tag">Control Timeline</span>
+          <h3>Primary Thread</h3>
+          <ul>
+            <li>Human Lead 与 Coordinator 主对话</li>
+            <li>关键状态变化</li>
+            <li>summary / escalation</li>
+          </ul>
+        </article>
+
+        <article class="box teal" style="left: 750px; top: 360px;">
+          <span class="tag">Conversation/Event Container</span>
+          <h3>Thread</h3>
+          <ul>
+            <li>消息与事件流</li>
+            <li>handoff / run / validation events</li>
+            <li>可被 Room 复用</li>
+          </ul>
+        </article>
+
+        <article class="box teal wide" style="left: 1190px; top: 360px;">
+          <span class="tag">Structured Work Room</span>
+          <h3>Room</h3>
+          <ul>
+            <li>归属 Issue，不归属 Thread</li>
+            <li>绑定自己的 room thread</li>
+            <li>可由 Coordinator 自动开房间，也可由 Human Lead 手动创建</li>
+          </ul>
+        </article>
+
+        <!-- orchestration/execution layer -->
+        <article class="box purple" style="left: 150px; top: 650px;">
+          <span class="tag">Agent Role</span>
+          <h3>Coordinator Agent</h3>
+          <ul>
+            <li>理解目标</li>
+            <li>选择 workflow / topology</li>
+            <li>组建 Room</li>
+            <li>汇总结果</li>
+          </ul>
+        </article>
+
+        <article class="box purple" style="left: 590px; top: 650px;">
+          <span class="tag">Reusable Rules</span>
+          <h3>Workflow Template</h3>
+          <ul>
+            <li>steps / handoff policy</li>
+            <li>agent team template</li>
+            <li>validation policy</li>
+          </ul>
+        </article>
+
+        <article class="box purple" style="left: 1010px; top: 650px;">
+          <span class="tag">Collaboration Shape</span>
+          <h3>Collaboration Topology</h3>
+          <ul>
+            <li>sequential</li>
+            <li>orchestrator_subagent</li>
+            <li>coordinator / council / moa</li>
+          </ul>
+        </article>
+
+        <article class="box orange" style="left: 1370px; top: 650px;">
+          <span class="tag">Execution</span>
+          <h3>Local Runner / Runtime</h3>
+          <ul>
+            <li>启动 CLI agent</li>
+            <li>流式记录 run events</li>
+            <li>执行命令 / 测试</li>
+          </ul>
+        </article>
+
+        <!-- output/security layer -->
+        <article class="box green" style="left: 250px; top: 905px;">
+          <span class="tag">Structured Output</span>
+          <h3>Artifact</h3>
+          <ul>
+            <li>research_findings</li>
+            <li>synthesis_plan</li>
+            <li>implementation_log</li>
+            <li>verification_results</li>
+          </ul>
+        </article>
+
+        <article class="box green" style="left: 705px; top: 905px;">
+          <span class="tag">Trust Layer</span>
+          <h3>Evidence Summary</h3>
+          <ul>
+            <li>commands / tests</li>
+            <li>changed artifacts</li>
+            <li>validation result</li>
+            <li>source event ids</li>
+          </ul>
+        </article>
+
+        <article class="box green" style="left: 1235px; top: 905px;">
+          <span class="tag">Long-term Learning</span>
+          <h3>Memory / Skill</h3>
+          <ul>
+            <li>decision / lesson</li>
+            <li>workflow note</li>
+            <li>skill candidate</li>
+          </ul>
+        </article>
+
+        <article class="box red small" style="left: 1585px; top: 912px;">
+          <span class="tag">Safety</span>
+          <h3>Provenance Gate</h3>
+          <p>长期记忆、Skill、Scheduled Issue 写入前必须有来源、信任等级和确认状态。</p>
+        </article>
+
+        <article class="box red small" style="left: 1390px; top: 1002px;">
+          <span class="tag">Safety</span>
+          <h3>Escalation</h3>
+          <p>权限、不可逆操作、跨 Workspace 写入、多轮不收敛时阻塞等待 Human Lead。</p>
+        </article>
+
+        <div class="note">
+          推荐理解方式：<strong>Issue owns Rooms</strong>；Room 绑定自己的 Thread；Primary Thread 是 Issue 级总控线程。Project 管逻辑，Workspace 管真实文件与执行环境。
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const viewport = document.getElementById("viewport");
+    let zoom = 1;
+
+    function setZoom(next) {
+      zoom = Math.max(0.55, Math.min(1.45, Math.round(next * 100) / 100));
+      canvas.style.transform = `scale(${zoom})`;
+      canvas.style.width = `${1780 * zoom}px`;
+      canvas.style.height = `${1160 * zoom}px`;
+    }
+
+    document.getElementById("zoom-in").addEventListener("click", () => setZoom(zoom + 0.1));
+    document.getElementById("zoom-out").addEventListener("click", () => setZoom(zoom - 0.1));
+    document.getElementById("zoom-reset").addEventListener("click", () => setZoom(1));
+    document.getElementById("print").addEventListener("click", () => window.print());
+
+    window.addEventListener("load", () => {
+      viewport.scrollLeft = 280;
+      viewport.scrollTop = 120;
+    });
+  </script>
+</body>
+</html>
