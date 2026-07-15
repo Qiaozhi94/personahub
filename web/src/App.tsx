@@ -7,6 +7,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { ProjectSwitcher } from "@/components/project/ProjectSwitcher";
 import { CreateProjectDialog } from "@/components/project/CreateProjectDialog";
 import { WorkspaceBinding } from "@/components/workspace/WorkspaceBinding";
+import { AdapterSettings } from "@/components/adapter/AdapterSettings";
 import { IssueList } from "@/components/issue/IssueList";
 import { CreateIssueDialog } from "@/components/issue/CreateIssueDialog";
 import { ThreadView } from "@/components/thread/ThreadView";
@@ -105,6 +106,10 @@ export function App() {
               <WorkspaceBinding projectId={selectedProjectId} workspace={workspace} />
             ) : null}
 
+            {selectedProjectId ? (
+              <AdapterSettings projectId={selectedProjectId} />
+            ) : null}
+
             <section className="mt-auto grid gap-1.5">
               <div className="px-2.5 text-xs text-muted-foreground">Configuration</div>
               <Button
@@ -142,7 +147,12 @@ export function App() {
               ) : !issue ? (
                 <NoIssue />
               ) : issue.primary_thread ? (
-                <ThreadView threadId={issue.primary_thread.id} />
+                <ThreadView
+                  threadId={issue.primary_thread.id}
+                  issueId={issue.id}
+                  issueStatus={issue.status}
+                  projectId={selectedProjectId!}
+                />
               ) : (
                 <NoIssue />
               )}

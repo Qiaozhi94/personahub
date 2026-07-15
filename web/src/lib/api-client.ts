@@ -1,5 +1,11 @@
 import {
   ErrorCode,
+  type AdapterConfigCreateInput,
+  type AdapterConfigCreateResponse,
+  type AdapterConfigListResponse,
+  type AdapterConfigUpdateInput,
+  type AdapterConfigUpdateResponse,
+  type AdapterConfigValidateResponse,
   type ApiError,
   type IssueCreateInput,
   type IssueCreateResponse,
@@ -8,6 +14,11 @@ import {
   type ProjectCreateResponse,
   type ProjectGetResponse,
   type ProjectListResponse,
+  type RunCancelResponse,
+  type RunCreateInput,
+  type RunCreateResponse,
+  type RunGetResponse,
+  type RunListResponse,
   type ThreadEventListResponse,
   type ThreadGetResponse,
   type WorkspaceBindResponse,
@@ -77,5 +88,37 @@ export const apiClient = {
       apiFetch<ThreadEventListResponse>(
         `/threads/${id}/events${afterEventId ? `?after_event_id=${encodeURIComponent(afterEventId)}` : ""}`,
       ),
+  },
+  adapters: {
+    create: (projectId: string, input: AdapterConfigCreateInput) =>
+      apiFetch<AdapterConfigCreateResponse>(`/projects/${projectId}/adapters`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    listByProject: (projectId: string) =>
+      apiFetch<AdapterConfigListResponse>(`/projects/${projectId}/adapters`),
+    update: (adapterId: string, input: AdapterConfigUpdateInput) =>
+      apiFetch<AdapterConfigUpdateResponse>(`/adapters/${adapterId}`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
+    delete: (adapterId: string) =>
+      apiFetch<void>(`/adapters/${adapterId}`, { method: "DELETE" }),
+    validate: (adapterId: string) =>
+      apiFetch<AdapterConfigValidateResponse>(`/adapters/${adapterId}/validate`, {
+        method: "POST",
+      }),
+  },
+  runs: {
+    create: (issueId: string, input: RunCreateInput) =>
+      apiFetch<RunCreateResponse>(`/issues/${issueId}/runs`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    get: (runId: string) => apiFetch<RunGetResponse>(`/runs/${runId}`),
+    listByIssue: (issueId: string) =>
+      apiFetch<RunListResponse>(`/issues/${issueId}/runs`),
+    cancel: (runId: string) =>
+      apiFetch<RunCancelResponse>(`/runs/${runId}/cancel`, { method: "POST" }),
   },
 };
