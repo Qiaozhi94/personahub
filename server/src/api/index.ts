@@ -3,21 +3,42 @@ import { projectRoutes } from "./routes/projects.js";
 import { workspaceRoutes } from "./routes/workspaces.js";
 import { issueRoutes } from "./routes/issues.js";
 import { threadRoutes } from "./routes/threads.js";
+import { adapterRoutes } from "./routes/adapters.js";
+import { runRoutes } from "./routes/runs.js";
 import type { ProjectService } from "../services/project.js";
 import type { WorkspaceService } from "../services/workspace.js";
 import type { IssueService } from "../services/issue.js";
 import type { ThreadService } from "../services/thread.js";
+import type { AdapterConfigService } from "../services/adapter-config.js";
+import type { RunService } from "../services/run.js";
+import type { RunDispatchService } from "../services/run-dispatch.js";
+import type { ThreadEventService } from "../services/thread-event.js";
+import type { EventBus } from "../runtime/event-bus.js";
 
 export interface Services {
   projectService: ProjectService;
   workspaceService: WorkspaceService;
   issueService: IssueService;
   threadService: ThreadService;
+  adapterConfigService: AdapterConfigService;
+  runService: RunService;
+  runDispatchService: RunDispatchService;
+  threadEventService: ThreadEventService;
+  eventBus: EventBus;
 }
 
 export function registerRoutes(app: FastifyInstance, services: Services): void {
   app.register(projectRoutes, { projectService: services.projectService });
   app.register(workspaceRoutes, { workspaceService: services.workspaceService });
   app.register(issueRoutes, { issueService: services.issueService });
-  app.register(threadRoutes, { threadService: services.threadService });
+  app.register(threadRoutes, {
+    threadService: services.threadService,
+    threadEventService: services.threadEventService,
+    eventBus: services.eventBus,
+  });
+  app.register(adapterRoutes, { adapterConfigService: services.adapterConfigService });
+  app.register(runRoutes, {
+    runDispatchService: services.runDispatchService,
+    runService: services.runService,
+  });
 }

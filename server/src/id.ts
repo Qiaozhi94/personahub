@@ -19,3 +19,11 @@ export function generateThreadId(): string {
 export function generateEventId(): string {
   return `evt_${ulid()}`;
 }
+
+export function generateRunId(): string {
+  return `run_${ulid()}`;
+}
+
+export function generateAdapterConfigId(): string {
+  return `adp_${ulid()}`;
+}
