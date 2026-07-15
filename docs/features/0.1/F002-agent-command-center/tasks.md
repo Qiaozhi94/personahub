@@ -4,12 +4,12 @@ related_features: [F001]
 topics: [agent-adapter, codex-cli, run-events, workspace-lock, escalation, api, ui, v0.1.1]
 doc_kind: tasks
 created: 2026-07-12
-updated: 2026-07-12
+updated: 2026-07-16
 ---
 
 # F002：Agent Command Center - 任务
 
-> Status: draft | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
 ## 规则
 
@@ -18,6 +18,12 @@ updated: 2026-07-12
 - 标记需求完成前，应先添加或更新对应测试。
 - 不实现 handoff、validation、artifact、多 adapter 或完整 sandbox/isolation。
 - 如果 Codex CLI probe 结果改变 design 假设，先更新 `design.md` 再继续实现。
+
+## 当前验证状态（2026-07-16）
+
+- 代码实现和 `AC-001` - `AC-012` 行为已完成；`npm run typecheck`、`npm test`、`npm run build` 全部通过。
+- Server 自动化测试通过 200 项，其中包含 12 项 F002 acceptance checklist 集成测试；Web 自动化测试通过 19 项。
+- `web/src/f002-ui-flows.test.tsx` 已覆盖 adapter 创建/更新、Thread 指令提交、Run 状态/log、取消和 blocker 的完整 UI 交互；Feature 状态为 `done`。
 
 ## Phase 1：Codex CLI 能力 Probe
 
@@ -99,7 +105,7 @@ updated: 2026-07-12
 - [x] T050（`TR-012`, `TR-013`, `NFR-004`）：新增 event replay / after_event_id 集成测试。
 - [x] T051（`FR-012`, `TR-007`, `NFR-006`）：新增 Issue Blocked 后 queued Run 不再启动的集成测试。
 - [x] T061（`FR-013`, `DR-008`）：新增 `WorkspaceContext` 凭据隔离单元测试，覆盖 `push_credentials_enabled` 为 `false`/`true` 两种情况下的环境变量构造。
-- [ ] T052（`UX-001` - `UX-007`）：新增 UI/E2E 测试，覆盖配置/更新 adapter、提交指令、状态展示、日志展示、取消和 blocker。
+- [x] T052（`UX-001` - `UX-007`）：新增 UI 测试，覆盖配置/更新 adapter、提交指令、状态展示、日志展示、取消和 blocker。
 
 ## Phase 9：手动验证与文档
 

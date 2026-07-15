@@ -4,7 +4,7 @@
 
 ## 现状
 
-F001（Workspace & Issue Foundation）正在实现中，`shared/` / `server/` / `web/` 已有代码。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
+F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完成代码、行为验收及关键 UI 自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`。F003（Development Trace）已完成 spec/design/tasks，等待开发。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
 
 ## 当前结构
 

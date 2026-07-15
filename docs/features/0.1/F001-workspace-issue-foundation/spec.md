@@ -4,12 +4,12 @@ related_features: []
 topics: [project, workspace, issue, thread, sqlite, v0.1.0]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-12
+updated: 2026-07-16
 ---
 
 # F001：Workspace & Issue Foundation
 
-> Status: spec | Owner: TBD | Target: v0.1.0
+> Status: done | Owner: TBD | Target: v0.1.0
 
 ## 0. 规格元信息
 
@@ -384,16 +384,16 @@ Issue created   -> Ready                F001 不开放；后续 Agent 配置能�
 
 ## 8. 验收清单
 
-- [ ] **AC-001**（`FR-001`, `FR-002`, `UX-001`）：用户可以创建、查看和切换 Projects。
-- [ ] **AC-002**（`FR-003`, `FR-004`, `UX-002`, `UX-003`）：用户可以绑定可读本地 Workspace path，无效路径会以清晰错误失败。
-- [ ] **AC-003**（`FR-005`, `NFR-004`）：Git Workspace 绑定会记录当前 branch；非 git Workspace 绑定成功且 git branch 为空。
-- [ ] **AC-004**（`FR-006`, `FR-007`, `UX-004`, `UX-007`）：用户只能创建 `coding` Issue，且每个 Issue 获得默认 workflow 和 validation policy 引用；非法 priority 被拒绝。
-- [ ] **AC-005**（`FR-008`）：F001 创建的新 Issue 初始状态是 `Inbox`，不会是 `Ready`、`Running`、`Validating`、`Done` 或 `Blocked`。
-- [ ] **AC-006**（`FR-009`, `DR-006`）：Issue 创建会创建且只创建一个 primary Thread，并回填 `Issue.primary_thread_id`。
-- [ ] **AC-007**（`TR-001`, `TR-002`, `TR-003`, `TR-004`）：Issue 创建会写入可读的 `issue.created` ThreadEvent，且 payload 包含必需字段。
-- [ ] **AC-008**（`FR-011`, `NFR-002`）：Project / Workspace / Issue / Thread / ThreadEvent 记录在应用重启后仍保留，且关系完整。
-- [ ] **AC-009**（`UX-005`, `UX-006`）：Issue 创建后，用户可以查看 primary Thread，并检查 Project / Workspace 关系。
-- [ ] **AC-010**（`FR-003`, `DR-002`, `IR-006`, `NFR-003`）：替换 default Workspace 后，Project 指向新 Workspace，已有 Issue 仍可追溯旧 Workspace；等价 Windows path 不重复创建 Workspace。
+- [x] **AC-001**（`FR-001`, `FR-002`, `UX-001`）：用户可以创建、查看和切换 Projects。
+- [x] **AC-002**（`FR-003`, `FR-004`, `UX-002`, `UX-003`）：用户可以绑定可读本地 Workspace path，无效路径会以清晰错误失败。
+- [x] **AC-003**（`FR-005`, `NFR-004`）：Git Workspace 绑定会记录当前 branch；非 git Workspace 绑定成功且 git branch 为空。
+- [x] **AC-004**（`FR-006`, `FR-007`, `UX-004`, `UX-007`）：用户只能创建 `coding` Issue，且每个 Issue 获得默认 workflow 和 validation policy 引用；非法 priority 被拒绝。
+- [x] **AC-005**（`FR-008`）：F001 创建的新 Issue 初始状态是 `Inbox`，不会是 `Ready`、`Running`、`Validating`、`Done` 或 `Blocked`。
+- [x] **AC-006**（`FR-009`, `DR-006`）：Issue 创建会创建且只创建一个 primary Thread，并回填 `Issue.primary_thread_id`。
+- [x] **AC-007**（`TR-001`, `TR-002`, `TR-003`, `TR-004`）：Issue 创建会写入可读的 `issue.created` ThreadEvent，且 payload 包含必需字段。
+- [x] **AC-008**（`FR-011`, `NFR-002`）：Project / Workspace / Issue / Thread / ThreadEvent 记录在应用重启后仍保留，且关系完整。
+- [x] **AC-009**（`UX-005`, `UX-006`）：Issue 创建后，用户可以查看 primary Thread，并检查 Project / Workspace 关系。
+- [x] **AC-010**（`FR-003`, `DR-002`, `IR-006`, `NFR-003`）：替换 default Workspace 后，Project 指向新 Workspace，已有 Issue 仍可追溯旧 Workspace；等价 Windows path 不重复创建 Workspace。
 
 ## 9. 测试计划
 

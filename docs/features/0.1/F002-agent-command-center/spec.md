@@ -4,12 +4,12 @@ related_features: [F001]
 topics: [agent-adapter, codex-cli, run-events, workspace-lock, escalation, v0.1.1]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-12
+updated: 2026-07-16
 ---
 
 # F002：Agent Command Center
 
-> Status: spec | Owner: TBD | Target: v0.1.1
+> Status: done | Owner: TBD | Target: v0.1.1
 
 ## 0. 规格元信息
 
@@ -514,18 +514,18 @@ escalation.triggered -> run.failed -> issue.blocked
 
 ## 8. 验收清单
 
-- [ ] **AC-001**（`FR-001`, `UX-001`）：用户可以创建、更新、删除至少一个本地 Codex CLI adapter，并获得路径/命令/args 可用性校验。
-- [ ] **AC-002**（`FR-002`, `FR-003`, `IR-002`, `UX-002`）：用户可以在 Issue primary Thread 中输入开发指令，系统创建 Run 并调用 Codex CLI adapter。
-- [ ] **AC-003**（`FR-004`, `DR-002`, `DR-003`, `UX-003`）：Run 状态按 `queued -> running -> completed/failed/interrupted/cancelled` 持久化，并能在 Inspector 中查看。
-- [ ] **AC-004**（`FR-005`, `FR-006`, `TR-001` - `TR-006`, `UX-004`）：`run.queued` / `run.started` / `run.output` / `run.output_truncated` / `run.completed` / `run.failed` 被持久化为 ThreadEvent，并能按稳定顺序展示。
-- [ ] **AC-005**（`FR-007`, `DR-004`, `NFR-002`）：同一 workspace 同一时刻只有一个 Run 执行写操作；后续 Run 排队。
-- [ ] **AC-006**（`FR-008`, `TR-006`, `NFR-003`）：backend 重启后，遗留 `running` Run 被回收为 `interrupted`，对应 workspace lock 被释放。
-- [ ] **AC-007**（`FR-009`, `TR-005`, `UX-006`）：用户可以取消 queued/running Run，状态和锁都被正确处理。
-- [ ] **AC-008**（`FR-010`, `IR-003`, `UX-005`）：右侧 Inspector 实时展示 agent status 和 run logs。
-- [ ] **AC-009**（`FR-011`, `FR-012`, `TR-009`, `TR-010`, `UX-007`, `NFR-006`）：`git push` / force push 触发 escalation；如果只能事后检测，UI 必须明确说明。
-- [ ] **AC-010**（`TR-012`, `TR-013`, `NFR-004`）：run events 先写 SQLite 再广播，前端断线重连后可通过 `event_sequence` cursor 补读历史事件。
-- [ ] **AC-011**（`FR-007`, `FR-012`, `TR-007`, `NFR-006`）：Issue 进入 `Blocked` 后，同 Issue 尚未启动的 queued Runs 被取消并记录原因，不会继续执行。
-- [ ] **AC-012**（`FR-013`, `DR-008`）：Project 未显式开启 push 凭据时，Run 的执行环境不包含可用于 push 的 git 凭据，`git push` 因此自然失败并触发 escalation。
+- [x] **AC-001**（`FR-001`, `UX-001`）：用户可以创建、更新、删除至少一个本地 Codex CLI adapter，并获得路径/命令/args 可用性校验。
+- [x] **AC-002**（`FR-002`, `FR-003`, `IR-002`, `UX-002`）：用户可以在 Issue primary Thread 中输入开发指令，系统创建 Run 并调用 Codex CLI adapter。
+- [x] **AC-003**（`FR-004`, `DR-002`, `DR-003`, `UX-003`）：Run 状态按 `queued -> running -> completed/failed/interrupted/cancelled` 持久化，并能在 Inspector 中查看。
+- [x] **AC-004**（`FR-005`, `FR-006`, `TR-001` - `TR-006`, `UX-004`）：`run.queued` / `run.started` / `run.output` / `run.output_truncated` / `run.completed` / `run.failed` 被持久化为 ThreadEvent，并能按稳定顺序展示。
+- [x] **AC-005**（`FR-007`, `DR-004`, `NFR-002`）：同一 workspace 同一时刻只有一个 Run 执行写操作；后续 Run 排队。
+- [x] **AC-006**（`FR-008`, `TR-006`, `NFR-003`）：backend 重启后，遗留 `running` Run 被回收为 `interrupted`，对应 workspace lock 被释放。
+- [x] **AC-007**（`FR-009`, `TR-005`, `UX-006`）：用户可以取消 queued/running Run，状态和锁都被正确处理。
+- [x] **AC-008**（`FR-010`, `IR-003`, `UX-005`）：右侧 Inspector 实时展示 agent status 和 run logs。
+- [x] **AC-009**（`FR-011`, `FR-012`, `TR-009`, `TR-010`, `UX-007`, `NFR-006`）：`git push` / force push 触发 escalation；如果只能事后检测，UI 必须明确说明。
+- [x] **AC-010**（`TR-012`, `TR-013`, `NFR-004`）：run events 先写 SQLite 再广播，前端断线重连后可通过 `event_sequence` cursor 补读历史事件。
+- [x] **AC-011**（`FR-007`, `FR-012`, `TR-007`, `NFR-006`）：Issue 进入 `Blocked` 后，同 Issue 尚未启动的 queued Runs 被取消并记录原因，不会继续执行。
+- [x] **AC-012**（`FR-013`, `DR-008`）：Project 未显式开启 push 凭据时，Run 的执行环境不包含可用于 push 的 git 凭据，`git push` 因此自然失败并触发 escalation。
 
 ## 9. 测试计划
 

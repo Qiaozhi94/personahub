@@ -4,18 +4,24 @@ related_features: []
 topics: [project, workspace, issue, thread, sqlite, api, ui, v0.1.0]
 doc_kind: tasks
 created: 2026-07-12
-updated: 2026-07-13
+updated: 2026-07-16
 ---
 
 # F001：Workspace & Issue Foundation - 任务
 
-> Status: draft | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
 ## 规则
 
 - 任务应当能追踪到 `spec.md` 中的需求 ID。
 - 只有当任务修改不同文件且没有顺序依赖时，才标记 `[P]`。
 - 标记需求完成前，应先添加或更新对应测试。
+
+## 当前验证状态（2026-07-16）
+
+- 代码实现和 `AC-001` - `AC-010` 行为已完成；`npm run typecheck`、`npm test`、`npm run build` 全部通过。
+- Server 自动化测试通过 200 项，Web 自动化测试通过 19 项。
+- `web/src/f001-ui-flows.test.tsx` 已覆盖 Project 创建、Workspace 绑定/替换、Issue 创建和 primary Thread 展示的完整 UI 交互；Feature 状态为 `done`。
 - 本 feature 不实现 agent execution、Run lifecycle、validation loop、Room、Artifact、Memory 或 Skill 行为。
 
 ## Phase 1：项目初始化与存储基础
@@ -62,7 +68,7 @@ updated: 2026-07-13
 - [x] T028（`FR-006` - `FR-010`, `DR-006`, `TR-001` - `TR-004`）：新增 Issue creation transaction、primary Thread creation、event persistence 的集成测试。
 - [x] T029（`DR-006`）：新增 failure-path 集成测试，证明部分 Issue 创建会回滚。
 - [x] T030（`FR-011`, `NFR-002`）：新增 restart/reopen persistence test，覆盖 Project / Workspace / Issue / Thread / ThreadEvent 关系。
-- [x] T031（`UX-001` - `UX-007`）：新增 UI 或 E2E 测试，覆盖 Project 创建、Workspace 绑定/替换、Issue 创建和 primary Thread 展示。
+- [x] T031（`UX-001` - `UX-007`）：新增 UI 测试，覆盖 Project 创建、Workspace 绑定/替换、Issue 创建和 primary Thread 展示。
 
 ## Phase 6：手动验证与文档
 
