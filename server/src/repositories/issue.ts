@@ -2,6 +2,11 @@ import type Database from "better-sqlite3";
 import type { Issue, IssueType, IssueStatus, IssuePriority } from "@personahub/shared/types";
 import { generateIssueId } from "../id.js";
 
+export interface IssueUpdateStatusInput {
+  status: IssueStatus;
+  updatedAt: string;
+}
+
 export interface IssueCreateInput {
   project_id: string;
   workspace_id: string;
@@ -97,5 +102,11 @@ export class IssueRepository {
     this.db.prepare(
       "UPDATE issues SET primary_thread_id = ?, updated_at = ? WHERE id = ?"
     ).run(threadId, updatedAt, issueId);
+  }
+
+  updateStatus(issueId: string, input: IssueUpdateStatusInput): void {
+    this.db.prepare(
+      "UPDATE issues SET status = ?, updated_at = ? WHERE id = ?"
+    ).run(input.status, input.updatedAt, issueId);
   }
 }

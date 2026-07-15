@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { SCHEMA_V1 } from "./schema-v1.js";
+import { SCHEMA_V2 } from "./schema-v2.js";
 
 export function applyMigrations(db: Database.Database): void {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_version (
@@ -13,5 +14,10 @@ export function applyMigrations(db: Database.Database): void {
   if (currentVersion < 1) {
     db.exec(SCHEMA_V1);
     db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(1, new Date().toISOString());
+  }
+
+  if (currentVersion < 2) {
+    db.exec(SCHEMA_V2);
+    db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(2, new Date().toISOString());
   }
 }
