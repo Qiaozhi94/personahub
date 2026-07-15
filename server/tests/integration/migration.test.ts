@@ -18,17 +18,17 @@ describe("Database Migration", () => {
   it("creates schema_version table", () => {
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(1);
+    expect(row.v).toBe(2);
   });
 
   it("is idempotent - running twice does not error", () => {
     applyMigrations(db);
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(1);
+    expect(row.v).toBe(2);
   });
 
-  it("creates all 7 tables", () => {
+  it("creates all 9 tables", () => {
     applyMigrations(db);
     const tables = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
@@ -42,6 +42,8 @@ describe("Database Migration", () => {
     expect(tableNames).toContain("thread_events");
     expect(tableNames).toContain("workflow_templates");
     expect(tableNames).toContain("validation_policies");
+    expect(tableNames).toContain("agent_configs");
+    expect(tableNames).toContain("runs");
   });
 
   it("seeds default coding workflow template", () => {

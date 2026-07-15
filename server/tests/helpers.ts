@@ -10,10 +10,22 @@ import { ThreadRepository } from "../src/repositories/thread.js";
 import { ThreadEventRepository } from "../src/repositories/thread-event.js";
 import { WorkflowTemplateRepository } from "../src/repositories/workflow-template.js";
 import { ValidationPolicyRepository } from "../src/repositories/validation-policy.js";
+import { AgentConfigRepository } from "../src/repositories/agent-config.js";
+import { RunRepository } from "../src/repositories/run.js";
 import { ProjectService } from "../src/services/project.js";
 import { WorkspaceService } from "../src/services/workspace.js";
 import { IssueService } from "../src/services/issue.js";
 import { ThreadService } from "../src/services/thread.js";
+import { AdapterConfigService } from "../src/services/adapter-config.js";
+import { ThreadEventService } from "../src/services/thread-event.js";
+import { WorkspaceLockService } from "../src/services/workspace-lock.js";
+import { RunService } from "../src/services/run.js";
+import { StaleRecoveryService } from "../src/services/stale-recovery.js";
+import { AgentAdapterRegistry } from "../src/runtime/adapter-registry.js";
+import { AgentRunner } from "../src/runtime/agent-runner.js";
+import { FakeAgentAdapter } from "../src/runtime/adapters/fake-adapter.js";
+import { RunDispatchService } from "../src/services/run-dispatch.js";
+import { EventBus } from "../src/runtime/event-bus.js";
 
 export function createTestDb(): Database.Database {
   return openDatabase(":memory:");
@@ -36,14 +48,23 @@ export interface TestServices {
   threadEventRepo: ThreadEventRepository;
   workflowTemplateRepo: WorkflowTemplateRepository;
   validationPolicyRepo: ValidationPolicyRepository;
+  agentConfigRepo: AgentConfigRepository;
+  runRepo: RunRepository;
   projectService: ProjectService;
   workspaceService: WorkspaceService;
   issueService: IssueService;
   threadService: ThreadService;
+  adapterConfigService: AdapterConfigService;
+  threadEventService: ThreadEventService;
+  workspaceLockService: WorkspaceLockService;
+  runService: RunService;
+  staleRecoveryService: StaleRecoveryService;
+  adapterRegistry: AgentAdapterRegistry;
+  agentRunner: AgentRunner;
+  runDispatchService: RunDispatchService;
 }
 
-export function createTestServices(): TestServices {
-  const db = createTestDb();
+export function createTestServices(): TestServices {  const db = createTestDb();
   const projectRepo = new ProjectRepository(db);
   const workspaceRepo = new WorkspaceRepository(db);
   const issueRepo = new IssueRepository(db);
@@ -51,6 +72,34 @@ export function createTestServices(): TestServices {
   const threadEventRepo = new ThreadEventRepository(db);
   const workflowTemplateRepo = new WorkflowTemplateRepository(db);
   const validationPolicyRepo = new ValidationPolicyRepository(db);
+  const agentConfigRepo = new AgentConfigRepository(db);
+  const runRepo = new RunRepository(db);
+
+  const eventBus = new EventBus();
+  const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
+  const workspaceLockService = new WorkspaceLockService(workspaceRepo);
+  const runService = new RunService(
+    runRepo, threadEventService, issueRepo, workspaceRepo,
+    agentConfigRepo, workspaceLockService, db,
+  );
+  const staleRecoveryService = new StaleRecoveryService(
+    runRepo, workspaceRepo, threadEventService, workspaceLockService,
+  );
+
+  const adapterRegistry = new AgentAdapterRegistry();
+  adapterRegistry.register(new FakeAgentAdapter());
+
+  const agentRunner = new AgentRunner({
+    runService,
+    threadEventService,
+    workspaceLockService,
+  });
+
+  const runDispatchService = new RunDispatchService(
+    runService, workspaceLockService, adapterRegistry,
+    agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
+    threadEventService, agentRunner, db,
+  );
 
   return {
     db,
@@ -61,6 +110,8 @@ export function createTestServices(): TestServices {
     threadEventRepo,
     workflowTemplateRepo,
     validationPolicyRepo,
+    agentConfigRepo,
+    runRepo,
     projectService: new ProjectService(projectRepo, workspaceRepo),
     workspaceService: new WorkspaceService(workspaceRepo, projectRepo, db),
     issueService: new IssueService(
@@ -68,9 +119,18 @@ export function createTestServices(): TestServices {
       projectRepo, workflowTemplateRepo, validationPolicyRepo, db,
     ),
     threadService: new ThreadService(threadRepo, threadEventRepo),
+    adapterConfigService: new AdapterConfigService(agentConfigRepo, projectRepo),
+    threadEventService,
+    workspaceLockService,
+    runService,
+    staleRecoveryService,
+    adapterRegistry,
+    agentRunner,
+    runDispatchService,
   };
 }
 
 export function disposeTestServices(services: TestServices): void {
+  void services.agentRunner.shutdown();
   services.db.close();
 }
