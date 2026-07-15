@@ -38,6 +38,8 @@ Workspace
   git_branch
   lock_state
   locked_by_run_id
+  locked_at
+  push_credentials_enabled
   created_at
   updated_at
 
@@ -119,15 +121,20 @@ HandoffPacket
   evidence_refs
   created_at
 
-Agent
+Agent (adapter_config)
   id
+  project_id
   name
   role
   cli_provider
-  runtime_id
+  command
+  args
   capability_tags
   default_model
-  system_instructions
+  status
+  last_checked_at
+  created_at
+  updated_at
 
 WorkflowTemplate
   id
@@ -169,12 +176,17 @@ Run
   id
   issue_id
   thread_id
-  agent_id
+  workspace_id
+  adapter_config_id
   status
-  validation_round_count
+  failure_reason
+  instructions
   started_at
   completed_at
   exit_code
+  error_message
+  created_at
+  updated_at
 
 EvidenceSummary
   id

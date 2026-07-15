@@ -560,15 +560,23 @@ Query / headers:
 
 ### Adapter Capability Probe
 
-实现 F002 前先执行 Codex CLI probe，并记录结果。probe 不是从零摸索——参考开源项目 multica（本机路径 `D:\Projects\multica`，实现见 `server/pkg/agent/codex.go`）对同一个 Codex CLI 的真实生产实现，已经给出了一套具体假设，probe 的任务是验证这套假设对本地安装的 Codex CLI 版本是否成立，而不是从头猜测：
+**Probe 已完成。本地 Codex CLI 版本：codex-cli 0.144.1（Windows）。**
 
-- **启动方式（假设）**：`codex app-server --listen stdio://`，建立 JSON-RPC 2.0 连接（而不是简单的 `codex exec` 一次性文本模式）。
-- **one-shot invocation（假设）**：每次任务 spawn 一个新的 `app-server` 进程，走 `initialize -> thread/start（或 thread/resume）-> turn/start -> 等待 turn/completed`，结束后关闭 stdin + cancel context 让进程自行退出；跨任务的上下文延续通过 Codex 自己的 `thread/resume`（携带上一次任务保存的 thread id）实现，不是让进程常驻。
-- **pre-command approval / permission hook（假设）**：有。Codex 在执行命令/改文件前会发送 `item/commandExecution/requestApproval`（旧协议 `execCommandApproval`）和 `item/fileChange/requestApproval`（旧协议 `applyPatchApproval`）请求，调用方需要回复 `{"decision": "accept"|"reject"}`。
-- **structured output（假设）**：有。输出是 JSON-RPC 通知（`thread/turn/item` 事件体系），可以解析出文本、tool_use、tool_result、status 等结构化类型，而不只是原始文本行。
-- **cancellation（假设）**：没有单独的"取消当前 turn"RPC 调用；优雅退出靠关闭 stdin + cancel context 触发 app-server 自行退出，超时未退出则走 context cancellation 的默认行为（Kill，POSIX 上是 SIGKILL，Windows 上是 TerminateProcess）。
+probe 不是从零摸索--参考开源项目 multica（本机路径 `D:\Projects\multica`，实现见 `server/pkg/agent/codex.go`）对同一个 Codex CLI 的真实生产实现，已经给出了一套具体假设，probe 的任务是验证这套假设对本地安装的 Codex CLI 版本是否成立。以下为逐条验证结果：
 
-probe 需要针对本地实际安装的 Codex CLI 版本逐条验证以上假设，并把结果（含 CLI 版本号）写回本节和第 11 节，如有出入以本地实测为准。
+- **启动方式（✅ 已确认）**：`codex app-server --listen stdio://`，建立 JSON-RPC 2.0 连接。`--listen` 默认值就是 `stdio://`，也支持 `unix://`、`ws://IP:PORT`。`codex exec --json` 是更简单的 JSONL 一次性模式，但拿不到 approval hook，F002 不采用。
+- **one-shot invocation（✅ 已确认）**：每次任务 spawn 一个新的 `app-server` 进程，走 `initialize -> thread/start -> turn/start -> 等待 turn/completed`，结束后关闭 stdin + cancel context 让进程自行退出。`initialize` 需要 `clientInfo`（`name` + `version`）+ 可选 `capabilities`。`thread/start` 可传入 `cwd`、`approvalPolicy`、`sandboxPolicy`、`baseInstructions`。`turn/start` 接收 `input: UserInput[]`（text/image/localImage/skill/mention），并可覆盖 `model`、`cwd`、`sandboxPolicy`、`approvalPolicy`、`outputSchema`。
+- **session resume（✅ 已确认）**：`thread/resume` 方法存在（`ThreadResumeParams` schema 36KB），可携带上一次任务的 thread id 延续上下文。F002 P0 采用 one-shot，session resume 留作后续增量优化。
+- **pre-command approval / permission hook（✅ 已确认，比假设更丰富）**：Codex app-server 在执行命令/改文件前会发送 server request（JSON-RPC 2.0 `id` 字段非空，需要 response 回复）：
+  - 新协议：`item/commandExecution/requestApproval`（`CommandExecutionRequestApprovalParams`：含 `command`、`cwd`、`commandActions`、`threadId`、`turnId`、`itemId`），调用方回复 `{"decision": "accept"|"acceptForSession"|"decline"|"cancel"}`。
+  - 新协议：`item/fileChange/requestApproval`（`FileChangeRequestApprovalParams`：含 `threadId`、`turnId`、`itemId`、`grantRoot`、`reason`），调用方回复 `{"decision": "accept"|"acceptForSession"|"decline"|"cancel"}`。
+  - 旧协议仍存在：`execCommandApproval` / `applyPatchApproval`。
+  - 还有 `permissions/requestApproval`（`PermissionsRequestApprovalParams`）用于权限升级请求。
+  - **`decline` 让 agent 继续当前 turn（不中断），`cancel` 同时中断 turn**--escalation 场景应使用 `cancel`。
+- **structured output（✅ 已确认）**：输出是 JSON-RPC 通知，包括 `thread/started`、`turn/started`、`turn/completed`（含结构化 `Turn` 对象）、`item/started`、`item/completed`（37KB schema，包含 text/tool_use/tool_result/status 等结构化类型）、`agent_message_delta`、`command_exec_output_delta`、`file_change_output_delta`、`process_output_delta`、`plan_delta`、`error` 等。
+- **cancellation（✅ 已确认，比假设更好）**：**有**单独的"取消当前 turn"RPC 调用：`turn/interrupt`（`TurnInterruptParams`：`threadId` + `turnId`，返回 `TurnInterruptResponse`）。这比假设的"只能关闭 stdin + cancel context"更优雅。实现时先调 `turn/interrupt`，超时未响应再 fallback 到关闭 stdin + kill 进程。
+
+probe 结果已回填本节。如有出入以本地实测为准。
 
 在 probe 结束前，自动化测试使用 `FakeAgentAdapter` 覆盖 runtime 流程。
 
@@ -701,7 +709,7 @@ P0 不需要恢复旧子进程继续执行；直接标记 interrupted 更清楚�
 凭据隔离是主要防线，下面两条是它之上的可观测性 / 兜底路径，不是安全底线本身。Codex CLI 能否前置拦截危险命令由 probe 决定，但已有高置信度的具体实现路径可参考（见 multica `server/pkg/agent/codex.go` 对 `item/commandExecution/requestApproval` / `item/fileChange/requestApproval` 的处理）：
 
 - **凭据隔离阻止（主要防线）**：`push_credentials_enabled = false` 时，push 因为缺少凭据失败，adapter 捕获到这个失败（进程 exit code 或 stderr 匹配 git 认证失败的特征），写 `escalation.triggered`（`blocked_by = credential_isolation`，`pre_execution_blocked = true`），Run 标记为 `failed`，Issue 置 `Blocked`。
-- **支持 approval hook（可选增强，大概率成立）**：CodexCliAdapter 作为 JSON-RPC 客户端接住 Codex 发来的 `item/commandExecution/requestApproval` / `item/fileChange/requestApproval`（或旧协议 `execCommandApproval` / `applyPatchApproval`）请求，解析其中的命令/文件变更内容，套用 escalation 策略（命中 `git push`、force push、受保护分支写入等黑名单）：命中则回复 `{"decision": "reject"}` 并写 `escalation.triggered`（`blocked_by = pre_execution_approval`，`pre_execution_blocked = true`），未命中则回复 `{"decision": "accept"}` 放行。这是 multica 本身没有使用、但协议已经支持的路径——multica 出于"全自动执行"的产品定位选择无条件 accept，PersonaHub 需要反过来在这里做真正的判断。即使拿不到这个钩子，凭据隔离依然生效，所以这一层不是阻塞项。
+- **支持 approval hook（✅ probe 已确认）**：CodexCliAdapter 作为 JSON-RPC 客户端接住 Codex 发来的 `item/commandExecution/requestApproval` / `item/fileChange/requestApproval`（或旧协议 `execCommandApproval` / `applyPatchApproval`）请求，解析其中的命令/文件变更内容，套用 escalation 策略（命中 `git push`、force push、受保护分支写入等黑名单）：命中则回复 `{"decision": "cancel"}`（同时中断 turn） 并写 `escalation.triggered`（`blocked_by = pre_execution_approval`，`pre_execution_blocked = true`），未命中则回复 `{"decision": "accept"}` 放行。这是 multica 本身没有使用、但协议已确认支持的路径——multica 出于"全自动执行"的产品定位选择无条件 accept，PersonaHub 需要反过来在这里做真正的判断。凭据隔离作为独立防线始终生效，两层互不依赖。
 - **事后检测（兜底路径，仅覆盖凭据隔离未生效的场景，例如 `push_credentials_enabled = true` 但仍需要审计）**：通过输出、git 状态、命令记录或可用日志做事后检测；一旦发现，写 `escalation.triggered`（`blocked_by = post_hoc_detection`），将 Run 标记为 `failed`，释放 workspace lock，Issue 置 `Blocked`，payload 中 `pre_execution_blocked = false`，UI 明确说明不是前置阻止。
 
 `escalation` 不是 Run status。事件顺序固定为：
