@@ -8,6 +8,10 @@ import type {
   ThreadEvent,
   IssueType,
   IssuePriority,
+  Run,
+  AdapterConfig,
+  RunStatus,
+  IssueWithRun,
 } from "../types/index.js";
 
 export enum ErrorCode {
@@ -23,6 +27,17 @@ export enum ErrorCode {
   ISSUE_NOT_FOUND = "ISSUE_NOT_FOUND",
   PROJECT_WORKSPACE_REQUIRED = "PROJECT_WORKSPACE_REQUIRED",
   THREAD_NOT_FOUND = "THREAD_NOT_FOUND",
+  ADAPTER_PROVIDER_UNSUPPORTED = "ADAPTER_PROVIDER_UNSUPPORTED",
+  ADAPTER_COMMAND_REQUIRED = "ADAPTER_COMMAND_REQUIRED",
+  ADAPTER_COMMAND_UNAVAILABLE = "ADAPTER_COMMAND_UNAVAILABLE",
+  ADAPTER_NOT_FOUND = "ADAPTER_NOT_FOUND",
+  ADAPTER_IN_USE = "ADAPTER_IN_USE",
+  ADAPTER_REQUIRED = "ADAPTER_REQUIRED",
+  ADAPTER_UNAVAILABLE = "ADAPTER_UNAVAILABLE",
+  RUN_NOT_FOUND = "RUN_NOT_FOUND",
+  RUN_INSTRUCTIONS_REQUIRED = "RUN_INSTRUCTIONS_REQUIRED",
+  ISSUE_BLOCKED = "ISSUE_BLOCKED",
+  WORKSPACE_LOCKED = "WORKSPACE_LOCKED",
   INTERNAL_ERROR = "INTERNAL_ERROR",
 }
 
@@ -96,4 +111,57 @@ export interface ThreadGetResponse {
 
 export interface ThreadEventListResponse {
   events: ThreadEvent[];
+}
+
+export interface AdapterConfigCreateInput {
+  cli_provider: string;
+  name: string;
+  role?: string;
+  command: string;
+  args?: string[];
+  default_model?: string;
+}
+
+export interface AdapterConfigCreateResponse {
+  adapter: AdapterConfig;
+}
+
+export interface AdapterConfigListResponse {
+  adapters: AdapterConfig[];
+}
+
+export interface AdapterConfigUpdateInput {
+  name?: string;
+  command?: string;
+  args?: string[];
+  default_model?: string;
+}
+
+export interface AdapterConfigUpdateResponse {
+  adapter: AdapterConfig;
+}
+
+export interface AdapterConfigValidateResponse {
+  adapter: AdapterConfig;
+}
+
+export interface RunCreateInput {
+  instructions: string;
+  adapter_id: string;
+}
+
+export interface RunCreateResponse {
+  run: Run;
+}
+
+export interface RunGetResponse {
+  run: Run;
+}
+
+export interface RunListResponse {
+  runs: Run[];
+}
+
+export interface RunCancelResponse {
+  run: Run;
 }

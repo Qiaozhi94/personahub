@@ -15,6 +15,8 @@ export interface Workspace {
   git_branch: string | null;
   lock_state: WorkspaceLockState;
   locked_by_run_id: string | null;
+  locked_at: string | null;
+  push_credentials_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -119,6 +121,16 @@ export enum ThreadType {
 
 export enum ThreadEventType {
   IssueCreated = "issue.created",
+  RunQueued = "run.queued",
+  RunStarted = "run.started",
+  RunOutput = "run.output",
+  RunOutputTruncated = "run.output_truncated",
+  RunCompleted = "run.completed",
+  RunFailed = "run.failed",
+  RunCancelled = "run.cancelled",
+  RunInterrupted = "run.interrupted",
+  EscalationTriggered = "escalation.triggered",
+  IssueBlocked = "issue.blocked",
 }
 
 export enum ActorType {
@@ -152,4 +164,76 @@ export interface ThreadSummary {
   issue_id: string;
   thread_type: ThreadType;
   title: string;
+}
+
+export enum RunStatus {
+  Queued = "queued",
+  Running = "running",
+  Completed = "completed",
+  Failed = "failed",
+  Interrupted = "interrupted",
+  Cancelled = "cancelled",
+}
+
+export enum FailureReason {
+  AdapterExitNonzero = "adapter_exit_nonzero",
+  SpawnFailed = "spawn_failed",
+  ExecutionTimeout = "execution_timeout",
+  CredentialIsolationBlocked = "credential_isolation_blocked",
+  PreExecutionApprovalRejected = "pre_execution_approval_rejected",
+  PostHocEscalation = "post_hoc_escalation",
+  ServerRestarted = "server_restarted",
+  OutputParseFailed = "output_parse_failed",
+}
+
+export enum AdapterStatus {
+  Unknown = "unknown",
+  Available = "available",
+  Unavailable = "unavailable",
+}
+
+export interface Run {
+  id: string;
+  issue_id: string;
+  thread_id: string;
+  workspace_id: string;
+  adapter_config_id: string;
+  status: RunStatus;
+  failure_reason: FailureReason | null;
+  instructions: string;
+  started_at: string | null;
+  completed_at: string | null;
+  exit_code: number | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdapterConfig {
+  id: string;
+  project_id: string;
+  name: string;
+  role: string;
+  cli_provider: string;
+  command: string;
+  args: string[];
+  capability_tags: string[];
+  default_model: string | null;
+  status: AdapterStatus;
+  last_checked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IssueWithRun extends Issue {
+  primary_thread: ThreadSummary | null;
+  latest_run: RunSummary | null;
+}
+
+export interface RunSummary {
+  id: string;
+  status: RunStatus;
+  started_at: string | null;
+  completed_at: string | null;
+  exit_code: number | null;
 }
