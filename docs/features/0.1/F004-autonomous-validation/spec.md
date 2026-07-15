@@ -4,12 +4,12 @@ related_features: [F001, F002, F003]
 topics: [autonomous-validation, validator-agent, validation-loop, evidence-summary, issue-status, workflow, v0.1.3]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-12
+updated: 2026-07-16
 ---
 
 # F004：Autonomous Validation
 
-> Status: draft | Owner: TBD | Target: v0.1.3
+> Status: ready-for-development | Owner: TBD | Target: v0.1.3
 
 ## 0. 规格元信息
 
@@ -174,6 +174,7 @@ F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证
 - 如果 validation fail 但未超过上限，系统可回到 `Running`，但不得自动无限创建 Run；下一轮修复是否自动启动由 design 决定，P0 推荐需要用户确认或明确 action。
 - 如果 Issue 已 Done，不应再自动触发 validation。
 - 如果 Issue 已 Blocked，必须由 operator 显式处理后回到 `Ready`，不会自动回到 Running。
+- 如果同一 Issue 的旧 implementation Run 仍在排队，但 Issue 已因另一条 implementation 完成而进入 `Validating`，queue drain 必须取消该 stale Run 并继续查找下一条 eligible Run，不得在 `Validating` 状态启动它。
 
 ## 4. 需求
 
@@ -198,8 +199,10 @@ F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证
 #### Scenario: Validator context
 
 - GIVEN Issue 有 F003 development trace
+- AND validator Run 明确绑定一个 `implementation_run_id`
 - WHEN validator Run 被创建
-- THEN adapter input 包含 Issue goal、latest handoff、evidence refs、file change summary、test results
+- THEN adapter input 包含 Issue goal，以及该 `implementation_run_id` 对应的 handoff、evidence refs、file change summary、test results
+- AND 不得因后续 consult Run 产生了更新的 handoff 而改变被验证对象
 
 ### Requirement: Validation Result 解析（`FR-003`）
 
@@ -388,7 +391,7 @@ Blocked    -> Ready       operator handled blocker
 ## 8. 验收清单
 
 - [ ] **AC-001**（`FR-001`, `TR-001`）：implementation Run completed 后自动创建 validator Run，Issue 进入 `Validating`。
-- [ ] **AC-002**（`FR-002`, `DR-003`）：validator Run 输入包含 goal、handoff、evidence refs、changed files、test results。
+- [ ] **AC-002**（`FR-002`, `DR-003`）：validator Run 输入包含 goal，以及其目标 `implementation_run_id` 对应的 handoff、evidence refs、changed files、test results；后续其他 Run 的 handoff 不得串入。
 - [ ] **AC-003**（`FR-003`, `TR-002`）：validator 输出被解析为 result 和 findings。
 - [ ] **AC-004**（`FR-004`, `FR-007`, `TR-003`, `TR-006`, `DR-004`）：validation pass 后 Issue 进入 `Done`，创建 Evidence Summary，并包含 `validator_identity` 和 `policy_version`。
 - [ ] **AC-005**（`FR-005`, `TR-004`）：validation fail 后写入 findings，Issue 回到 `Running`，下一轮上下文包含 findings。

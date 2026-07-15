@@ -4,11 +4,12 @@ related_features: [F002, F003, F004]
 topics: [agent-adapter, claude-code, opencode, manual-routing, multi-agent, v0.1.4]
 doc_kind: spec
 created: 2026-07-12
+updated: 2026-07-16
 ---
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）
 
-> Status: spec | Owner: TBD | Target: v0.1.4
+> Status: ready-for-development | Owner: TBD | Target: v0.1.4
 
 ## 0. 规格元信息
 
@@ -158,6 +159,7 @@ F001-F004 交付后，PersonaHub 能自动完成"一个 implementation agent + �
 - 同一个 Issue 短时间内被 @ 多个不同 adapter，workspace 锁仍然只允许一个在跑，其余排队。
 - 用户在没有任何已配置 adapter 时尝试发送指令。
 - OpenCode 同时配置了 OAuth 和 API key 两种鉴权信息。
+- 同一 Issue 的 queued implementation / validator Run 在真正取得 workspace lock 前，Issue 状态已经变化；系统必须重新校验其角色是否仍与状态匹配，不再匹配则取消并继续 drain。
 
 ## 4. 需求
 
@@ -241,9 +243,11 @@ F001-F004 交付后，PersonaHub 能自动完成"一个 implementation agent + �
 #### Scenario: 手动 validator 判定通过
 
 - GIVEN Issue 处于 `Validating`
+- AND 当前 validation request 绑定一个明确的 `implementation_run_id`
 - WHEN 用户手动指定的 adapter 输出 pass
 - THEN 系统按 F004 `FR-004` 的规则将 Issue 置为 `Done`
 - AND Evidence Summary 记录该 adapter 作为 `validator_identity`
+- AND validator context/evidence 来自该 `implementation_run_id`，不受后续 consult Run handoff 影响
 
 #### Scenario: 手动 validator 判定失败
 
@@ -253,21 +257,31 @@ F001-F004 交付后，PersonaHub 能自动完成"一个 implementation agent + �
 
 ### Requirement: 咨询性 Run 不驱动状态机（`FR-007`）
 
-系统应当以"这次 @ 是否命中当前 Issue 状态期望的角色"作为判定 Run 是 workflow-bound 还是咨询性的信号，而不是要求用户每次显式声明。参考 clowder-ai 对 Message 和 Invocation 解耦的设计（只有 `@` 命中目标才创建正式 Invocation，否则只是普通消息，不触碰任务状态）：Issue 处于 `Validating` 且用户 @ 的 adapter 具备 validator 能力时，视为 workflow-bound（承接 validator 角色）；其余情况下的 @ 指令视为咨询性 Run，不改变 Issue 状态。
+系统应当以"这次 @ 是否命中当前 Issue 状态期望的角色"作为判定 Run 是 workflow-bound 还是咨询性的信号，而不是要求用户每次显式声明。当前期望角色固定为：`Inbox` / `Ready` / `Running` 期望 implementation，`Validating` 期望 validator，终态不接受新 Run。被选 adapter 具备当前期望能力时视为 workflow-bound；不具备时视为咨询性 Run，不改变 Issue 状态。参考 clowder-ai 对 Message 和 Invocation 解耦的设计（只有 `@` 命中目标才创建正式 Invocation，否则只是普通消息，不触碰任务状态）。
 
 #### Scenario: @ 命中期望角色
 
-- GIVEN Issue 处于 `Validating`
-- AND 用户 @ 的 adapter 被配置了 validator 能力
+- GIVEN Issue 处于非终态
+- AND 用户 @ 的 adapter 被配置了当前状态期望的能力（Running 为 implementation，Validating 为 validator）
 - WHEN 用户发送指令
-- THEN 系统将该 Run 标记为 workflow-bound（validator 角色）
+- THEN 系统将该 Run 标记为 workflow-bound，并记录对应的 implementation 或 validator 角色
 
 #### Scenario: @ 未命中期望角色（咨询性）
 
 - GIVEN Issue 处于任意非终态状态
-- WHEN 用户手动 @ 一个 adapter，且当前 Issue 状态没有期望这个角色介入（例如 Issue 处于 `Running` 而不是 `Validating`，或被 @ 的 adapter 不具备当前阶段需要的能力）
+- WHEN 用户手动 @ 一个 adapter，且该 adapter 不具备当前阶段需要的能力（例如 Issue 处于 `Running` 但 adapter 只有 validator 能力）
 - THEN 系统创建 Run 并记录输出
 - AND Issue 状态保持不变
+
+### Requirement: Escalation 覆盖所有 adapter（`FR-008`）
+
+F002 定义的凭据隔离和 escalation 机制应当对 Claude Code、OpenCode 同样生效，不因为 adapter 类型不同而失效。
+
+#### Scenario: 非 Codex adapter 触发 escalation
+
+- GIVEN Workspace 未开启 push 凭据
+- WHEN Claude Code 或 OpenCode 在 Run 中尝试 `git push`
+- THEN 行为与 Codex 一致：push 失败，触发 escalation，Issue 置 `Blocked`
 
 ### Requirement: 手动 validator 与自动 validator 互斥（`FR-009`）
 
@@ -286,20 +300,10 @@ F001-F004 交付后，PersonaHub 能自动完成"一个 implementation agent + �
 - WHEN 用户此时尝试手动指定另一个 adapter 也承接 validator 角色
 - THEN 系统拒绝该请求，并提示已有一条 validator Run 在进行中
 
-### Requirement: Escalation 覆盖所有 adapter（`FR-008`）
-
-F002 定义的凭据隔离和 escalation 机制应当对 Claude Code、OpenCode 同样生效，不因为 adapter 类型不同而失效。
-
-#### Scenario: 非 Codex adapter 触发 escalation
-
-- GIVEN Workspace 未开启 push 凭据
-- WHEN Claude Code 或 OpenCode 在 Run 中尝试 `git push`
-- THEN 行为与 Codex 一致：push 失败，触发 escalation，Issue 置 `Blocked`
-
 ### 数据 / 实体需求
 
 - **DR-001**：Adapter config 应当支持 `auth_type`（`oauth` / `api_key`）；`api_key` 方式下的凭据字段**沿用 multica / clowder-ai 的存储方式**——不做额外加密，明文存储在本地（DB 列或本地配置文件），只在 API 响应/UI 展示时打码（如 `****`），并通过本地文件/数据库的访问权限做基本保护。这是有意识的从简决定，不是遗漏；如果后续需要更强的机密性保证（例如 OS keychain 集成），作为独立的安全加固任务另行评估，不在本 feature 阻塞。
-- **DR-002**：Run 应当增加区分"workflow-bound"（implementation / validator，驱动 Issue 状态机）和"ad-hoc consult"（咨询性，不驱动状态机）的字段。
+- **DR-002**：Run 应当增加区分"workflow-bound"（implementation / validator，驱动 Issue 状态机）和"ad-hoc consult"（咨询性，不驱动状态机）的字段；Run role 保持非空，咨询性 Run 使用持久化值 `consult`，不得写成 `null` 或伪装成 `implementation`。
 - **DR-003**：Run 应当能记录是否由用户手动指定 adapter（区别于系统默认），用于审计和回溯。
 - **DR-004**：其余 Run / ThreadEvent 字段沿用 F002 既有定义，不重复设计。
 - **DR-005**：Run 表应当增加一条数据库级 partial unique 约束，保证同一 `issue_id` 同一时刻最多只有一条 `role = validator` 且 `status IN (queued, running)` 的记录，作为 `FR-009` 互斥规则的强制手段（参考 multica `agent_task_queue` 的同类约束，以及 F001 primary Thread 唯一性约束的既有先例）。应用层可以有一次前置检查作为优化（减少无意义的失败），但正确性以这条 DB 约束为准，不依赖进程内锁——同一时刻先提交成功的一方获胜，另一方收到明确的冲突错误，不产生重复 Run。
@@ -372,7 +376,7 @@ Ad-hoc Consult Run
 - [ ] **AC-001**（`FR-001`, `FR-002`）：Claude Code 通过 OAuth、OpenCode 通过 OAuth 或 API key 均可完成配置并显示可用状态。
 - [ ] **AC-002**（`FR-003`, `FR-004`）：用户可以在 composer 中手动选择 Codex / Claude Code / OpenCode 中的一个处理当前指令，未选择时使用明确的默认值。
 - [ ] **AC-003**（`FR-005`）：手动指定的 Run 自动携带上一轮 Handoff Packet 和 evidence refs 作为 context；没有上一轮时不报错。
-- [ ] **AC-004**（`FR-006`）：手动指定的 validator Run 的 pass/fail 输出正确驱动 Issue 到 `Done` 或回到 `Running`，Evidence Summary 正确记录 `validator_identity` 和 `same_origin_validation`。
+- [ ] **AC-004**（`FR-006`）：手动指定的 validator Run 的 pass/fail 输出正确驱动 Issue 到 `Done` 或回到 `Running`，Evidence Summary 正确记录 `validator_identity` 和 `same_origin_validation`；validator context严格绑定目标`implementation_run_id`。
 - [ ] **AC-005**（`FR-007`）：@ 命中当前期望角色时判定为 workflow-bound，未命中时判定为咨询性且不改变 Issue 状态；两种情况在 Thread 中都留下完整记录。
 - [ ] **AC-006**（`FR-008`）：Claude Code、OpenCode 触发危险 git 操作时，行为与 Codex 一致，同样被凭据隔离挡住并触发 escalation。
 - [ ] **AC-007**（`FR-009`, `DR-005`）：同一 Issue 同一时刻只能有一条 pending validator Run；无论是手动介入还是系统自动触发先到，后到的一方都会被数据库唯一约束拒绝，不产生重复 Run。
@@ -458,7 +462,7 @@ Ad-hoc Consult Run
 
 ## 14. 实现备注
 
-- 本 feature 的 `design.md` 暂不编写，按项目约定（`docs/SOP.md`"PRD 版本拆解为 Feature 的节奏"）等 F001-F004 实现完成、真正开始这个 feature 前再拆解。第 12 节的四个待确认问题已经关闭并有明确结论，design.md 阶段是把这些结论落到具体 schema/接口设计，不是重新讨论方向。
+- 本 feature 的 `design.md` / `tasks.md` 已于 2026-07-16 完成并清空设计开放问题；代码开发应按其中的 schema、接口、协议 probe、状态机互斥和安全降级顺序推进。
 - Claude Code / OpenCode 的具体 adapter 实现应参考 F002 `CodexCliAdapter` 的落地经验（one-shot invocation、`WorkspaceContext` 凭据隔离、CAS 状态机等），不重新发明这些机制。
 - Claude Code 的 `control_request` 前置审批接入方式，可以直接参考 multica `claude.go` 里已经写好但未接入的 `handleControlRequest` 函数形状，不需要从协议文档从零摸索。
 - `FR-007`（@ 是否命中期望角色）和 `FR-009`（DB 唯一约束防重复）这两条机制在 design.md 阶段需要落到具体的 schema 和判定代码，但方向已经不需要再讨论。

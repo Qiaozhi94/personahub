@@ -138,9 +138,9 @@ updated: 2026-07-15
 - [ ] **T074 [P]**（`UX-004`, `UX-005`, `UX-007`）：添加 Handoff/Validation cards 测试，覆盖 risks、missing evidence、next action、finding severity、pass/fail/blocked 和“Recorded result”语义。
 - [ ] **T075**（`UX-004`, `UX-005`）：实现 HandoffTraceCard / ValidationTraceCard。
 - [ ] **T076**（`UX-001` - `UX-005`, `NFR-008`）：重构现有 `ThreadEvent.tsx` 为通用 shell + F003 renderer dispatch；unknown type 保留 generic fallback，文件不得超过 350 行。
-- [ ] **T077**（`UX-006`, `UX-007`）：添加 Inspector evidence section 测试，覆盖 complete/partial/unavailable、tests、changed files、handoff、validation result、export loading/error/success。
+- [ ] **T077**（`UX-006`, `UX-007`, `UX-008`）：添加 Inspector evidence section 测试，覆盖 complete/partial/unavailable、tests、changed files、handoff、validation result、export loading/error/success；同时回归 F002 Run cancel 和 credential isolation/pre-execution/post-hoc 三类 escalation blocker 能力边界文案。
 - [ ] **T078**（`FR-008`, `UX-006` - `UX-008`）：实现 Inspector evidence summary、View all 和 Export Markdown；保留 F002 Run Logs/Cancel/Blocked UI。
-- [ ] **T079**（`AC-009`, `AC-012`）：扩展 App/Thread UI 集成测试，模拟 SSE 新 command/file/handoff event，验证 query refresh、排序去重和现有日志不回归。
+- [ ] **T079**（`AC-009`, `AC-012`, `UX-008`）：扩展 App/Thread UI 集成测试，模拟 SSE 新 command/file/handoff event，验证 query refresh、排序去重，并回归 F002 连续 `run.output` 合并、`run.output_truncated` 标记、无 adapter/Blocked/active Run composer 护栏、提交成功清空输入框和 mutation error 渲染。多 adapter selector 由 F005 T089-T091 覆盖，不在本任务重复实现。
 
 **Checkpoint 9**：用户可在三栏 UI 复盘 trace、查看完整性/分页、下载 Markdown；所有状态不只靠颜色表达。
 

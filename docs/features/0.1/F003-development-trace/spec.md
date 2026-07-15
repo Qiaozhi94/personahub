@@ -299,7 +299,7 @@ Thread 和 Inspector 应提供适合实时观察与复盘的 trace 视图。
 - **UX-005**：validation card 明确区分 finding severity 和 pass/fail/blocked；F003 阶段不把它包装成 Issue Done。
 - **UX-006**：Inspector 汇总最近 Run evidence，并提供 Markdown export action。
 - **UX-007**：command unavailable、scan failed、scan truncated、missing ref、output truncated 均有可见状态。
-- **UX-008**：SSE 到达新 trace event 时刷新 trace/Run evidence query，不破坏 F002 的日志实时展示。
+- **UX-008**：SSE 到达新 trace event 时刷新 trace/Run evidence query，不破坏 F002 的日志实时展示、连续 output 合并/截断标记、Run cancel、composer 发送护栏与 mutation 成功/失败反馈，以及三类 escalation blocker 能力边界文案。
 
 ### 非功能需求
 
@@ -367,7 +367,7 @@ workspace lock acquired
 - [ ] **AC-006**（`FR-005`, `TR-006`, `NFR-001`）：started Run 自动且幂等地产生一个 handoff；失败/取消/恢复路径包含风险和缺失证据。
 - [ ] **AC-007**（`FR-006`, `IR-006`）：validation events 可由内部 contract 写入和展示，但 F003 不改变 Issue 状态，也无公开写接口。
 - [ ] **AC-008**（`FR-007`, `IR-001` - `IR-005`）：Issue trace、Run evidence 和 Markdown export 在多 Run、缺失、截断场景下结果稳定。
-- [ ] **AC-009**（`FR-008`, `UX-001` - `UX-008`）：Thread/Inspector 可读展示 trace、完整性和 export，且 SSE 新事件能刷新。
+- [ ] **AC-009**（`FR-008`, `UX-001` - `UX-008`）：Thread/Inspector 可读展示 trace、完整性和 export，且 SSE 新事件能刷新；F002 日志、取消、composer 护栏/反馈和 escalation blocker 展示回归通过。
 - [ ] **AC-010**（`NFR-001`, `NFR-002`）：重复 finalization、服务重启、scan failure 均不产生重复证据或永久锁。
 - [ ] **AC-011**（`NFR-004`, `NFR-007`）：敏感 command 片段被 redaction；Windows path/PowerShell/cmd 命令样例通过。
 - [ ] **AC-012**（`TR-008`）：刷新/断线重连后 trace 仍按 Thread `event_sequence` 去重排序。

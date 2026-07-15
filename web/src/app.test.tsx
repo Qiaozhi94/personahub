@@ -4,33 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "@/App";
 import { IssueStatus, IssueType, IssuePriority, ThreadType, ThreadEventType, ActorType, WorkspaceLockState } from "@personahub/shared";
 
-vi.mock("@/lib/api-client", () => ({
-  apiClient: {
-    projects: {
-      create: vi.fn(),
-      list: vi.fn(),
-      get: vi.fn(),
-    },
-    workspaces: {
-      bind: vi.fn(),
-      getByProject: vi.fn(),
-      getById: vi.fn(),
-    },
-    issues: {
-      create: vi.fn(),
-      listByProject: vi.fn(),
-      get: vi.fn(),
-    },
-    threads: {
-      get: vi.fn(),
-      getEvents: vi.fn(),
-    },
-  },
-  toApiError: vi.fn((e: unknown) => ({
-    code: "INTERNAL_ERROR",
-    message: e instanceof Error ? e.message : "Unknown error",
-  })),
-}));
+vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
 
 import { apiClient } from "@/lib/api-client";
 

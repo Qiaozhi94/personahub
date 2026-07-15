@@ -1,115 +1,48 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ActorType,
-  AdapterStatus,
   FailureReason,
-  IssuePriority,
   IssueStatus,
-  IssueType,
   RunStatus,
   ThreadEventType,
   ThreadType,
-  type AdapterConfig,
   type IssueWithThread,
   type Run,
 } from "@personahub/shared";
 import { AdapterSettings } from "@/components/adapter/AdapterSettings";
 import { ThreadView } from "@/components/thread/ThreadView";
 import { IssueInspector } from "@/components/inspector/IssueInspector";
+import {
+  createAdapter,
+  createIssue,
+  createRun,
+  renderWithQuery,
+} from "@/test/ui-flow-helpers";
 
-vi.mock("@/lib/api-client", () => ({
-  apiClient: {
-    projects: { create: vi.fn(), list: vi.fn(), get: vi.fn() },
-    workspaces: { bind: vi.fn(), getByProject: vi.fn(), getById: vi.fn() },
-    issues: { create: vi.fn(), listByProject: vi.fn(), get: vi.fn() },
-    threads: { get: vi.fn(), getEvents: vi.fn() },
-    adapters: {
-      create: vi.fn(), listByProject: vi.fn(), update: vi.fn(),
-      delete: vi.fn(), validate: vi.fn(),
-    },
-    runs: { create: vi.fn(), get: vi.fn(), listByIssue: vi.fn(), cancel: vi.fn() },
-  },
-  toApiError: vi.fn((error: unknown) => ({
-    code: "INTERNAL_ERROR",
-    message: error instanceof Error ? error.message : "Unknown error",
-  })),
-}));
+vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
 
 import { apiClient } from "@/lib/api-client";
 
-function renderWithQuery(ui: React.ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
-}
+const adapter = createAdapter();
 
-const adapter: AdapterConfig = {
-  id: "agt_1",
-  project_id: "prj_1",
-  name: "Codex CLI",
-  role: "implementation",
-  cli_provider: "codex",
-  command: "codex",
-  args: ["--quiet"],
-  capability_tags: [],
-  default_model: "gpt-5",
-  status: AdapterStatus.Available,
-  last_checked_at: "2026-07-16T00:00:00.000Z",
-  created_at: "2026-07-16T00:00:00.000Z",
-  updated_at: "2026-07-16T00:00:00.000Z",
-};
-
-const baseIssue: IssueWithThread = {
-  id: "iss_1",
-  project_id: "prj_1",
-  workspace_id: "wsp_1",
-  primary_thread_id: "thr_1",
-  issue_type: IssueType.Coding,
-  workflow_template_id: "wft_coding_default",
-  validation_policy_id: "vpl_coding_default",
+const baseIssue: IssueWithThread = createIssue({
   title: "Implement command center",
   goal: "Run Codex from the Thread",
   status: IssueStatus.Running,
-  owner_agent_id: null,
-  coordinator_agent_id: null,
-  priority: IssuePriority.Normal,
-  labels: [],
-  validation_round_count: 0,
-  created_at: "2026-07-16T00:00:00.000Z",
-  updated_at: "2026-07-16T00:00:00.000Z",
   primary_thread: {
-    id: "thr_1", issue_id: "iss_1", thread_type: ThreadType.Primary,
+    id: "thr_1",
+    issue_id: "iss_1",
+    thread_type: ThreadType.Primary,
     title: "Implement command center",
   },
-};
+});
 
-const runningRun: Run = {
-  id: "run_1",
-  issue_id: "iss_1",
-  thread_id: "thr_1",
-  workspace_id: "wsp_1",
-  adapter_config_id: "agt_1",
-  status: RunStatus.Running,
-  failure_reason: null,
-  instructions: "Implement it",
-  started_at: "2026-07-16T00:01:00.000Z",
-  completed_at: null,
-  exit_code: null,
-  error_message: null,
-  created_at: "2026-07-16T00:00:00.000Z",
-  updated_at: "2026-07-16T00:01:00.000Z",
-};
+const runningRun: Run = createRun();
 
 describe("F002 UI flows", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.defineProperty(Element.prototype, "scrollIntoView", {
-      configurable: true,
-      value: vi.fn(),
-    });
   });
 
   it("creates an adapter from Agent Settings", async () => {

@@ -899,7 +899,7 @@ web/src/components/trace/TraceCompleteness.tsx
 - Inspector complete/partial/unavailable and pagination。
 - export success/error, object URL cleanup。
 - SSE invalidates trace queries。
-- existing F002 logs/cancel/escalation regression。
+- existing F002 logs/cancel/escalation regression，包括连续 `run.output` 合并、`run.output_truncated` 标记、无 adapter/Blocked/active Run composer 护栏、提交成功清空、mutation error，以及 credential isolation/pre-execution/post-hoc 三类能力边界文案。
 
 ### 11.4 Manual probe
 

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { apiClient } from "@/lib/api-client";
 import type { ThreadEvent } from "@personahub/shared";
 
@@ -14,7 +14,6 @@ export function useThread(id: string | null) {
 export function useThreadEvents(id: string | null, afterEventId?: string) {
   const queryClient = useQueryClient();
   const lastEventId = useRef<string | undefined>(afterEventId);
-  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -30,13 +29,8 @@ export function useThreadEvents(id: string | null, afterEventId?: string) {
         void 0;
       }
     };
-    eventSource.onopen = () => setConnected(true);
-    eventSource.onerror = () => {
-      setConnected(false);
-    };
     return () => {
       eventSource.close();
-      setConnected(false);
     };
   }, [id, queryClient]);
 
