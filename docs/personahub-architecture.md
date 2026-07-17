@@ -2,6 +2,7 @@
 topics: [architecture, runtime, module-design, agent-team-os]
 doc_kind: design
 created: 2026-07-12
+updated: 2026-07-17
 ---
 
 # PersonaHub 软件架构设计
@@ -149,10 +150,10 @@ interface RunHandle {
 
 原设计只说"断线重连可从 DB 补历史"，但没有定义具体契约，导致排序、去重、补发都没有依据。补充：
 
-- 每条 `ThreadEvent` 拥有全局单调递增的 `id`，作为排序和去重的唯一依据；`created_at` 只用于展示，不参与排序（避免同毫秒内乱序）。
+- 每条 `ThreadEvent` 拥有稳定且不透明的 ULID `id`，用于 cursor 和去重；排序使用同一 Thread 内的 `event_sequence`，`created_at` 只用于展示。当前实现可全局分配 sequence，但对外 contract 只保证 Thread 内顺序，客户端不得依赖跨 Thread 单调性。
 - SSE 推送使用标准 `id:` 字段，前端断线重连时浏览器按 `Last-Event-ID` 自动携带；同时提供显式 query 参数 `?after_event_id=` 作为退化路径（例如非浏览器客户端）。
 - 订阅接口必须支持按 `after_event_id` 补发遗漏事件，覆盖"先写库、广播失败"的场景。
-- 前端按 `event.id` 去重和排序渲染，不依赖到达顺序。
+- 前端按 `event.id` 去重、按 `event_sequence` 排序渲染，不依赖到达顺序。
 
 ## 5. Workflow / Validation 执行引擎
 
@@ -181,7 +182,7 @@ class SequentialTopologyExecutor implements TopologyExecutor { ... }
 Artifact-centered collaboration 是 PRD v0.3 的既定范围，属于 v0.1–v0.3 近期承诺（PRD 第 15 节），不应该被当成"v0.4+ 方向性设想"轻描淡写带过——这是本文档上一版遗漏的一处分类错误。现在只需一个轻量边界，不需要现在实现 Room 或完整 artifact manifest：
 
 - Artifact 由一个 `ArtifactService`（Repository 之上的薄封装）管理，`storage_type` 支持 `inline_markdown` / `local_file_path` / `db_record`（`external_url` 留到实际需要外部存储时再启用）。
-- `ThreadEvent`、`HandoffPacket`、`EvidenceSummary` 从 v0.1 起就使用同一种 artifact 引用格式（`artifact_id` 数组），即使 v0.1 大多数 Issue 没有独立 artifact、evidence summary 直接内联在 DB 里。
+- v0.1 的 `ThreadEvent`、内联 Handoff Packet 与 Evidence Summary 统一使用可版本化 typed evidence refs：`event:<thread_event_id>` 和 `file-change-set:<run_id>`。v0.3 引入 Artifact 时新增 `artifact:<artifact_id>` 前缀，由同一 resolver 扩展解析；现有 refs 无需格式迁移。
 - Artifact 引用必须可追溯到 `issue_id` / `thread_id` / `run_id`（与 `system-design.md` Artifact 字段一致）。
 - v0.1 不需要 Room、不需要多阶段 artifact manifest，这些仍然是 v0.3 范围；本节只保证 v0.1 产生的 evidence/handoff 数据在 v0.3 落地 Room 时不需要做格式迁移。
 

@@ -4,7 +4,7 @@ related_features: [F001, F002, F004, F005]
 topics: [development-trace, adapter-trace, evidence-refs, file-snapshot, handoff, validation-events, export]
 doc_kind: design
 created: 2026-07-15
-updated: 2026-07-15
+updated: 2026-07-17
 ---
 
 # F003：Development Trace - 设计
@@ -139,9 +139,17 @@ export enum ValidationFindingSeverity {
   Error = "error",
   Blocking = "blocking",
 }
+
+export enum CommandTraceCapability {
+  Supported = "supported",
+  Unsupported = "unsupported",
+  Unknown = "unknown",
+}
 ```
 
 `ThreadEventType` 增加 spec `DR-001` 的 11 个值。枚举值是持久化 contract，后续只能新增，不重命名旧值。
+
+`CommandTraceCapability` 描述“该 Run 的 adapter 是否具备 structured command trace 能力”，是 `run_trace_states.command_trace_capability` 的持久化取值，由当次 `AgentAdapterCapabilities.supportsStructuredTrace` 派生。它与 `TraceCompletenessStatus`（描述“已采集到的 trace 完整度”）是两个不同语义域：capability 是输入前提，completeness 是运行结果，不得互相复用同一枚举。
 
 ### 3.2 Adapter trace signal
 
@@ -204,7 +212,12 @@ export interface EvidenceResolution {
   ref: string
   kind: "event" | "file_change_set"
   status: "resolved" | "missing" | "truncated"
-  event?: ThreadEvent
+  target?: {
+    id: string
+    type: ThreadEventType
+    thread_id: string
+    run_id?: string
+  }
   run_id?: string
   reason?: string
 }
@@ -322,17 +335,25 @@ GET /api/issues/:issue_id/trace?after_event_id=<id>&limit=100
 `limit` 默认 100、最大 200。只读取 primary Thread；事件包含 F002 Run lifecycle（queued/output 除外）和 F003 trace types，按 `event_sequence ASC`。
 
 ```ts
+interface RunTraceSummary {
+  run: Run
+  trace_applicable: boolean
+  completeness: TraceCompleteness | null
+}
+
 interface IssueTraceResponse {
   issue: IssueWithThread
-  runs: Run[]
+  runs: RunTraceSummary[]
   events: ThreadEvent[]
   evidence: EvidenceResolution[]
-  completeness: TraceCompleteness
+  issue_completeness: TraceCompleteness
   next_after_event_id: string | null
 }
 ```
 
-排除原始 `run.output` 是为了防止 trace query 重复传输最多 1 MiB 日志；command events 通过 refs 指向相关 output event，Inspector 原有日志仍使用 Thread events query。
+排除原始 `run.output` 是为了防止 trace query 重复传输最多 1 MiB 日志；command events 仍可通过 refs 指向相关 output event，但 `EvidenceResolution.target` 只返回 id/type/thread/run metadata，不返回目标 `payload_json`，Inspector 原有日志仍使用 Thread events query。
+
+所有 Issue Runs 都返回；曾进入 running 的 Run 为 `trace_applicable=true` 并独立计算 completeness，queued 且从未 running 的 Run 为 `trace_applicable=false, completeness=null`，不能误报为 unavailable。Completeness 不受当前 event page 影响。`issue_completeness` 只聚合 started Runs，按维度取最差状态（`unavailable > partial > complete`），reason 必须带来源 `run_id`；started 的旧 Run 没有 trace state 时该 Run 为 unavailable。Issue 没有任何 started Run 时聚合值为四项 unavailable，并带稳定 reason `no_started_runs`。Inspector 的 Latest Run section 使用对应 Run completeness，不用 Issue 聚合值。Markdown 按 Run 输出 completeness，Issue 顶部可附聚合值。
 
 ### 5.2 Run Evidence
 
@@ -355,6 +376,7 @@ interface RunEvidenceResponse {
 - event query 先按 Run 的 `thread_id` 取 trace event，再严格筛 `payload_json.run_id === run.id`。
 - file cursor 必须属于同一 Run；否则返回 `INVALID_QUERY`，不能把其他 Run 的 cursor 当成 offset。
 - `event_limit/file_limit` 默认 100、最大 200。
+- completeness 基于该 Run 的完整持久化 trace 计算，不随 event/file pagination 改变。
 
 ### 5.3 Markdown Export
 
@@ -392,6 +414,7 @@ Markdown 固定结构：
 - command 使用 fenced code block；动态内容不能闭合 fence，renderer 选择不冲突的 fence 长度。
 - Markdown 特殊字符、HTML 和 filename 统一 escape/sanitize。
 - 不导出完整 run output、fingerprints、absolute workspace path 或 raw protocol message。
+- evidence ref 解析即使目标是 `run.output` 也只输出目标 id/type 和 resolved/missing 状态，不读取或渲染 raw output payload。
 - exporter 分页读取所有已记录 file changes，但受全局 export record 上限保护；到上限时写明 truncated。
 - 缺少 tests 与 tests passed 是两个不同状态，前者明确写 `Not recorded`。
 
@@ -445,6 +468,7 @@ interface EvidenceScope {
 - `event:`：event -> thread -> issue；若 scope 有 runId，还需 payload `run_id` 相同，除非调用者显式允许 Issue 级 validation ref。
 - `file-change-set:`：run -> issue/thread；检查 scope 后返回记录数与是否 scan_truncated。
 - ref 目标不存在返回 `missing`，查询/export 不抛错；写入新的 handoff/validation event 时，非法或越界 ref 必须拒绝。
+- public query/export 的 event resolution 只返回最小 target metadata；任何 event type 都不内联目标 `payload_json`，尤其不得经 ref 重新暴露被 trace query 排除的 `run.output`。内部 F004/F005 context builder 若需读取允许类型的 payload，必须在 scope 校验后使用独立的 trusted resolver allowlist，且 `run.output` 永不进入 context。
 - resolver 去重但保持首次出现顺序。
 - F003 产生的 event refs 使用 event id，不使用 `event_sequence`；sequence 只在 Thread 内排序，不是跨资源标识。
 
@@ -493,7 +517,7 @@ Fake adapter 增加可配置 `traceSignals`，`fake-codex.mjs` 增加 command su
 ```ts
 commandEventsByItemId: Map<string, string>       // item id -> command.started event id
 outputEventIdsByItemId: Map<string, string[]>   // item id -> bounded run.output event ids
-traceCapability: TraceCompletenessStatus
+traceCapability: CommandTraceCapability          // 当次 adapter 能力，与 run_trace_states.command_trace_capability 同域；completeness 单独计算
 ```
 
 处理 started：
@@ -572,14 +596,15 @@ Snapshot 至少保存：
 
 - HEAD oid（unborn 时为 null）。
 - `git status --porcelain=v1 -z --untracked-files=all` 解析后的 path/status。
-- baseline 时已 dirty/untracked path 的内容 fingerprint，使“原本已 modified、Run 又继续修改”可识别。
+- baseline 时已 dirty/untracked path 的内容 fingerprint，使“原本已 modified、Run 又继续修改”可识别；clean tracked path 的 baseline workspace view 可由 baseline HEAD blob 恢复。
 - scanner version 和 `scan_truncated`。
 
-Final diff 合并：
+Final diff 使用候选路径 + workspace view 复核：
 
 - baseline/final status 差异。
 - 同为 dirty 但 fingerprint 改变的 path。
-- HEAD 变化时 baseline HEAD 到 final HEAD 的 name-status，覆盖 agent commit。
+- HEAD 变化时 baseline HEAD 到 final HEAD 的 name-status 只提供候选路径，不能直接成为 file-change record。
+- 每个候选路径最终比较 baseline workspace view 与 final workspace view：baseline dirty/untracked 使用已存 fingerprint，baseline clean tracked 使用 baseline HEAD blob；final 使用 working tree 内容或 final HEAD blob。两端内容相同则不记录，因此“把 Run 前已有 dirty 内容原样 commit”不会误报。
 - rename 在可靠识别时保留 `previous_path`；否则降级为 delete + add，不伪造 rename。
 
 P0 不保存 patch，也不执行 `git reset/checkout` 等写操作。
@@ -590,8 +615,9 @@ P0 不保存 patch，也不执行 `git reset/checkout` 等写操作。
 
 - 默认忽略 `.git/`、`node_modules/`、依赖/缓存目录和 PersonaHub DB/WAL/SHM；不笼统忽略 `dist/`、`build/` 等可能属于用户交付物的目录，ignore list 在常量中集中维护并测试。
 - path 经 `resolve`/`relative` 后必须仍在 workspace 内；symlink 不跟随到 workspace 外。
+- 目录与文件使用规范化 workspace-relative path 的 lexical order 确定性遍历，snapshot 记录 `scan_complete`/`scan_truncated` 和停止原因。
 - 小文件使用 SHA-256；超过单文件 hash 上限使用 `size + mtime` 并降低 confidence。
-- 比较 before/after manifest 得出 added/modified/deleted。
+- 两侧 snapshot 都 complete 时比较完整 manifest 得出 added/modified/deleted；任一 snapshot 因 entry/time/IO 边界不完整时，只允许为两侧都实际观察到且 fingerprint 不同的同一路径生成 modified，不生成 added/deleted。未覆盖差异只进入 truncated/unknown completeness。
 
 #### Limits
 
@@ -606,7 +632,7 @@ P0 不保存 patch，也不执行 `git reset/checkout` 等写操作。
 | event preview | 100 |
 | export changes | 5,000 |
 
-达到 scan/entry/persist 上限时保留已确认记录并标 `scan_truncated=true`，completeness 为 partial。超时、权限、baseline parse 错误使用稳定 reason code，而不是自由文本作为判断依据。
+达到 scan/entry 上限时按上述 coverage 规则只保留已确认记录并标 `scan_truncated=true`，completeness 为 partial。若两侧 snapshot 完整、只是变化记录超过 persist 上限，则按规范化 path 排序保留前 5,000 条已确认变化并标 `scan_truncated=true`；不得因持久化截断改变记录真假。超时、权限、baseline parse 错误使用稳定 reason code，而不是自由文本作为判断依据。
 
 ### 7.7 Terminal finalization
 
@@ -638,7 +664,8 @@ async finalizeAndDrain(runId: string, workspaceId: string): Promise<void> {
 
 - scanner 异常转为 `file.change_scan_failed`，仍生成 handoff。
 - handoff builder 不应抛；未知字段转 missing evidence。
-- DB 写失败时记录 server error，`finally` 仍释放锁；state 保持 unfinalized，启动恢复可再次尝试，并标 `recovered_after_restart`/`workspace_may_have_advanced`。
+- finalization transaction DB 写失败时在仍持有 workspace 锁的当前调用内做有界重试（默认最多 3 次，间隔常量集中管理）；仍失败则记录 server error，`finally` 释放锁并继续 drain，state 保持 unfinalized。
+- startup recovery 处理 terminal-unfinalized state 时先验证 workspace 仍由该 `run_id` 持锁：仍持有才允许重新采 final snapshot；锁已丢失/属于其他 Run 时，不读取 workspace、不重新扫描、不写 file records，只基于已持久化的 Run/trace state 以 `file.change_scan_failed(reason_code=workspace_ownership_lost)` + handoff missing evidence + finalized CAS 收敛。该 DB-only failure finalization 是“扫描必须持锁”的唯一例外；仍可标 `recovered_after_restart=true`，但不使用模糊的 `workspace_may_have_advanced` 作为可信 file evidence。
 
 ### 7.8 Cancel / escalation / recovery
 
@@ -647,7 +674,7 @@ async finalizeAndDrain(runId: string, workspaceId: string): Promise<void> {
 - escalation：保持 F002 的 `escalation.triggered -> run.failed -> issue.blocked` 顺序；随后 finalization，再 cancel blocked Issue queued Runs、unlock/drain。
 - escalation 的三个事件在同一事务写入，并在最外层 commit 后按上述顺序广播；不得由嵌套 RunService 调用提前广播 `run.failed`。
 - timeout/spawn/adapter nonzero：terminal event 后走同一 finalization。
-- startup recovery：先处理 running Run 为 interrupted（不解锁），再 finalize；再处理“已 terminal 但未 finalized”的 state；最后清 stale lock/queue。`main()` 改为 await async recovery 后再 listen。
+- startup recovery：先处理 running Run 为 interrupted（不解锁），再 finalize；再处理“已 terminal 但未 finalized”的 state，并按锁 ownership 决定正常扫描或 `workspace_ownership_lost` fail-closed；最后清 stale lock/queue。`main()` 改为 await async recovery 后再 listen。
 - server shutdown 主动 cancel 时仍由正常 callback finalization；如果进程来不及完成，startup recovery 补做。
 
 ## 8. Event / Trace 设计
@@ -757,7 +784,7 @@ async finalizeAndDrain(runId: string, workspaceId: string): Promise<void> {
 }
 ```
 
-稳定 reason code：`git_unavailable`、`not_a_git_workspace`（通常触发 fallback，不直接失败）、`permission_denied`、`timeout`、`entry_limit`、`snapshot_corrupt`、`path_outside_workspace`、`unknown`。
+稳定 reason code：`git_unavailable`、`not_a_git_workspace`（通常触发 fallback，不直接失败）、`permission_denied`、`timeout`、`entry_limit`、`snapshot_corrupt`、`path_outside_workspace`、`workspace_ownership_lost`、`unknown`。
 
 ### 8.4 Handoff event
 
@@ -823,7 +850,7 @@ web/src/components/trace/ValidationTraceCard.tsx
 web/src/components/trace/TraceCompleteness.tsx
 ```
 
-现有 `ThreadEvent.tsx` 保留通用 shell、F002 run/escalation renderer，把 F003 类型委托给专用 cards，避免继续膨胀。
+现有 `web/src/components/thread/ThreadEvent.tsx` 保留通用 shell、F002 run/escalation renderer，把 F003 类型委托给专用 cards，避免继续膨胀。新增 trace cards 与既有约定同级嵌套于 `web/src/components/trace/`。
 
 ### 9.2 Thread
 
@@ -862,7 +889,7 @@ web/src/components/trace/TraceCompleteness.tsx
 | final scan 超时/权限失败 | scan_failed；Run status 不变；继续 handoff/unlock |
 | file changes 达上限 | 已记录部分可分页，event `scan_truncated=true`，completeness partial |
 | evidence target missing | query/export 返回 missing；新 handoff/validation 写入越界 ref 则拒绝 |
-| DB finalization 失败 | 记录 server error；finally 解锁；state 未 finalized 供 startup recovery |
+| DB finalization 失败 | 持锁有界重试；仍失败则解锁/drain。恢复时仅在锁仍属于旧 Run 时重扫，否则以 `workspace_ownership_lost` scan failure + missing evidence 收敛，不写旧 Run file records |
 | SSE 广播失败 | DB 已有 event，客户端 replay 补读 |
 | service restart | interrupted terminalization -> finalization -> unlock；再扫 terminal/unfinalized state |
 | export 中动态 Markdown | escape/fence/filename sanitize；不执行、不渲染为 raw HTML |
@@ -875,7 +902,7 @@ web/src/components/trace/TraceCompleteness.tsx
 - `codex-trace-normalizer.test.ts`：started/completed/output/approval、字段变体、unknown、dedupe。
 - `verification-classifier.test.ts`：正例、wrapper、Windows、substring false positive、unknown exit。
 - `trace-redaction.test.ts`：flag/env/url/bearer/token、长度、Unicode。
-- `workspace-snapshot.test.ts`：git status parse、dirty baseline、HEAD change、rename fallback、non-git hash、symlink/path scope、limits。
+- `workspace-snapshot.test.ts`：git status parse、dirty baseline 原样/修改后 commit、HEAD change、rename fallback、non-git hash、deterministic traversal、截断 snapshot 不产生虚假 add/delete、symlink/path scope、limits。
 - `evidence-ref.test.ts`：grammar、missing、scope mismatch、stable order。
 - `handoff.test.ts`：四种 terminal status、missing/truncated evidence、deterministic output。
 - `trace-export.test.ts`：escaping、fence、filename、missing/truncated sections。
@@ -889,8 +916,8 @@ web/src/components/trace/TraceCompleteness.tsx
 - queued cancel produces neither。
 - two Runs same workspace: second adapter start timestamp/event sequence is after first `handoff.created` and unlock。
 - duplicate exit/finalize callback produces no duplicate rows/events。
-- restart with running or terminal-unfinalized Run recovers and releases lock。
-- Issue trace/Run evidence cursor, scope errors, file pagination, export response。
+- restart with running or terminal-unfinalized Run recovers and releases lock；DB finalization 失败后下一 Run 推进再重启时，旧 Run 只产生 ownership-lost failure，不产生 file records。
+- Issue trace/Run evidence cursor、scope errors、file pagination、逐 Run/Issue completeness、public resolver/export 不内联 raw output。
 - SSE replay includes F003 events by event sequence。
 
 ### 11.3 UI
@@ -926,6 +953,9 @@ web/src/components/trace/TraceCompleteness.tsx
 | File IO 在 transaction 外，最终写入在 transaction 内 | 避免长 SQLite 写锁，同时用二次 CAS 保证幂等 | 扫描全程持 DB transaction；阻塞其他请求 |
 | Handoff 确定性生成，不调用 LLM | terminal path 快、可测、可恢复；F003 只需要最小 packet | 再启动 summarizer agent；引入递归 Run/失败/成本 |
 | event preview + file record pagination | Thread 可读且完整已记录数据可恢复 | event 保存全部；大 repo 拖慢 SSE/UI |
+| public resolver 只返回 target metadata | refs 可追溯且不会绕过 trace/export 的 raw output 边界 | 内联目标 event；重新暴露大日志和潜在秘密 |
+| snapshot 截断时只保留可证明变化 | partial evidence 仍必须逐条可信 | 直接 diff 两个部分 manifest；会制造虚假 add/delete |
+| ownership 丢失的恢复 fail closed | 解锁继续队列后无法可靠重建旧 Run terminal view | 从当前 workspace 重扫；会把下一 Run 归到旧 Run |
 | 旧 Run 不回填 evidence | 无 baseline 无法可靠重建“那一轮”净变化 | 用当前 workspace 猜历史；制造伪证据 |
 | 无公开 validation write API | 防止客户端伪造 pass/fail；F004 走内部 service | 通用 POST event；安全/状态语义不清 |
 | 锁释放统一归 RunDispatch finalizer | 消除 RunService/Dispatch 双重释放并建立唯一 terminal 收尾出口 | 各 terminal method 自己释放；顺序分散易回归 |
@@ -943,6 +973,6 @@ web/src/components/trace/TraceCompleteness.tsx
 F003 稳定后：
 
 - `docs/personahub-system-design.md` 增加 `RunTraceState` / `RunFileChange`，说明 Handoff P0 仍内联 event。
-- `docs/personahub-architecture.md` 更新实际 Adapter interface（`onTrace`、structured capability）和 terminal finalization/lock 顺序；修正其中“ThreadEvent id 全局单调”与当前 `event_sequence` 实现的表述差异。
+- `docs/personahub-architecture.md` 更新实际 Adapter interface（`onTrace`、structured capability）和 terminal finalization/lock 顺序；修正其中“ThreadEvent id 全局单调”与当前 `event_sequence` 实现的表述差异，并确认 typed evidence refs（`event:` / `file-change-set:` / future `artifact:`）是唯一演进 contract。
 - `CLAUDE.md` 的“现状”更新 F001/F002/F003 状态，但只在本 feature 实现完成时执行。
 - `BACKLOG.md` 按 review/done 状态更新；设计阶段不提前标 done。

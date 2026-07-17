@@ -4,7 +4,7 @@ related_features: [F002, F003, F004]
 topics: [multi-adapter, manual-routing, claude-code, opencode, auth, security, v0.1.4]
 doc_kind: tasks
 created: 2026-07-16
-updated: 2026-07-16
+updated: 2026-07-17
 ---
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）- 任务
@@ -101,7 +101,7 @@ updated: 2026-07-16
 
 ## Phase 7：Handoff Context与Routing纯逻辑
 
-- [ ] **T049 [P]**（`FR-005`, `FR-006`, `AC-003`, `AC-004`）：添加RunContextBuilder测试；普通implementation/consult使用latest eligible prior handoff，validator严格绑定`implementation_run_id`对应handoff/evidence/files/tests，并覆盖Validating期间更新consult handoff不得串入、findings、first Run、missing refs、Windows path和size limit。
+- [ ] **T049 [P]**（`FR-005`, `FR-006`, `AC-003`, `AC-004`）：添加RunContextBuilder测试；普通implementation/consult使用latest eligible prior handoff，validator严格绑定`implementation_run_id`对应handoff/evidence/files/tests，并覆盖Validating期间更新consult handoff不得串入、trusted evidence resolver allowlist 拒绝 `run.output` payload、findings、first Run、missing refs、Windows path和size limit。
 - [ ] **T050**（`FR-005`, `FR-006`）：实现带source policy的统一RunContextBuilder并替换F002手拼context；validator设置`context_source_run_id=implementation_run_id`，其他Run记录实际latest source。
 - [ ] **T051 [P]**（`FR-004`, `FR-007`, `AC-002`, `AC-005`）：添加expected-role/purpose classifier矩阵，覆盖Inbox/Ready/Running/Validating/Done/Blocked、multi-capability、forced consult、不能forced workflow和consult role始终非空。
 - [ ] **T052**（`FR-004`, `FR-007`）：实现pure routing classifier；Running期望implementation，Validating期望validator，未命中持久化`role=consult`。

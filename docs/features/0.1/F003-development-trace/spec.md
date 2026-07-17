@@ -4,7 +4,7 @@ related_features: [F001, F002, F004, F005]
 topics: [development-trace, evidence, command-events, file-change-events, handoff, validation-events, markdown-export, v0.1.2]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-15
+updated: 2026-07-17
 ---
 
 # F003：Development Trace
@@ -161,9 +161,10 @@ F002 已允许用户从 primary Thread 启动 Codex Run，并查看状态和日�
 - P0 command evidence 只接受 adapter structured event 或 approval hook 直接观察到的命令；普通 `run.output` 不升级为 confirmed command evidence。
 - 文件证据描述的是 Run baseline 与 final snapshot 的净变化，不宣称能证明每一个中间写入动作。
 - 文件扫描失败只降低 trace 完整性，不改变 Run 的 completed/failed/cancelled/interrupted 结果。
-- finalization 必须在 workspace 锁仍由该 Run 持有时执行；无论 finalization 成败都必须最终释放锁并继续队列。
+- 任何读取 workspace 的 finalization 必须在 workspace 锁仍由该 Run 持有时执行；无论 finalization 成败都必须最终释放锁并继续队列。恢复时若 ownership 已丢失，只允许在不读取 workspace 的前提下持久化 scan failure/handoff missing evidence 并收敛状态。
+- finalization DB 提交失败且锁已释放后，除非系统能证明 workspace 尚未推进，否则恢复流程不得重新扫描并归因给旧 Run；必须以稳定 reason code 收敛为 unavailable/missing evidence。
 - 所有 path 对外使用 workspace-relative 形式；越出 workspace、无法规范化或包含 NUL 的 path 不进入 evidence。
-- 展示可截断，持久化的文件变更可分页；达到扫描安全上限时必须标记 `scan_truncated`，不能暗示列表完整。
+- 展示可截断，持久化的文件变更可分页；达到扫描安全上限时必须标记 `scan_truncated`，且只有能由 snapshot coverage 证明的变化才可持久化，不能把“未扫描到”当作新增或删除。
 
 ## 4. 需求
 
@@ -279,7 +280,7 @@ Thread 和 Inspector 应提供适合实时观察与复盘的 trace 视图。
 - **TR-006**：`handoff.created` 在 file event 之后写入；同一 Run 最多一个。
 - **TR-007**：validation contract 支持 requested/finding/passed/failed/blocked；finding severity 为固定枚举，file refs 可选。
 - **TR-008**：所有事件先写 SQLite 再广播，沿用 Thread 内 `event_sequence` 排序、event id cursor 和 SSE replay。
-- **TR-009**：event payload 不复制完整 command output 或完整 diff；使用摘要和 evidence ref 避免重复存储。
+- **TR-009**：event payload 不复制完整 command output 或完整 diff；使用摘要和 evidence ref 避免重复存储。Trace/evidence query 与 export 解析 `run.output` ref 时只返回最小目标 metadata，不内联原始 output payload。
 
 ### API / 接口需求
 
@@ -287,7 +288,7 @@ Thread 和 Inspector 应提供适合实时观察与复盘的 trace 视图。
 - **IR-002**：`GET /api/runs/:run_id/evidence` 返回该 Run 的 trace events，并支持 file changes 分页。
 - **IR-003**：`GET /api/issues/:issue_id/trace/export` 返回 UTF-8 Markdown attachment；后端不落盘。
 - **IR-004**：不存在的 Issue/Run 返回既有结构化 `ISSUE_NOT_FOUND` / `RUN_NOT_FOUND`；非法 cursor/page 参数返回结构化校验错误。
-- **IR-005**：查询和导出显式表达 `resolved`、`missing`、`truncated`、`unavailable`，不静默丢证据。
+- **IR-005**：查询和导出显式表达 `resolved`、`missing`、`truncated`、`unavailable`，不静默丢证据；Issue trace 同时返回逐 Run completeness，queued 且从未 running 的 Run 明确为 not applicable，不参与 Issue 聚合；聚合规则固定且不受 event 分页影响。
 - **IR-006**：F003 不新增公开 validation event 写接口；F004 通过内部 service contract 写入。
 
 ### UX 需求
@@ -311,6 +312,7 @@ Thread 和 Inspector 应提供适合实时观察与复盘的 trace 视图。
 - **NFR-006（本地优先）**：evidence 和导出均来自本地 SQLite/workspace，不依赖云服务，导出不污染 workspace。
 - **NFR-007（兼容性）**：支持 Windows path 和常见 PowerShell/cmd/npm 命令形态，不假设 Unix shell。
 - **NFR-008（可维护性）**：遵循 `routes -> services -> repositories -> db` 与 `components -> hooks -> apiClient` 分层，单文件 350 行硬上限。
+- **NFR-009（归因安全）**：file-change record 必须可由 baseline/final workspace view 或明确 coverage 证明；workspace 可能在锁释放后推进时 fail closed，不把当前状态归因给旧 Run。
 
 ## 5. 关键实体 / 概念
 
@@ -362,13 +364,13 @@ workspace lock acquired
 - [ ] **AC-001**（`FR-001`, `TR-001` - `TR-003`）：Codex/Fake adapter 的结构化命令信号按序持久化并显示，缺失能力不伪造 evidence。
 - [ ] **AC-002**（`FR-002`, `TR-004`, `NFR-005`）：常见验证命令被保守分类，pass/fail/unknown 与 exit 状态一致。
 - [ ] **AC-003**（`FR-003`, `DR-002`, `NFR-002`）：baseline 在 adapter 前获取；终态扫描/handoff 在释放锁和启动下一 Run 前完成。
-- [ ] **AC-004**（`FR-003`, `DR-003`, `NFR-003`）：新增/修改/删除正确；大列表 event 截断但已记录数据可分页。
+- [ ] **AC-004**（`FR-003`, `DR-003`, `NFR-003`, `NFR-009`）：新增/修改/删除正确；dirty 内容被原样 commit 不误报；大列表 event 截断但已确认数据可分页，未覆盖路径不产生虚假 added/deleted。
 - [ ] **AC-005**（`FR-004`, `NFR-004`）：refs 可解析、缺失可见、跨 Issue/Thread 引用被拒绝。
 - [ ] **AC-006**（`FR-005`, `TR-006`, `NFR-001`）：started Run 自动且幂等地产生一个 handoff；失败/取消/恢复路径包含风险和缺失证据。
 - [ ] **AC-007**（`FR-006`, `IR-006`）：validation events 可由内部 contract 写入和展示，但 F003 不改变 Issue 状态，也无公开写接口。
-- [ ] **AC-008**（`FR-007`, `IR-001` - `IR-005`）：Issue trace、Run evidence 和 Markdown export 在多 Run、缺失、截断场景下结果稳定。
+- [ ] **AC-008**（`FR-007`, `IR-001` - `IR-005`, `TR-009`）：Issue trace、Run evidence 和 Markdown export 在多 Run、缺失、截断场景下结果稳定；逐 Run/Issue 聚合 completeness 明确，响应和导出不含 raw `run.output` payload。
 - [ ] **AC-009**（`FR-008`, `UX-001` - `UX-008`）：Thread/Inspector 可读展示 trace、完整性和 export，且 SSE 新事件能刷新；F002 日志、取消、composer 护栏/反馈和 escalation blocker 展示回归通过。
-- [ ] **AC-010**（`NFR-001`, `NFR-002`）：重复 finalization、服务重启、scan failure 均不产生重复证据或永久锁。
+- [ ] **AC-010**（`NFR-001`, `NFR-002`, `NFR-009`）：重复 finalization、服务重启、scan failure、DB finalization failure 后 workspace 推进均不产生重复/错误归因证据或永久锁。
 - [ ] **AC-011**（`NFR-004`, `NFR-007`）：敏感 command 片段被 redaction；Windows path/PowerShell/cmd 命令样例通过。
 - [ ] **AC-012**（`TR-008`）：刷新/断线重连后 trace 仍按 Thread `event_sequence` 去重排序。
 
@@ -379,7 +381,7 @@ workspace lock acquired
 - Codex protocol command normalizer 与 adapter item correlation。
 - verification command classifier（npm/pnpm/yarn/bun、pytest/vitest/jest、cargo/go/dotnet、lint/typecheck/build；含 PowerShell/cmd wrapper）。
 - command redaction、长度限制和 workspace-relative path 规范化。
-- git/filesystem snapshot diff、change type、limits 和 failure reason。
+- git/filesystem snapshot diff、change type、dirty 内容原样 commit、coverage/frontier、limits 和 failure reason。
 - typed evidence ref parser/resolver/scope validator。
 - Handoff builder、completeness builder、Markdown renderer。
 
@@ -389,8 +391,8 @@ workspace lock acquired
 - git/non-git workspace baseline 与 terminal scan。
 - completed/failed/cancelled/interrupted/escalation 的 finalization 顺序。
 - 同 workspace 两个 Run：前一 Run handoff 提交后才释放锁并启动下一 Run。
-- finalization 重试与重启恢复无重复 event。
-- Run evidence 分页、Issue trace、missing refs 和 Markdown headers/content。
+- finalization 重试与重启恢复无重复 event；DB finalization failure 后下一 Run 推进时旧 Run fail closed，不重新归因 file records。
+- Run evidence 分页、Issue trace、逐 Run/Issue completeness、missing refs、raw output 非内联和 Markdown headers/content。
 
 ### UI 测试
 
@@ -435,6 +437,8 @@ workspace lock acquired
 | 非 git 大目录扫描昂贵 | terminal 收尾慢、队列等待 | ignore 规则、时间/文件/大小上限、hash 策略和 scan_truncated；不无限扫描 |
 | 命令含 token/secret | DB/UI/export 泄密 | 写事件前统一 redaction + 长度限制；不复制完整环境变量和原始 protocol 消息 |
 | finalization 崩溃或重复回调 | 重复 handoff、锁遗留 | 持久化 trace state，事务内 claim/finalize，启动恢复与幂等测试 |
+| finalization DB 失败后解锁并继续队列 | 恢复扫描把下一 Run 的修改归到旧 Run | 有界重试；无法证明 workspace 未推进时只生成稳定 scan failure/missing evidence，不重建旧 Run file records |
+| baseline/final snapshot 在不同位置截断 | 未扫描路径被误判为 added/deleted | 保存 deterministic coverage/frontier；只持久化 coverage 可证明的变化，其他差异标 unknown/truncated |
 | evidence ref 越界 | F004/F005 读取错误 Issue 的证据 | typed resolver 以当前 Issue/Thread/Run 做 scope validation |
 | validation UI 被误解为自动 Done | 产品语义超前 | F003 只显示 trace，明确“recorded result”；状态流转留给 F004 |
 
@@ -458,6 +462,7 @@ workspace lock acquired
 | `FR-006` | PRD 7.5；F004 event contract | `AC-007` |
 | `FR-007`, `FR-008` | PRD v0.1.2 Markdown export / UI | `AC-008`, `AC-009`, `AC-012` |
 | `NFR-001`, `NFR-002` | F002 recovery/lock/queue 不变量 | `AC-003`, `AC-010` |
+| `NFR-009` | F003 file evidence 归因与可信度边界 | `AC-004`, `AC-010` |
 
 ## 14. 与旧版 spec 相比的修订
 

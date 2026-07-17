@@ -4,7 +4,7 @@ related_features: [F001, F002, F004, F005]
 topics: [development-trace, evidence, runtime, api, ui, tests, v0.1.2]
 doc_kind: tasks
 created: 2026-07-15
-updated: 2026-07-15
+updated: 2026-07-17
 ---
 
 # F003：Development Trace - 任务
@@ -31,7 +31,7 @@ updated: 2026-07-15
 
 ## Phase 2：共享类型、错误与 Schema v3
 
-- [ ] **T005**（`DR-001`, `DR-003` - `DR-006`）：先添加 shared 类型编译测试/使用点，覆盖新增 ThreadEvent types、trace enums、RunFileChange、TraceCompleteness 和 API response。
+- [ ] **T005**（`DR-001`, `DR-003` - `DR-006`）：先添加 shared 类型编译测试/使用点，覆盖新增 ThreadEvent types、trace enums、RunFileChange、typed `evidence_refs: string[]`、TraceCompleteness、最小 EvidenceResolution target metadata、Run trace_applicable/null completeness 和 Issue 聚合 completeness API response。
 - [ ] **T006**（`DR-001`, `DR-003` - `DR-006`, `NFR-008`）：新增 `shared/src/types/trace.ts` 并从 `types/index.ts` re-export；扩展 `ThreadEventType`，避免现有 index 超过文件上限。
 - [ ] **T007**（`IR-004`）：先添加错误映射测试，再新增 `INVALID_QUERY`、`EVIDENCE_REF_INVALID`、`EVIDENCE_SCOPE_MISMATCH` 及 HTTP status 映射。
 - [ ] **T008**（`DR-002`, `DR-003`）：添加 v3 migration 集成测试，覆盖空库、v2 升级、重复启动、既有 F001/F002 数据不变和索引存在。
@@ -47,8 +47,8 @@ updated: 2026-07-15
 
 ## Phase 3：Evidence、Redaction 与 Verification 纯逻辑
 
-- [ ] **T016 [P]**（`FR-004`, `AC-005`）：添加 typed evidence ref parser/resolver 单元测试，覆盖 event/file-change-set、去重顺序、missing、非法 grammar、Issue/Thread/Run scope mismatch。
-- [ ] **T017**（`FR-004`, `NFR-004`）：实现 `services/evidence.ts` 的 parse/resolve/validateWriteScope；查询 missing 不抛错，新写入非法/越界 ref 抛结构化错误。
+- [ ] **T016 [P]**（`FR-004`, `DR-004`, `AC-005`, `TR-009`）：添加 typed evidence ref parser/resolver 单元测试，覆盖 event/file-change-set、去重顺序、missing、非法 grammar、Issue/Thread/Run scope mismatch；public resolver 对普通 event 和 `run.output` 都只返回 target metadata、不返回 payload，trusted internal resolver 使用显式 allowlist 且拒绝 `run.output`。
+- [ ] **T017**（`FR-004`, `NFR-004`, `TR-009`）：实现 `services/evidence.ts` 的 parse/resolve/validateWriteScope、public metadata-only resolution 与 trusted internal allowlist；查询 missing 不抛错，新写入非法/越界 ref 抛结构化错误，raw output 不进入 trace/export/F004/F005 context。
 - [ ] **T018 [P]**（`NFR-004`, `AC-011`）：添加 trace text redaction 测试，覆盖 flag、`--key=value`、Bearer、credential URL、高置信 token、Unicode、长度限制和 redaction failure。
 - [ ] **T019**（`TR-002`, `TR-003`, `NFR-004`）：实现集中式 `runtime/trace/redaction.ts`；command/summary/export 复用同一函数。
 - [ ] **T020 [P]**（`FR-002`, `NFR-005`, `NFR-007`）：添加 verification classifier 测试矩阵，覆盖 npm/pnpm/yarn/bun、vitest/jest/pytest/cargo/go/dotnet/maven/gradle、lint/typecheck/build、PowerShell/cmd wrapper 和 false positives。
@@ -61,11 +61,11 @@ updated: 2026-07-15
 ## Phase 4：Workspace Baseline 与 File Change Scanner
 
 - [ ] **T024**（`FR-003`, `NFR-003`, `NFR-007`）：添加 workspace-relative path/ignore/limit 单元测试，覆盖 Windows 反斜杠、空格、NUL、`..`、symlink 越界、DB/WAL/SHM 和缓存目录。
-- [ ] **T025**（`FR-003`, `NFR-004`）：实现 path normalization、集中 limits/ignore constants 和 snapshot 类型。
-- [ ] **T026**（`FR-003`, `AC-004`）：添加 git scanner 集成测试，覆盖 clean baseline 后 add/modify/delete、pre-existing dirty file 再修改、untracked、HEAD commit change、rename fallback、unborn repo、git timeout/error。
-- [ ] **T027**（`FR-003`, `NFR-003`）：实现 `runtime/trace/git-workspace-scanner.ts`，使用 executable + argv、`shell:false`，不保存 patch、不执行写 git 命令。
-- [ ] **T028**（`FR-003`, `AC-004`, `AC-011`）：添加 filesystem fallback 集成测试，覆盖 non-git add/modify/delete、小文件 hash、大文件 metadata confidence、ignore、entry/time/persist limits。
-- [ ] **T029**（`FR-003`, `NFR-003`, `NFR-007`）：实现有界 `runtime/trace/filesystem-workspace-scanner.ts`，不跟随 workspace 外 symlink。
+- [ ] **T025**（`FR-003`, `NFR-004`, `NFR-009`）：实现 path normalization、集中 limits/ignore constants，以及含 deterministic traversal、`scan_complete`/`scan_truncated`/停止原因的 snapshot 类型。
+- [ ] **T026**（`FR-003`, `AC-004`, `NFR-009`）：添加 git scanner 集成测试，覆盖 clean baseline 后 add/modify/delete、pre-existing dirty file 被原样 commit（不记录）、修改后 commit、删除后 commit、untracked、HEAD commit candidate 复核、rename fallback、unborn repo、git timeout/error。
+- [ ] **T027**（`FR-003`, `NFR-003`, `NFR-009`）：实现 `runtime/trace/git-workspace-scanner.ts`，使用 executable + argv、`shell:false`；HEAD diff 只产候选路径，最终比较 baseline/final workspace view，不保存 patch、不执行写 git 命令。
+- [ ] **T028**（`FR-003`, `AC-004`, `AC-011`, `NFR-009`）：添加 filesystem fallback 集成测试，覆盖 non-git add/modify/delete、小文件 hash、大文件 metadata confidence、ignore、deterministic lexical traversal、baseline/final 在不同 frontier 截断时不产生虚假 added/deleted、entry/time/persist limits。
+- [ ] **T029**（`FR-003`, `NFR-003`, `NFR-007`, `NFR-009`）：实现有界 `runtime/trace/filesystem-workspace-scanner.ts`，不跟随 workspace 外 symlink；snapshot 不完整时只记录两侧都观察到且 fingerprint 变化的 modified，persist limit 只截断已确认且已排序的 changes。
 - [ ] **T030**（`FR-003`, `TR-005`）：添加 scanner selector/fallback 测试，确保 git unavailable/non-git 使用 filesystem，权限/超时产生稳定 reason code 和 partial/unavailable。
 - [ ] **T031**（`FR-003`）：实现 `workspace-scanner.ts` facade 和 snapshot serialization/version check。
 
@@ -88,13 +88,13 @@ updated: 2026-07-15
 
 - [ ] **T040**（`FR-003`, `DR-002`, `AC-003`）：添加 `prepareRun()` 集成测试，断言取得锁后、`run.started`/adapter mutation 前固化 adapter trace capability 并持久化 baseline；baseline failure 不阻止 Run。
 - [ ] **T041**（`FR-003`）：实现 `DevelopmentTraceService.prepareRun()` 和 trace state 创建/覆盖规则。
-- [ ] **T042**（`FR-003` - `FR-005`, `NFR-001`）：添加 `finalizeRun()` 集成测试，覆盖 file records + file event + handoff + finalized_at 同事务、事件顺序和广播在 commit 后。
+- [ ] **T042**（`FR-003` - `FR-005`, `NFR-001`）：添加 `finalizeRun()` 集成测试，覆盖 file records + file event + handoff + finalized_at 同事务、事件顺序、广播在 commit 后，以及 finalization DB 写失败时仍持锁进行有界重试。
 - [ ] **T043**（`FR-003` - `FR-005`, `TR-005`, `TR-006`）：实现 terminal final snapshot、file preview/records、handoff、completeness 聚合和 transaction/broadcast。
 - [ ] **T044**（`FR-003`, `NFR-001`）：添加重复/并发 finalization 测试，确保同 Run 最多一个 file event、一个 handoff、一个 file set。
 - [ ] **T045**（`FR-003`, `NFR-001`）：实现 finalization 前后幂等检查和 `finalized_at IS NULL` CAS；竞争 loser 不广播草稿事件。
-- [ ] **T046**（`FR-003`, `FR-005`）：添加 baseline missing/corrupt、scanner timeout/permission、builder missing evidence 测试，确保 scan_failed 后仍 handoff/finalized。
-- [ ] **T047**（`FR-003`, `FR-005`）：实现 failure draft 和稳定 reason code 收敛；不得重写 Run terminal status。
-- [ ] **T048**（`FR-006`, `AC-007`）：添加 ValidationTraceService 测试，覆盖五类 payload、severity、optional file/line、ref scope，以及不修改 Issue status。
+- [ ] **T046**（`FR-003`, `FR-005`, `NFR-009`）：添加 baseline missing/corrupt、scanner timeout/permission、workspace ownership lost、builder missing evidence 测试，确保 scan_failed 后仍 handoff/finalized；ownership lost 路径不读取 workspace、不启动 scanner、不写 file records，只使用已持久化 Run/trace state。
+- [ ] **T047**（`FR-003`, `FR-005`, `NFR-009`）：实现 failure draft、`workspace_ownership_lost` 等稳定 reason code 和 DB retry 常量/收敛；不得重写 Run terminal status，无法证明锁 ownership 时 fail closed。
+- [ ] **T048**（`FR-006`, `TR-007`, `AC-007`）：添加 ValidationTraceService 测试，覆盖五类 payload、severity、optional file/line、ref scope，以及不修改 Issue status。
 - [ ] **T049**（`FR-006`, `IR-006`）：实现内部 ValidationTraceService；不注册公开 POST route。
 
 **Checkpoint 6**：单独调用 trace service 已满足 file/handoff/validation contract，且 finalization 可幂等重试。
@@ -109,7 +109,7 @@ updated: 2026-07-15
 - [ ] **T055**（`NFR-002`, `TR-008`）：把 AgentRunner callback、RunDispatch cancel/escalation/error path 全部收敛到 async `finalizeAndDrain()`；`finally` 必须解锁和 drain，外层事务的 pending events 必须在 commit 后广播。
 - [ ] **T056**（`FR-003`, `AC-003`）：添加 queued cancel 测试，确保无 baseline/file/handoff，且异常持锁可释放。
 - [ ] **T057**（`NFR-002`）：修正 queued cancel/blocked Issue queued Runs 的 lock/queue 行为，不进入 trace finalization。
-- [ ] **T058**（`NFR-001`, `AC-010`）：添加 restart recovery 测试，覆盖 running -> interrupted -> finalize -> unlock、terminal-unfinalized 补做、DB finalization failure 后下次恢复、无重复 events。
+- [ ] **T058**（`NFR-001`, `NFR-009`, `AC-010`）：添加 restart recovery 测试，覆盖 running -> interrupted -> finalize -> unlock、仍持有旧 Run 锁的 terminal-unfinalized 正常补做、DB finalization failure 解锁后下一 Run 修改 workspace 再重启时旧 Run 仅写 `workspace_ownership_lost` scan_failed/handoff 且无 file records、无重复 events。
 - [ ] **T059**（`NFR-001`）：把 stale recovery 改为 async orchestrated recovery；`main()` 在 listen/queue drain 前 await，保留 F002 stale lock 行为。
 - [ ] **T060**（`NFR-002`, `AC-003`）：添加同 workspace 双 Run 端到端集成测试，第二 adapter 不能在第一 handoff commit 前启动；不同 workspace 仍可并行。
 
@@ -117,11 +117,11 @@ updated: 2026-07-15
 
 ## Phase 8：Trace Query 与 Markdown Export API
 
-- [ ] **T061**（`IR-001`, `IR-002`, `AC-008`）：添加 DevelopmentTraceService query 测试，覆盖多 Run、event type filter、Run payload scope、cursor/limit、file cursor scope、missing/truncated completeness。
-- [ ] **T062**（`FR-007`, `IR-001`, `IR-002`）：实现 Issue trace/Run evidence query service 和 shared response；不返回完整 run.output/fingerprints/baseline JSON。
-- [ ] **T063**（`FR-007`, `AC-008`）：添加 Markdown renderer snapshot/semantic 测试，覆盖多 Run、无 tests、scan failure、missing ref、truncation、Unicode、code fence/HTML escaping 和 filename sanitize。
-- [ ] **T064**（`FR-007`, `NFR-004`, `NFR-006`）：实现 `trace-export.ts`，分页读取 evidence、应用 export 上限，在内存生成 UTF-8 Markdown。
-- [ ] **T065**（`IR-001` - `IR-005`）：添加 route 集成测试，覆盖三个 GET endpoint、Content-Type/Disposition/Cache-Control、404、invalid limit/cursor 和结构化 error。
+- [ ] **T061**（`IR-001`, `IR-002`, `AC-008`, `TR-009`）：添加 DevelopmentTraceService query 测试，覆盖多 Run、event type filter、Run payload scope、cursor/limit、file cursor scope、逐 Run completeness、queued never-started 为 not applicable/null 且不参与聚合、无 started Run 的 `no_started_runs`、Issue worst-of 聚合且不随分页变化、started 旧 Run unavailable + 最新 Run complete、missing/truncated，以及 `run.output` ref 只返回 metadata。
+- [ ] **T062**（`FR-007`, `IR-001`, `IR-002`, `TR-009`）：实现 Issue trace/Run evidence query service 和 shared response；返回逐 Run completeness 与稳定 Issue 聚合，不返回完整 run.output/fingerprints/baseline JSON，public evidence resolution 不内联任何 event payload。
+- [ ] **T063**（`FR-007`, `AC-008`, `TR-009`）：添加 Markdown renderer snapshot/semantic 测试，覆盖多 Run 逐项 completeness、Issue 聚合、无 tests、scan failure、missing ref、truncation、`run.output` ref 不渲染 raw chunk、Unicode、code fence/HTML escaping 和 filename sanitize。
+- [ ] **T064**（`FR-007`, `NFR-004`, `NFR-006`, `TR-009`）：实现 `trace-export.ts`，分页读取 evidence、仅使用 metadata-only public resolution、应用 export 上限，在内存生成 UTF-8 Markdown；不得读取 raw output payload。
+- [ ] **T065**（`IR-001` - `IR-005`, `TR-009`）：添加 route 集成测试，覆盖三个 GET endpoint、Content-Type/Disposition/Cache-Control、404、invalid limit/cursor、结构化 error，并断言 trace/evidence/export 响应不含 raw `run.output` payload。
 - [ ] **T066**（`IR-001` - `IR-006`）：新增 `api/routes/traces.ts` 并注册 services/routes；确认没有公开 validation event 写接口。
 - [ ] **T067**（`TR-008`, `AC-012`）：扩展 SSE replay 集成测试，验证 F003 events 使用现有 `event_sequence`、event id cursor、先写库再广播和断线补读。
 
@@ -137,7 +137,7 @@ updated: 2026-07-15
 - [ ] **T073**（`UX-003`）：实现 FileChangeTraceCard 和 file list pagination。
 - [ ] **T074 [P]**（`UX-004`, `UX-005`, `UX-007`）：添加 Handoff/Validation cards 测试，覆盖 risks、missing evidence、next action、finding severity、pass/fail/blocked 和“Recorded result”语义。
 - [ ] **T075**（`UX-004`, `UX-005`）：实现 HandoffTraceCard / ValidationTraceCard。
-- [ ] **T076**（`UX-001` - `UX-005`, `NFR-008`）：重构现有 `ThreadEvent.tsx` 为通用 shell + F003 renderer dispatch；unknown type 保留 generic fallback，文件不得超过 350 行。
+- [ ] **T076**（`UX-001` - `UX-005`, `NFR-008`）：重构现有 `web/src/components/thread/ThreadEvent.tsx` 为通用 shell + F003 renderer dispatch；unknown type 保留 generic fallback，文件不得超过 350 行。
 - [ ] **T077**（`UX-006`, `UX-007`, `UX-008`）：添加 Inspector evidence section 测试，覆盖 complete/partial/unavailable、tests、changed files、handoff、validation result、export loading/error/success；同时回归 F002 Run cancel 和 credential isolation/pre-execution/post-hoc 三类 escalation blocker 能力边界文案。
 - [ ] **T078**（`FR-008`, `UX-006` - `UX-008`）：实现 Inspector evidence summary、View all 和 Export Markdown；保留 F002 Run Logs/Cancel/Blocked UI。
 - [ ] **T079**（`AC-009`, `AC-012`, `UX-008`）：扩展 App/Thread UI 集成测试，模拟 SSE 新 command/file/handoff event，验证 query refresh、排序去重，并回归 F002 连续 `run.output` 合并、`run.output_truncated` 标记、无 adapter/Blocked/active Run composer 护栏、提交成功清空输入框和 mutation error 渲染。多 adapter selector 由 F005 T089-T091 覆盖，不在本任务重复实现。
@@ -152,7 +152,7 @@ updated: 2026-07-15
 - [ ] **T083**（`AC-008`, `AC-009`）：导出多 Run Issue Markdown，人工检查可读性、missing/truncated 标记、敏感信息 redaction、UTF-8 filename 和 workspace 无新增文件。
 - [ ] **T084**（`NFR-003`）：在中型 repository 记录 baseline/final scan 时间、DB/event 大小和 UI 展开体验；若超限只调整集中 limits/strategy，并同步 design 默认值。
 - [ ] **T085**（`DR-002`, `DR-003`）：更新 `docs/personahub-system-design.md`，加入 RunTraceState/RunFileChange，说明 handoff/event/ref P0 存储方式。
-- [ ] **T086**（`FR-001`, `NFR-001`, `NFR-002`, `TR-008`）：更新 `docs/personahub-architecture.md` 的实际 AgentAdapter `onTrace`、structured capability、terminal finalization/lock 顺序，并修正 cursor 描述与 `event_sequence` 实现一致。
+- [ ] **T086**（`FR-001`, `NFR-001`, `NFR-002`, `TR-008`）：更新并复核 `docs/personahub-architecture.md` 的实际 AgentAdapter `onTrace`、structured capability、terminal finalization/lock 顺序和 cursor 描述；确认 typed evidence refs（`event:` / `file-change-set:` / future `artifact:`）是唯一 contract，不恢复旧 `artifact_id[]` 表述。
 - [ ] **T087**（`AC-001` - `AC-012`）：逐项走查 `spec.md` 验收清单并勾选；任何不满足项不得以文档说明代替实现或测试。
 - [ ] **T088**：F003 进入 review/done 时更新 `BACKLOG.md`、本三件套 Status 和 `CLAUDE.md` 现状；保持已完成的 F001/F002 状态不变。
 
@@ -193,7 +193,7 @@ Phase 3 pure logic + Phase 4 scanners + Phase 5 adapter trace
 | `FR-007` Query / Export | T061-T069, T077-T083 |
 | `FR-008` Trace UI | T068-T079 |
 | `NFR-001/002` Recovery / Lock | T040-T060, T082 |
-| `NFR-003/004/005/007` Limits / Security / Trust / Windows | T018-T031, T063-T064, T081-T084 |
+| `NFR-003/004/005/007/009` Limits / Security / Trust / Windows / Attribution | T016-T031, T042-T047, T058, T061-T065, T081-T084 |
 
 ## 备注
 

@@ -4,7 +4,7 @@ related_features: [F001, F002, F003, F005]
 topics: [autonomous-validation, workflow, evidence-summary, state-machine, tests, v0.1.3]
 doc_kind: tasks
 created: 2026-07-16
-updated: 2026-07-16
+updated: 2026-07-17
 ---
 
 # F004：Autonomous Validation - 任务
@@ -60,7 +60,7 @@ updated: 2026-07-16
 - [ ] **T021**（`FR-003`, `NFR-005`）：实现`services/validation/result-parser.ts`；不得加入regex/自由Markdown fallback。
 - [ ] **T022 [P]**（`FR-004`, `FR-006`, `AC-004`, `AC-006`）：添加policy gate/round测试，覆盖handoff/file/test要求、partial/missing refs、scope mismatch、`nextCount >= max`边界和max非法。
 - [ ] **T023**（`FR-004`, `FR-006`, `NFR-002`）：实现`validation-policy-gate.ts`和稳定block reason映射。
-- [ ] **T024 [P]**（`FR-002`, `FR-005`, `AC-002`, `AC-005`）：添加validator/repair context builder测试；validator path 必须按 `implementation_run_id` 绑定 handoff/tests/files/refs，并覆盖后续 consult handoff 不得串入、goal、prior findings、missing completeness、Windows path、first round和128 KiB截断优先级。
+- [ ] **T024 [P]**（`FR-002`, `FR-005`, `AC-002`, `AC-005`）：添加validator/repair context builder测试；validator path 必须按 `implementation_run_id` 绑定 handoff/tests/files/refs，并覆盖后续 consult handoff 不得串入、trusted evidence resolver allowlist 拒绝 `run.output` payload、goal、prior findings、missing completeness、Windows path、first round和128 KiB截断优先级。
 - [ ] **T025**（`FR-002`, `FR-005`）：实现`validation-context-builder.ts`和下一implementation findings注入builder；validator evidence resolver强制使用目标`implementation_run_id` scope，禁止raw output/absolute path/secret。
 - [ ] **T026 [P]**（`FR-007`, `FR-008`, `AC-004`, `AC-007`）：添加same-origin和EvidenceSummary builder测试，覆盖provider/model组合、identity/policy、stable Markdown、escaping、500 refs/256 KiB truncation和trace completeness。
 - [ ] **T027**（`FR-007`, `FR-008`）：实现pure `same-origin.ts`和`evidence-summary-builder.ts`，不调用LLM。
