@@ -31,3 +31,10 @@ Thumbs.db
 npm-debug.log*
 server-stdout.txt
 server-stderr.txt
+
+# Local-only docs (kept on disk, not tracked)
+docs/research/
+docs/reviews/
+
+# Probe raw output streams
+server/scripts/codex-probe-*.jsonl
