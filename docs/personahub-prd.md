@@ -13,9 +13,11 @@ updated: 2026-07-18
 
 ## 修订记录
 
-| 日期 | 修订目的 | 修订内容 |
-| --- | --- | --- |
-| 2026-07-18 | 避免 v0.4 在 Workflow 抽象尚未经过跨场景验证时，同时铺开多个浅层非 coding workflow；让后续自动编排有可评价的数据基础 | 将 v0.4 调整为“扩展契约 + 按任务范式逐个验证的垂直切片”，优先做 Windows Troubleshooting，再按实测进入 knowledge/research 与 writing；明确多种 Issue Type 可以保留为方向，但不承诺同一版本全部成熟交付；将最小 AgentOps 原始信号前置到 v0.1–v0.3，v0.5 仍负责完整评价、分析 UI 与 trust scoring |
+| 日期 | 来源提交 | 修订目的 | 修订内容 |
+| --- | --- | --- | --- |
+| 2026-07-18 | `4d13cab` | 避免 v0.4 在 Workflow 抽象尚未经过跨场景验证时，同时铺开多个浅层非 coding workflow；让后续自动编排有可评价的数据基础 | 将 v0.4 调整为“扩展契约 + 按任务范式逐个验证的垂直切片”，优先做 Windows Troubleshooting，再按实测进入 knowledge/research 与 writing；明确多种 Issue Type 可以保留为方向，但不承诺同一版本全部成熟交付；将最小 AgentOps 原始信号前置到 v0.1–v0.3，v0.5 仍负责完整评价、分析 UI 与 trust scoring |
+| 2026-07-12 | `9c79555` | 在 Coordinator 自动编排前增加一条可独立交付的多 Agent 协作路径 | 新增 v0.1.4 手动多 Agent 路由：补齐 Codex / Claude Code / OpenCode adapter 与鉴权范围，在 Thread 中手动选择下一位 Agent，并通过 Handoff Packet 和 evidence refs 避免复制上下文；相应调整 v0.1 完成判据和 v0.2 Coordinator 边界 |
+| 2026-07-12 | `4af80c1` | 建立 PersonaHub 第一版正式产品真相源 | 创建完整 PRD，确定个人优先的 Agent Team OS 定位，以及 Project / Workspace / Issue / Thread / Room、Workflow Template、Validation、Evidence、Memory、Skill 等核心概念；给出 v0.1–v0.9 路线、信息架构、安全边界与 MVP 验收标准 |
 
 ## 1. 背景
 

@@ -11,9 +11,12 @@ updated: 2026-07-18
 
 ## 修订记录
 
-| 日期 | 修订目的 | 修订内容 |
-| --- | --- | --- |
-| 2026-07-18 | 同步 PRD 对 v0.4 渐进式多场景扩展和 AgentOps 前置数据采集的产品调整 | 明确非 coding Workflow 按任务范式逐个做垂直切片，不能把场景差异压成模板 JSON；补充 Windows 排障、knowledge/research、writing 三类执行与证据边界；明确 v0.1–v0.3 先保存可派生的最小原始信号，v0.5 再建设完整 AgentOps 聚合与评价能力 |
+| 日期 | 来源提交 | 修订目的 | 修订内容 |
+| --- | --- | --- | --- |
+| 2026-07-18 | `4d13cab` | 同步 PRD 对 v0.4 渐进式多场景扩展和 AgentOps 前置数据采集的产品调整 | 明确非 coding Workflow 按任务范式逐个做垂直切片，不能把场景差异压成模板 JSON；补充 Windows 排障、knowledge/research、writing 三类执行与证据边界；明确 v0.1–v0.3 先保存可派生的最小原始信号，v0.5 再建设完整 AgentOps 聚合与评价能力 |
+| 2026-07-17 | `4829752` | 让 F003 Development Trace 的事件回放和 evidence 引用契约与真实实现一致，并为 v0.3 Artifact 扩展保留兼容路径 | 将事件 cursor 从“全局递增 id”修正为稳定 ULID `id` 去重、Thread 内 `event_sequence` 排序；统一 v0.1 typed evidence refs（`event:` / `file-change-set:`），并约定 v0.3 通过新增 `artifact:` 前缀扩展而无需迁移已有引用 |
+| 2026-07-12 | `9c79555` | 同步前端样式与代码目录决策，降低业务逻辑和 UI 组件耦合 | 引用决策 0004，明确 `lib` / `hooks` / `types` 与 `components` 分层，组件不直接内嵌 API 调用，为后续桌面打包和可能的多端业务逻辑复用保留边界 |
+| 2026-07-12 | `4af80c1` | 建立支撑第一阶段产品路线的整体软件架构基线 | 创建分层架构，定义单进程本地运行模型、Workspace 锁恢复、Run 生命周期、Agent Adapter、SSE cursor/replay、Workflow/Validation、SQLite 存储、Artifact/Evidence 引用、前端边界、执行权限与 v0.7 daemon 演进路径 |
 
 ## 与 PRD / 数据模型文档的关系
 
