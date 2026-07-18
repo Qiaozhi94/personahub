@@ -1,16 +1,18 @@
 import type Database from "better-sqlite3";
 import type { Run, FailureReason, IssueStatus, ThreadEvent } from "@personahub/shared/types";
-import { IssueStatus as IS, RunStatus as RS, ThreadEventType, ActorType } from "@personahub/shared/types";
+import { IssueStatus as IS, RunStatus as RS, ThreadEventType, ActorType, CommandTraceCapability } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { RunService } from "./run.js";
 import type { WorkspaceLockService } from "./workspace-lock.js";
 import type { ThreadEventService } from "./thread-event.js";
+import type { DevelopmentTraceService } from "./development-trace.js";
 import type { AgentAdapterRegistry } from "../runtime/adapter-registry.js";
 import type { AgentRunner, EscalationParams } from "../runtime/agent-runner.js";
 import type { AgentConfigRepository } from "../repositories/agent-config.js";
 import type { IssueRepository } from "../repositories/issue.js";
 import type { ThreadRepository } from "../repositories/thread.js";
 import type { WorkspaceRepository } from "../repositories/workspace.js";
+import type { RunTraceRepository } from "../repositories/run-trace.js";
 import { AppError } from "../api/errors.js";
 
 export class RunDispatchService {
@@ -24,6 +26,8 @@ export class RunDispatchService {
     private workspaceRepo: WorkspaceRepository,
     private threadEventService: ThreadEventService,
     private agentRunner: AgentRunner,
+    private developmentTraceService: DevelopmentTraceService,
+    private runTraceRepo: RunTraceRepository,
     private db: Database.Database,
   ) {}
 
@@ -35,9 +39,17 @@ export class RunDispatchService {
       return run;
     }
 
-    const startedRun = this.runService.transitionToRunning(run.id);
+    let startedRun: Run | null;
+    try {
+      startedRun = this.prepareAndStart(run);
+    } catch (error) {
+      // prepareAndStart can throw (e.g. workspace/adapter deleted after create);
+      // never leave the just-acquired lock held.
+      this.workspaceLockService.releaseByRunId(run.id);
+      throw error;
+    }
     if (!startedRun) {
-      this.workspaceLockService.release(run.workspace_id);
+      this.workspaceLockService.releaseByRunId(run.id);
       return run;
     }
 
@@ -50,26 +62,51 @@ export class RunDispatchService {
         null,
         String(error),
       );
-      this.onRunTerminal(startedRun.id, startedRun.workspace_id);
+      await this.finalizeAndDrain(startedRun.id, startedRun.workspace_id);
     }
     return run;
   }
 
-  onRunTerminal(runId: string, workspaceId: string): void {
-    this.workspaceLockService.release(workspaceId);
-
-    const nextRun = this.runService.startNextQueuedRun(workspaceId);
-    if (nextRun) {
-      this.startAdapter(nextRun).catch(() => {
-        this.runService.transitionToFailed(
-          nextRun.id,
-          "spawn_failed" as FailureReason,
-          null,
-          "Failed to start adapter",
-        );
-        this.onRunTerminal(nextRun.id, workspaceId);
-      });
+  private prepareAndStart(run: Run): Run | null {
+    const workspace = this.workspaceRepo.getById(run.workspace_id);
+    if (!workspace) {
+      throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, "Workspace not found.");
     }
+
+    const adapterConfig = this.agentConfigRepo.getById(run.adapter_config_id);
+    if (!adapterConfig) {
+      throw new AppError(ErrorCode.ADAPTER_NOT_FOUND, "Adapter config not found.");
+    }
+
+    const adapter = this.adapterRegistry.getForConfig(adapterConfig);
+    const traceCapability = adapter.capabilities.supportsStructuredTrace
+      ? CommandTraceCapability.Supported
+      : CommandTraceCapability.Unsupported;
+
+    try {
+      this.developmentTraceService.prepareRun({ run, workspace, traceCapability });
+    } catch {
+      // baseline failure does not prevent Run
+    }
+
+    return this.runService.transitionToRunning(run.id);
+  }
+
+  async finalizeAndDrain(runId: string, workspaceId: string): Promise<void> {
+    try {
+      try {
+        this.developmentTraceService.finalizeRun(runId);
+      } catch {
+        // finalization failure still releases lock
+      }
+    } finally {
+      this.workspaceLockService.releaseByRunId(runId);
+      await this.startNextQueuedRun(workspaceId);
+    }
+  }
+
+  onRunTerminal(runId: string, workspaceId: string): void {
+    void this.finalizeAndDrain(runId, workspaceId);
   }
 
   onEscalation(params: EscalationParams): void {
@@ -105,12 +142,15 @@ export class RunDispatchService {
       );
       pendingBroadcasts.push(escalationEvent);
 
-      this.runService.transitionToFailed(
+      const failedResult = this.runService.transitionToFailedWriteOnly(
         params.runId,
         params.failureReason,
         null,
         params.detectedOperation,
       );
+      if (failedResult) {
+        pendingBroadcasts.push(failedResult.event);
+      }
 
       this.issueRepo.updateStatus(params.issueId, {
         status: IS.Blocked,
@@ -141,7 +181,7 @@ export class RunDispatchService {
 
     this.cancelQueuedRunsForIssue(params.issueId);
 
-    this.onRunTerminal(params.runId, escalationRun.workspace_id);
+    void this.finalizeAndDrain(params.runId, escalationRun.workspace_id);
   }
 
   async cancel(runId: string): Promise<Run | null> {
@@ -154,7 +194,7 @@ export class RunDispatchService {
     if (run.status === RS.Running) {
       const cancelled = await this.agentRunner.cancelRun(runId);
       if (cancelled?.status === RS.Cancelled) {
-        this.onRunTerminal(runId, cancelled.workspace_id);
+        await this.finalizeAndDrain(runId, cancelled.workspace_id);
       }
       return cancelled;
     }
@@ -196,6 +236,46 @@ export class RunDispatchService {
         this.onEscalation(escalationParams);
       },
     });
+  }
+
+  private async startNextQueuedRun(workspaceId: string): Promise<void> {
+    const queuedRuns = this.runService.listQueuedByWorkspace(workspaceId);
+    for (const run of queuedRuns) {
+      const issue = this.issueRepo.getById(run.issue_id);
+      if (!issue) continue;
+      if (issue.status === IS.Blocked) {
+        this.runService.cancelQueued(run.id, "issue_blocked_before_start");
+        continue;
+      }
+
+      const lockAcquired = this.workspaceLockService.acquire(workspaceId, run.id);
+      if (!lockAcquired) return;
+
+      let startedRun: Run | null;
+      try {
+        startedRun = this.prepareAndStart(run);
+      } catch {
+        // Do not leak the lock or reject out of the finalize/drain path;
+        // release and try the next queued Run.
+        this.workspaceLockService.releaseByRunId(run.id);
+        continue;
+      }
+      if (startedRun) {
+        try {
+          await this.startAdapter(startedRun);
+        } catch (error) {
+          this.runService.transitionToFailed(
+            startedRun.id,
+            "spawn_failed" as FailureReason,
+            null,
+            String(error),
+          );
+          await this.finalizeAndDrain(startedRun.id, workspaceId);
+        }
+        return;
+      }
+      this.workspaceLockService.releaseByRunId(run.id);
+    }
   }
 
   private cancelQueuedRunsForIssue(issueId: string): void {

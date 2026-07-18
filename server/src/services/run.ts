@@ -83,14 +83,7 @@ export class RunService {
         ThreadEventType.RunQueued,
         ActorType.System,
         null,
-        {
-          run_id: run.id,
-          issue_id: issueId,
-          thread_id: threadId,
-          workspace_id: workspace.id,
-          status: RS.Queued,
-          adapter_config_id: adapterId,
-        },
+        runEventPayload(run, RS.Queued, { adapter_config_id: adapterId }),
       );
 
       return { run, event };
@@ -112,6 +105,10 @@ export class RunService {
     return this.runRepo.listByIssue(issueId);
   }
 
+  listQueuedByWorkspace(workspaceId: string): Run[] {
+    return this.runRepo.listQueuedByWorkspace(workspaceId);
+  }
+
   transitionToRunning(runId: string): Run | null {
     const now = new Date().toISOString();
     const result = this.runRepo.transitionStatus(runId, RS.Queued, RS.Running, {
@@ -127,13 +124,7 @@ export class RunService {
       ThreadEventType.RunStarted,
       ActorType.System,
       null,
-      {
-        run_id: runId,
-        issue_id: result.run.issue_id,
-        thread_id: result.run.thread_id,
-        workspace_id: result.run.workspace_id,
-        status: RS.Running,
-      },
+      runEventPayload(result.run, RS.Running),
     );
 
     return result.run;
@@ -155,17 +146,9 @@ export class RunService {
       ThreadEventType.RunCompleted,
       ActorType.System,
       null,
-      {
-        run_id: runId,
-        issue_id: result.run.issue_id,
-        thread_id: result.run.thread_id,
-        workspace_id: result.run.workspace_id,
-        status: RS.Completed,
-        exit_code: exitCode,
-      },
+      runEventPayload(result.run, RS.Completed, { exit_code: exitCode }),
     );
 
-    this.workspaceLockService.releaseByRunId(runId);
     return result.run;
   }
 
@@ -175,6 +158,19 @@ export class RunService {
     exitCode: number | null,
     errorMessage: string | null,
   ): Run | null {
+    const result = this.transitionToFailedWriteOnly(runId, failureReason, exitCode, errorMessage);
+    if (result?.event) {
+      this.threadEventService.broadcast(result.event);
+    }
+    return result?.run ?? null;
+  }
+
+  transitionToFailedWriteOnly(
+    runId: string,
+    failureReason: FailureReason,
+    exitCode: number | null,
+    errorMessage: string | null,
+  ): { run: Run; event: ThreadEvent } | null {
     const now = new Date().toISOString();
     const result = this.runRepo.transitionStatus(runId, RS.Running, RS.Failed, {
       completed_at: now,
@@ -187,25 +183,19 @@ export class RunService {
       return null;
     }
 
-    this.threadEventService.writeAndBroadcast(
+    const event = this.threadEventService.write(
       result.run.thread_id,
       ThreadEventType.RunFailed,
       ActorType.System,
       null,
-      {
-        run_id: runId,
-        issue_id: result.run.issue_id,
-        thread_id: result.run.thread_id,
-        workspace_id: result.run.workspace_id,
-        status: RS.Failed,
+      runEventPayload(result.run, RS.Failed, {
         failure_reason: failureReason,
         exit_code: exitCode,
         error_message: errorMessage,
-      },
+      }),
     );
 
-    this.workspaceLockService.releaseByRunId(runId);
-    return result.run;
+    return { run: result.run, event };
   }
 
   transitionToInterrupted(runId: string): Run | null {
@@ -224,17 +214,9 @@ export class RunService {
       ThreadEventType.RunInterrupted,
       ActorType.System,
       null,
-      {
-        run_id: runId,
-        issue_id: result.run.issue_id,
-        thread_id: result.run.thread_id,
-        workspace_id: result.run.workspace_id,
-        status: RS.Interrupted,
-        failure_reason: FR.ServerRestarted,
-      },
+      runEventPayload(result.run, RS.Interrupted, { failure_reason: FR.ServerRestarted }),
     );
 
-    this.workspaceLockService.releaseByRunId(runId);
     return result.run;
   }
 
@@ -262,14 +244,7 @@ export class RunService {
       ThreadEventType.RunCancelled,
       ActorType.System,
       null,
-      {
-        run_id: runId,
-        issue_id: result.run.issue_id,
-        thread_id: result.run.thread_id,
-        workspace_id: result.run.workspace_id,
-        status: RS.Cancelled,
-        reason,
-      },
+      runEventPayload(result.run, RS.Cancelled, { reason }),
     );
 
     return result.run;
@@ -290,17 +265,9 @@ export class RunService {
       ThreadEventType.RunCancelled,
       ActorType.System,
       null,
-      {
-        run_id: runId,
-        issue_id: result.run.issue_id,
-        thread_id: result.run.thread_id,
-        workspace_id: result.run.workspace_id,
-        status: RS.Cancelled,
-        reason,
-      },
+      runEventPayload(result.run, RS.Cancelled, { reason }),
     );
 
-    this.workspaceLockService.releaseByRunId(runId);
     return result.run;
   }
 
@@ -345,4 +312,20 @@ export class RunService {
 
 function isTerminalStatus(status: RunStatus): boolean {
   return status === RS.Completed || status === RS.Failed || status === RS.Interrupted || status === RS.Cancelled;
+}
+
+/** Common lifecycle-event payload shared by every Run status transition. */
+function runEventPayload(
+  run: Run,
+  status: RunStatus,
+  extra: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    run_id: run.id,
+    issue_id: run.issue_id,
+    thread_id: run.thread_id,
+    workspace_id: run.workspace_id,
+    status,
+    ...extra,
+  };
 }

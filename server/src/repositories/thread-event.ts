@@ -79,6 +79,43 @@ export class ThreadEventRepository {
     return rows.map(mapRow);
   }
 
+  getById(eventId: string): ThreadEvent | null {
+    const row = this.db.prepare("SELECT * FROM thread_events WHERE id = ?").get(eventId) as ThreadEventRow | undefined;
+    return row ? mapRow(row) : null;
+  }
+
+  listByThreadAndTypes(
+    threadId: string,
+    types: ThreadEventType[],
+    afterEventId?: string,
+    limit = 100,
+  ): ThreadEvent[] {
+    if (types.length === 0) {
+      return [];
+    }
+    const placeholders = types.map(() => "?").join(", ");
+
+    if (afterEventId) {
+      const afterRow = this.db.prepare(
+        "SELECT event_sequence FROM thread_events WHERE id = ? AND thread_id = ?"
+      ).get(afterEventId, threadId) as { event_sequence: number } | undefined;
+
+      if (!afterRow) {
+        return [];
+      }
+
+      const rows = this.db.prepare(
+        `SELECT * FROM thread_events WHERE thread_id = ? AND event_sequence > ? AND type IN (${placeholders}) ORDER BY event_sequence ASC LIMIT ?`
+      ).all(threadId, afterRow.event_sequence, ...types, limit) as ThreadEventRow[];
+      return rows.map(mapRow);
+    }
+
+    const rows = this.db.prepare(
+      `SELECT * FROM thread_events WHERE thread_id = ? AND type IN (${placeholders}) ORDER BY event_sequence ASC LIMIT ?`
+    ).all(threadId, ...types, limit) as ThreadEventRow[];
+    return rows.map(mapRow);
+  }
+
   getNextSequence(): number {
     const row = this.db.prepare(
       "SELECT COALESCE(MAX(event_sequence), 0) + 1 as next_seq FROM thread_events"

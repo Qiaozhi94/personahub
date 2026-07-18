@@ -25,6 +25,11 @@ export function useThreadEvents(id: string | null, afterEventId?: string) {
         lastEventId.current = parsed.id;
         queryClient.invalidateQueries({ queryKey: ["thread-events", id] });
         queryClient.invalidateQueries({ queryKey: ["runs"] });
+        const traceTypes = ["command.", "test.", "file.", "handoff.", "validation.", "run.completed", "run.failed", "run.cancelled", "run.interrupted"];
+        if (traceTypes.some((t) => parsed.type.startsWith(t))) {
+          queryClient.invalidateQueries({ queryKey: ["issue-trace"] });
+          queryClient.invalidateQueries({ queryKey: ["run-evidence"] });
+        }
       } catch {
         void 0;
       }

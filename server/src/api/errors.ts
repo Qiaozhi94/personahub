@@ -37,6 +37,9 @@ const ERROR_STATUS_MAP: Record<ErrorCode, number> = {
   [ErrorCode.RUN_INSTRUCTIONS_REQUIRED]: 400,
   [ErrorCode.ISSUE_BLOCKED]: 409,
   [ErrorCode.WORKSPACE_LOCKED]: 409,
+  [ErrorCode.INVALID_QUERY]: 400,
+  [ErrorCode.EVIDENCE_REF_INVALID]: 400,
+  [ErrorCode.EVIDENCE_SCOPE_MISMATCH]: 409,
   [ErrorCode.INTERNAL_ERROR]: 500,
 };
 

@@ -124,7 +124,7 @@ describe("Persistence / Restart Recovery", () => {
     {
       const db = openDatabase(dbPath);
       const version = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(version.v).toBe(2);
+      expect(version.v).toBe(3);
       db.close();
     }
   });

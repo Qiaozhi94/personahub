@@ -11,12 +11,14 @@ import {
   type IssueCreateResponse,
   type IssueGetResponse,
   type IssueListResponse,
+  type IssueTraceResponse,
   type ProjectCreateResponse,
   type ProjectGetResponse,
   type ProjectListResponse,
   type RunCancelResponse,
   type RunCreateInput,
   type RunCreateResponse,
+  type RunEvidenceResponse,
   type RunGetResponse,
   type RunListResponse,
   type ThreadEventListResponse,
@@ -120,5 +122,41 @@ export const apiClient = {
       apiFetch<RunListResponse>(`/issues/${issueId}/runs`),
     cancel: (runId: string) =>
       apiFetch<RunCancelResponse>(`/runs/${runId}/cancel`, { method: "POST" }),
+  },
+  traces: {
+    getIssueTrace: (issueId: string, afterEventId?: string, limit?: number) => {
+      const params = new URLSearchParams();
+      if (afterEventId) params.set("after_event_id", afterEventId);
+      if (limit) params.set("limit", String(limit));
+      const qs = params.toString();
+      return apiFetch<IssueTraceResponse>(`/issues/${issueId}/trace${qs ? `?${qs}` : ""}`);
+    },
+    getRunEvidence: (
+      runId: string,
+      afterEventId?: string,
+      afterFileChangeId?: string,
+      eventLimit?: number,
+      fileLimit?: number,
+    ) => {
+      const params = new URLSearchParams();
+      if (afterEventId) params.set("after_event_id", afterEventId);
+      if (afterFileChangeId) params.set("after_file_change_id", afterFileChangeId);
+      if (eventLimit) params.set("event_limit", String(eventLimit));
+      if (fileLimit) params.set("file_limit", String(fileLimit));
+      const qs = params.toString();
+      return apiFetch<RunEvidenceResponse>(`/runs/${runId}/evidence${qs ? `?${qs}` : ""}`);
+    },
+    exportMarkdown: async (issueId: string): Promise<{ blob: Blob; filename: string }> => {
+      const res = await fetch(`${API_BASE}/issues/${issueId}/trace/export`);
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({ error: { code: ErrorCode.INTERNAL_ERROR, message: "Unknown error" } }));
+        throw errorBody.error as ApiError;
+      }
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+      const filename = filenameMatch?.[1] ?? "trace.md";
+      const blob = await res.blob();
+      return { blob, filename };
+    },
   },
 };

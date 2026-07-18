@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
 import { applyMigrations } from "../../src/db/migrations.js";
-import { createTestServices, disposeTestServices, type TestServices } from "../helpers.js";
+import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
 
 describe("Database Migration", () => {
   let db: Database.Database;
@@ -18,17 +18,17 @@ describe("Database Migration", () => {
   it("creates schema_version table", () => {
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(2);
+    expect(row.v).toBe(3);
   });
 
   it("is idempotent - running twice does not error", () => {
     applyMigrations(db);
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(2);
+    expect(row.v).toBe(3);
   });
 
-  it("creates all 9 tables", () => {
+  it("creates all 11 tables", () => {
     applyMigrations(db);
     const tables = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
@@ -44,6 +44,8 @@ describe("Database Migration", () => {
     expect(tableNames).toContain("validation_policies");
     expect(tableNames).toContain("agent_configs");
     expect(tableNames).toContain("runs");
+    expect(tableNames).toContain("run_trace_states");
+    expect(tableNames).toContain("run_file_changes");
   });
 
   it("seeds default coding workflow template", () => {
@@ -113,6 +115,40 @@ describe("Database Migration", () => {
       db.prepare("INSERT INTO threads (id, issue_id, thread_type, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)")
         .run("thr_2", "iss_test", "primary", "Test2", now, now),
     ).toThrow();
+  });
+
+  it("v3 creates run_trace_states and run_file_changes tables", () => {
+    applyMigrations(db);
+    const tables = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('run_trace_states', 'run_file_changes') ORDER BY name",
+    ).all() as { name: string }[];
+    expect(tables).toHaveLength(2);
+  });
+
+  it("v3 creates indexes for trace tables", () => {
+    applyMigrations(db);
+    const indexes = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='index' AND name IN ('idx_run_trace_states_unfinalized', 'idx_run_file_changes_run_id')",
+    ).all() as { name: string }[];
+    expect(indexes).toHaveLength(2);
+  });
+
+  it("v2 to v3 upgrade preserves existing data", () => {
+    const services = createTestServices();
+    const project = services.projectService.create("Test", "desc");
+    services.workspaceService.bind(project.id, createTempDir());
+    const { issue } = services.issueService.create(project.id, { title: "Test", goal: "Goal" });
+
+    disposeTestServices(services);
+
+    const freshDb = new Database(":memory:");
+    freshDb.pragma("foreign_keys = ON");
+    applyMigrations(freshDb);
+    const tableCount = freshDb.prepare(
+      "SELECT COUNT(*) as c FROM sqlite_master WHERE type='table' AND name='run_trace_states'",
+    ).get() as { c: number };
+    expect(tableCount.c).toBe(1);
+    freshDb.close();
   });
 });
 

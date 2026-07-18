@@ -12,6 +12,8 @@ import { WorkflowTemplateRepository } from "../src/repositories/workflow-templat
 import { ValidationPolicyRepository } from "../src/repositories/validation-policy.js";
 import { AgentConfigRepository } from "../src/repositories/agent-config.js";
 import { RunRepository } from "../src/repositories/run.js";
+import { RunTraceRepository } from "../src/repositories/run-trace.js";
+import { FileChangeRepository } from "../src/repositories/file-change.js";
 import { ProjectService } from "../src/services/project.js";
 import { WorkspaceService } from "../src/services/workspace.js";
 import { IssueService } from "../src/services/issue.js";
@@ -26,6 +28,11 @@ import { AgentRunner } from "../src/runtime/agent-runner.js";
 import { FakeAgentAdapter } from "../src/runtime/adapters/fake-adapter.js";
 import { RunDispatchService } from "../src/services/run-dispatch.js";
 import { EventBus } from "../src/runtime/event-bus.js";
+import { EvidenceService } from "../src/services/evidence.js";
+import { DevelopmentTraceService } from "../src/services/development-trace.js";
+import { ValidationTraceService } from "../src/services/validation-trace.js";
+import { TraceQueryService } from "../src/services/trace-query.js";
+import { TraceExportService } from "../src/services/trace-export.js";
 
 export function createTestDb(): Database.Database {
   return openDatabase(":memory:");
@@ -50,6 +57,8 @@ export interface TestServices {
   validationPolicyRepo: ValidationPolicyRepository;
   agentConfigRepo: AgentConfigRepository;
   runRepo: RunRepository;
+  runTraceRepo: RunTraceRepository;
+  fileChangeRepo: FileChangeRepository;
   projectService: ProjectService;
   workspaceService: WorkspaceService;
   issueService: IssueService;
@@ -62,6 +71,11 @@ export interface TestServices {
   adapterRegistry: AgentAdapterRegistry;
   agentRunner: AgentRunner;
   runDispatchService: RunDispatchService;
+  evidenceService: EvidenceService;
+  developmentTraceService: DevelopmentTraceService;
+  validationTraceService: ValidationTraceService;
+  traceQueryService: TraceQueryService;
+  traceExportService: TraceExportService;
 }
 
 export function createTestServices(): TestServices {  const db = createTestDb();
@@ -74,6 +88,8 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   const validationPolicyRepo = new ValidationPolicyRepository(db);
   const agentConfigRepo = new AgentConfigRepository(db);
   const runRepo = new RunRepository(db);
+  const runTraceRepo = new RunTraceRepository(db);
+  const fileChangeRepo = new FileChangeRepository(db);
 
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
@@ -82,8 +98,14 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     runRepo, threadEventService, issueRepo, workspaceRepo,
     agentConfigRepo, workspaceLockService, db,
   );
-  const staleRecoveryService = new StaleRecoveryService(
-    runRepo, workspaceRepo, threadEventService, workspaceLockService,
+
+  const evidenceService = new EvidenceService(threadEventRepo, fileChangeRepo, runRepo, runTraceRepo);
+  const developmentTraceService = new DevelopmentTraceService(
+    runRepo, runTraceRepo, fileChangeRepo, threadEventRepo,
+    issueRepo, workspaceRepo, threadEventService, evidenceService, db,
+  );
+  const validationTraceService = new ValidationTraceService(
+    threadEventService, evidenceService, issueRepo, runRepo,
   );
 
   const adapterRegistry = new AgentAdapterRegistry();
@@ -98,7 +120,19 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   const runDispatchService = new RunDispatchService(
     runService, workspaceLockService, adapterRegistry,
     agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
-    threadEventService, agentRunner, db,
+    threadEventService, agentRunner, developmentTraceService, runTraceRepo, db,
+  );
+
+  const staleRecoveryService = new StaleRecoveryService(
+    runRepo, workspaceRepo, threadEventService, workspaceLockService,
+    developmentTraceService, runTraceRepo,
+  );
+
+  const traceQueryService = new TraceQueryService(
+    runRepo, threadEventRepo, fileChangeRepo, issueRepo, threadRepo, runTraceRepo, evidenceService,
+  );
+  const traceExportService = new TraceExportService(
+    issueRepo, runRepo, threadEventRepo, fileChangeRepo, runTraceRepo, evidenceService,
   );
 
   return {
@@ -112,6 +146,8 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     validationPolicyRepo,
     agentConfigRepo,
     runRepo,
+    runTraceRepo,
+    fileChangeRepo,
     projectService: new ProjectService(projectRepo, workspaceRepo),
     workspaceService: new WorkspaceService(workspaceRepo, projectRepo, db),
     issueService: new IssueService(
@@ -127,6 +163,11 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     adapterRegistry,
     agentRunner,
     runDispatchService,
+    evidenceService,
+    developmentTraceService,
+    validationTraceService,
+    traceQueryService,
+    traceExportService,
   };
 }
 

@@ -4,7 +4,7 @@
 
 ## 现状
 
-F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完成代码、行为验收及关键 UI 自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`。F003（Development Trace）已完成 spec/design/tasks，等待开发。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
+F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完成代码、行为验收及关键 UI 自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`。F003（Development Trace）已完成全部 88 个任务的代码实现和自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`；真实 Codex CLI 手动 probe 和端到端验证（T001、T081-T084）待用户在真实环境中执行。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
 
 ## 当前结构
 

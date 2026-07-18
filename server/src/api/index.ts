@@ -5,6 +5,7 @@ import { issueRoutes } from "./routes/issues.js";
 import { threadRoutes } from "./routes/threads.js";
 import { adapterRoutes } from "./routes/adapters.js";
 import { runRoutes } from "./routes/runs.js";
+import { traceRoutes } from "./routes/traces.js";
 import type { ProjectService } from "../services/project.js";
 import type { WorkspaceService } from "../services/workspace.js";
 import type { IssueService } from "../services/issue.js";
@@ -13,6 +14,8 @@ import type { AdapterConfigService } from "../services/adapter-config.js";
 import type { RunService } from "../services/run.js";
 import type { RunDispatchService } from "../services/run-dispatch.js";
 import type { ThreadEventService } from "../services/thread-event.js";
+import type { TraceQueryService } from "../services/trace-query.js";
+import type { TraceExportService } from "../services/trace-export.js";
 import type { EventBus } from "../runtime/event-bus.js";
 
 export interface Services {
@@ -25,6 +28,8 @@ export interface Services {
   runDispatchService: RunDispatchService;
   threadEventService: ThreadEventService;
   eventBus: EventBus;
+  traceQueryService: TraceQueryService;
+  traceExportService: TraceExportService;
 }
 
 export function registerRoutes(app: FastifyInstance, services: Services): void {
@@ -40,5 +45,9 @@ export function registerRoutes(app: FastifyInstance, services: Services): void {
   app.register(runRoutes, {
     runDispatchService: services.runDispatchService,
     runService: services.runService,
+  });
+  app.register(traceRoutes, {
+    traceQueryService: services.traceQueryService,
+    traceExportService: services.traceExportService,
   });
 }

@@ -30,7 +30,7 @@ describe("Backend Restart Recovery (T055)", () => {
     disposeTestServices(services);
   });
 
-  it("simulates backend restart: stale Run recovered, lock released", () => {
+  it("simulates backend restart: stale Run recovered, lock released", async () => {
     const dbPath = `${tempDir}/test-restart.db`;
     const db = openDatabase(dbPath);
 
@@ -107,7 +107,7 @@ describe("Backend Restart Recovery (T055)", () => {
       reopenedRunRepo, reopenedWorkspaceRepo, threadEventService, lockService,
     );
 
-    staleRecovery.runAll();
+    await staleRecovery.runAll();
 
     const recoveredRun = reopenedRunRepo.getById(run.id);
     expect(recoveredRun!.status).toBe(RunStatus.Interrupted);
@@ -120,13 +120,13 @@ describe("Backend Restart Recovery (T055)", () => {
     reopenedDb.close();
   });
 
-  it("simulates restart with no stale runs: no changes", () => {
+  it("simulates restart with no stale runs: no changes", async () => {
     const project = services.projectService.create("Test", "desc");
     services.workspaceService.bind(project.id, tempDir);
     const { issue } = services.issueService.create(project.id, { title: "Test", goal: "Goal" });
 
     const beforeStatus = services.issueRepo.getById(issue.id)!.status;
-    services.staleRecoveryService.runAll();
+    await services.staleRecoveryService.runAll();
     const afterStatus = services.issueRepo.getById(issue.id)!.status;
 
     expect(afterStatus).toBe(beforeStatus);

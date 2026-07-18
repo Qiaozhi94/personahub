@@ -12,100 +12,37 @@ import type {
 } from "../types.js";
 import { DEFAULT_EXECUTION_TIMEOUT_MS, CANCEL_TIMEOUT_MS } from "../types.js";
 import { buildChildEnv } from "../workspace-context.js";
-import { spawnSync } from "node:child_process";
-
-const GIT_PUSH_PATTERNS = [
-  /\bgit\s+push\b/,
-  /\bgit\s+push\s+--force\b/,
-  /\bgit\s+push\s+-f\b/,
-];
-
-function isGitPushCommand(command: unknown): boolean {
-  if (typeof command === "string") {
-    return GIT_PUSH_PATTERNS.some((p) => p.test(command));
-  }
-  if (Array.isArray(command)) {
-    const joined = command.join(" ");
-    return GIT_PUSH_PATTERNS.some((p) => p.test(joined));
-  }
-  return false;
-}
-
-function isGitPushOutput(text: string): boolean {
-  return GIT_PUSH_PATTERNS.some((p) => p.test(text));
-}
-
-interface JsonRpcRequest {
-  jsonrpc: "2.0";
-  id: number;
-  method: string;
-  params?: Record<string, unknown>;
-}
-
-interface JsonRpcResponse {
-  jsonrpc: "2.0";
-  id: number;
-  result?: unknown;
-  error?: { code: number; message: string };
-}
-
-interface JsonRpcNotification {
-  jsonrpc: "2.0";
-  method: string;
-  params?: Record<string, unknown>;
-}
-
-type JsonRpcMessage = JsonRpcRequest | JsonRpcResponse | JsonRpcNotification;
-
-function isRequest(msg: JsonRpcMessage): msg is JsonRpcRequest {
-  return "method" in msg && "id" in msg;
-}
-
-function isResponse(msg: JsonRpcMessage): msg is JsonRpcResponse {
-  return "id" in msg && !("method" in msg);
-}
-
-function isNotification(msg: JsonRpcMessage): msg is JsonRpcNotification {
-  return "method" in msg && !("id" in msg);
-}
-
-function getResult(response: JsonRpcResponse): Record<string, unknown> {
-  return (response.result ?? {}) as Record<string, unknown>;
-}
+import { normalizeCodexTraceNotification } from "./codex-trace-normalizer.js";
+import {
+  type JsonRpcRequest,
+  type JsonRpcResponse,
+  type JsonRpcMessage,
+  isRequest,
+  isResponse,
+  isNotification,
+  getResult,
+  isGitPushCommand,
+  isGitPushOutput,
+  validateCodexCommand,
+  CREDENTIAL_FAILURE_PATTERN,
+} from "./codex-protocol.js";
 
 export class CodexCliAdapter implements AgentAdapter {
   readonly provider = "codex";
   readonly capabilities: AgentAdapterCapabilities = {
     provider: "codex",
     supportsApprovalHook: true,
+    supportsStructuredTrace: true,
     executionTimeoutMs: DEFAULT_EXECUTION_TIMEOUT_MS,
   };
 
   async validate(config: AdapterConfig): Promise<AdapterValidationResult> {
-    const command = config.command?.trim();
-    if (!command) {
-      return { available: false, errorMessage: "Command is empty." };
-    }
-    try {
-      const result = spawnSync(command, ["--version"], {
-        timeout: 10_000,
-        encoding: "utf-8",
-        shell: process.platform === "win32",
-      });
-      if (result.error) {
-        return { available: false, errorMessage: `Command not found: ${command}` };
-      }
-      if (result.status !== 0) {
-        return { available: false, errorMessage: `Command exited with code ${result.status}` };
-      }
-      return { available: true, errorMessage: null };
-    } catch (err) {
-      return { available: false, errorMessage: `Failed to validate command: ${String(err)}` };
-    }
+    return validateCodexCommand(config);
   }
 
   async start(input: AgentRunInput): Promise<RunHandle> {
     const outputCallbacks: Array<(event: RunOutputChunk) => void> = [];
+    const traceCallbacks: Array<(event: import("@personahub/shared/types").RunTraceSignal) => void> = [];
     const exitCallbacks: Array<(result: RunExitResult) => void> = [];
     let exited = false;
     let pendingExit: RunExitResult | null = null;
@@ -130,6 +67,11 @@ export class CodexCliAdapter implements AgentAdapter {
       }
     };
 
+    const failSpawn = (errorMessage: string): RunHandle => {
+      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage });
+      return createHandle();
+    };
+
     const finish = (result: RunExitResult): void => {
       try { childProcess?.stdin?.end(); } catch { void 0; }
       if (childProcess && childProcess.exitCode === null && !childProcess.killed) {
@@ -138,10 +80,10 @@ export class CodexCliAdapter implements AgentAdapter {
       callExit(result);
     };
 
-    const emitOutput = (stream: "stdout" | "stderr", chunk: string) => {
+    const emitOutput = (stream: "stdout" | "stderr", chunk: string, sourceItemId?: string) => {
       sequence++;
       for (const cb of outputCallbacks) {
-        cb({ stream, chunk, sequence });
+        cb({ stream, chunk, sequence, ...(sourceItemId ? { sourceItemId } : {}) });
       }
     };
 
@@ -199,6 +141,13 @@ export class CodexCliAdapter implements AgentAdapter {
       }
 
       if (isNotification(msg)) {
+        const traceSignal = normalizeCodexTraceNotification(msg);
+        if (traceSignal) {
+          for (const cb of traceCallbacks) {
+            cb(traceSignal);
+          }
+        }
+
         if (msg.method === "turn/completed") {
           turnCompleted = true;
           const turn = msg.params?.turn as { status?: string; error?: { message?: string } } | undefined;
@@ -214,21 +163,26 @@ export class CodexCliAdapter implements AgentAdapter {
           return;
         }
 
-        // v2 protocol notification names
-        if (msg.method === "item/agentMessage/delta" || msg.method === "item/commandExecution/outputDelta") {
+        if (msg.method === "item/agentMessage/delta") {
           const delta = msg.params?.delta ?? msg.params?.text ?? "";
           if (typeof delta === "string" && delta.length > 0) {
             emitOutput("stdout", delta);
-            if (msg.method === "item/commandExecution/outputDelta") {
-              if (!escalationTriggered && isGitPushOutput(delta) && !input.workspace.pushCredentialsEnabled) {
-                escalationTriggered = true;
-                finish({
-                  exitCode: null,
-                  failureReason: FR.PostHocEscalation,
-                  errorMessage: delta.trim().slice(0, 200),
-                });
-              }
+            if (!escalationTriggered && isGitPushOutput(delta) && !input.workspace.pushCredentialsEnabled) {
+              escalationTriggered = true;
+              finish({
+                exitCode: null,
+                failureReason: FR.PostHocEscalation,
+                errorMessage: delta.trim().slice(0, 200),
+              });
             }
+          }
+          return;
+        }
+
+        if (msg.method === "item/completed") {
+          const item = msg.params?.item as { type?: string; aggregatedOutput?: string; id?: string } | undefined;
+          if (item?.type === "commandExecution" && typeof item.aggregatedOutput === "string" && item.aggregatedOutput.length > 0) {
+            emitOutput("stdout", item.aggregatedOutput, item.id);
           }
           return;
         }
@@ -250,21 +204,11 @@ export class CodexCliAdapter implements AgentAdapter {
         },
       );
     } catch (err) {
-      callExit({
-        exitCode: null,
-        failureReason: FR.SpawnFailed,
-        errorMessage: `Failed to spawn process: ${String(err)}`,
-      });
-      return createHandle();
+      return failSpawn(`Failed to spawn process: ${String(err)}`);
     }
 
     if (!childProcess || !childProcess.pid) {
-      callExit({
-        exitCode: null,
-        failureReason: FR.SpawnFailed,
-        errorMessage: "Failed to spawn process: no PID",
-      });
-      return createHandle();
+      return failSpawn("Failed to spawn process: no PID");
     }
 
     childProcess.stdout?.setEncoding("utf-8");
@@ -287,8 +231,7 @@ export class CodexCliAdapter implements AgentAdapter {
     });
 
     childProcess.stderr?.on("data", (data: string) => {
-      const credPattern = /permission denied|authentication failed|could not read|no credentials|403|401/i;
-      if (gitPushAttempted && credPattern.test(data)) {
+      if (gitPushAttempted && CREDENTIAL_FAILURE_PATTERN.test(data)) {
         credentialFailureDetected = true;
       }
       emitOutput("stderr", data);
@@ -306,8 +249,6 @@ export class CodexCliAdapter implements AgentAdapter {
       if (!exited && !turnCompleted) {
         if (escalationTriggered) return;
         if (code !== null && code !== 0) {
-          const credentialPatterns = /permission denied|authentication failed|could not read|no credentials|403|401/i;
-          const stderrSeen = lineBuffer;
           const isCredentialIssue = gitPushAttempted
             && !input.workspace.pushCredentialsEnabled
             && credentialFailureDetected;
@@ -369,6 +310,9 @@ export class CodexCliAdapter implements AgentAdapter {
         runId: input.runId,
         onOutput(cb: (event: RunOutputChunk) => void): void {
           outputCallbacks.push(cb);
+        },
+        onTrace(cb: (event: import("@personahub/shared/types").RunTraceSignal) => void): void {
+          traceCallbacks.push(cb);
         },
         onExit(cb: (result: RunExitResult) => void): void {
           if (pendingExit) {

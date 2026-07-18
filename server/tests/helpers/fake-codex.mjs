@@ -68,6 +68,102 @@ rl.on("line", (line) => {
             startedAtMs: Date.now(),
           }});
         }, 10);
+      } else if (mode === "command_success") {
+        setTimeout(() => {
+          sendNotification("item/started", {
+            item: {
+              type: "commandExecution", id: "cmd-1",
+              command: "npm test", cwd: ".",
+              commandActions: [{ type: "unknown", command: "npm test" }],
+              status: "inProgress", exitCode: null, durationMs: null, aggregatedOutput: null,
+            },
+            threadId: fakeThreadId, turnId: fakeTurnId,
+            startedAtMs: Date.now(),
+          });
+          setTimeout(() => {
+            sendNotification("item/completed", {
+              item: {
+                type: "commandExecution", id: "cmd-1",
+                command: "npm test", cwd: ".",
+                commandActions: [{ type: "unknown", command: "npm test" }],
+                status: "completed", exitCode: 0, durationMs: 842,
+                aggregatedOutput: "test passed\n",
+              },
+              threadId: fakeThreadId, turnId: fakeTurnId,
+              completedAtMs: Date.now(),
+            });
+            setTimeout(() => {
+              sendNotification("turn/completed", { turn: { id: fakeTurnId, status: "completed" } });
+            }, 10);
+          }, 10);
+        }, 10);
+      } else if (mode === "command_failure") {
+        setTimeout(() => {
+          sendNotification("item/started", {
+            item: {
+              type: "commandExecution", id: "cmd-1",
+              command: "npm test", cwd: ".",
+              commandActions: [{ type: "unknown", command: "npm test" }],
+              status: "inProgress", exitCode: null, durationMs: null, aggregatedOutput: null,
+            },
+            threadId: fakeThreadId, turnId: fakeTurnId,
+            startedAtMs: Date.now(),
+          });
+          setTimeout(() => {
+            sendNotification("item/completed", {
+              item: {
+                type: "commandExecution", id: "cmd-1",
+                command: "npm test", cwd: ".",
+                commandActions: [{ type: "unknown", command: "npm test" }],
+                status: "completed", exitCode: 1, durationMs: 1200,
+                aggregatedOutput: "FAIL  src/app.test.ts\n",
+              },
+              threadId: fakeThreadId, turnId: fakeTurnId,
+              completedAtMs: Date.now(),
+            });
+            setTimeout(() => {
+              sendNotification("turn/completed", { turn: { id: fakeTurnId, status: "completed" } });
+            }, 10);
+          }, 10);
+        }, 10);
+      } else if (mode === "approval_blocked") {
+        // T004: Emit approval request for a non-git-push command that gets rejected
+        setTimeout(() => {
+          send({ jsonrpc: "2.0", id: 9002, method: "item/commandExecution/requestApproval", params: {
+            command: "rm -rf /",
+            threadId: fakeThreadId,
+            turnId: fakeTurnId,
+            itemId: "cmd-blocked-1",
+            startedAtMs: Date.now(),
+          }});
+        }, 10);
+      } else if (mode === "malformed") {
+        // T004: Emit malformed JSON line and an unknown notification, then complete normally
+        setTimeout(() => {
+          process.stdout.write("{ this is not valid json\n");
+          setTimeout(() => {
+            sendNotification("item/unknownNotification", { itemId: "cmd-x", threadId: fakeThreadId });
+            setTimeout(() => {
+              sendNotification("turn/completed", { turn: { id: fakeTurnId, status: "completed" } });
+            }, 10);
+          }, 10);
+        }, 10);
+      } else if (mode === "command_no_exit") {
+        setTimeout(() => {
+          sendNotification("item/started", {
+            item: {
+              type: "commandExecution", id: "cmd-1",
+              command: "npm test", cwd: ".",
+              commandActions: [{ type: "unknown", command: "npm test" }],
+              status: "inProgress", exitCode: null, durationMs: null, aggregatedOutput: null,
+            },
+            threadId: fakeThreadId, turnId: fakeTurnId,
+            startedAtMs: Date.now(),
+          });
+          setTimeout(() => {
+            sendNotification("turn/completed", { turn: { id: fakeTurnId, status: "completed" } });
+          }, 10);
+        }, 10);
       }
     } else if (msg.method === "turn/interrupt") {
       if (!msg.params?.threadId || !msg.params?.turnId) {

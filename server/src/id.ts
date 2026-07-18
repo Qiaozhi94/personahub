@@ -27,3 +27,7 @@ export function generateRunId(): string {
 export function generateAdapterConfigId(): string {
   return `adp_${ulid()}`;
 }
+
+export function generateFileChangeId(): string {
+  return `fcg_${ulid()}`;
+}

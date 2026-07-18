@@ -1,4 +1,5 @@
 import type { AdapterConfig, RunStatus, FailureReason } from "@personahub/shared/types";
+import type { RunTraceSignal } from "@personahub/shared/types";
 
 export interface WorkspaceContext {
   workspaceId: string;
@@ -21,6 +22,7 @@ export interface RunOutputChunk {
   stream: "stdout" | "stderr";
   chunk: string;
   sequence: number;
+  sourceItemId?: string;
 }
 
 export interface RunExitResult {
@@ -32,6 +34,7 @@ export interface RunExitResult {
 export interface RunHandle {
   runId: string;
   onOutput(cb: (event: RunOutputChunk) => void): void;
+  onTrace(cb: (event: RunTraceSignal) => void): void;
   onExit(cb: (result: RunExitResult) => void): void;
   cancel(): Promise<void>;
 }
@@ -39,6 +42,7 @@ export interface RunHandle {
 export interface AgentAdapterCapabilities {
   provider: string;
   supportsApprovalHook: boolean;
+  supportsStructuredTrace: boolean;
   executionTimeoutMs: number;
 }
 

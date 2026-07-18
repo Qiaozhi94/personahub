@@ -40,39 +40,39 @@ describe("StaleRecoveryService", () => {
     disposeTestServices(services);
   });
 
-  it("marks stale running Runs as interrupted", () => {
+  it("marks stale running Runs as interrupted", async () => {
     const { run } = setupTestRun(services, tempDir, RunStatus.Running);
 
-    services.staleRecoveryService.runAll();
+    await services.staleRecoveryService.runAll();
 
     const recovered = services.runRepo.getById(run.id);
     expect(recovered!.status).toBe(RunStatus.Interrupted);
     expect(recovered!.failure_reason).toBe(FailureReason.ServerRestarted);
   });
 
-  it("releases workspace lock after stale recovery", () => {
+  it("releases workspace lock after stale recovery", async () => {
     const { issue, run } = setupTestRun(services, tempDir, RunStatus.Running);
     services.workspaceRepo.acquireLock(issue.workspace_id, run.id);
 
     expect(services.workspaceLockService.isLocked(issue.workspace_id)).toBe(true);
-    services.staleRecoveryService.runAll();
+    await services.staleRecoveryService.runAll();
     expect(services.workspaceLockService.isLocked(issue.workspace_id)).toBe(false);
   });
 
-  it("does not touch queued Runs", () => {
+  it("does not touch queued Runs", async () => {
     const { run } = setupTestRun(services, tempDir, RunStatus.Queued);
 
-    services.staleRecoveryService.runAll();
+    await services.staleRecoveryService.runAll();
 
     const untouched = services.runRepo.getById(run.id);
     expect(untouched!.status).toBe(RunStatus.Queued);
   });
 
-  it("cleans up stale locks pointing to terminal runs", () => {
+  it("cleans up stale locks pointing to terminal runs", async () => {
     const { issue, run } = setupTestRun(services, tempDir, RunStatus.Completed);
     services.workspaceRepo.acquireLock(issue.workspace_id, run.id);
 
-    services.staleRecoveryService.runAll();
+    await services.staleRecoveryService.runAll();
 
     expect(services.workspaceLockService.isLocked(issue.workspace_id)).toBe(false);
   });

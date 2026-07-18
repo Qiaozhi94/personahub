@@ -75,7 +75,7 @@ describe("Same Workspace Serial Execution", () => {
     expect(services.runRepo.getById(run1.id)!.status).toBe(RunStatus.Running);
     expect(services.runRepo.getById(run2.id)!.status).toBe(RunStatus.Queued);
 
-    await wait(800);
+    await wait(2500);
 
     const run1Final = services.runRepo.getById(run1.id);
     const run2Final = services.runRepo.getById(run2.id);

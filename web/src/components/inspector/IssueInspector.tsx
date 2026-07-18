@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EvidenceSection } from "./EvidenceSection.js";
 
 interface IssueInspectorProps {
   issue: IssueWithThread;
@@ -246,6 +247,8 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
           <span className="text-xs text-muted-foreground">No runs yet</span>
         </section>
       )}
+
+      <EvidenceSection issue={issue} />
 
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <DialogContent>

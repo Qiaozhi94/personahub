@@ -1,9 +1,12 @@
 import type { RunStatus } from "@personahub/shared/types";
-import { RunStatus as RS, FailureReason as FR, ThreadEventType, ActorType } from "@personahub/shared/types";
+import { RunStatus as RS, FailureReason as FR, ThreadEventType, ActorType, BaselineStatus } from "@personahub/shared/types";
 import type { RunRepository } from "../repositories/run.js";
 import type { WorkspaceRepository } from "../repositories/workspace.js";
 import type { ThreadEventService } from "./thread-event.js";
 import type { WorkspaceLockService } from "./workspace-lock.js";
+import type { DevelopmentTraceService } from "./development-trace.js";
+import type { RunTraceRepository } from "../repositories/run-trace.js";
+import { SCAN_REASON_CODES } from "../runtime/trace/constants.js";
 
 export class StaleRecoveryService {
   constructor(
@@ -11,9 +14,17 @@ export class StaleRecoveryService {
     private workspaceRepo: WorkspaceRepository,
     private threadEventService: ThreadEventService,
     private workspaceLockService: WorkspaceLockService,
+    private developmentTraceService?: DevelopmentTraceService,
+    private runTraceRepo?: RunTraceRepository,
   ) {}
 
-  recoverStaleRuns(): void {
+  async runAll(): Promise<void> {
+    await this.recoverStaleRuns();
+    await this.recoverTerminalUnfinalized();
+    this.cleanupStaleLocks();
+  }
+
+  async recoverStaleRuns(): Promise<void> {
     const runningRuns = this.runRepo.listRunning();
 
     for (const run of runningRuns) {
@@ -36,7 +47,37 @@ export class StaleRecoveryService {
           { run_id: run.id, issue_id: result.run.issue_id, thread_id: result.run.thread_id, workspace_id: result.run.workspace_id, status: RS.Interrupted, failure_reason: FR.ServerRestarted },
         );
 
+        try {
+          this.developmentTraceService?.finalizeRun(run.id);
+        } catch {
+          // finalization failure during recovery is non-fatal
+        }
         this.workspaceLockService.releaseByRunId(run.id);
+      }
+    }
+  }
+
+  async recoverTerminalUnfinalized(): Promise<void> {
+    if (!this.runTraceRepo) return;
+    const unfinalized = this.runTraceRepo.listTerminalUnfinalized();
+
+    for (const state of unfinalized) {
+      const workspace = this.workspaceRepo.listLockedWorkspaces().find(
+        (w) => w.locked_by_run_id === state.run_id,
+      );
+
+      if (workspace && workspace.locked_by_run_id === state.run_id) {
+        try {
+          this.developmentTraceService?.finalizeRun(state.run_id);
+        } catch {
+          // finalization failure during recovery is non-fatal
+        }
+        this.workspaceLockService.releaseByRunId(state.run_id);
+      } else {
+        this.developmentTraceService?.finalizeRunWithoutWorkspace(
+          state.run_id,
+          SCAN_REASON_CODES.workspaceOwnershipLost,
+        );
       }
     }
   }
@@ -60,11 +101,6 @@ export class StaleRecoveryService {
         this.workspaceLockService.release(workspace.id);
       }
     }
-  }
-
-  runAll(): void {
-    this.recoverStaleRuns();
-    this.cleanupStaleLocks();
   }
 }
 

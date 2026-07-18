@@ -131,6 +131,17 @@ export enum ThreadEventType {
   RunInterrupted = "run.interrupted",
   EscalationTriggered = "escalation.triggered",
   IssueBlocked = "issue.blocked",
+  CommandStarted = "command.started",
+  CommandCompleted = "command.completed",
+  TestCompleted = "test.completed",
+  FileChangeSummary = "file.change_summary",
+  FileChangeScanFailed = "file.change_scan_failed",
+  HandoffCreated = "handoff.created",
+  ValidationRequested = "validation.requested",
+  ValidationFinding = "validation.finding",
+  ValidationPassed = "validation.passed",
+  ValidationFailed = "validation.failed",
+  ValidationBlocked = "validation.blocked",
 }
 
 export enum ActorType {
@@ -237,3 +248,5 @@ export interface RunSummary {
   completed_at: string | null;
   exit_code: number | null;
 }
+
+export * from "./trace.js";

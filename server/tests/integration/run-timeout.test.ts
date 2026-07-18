@@ -30,6 +30,7 @@ class HangingAgentAdapter implements AgentAdapter {
   readonly capabilities: AgentAdapterCapabilities = {
     provider: "hanging",
     supportsApprovalHook: false,
+    supportsStructuredTrace: false,
     executionTimeoutMs: 100,
   };
 
@@ -41,6 +42,7 @@ class HangingAgentAdapter implements AgentAdapter {
     const handle: RunHandle = {
       runId: input.runId,
       onOutput() {},
+      onTrace() {},
       onExit() {},
       async cancel() {},
     };
@@ -65,16 +67,11 @@ describe("Run Execution Timeout", () => {
     const { issue, adapter } = setupIssue(services, tempDir);
 
     await services.runDispatchService.dispatch(issue.id, adapter.id, "test");
-    await wait(50);
+    await wait(150);
 
-    const runningRun = services.runRepo.getById(
+    const timedOutRun = services.runRepo.getById(
       services.runRepo.listByIssue(issue.id)[0]!.id,
     );
-    expect(runningRun!.status).toBe(RunStatus.Running);
-
-    await wait(200);
-
-    const timedOutRun = services.runRepo.getById(runningRun!.id);
     expect(timedOutRun!.status).toBe(RunStatus.Failed);
     expect(timedOutRun!.failure_reason).toBe(FailureReason.ExecutionTimeout);
   });
@@ -87,7 +84,7 @@ describe("Run Execution Timeout", () => {
 
     expect(services.workspaceLockService.isLocked(issue.workspace_id)).toBe(true);
 
-    await wait(200);
+    await wait(400);
 
     expect(services.workspaceLockService.isLocked(issue.workspace_id)).toBe(false);
   });

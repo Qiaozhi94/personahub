@@ -1,11 +1,12 @@
 import type { Run, FailureReason, AdapterConfig, Workspace } from "@personahub/shared/types";
-import { FailureReason as FR, ThreadEventType, ActorType } from "@personahub/shared/types";
+import { FailureReason as FR, ThreadEventType, ActorType, CommandTraceCapability, type RunTraceSignal } from "@personahub/shared/types";
 import type { AgentAdapter, RunHandle, RunOutputChunk, RunExitResult, AgentRunInput } from "./types.js";
 import { DEFAULT_EXECUTION_TIMEOUT_MS, MAX_OUTPUT_BYTES, MAX_CHUNK_BYTES } from "./types.js";
 import type { RunService } from "../services/run.js";
 import type { ThreadEventService } from "../services/thread-event.js";
 import type { WorkspaceLockService } from "../services/workspace-lock.js";
 import { buildWorkspaceContext } from "./workspace-context.js";
+import { CommandCorrelator } from "./trace/command-correlator.js";
 
 interface ActiveRun {
   handle: RunHandle;
@@ -14,6 +15,9 @@ interface ActiveRun {
   timeoutTimer: ReturnType<typeof setTimeout>;
   truncated: boolean;
   exited: boolean;
+  correlator: CommandCorrelator;
+  workspacePath: string;
+  traceCapability: CommandTraceCapability;
 }
 
 export interface AgentRunnerDeps {
@@ -83,6 +87,11 @@ export class AgentRunner {
       timeoutTimer: null as never,
       truncated: false,
       exited: false,
+      correlator: new CommandCorrelator(this.deps.threadEventService),
+      workspacePath: workspace.local_path,
+      traceCapability: adapter.capabilities.supportsStructuredTrace
+        ? CommandTraceCapability.Supported
+        : CommandTraceCapability.Unsupported,
     };
 
     const timeoutTimer = setTimeout(() => {
@@ -99,6 +108,15 @@ export class AgentRunner {
     handle.onOutput((event: RunOutputChunk) => {
       if (activeRun.exited) return;
       this.handleOutput(run, event, activeRun);
+    });
+
+    handle.onTrace((signal: RunTraceSignal) => {
+      if (activeRun.exited) return;
+      activeRun.correlator.handleSignal(signal, {
+        run,
+        workspacePath: activeRun.workspacePath,
+        traceCapability: activeRun.traceCapability,
+      });
     });
 
     handle.onExit((result: RunExitResult) => {
@@ -188,7 +206,7 @@ export class AgentRunner {
       return;
     }
 
-    this.deps.threadEventService.writeAndBroadcast(
+    const outputEvent = this.deps.threadEventService.writeAndBroadcast(
       run.thread_id,
       ThreadEventType.RunOutput,
       ActorType.System,
@@ -202,8 +220,10 @@ export class AgentRunner {
         stream: event.stream,
         sequence: activeRun.sequence,
         chunk,
+        ...(event.sourceItemId ? { source_item_id: event.sourceItemId } : {}),
       },
     );
+    activeRun.correlator.trackOutputEvent(event.sourceItemId, outputEvent.id);
   }
 
   private handleExit(

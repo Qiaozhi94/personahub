@@ -8,6 +8,7 @@ import type {
   RunExitResult,
 } from "../types.js";
 import { DEFAULT_EXECUTION_TIMEOUT_MS } from "../types.js";
+import type { RunTraceSignal } from "@personahub/shared/types";
 
 export interface FakeAdapterOptions {
   outputDelayMs?: number;
@@ -16,19 +17,23 @@ export interface FakeAdapterOptions {
   delayMs?: number;
   failureReason?: import("@personahub/shared/types").FailureReason | null;
   errorMessage?: string | null;
+  traceSignals?: RunTraceSignal[];
+  supportsStructuredTrace?: boolean;
 }
 
 export class FakeAgentAdapter implements AgentAdapter {
   readonly provider = "fake";
-  readonly capabilities: AgentAdapterCapabilities = {
-    provider: "fake",
-    supportsApprovalHook: false,
-    executionTimeoutMs: DEFAULT_EXECUTION_TIMEOUT_MS,
-  };
-
+  readonly capabilities: AgentAdapterCapabilities;
   private defaultOptions: Required<FakeAdapterOptions>;
 
   constructor(options: FakeAdapterOptions = {}) {
+    this.capabilities = {
+      provider: "fake",
+      supportsApprovalHook: false,
+      supportsStructuredTrace: options.supportsStructuredTrace ?? true,
+      executionTimeoutMs: DEFAULT_EXECUTION_TIMEOUT_MS,
+    };
+
     this.defaultOptions = {
       outputDelayMs: options.outputDelayMs ?? 50,
       outputChunks: options.outputChunks ?? ["Fake agent output line 1\n", "Fake agent output line 2\n"],
@@ -36,6 +41,8 @@ export class FakeAgentAdapter implements AgentAdapter {
       delayMs: options.delayMs ?? 100,
       failureReason: options.failureReason ?? null,
       errorMessage: options.errorMessage ?? null,
+      traceSignals: options.traceSignals ?? [],
+      supportsStructuredTrace: options.supportsStructuredTrace ?? true,
     };
   }
 
@@ -48,9 +55,11 @@ export class FakeAgentAdapter implements AgentAdapter {
     let cancelled = false;
     let outputTimer: ReturnType<typeof setTimeout> | null = null;
     let exitTimer: ReturnType<typeof setTimeout> | null = null;
+    let traceTimer: ReturnType<typeof setTimeout> | null = null;
     let sequence = 0;
 
     const outputCallbacks: Array<(event: RunOutputChunk) => void> = [];
+    const traceCallbacks: Array<(event: RunTraceSignal) => void> = [];
     const exitCallbacks: Array<(result: RunExitResult) => void> = [];
 
     const startTimers = () => {
@@ -70,6 +79,22 @@ export class FakeAgentAdapter implements AgentAdapter {
       };
 
       outputTimer = setTimeout(emitNextChunk, opts.outputDelayMs);
+
+      if (opts.traceSignals.length > 0 && this.capabilities.supportsStructuredTrace) {
+        let traceIndex = 0;
+        const emitNextTrace = () => {
+          if (cancelled || traceIndex >= opts.traceSignals.length) {
+            traceTimer = null;
+            return;
+          }
+          for (const cb of traceCallbacks) {
+            cb(opts.traceSignals[traceIndex]);
+          }
+          traceIndex++;
+          traceTimer = setTimeout(emitNextTrace, opts.outputDelayMs);
+        };
+        traceTimer = setTimeout(emitNextTrace, opts.outputDelayMs);
+      }
 
       exitTimer = setTimeout(() => {
         if (cancelled) return;
@@ -91,6 +116,9 @@ export class FakeAgentAdapter implements AgentAdapter {
       onOutput(cb: (event: RunOutputChunk) => void): void {
         outputCallbacks.push(cb);
       },
+      onTrace(cb: (event: RunTraceSignal) => void): void {
+        traceCallbacks.push(cb);
+      },
       onExit(cb: (result: RunExitResult) => void): void {
         exitCallbacks.push(cb);
       },
@@ -98,6 +126,7 @@ export class FakeAgentAdapter implements AgentAdapter {
         cancelled = true;
         if (outputTimer) clearTimeout(outputTimer);
         if (exitTimer) clearTimeout(exitTimer);
+        if (traceTimer) clearTimeout(traceTimer);
       },
     };
 

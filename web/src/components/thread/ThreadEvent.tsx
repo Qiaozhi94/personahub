@@ -3,6 +3,11 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { ThreadEventType, type ThreadEvent as ThreadEventData } from "@personahub/shared";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { CommandTraceCard } from "@/components/trace/CommandTraceCard";
+import { VerificationTraceCard } from "@/components/trace/VerificationTraceCard";
+import { FileChangeTraceCard } from "@/components/trace/FileChangeTraceCard";
+import { HandoffTraceCard } from "@/components/trace/HandoffTraceCard";
+import { ValidationTraceCard } from "@/components/trace/ValidationTraceCard";
 
 interface ThreadEventProps {
   event: ThreadEventData;
@@ -55,16 +60,59 @@ function getBorderClass(type: string): string {
     case ThreadEventType.EscalationTriggered:
     case ThreadEventType.RunFailed:
     case ThreadEventType.IssueBlocked:
+    case ThreadEventType.FileChangeScanFailed:
       return "border-l-destructive";
     case ThreadEventType.RunCompleted:
+    case ThreadEventType.ValidationPassed:
       return "border-l-success";
     case ThreadEventType.RunInterrupted:
     case ThreadEventType.RunOutputTruncated:
+    case ThreadEventType.ValidationFailed:
+    case ThreadEventType.ValidationBlocked:
+    case ThreadEventType.ValidationFinding:
       return "border-l-warning";
     case ThreadEventType.RunCancelled:
+    case ThreadEventType.ValidationRequested:
       return "border-l-secondary";
     default:
       return "border-l-brand";
+  }
+}
+
+const F003_TRACE_TYPES = new Set<string>([
+  ThreadEventType.CommandStarted,
+  ThreadEventType.CommandCompleted,
+  ThreadEventType.TestCompleted,
+  ThreadEventType.FileChangeSummary,
+  ThreadEventType.FileChangeScanFailed,
+  ThreadEventType.HandoffCreated,
+  ThreadEventType.ValidationRequested,
+  ThreadEventType.ValidationFinding,
+  ThreadEventType.ValidationPassed,
+  ThreadEventType.ValidationFailed,
+  ThreadEventType.ValidationBlocked,
+]);
+
+function renderTraceCard(event: ThreadEventData): React.ReactNode | null {
+  switch (event.type) {
+    case ThreadEventType.CommandStarted:
+    case ThreadEventType.CommandCompleted:
+      return <CommandTraceCard event={event} />;
+    case ThreadEventType.TestCompleted:
+      return <VerificationTraceCard event={event} />;
+    case ThreadEventType.FileChangeSummary:
+    case ThreadEventType.FileChangeScanFailed:
+      return <FileChangeTraceCard event={event} />;
+    case ThreadEventType.HandoffCreated:
+      return <HandoffTraceCard event={event} />;
+    case ThreadEventType.ValidationRequested:
+    case ThreadEventType.ValidationFinding:
+    case ThreadEventType.ValidationPassed:
+    case ThreadEventType.ValidationFailed:
+    case ThreadEventType.ValidationBlocked:
+      return <ValidationTraceCard event={event} />;
+    default:
+      return null;
   }
 }
 
@@ -212,7 +260,9 @@ export function ThreadEvent({ event, consecutiveOutputChunks }: ThreadEventProps
         </div>
       ) : null}
 
-      {fields.length > 0 ? (
+      {F003_TRACE_TYPES.has(event.type) ? renderTraceCard(event) : null}
+
+      {fields.length > 0 && !F003_TRACE_TYPES.has(event.type) ? (
         <div className="grid grid-cols-[auto_1fr] gap-x-2.5 gap-y-1 font-mono text-xs">
           {fields.map((key) => (
             <Fragment key={key}>
