@@ -4,12 +4,18 @@ related_features: []
 topics: [prd, product, agent-team-os, issue-managed-workflow, room-collaboration, topology-aware-automation, evidence-grounded, artifact-centered]
 doc_kind: prd
 created: 2026-07-11
-updated: 2026-07-11
+updated: 2026-07-18
 ---
 
 # PersonaHub PRD: Personal AI Agent Team OS
 
 > Status: draft | Owner: qiaozhi
+
+## 修订记录
+
+| 日期 | 修订目的 | 修订内容 |
+| --- | --- | --- |
+| 2026-07-18 | 避免 v0.4 在 Workflow 抽象尚未经过跨场景验证时，同时铺开多个浅层非 coding workflow；让后续自动编排有可评价的数据基础 | 将 v0.4 调整为“扩展契约 + 按任务范式逐个验证的垂直切片”，优先做 Windows Troubleshooting，再按实测进入 knowledge/research 与 writing；明确多种 Issue Type 可以保留为方向，但不承诺同一版本全部成熟交付；将最小 AgentOps 原始信号前置到 v0.1–v0.3，v0.5 仍负责完整评价、分析 UI 与 trust scoring |
 
 ## 1. 背景
 
@@ -153,7 +159,7 @@ PersonaHub 应支持从个人到团队的渐进采用：
 
 第一阶段目标是：用户可以把日常代码开发工作流完整迁移到 `PersonaHub` 中，不再需要在多个 CLI 工具之间反复切换、复制上下文和手动下发工作指令。
 
-P0 只完整实现 coding workflow：只有 Coding Issue Type 拥有可运行的 Workflow Template、Agent Team Template 和 Validation Policy。Windows / Paper / Book / Research / Writing 等 Issue Type 在 P0 阶段只保留数据模型边界（Issue Type 枚举、Workflow Template / Validation Policy 的可扩展字段结构），不提供可运行模板或占位 UI——多场景同时铺开会稀释 P0 焦点，也会把还不成熟的 workflow 抽象过早产品化。这些 workflow 的完整实现见第 15 节 v0.4。
+P0 只完整实现 coding workflow：只有 Coding Issue Type 拥有可运行的 Workflow Template、Agent Team Template 和 Validation Policy。Windows / Paper / Book / Research / Writing 等 Issue Type 在 P0 阶段只保留数据模型边界（Issue Type 枚举、Workflow Template / Validation Policy 的可扩展字段结构），不提供可运行模板或占位 UI——多场景同时铺开会稀释 P0 焦点，也会把还不成熟的 workflow 抽象过早产品化。这些候选 workflow 从第 15 节 v0.4 起按任务范式逐个做垂直切片和真实验证，不承诺一次全部实现。
 
 P0 要跑通的开发工作流闭环：
 
@@ -896,12 +902,12 @@ P0 / P1 / P2 与第 15 节版本路线一一对应，不是独立的第二套排
 
 ### P2（v0.4 及以后）
 
-- 内置 Windows Troubleshooting Workflow。
-- 内置 Paper / Book Breakdown Workflow。
-- Research Workflow / Writing Workflow。
+- Workflow 扩展契约：输入/输出、capability、artifact、evidence、validation、权限与 Done policy 的扩展边界。
+- 按任务范式逐个交付非 coding 垂直切片，优先内置 Windows Troubleshooting Workflow。
+- Paper / Research、Writing / Book Breakdown 作为后续候选切片，根据前一个切片的实测结果依次评估，不承诺在同一版本并行完成。
 - Scheduled Issue。
 - Reusable Skill 文件加载 / 手动使用。
-- AgentOps Evaluation。
+- AgentOps Evaluation（最小原始信号从 v0.1–v0.3 开始记录；完整聚合、评价 UI 与 trust scoring 在 v0.5 落地）。
 - Provenance Gate 初版落地。
 - Skill candidates from Done Issue（candidate only，不自动参与执行）。
 - Issue board view。
@@ -1210,29 +1216,39 @@ v0.1 完成判据：
 
 ### v0.4 Daily Workflow Expansion
 
-目标：从 coding 扩展到个人日常 workflow，让 PersonaHub 不只是开发工具。
+目标：从 coding 扩展到个人日常 workflow，并通过不同任务范式的真实垂直切片验证 Workflow / Artifact / Evidence / Validation 抽象是否通用，让 PersonaHub 不只是开发工具。
+
+交付原则：
+
+- v0.4 是渐进扩展阶段，不是一次同时发布 Windows 排障、论文、书籍、研究、写作五套成熟 workflow 的功能包。
+- 一次优先做深一种新的任务范式；前一个切片完成真实端到端验证、暴露并修正通用抽象后，再决定下一个切片。
+- 可以提前保留多种 Issue Type 和 template 的数据模型边界，但“类型存在”不等于“已提供可运行、可验证的内置 Workflow”，UI 不应把未成熟类型展示为已支持能力。
+- 新场景优先通过 Workflow Template / Validation Policy / Agent capability 扩展；如果出现新的执行环境、证据语义或权限模型，应如实扩展对应模块，不把所有差异压进通用 JSON 配置。
 
 范围：
 
-- Windows Troubleshooting Workflow。
-- Paper Reading Workflow。
-- Book Breakdown Workflow。
-- Research Workflow。
-- Writing Workflow。
-- Scheduled Issue / Recurring Issue。
-- Skill 文件加载。
+以下编号表达建议的验证顺序和候选切片，不代表现在已经拆出的 Feature 或排期承诺；正式拆分仍应等待 v0.1–v0.3 的真实使用反馈。
+
+- **v0.4.0 Workflow 扩展契约**：明确输入/输出 contract、Agent capability、阶段 artifact、evidence requirements、validation policy、权限/escalation policy 和 Done policy 的扩展边界。
+- **v0.4.1 Windows Troubleshooting 垂直切片**：作为首个非 coding Workflow，覆盖诊断、受约束修复、修复前后状态证据、权限升级和危险操作 escalation；它与 coding 同样具有较强的客观验证条件，又能检验 Workspace、Runner、Evidence 和安全边界是否过度绑定代码仓库。
+- **v0.4.2 Knowledge / Research 候选切片**：在 v0.4.1 实测后，从 Paper Reading 或 Research 中选择一个优先落地，重点验证来源级 provenance、事实/作者观点/Agent 推断区分、多来源冲突和不确定性；不默认同时实现两者。
+- **v0.4.3 Writing / Book 候选切片**：根据前两个切片的反馈再决定范围，重点处理事实验证与主观偏好 gate 的边界；可以作为 verified research artifacts 的下游 Workflow，而不是复制一套独立平台。
+- Scheduled Issue / Recurring Issue 和 Skill 文件加载仅在至少一个非 coding 垂直切片稳定后按需引入，不作为五类 Workflow 同时交付的理由。
 
 完成判据：
 
-- 至少一个非 coding Issue Type 可以端到端完成并生成 evidence summary。
-- Scheduled Issue 可以按模板创建低风险重复任务。
+- 至少一个非 coding Issue Type（优先 Windows Troubleshooting）可以用真实任务端到端完成并生成可回溯的 Evidence Summary。
+- 能明确区分哪些 contract / artifact / evidence / validation 能力是跨场景通用抽象，哪些属于具体任务范式；不得依赖散落的 `issue_type` 条件分支或无法验证语义的万能 JSON 来伪装通用性。
+- 只有已完成真实端到端验证的内置 Workflow 才在 UI 和文档中标记为 supported；其余候选保持 experimental / planned。
+- 如果引入 Scheduled Issue，至少一种低风险、验证策略明确的 Workflow 可以按模板安全重复执行。
 
 ### v0.5 AgentOps & Evaluation
 
-目标：评估的不只是任务是否完成，还包括 agent / workflow / topology 的成本、可靠性和失败模式。
+目标：基于前序版本已经持续记录的最小运行信号，评估的不只是任务是否完成，还包括 agent / workflow / topology 的成本、可靠性和失败模式。v0.5 新增的是完整聚合、评价产品能力和信任决策，不应到此版本才首次开始收集基础数据。
 
 范围：
 
+- v0.1–v0.3 的最小前置埋点/事件不变量：人工介入与 override、手动上下文复制（可观测时）、duration、retry count、validation round、blocked reason、错误 Done / 错误 Blocked 纠正记录，以及证据回溯入口；早期可以只保存原始事件，不要求完整 AgentOps UI。
 - AgentOps metrics：cost、duration、retry count、validation_round_count、blocker count、tool efficiency。
 - Workflow success rate。
 - Drift / ping-pong / blocked reason 记录。

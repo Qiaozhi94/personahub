@@ -2,12 +2,18 @@
 topics: [architecture, runtime, module-design, agent-team-os]
 doc_kind: design
 created: 2026-07-12
-updated: 2026-07-17
+updated: 2026-07-18
 ---
 
 # PersonaHub 软件架构设计
 
 > Status: draft | Owner: TBD
+
+## 修订记录
+
+| 日期 | 修订目的 | 修订内容 |
+| --- | --- | --- |
+| 2026-07-18 | 同步 PRD 对 v0.4 渐进式多场景扩展和 AgentOps 前置数据采集的产品调整 | 明确非 coding Workflow 按任务范式逐个做垂直切片，不能把场景差异压成模板 JSON；补充 Windows 排障、knowledge/research、writing 三类执行与证据边界；明确 v0.1–v0.3 先保存可派生的最小原始信号，v0.5 再建设完整 AgentOps 聚合与评价能力 |
 
 ## 与 PRD / 数据模型文档的关系
 
@@ -20,7 +26,7 @@ updated: 2026-07-17
 按 PRD 第 15 节的版本路线，本文档的设计深度分两档，避免"过度平台化"（PRD 第 13 节风险）：
 
 - **主干做到能撑住 v0.7**：运行时/进程模型、agent adapter 抽象、事件流、存储访问层、workspace 执行边界、artifact/evidence 引用层——这些是一旦按"临时脚本"心态写死、后续很难无痛升级的部分，因为 v0.7（Runtime / Daemon / Self-host）要做的 daemon 化、multi-workspace、workspace isolation、background queue 本质上是运行时模型的改变，而不是加功能；artifact/evidence 引用层则因为属于 v0.1–v0.3 近期承诺范围（PRD 第 15 节），也需要现在就定好格式，避免 v0.3 落地时做数据迁移。这一档现在就设计清楚。
-- **v0.4–v0.6 只做到数据模型 + 接口占位**：新增 Issue Type / Workflow（v0.4）、AgentOps metrics / Provenance Gate（v0.5）、Skill Compounding（v0.6）这些是在既有 Issue/Workflow/Memory/Skill 模型上加表加策略，大概率不改变系统怎么跑，但也不预先承诺"完全不动 engine"（见第 10 节）。本文档只保证扩展点存在，不展开具体算法或判定逻辑。
+- **v0.4–v0.6 只做到扩展边界 + 接口占位**：新增 Issue Type / Workflow（v0.4）、AgentOps Evaluation / Provenance Gate（v0.5）、Skill Compounding（v0.6）会复用既有 Issue/Workflow/Memory/Skill 模型，但新任务范式可能引入不同执行环境、证据语义和权限模型，不能预设为只加表或 JSON 策略；本文档只保证扩展边界存在，不提前展开对应算法。为支持 v0.5 评价，v0.1–v0.3 已有 Run / ThreadEvent 应保留可派生的最小原始信号（见第 10 节）。
 - **v0.8 及以后不在本文档范围内**：MCP/A2A 协议层、adaptive topology selection 等，PRD 自身已标注为"方向性设想"，会随 v0.1–v0.3 的使用反馈调整，现在设计过细价值有限。
 
 ### 前置决策
@@ -210,8 +216,8 @@ Artifact-centered collaboration 是 PRD v0.3 的既定范围，属于 v0.1–v0.
 
 ## 10. v0.4–v0.6 扩展点（占位，不展开机制，不预先承诺零改动）
 
-- **新 Issue Type / Workflow（v0.4）**：优先通过 `WorkflowTemplate` / `ValidationPolicy` / Agent capability 扩展；若出现新的执行边界、证据类型或权限模型（例如 Windows 排障涉及权限提升和更严格的危险操作拦截，Paper/Book/Research 涉及外部资料读取和新证据类型），再局部扩展 Runner / Evidence / Adapter 层——不预先承诺"只是加 template 数据、完全不改 engine"，这是上一版过于乐观的表述。
-- **AgentOps metrics（v0.5）**：`Run` 表承载基础运行指标（cost / duration / retry count 等可直接加列）；但 workflow success rate、blocked reason、tool efficiency 等聚合型指标更可能来自 `ThreadEvent` / `Run` 的派生统计，必要时新增 projection 表，不宜预先断言"只是加列"。
+- **新 Issue Type / Workflow（v0.4）**：按任务范式逐个实现和验证垂直切片，不并行铺开多个浅层模板。首个候选 Windows Troubleshooting 会引入主机状态采集、权限提升、危险系统操作和修复前后验证；后续 Knowledge / Research 会引入来源定位、引用 provenance、事实/推断区分和冲突证据；Writing / Book 还需要区分客观事实验证与主观偏好 gate。这些差异优先通过 `WorkflowTemplate` / `ValidationPolicy` / Agent capability 表达，但若出现新的执行边界、证据类型或权限模型，应局部扩展 Runner / Evidence / Adapter 层，不得全部塞进无法形成业务不变量的通用 JSON，也不预先承诺"完全不改 engine"。
+- **AgentOps signals（v0.1–v0.3 前置）与 Evaluation（v0.5）**：前序版本的 `Run` / `ThreadEvent` 先保存 duration、retry、validation round、blocked reason、人工 intervention/override、Done/Blocked 纠正等可派生的原始事实；不要求提前实现完整指标面板。v0.5 再对 cost、workflow success rate、tool efficiency、validator FP/FN 等进行稳定定义和聚合，必要时新增 projection 表，不能仅靠给 `Run` 表加列。
 - **Provenance Gate（v0.5）**：Memory / Skill / Scheduled Issue 写入长期状态前，统一经过一个 `LongTermStateGate` 服务接口；v0.1–v0.4 阶段该 gate 直接放行（因为这几个版本本就不开放自动写入长期 Memory，PRD "Memory 沉淀"小节），v0.5 只需替换 gate 内部实现为真正的来源校验逻辑，调用方不用改。
 - **Skill Compounding（v0.6）**：`Skill` 表和 provenance 字段已在数据模型草案中占位，具体的 skill candidate 提取算法、review/accept 流程留到 v0.6 临近时再设计。
 
