@@ -4,7 +4,7 @@ related_features: [F001, F002, F003]
 topics: [autonomous-validation, validator-agent, validation-loop, evidence-summary, issue-status, workflow, v0.1.3]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-16
+updated: 2026-07-18
 ---
 
 # F004：Autonomous Validation
@@ -34,7 +34,7 @@ F001-F003 已经建立了 Project/Issue/Thread、agent Run、run events 和 deve
 - Validation fail 后没有结构化 findings 回流，用户仍需手动组织下一轮修复。
 - 多轮验证无法收敛时，如果不自动 Blocked，系统可能无限循环。
 
-F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证通过后 Done，验证失败后带 findings 回流，超过上限后 Blocked。
+F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证通过后 Done，验证失败后带 findings 回流，本次失败计入后达到上限即 Blocked。
 
 ### 目标
 
@@ -43,7 +43,7 @@ F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证
 - Validator 基于 F003 evidence refs 和 handoff packet 输出结构化 findings。
 - Validation pass 时，Issue 自动进入 `Done`，并生成 Evidence Summary。
 - Validation fail 时，Issue 回到 `Running`，findings 成为下一轮修复输入。
-- 超过 `max_validation_rounds` 或证据不足无法自行补齐时，Issue 进入 `Blocked`。
+- 本次失败计入后达到 `max_validation_rounds`，或证据不足无法自行补齐时，Issue 进入 `Blocked`。
 - UI 在 Thread / Inspector 中展示 validation result、findings、round count 和 Done evidence summary。
 
 ### 非目标
@@ -53,7 +53,7 @@ F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证
 - 本 feature 不实现 v0.5 validator capability / trust scoring；validator 仍来自 Coding Workflow Template 的固定角色。
 - 本 feature 不实现跨多个 validator 的 parallel_validation。
 - 本 feature 不自动写入长期 Memory 或 Skill candidate。
-- 本 feature 不要求真实 CLI 一定能提供强结构化验证输出；允许 P0 使用约定 JSON 或可解析 Markdown，但必须有可靠 fallback。
+- 本 feature 不要求所有真实 CLI 都具备 validator 能力；只有能提供可靠 final agent message 的 adapter 才可作为 validator。Validator 结果只接受约定的严格 JSON envelope（允许外包一层单独的 `json` fence），不从普通日志、command output 或自由 Markdown 推断结论；无法取得或解析时必须 Blocked。
 
 ## 2. 用户场景与独立测试
 
@@ -96,20 +96,20 @@ F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证
 **验收场景**：
 
 1. Given validator 输出 fail，when validation result 被解析，then 系统写入 `validation.failed` 和至少一条 `validation.finding`。
-2. Given validation failed，when Issue 未超过最大轮数，then Issue 回到 `Running`，并允许创建下一轮修复 Run。
+2. Given validation failed，when 本次失败计入后仍低于最大轮数，then Issue 回到 `Running`，并允许创建下一轮修复 Run。
 3. Given 下一轮修复 Run 被创建，when adapter input 被组装，then validation findings 被包含为修复上下文。
 
 ### US4：多轮验证不收敛后 Blocked（Priority: P1）
 
-作为用户，我希望系统不要无限循环修复和验证，而是在超过上限时明确阻塞并提示我介入。
+作为用户，我希望系统不要无限循环修复和验证，而是在失败次数达到上限时明确阻塞并提示我介入。
 
 **为什么是这个优先级**：失败收敛是 PRD 的安全边界，不是体验优化。
 
-**独立测试**：设置 `max_validation_rounds = 2`，连续模拟两次 validation fail，验证 Issue 进入 `Blocked`。
+**独立测试**：设置 `max_validation_rounds = 2`，连续模拟两次 validation fail；每次 fail 先计入 round count，第二次计入后达到上限并验证 Issue 进入 `Blocked`。
 
 **验收场景**：
 
-1. Given Issue validation_round_count 已达到上限，when validator 再次 fail，then Issue 进入 `Blocked`。
+1. Given 本次 fail 计入后的 `validation_round_count` 达到 `max_validation_rounds`，when 系统提交该结果，then Issue 进入 `Blocked`。
 2. Given Issue 进入 Blocked，when 用户查看 Inspector，then UI 展示 blocked reason 和最近 findings。
 3. Given Issue 已 Blocked，when 系统有 queued 自动修复动作，then 不应继续自动执行。
 
@@ -171,7 +171,7 @@ F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证
 - 如果 validator Run 失败退出，Issue 应进入 `Blocked` 或保持 `Validating` 后转 Blocked，不得 Done。
 - 如果 validator 输出无法解析，系统应写入 `validation.blocked`，并提示输出解析失败。
 - 如果 evidence refs 缺失，系统不得把 Issue 自动置 Done。
-- 如果 validation fail 但未超过上限，系统可回到 `Running`，但不得自动无限创建 Run；下一轮修复是否自动启动由 design 决定，P0 推荐需要用户确认或明确 action。
+- 如果 validation fail 计入后仍低于上限，系统可回到 `Running`，但不得自动无限创建 Run；下一轮修复是否自动启动由 design 决定，P0 推荐需要用户确认或明确 action。
 - 如果 Issue 已 Done，不应再自动触发 validation。
 - 如果 Issue 已 Blocked，必须由 operator 显式处理后回到 `Ready`，不会自动回到 Running。
 - 如果同一 Issue 的旧 implementation Run 仍在排队，但 Issue 已因另一条 implementation 完成而进入 `Validating`，queue drain 必须取消该 stale Run 并继续查找下一条 eligible Run，不得在 `Validating` 状态启动它。
@@ -214,6 +214,7 @@ F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证
 - WHEN 系统解析 validation result
 - THEN 得到 `passed` / `failed` / `blocked`
 - AND findings 包含 severity、message、evidence_refs、optional file refs
+- AND result 同时包含有界的 `key_decisions` 与 `lessons_candidate` 数组（允许为空），供 Done Evidence Summary 确定性生成
 
 ### Requirement: Validation Pass To Done（`FR-004`）
 
@@ -230,12 +231,12 @@ Validation pass 且 evidence trace 存在时，系统应当将 Issue 置为 Done
 
 ### Requirement: Validation Fail 回流（`FR-005`）
 
-Validation fail 且未超过轮次上限时，系统应当把 findings 回流为下一轮修复输入。
+Validation fail 且本次 fail 计入后仍低于轮次上限时，系统应当把 findings 回流为下一轮修复输入。
 
 #### Scenario: 失败回流
 
 - GIVEN validation result 是 `failed`
-- AND validation_round_count 未超过上限
+- AND 本次 fail 计入后的 validation_round_count 仍低于上限
 - WHEN 系统提交 validation 结果
 - THEN 写入 `validation.failed` 和 `validation.finding`
 - AND Issue 状态回到 `Running`
@@ -243,12 +244,12 @@ Validation fail 且未超过轮次上限时，系统应当把 findings 回流为
 
 ### Requirement: Validation Round Limit（`FR-006`）
 
-系统应当在超过 `max_validation_rounds` 时将 Issue 置为 Blocked。
+系统应当在本次 validation fail 计入后使 `validation_round_count >= max_validation_rounds` 时将 Issue 置为 Blocked；默认 `max_validation_rounds=3` 表示第三次 failed 直接 Blocked，不允许第四次。
 
 #### Scenario: 多轮不收敛
 
-- GIVEN Issue validation_round_count 达到 ValidationPolicy 上限
-- WHEN validation 再次失败
+- GIVEN 本次 validation fail 计入后 validation_round_count 达到 ValidationPolicy 上限
+- WHEN 系统提交该次失败
 - THEN 系统写入 `validation.blocked`
 - AND Issue 状态变为 `Blocked`
 - AND 不再自动启动下一轮 Run
@@ -262,7 +263,7 @@ Validation fail 且未超过轮次上限时，系统应当把 findings 回流为
 - GIVEN Issue validation passed
 - WHEN Issue 进入 Done
 - THEN 系统创建 Evidence Summary
-- AND summary 包含 validation_result、test evidence、changed files、handoff、validator identity、same_origin_validation 标记
+- AND summary 包含 goal、final result、implementation summary、key decisions、commands/tests、changed files、handoff、validation result、lessons candidate、双方 identity、same_origin_validation 与 policy snapshot 标记
 
 ### Requirement: Same-Origin Validation 标记（`FR-008`）
 
@@ -307,8 +308,8 @@ UI 应当展示 validation 状态、findings、round count、blocker 和 Done ev
 
 - **DR-001**：Issue 应当持久化 `validation_round_count`，并在 validation fail 回流时递增。
 - **DR-002**：ValidationPolicy 应当提供 `max_validation_rounds`，P0 默认值为 `3`。
-- **DR-003**：Run 应当能区分 implementation Run 和 validator Run，至少通过 role / purpose / adapter_config_id / workflow_step 表达。
-- **DR-004**：EvidenceSummary 应当绑定 `issue_id`、`thread_id`、`validation_result`、`evidence_refs`、`summary_markdown`、`same_origin_validation`、`validator_identity`（validator agent 的 id/name/`default_model`）、`policy_version`（当次验证使用的 `ValidationPolicy` 版本标识）、`created_at`。缺少 `validator_identity`/`policy_version` 会让以后复盘"这次 Done 是按哪个 policy、哪个 validator 判的"变得不可追溯，尤其是 `ValidationPolicy` 未来可能迭代版本。
+- **DR-003**：Run 应当能区分 implementation Run 和 validator Run，至少通过 role / purpose / adapter_config_id / workflow_step 表达；role/workflow step/dispatch source 必须由服务端按创建路径派生，客户端不能伪造。每个新 Run 在创建时固化不含凭据的 adapter identity snapshot（config id/name/provider/model），后续配置修改不得改变历史 same-origin 判定。
+- **DR-004**：EvidenceSummary 应当绑定 `issue_id`、`thread_id`、`validation_result`、`evidence_refs`、`summary_markdown`、`same_origin_validation`、implementation/validator identity snapshot、`policy_id`、`policy_version`、当轮 policy snapshot/hash、`created_at`。Summary 内容覆盖 PRD 的 goal、final result、implementation summary、key decisions、commands/tests、changed artifacts、validation result、lessons candidate。缺少 identity/policy snapshot 会让以后复盘“这次 Done 是按哪套 policy、哪两个实际 Run identity 判的”变得不可追溯。
 - **DR-005**：ThreadEvent 应当支持 `validation.requested`、`validation.finding`、`validation.passed`、`validation.failed`、`validation.blocked`、`issue.done`、`issue.unblocked`。
 - **DR-006**：Blocked reason 应当持久化，至少能从 Issue 或 latest blocker event 查询。
 
@@ -323,13 +324,15 @@ UI 应当展示 validation 状态、findings、round count、blocker 和 Done ev
 - **TR-007**：Issue 从 Blocked 恢复到 Ready 时，系统应写入 `issue.unblocked`，payload 必须包含 operator 提供的 `operator_note`（恢复原因），不允许为空。
 - **TR-008**：所有 validation events 应复用 F001/F002 的 ThreadEvent cursor、持久化和 SSE replay 机制。
 
+Validation event 的执行来源和证据目标必须分开表达：`validator_run_id` 标识产生判断的 Run，`implementation_run_id` 标识被验证对象；implementation evidence refs 必须按后者做 Run scope 校验，不能以 validator Run scope 校验，也不能为兼容两者而取消 Run scope。
+
 ### API / 接口需求
 
 - **IR-001**：后端应提供读取 Issue validation status / round count / latest result 的接口。
 - **IR-002**：后端应提供读取 Evidence Summary 的接口。
 - **IR-003**：后端应提供处理 validation blocker 并将 Issue 恢复到 Ready 的接口；请求必须包含非空 `operator_note`，缺失时拒绝请求。
 - **IR-004**：后端应提供触发或重试 validation 的接口；是否允许用户手动触发由 design 明确。
-- **IR-005**：非法状态转换应返回结构化错误，例如 Done Issue 不允许自动重验，Blocked Issue 未处理前不允许继续执行。
+- **IR-005**：非法状态转换应返回结构化错误：Done Issue 不允许重验或创建新 Run；Validating Issue 不允许用户创建普通 implementation Run；Blocked Issue 未处理前不允许继续执行。公开 Run 创建请求不得接受或伪造 validator role、workflow step、validation round、dispatch source。
 
 ### UX 需求
 
@@ -343,8 +346,8 @@ UI 应当展示 validation 状态、findings、round count、blocker 和 Done ev
 ### 非功能需求
 
 - **NFR-001**：可靠性：Issue 状态更新、validation event、Evidence Summary 创建必须保持事务一致性。
-- **NFR-002**：安全 / escalation 边界：超过 validation round limit、证据不足无法补齐、validator 不可用时必须 Blocked，不得无限循环。
-- **NFR-003**：可追溯性：Done 必须能追溯到 validation.passed 和 Evidence Summary。
+- **NFR-002**：安全 / escalation 边界：本次 fail 计入后达到 validation round limit、证据不足无法补齐、validator 不可用时必须 Blocked，不得无限循环。
+- **NFR-003**：可追溯性：Done 必须能追溯到 validation.passed、Evidence Summary、创建 Run 时固化的双方 adapter identity，以及 request 时固化的 policy snapshot/hash。
 - **NFR-004**：本地优先：validation 和 evidence summary 默认本地持久化，不依赖外部云服务。
 - **NFR-005**：兼容性：validator context 和 findings 中的 file refs 必须兼容 Windows path。
 
@@ -352,10 +355,10 @@ UI 应当展示 validation 状态、findings、round count、blocker 和 Done ev
 
 - **Validator Agent**：Coding Workflow Template 中固定声明的 reviewer / validator 角色。v0.1 不允许任意 Agent 通过 capability 自行成为 validator。
 - **Validation Run**：用于验证 implementation result 的 agent Run，绑定同一个 Issue / Thread / Workspace。
-- **Validation Result**：validator 输出的结构化结果，最小取值为 `passed` / `failed` / `blocked`。
+- **Validation Result**：validator final message 中唯一、严格的 JSON envelope，最小 outcome 为 `passed` / `failed` / `blocked`，并携带 findings、key decisions 和 lessons candidate；不得从自由 Markdown 或混合输出猜测。
 - **Validation Finding**：validator 输出的问题项，包含 severity、message、evidence refs 和可选 file refs。
 - **Validation Round**：一次 implementation -> validation 的验证轮次。validation fail 回流会增加 `validation_round_count`。
-- **Evidence Summary**：Done Issue 的证据摘要，汇总验证结果、测试证据、文件变更、关键命令、handoff 和同源验证标记。
+- **Evidence Summary**：Done Issue 的确定性证据摘要，汇总 goal、final/implementation/validation result、key decisions、测试与关键命令、文件变更、handoff、lessons candidate、双方 identity、policy snapshot 和同源验证标记。
 - **Same-Origin Validation**：implementation agent 和 validator agent 的 provider/model 完全一致时的验证独立性标记。
 
 ## 6. 状态、工作流或生命周期
@@ -366,7 +369,7 @@ F004 落地 v0.1 coding workflow 的状态闭环：
 Running    -> Validating  implementation Run completed
 Validating -> Done        validation passed + evidence trace exists
 Validating -> Running     validation failed + round count below max
-Validating -> Blocked     max rounds exceeded / evidence missing / validator unavailable / result unparsable
+Validating -> Blocked     本次 fail 计入后达到 max rounds / evidence missing / validator unavailable / result unparsable
 Blocked    -> Ready       operator handled blocker
 ```
 
@@ -375,7 +378,7 @@ Blocked    -> Ready       operator handled blocker
 - Issue 进入 `Validating` 前必须有 completed implementation Run。
 - Validation pass 必须绑定 evidence refs；没有 evidence 不得 Done。
 - Validation fail 回流时递增 `validation_round_count`。
-- 超过 `max_validation_rounds` 后进入 Blocked。
+- 本次 fail 计入后 `validation_round_count >= max_validation_rounds` 即进入 Blocked。
 - Done 是终态；F004 不定义 Done 后重新打开。
 - Blocked 不是终态，但只能由 operator action 回到 Ready。
 - F004 P0 推荐不自动启动下一轮修复 Run，而是将 findings 放入上下文并等待用户触发，避免无人值守无限循环。
@@ -392,14 +395,14 @@ Blocked    -> Ready       operator handled blocker
 
 - [ ] **AC-001**（`FR-001`, `TR-001`）：implementation Run completed 后自动创建 validator Run，Issue 进入 `Validating`。
 - [ ] **AC-002**（`FR-002`, `DR-003`）：validator Run 输入包含 goal，以及其目标 `implementation_run_id` 对应的 handoff、evidence refs、changed files、test results；后续其他 Run 的 handoff 不得串入。
-- [ ] **AC-003**（`FR-003`, `TR-002`）：validator 输出被解析为 result 和 findings。
-- [ ] **AC-004**（`FR-004`, `FR-007`, `TR-003`, `TR-006`, `DR-004`）：validation pass 后 Issue 进入 `Done`，创建 Evidence Summary，并包含 `validator_identity` 和 `policy_version`。
+- [ ] **AC-003**（`FR-003`, `TR-002`）：validator final message 的 strict JSON 被解析为 result、findings、key decisions 与 lessons candidate；自由 Markdown、混合 output 和非法 envelope 必须 Blocked。
+- [ ] **AC-004**（`FR-004`, `FR-007`, `TR-003`, `TR-006`, `DR-004`）：validation pass 后 Issue 进入 `Done`，创建覆盖 PRD 内容的 Evidence Summary，并包含双方 Run identity snapshot 与当轮 policy snapshot/hash。
 - [ ] **AC-005**（`FR-005`, `TR-004`）：validation fail 后写入 findings，Issue 回到 `Running`，下一轮上下文包含 findings。
-- [ ] **AC-006**（`FR-006`, `TR-005`, `NFR-002`）：超过 max validation rounds 后 Issue 进入 `Blocked`，不再自动执行。
+- [ ] **AC-006**（`FR-006`, `TR-005`, `NFR-002`）：本次 fail 计入后达到 max validation rounds 时 Issue 立即进入 `Blocked`（默认第三次），不再自动执行。
 - [ ] **AC-007**（`FR-008`, `UX-005`）：同源验证被识别并展示。
 - [ ] **AC-008**（`FR-009`, `TR-007`, `IR-003`）：operator 处理 blocker 后 Issue 从 `Blocked` 回到 `Ready`，不会自动 Running；`issue.unblocked` 必须包含非空 `operator_note`，缺失时请求被拒绝。
 - [ ] **AC-009**（`FR-010`, `UX-001` - `UX-004`）：Thread / Inspector 展示 validation events、findings、round count、blocker 和 Done summary。
-- [ ] **AC-010**（`NFR-001`, `NFR-003`）：Issue 状态、validation events、Evidence Summary 保持事务一致且可追溯。
+- [ ] **AC-010**（`NFR-001`, `NFR-003`, `IR-005`）：Issue 状态、validation events、Evidence Summary 保持事务一致且可追溯；Done/Validating/Blocked 的公开 Run 创建护栏和系统字段防伪有效。
 
 ## 9. 测试计划
 
@@ -417,7 +420,7 @@ Blocked    -> Ready       operator handled blocker
 - Fake implementation Run completed 后触发 fake validator Run。
 - validator pass -> validation.passed -> Evidence Summary -> Issue Done。
 - validator fail -> findings -> Issue Running -> round count 增加。
-- max rounds exceeded -> validation.blocked -> Issue Blocked。
+- 本次 fail 计入后达到 max rounds -> validation.blocked -> Issue Blocked。
 - validator unavailable / unparsable output -> Issue Blocked。
 - operator unblock -> Issue Ready。
 
@@ -432,7 +435,7 @@ Blocked    -> Ready       operator handled blocker
 
 - 一个真实小型 coding Issue 从实现、验证到 Done。
 - 一个故意失败测试的 Issue 进入 validation failed，并回流 findings。
-- 一个超过 max rounds 的 Issue 自动 Blocked。
+- 一个在本次 fail 计入后达到 max rounds 的 Issue 自动 Blocked。
 - 缺少 test evidence 时不得 Done。
 
 ## 10. 依赖
@@ -461,7 +464,7 @@ Blocked    -> Ready       operator handled blocker
 
 | 风险 | 影响 | 缓解 |
 | --- | --- | --- |
-| validator 输出不稳定 | result 解析失败，状态机卡住 | 要求最小 JSON contract；解析失败进入 Blocked 并保留原始输出 |
+| validator 输出不稳定 | result 解析失败，状态机卡住 | 要求 strict final-message JSON contract；解析失败进入 Blocked，原始 final message 仅保留在内部 Run 记录并禁止通过公共 API/evidence payload 暴露 |
 | validation 自动循环失控 | agent 反复修复/验证消耗资源 | `max_validation_rounds` 强制 Blocked；P0 不自动启动下一轮修复 Run |
 | 同源验证可信度不足 | Done 看起来比实际更可信 | Evidence Summary 标记 `same_origin_validation`，UI 如实展示 |
 | evidence 缺失仍 Done | 破坏 PRD 可信度底线 | Done 前强制检查 evidence refs；缺失则 blocked/failed |
@@ -472,10 +475,10 @@ Blocked    -> Ready       operator handled blocker
 
 目前没有遗留的开放问题，以下四项均已关闭：
 
-- **Q1（已关闭）**：维持严格 JSON 优先、解析失败必须 Blocked 的现有设计，不采纳 clowder-ai 更宽松的做法——它真实的 review/merge-gate 流程其实是对自由格式 Markdown 用正则找 severity 标记，找不到就静默当无问题处理，不做硬性拒绝；这种宽松处理成立的前提是"始终有人或 agent 在读原始文本兜底解读"，而 F004 要做的是无人值守的自动 Done/Blocked 判定，不能假设有人兜底，所以更严格的 JSON contract 是对的选择，见 `FR-003`。
+- **Q1（已关闭）**：只接受严格 final-message JSON（可外包单一 `json` fence），解析失败必须 Blocked，不采纳 clowder-ai 更宽松的自由 Markdown/正则做法——它成立的前提是“始终有人或 agent 在读原始文本兜底解读”，而 F004 的自动 Done/Blocked 判定不能依赖该假设，见 `FR-003`。
 - **Q2（已关闭）**：维持 validation fail 后不自动重跑、等待用户触发的现有设计；multica 的 `attempt`/`max_attempts` 重试机制被证实只覆盖基础设施类失败（进程崩溃、超时、runtime 离线），代码注释明确把 agent 自身错误排除在自动重试之外（"real problems the user should see, not infrastructure flakiness"），人工 rerun 还会强制重置 session 避免复现同样的坏状态——与本 feature"不自动开下一轮"的立场一致，见"状态、工作流或生命周期"一节。
 - **Q3（已关闭）**：P0 允许同 provider 不同 `default_model`，无法满足时标记同源验证；F005 引入 Claude Code / OpenCode 后可以配置真正跨 provider 的 validator，届时应优先使用真实跨 provider 而非同源 fallback，见 `FR-008`。
-- **Q4（已关闭）**：Evidence Summary 复用 F003 export 的 renderer，但作为 Done Issue 的独立结构化记录持久化，不只是一份导出文件；multica 和 clowder-ai 都没有等价的"Done 摘要"概念可比对，这条是 PersonaHub 自己的设计判断，非阻塞，见 `DR-004`。
+- **Q4（已关闭）**：Evidence Summary 复用 F003 的 evidence 数据、escaping/截断约定和 Markdown 风格，但由独立 deterministic builder 生成并作为 Done Issue 的结构化记录持久化，不直接调用 F003 export 的私有 renderer；内容覆盖 PRD 第 7.6 节，见 `DR-004`。
 
 ## 13. 可追踪性
 

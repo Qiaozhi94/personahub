@@ -4,7 +4,7 @@ related_features: [F001, F002, F003, F005]
 topics: [autonomous-validation, workflow-engine, validator, evidence-summary, issue-state, recovery]
 doc_kind: design
 created: 2026-07-16
-updated: 2026-07-16
+updated: 2026-07-18
 ---
 
 # F004：Autonomous Validation - 设计
@@ -65,7 +65,7 @@ validator Run completed
 2. `RunDispatchService.finalizeAndDrain()` 在 F003 finalization 和 unlock 后调用 workflow hook；hook 失败必须收敛为 Blocked，不能让 adapter callback 抛出未处理异常。
 3. Validator Run 的非零退出、超时、取消、中断、无法解析都不是普通 validation fail；它们意味着本轮无法形成可信判断，统一进入 `Blocked`。
 4. Implementation Run failed/cancelled/interrupted 不触发 validation，Issue 保持 `Running`（若 escalation 已置 Blocked 则保持 Blocked）。
-5. 用户创建 Run 不能伪造 `role=validator`、`validation_round` 或 validation result；F004 的 validator Run 只由 workflow service 创建。
+5. 用户创建 Run 不能伪造 `role=validator`、`workflow_step`、`validation_round`、`dispatch_source` 或 validation result；F004 的 validator Run 只由 workflow service 创建。Done/Validating/Blocked Issue 的公开 implementation Run 创建在 service transaction 内拒绝，不能依赖稍后的 queue cancellation 兜底。
 
 F004会把F003 terminal出口的最终顺序明确调整为：`trace finalize -> release lock -> workflow hook -> drain next queued Run`。Workflow hook必须早于queue drain：否则旧队列中的implementation/consult Run可能先启动，validator创建顺序会漂移；若validator结果需要把Issue置Blocked，也来不及在drain前取消不再eligible的queued Run。Hook无论成功或收敛为Blocked，最外层`finally`都必须继续执行queue drain，不能制造新死锁。
 
@@ -93,6 +93,11 @@ export enum RunRole {
 export enum RunDispatchSource {
   UserExplicit = "user_explicit",
   System = "system",
+}
+
+export enum AdapterRole {
+  Implementation = "implementation",
+  Validator = "validator",
 }
 
 export enum ValidationOutcome {
@@ -128,6 +133,29 @@ export interface ValidationResultEnvelope {
   findings: ValidationFinding[];
   evidence_refs: string[];
   missing_evidence: string[];
+  key_decisions: string[];
+  lessons_candidate: string[];
+}
+
+export interface AdapterIdentitySnapshot {
+  adapter_config_id: string;
+  name: string;
+  cli_provider: string;
+  default_model: string | null;
+}
+
+export interface ValidationPolicySnapshot {
+  policy_id: string;
+  version: number;
+  max_validation_rounds: number;
+  evidence_requirements: ValidationEvidenceRequirements;
+}
+
+export interface ValidationEvidenceRequirements {
+  require_handoff: boolean;
+  require_file_trace: boolean;
+  require_verification: boolean;
+  accepted_verification_kinds: VerificationKind[];
 }
 ```
 
@@ -138,7 +166,10 @@ role: RunRole
 workflow_step: "implementation" | "validation" | null
 validation_round: number | null
 dispatch_source: RunDispatchSource
+adapter_identity: AdapterIdentitySnapshot | null
 ```
+
+`adapter_identity` 在每条新 Run 创建 transaction 内从已校验的 adapter config 固化，不含 command/args/env/credential；v1-v3 历史 Run 迁移后允许为 `null`。Same-origin、Evidence Summary 和恢复路径只读取 Run snapshot，不重新读取可变的 `agent_configs`。公开创建 input 不接受该字段；公共 Run DTO 只在确有 UI 需要时返回这份无凭据 snapshot。
 
 `workflow_step` 完全由 `role` 派生，创建 Run 时按下表固化，不接受客户端传入，也不独立于 `role` 变化：
 
@@ -150,14 +181,9 @@ dispatch_source: RunDispatchSource
 
 即 `workflow_step` 是 `role` 的展示派生列（`consult -> null`，其余同名映射）；任何创建路径都必须与 `role` 一致，二者不得出现 `role=consult` 却 `workflow_step` 非空之类的组合。
 
-`ThreadEventType` 显式增加以下持久化枚举值：
+F003 已经持久化 `validation.requested/finding/passed/failed/blocked` 五类枚举，F004 复用并扩展其 payload contract，不重复新增。F004 只新增以下持久化枚举值：
 
 ```ts
-ValidationRequested = "validation.requested"
-ValidationFinding = "validation.finding"
-ValidationPassed = "validation.passed"
-ValidationFailed = "validation.failed"
-ValidationBlocked = "validation.blocked"
 IssueDone = "issue.done"
 IssueUnblocked = "issue.unblocked"
 ```
@@ -183,6 +209,7 @@ ALTER TABLE runs ADD COLUMN workflow_step TEXT;
 ALTER TABLE runs ADD COLUMN validation_round INTEGER;
 ALTER TABLE runs ADD COLUMN dispatch_source TEXT NOT NULL DEFAULT 'user_explicit';
 ALTER TABLE runs ADD COLUMN final_message TEXT;
+ALTER TABLE runs ADD COLUMN adapter_identity_json TEXT;
 
 ALTER TABLE issues ADD COLUMN blocked_reason_code TEXT;
 ALTER TABLE issues ADD COLUMN blocked_reason_message TEXT;
@@ -197,9 +224,12 @@ CREATE TABLE IF NOT EXISTS evidence_summaries (
   evidence_refs TEXT NOT NULL,
   summary_markdown TEXT NOT NULL,
   same_origin_validation INTEGER NOT NULL,
+  implementation_identity_json TEXT NOT NULL,
   validator_identity_json TEXT NOT NULL,
   policy_id TEXT NOT NULL,
   policy_version INTEGER NOT NULL,
+  policy_snapshot_json TEXT NOT NULL,
+  policy_snapshot_hash TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
 
@@ -211,7 +241,7 @@ CREATE INDEX IF NOT EXISTS idx_runs_issue_role_created
   ON runs(issue_id, role, created_at DESC);
 ```
 
-`validator_identity_json` 固定形状：
+`implementation_identity_json` 与 `validator_identity_json` 都使用 `AdapterIdentitySnapshot` 的固定形状：
 
 ```json
 {
@@ -224,7 +254,7 @@ CREATE INDEX IF NOT EXISTS idx_runs_issue_role_created
 
 约束与兼容：
 
-- v1-v3 Run 全部迁移为 implementation/user_explicit；这是对已有行为的真实解释。
+- v1-v3 Run 全部迁移为 implementation/user_explicit；这是对已有行为的真实解释。历史 `adapter_identity_json` 可为 null，新建 Run 由 service 强制非空。
 - `issue_id UNIQUE` 保证 Done projection 每个 Issue 只有一份。F004 不支持 reopen；重放 terminal hook 使用 `INSERT ... ON CONFLICT DO NOTHING` 加状态 CAS，不能覆盖历史 Done 证据。
 - active validator partial unique index既保护 F004 重复 callback，也直接成为 F005 手动/自动互斥的数据库底线。
 - migration 前若意外已有重复 pending validator（理论上旧 schema 无 role，不会出现），迁移测试必须失败并报告，不静默删除数据。
@@ -256,7 +286,9 @@ v4 migration 只在默认记录仍为 v1 seed 形态时更新，不覆盖用户�
 }
 ```
 
-P0 pass gate 要求：本轮 implementation 有 `handoff.created`、file trace 为 complete/partial 且有 `file-change-set:` ref、至少一条 confirmed `test.completed` 且 result=`passed`。若 Issue goal 明确是只读/无代码变更，P0 仍不自动放宽；operator 可处理 blocker 后重新组织任务，避免 engine 猜意图。
+P0 pass gate 要求：本轮 implementation 有 `handoff.created`、file trace 为 complete/partial 且有 `file-change-set:` ref、至少一条 confirmed `test.completed`（其 `kind ∈ accepted_verification_kinds`）且 result=`passed`。若 Issue goal 明确是只读/无代码变更，P0 仍不自动放宽；operator 可处理 blocker 后重新组织任务，避免 engine 猜意图。
+
+Validation request 时把 policy 解析为 `ValidationPolicySnapshot`，对规范化 JSON（稳定 key order）计算 SHA-256 `snapshot_hash`，并完整固化在 `validation.requested` payload；Evidence Summary 同时保存 snapshot JSON/hash。Context builder、pass gate、round gate、result submission 与 startup recovery 都读取该 requested snapshot，绝不在 validator terminal 时重新读取可能已修改的 policy 行。`policy_id/version` 仍用于展示和索引，但不能单独充当历史快照。
 
 ### 4.3 Repositories
 
@@ -278,6 +310,8 @@ P0 pass gate 要求：本轮 implementation 有 `handoff.created`、file trace �
 
 Repository 不解析 JSON result、不判断 evidence 是否足够、不广播事件。
 
+`RunService` 的公开创建入口只创建 `role=implementation/workflow_step=implementation/dispatch_source=user_explicit`，并在同一 transaction 重新读取 Issue：仅 Inbox/Ready/Running 可接受；Validating/Done/Blocked 返回结构化 transition error。请求 body 出现 role/workflow_step/validation_round/dispatch_source/adapter_identity 等系统字段时直接拒绝未知/保留字段。`AdapterConfigService` 同样把 F004 role 限制为 `implementation|validator`，不允许任意字符串进入数据库。
+
 ## 5. Validator 输出与 Context
 
 ### 5.1 Final agent message
@@ -293,7 +327,9 @@ interface RunExitResult {
 }
 ```
 
-- Codex normalizer 从 final `agentMessage` item/turn result 采集 final message，最大 64 KiB；command output 不进入该字段。
+- Codex final message 的权威来源是 `item/completed` 通知中 `item.type === "agentMessage"` 且 `item.phase === "final_answer"` 的 item，取其 `text` 字段；同一 turn 出现多条时取最后一条 `final_answer`。**不得累加 `item/agentMessage/delta` 流**——一个 turn 可能先有 preamble agentMessage（`phase !== "final_answer"`）再有 final answer，累加会把两段拼成非法 JSON 而误判 unparsable。也**不得依赖 `turn/completed`**，其 `turn.items` 为 `[]`、`itemsView=notLoaded`，不携带正文。最大 64 KiB；command output 走 `commandExecution.aggregatedOutput`，不进入该字段。
+- 取不到 `phase === "final_answer"` 的 agentMessage item 视为 final message 缺失，validator Run 按 `result_unparsable` Blocked。
+- 上述契约由真实 Codex `0.144.5`（Windows）final-answer probe 固化：delta 字段名为 `delta`；preamble agentMessage 观测到 `phase="commentary"`、final answer 为 `phase="final_answer"`，故采集须**只认 `final_answer` 并显式排除 `commentary`**；每条 agentMessage 先 `item/started`（text 空）后 `item/completed`（text 完整），采集认 `item/completed`；命令输出（`commandExecution.aggregatedOutput`）与 final message 隔离已验证，Unicode 原样保留。probe 未覆盖的 64 KiB 截断、缺失/非零/cancel/timeout 由实现期正式 fixture 补齐，均已有 Blocked 兜底。
 - Fake adapter 可直接配置 `finalMessage`。
 - 不支持 final message 的 adapter 可以正常做 implementation，但不能作为 validator；availability capability 显示原因。
 - AgentRunner 在 validator Run terminal 时把 `finalMessage` 交给 workflow hook；不把未 redacted 原文新增到结构化 validation payload。原始输出仍按 F002/F003 有界 trace 留存。
@@ -304,10 +340,10 @@ Validator prompt 要求 final message 只包含一个 JSON object。Parser：
 
 1. UTF-8 trim；允许最外层一个 ```json fenced block，但 fence 外只能有空白。
 2. `JSON.parse` 后做严格 schema 校验；未知顶层字段拒绝，避免协议漂移被静默吞掉。
-3. 限制 summary 8 KiB、finding 100 条、单 finding message/suggestion 各 4 KiB、refs 200 条。
+3. 限制 summary 8 KiB、finding 100 条、单 finding message/suggestion 各 4 KiB、refs 200 条、key decisions/lessons candidate 各 50 条且单项 4 KiB。
 4. `passed` 必须 `findings=[]` 且 `missing_evidence=[]`；否则拒绝为 unparsable。
-5. `failed` 必须至少一个 finding；`blocked` 必须在 `missing_evidence` 或 finding 中说明原因。
-6. 所有 refs 用 F003 EvidenceService 校验 Issue/Thread scope；finding `file_path` 规范化为 workspace-relative，越界拒绝。
+5. `failed` 必须至少一个 finding；`blocked` 必须在 `missing_evidence` 或 finding 中说明原因；`key_decisions`/`lessons_candidate` 必须存在但允许空数组。
+6. 所有 implementation evidence refs 用 F003 EvidenceService 按 Issue/Thread/`implementation_run_id` scope 校验；issue-level result refs另按 Issue/Thread scope校验；finding `file_path` 规范化为 workspace-relative，越界拒绝。
 
 解析失败不尝试 regex/Markdown fallback，写 `validation.blocked(reason=result_unparsable)` 并保留 `validator_run_id` 供用户查看原始 Run trace。
 
@@ -319,6 +355,7 @@ Validator prompt 要求 final message 只包含一个 JSON object。Parser：
 System contract + JSON schema
 Issue title / goal
 Validation policy id/version/evidence requirements/max rounds
+Validation policy snapshot hash
 Implementation Run identity
 Handoff payload whose run_id equals implementation_run_id
 Verification events and refs scoped to implementation_run_id
@@ -329,7 +366,17 @@ Missing/partial trace completeness warnings
 
 `implementation_run_id` 是 validator context 的强制 scope：handoff、verification、file change set 和 evidence refs 都必须解析到该 Run；同一 Issue 后续 consult/其他 Run 的更新 handoff 不参与本次验证。绝对 workspace path、baseline fingerprints、raw command output、secret-bearing config 不进入 context。上下文达到 128 KiB 时按“完整 file list -> command summaries -> older findings”顺序截断，但 policy、goal、目标 implementation handoff、missing-evidence 状态和 refs 不得截断；仍超限则 Blocked。
 
-`implementation_run_id` 的权威来源是本轮 `validation.requested` event payload（§8）——它在 §6.2 request 时用 `RunRepository.getLatestCompletedByRole(issueId,'implementation')` 一次性确定并**固化**进 requested payload。`runs` 表不新增 `implementation_run_id` 列；context builder（§5.3）、passed/failed gate（§6.4/§6.5）和 startup recovery（§6.7 处理 terminal validator）**都从该 requested event 读取同一个固化值**，绝不在 validator terminal 时用 `getLatestCompletedByRole` 重新推导。这样即便 Validating 期间出现其他 Run，被验证对象也不会漂移；同时也不依赖“Validating 期间无新 completed implementation”这类隐含不变量（该不变量由 §6.1.1 drain eligibility 顺带保证，但不是 validator 绑定正确性的必要条件）。
+`implementation_run_id` 与 `policy_snapshot` 的权威来源都是本轮 `validation.requested` event payload——它们在 §6.2 request 时一次性确定并固化。`runs` 表不新增 `implementation_run_id` 列；context builder（§5.3）、passed/failed gate（§6.4/§6.5）和 startup recovery（§6.7 处理 terminal validator）都读取同一个 requested event，绝不在 validator terminal 时重新推导目标 Run 或重读可变 policy。这样即便 Validating 期间出现其他 Run/配置变化，被验证对象和判定规则也不会漂移。
+
+### 5.4 Validation event ownership 与 evidence scope
+
+Validation event 的执行来源和证据目标是两个独立维度，不复用一个 `runId` 参数：
+
+- `validator_run_id` 表示产生判断的 validator Run；`implementation_run_id` 表示被验证对象。
+- `validation.requested/finding/passed/failed/blocked` payload 显式保存这两个字段；不使用含义模糊的通用 `run_id` 代替任一字段。
+- `ValidationTraceService` 写入接口拆为 `sourceValidatorRunId` 与 `evidenceScopeRunId`。事件自身先校验 validator Run 属于同 Issue/Thread/round；所有 handoff/test/file-change refs 再用 `evidenceScopeRunId=implementation_run_id` 调用 F003 EvidenceService。
+- issue-level ref（例如 `event:<validation.passed>`）只做 Issue/Thread scope 校验；implementation evidence 必须额外做 Run scope 校验。不得为兼容两类 ref 而整体关闭 Run scope。
+- trusted payload resolver 仍只允许 F003 allowlist，并强制目标 `implementation_run_id`；`run.output` 永不进入 context。
 
 下一轮 implementation context builder 在现有 Issue/Run context 后追加最新一轮 `validation.failed` 与 findings；只有当前 Issue 的最新 failed round，最多 100 条。进入 Ready 后重新执行仍保留历史 findings，但标注其 round。
 
@@ -343,6 +390,8 @@ P0 固定角色，不做 capability scoring。`ValidatorSelector`：
 2. 查 Project 内 `status=available AND role='validator'` 的 configs。
 3. 按 `created_at ASC,id ASC` 选第一条，保证确定性。
 4. 没有可用 validator 时直接 Blocked，reason=`validator_unavailable`。
+
+Adapter config 的 `role` 在 F004 是受控枚举而非自由标签；create/update API 和 service 都拒绝其他值。F005 以后改用 capability 作为能力真相源时再按其 migration 扩展，不提前允许未知角色。
 
 F004 UI 在 Adapter Settings 暴露 `role`（implementation/validator）和 model；允许同 provider/model，Done 时如实标 same-origin。F004 不自动把 implementation adapter 当 validator，因为那会把配置缺失伪装成有效 workflow。
 
@@ -365,17 +414,18 @@ validator      -> Validating，且 validation_round 等于当前 round
 - F003 trace state 已 finalized；
 - Issue 当前为 `Running`；
 - 该 Run 是 Issue 最新 completed implementation Run，且之后没有 requested/pass/fail/block result；
+- implementation Run 有创建时固化的无凭据 adapter identity snapshot，Issue policy 可解析并能生成稳定 snapshot/hash；
 - Issue 未 Done/Blocked。
 
 单个 transaction：
 
 1. CAS Issue `Running -> Validating`，清旧 blocker。
 2. 计算 `round = validation_round_count + 1`。
-3. 写 `validation.requested`，refs 指向 implementation handoff/file/test evidence。
-4. 选择 validator并创建 queued validator Run，`role=validator`、`workflow_step=validation`、`validation_round=round`、`dispatch_source=system`。
-5. 写 `run.queued`。
+3. 选择 validator并创建 queued validator Run row，`role=validator`、`workflow_step=validation`、`validation_round=round`、`dispatch_source=system`，同时固化 validator identity；此时尚不写 queued event。
+4. 写 `validation.requested`，固化 `implementation_run_id`、validator Run/config、implementation identity、完整 policy snapshot/hash，refs 指向 implementation handoff/file/test evidence。
+5. 写 `run.queued`，因此对外 event sequence 仍是 requested 在 queued 之前。
 
-若 validator 选择/配置无效，第 1 步不单独提交，改为同 transaction `Running -> Blocked` + `validation.blocked`。DB unique conflict表示另一路已创建 validator；重新读取 active Run，若 round/Issue 匹配则幂等成功，否则以 `recovery_inconsistent` Blocked。
+若 implementation identity缺失或 policy/validator 配置无效，第 1 步不单独提交，改为同 transaction `Running -> Blocked` + `validation.blocked`。DB unique conflict表示另一路已创建 validator；重新读取 active Run，若 round/Issue 匹配则幂等成功，否则以 `recovery_inconsistent` Blocked。
 
 事务提交后按 event sequence 广播，再让 queue 尝试取得 workspace lock。不得在 transaction 内 spawn adapter。
 
@@ -391,14 +441,14 @@ Outcome submission 先在事务外完成 parse、evidence resolve、summary draf
 
 ### 6.4 Passed / Done gate
 
-`passed` 仍必须经过 deterministic policy gate，不能仅信任 agent 声明：
+`passed` 仍必须经过 deterministic policy gate，不能仅信任 agent 声明；gate 使用 requested event 固化的 policy snapshot：
 
 - result refs 均存在且 scope 正确；
 - implementation handoff/file trace/confirmed passed verification 满足 policy；
 - validator Run 本身 completed且 round 等于当前 round；
 - summary builder 能生成完整 projection。
 
-同 transaction：写 `validation.passed` -> create EvidenceSummary -> Issue `Validating -> Done` -> 写 `issue.done`。`issue.done.evidence_refs` 含 `event:<validation.passed>` 与 summary 聚合 refs，payload 含 `evidence_summary_id`。
+同 transaction：写 `validation.passed` -> create EvidenceSummary -> Issue `Validating -> Done` -> 写 `issue.done`。`issue.done.evidence_refs` 含 `event:<validation.passed>` 与 summary 聚合 refs，payload 含 `evidence_summary_id`。Summary 使用 implementation/validator Run 创建时固化的 identity snapshots、requested policy snapshot，以及 result envelope 的 key decisions/lessons candidate。
 
 ### 6.5 Failed / round limit
 
@@ -431,7 +481,7 @@ else -> Running
 F003 startup recovery完成 terminal finalization后，F004 执行 `ValidationRecoveryService.reconcile()`，然后才 listen/drain queue：
 
 1. 对 finalized completed implementation + Issue Running且无 result 的记录，幂等 request validation。
-2. 对 terminal validator + Issue Validating且无 result，幂等 process result；finalMessage 必须已随 terminal capture 持久化。为此 v4 在 `runs` 增加 `final_message TEXT` 内部列（API `Run` 默认不返回正文，只返回 `has_final_message`）。
+2. 对 terminal validator + Issue Validating且无 result，幂等 process result；从 requested event 读取固化的 implementation/policy scope。finalMessage 必须已随 terminal capture 持久化。为此 v4 在 `runs` 增加 `final_message TEXT` 内部列（API `Run` 默认不返回正文，只返回 `has_final_message`）。
 3. Validating但无 active/terminal validator时：若 requested event存在且创建中断，重建一次；配置不可用则 Blocked。
 4. Done但缺 validation.passed或 summary视为数据不一致：不伪造，记录 server diagnostic并将 Issue转 Blocked仅适用于尚未对外进入 Done 的同事务失败；已提交 Done按 SQLite transaction不应出现该状态，startup检测后停止该 Issue自动化并报告。
 
@@ -478,6 +528,8 @@ POST /api/issues/:issue_id/validation
 
 F004 仅允许以下幂等语义：Issue 已 `Validating` 且尚无 active validator时补建默认 validator；正常 implementation completion仍自动调用同一 service。Running/Ready/Blocked/Done 返回 `INVALID_ISSUE_TRANSITION`。若已有 active validator，返回现有 Run而不是创建重复记录。
 
+若显式补建时发现 validator/config 不可用，service 仍按统一状态机提交 `validation.blocked` + Issue Blocked；HTTP 返回 409 `VALIDATOR_UNAVAILABLE` 并携带更新后的 blocker metadata。该 409 是“请求未能创建 validator，但状态已安全收敛”的领域结果，不是无副作用回滚。
+
 ### 7.4 Unblock
 
 ```http
@@ -503,7 +555,7 @@ Content-Type: application/json
 
 ## 8. Event / Trace 设计
 
-所有 payload 包含 `issue_id/thread_id/validation_round`；有 Run 时含 `validator_run_id`/`implementation_run_id`。
+所有 payload 包含 `issue_id/thread_id/validation_round`；有 Run 时分别包含 `validator_run_id`/`implementation_run_id`，不使用通用 `run_id` 混淆执行来源和 evidence scope。
 
 ### `validation.requested`
 
@@ -512,7 +564,20 @@ Content-Type: application/json
   "validation_round": 1,
   "policy_id": "vpl_coding_default",
   "policy_version": 1,
+  "policy_snapshot": {
+    "policy_id": "vpl_coding_default",
+    "version": 1,
+    "max_validation_rounds": 3,
+    "evidence_requirements": {
+      "require_handoff": true,
+      "require_file_trace": true,
+      "require_verification": true,
+      "accepted_verification_kinds": ["test", "lint", "typecheck", "build"]
+    }
+  },
+  "policy_snapshot_hash": "sha256:...",
   "implementation_run_id": "...",
+  "validator_run_id": "...",
   "validator_adapter_config_id": "...",
   "target": "implementation_result"
 }
@@ -539,18 +604,25 @@ Content-Type: application/json
 ```markdown
 # <Issue title> — Evidence Summary
 
+## Goal
+## Final Result
+## Implementation Summary
+## Key Decisions
 ## Validation
-## Validator Identity
+## Run Identities
+## Validation Policy
+## Key Commands
 ## Verification Evidence
 ## Changed Files
 ## Implementation Handoff
 ## Findings
+## Lessons Candidate
 ## Trace Completeness
 ```
 
-`evidence_refs` 聚合 pass event、implementation handoff、verification、file-change-set，去重保序并限制 500 条。`summary_markdown` 最大 256 KiB，file list超过上限时写 truncated标记；不能因 renderer截断丢失 policy/identity/same-origin/trace completeness。
+`evidence_refs` 聚合 pass event、implementation handoff、verification、file-change-set，去重保序并限制 500 条。Goal 来自 Issue；implementation summary/handoff 来自目标 implementation Run 的 F003 handoff；final/validation result、key decisions、lessons candidate 来自 strict result envelope与系统 outcome；commands/tests/files来自目标 Run evidence。`summary_markdown` 最大 256 KiB，file list超过上限时写 truncated标记；不能因 renderer截断丢失 goal、result、policy snapshot/hash、双方 identity、same-origin、key decisions、lessons candidate 或 trace completeness。
 
-Same-origin 使用当次 Run 所绑定 config snapshot比较。为避免 adapter config后改 model污染历史，validator identity固化在 summary；implementation identity从 implementation Run创建时的 config读取。F004 不新增完整 config snapshot列，因此若 implementation config在验证前被修改，比较使用验证提交时的当前记录并在 summary标 `identity_snapshot_time=validation_commit`。这是 P0 已知限制，F005新增多 provider后仍可通过 provider差异可靠判断。
+Same-origin 只比较 implementation/validator Run 创建时写入 `runs.adapter_identity_json` 的 provider/model snapshot；任一新 Run 缺 snapshot 都不得自动 Done，并以 `recovery_inconsistent` Blocked。Evidence Summary复制双方 snapshot，后续 adapter config 修改不会改变历史结论。v1-v3 历史 Run snapshot 为 null，不参与自动 validation。
 
 ## 10. UI 设计
 
@@ -580,9 +652,10 @@ F004 在既有 Codex配置表单增加 role选择和只读 capability提示。�
 | --- | --- |
 | implementation evidence finalization失败 | F003先完成/标 partial；F004 policy不足则 Blocked |
 | validator配置缺失/不可用 | 不创建Run；validation.blocked + Issue Blocked |
+| implementation identity缺失/policy snapshot非法 | recovery_inconsistent/workflow_configuration_invalid -> Blocked，不启动validator |
 | duplicate terminal callback | result event/run/Issue CAS幂等，无重复 summary |
 | validator spawn/timeout/nonzero/cancel/restart | validator_run_failed -> Blocked |
-| finalMessage缺失/超限/JSON非法 | result_unparsable -> Blocked |
+| finalMessage缺失/超限/JSON非法 | result_unparsable -> Blocked；正文仅内部持久化，不进入公共 Run/evidence/API payload |
 | result refs越界/缺失 | scope mismatch/evidence missing -> Blocked，不得 Done |
 | pass声明但 deterministic gate不满足 | evidence_missing -> Blocked |
 | fail达到round limit | findings + failed + blocked同事务，停止自动化 |
@@ -595,7 +668,7 @@ F004 在既有 Codex配置表单增加 role选择和只读 capability提示。�
 
 ### 12.1 Unit
 
-- strict result parser、limits、fence、unknown fields、Windows file refs。
+- strict result parser、limits、fence、unknown fields、key decisions/lessons candidate、Windows file refs。
 - policy evidence gate和round boundary (`nextCount >= max`)。
 - validator selector deterministic order/role/status。
 - context builder截断优先级、prior findings注入。
@@ -604,7 +677,7 @@ F004 在既有 Codex配置表单增加 role选择和只读 capability提示。�
 
 ### 12.2 Integration
 
-- v3 -> v4 migration、旧Run defaults、partial unique index。
+- v3 -> v4 migration、旧Run defaults、identity snapshot兼容、partial unique index。
 - implementation completed -> F003 finalize -> validation requested -> queued validator的严格顺序。
 - pass事务含 passed/summary/done；任一点失败整体回滚。
 - fail回流、findings顺序、round count、下一implementation context。
@@ -639,6 +712,8 @@ F004 在既有 Codex配置表单增加 role选择和只读 capability提示。�
 | fail不自动开修复Run | 防止无人值守无限消耗，符合spec关闭问题 | 自动loop直到max；风险更高 |
 | findings保留为events | F003已有事件真相源，P0查询量小 | findings表；重复projection和事务复杂度 |
 | EvidenceSummary独立表 | Done需要稳定可查projection和policy/identity快照 | 每次从events动态拼；历史config变化且查询重 |
+| Run创建时固化adapter identity | same-origin和审计不能受后续config修改影响 | validation commit时读当前config；历史结论会漂移 |
+| request时固化policy snapshot/hash | terminal/restart必须使用同一判定规则 | 只存id/version后重读可变行；同版本修改会漂移 |
 | active validator DB唯一索引在v4落地 | F004本身也需要幂等；F005可直接复用 | 只靠进程锁；race/restart不可靠 |
 | validator用显式role选择 | 固定workflow角色、确定性、可解释 | 自动把implementation config复用；掩盖缺配置 |
 | 第N次fail计入后与max比较 | max=3直观表示最多三次失败结果 | 超过后第4次才Block；多跑一轮 |
@@ -665,12 +740,14 @@ F004 在既有 Codex配置表单增加 role选择和只读 capability提示。�
 
 - **已关闭：validator输出协议**——使用 final agent message严格JSON；真实Codex final message字段由实现probe验证，字段差异只改adapter normalizer，不改领域contract。
 - **已关闭：下一轮修复是否自动启动**——不自动，等待用户明确发起。
-- **已关闭：Evidence Summary存储**——独立结构化记录 + deterministic Markdown，原始evidence仍在ThreadEvent/F003表。
+- **已关闭：Evidence Summary存储**——独立结构化记录 + deterministic Markdown，覆盖PRD第7.6节；原始evidence仍在ThreadEvent/F003表。
 - **已关闭：同源验证**——允许并标记；不把同源伪装成跨provider独立验证。
 - **已关闭：round上限边界**——本次fail计入后 `>= max` 即Blocked。
 - **已关闭：手动触发**——公开接口只补建当前Validating的默认validator，不允许任意状态重验Done或绕过Blocked。
 
-需要真实环境验证的Codex final-message通知、Windows重启时序已转为 `tasks.md` 任务，并已有明确fallback（无法可靠取得即Blocked），不阻塞开发。
+- **已关闭：Codex final-message 契约**——真实 Codex `0.144.5`（Windows）probe 完成，final message = `item/completed` 中 `phase === "final_answer"` 的 agentMessage `text`（禁止累加 delta、禁止依赖 turn/completed），命令输出隔离与 Unicode 已验证，见 §5.1。
+
+Windows 重启时序仍为 `tasks.md` 任务，已有明确 fallback（无法可靠取得即 Blocked），不阻塞开发。
 
 ## 15. 实现后回写
 

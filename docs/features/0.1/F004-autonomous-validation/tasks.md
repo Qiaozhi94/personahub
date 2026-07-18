@@ -4,7 +4,7 @@ related_features: [F001, F002, F003, F005]
 topics: [autonomous-validation, workflow, evidence-summary, state-machine, tests, v0.1.3]
 doc_kind: tasks
 created: 2026-07-16
-updated: 2026-07-17
+updated: 2026-07-18
 ---
 
 # F004：Autonomous Validation - 任务
@@ -29,41 +29,43 @@ updated: 2026-07-17
 
 **Checkpoint 1**：F003 hook和Codex final-message映射已由fixture固定；领域JSON contract无需待确认。
 
+> 备注：T002/T003 的裸协议 probe 已在真实 Codex `0.144.5`（Windows）跑通，契约结论固化在 design §5.1（final message = `item/completed` 中 `phase === "final_answer"` 的 agentMessage `text`，禁止累加 delta，命令输出隔离/Unicode 已验证）。本 Phase 剩余工作是把 probe 数据落成 test-suite fixture，并补 64 KiB/缺失/非零/cancel/timeout 边界 fixture。
+
 ## Phase 2：Shared Contract与Schema v4
 
-- [ ] **T005**（`DR-003` - `DR-006`）：先添加shared contract编译测试，覆盖RunRole/DispatchSource、ValidationOutcome/BlockReason/Finding/Result、Issue blocker、EvidenceSummary和API DTO。
-- [ ] **T006**（`DR-003` - `DR-006`）：新增`shared/src/types/validation.ts`并re-export；扩展Run/Issue/ThreadEventType，保持持久化枚举只增不改。
+- [ ] **T005**（`DR-003` - `DR-006`）：先添加shared contract编译测试，覆盖RunRole/DispatchSource、受控AdapterRole、AdapterIdentitySnapshot、ValidationPolicySnapshot、ValidationOutcome/BlockReason/Finding/Result（含key decisions/lessons candidate）、Issue blocker、EvidenceSummary和API DTO。
+- [ ] **T006**（`DR-003` - `DR-006`）：新增`shared/src/types/validation.ts`并re-export；扩展Run/Issue。F003已存在`validation.requested/finding/passed/failed/blocked`，F004只给ThreadEventType新增`issue.done/issue.unblocked`并扩展既有validation payload contract，保持持久化枚举只增不改。
 - [ ] **T007**（`IR-001` - `IR-005`）：先补错误HTTP映射测试，再新增validation、summary、transition、operator note相关ErrorCode。
-- [ ] **T008**（`DR-001` - `DR-006`, `NFR-001`）：添加v4 migration集成测试，覆盖空库、v3升级、重跑、旧Run默认值、seed条件更新、EvidenceSummary约束和索引存在。
-- [ ] **T009**（`DR-001` - `DR-006`）：实现`schema-v4.ts`并注册migration；schema SQL 显式加入Run `final_message`内部列、role/step/round/source、Issue blocker、EvidenceSummary和active validator partial unique index。
-- [ ] **T010**（`DR-002`, `FR-002`）：添加default workflow/policy seed解析测试，覆盖schema version、steps、evidence requirements、非法/用户自定义seed不被覆盖。
-- [ ] **T011**（`DR-002`）：更新v4 seed及WorkflowTemplate/ValidationPolicy repository `getById`；JSON解析留给service。
+- [ ] **T008**（`DR-001` - `DR-006`, `NFR-001`）：添加v4 migration集成测试，覆盖空库、v3升级、重跑、旧Run identity snapshot为空、新Run约束、seed条件更新、EvidenceSummary双方identity/policy snapshot+hash约束和索引存在。
+- [ ] **T009**（`DR-001` - `DR-006`）：实现`schema-v4.ts`并注册migration；schema SQL 显式加入Run `final_message`内部列、role/step/round/source、`adapter_identity_json`、Issue blocker、EvidenceSummary双方identity与policy snapshot/hash和active validator partial unique index。
+- [ ] **T010**（`DR-002`, `FR-002`）：添加default workflow/policy seed与snapshot解析测试，覆盖schema version、steps、evidence requirements、canonical JSON/hash稳定性、非法/用户自定义seed不被覆盖。
+- [ ] **T011**（`DR-002`）：更新v4 seed及WorkflowTemplate/ValidationPolicy repository `getById`；JSON解析、snapshot canonicalization/hash留给service。
 
 **Checkpoint 2**：v3数据无损升级，旧Run被准确解释为implementation，数据库能强制active validator唯一。
 
 ## Phase 3：Repositories与事务原语
 
-- [ ] **T012 [P]**（`DR-004`, `FR-007`）：添加EvidenceSummaryRepository测试，覆盖create-if-absent、Issue唯一、get、JSON映射和不得覆盖历史。
+- [ ] **T012 [P]**（`DR-004`, `FR-007`）：添加EvidenceSummaryRepository测试，覆盖create-if-absent、Issue唯一、get、双方identity/policy snapshot+hash JSON映射和不得覆盖历史。
 - [ ] **T013**（`DR-004`）：实现`repositories/evidence-summary.ts`和统一ID生成器扩展。
 - [ ] **T014 [P]**（`DR-001`, `DR-006`, `NFR-001`）：添加IssueRepository CAS测试，覆盖expected status、round增量、blocker set/clear、due字段兼容和lost update。
 - [ ] **T015**（`DR-001`, `DR-006`）：实现Issue CAS/status patch和validating recovery查询；业务判断不进入repository。
-- [ ] **T016 [P]**（`DR-003`, `FR-001`, `NFR-001`）：添加RunRepository测试，覆盖role/step/round/source/final message、latest implementation、active validator和partial unique race；断言`workflow_step`严格按§3的`role`派生表固化（implementation→`implementation`、validator→`validation`），不接受与`role`不一致的组合。
-- [ ] **T017**（`DR-003`）：扩展RunRepository映射/创建/查询/terminal final-message持久化；public Run只暴露`has_final_message`。
-- [ ] **T018 [P]**（`FR-001`, `FR-008`）：添加AgentConfigRepository role/status确定性查询和identity读取测试。
-- [ ] **T019**（`FR-001`, `FR-008`）：实现available validator查询，排序`created_at,id`。
+- [ ] **T016 [P]**（`DR-003`, `FR-001`, `IR-005`, `NFR-001`）：添加RunRepository/RunService边界测试，覆盖role/step/round/source/final message、创建时adapter identity snapshot、latest implementation、active validator和partial unique race；断言`workflow_step`严格按§3的`role`派生表固化，Done/Validating/Blocked拒绝公开implementation Run，客户端不能提交role/step/round/source/identity等系统字段。
+- [ ] **T017**（`DR-003`, `IR-005`）：扩展RunRepository映射/创建/查询/terminal final-message持久化与RunService创建护栏；新Run在transaction内固化无凭据identity，public Run只暴露`has_final_message`及明确允许的安全identity DTO。
+- [ ] **T018 [P]**（`FR-001`, `FR-008`）：添加AgentConfigRepository/Service role/status确定性查询、受控`implementation|validator` create/update校验和identity读取测试。
+- [ ] **T019**（`FR-001`, `FR-008`）：实现available validator查询（排序`created_at,id`）及AdapterConfigService/API role枚举校验；不得让任意role字符串进入数据库。
 
 **Checkpoint 3**：state machine所需CAS、唯一约束、identity和summary原语均有独立测试。
 
 ## Phase 4：纯逻辑——Parser、Policy、Context、Summary
 
-- [ ] **T020 [P]**（`FR-003`, `AC-003`）：添加strict validation parser测试，覆盖纯JSON/单fence、未知字段、pass不变量、failed无finding、blocked无原因、limits、Unicode和非法file ref。
+- [ ] **T020 [P]**（`FR-003`, `AC-003`）：添加strict validation parser测试，覆盖纯JSON/单fence、未知字段、pass不变量、failed无finding、blocked无原因、key decisions/lessons candidate必填数组及limits、Unicode和非法file ref。
 - [ ] **T021**（`FR-003`, `NFR-005`）：实现`services/validation/result-parser.ts`；不得加入regex/自由Markdown fallback。
-- [ ] **T022 [P]**（`FR-004`, `FR-006`, `AC-004`, `AC-006`）：添加policy gate/round测试，覆盖handoff/file/test要求、partial/missing refs、scope mismatch、`nextCount >= max`边界和max非法。
+- [ ] **T022 [P]**（`FR-004`, `FR-006`, `AC-004`, `AC-006`）：添加policy snapshot/gate/round测试，覆盖稳定canonical hash、handoff/file/test要求、partial/missing refs、scope mismatch、`nextCount >= max`边界、max非法，以及request后原policy行修改不得改变本轮判定。
 - [ ] **T023**（`FR-004`, `FR-006`, `NFR-002`）：实现`validation-policy-gate.ts`和稳定block reason映射。
-- [ ] **T024 [P]**（`FR-002`, `FR-005`, `AC-002`, `AC-005`）：添加validator/repair context builder测试；validator path 必须按 `implementation_run_id` 绑定 handoff/tests/files/refs，并覆盖后续 consult handoff 不得串入、trusted evidence resolver allowlist 拒绝 `run.output` payload、goal、prior findings、missing completeness、Windows path、first round和128 KiB截断优先级。
-- [ ] **T025**（`FR-002`, `FR-005`）：实现`validation-context-builder.ts`和下一implementation findings注入builder；validator evidence resolver强制使用目标`implementation_run_id` scope，禁止raw output/absolute path/secret。
-- [ ] **T026 [P]**（`FR-007`, `FR-008`, `AC-004`, `AC-007`）：添加same-origin和EvidenceSummary builder测试，覆盖provider/model组合、identity/policy、stable Markdown、escaping、500 refs/256 KiB truncation和trace completeness。
-- [ ] **T027**（`FR-007`, `FR-008`）：实现pure `same-origin.ts`和`evidence-summary-builder.ts`，不调用LLM。
+- [ ] **T024 [P]**（`FR-002`, `FR-005`, `AC-002`, `AC-005`）：添加validator/repair context builder测试；validator来源用`validator_run_id`校验，evidence必须另按`implementation_run_id`绑定handoff/tests/files/refs，并覆盖后续 consult handoff不得串入、trusted allowlist拒绝`run.output`、固化policy snapshot/hash、goal、prior findings、missing completeness、Windows path、first round和128 KiB截断优先级。
+- [ ] **T025**（`FR-002`, `FR-005`）：实现`validation-context-builder.ts`和下一implementation findings注入builder；显式拆分source validator Run与evidence scope Run，resolver强制使用目标`implementation_run_id`，禁止raw output/absolute path/secret，并只读取requested event固化的policy snapshot。
+- [ ] **T026 [P]**（`FR-007`, `FR-008`, `AC-004`, `AC-007`）：添加same-origin和EvidenceSummary builder测试，覆盖Run创建时双方identity snapshot、config后改不漂移、policy snapshot/hash、goal/final result/implementation summary/key decisions/commands-tests/files/handoff/validation result/lessons candidate、stable Markdown、escaping、500 refs/256 KiB truncation和trace completeness。
+- [ ] **T027**（`FR-007`, `FR-008`）：实现pure `same-origin.ts`和覆盖PRD第7.6节的`evidence-summary-builder.ts`，只读Run identity/policy snapshots，不调用LLM。
 - [ ] **T028 [P]**（`FR-001`）：添加ValidatorSelector测试，覆盖workflow缺step、无available config、role/status过滤和确定性选择。
 - [ ] **T029**（`FR-001`）：实现`validator-selector.ts`；F004不fallback到implementation config。
 
@@ -82,8 +84,8 @@ updated: 2026-07-17
 
 ## Phase 6：Validation Trace、Query与Unblock Service
 
-- [ ] **T036**（`TR-001` - `TR-007`, `NFR-001`）：扩展F003 ValidationTraceService测试，覆盖requested/finding/passed/failed/blocked/done/unblocked payload、refs scope和pending broadcasts。
-- [ ] **T037**（`TR-001` - `TR-007`）：扩展ValidationTraceService builders；仍不注册通用公开write route。
+- [ ] **T036**（`TR-001` - `TR-007`, `NFR-001`）：扩展F003 ValidationTraceService测试，覆盖既有requested/finding/passed/failed/blocked及新增done/unblocked payload、`validator_run_id`来源校验、独立`implementation_run_id` evidence scope、issue-level ref与run-level ref分层校验和pending broadcasts。
+- [ ] **T037**（`TR-001` - `TR-007`）：扩展ValidationTraceService builders，明确拆分`sourceValidatorRunId`与`evidenceScopeRunId`；不重复新增F003已有枚举，仍不注册通用公开write route。
 - [ ] **T038**（`FR-009`, `AC-008`）：添加unblock service测试，覆盖非空note、长度、validation blocker scope、Blocked CAS、Ready结果、round保留、清blocker和不自动Run。
 - [ ] **T039**（`FR-009`, `TR-007`）：实现`ValidationRecoveryActionService.unblock()`，状态/event同事务commit后广播。
 - [ ] **T040**（`FR-010`, `IR-001`, `IR-002`）：添加ValidationQueryService测试，覆盖current round/max、active Run、latest result/findings/blocker/summary和100 findings上限。
@@ -91,19 +93,19 @@ updated: 2026-07-17
 
 ## Phase 7：Validation Workflow State Machine
 
-- [ ] **T042**（`FR-001`, `AC-001`）：添加`requestValidation()`集成测试，断言F003 finalized后才执行、Running CAS、requested+validator run.queued同事务和commit后广播。
-- [ ] **T043**（`FR-001`, `FR-002`）：实现ValidationWorkflowService request、selector、context和queued Run创建；事务内不spawn。
+- [ ] **T042**（`FR-001`, `AC-001`）：添加`requestValidation()`集成测试，断言F003 finalized后才执行、缺implementation identity/非法policy先Blocked、Running CAS、先创建validator Run row固化identity、requested固化implementation/policy scope、requested+run.queued同事务且event sequence正确、commit后广播。
+- [ ] **T043**（`FR-001`, `FR-002`）：实现ValidationWorkflowService request、selector、identity/policy snapshot、context和queued Run创建；事务内不spawn，不在terminal/recovery重读可变config/policy。
 - [ ] **T044**（`FR-001`, `NFR-001`）：添加duplicate/concurrent request测试，确保active validator唯一，same request幂等，inconsistent conflict Blocked。
 - [ ] **T045**（`FR-001`）：实现unique conflict读取/幂等映射和queue kick。
-- [ ] **T046**（`FR-004`, `FR-007`, `FR-008`, `AC-004`, `AC-010`）：添加pass端到端事务测试，覆盖parser、gate、passed、summary、done顺序，任何插入失败整体回滚。
-- [ ] **T047**（`FR-004`, `FR-007`, `FR-008`）：实现passed submission transaction和same-origin/identity/policy固化。
+- [ ] **T046**（`FR-004`, `FR-007`, `FR-008`, `AC-004`, `AC-010`）：添加pass端到端事务测试，覆盖parser、固化policy gate、passed、完整PRD summary、done顺序、adapter config后改不影响same-origin，任何插入失败整体回滚。
+- [ ] **T047**（`FR-004`, `FR-007`, `FR-008`）：实现passed submission transaction，使用双方Run identity与requested policy snapshots生成same-origin和Summary；缺snapshot不得Done。
 - [ ] **T048**（`FR-005`, `AC-005`）：添加failed回流测试，覆盖finding排序/refs、failed event、round++、Running、下一implementation context且不自动创建Run。
 - [ ] **T049**（`FR-005`）：实现failed submission path。
 - [ ] **T050**（`FR-006`, `AC-006`）：添加round limit测试，覆盖第1/2次Running、第3次failed+blocked、queued自动动作停止和blocker columns。
 - [ ] **T051**（`FR-006`, `NFR-002`）：实现round-limit blocked path，保留findings和round。
-- [ ] **T052**（`FR-003`, `FR-006`）：添加blocked矩阵测试：validator unavailable/run failed/cancel/interrupted/unparsable/missing/scope mismatch/config invalid。
+- [ ] **T052**（`FR-003`, `FR-006`）：添加blocked矩阵测试：validator unavailable/run failed/cancel/interrupted/unparsable/missing/scope mismatch、implementation identity缺失、policy/config invalid。
 - [ ] **T053**（`FR-003`, `FR-006`）：实现统一`blockValidation()`事务和stable messages；不得把这些情况写成Done或普通fail后继续。
-- [ ] **T054**（`NFR-001`）：添加stale/duplicate validator result测试，旧round不能覆盖新round/Done/Blocked。
+- [ ] **T054**（`NFR-001`）：添加stale/duplicate validator result测试，旧round不能覆盖新round/Done/Blocked；request后修改adapter config或policy行也不能改变本轮identity/gate。
 - [ ] **T055**（`NFR-001`）：实现result submission二次CAS和result-event idempotency guard。
 
 **Checkpoint 7**：pass/fail/blocked/round/race全部通过真实SQLite事务测试，且没有自动修复循环。
@@ -114,15 +116,15 @@ updated: 2026-07-17
 - [ ] **T057**（`FR-001`）：在F003唯一`finalizeAndDrain()`完成点接入async workflow hook；implementation completed触发，其他implementation terminal不触发。
 - [ ] **T058**（`FR-003`, `NFR-002`）：添加validator completed/failed/cancelled/interrupted/spawn/timeout/escalation集成测试；仅completed尝试parse，其余Blocked。
 - [ ] **T059**（`FR-003`）：把validator terminal统一接到ValidationWorkflowService，保留F003 trace finalization和queue drain。
-- [ ] **T060**（`NFR-001`, `NFR-003`）：添加startup recovery测试，覆盖completed implementation未request、terminal validator未result、Validating无active、result transaction上次失败和重复restart；断言recovery处理terminal validator时从`validation.requested` payload读取固化的`implementation_run_id`，不用`getLatestCompletedByRole`重新推导，被验证对象在Validating期间不漂移。
+- [ ] **T060**（`NFR-001`, `NFR-003`）：添加startup recovery测试，覆盖completed implementation未request、terminal validator未result、Validating无active、result transaction上次失败和重复restart；断言recovery从`validation.requested`读取固化的`implementation_run_id`与policy snapshot/hash，并从Run读取identity snapshot，不用latest/current config/policy重新推导。
 - [ ] **T061**（`NFR-001`）：实现ValidationRecoveryService，并在F003 recovery后、listen/queue drain前await执行。
-- [ ] **T062**（`AC-001`, `NFR-002`）：添加同workspace implementation+validator+其他queued Run顺序测试；queue drain 每次重验 role/Issue status，取消`Validating`下同Issue stale implementation并继续扫描，validator不跨Issue绕过FIFO锁，Blocked取消不再eligible的自动queue。
+- [ ] **T062**（`AC-001`, `IR-005`, `NFR-002`）：添加同workspace implementation+validator+其他queued Run顺序测试；queue drain每次重验role/round/Issue status，取消`Validating`下同Issue stale implementation并继续扫描，Done/Blocked不启动新Run，validator不跨Issue绕过FIFO锁；另断言公开创建入口在Validating/Done/Blocked时已提前拒绝而不是依赖出队取消。
 
 **Checkpoint 8**：正常、异常和restart都通过同一状态机；不存在Done无summary或Validating永久悬挂。
 
 ## Phase 9：HTTP API
 
-- [ ] **T063**（`IR-001` - `IR-005`）：先添加route集成测试，覆盖GET validation、GET summary、POST validation、POST unblock、404/400/409/422和secret/raw output不泄漏。
+- [ ] **T063**（`IR-001` - `IR-005`）：先添加route集成测试，覆盖GET validation、GET summary、POST validation、POST unblock、404/400/409/422、显式补建无validator时“提交Blocked并返回409”的语义、Done/Validating/Blocked Run创建护栏、系统字段防伪和secret/raw final message不泄漏。
 - [ ] **T064**（`IR-001`, `IR-002`）：新增`api/routes/validation.ts`的两个GET，route只校验参数并调用service。
 - [ ] **T065**（`IR-003`, `FR-009`）：实现unblock route的body schema和structured error。
 - [ ] **T066**（`IR-004`, `IR-005`）：实现显式补建validator endpoint；仅Validating允许，active同一Run幂等返回。
@@ -133,14 +135,14 @@ updated: 2026-07-17
 
 - [ ] **T069**（`FR-010`, `UX-001` - `UX-004`）：先添加apiClient/use-validation hook测试，覆盖status/summary/unblock/trigger和SSE invalidation keys。
 - [ ] **T070**（`FR-010`）：实现`apiClient.validation`和`hooks/use-validation.ts`。
-- [ ] **T071 [P]**（`UX-001`, `UX-005`）：添加ValidationTraceCard组件测试，覆盖requested/finding/passed/failed/blocked/done/unblocked、severity文字、refs和same-origin文案。
+- [ ] **T071 [P]**（`UX-001`, `UX-005`）：添加ValidationTraceCard组件测试，覆盖requested/finding/passed/failed/blocked/done/unblocked、severity文字、双Run identity/evidence scope refs和same-origin文案。
 - [ ] **T072**（`UX-001`, `UX-005`）：扩展F003 validation card/Thread renderer，unknown payload保持generic fallback。
-- [ ] **T073 [P]**（`UX-002` - `UX-004`）：添加Inspector Validation section测试，覆盖round/max、active、findings、blocker、summary、loading/error和evidence missing不得显示Done。
+- [ ] **T073 [P]**（`UX-002` - `UX-004`）：添加Inspector Validation section测试，覆盖round/max、active、findings、blocker、完整PRD summary、identity/policy snapshot标记、loading/error和evidence missing不得显示Done。
 - [ ] **T074**（`FR-010`, `UX-002` - `UX-004`）：实现Inspector Validation section和Evidence Summary展示。
 - [ ] **T075**（`FR-009`, `UX-004`）：添加unblock dialog测试，覆盖required note、server conflict、success刷新和不自动Run。
 - [ ] **T076**（`FR-009`）：实现Resolve Blocker dialog/action。
-- [ ] **T077**（`FR-001`）：添加Adapter Settings role配置/validator availability提示测试。
-- [ ] **T078**（`FR-001`）：扩展Codex adapter表单和列表显示implementation/validator role/model。
+- [ ] **T077**（`FR-001`）：添加Adapter Settings role配置/validator availability提示测试，并覆盖非法role前后端拒绝及配置修改不改变既有Run identity snapshot。
+- [ ] **T078**（`FR-001`）：扩展Codex adapter表单和列表显示受控implementation/validator role/model；不允许自由字符串role。
 - [ ] **T079**（`AC-009`）：扩展App UI flow测试，跑通implementation completed -> Validating -> pass Done和fail/Blocked两条路径。
 
 **Checkpoint 10**：用户从Thread/Inspector可看完整validation链并安全恢复Blocked；同源与独立验证不会混淆。
