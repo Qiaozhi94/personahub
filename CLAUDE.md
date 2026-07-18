@@ -14,7 +14,9 @@ F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完�
 - `docs/SOP.md`：个人开发流程约定。
 - `docs/features/`：后续功能规格目录。
 - `docs/decisions/`：重要产品/技术决策记录目录。
-- `docs/research/`：前期调研和竞品分析归档，仅作背景材料。
+- `docs/research/`：前期调研和竞品分析归档，仅作背景材料；**本地-only，不纳入 git**（见 `.gitignore`）。
+- `docs/reviews/`：设计/代码评审记录；**本地-only，不纳入 git**（见 `.gitignore`）。
+- `server/scripts/`：一次性/可复现的运维与 probe 脚本（如 Codex final-message probe，见 F004 T002/T003）。
 - `BACKLOG.md`：近期功能拆分和执行跟踪入口。
 - `shared/` / `server/` / `web/`：npm workspaces monorepo 代码，目录结构和分层约定见 `docs/decisions/0005-code-directory-structure.md`。
 
