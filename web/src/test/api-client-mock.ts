@@ -38,6 +38,7 @@ export const apiClient = {
     getValidation: vi.fn(),
     getEvidenceSummary: vi.fn(),
     unblock: vi.fn(),
+    resetRounds: vi.fn(),
     triggerValidation: vi.fn(),
   },
   traces: {

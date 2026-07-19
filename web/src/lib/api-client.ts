@@ -173,6 +173,11 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ operator_note: operatorNote } satisfies UnblockInput),
       }),
+    resetRounds: (issueId: string, operatorNote: string) =>
+      apiFetch<UnblockResponse>(`/issues/${issueId}/reset-rounds`, {
+        method: "POST",
+        body: JSON.stringify({ operator_note: operatorNote } satisfies UnblockInput),
+      }),
     triggerValidation: (issueId: string) =>
       apiFetch<IssueValidationResponse>(`/issues/${issueId}/validation`, {
         method: "POST",

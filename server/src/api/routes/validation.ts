@@ -57,6 +57,16 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
     return { issue };
   });
 
+  app.post("/api/issues/:issue_id/reset-rounds", async (request) => {
+    const { issue_id } = request.params as { issue_id: string };
+    const body = (request.body ?? {}) as { operator_note?: string };
+    if (!body.operator_note || typeof body.operator_note !== "string") {
+      throw new AppError(ErrorCode.OPERATOR_NOTE_REQUIRED, "Operator note is required.");
+    }
+    const issue = validationRecoveryActionService.resetRounds(issue_id, body.operator_note);
+    return { issue };
+  });
+
   app.post("/api/issues/:issue_id/validation", async (request) => {
     const { issue_id } = request.params as { issue_id: string };
     const issue = issueRepo.getById(issue_id);

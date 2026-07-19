@@ -148,6 +148,7 @@ export enum ThreadEventType {
   ValidationBlocked = "validation.blocked",
   IssueDone = "issue.done",
   IssueUnblocked = "issue.unblocked",
+  ValidationRoundReset = "validation.round_reset",
 }
 
 export enum ActorType {

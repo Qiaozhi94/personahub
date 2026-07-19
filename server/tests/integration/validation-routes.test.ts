@@ -157,6 +157,48 @@ describe("Validation routes (T063-T066)", () => {
     });
   });
 
+  describe("POST /api/issues/:issue_id/reset-rounds", () => {
+    function blockRoundLimit(issueId: string, reason: string, roundCount: number) {
+      services.db.prepare("UPDATE issues SET status = ?, blocked_reason_code = ?, blocked_reason_message = ?, validation_round_count = ? WHERE id = ?")
+        .run(IssueStatus.Blocked, reason, "blocked", roundCount, issueId);
+    }
+
+    it("returns 200, keeps the Issue Blocked and clears the round count", async () => {
+      const { issue } = setupValidatingFixture(services, tempDir);
+      blockRoundLimit(issue.id, "round_limit_reached", 3);
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/issues/${issue.id}/reset-rounds`,
+        payload: { operator_note: "granting more rounds" },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.issue.status).toBe(IssueStatus.Blocked);
+      expect(body.issue.validation_round_count).toBe(0);
+    });
+
+    it("returns 400 when operator_note is missing", async () => {
+      const { issue } = setupValidatingFixture(services, tempDir);
+      blockRoundLimit(issue.id, "round_limit_reached", 3);
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/issues/${issue.id}/reset-rounds`, payload: {},
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("rejects reset for non round_limit_reached blockers", async () => {
+      const { issue } = setupValidatingFixture(services, tempDir);
+      blockRoundLimit(issue.id, "evidence_missing", 1);
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/issues/${issue.id}/reset-rounds`,
+        payload: { operator_note: "x" },
+      });
+      expect(res.statusCode).toBeGreaterThanOrEqual(400);
+    });
+  });
+
   describe("POST /api/issues/:issue_id/unblock", () => {
     it("returns 200 with updated Issue", async () => {
       const { issue } = setupValidatingFixture(services, tempDir);

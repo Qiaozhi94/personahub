@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IssueStatus, ValidationFindingSeverity } from "@personahub/shared";
+import { IssueStatus, ValidationFindingSeverity, ValidationBlockReason } from "@personahub/shared";
 import { useValidationStatus } from "@/hooks/use-validation";
 import { toApiError } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
@@ -127,6 +127,18 @@ export function ValidationInspectorSection({ issueId }: ValidationInspectorSecti
           >
             Resolve Blocker…
           </Button>
+          {data.blocker.reason_code === ValidationBlockReason.RoundLimitReached ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 w-full"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("personahub:reset-rounds", { detail: { issueId } }));
+              }}
+            >
+              Reset Rounds…
+            </Button>
+          ) : null}
         </div>
       ) : null}
 

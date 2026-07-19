@@ -76,6 +76,15 @@ export interface IssueUnblockedInput {
   previousBlockReason: string;
 }
 
+export interface RoundResetInput {
+  issueId: string;
+  threadId: string;
+  workspaceId: string;
+  previousRoundCount: number;
+  operatorNote: string;
+  blockReason: string;
+}
+
 export class ValidationTraceService {
   constructor(
     private threadEventService: ThreadEventService,
@@ -190,6 +199,28 @@ export class ValidationTraceService {
         status: "Ready",
         operator_note: input.operatorNote,
         previous_block_reason: input.previousBlockReason,
+      },
+    );
+  }
+
+  writeRoundReset(input: RoundResetInput): ThreadEvent {
+    this.validateScope(
+      input.issueId, input.threadId, input.workspaceId, 0,
+      undefined, undefined, undefined,
+    );
+    return this.threadEventService.write(
+      input.threadId,
+      ThreadEventType.ValidationRoundReset,
+      ActorType.System,
+      null,
+      {
+        issue_id: input.issueId,
+        thread_id: input.threadId,
+        workspace_id: input.workspaceId,
+        previous_round_count: input.previousRoundCount,
+        operator_note: input.operatorNote,
+        status: "Blocked",
+        reason_code: input.blockReason,
       },
     );
   }

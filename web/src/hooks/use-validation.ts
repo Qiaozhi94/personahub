@@ -36,6 +36,19 @@ export function useUnblock(issueId: string | null) {
   });
 }
 
+export function useResetRounds(issueId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ operator_note }: { operator_note: string }) =>
+      apiClient.validation.resetRounds(issueId!, operator_note.trim()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["validation-status", issueId] });
+      qc.invalidateQueries({ queryKey: ["issue", issueId] });
+      qc.invalidateQueries({ queryKey: ["thread-events"] });
+    },
+  });
+}
+
 export function useTriggerValidation(issueId: string | null) {
   const qc = useQueryClient();
   return useMutation({
