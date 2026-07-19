@@ -279,6 +279,23 @@ interface AdapterAuthMaterial {
 
 API key模式根据集中allowlist把`model_provider`映射到CLI实际支持的环境变量/临时config协议；初始至少覆盖本地probe验证通过的provider。未知provider返回`ADAPTER_MODEL_PROVIDER_UNSUPPORTED`，不允许用户直接指定任意env name。
 
+已用本机 OpenCode 1.18.3 零成本实测（仅本地 `opencode models` listing，未发生真实计费 API 调用）确认标准 `<PROVIDER>_API_KEY` 环境变量约定真实有效，`AdapterAuthMaterial.env` 的设计（进程 env 注入，不落 workspace/config 文件）无需改动。初始 allowlist：
+
+| `model_provider` | 环境变量 |
+| --- | --- |
+| `openai` | `OPENAI_API_KEY` |
+| `anthropic` | `ANTHROPIC_API_KEY` |
+| `deepseek` | `DEEPSEEK_API_KEY` |
+| `google` | `GEMINI_API_KEY`（或 `GOOGLE_API_KEY`） |
+| `openrouter` | `OPENROUTER_API_KEY` |
+| `groq` | `GROQ_API_KEY` |
+| `mistral` | `MISTRAL_API_KEY` |
+| `xai` | `XAI_API_KEY` |
+| `togetherai` | `TOGETHER_API_KEY` |
+| `perplexity` | `PERPLEXITY_API_KEY` |
+
+**重要澄清**：OpenCode 本身**不内置固定的 provider 枚举**——`opencode models` 在真实（污染的）操作员环境下会混入个人 `opencode.jsonc` 里的自定义 provider 别名（如 `heiyucode-openai`），不能作为基准；已用隔离 `HOME` 下全新配置验证，干净安装只有内置免费的 `opencode/*` 模型，上表列的 provider id 是**PersonaHub 自定义的 allowlist**，通过设置对应环境变量并观察 provider 是否出现在 `opencode models` 列表来确认，不是 OpenCode 文档化的固定契约。详见 `server/tests/helpers/opencode-protocol-fixtures.md` T007。
+
 Material只在spawn前从repository读取并合入已经过credential isolation的child env；不写workspace，不进入`AgentRunInput.context`。若真实OpenCode版本要求配置文件，写入PersonaHub runtime临时目录、限制当前用户访问、Run terminal/shutdown/recovery时清理；设计优先使用进程env，具体映射由probe固化。
 
 ### 5.4 CLI-owned auth目录与git credential隔离
@@ -292,6 +309,16 @@ F002当前把HOME/USERPROFILE改到workspace，并只对白名单`CODEX_HOME`恢
 - API-key模式无需暴露用户home auth目录。
 
 如果某CLI无法在不恢复完整HOME的情况下使用OAuth，OAuth路径标为unavailable并提示使用已验证替代（OpenCode可用API key）；不能为了可用性撤掉credential isolation。
+
+**已用本机三个 CLI 实测确认，三者均不需要恢复完整 HOME**：
+
+| Provider | 隔离机制 | 备注 |
+| --- | --- | --- |
+| Codex | `CODEX_HOME`（F002 已实现） | 沿用既有白名单 |
+| Claude Code | `CLAUDE_CONFIG_DIR` 指向真实 `~/.claude` 目录 | 已验证：`HOME`/`USERPROFILE` 完全隔离、仅设置此变量指向真实 `.claude` 文件夹，`claude auth status` 仍正确返回真实登录态。**已知良性副作用**：stderr 会打印一条关于顶层 `.claude.json`（不在 `CLAUDE_CONFIG_DIR` 指向的文件夹内，而在其父目录）"not found" 的警告并提示 backup 恢复命令——这是 2.1.215 内部路径解析的一个不一致（部分状态存在 `<home>/.claude.json`，部分在 `<home>/.claude/` 内），登录探测本身不受影响。adapter 必须容忍/静默这条 stderr 警告，不得当作探测失败。 |
+| OpenCode | `XDG_DATA_HOME` + `XDG_CONFIG_HOME` 均指向真实位置 | 已验证：`HOME`/`USERPROFILE` 完全隔离，仅设置这两个 XDG 变量指向真实 `~/.local/share`、`~/.config`，`opencode auth list` 正确显示真实凭据，无警告。两个变量都要设置——前者对应 `auth.json`，后者对应 `opencode.jsonc`。 |
+
+三者的共同点：SSH agent、git credential helper、GH token 均由 `HOME`/`USERPROFILE`（保持隔离）控制，与上述 provider 专属变量无关，因此这套注入不会连带放宽 git 凭据隔离。详见 `server/tests/helpers/{claude,opencode}-protocol-fixtures.md` T009。
 
 ## 6. Adapter Runtime设计
 

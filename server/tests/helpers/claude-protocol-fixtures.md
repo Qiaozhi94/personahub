@@ -351,4 +351,28 @@ message降低trace completeness，不导致整个Run失败" principle (§6.2). `
 gap (computable from two existing timestamps), just not a native field the way Codex
 provides it directly.
 
+## T009: Minimal auth directory isolation (no full HOME needed)
+
+`CLAUDE_CONFIG_DIR` is a real, honored env var (not documented in `--help`, discovered by
+testing the common convention). Confirmed: with `HOME`/`USERPROFILE` fully redirected to an
+isolated scratch directory, setting `CLAUDE_CONFIG_DIR` to the **real** `~/.claude` folder
+still produces `loggedIn: true` — the real login state is used, without exposing the rest
+of a real `HOME` (SSH agent config, git credential helper, GH CLI token, or any other app's
+data that would live under a generic HOME override).
+
+**Known benign side effect**: this combination prints a startup warning to stderr about a
+missing top-level `.claude.json` (with a suggested backup-restore command) —
+`CLAUDE_CONFIG_DIR` must point directly at the `.claude` folder itself (pointing it at the
+parent/profile-root instead was tested and does **not** authenticate — `loggedIn: false`),
+and Claude Code 2.1.215 apparently expects one piece of top-level bookkeeping state
+(`.claude.json`) to sit one level up from the folder `CLAUDE_CONFIG_DIR` points to,
+independent of where the real login/credential material actually lives (which — auth
+succeeded — is found correctly). This is a minor internal path-resolution inconsistency in
+this CLI version, not a security problem: the adapter must tolerate/suppress this specific
+stderr warning rather than treat it as a probe/auth failure.
+
+Confirmed: SSH agent, git credential helper, and GH token exposure are governed entirely by
+`HOME`/`USERPROFILE` (which stays isolated), independent of `CLAUDE_CONFIG_DIR` — so this
+mechanism does not re-widen git credential isolation.
+
 ## Next: Phase 1 T005-T010 (OpenCode)

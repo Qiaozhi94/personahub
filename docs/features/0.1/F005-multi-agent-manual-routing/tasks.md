@@ -66,9 +66,16 @@ updated: 2026-07-19
 - [x] **T006**（`FR-002`, `FR-005`）：验证OpenCode one-shot、JSON/structured输出、prompt传递、final message、正常/非零/auth failure/cancel，保存redacted fixtures。
 
   **2026-07-19 完成**：`opencode run --format json` 是 NDJSON 事件流；**没有单一终态事件**（不像 Claude 的 `result` 或预期中的单一 final message），最终消息需由 normalizer 从最后一个 `step_finish.reason=="stop"` 之前的 `text` part 拼接得出——仍是纯字符串，与 F004 parser 兼容。`tool_use` 事件比 Claude 更丰富：`part.state.metadata.exit` 直接给出结构化 exit code（**这是相对 Claude 的能力优势**），`time.start/end` 同一事件内即可算 duration，无需跨事件关联。工具名是小写 `bash`（Windows 上也是），进一步确认 normalizer 不能硬编码任何单一工具名。详见 fixtures 文档 T006。
-- [ ] **T007**（`FR-002`, `DR-001`）：确定经实测可用的OpenCode API-key provider allowlist和env/临时config映射；验证key不需进入argv或workspace。
-- [ ] **T008**（`FR-008`, `NFR-003`, `AC-006`）：确认OpenCode无等价消息级approval通道；验证credential-isolated env下push失败可被稳定识别，记录真实能力说明。
-- [ ] **T009**（`NFR-001`, `NFR-004`）：验证三个CLI在不恢复完整HOME/USERPROFILE时所需的最小auth目录变量/路径；若某OAuth路径无法隔离，按design标unavailable而非放宽git凭据环境。
+- [x] **T007**（`FR-002`, `DR-001`）：确定经实测可用的OpenCode API-key provider allowlist和env/临时config映射；验证key不需进入argv或workspace。
+
+  **2026-07-19 完成**：标准 `<PROVIDER>_API_KEY` 环境变量约定确认有效（零成本验证，只用本地 `opencode models` listing + 假 key 值，未触发真实计费调用），design §5.3 的 `AdapterAuthMaterial.env` 机制无需改动，已写入 10 项 provider→env var 映射表。**重要澄清**：`opencode models` 在真实操作员环境下会混入个人 `opencode.jsonc` 自定义 provider（如 `heiyucode-openai`），不能作为基准；OpenCode 本身不内置固定 provider 枚举，上表是 PersonaHub 自定义的 allowlist。详见 fixtures 文档 T007。
+
+- [x] **T008**（`FR-008`, `NFR-003`, `AC-006`）：确认OpenCode无等价消息级approval通道；验证credential-isolated env下push失败可被稳定识别，记录真实能力说明。
+
+  **2026-07-19 完成**：用显式构造的最小 env（无 SSH_AUTH_SOCK/GH_TOKEN/git credential helper，`HOME` 隔离）+ 真实 GitHub HTTPS URL（不存在的仓库，安全无副作用）验证 push 失败，`tool_use.metadata.exit:1` 是可靠的结构化信号。**能力如实记录**：失败文案是 GitHub 的 `"Repository not found"`（隐私保护机制，无论无凭据还是凭据不足都返回 404），不是明确的 `"Authentication failed"`——`CredentialIsolationBlocked` 分类器需要匹配多种文案，不能假设单一字符串。确认 F002 `buildChildEnv()` 已有的 `GIT_TERMINAL_PROMPT=0`/`GIT_ASKPASS=""` 对 OpenCode 同样有效，无需新增 env 变量。OpenCode 无等价的前置拦截机制，credential isolation 是唯一防线，与 design NFR-003 承诺一致。详见 fixtures 文档 T008。
+- [x] **T009**（`NFR-001`, `NFR-004`）：验证三个CLI在不恢复完整HOME/USERPROFILE时所需的最小auth目录变量/路径；若某OAuth路径无法隔离，按design标unavailable而非放宽git凭据环境。
+
+  **2026-07-19 完成，三者全部可隔离，无需放宽git凭据环境**：Codex 沿用已实现的 `CODEX_HOME`；Claude Code 是 `CLAUDE_CONFIG_DIR`（指向真实 `~/.claude` 文件夹，非父目录）——已验证隔离 HOME 后仍保留真实登录态，但有一条关于顶层 `.claude.json` 的良性 stderr 警告需要 adapter 容忍/静默，不当作探测失败；OpenCode 需要**同时**设置 `XDG_DATA_HOME`（定位 `auth.json`）和 `XDG_CONFIG_HOME`（定位 `opencode.jsonc`），已验证无警告、干净生效。三者的 SSH agent/git credential helper/GH token 暴露都只受 `HOME`/`USERPROFILE` 控制，与这些 provider 专属变量无关，隔离机制不会连带放宽。design §5.4 已写入对照表。详见 fixtures 文档 T009。
 - [ ] **T009a**（`NFR-003`, `NFR-004`, `AC-006`）：实现统一的 CLI 可执行文件解析，让三个 adapter 都能真正以 `shell=false` 启动。
 
   **背景**：本机实测（T000）三个 CLI 的路径形态不一致——Claude 是真 exe（`claude.exe`），Codex 和 OpenCode 都是 Windows 批处理 shim（`codex.cmd` / `opencode.cmd`）。Node `spawn` 在 `shell:false` 下无法直接执行 `.cmd`，这正是 F002 基线被迫写成 `shell: process.platform === "win32"` 的原因（见 `runtime/adapters/codex-cli-adapter.ts:196`、`codex-protocol.ts:83`）。若不处理，F005 三个 adapter 会出现"两个走 shell、一个不走"的分裂，`shell=true` 让命令串经过 `cmd.exe`，与 design 反复强调的"instructions/API key 绝不进 argv"的安全论证不自洽。

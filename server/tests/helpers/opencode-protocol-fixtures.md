@@ -149,6 +149,97 @@ assembled by the normalizer from the last `text` part(s) prior to a `step_finish
 (same as Claude/Codex — the parser has no CLI-specific assumptions), but the *construction*
 logic differs per adapter and must be implemented distinctly, not shared.
 
-## Next: T007 (API-key provider allowlist), T008 (escalation/credential isolation), T009
-(auth directory isolation across all three CLIs), T009a (executable resolver
-implementation).
+## T007: API-key provider allowlist — env var convention confirmed, provider IDs are not a fixed enum
+
+### Caveat: `opencode models` on a normal install is contaminated by personal config
+
+Running `opencode models` under the real `HOME` lists whatever custom provider aliases the
+operator has configured in their own `~/.config/opencode/opencode.jsonc` (e.g.
+`heiyucode-openai`, `micu-claude` — personal proxy/aliases, not OpenCode built-ins). **These
+are not a baseline provider catalog** — re-running under an isolated, freshly-generated
+`HOME` (no user config) showed **only** the bundled `opencode/*-free` models. OpenCode does
+not ship a fixed enum of "well-known provider" identifiers the way the design's `DR-001`
+phrasing ("集中allowlist把model_provider映射到CLI实际支持的环境变量") implied — a "provider"
+is an arbitrary alias defined by whatever config or env var makes it resolvable.
+
+### Confirmed: standard `<PROVIDER>_API_KEY` env vars are auto-detected, at zero cost to verify
+
+Each test below only ran `opencode models` (a local listing command, no outbound API call,
+no real key required — a **fake** key value was used throughout, verified safe/free) with
+an isolated, empty `HOME` plus one env var set, checking whether the corresponding provider
+id appeared in the listing:
+
+| Env var | Provider id that appears |
+| --- | --- |
+| `OPENAI_API_KEY` | `openai` |
+| `ANTHROPIC_API_KEY` | `anthropic` |
+| `DEEPSEEK_API_KEY` | `deepseek` |
+| `GEMINI_API_KEY` **or** `GOOGLE_API_KEY` | `google` |
+| `OPENROUTER_API_KEY` | `openrouter` |
+| `GROQ_API_KEY` | `groq` |
+| `MISTRAL_API_KEY` | `mistral` |
+| `XAI_API_KEY` | `xai` |
+| `TOGETHER_API_KEY` | `togetherai` |
+| `PERPLEXITY_API_KEY` | `perplexity` (and `perplexity-agent`) |
+
+This is a real, usable allowlist for F005's `AuthMaterial` mapping (design §5.3): the
+`AdapterAuthMaterial.env` shape (`Record<string,string>`) is confirmed correct — inject
+exactly one `<PROVIDER>_API_KEY` env var per configured provider, nothing else, key never
+touches argv or any workspace file. Adapter should restrict `model_provider` input to this
+confirmed allowlist (returning `ADAPTER_MODEL_PROVIDER_UNSUPPORTED` for anything else per
+design §5.3), since providers outside this list are unverified and design explicitly says
+not to let users specify arbitrary env var names.
+
+## T008: Credential isolation / escalation boundary (no pre-execution hook exists)
+
+Confirmed empirically with a real OpenCode process, spawned with an **explicitly
+constructed minimal env** (not inherited `process.env`): only `PATH`, `SystemRoot`,
+`TEMP`/`TMP`, and `HOME`/`USERPROFILE` redirected to an isolated scratch dir with no git
+credential store — no `SSH_AUTH_SOCK`, no `GH_TOKEN`, no git credential helper. Target
+remote: a real, syntactically valid GitHub HTTPS URL for a nonexistent/inaccessible repo
+(`https://github.com/personahub-nonexistent-test-org/does-not-exist-test-repo-xyz123.git`)
+— a real (harmless) network round-trip to github.com, no data exfiltration risk, same class
+of check git itself performs on every push attempt.
+
+```json
+{"status":"completed","input":{"command":"git push origin main"},
+ "output":"remote: Repository not found.\nfatal: repository '...' not found\n",
+ "metadata":{"exit":1,...}}
+```
+
+**Confirmed**: push fails, `metadata.exit:1` — a genuinely structured, reliable failure
+signal (see T006 — OpenCode's `tool_use` always carries `metadata.exit`, an advantage over
+Claude here). **Capability note, honestly recorded**: the failure text is `"Repository not
+found"`, not an explicit `"Authentication failed"` — this is GitHub's own privacy-preserving
+behavior (private/inaccessible repos 404 rather than 403, regardless of whether credentials
+were present but insufficient, or entirely absent). The
+`CredentialIsolationBlocked` classifier (design §6.4) must therefore pattern-match multiple
+message shapes as equivalent "push blocked" signals — `"not found"`, `"could not read
+Username"`, `"Authentication failed"`, `"terminal prompts disabled"` — not assume a single
+canonical string.
+
+**No pre-execution interception exists for OpenCode** (confirmed by absence: no
+`--permission-prompt`-style flag in `--help`, no hook-registration mechanism analogous to
+Claude's `--settings`/`PreToolUse` found in the CLI surface) — credential isolation is
+confirmed as the **sole** effective defense, exactly as design's `NFR-003` already commits
+to. `GIT_TERMINAL_PROMPT=0` (already set by F002's existing `buildChildEnv()` in
+`workspace-context.ts`) correctly prevented any interactive-prompt hang in this test — no
+new env var is needed for OpenCode beyond what F002 already sets.
+
+## T009: Minimal auth directory isolation — `XDG_DATA_HOME` + `XDG_CONFIG_HOME`
+
+Confirmed: with `HOME`/`USERPROFILE` fully redirected to an isolated scratch directory,
+setting **both** `XDG_DATA_HOME` (→ real `~/.local/share`) and `XDG_CONFIG_HOME` (→ real
+`~/.config`) to their real paths made `opencode auth list` correctly show the real
+credential (`1 credentials`, the operator's real provider entry) — no warnings, cleaner
+than Claude's equivalent mechanism. **Both variables are required**: `XDG_DATA_HOME` alone
+locates `auth.json` (the credential store); `XDG_CONFIG_HOME` alone locates
+`opencode.jsonc` (provider/model config) — OpenCode's OAuth-mode login material and its
+provider configuration live under these two separately-named XDG roots, not a single
+combined directory the way Claude's `.claude` folder bundles config+auth together.
+
+SSH agent, git credential helper, and GH token exposure remain governed by
+`HOME`/`USERPROFILE` alone (which stays isolated) — this mechanism does not widen git
+credential isolation.
+
+## Next: T009a (executable resolver implementation).
