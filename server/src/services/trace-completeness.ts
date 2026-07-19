@@ -17,13 +17,12 @@ import {
 export function buildTraceCompleteness(
   run: Run,
   events: ThreadEvent[],
-  fileChangeCount: number,
   traceState: RunTraceState | null,
   evidenceResolutionFailures: number,
 ): TraceCompleteness {
   const commands = assessCommands(events, traceState);
   const verification = assessVerification(events);
-  const fileChanges = assessFileChanges(fileChangeCount, traceState);
+  const fileChanges = assessFileChanges(events, traceState);
   const refs = assessRefs(evidenceResolutionFailures);
 
   const reasons: string[] = [];
@@ -72,25 +71,28 @@ function assessCommands(
   return { status: TCS.Complete };
 }
 
-function assessVerification(events: ThreadEvent[]): { status: TraceCompletenessStatus } {
-  const tests = events.filter((e) => e.type === ThreadEventType.TestCompleted);
-  if (tests.length === 0) {
-    return { status: TCS.Complete };
-  }
+function assessVerification(_events: ThreadEvent[]): { status: TraceCompletenessStatus } {
+  // Verification completeness is always Complete by design:
+  // TestCompleted events are recorded completely, or no verification
+  // was attempted. Actual pass/fail classification is in handoff builder.
   return { status: TCS.Complete };
 }
 
 function assessFileChanges(
-  fileChangeCount: number,
+  events: ThreadEvent[],
   traceState: RunTraceState | null,
 ): { status: TraceCompletenessStatus } {
-  if (!traceState) {
+  if (!traceState || traceState.baseline_status !== BaselineStatus.Captured) {
     return { status: TCS.Unavailable };
   }
-  if (traceState.baseline_status === BaselineStatus.Failed) {
+  if (events.some((e) => e.type === ThreadEventType.FileChangeScanFailed)) {
     return { status: TCS.Unavailable };
   }
-  return { status: TCS.Complete };
+  const summary = events.find((e) => e.type === ThreadEventType.FileChangeSummary);
+  if (summary?.payload_json.scan_truncated === true) {
+    return { status: TCS.Partial };
+  }
+  return { status: summary ? TCS.Complete : TCS.Partial };
 }
 
 function assessRefs(failures: number): { status: TraceCompletenessStatus } {

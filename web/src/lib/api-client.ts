@@ -7,11 +7,13 @@ import {
   type AdapterConfigUpdateResponse,
   type AdapterConfigValidateResponse,
   type ApiError,
+  type EvidenceSummaryResponse,
   type IssueCreateInput,
   type IssueCreateResponse,
   type IssueGetResponse,
   type IssueListResponse,
   type IssueTraceResponse,
+  type IssueValidationResponse,
   type ProjectCreateResponse,
   type ProjectGetResponse,
   type ProjectListResponse,
@@ -23,6 +25,8 @@ import {
   type RunListResponse,
   type ThreadEventListResponse,
   type ThreadGetResponse,
+  type UnblockInput,
+  type UnblockResponse,
   type WorkspaceBindResponse,
   type WorkspaceByIdResponse,
   type WorkspaceGetResponse,
@@ -158,5 +162,20 @@ export const apiClient = {
       const blob = await res.blob();
       return { blob, filename };
     },
+  },
+  validation: {
+    getValidation: (issueId: string) =>
+      apiFetch<IssueValidationResponse>(`/issues/${issueId}/validation`),
+    getEvidenceSummary: (issueId: string) =>
+      apiFetch<EvidenceSummaryResponse>(`/issues/${issueId}/evidence-summary`),
+    unblock: (issueId: string, operatorNote: string) =>
+      apiFetch<UnblockResponse>(`/issues/${issueId}/unblock`, {
+        method: "POST",
+        body: JSON.stringify({ operator_note: operatorNote } satisfies UnblockInput),
+      }),
+    triggerValidation: (issueId: string) =>
+      apiFetch<IssueValidationResponse>(`/issues/${issueId}/validation`, {
+        method: "POST",
+      }),
   },
 };

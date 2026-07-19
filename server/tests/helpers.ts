@@ -28,11 +28,16 @@ import { AgentRunner } from "../src/runtime/agent-runner.js";
 import { FakeAgentAdapter } from "../src/runtime/adapters/fake-adapter.js";
 import { RunDispatchService } from "../src/services/run-dispatch.js";
 import { EventBus } from "../src/runtime/event-bus.js";
+import type { EventBus as EventBusType } from "../src/runtime/event-bus.js";
 import { EvidenceService } from "../src/services/evidence.js";
 import { DevelopmentTraceService } from "../src/services/development-trace.js";
 import { ValidationTraceService } from "../src/services/validation-trace.js";
+import { ValidationQueryService } from "../src/services/validation/query.js";
+import { ValidationRecoveryActionService } from "../src/services/validation/recovery-action.js";
+import { ValidationWorkflowService } from "../src/services/validation/workflow-service.js";
 import { TraceQueryService } from "../src/services/trace-query.js";
 import { TraceExportService } from "../src/services/trace-export.js";
+import { EvidenceSummaryRepository } from "../src/repositories/evidence-summary.js";
 
 export function createTestDb(): Database.Database {
   return openDatabase(":memory:");
@@ -76,6 +81,11 @@ export interface TestServices {
   validationTraceService: ValidationTraceService;
   traceQueryService: TraceQueryService;
   traceExportService: TraceExportService;
+  evidenceSummaryRepo: EvidenceSummaryRepository;
+  validationQueryService: ValidationQueryService;
+  validationRecoveryActionService: ValidationRecoveryActionService;
+  validationWorkflowService: ValidationWorkflowService;
+  eventBus: EventBusType;
 }
 
 export function createTestServices(): TestServices {  const db = createTestDb();
@@ -108,6 +118,13 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     threadEventService, evidenceService, issueRepo, runRepo,
   );
 
+  const evidenceSummaryRepo = new EvidenceSummaryRepository(db);
+  const validationWorkflowService = new ValidationWorkflowService(
+    db, issueRepo, runRepo, threadEventService, threadEventRepo,
+    validationTraceService, agentConfigRepo, workflowTemplateRepo,
+    validationPolicyRepo, evidenceSummaryRepo, fileChangeRepo,
+  );
+
   const adapterRegistry = new AgentAdapterRegistry();
   adapterRegistry.register(new FakeAgentAdapter());
 
@@ -120,7 +137,8 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   const runDispatchService = new RunDispatchService(
     runService, workspaceLockService, adapterRegistry,
     agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
-    threadEventService, agentRunner, developmentTraceService, runTraceRepo, db,
+    threadEventService, agentRunner, developmentTraceService, runTraceRepo,
+    validationWorkflowService, db,
   );
 
   const staleRecoveryService = new StaleRecoveryService(
@@ -133,6 +151,13 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   );
   const traceExportService = new TraceExportService(
     issueRepo, runRepo, threadEventRepo, fileChangeRepo, runTraceRepo, evidenceService,
+  );
+
+  const validationQueryService = new ValidationQueryService(
+    issueRepo, runRepo, evidenceSummaryRepo, validationPolicyRepo, threadEventRepo,
+  );
+  const validationRecoveryActionService = new ValidationRecoveryActionService(
+    issueRepo, validationTraceService, db,
   );
 
   return {
@@ -168,6 +193,11 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     validationTraceService,
     traceQueryService,
     traceExportService,
+    evidenceSummaryRepo,
+    validationQueryService,
+    validationRecoveryActionService,
+    validationWorkflowService,
+    eventBus,
   };
 }
 

@@ -20,6 +20,17 @@ export interface IssueCreateInput {
   labels: string[];
 }
 
+export interface IssueCompareAndSetPatch {
+  validation_round_count?: number;
+  blocked_reason_code?: string | null;
+  blocked_reason_message?: string | null;
+}
+
+export interface IssueCompareAndSetResult {
+  success: boolean;
+  issue: Issue | null;
+}
+
 interface IssueRow {
   id: string;
   project_id: string;
@@ -36,6 +47,8 @@ interface IssueRow {
   priority: string;
   labels: string;
   validation_round_count: number;
+  blocked_reason_code: string | null;
+  blocked_reason_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +70,8 @@ function mapRow(row: IssueRow): Issue {
     priority: row.priority as IssuePriority,
     labels: JSON.parse(row.labels ?? "[]") as string[],
     validation_round_count: row.validation_round_count,
+    blocked_reason_code: row.blocked_reason_code,
+    blocked_reason_message: row.blocked_reason_message,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -108,5 +123,63 @@ export class IssueRepository {
     this.db.prepare(
       "UPDATE issues SET status = ?, updated_at = ? WHERE id = ?"
     ).run(input.status, input.updatedAt, issueId);
+  }
+
+  compareAndSetStatus(
+    id: string,
+    expected: IssueStatus,
+    next: IssueStatus,
+    patch?: IssueCompareAndSetPatch,
+  ): IssueCompareAndSetResult {
+    const sets: string[] = ["status = ?", "updated_at = ?"];
+    const values: unknown[] = [next, new Date().toISOString()];
+
+    if (patch?.validation_round_count !== undefined) {
+      sets.push("validation_round_count = ?");
+      values.push(patch.validation_round_count);
+    }
+    if (patch?.blocked_reason_code !== undefined) {
+      sets.push("blocked_reason_code = ?");
+      values.push(patch.blocked_reason_code);
+    }
+    if (patch?.blocked_reason_message !== undefined) {
+      sets.push("blocked_reason_message = ?");
+      values.push(patch.blocked_reason_message);
+    }
+
+    values.push(id, expected);
+
+    const result = this.db.prepare(
+      `UPDATE issues SET ${sets.join(", ")} WHERE id = ? AND status = ?`,
+    ).run(...values);
+
+    if (result.changes === 0) {
+      return { success: false, issue: null };
+    }
+
+    const row = this.db.prepare("SELECT * FROM issues WHERE id = ?").get(id) as IssueRow;
+    return { success: true, issue: mapRow(row) };
+  }
+
+  listByStatus(status: IssueStatus): Issue[] {
+    const rows = this.db.prepare(
+      "SELECT * FROM issues WHERE status = ? ORDER BY created_at ASC, id ASC"
+    ).all(status) as IssueRow[];
+    return rows.map(mapRow);
+  }
+
+  listValidatingWithoutActiveValidator(): Issue[] {
+    const rows = this.db.prepare(
+      `SELECT i.* FROM issues i
+       WHERE i.status = 'Validating'
+         AND NOT EXISTS (
+           SELECT 1 FROM runs r
+           WHERE r.issue_id = i.id
+             AND r.role = 'validator'
+             AND r.status IN ('queued', 'running')
+         )
+       ORDER BY i.created_at ASC, i.id ASC`,
+    ).all() as IssueRow[];
+    return rows.map(mapRow);
   }
 }

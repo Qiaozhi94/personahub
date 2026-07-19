@@ -40,4 +40,11 @@ export class ValidationPolicyRepository {
     ).get() as ValidationPolicyRow | undefined;
     return row ? mapRow(row) : null;
   }
+
+  getById(id: string): ValidationPolicy | null {
+    const row = this.db.prepare(
+      "SELECT * FROM validation_policies WHERE id = ?"
+    ).get(id) as ValidationPolicyRow | undefined;
+    return row ? mapRow(row) : null;
+  }
 }

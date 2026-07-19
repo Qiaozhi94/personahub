@@ -16,6 +16,7 @@ export interface AdapterConfigCreateInput {
 
 export interface AdapterConfigUpdateInput {
   name?: string;
+  role?: string;
   command?: string;
   args?: string[];
   default_model?: string | null;
@@ -89,11 +90,19 @@ export class AgentConfigRepository {
     return rows.map(mapRow);
   }
 
+  listAvailableByProjectAndRole(projectId: string, role: string): AdapterConfig[] {
+    const rows = this.db.prepare(
+      "SELECT * FROM agent_configs WHERE project_id = ? AND role = ? AND status = 'available' ORDER BY created_at ASC, id ASC"
+    ).all(projectId, role) as AdapterConfigRow[];
+    return rows.map(mapRow);
+  }
+
   update(id: string, input: AdapterConfigUpdateInput): void {
     const sets: string[] = [];
     const values: unknown[] = [];
 
     if (input.name !== undefined) { sets.push("name = ?"); values.push(input.name); }
+    if (input.role !== undefined) { sets.push("role = ?"); values.push(input.role); }
     if (input.command !== undefined) { sets.push("command = ?"); values.push(input.command); }
     if (input.args !== undefined) { sets.push("args = ?"); values.push(JSON.stringify(input.args)); }
     if (input.default_model !== undefined) { sets.push("default_model = ?"); values.push(input.default_model); }

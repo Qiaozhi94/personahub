@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import type { Run, FailureReason, IssueStatus, ThreadEvent } from "@personahub/shared/types";
-import { IssueStatus as IS, RunStatus as RS, ThreadEventType, ActorType, CommandTraceCapability } from "@personahub/shared/types";
+import { IssueStatus as IS, RunStatus as RS, RunRole, ThreadEventType, ActorType, CommandTraceCapability, ValidationBlockReason } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { RunService } from "./run.js";
 import type { WorkspaceLockService } from "./workspace-lock.js";
@@ -13,6 +13,7 @@ import type { IssueRepository } from "../repositories/issue.js";
 import type { ThreadRepository } from "../repositories/thread.js";
 import type { WorkspaceRepository } from "../repositories/workspace.js";
 import type { RunTraceRepository } from "../repositories/run-trace.js";
+import type { ValidationWorkflowService } from "./validation/workflow-service.js";
 import { AppError } from "../api/errors.js";
 
 export class RunDispatchService {
@@ -28,6 +29,7 @@ export class RunDispatchService {
     private agentRunner: AgentRunner,
     private developmentTraceService: DevelopmentTraceService,
     private runTraceRepo: RunTraceRepository,
+    private validationWorkflowService: ValidationWorkflowService,
     private db: Database.Database,
   ) {}
 
@@ -101,7 +103,31 @@ export class RunDispatchService {
       }
     } finally {
       this.workspaceLockService.releaseByRunId(runId);
+      try {
+        await this.workflowHook(runId);
+      } catch {
+        // hook errors must not prevent queue drain
+      }
       await this.startNextQueuedRun(workspaceId);
+    }
+  }
+
+  private async workflowHook(runId: string): Promise<void> {
+    const run = this.runService.get(runId);
+    if (!run || !run.role) return;
+
+    if (run.role === RunRole.Implementation && run.status === RS.Completed) {
+      this.validationWorkflowService.requestValidation(run.issue_id, runId);
+      return;
+    }
+
+    if (run.role === RunRole.Validator) {
+      if (run.status === RS.Completed) {
+        this.validationWorkflowService.processValidatorResult(runId);
+      } else if (run.status === RS.Failed || run.status === RS.Cancelled || run.status === RS.Interrupted) {
+        this.validationWorkflowService.blockValidation(run.issue_id, runId, ValidationBlockReason.ValidatorRunFailed);
+      }
+      return;
     }
   }
 
@@ -246,6 +272,26 @@ export class RunDispatchService {
       if (issue.status === IS.Blocked) {
         this.runService.cancelQueued(run.id, "issue_blocked_before_start");
         continue;
+      }
+      if (issue.status === IS.Done) {
+        this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
+        continue;
+      }
+      if (issue.status === IS.Validating && run.role !== RunRole.Validator) {
+        this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
+        continue;
+      }
+
+      if (run.role === RunRole.Validator) {
+        if (issue.status !== IS.Validating) {
+          this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
+          continue;
+        }
+        const expectedRound = issue.validation_round_count + 1;
+        if (run.validation_round !== expectedRound) {
+          this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
+          continue;
+        }
       }
 
       const lockAcquired = this.workspaceLockService.acquire(workspaceId, run.id);

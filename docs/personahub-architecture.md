@@ -1,8 +1,8 @@
 ---
-topics: [architecture, runtime, module-design, agent-team-os]
+topics: [architecture, runtime, module-design, agent-team-os, validation, workflow]
 doc_kind: design
 created: 2026-07-12
-updated: 2026-07-18
+updated: 2026-07-19
 ---
 
 # PersonaHub 软件架构设计
@@ -179,6 +179,81 @@ class SequentialTopologyExecutor implements TopologyExecutor { ... }
 - v0.1 只实现 `SequentialTopologyExecutor`：按 `WorkflowTemplate.steps_json` 顺序把 Issue 交给下一个 agent 角色，validator 角色只是 steps 中的一步，不是独立引擎（与 PRD "Agent Validation Loop"小节一致——validation 是 Thread 内事件，不是一级模块）。
 - `orchestrator_subagent` / `coordinator` / `council` / `moa` / `swarm` 等 topology（v0.2 及以后）只保留 `TopologyExecutor` 接口和 `WorkflowTemplate.collaboration_topology` 字段占位，不在本阶段实现，避免为还未验证的协作形态设计具体机制。
 - 失败收敛：`validation_round_count` 由 Workflow Engine 在每次 validation fail 回流时自增，超过 `max_validation_rounds` 由 Engine 直接把 Issue 置 Blocked 并写 escalation 事件（PRD "Agent Validation Loop"/"自动化与安全边界"小节），这条规则在 v0.1 就要实现，不属于"轻量占位"范畴，因为它是安全边界而非功能扩展。
+
+### 5.1 Terminal Finalization 顺序（F004）
+
+F003 的 `finalizeAndDrain()` 出口顺序调整为：
+
+```text
+trace finalize (F003 file changes + handoff, lock still held)
+  -> release workspace lock
+  -> workflow hook (ValidationWorkflowService)
+  -> drain next queued Run
+```
+
+Workflow hook 必须早于 queue drain：否则旧队列中的 implementation/consult Run 可能先启动，validator 创建顺序会漂移；若 validator 结果需把 Issue 置 Blocked，也来不及在 drain 前取消不再 eligible 的 queued Run。Hook 无论成功或收敛为 Blocked，最外层 `finally` 都必须继续执行 queue drain。
+
+### 5.2 Validation 工作流（F004）
+
+**Implementation completed -> 自动触发 validator：**
+
+```text
+implementation Run completed
+  -> F003 finalizeRun -> release lock
+  -> ValidationWorkflowService.requestValidation()
+       Issue Running -> Validating
+       validation.requested (固化 implementation_run_id、policy snapshot/hash、双方 identity)
+       create queued validator Run (role=validator, workflow_step=validation, dispatch_source=system)
+  -> normal workspace queue dispatch
+```
+
+**Validator terminal -> outcome submission：**
+
+```text
+validator Run completed
+  -> F003 finalizeRun -> release lock
+  -> ValidationWorkflowService.processValidatorResult()
+       1. Parse strict JSON final message
+       2. Deterministic policy gate (evidence requirements from requested snapshot)
+       3. Round limit check (nextCount = validation_round_count + 1)
+       passed  -> validation.passed + EvidenceSummary + issue.done -> Done
+       failed  -> findings + validation.failed + round++ -> Running
+       blocked -> validation.blocked + blocker columns -> Blocked
+```
+
+Validator `failed/cancelled/interrupted` 不过 parser，直接 `validator_run_failed` -> Blocked（不增加 failed round count）。
+
+### 5.3 Strict Validation Gate（F004）
+
+Validation pass 不能仅信任 validator agent 声明，必须经过 deterministic policy gate：
+
+- 使用 `validation.requested` 事件固化的 policy snapshot（而非当前可能已修改的 policy 行）。
+- 检查 handoff/file trace/verification evidence 满足 `ValidationEvidenceRequirements`。
+- Same-origin 标记比较双方 Run 创建时固化的 `adapter_identity_json`（`cli_provider` + `default_model`），不读后续可能变化的 adapter config。
+- Gate 不通过时，即使 validator 输出 `passed`，仍按 `evidence_missing` -> Blocked。
+
+### 5.4 Queue Drain Eligibility（F004 §6.1.1）
+
+每次从 workspace FIFO 取出 queued Run 时，重新读取 Issue 并校验 role/status：
+
+```text
+implementation -> Inbox / Ready / Running
+validator      -> Validating，且 validation_round 等于当前 round
+```
+
+同一 Issue 的 Run 若因状态推进不再 eligible，使用 CAS 将其从 `queued` 置为 `cancelled`（`issue_state_changed_before_start`），继续扫描下一条；不得让 stale implementation 阻塞其后 validator。其他 Issue 中仍 eligible 的更早 Run 继续遵守 workspace FIFO，validator 不获得跨 Issue 插队权。
+
+### 5.5 Startup Recovery 顺序（F004 §6.7）
+
+API server 启动时的恢复顺序扩展为：
+
+1. **F003 stale Run recovery**：`status = running` 的 Run -> `interrupted`，释放 workspace 锁。
+2. **F004 validation recovery**（`ValidationRecoveryService.reconcile()`）：
+   - Finalized completed implementation + Issue Running 且无 result -> 幂等 `requestValidation()`。
+   - Terminal validator + Issue Validating 且无 result -> 幂等 `processValidatorResult()`（从固化 `validation.requested` 读取 implementation/policy scope）。
+   - Validating 但无 active/terminal validator -> 重建一次或 Blocked。
+   - Done 缺 validation.passed 或 summary -> 记录 diagnostic，停止该 Issue 自动化。
+3. **listen / drain queue**：开始正常服务。
 
 ## 6. 存储层
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { Trash2, RefreshCw, Cpu } from "lucide-react";
+import { Trash2, RefreshCw, Cpu, AlertTriangle } from "lucide-react";
 import { AdapterStatus, type AdapterConfig, type AdapterConfigCreateInput } from "@personahub/shared";
 import { useAdapters, useCreateAdapter, useUpdateAdapter, useDeleteAdapter, useValidateAdapter } from "@/hooks/use-adapters";
 import { toApiError } from "@/lib/api-client";
@@ -90,6 +90,13 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
         </div>
       )}
 
+      {adapters.length > 0 && !adapters.some((a) => a.role === "validator") ? (
+        <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/5 px-2.5 py-1.5 text-[11px] text-warning">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          No validator configured — auto-validation requires at least one validator adapter
+        </div>
+      ) : null}
+
       <Button
         variant="secondary"
         size="sm"
@@ -136,6 +143,9 @@ function AdapterRow({ adapter, projectId, onEdit }: AdapterRowProps) {
       >
         {adapter.name}
       </button>
+      <Badge variant="secondary" className="shrink-0 text-[9px]">
+        {adapter.role}
+      </Badge>
       <Badge variant={STATUS_VARIANT[adapter.status]} className="shrink-0 text-[10px]">
         {STATUS_LABEL[adapter.status]}
       </Badge>
@@ -181,6 +191,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
   const [command, setCommand] = useState(editingAdapter?.command ?? "");
   const [argsInput, setArgsInput] = useState(editingAdapter?.args?.join(", ") ?? "");
   const [defaultModel, setDefaultModel] = useState(editingAdapter?.default_model ?? "");
+  const [role, setRole] = useState(editingAdapter?.role ?? "implementation");
 
   useEffect(() => {
     if (open) {
@@ -188,6 +199,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
       setCommand(editingAdapter?.command ?? "");
       setArgsInput(editingAdapter?.args?.join(", ") ?? "");
       setDefaultModel(editingAdapter?.default_model ?? "");
+      setRole(editingAdapter?.role ?? "implementation");
     }
   }, [open, editingAdapter]);
 
@@ -202,6 +214,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
     setCommand(editingAdapter?.command ?? "");
     setArgsInput(editingAdapter?.args?.join(", ") ?? "");
     setDefaultModel(editingAdapter?.default_model ?? "");
+    setRole(editingAdapter?.role ?? "implementation");
     createAdapter.reset();
     updateAdapter.reset();
   }
@@ -224,6 +237,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
           adapterId: editingAdapter.id,
           input: {
             name: name || undefined,
+            role: role || undefined,
             command: command || undefined,
             args: args.length > 0 ? args : undefined,
             default_model: defaultModel.trim() || undefined,
@@ -235,6 +249,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
       const input: AdapterConfigCreateInput = {
         cli_provider: "codex",
         name,
+        role,
         command,
         args: args.length > 0 ? args : undefined,
         default_model: defaultModel.trim() || undefined,
@@ -288,6 +303,19 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
               onChange={(e) => setDefaultModel(e.target.value)}
               placeholder="gpt-5"
             />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="adapter-role">Role</Label>
+            <select
+              id="adapter-role"
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="Role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="implementation">implementation</option>
+              <option value="validator">validator</option>
+            </select>
           </div>
           {errorMessage ? <p className="text-xs text-destructive">{errorMessage}</p> : null}
           <div className="flex justify-end gap-2">

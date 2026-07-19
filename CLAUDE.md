@@ -4,7 +4,9 @@
 
 ## 现状
 
-F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完成代码、行为验收及关键 UI 自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`。F003（Development Trace）已完成全部 88 个任务的代码实现和自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`；真实 Codex CLI 手动 probe 和端到端验证（T001、T081-T084）待用户在真实环境中执行。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
+F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完成代码、行为验收及关键 UI 自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`。F003（Development Trace）已完成全部 88 个任务的代码实现和自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`；真实 Codex CLI 手动 probe 和端到端验证（T001、T081-T084）待用户在真实环境中执行。
+
+F004（Autonomous Validation）在 2026-07-19 final review 后重新进入 `in-progress`。既有实现已覆盖主要状态机、API/UI 和自动化测试，但 review 确认仍需完成 T090-T095：生产 validator/repair context 接线、validator 声明 blocked 的提交路径、完整 Evidence Summary projection 与 Markdown 导出、同一 Issue/round validator 全生命周期唯一、显式 round reset、schema invariant。AC-002/003/004/005/009/010/011 已重新打开；T081-T085 必须在上述修复后按 `docs/SOP.md` 在本机真实环境重新执行，完成前不得标记 `done`。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
 
 ## 当前结构
 

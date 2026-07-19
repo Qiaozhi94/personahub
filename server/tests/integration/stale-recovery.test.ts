@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
-import { IssueStatus, RunStatus, FailureReason, AdapterStatus } from "@personahub/shared/types";
+import { IssueStatus, RunStatus, FailureReason, AdapterStatus, CommandTraceCapability, BaselineStatus } from "@personahub/shared/types";
 
 function setupTestRun(services: TestServices, tempDir: string, status: RunStatus = RunStatus.Running) {
   const project = services.projectService.create("Test", "desc");
@@ -75,5 +75,34 @@ describe("StaleRecoveryService", () => {
     await services.staleRecoveryService.runAll();
 
     expect(services.workspaceLockService.isLocked(issue.workspace_id)).toBe(false);
+  });
+
+  it("handles workspace ownership loss without attributing file changes (T091)", async () => {
+    const { run, issue, adapter } = setupTestRun(services, tempDir, RunStatus.Running);
+
+    // Create trace state with captured baseline (simulating prepareRun)
+    const now = new Date().toISOString();
+    services.runTraceRepo.createPending(run.id, CommandTraceCapability.Supported, now);
+    services.runTraceRepo.saveBaseline(run.id, "filesystem", JSON.stringify({
+      scannerType: "filesystem", scanComplete: true, scanTruncated: false,
+      stopReason: null, headOid: null, scannerVersion: 1, entries: [],
+    }), now);
+
+    // Create a legitimate other run and have it lock the workspace
+    const otherRun = services.runRepo.create({
+      issue_id: issue.id, thread_id: issue.primary_thread!.id, workspace_id: issue.workspace_id,
+      adapter_config_id: adapter.id, instructions: "other", status: RunStatus.Running,
+    });
+    services.workspaceRepo.acquireLock(issue.workspace_id, otherRun.id);
+
+    await services.staleRecoveryService.runAll();
+
+    // Original run should be interrupted
+    const recovered = services.runRepo.getById(run.id);
+    expect(recovered!.status).toBe(RunStatus.Interrupted);
+
+    // No file changes should be attributed to the original run (ownership lost path)
+    const fileChanges = services.fileChangeRepo.listByRun(run.id);
+    expect(fileChanges).toHaveLength(0);
   });
 });

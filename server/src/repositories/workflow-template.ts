@@ -44,4 +44,11 @@ export class WorkflowTemplateRepository {
     ).get() as WorkflowTemplateRow | undefined;
     return row ? mapRow(row) : null;
   }
+
+  getById(id: string): WorkflowTemplate | null {
+    const row = this.db.prepare(
+      "SELECT * FROM workflow_templates WHERE id = ?"
+    ).get(id) as WorkflowTemplateRow | undefined;
+    return row ? mapRow(row) : null;
+  }
 }

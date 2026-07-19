@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTempDir, cleanupTempDir } from "../helpers.js";
-import { writeFileSync, mkdirSync, rmSync, symlinkSync } from "node:fs";
+import { writeFileSync, mkdirSync, rmSync, symlinkSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import { captureFilesystemSnapshot, diffFilesystemSnapshots } from "../../src/runtime/trace/filesystem-workspace-scanner.js";
 import { FileChangeType } from "@personahub/shared/types";
@@ -126,6 +126,40 @@ describe("Filesystem Workspace Scanner (T028)", () => {
       expect(snapshot.entries.has("link/secret.txt")).toBe(false);
     } finally {
       cleanupTempDir(outsideDir);
+    }
+  });
+
+  it.runIf(process.platform !== "win32")("does not produce false added/deleted when subdirectory is permission denied (T089)", () => {
+    mkdirSync(join(dir, "sub"));
+    writeFileSync(join(dir, "sub", "file.ts"), "content");
+    writeFileSync(join(dir, "root.ts"), "root");
+
+    const before = captureFilesystemSnapshot(dir);
+    expect(before.scanComplete).toBe(true);
+    expect(before.entries.has("root.ts")).toBe(true);
+    expect(before.entries.has("sub/file.ts")).toBe(true);
+
+    chmodSync(join(dir, "sub"), 0o000);
+
+    try {
+      const after = captureFilesystemSnapshot(dir);
+      // Permission denied means incomplete but NOT truncated
+      expect(after.scanComplete).toBe(false);
+      expect(after.scanTruncated).toBe(false);
+      expect(after.stopReason).toBe("permission_denied");
+
+      // Root file still visible; sub dir not traversed
+      expect(after.entries.has("root.ts")).toBe(true);
+      expect(after.entries.has("sub/file.ts")).toBe(false);
+
+      // No false added/deleted (bothComplete is false when scanComplete is false)
+      const diffs = diffFilesystemSnapshots(before, after);
+      const added = diffs.filter(d => d.change_type === FileChangeType.Added);
+      const deleted = diffs.filter(d => d.change_type === FileChangeType.Deleted);
+      expect(added.length).toBe(0);
+      expect(deleted.length).toBe(0);
+    } finally {
+      chmodSync(join(dir, "sub"), 0o755);
     }
   });
 });

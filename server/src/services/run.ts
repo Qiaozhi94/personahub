@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
-import type { Run, RunStatus, FailureReason, IssueStatus, ThreadEvent } from "@personahub/shared/types";
-import { RunStatus as RS, IssueStatus as IS, FailureReason as FR, ThreadEventType, ActorType, AdapterStatus } from "@personahub/shared/types";
+import type { Run, RunStatus, FailureReason, IssueStatus, ThreadEvent, AdapterIdentitySnapshot } from "@personahub/shared/types";
+import { RunStatus as RS, IssueStatus as IS, FailureReason as FR, ThreadEventType, ActorType, AdapterStatus, RunRole, RunDispatchSource } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { RunRepository } from "../repositories/run.js";
 import type { IssueRepository } from "../repositories/issue.js";
@@ -32,10 +32,6 @@ export class RunService {
       throw new AppError(ErrorCode.ISSUE_NOT_FOUND, "Issue not found.");
     }
 
-    if (issue.status === IS.Blocked) {
-      throw new AppError(ErrorCode.ISSUE_BLOCKED, "Issue is blocked and cannot accept new runs.");
-    }
-
     const trimmedInstructions = instructions?.trim();
     if (!trimmedInstructions) {
       throw new AppError(ErrorCode.RUN_INSTRUCTIONS_REQUIRED, "Run instructions are required.", "instructions");
@@ -60,8 +56,25 @@ export class RunService {
     }
 
     const threadId = issue.primary_thread_id;
+    const adapterIdentity: AdapterIdentitySnapshot = {
+      adapter_config_id: adapter.id,
+      name: adapter.name,
+      cli_provider: adapter.cli_provider,
+      default_model: adapter.default_model,
+    };
 
     const { run, event } = this.db.transaction(() => {
+      const freshIssue = this.issueRepo.getById(issueId);
+      if (!freshIssue) {
+        throw new AppError(ErrorCode.ISSUE_NOT_FOUND, "Issue not found.");
+      }
+      if (freshIssue.status === IS.Validating || freshIssue.status === IS.Done || freshIssue.status === IS.Blocked) {
+        throw new AppError(
+          ErrorCode.INVALID_ISSUE_TRANSITION,
+          `Cannot create run: issue is ${freshIssue.status}.`,
+        );
+      }
+
       const run = this.runRepo.create({
         issue_id: issueId,
         thread_id: threadId,
@@ -69,9 +82,12 @@ export class RunService {
         adapter_config_id: adapterId,
         instructions: trimmedInstructions,
         status: RS.Queued,
+        role: RunRole.Implementation,
+        dispatch_source: RunDispatchSource.UserExplicit,
+        adapter_identity: adapterIdentity,
       });
 
-      if (issue.status === IS.Inbox || issue.status === IS.Ready) {
+      if (freshIssue.status === IS.Inbox || freshIssue.status === IS.Ready) {
         this.issueRepo.updateStatus(issueId, {
           status: IS.Running,
           updatedAt: new Date().toISOString(),
@@ -130,11 +146,12 @@ export class RunService {
     return result.run;
   }
 
-  transitionToCompleted(runId: string, exitCode: number): Run | null {
+  transitionToCompleted(runId: string, exitCode: number, finalMessage: string | null = null): Run | null {
     const now = new Date().toISOString();
     const result = this.runRepo.transitionStatus(runId, RS.Running, RS.Completed, {
       completed_at: now,
       exit_code: exitCode,
+      final_message: finalMessage,
     });
 
     if (!result.success || !result.run) {

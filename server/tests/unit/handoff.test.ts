@@ -194,9 +194,14 @@ describe("Trace Completeness Builder (T022)", () => {
     const events = [
       makeEvent(ThreadEventType.CommandStarted, { run_id: run.id }),
       makeEvent(ThreadEventType.CommandCompleted, { run_id: run.id, outcome: CommandOutcome.Succeeded }),
+      makeEvent(ThreadEventType.FileChangeSummary, {
+        run_id: run.id, scan_truncated: false,
+        added_count: 0, modified_count: 0, deleted_count: 0, renamed_count: 0,
+        total_count: 0, preview: [], preview_truncated: false,
+      }),
     ];
     const state = makeTraceState();
-    const completeness = buildTraceCompleteness(run, events, 2, state, 0);
+    const completeness = buildTraceCompleteness(run, events, state, 0);
     expect(completeness.commands).toBe(TraceCompletenessStatus.Complete);
     expect(completeness.verification).toBe(TraceCompletenessStatus.Complete);
     expect(completeness.file_changes).toBe(TraceCompletenessStatus.Complete);
@@ -207,28 +212,64 @@ describe("Trace Completeness Builder (T022)", () => {
     const run = makeRun();
     const events = [makeEvent(ThreadEventType.CommandStarted, { run_id: run.id })];
     const state = makeTraceState();
-    const completeness = buildTraceCompleteness(run, events, 0, state, 0);
+    const completeness = buildTraceCompleteness(run, events, state, 0);
     expect(completeness.commands).toBe(TraceCompletenessStatus.Partial);
   });
 
   it("returns unavailable when adapter unsupported", () => {
     const run = makeRun();
     const state = makeTraceState({ command_trace_capability: CommandTraceCapability.Unsupported });
-    const completeness = buildTraceCompleteness(run, [], 0, state, 0);
+    const completeness = buildTraceCompleteness(run, [], state, 0);
     expect(completeness.commands).toBe(TraceCompletenessStatus.Unavailable);
   });
 
   it("returns unavailable when baseline failed", () => {
     const run = makeRun();
     const state = makeTraceState({ baseline_status: BaselineStatus.Failed });
-    const completeness = buildTraceCompleteness(run, [], 0, state, 0);
+    const completeness = buildTraceCompleteness(run, [], state, 0);
     expect(completeness.file_changes).toBe(TraceCompletenessStatus.Unavailable);
   });
 
   it("returns unavailable when no trace state", () => {
     const run = makeRun();
-    const completeness = buildTraceCompleteness(run, [], 0, null, 0);
+    const completeness = buildTraceCompleteness(run, [], null, 0);
     expect(completeness.file_changes).toBe(TraceCompletenessStatus.Unavailable);
+  });
+
+  it("returns unavailable when scan failed event present (T090)", () => {
+    const run = makeRun();
+    const events = [
+      makeEvent(ThreadEventType.FileChangeScanFailed, { run_id: run.id, reason_code: "permission_denied" }),
+    ];
+    const state = makeTraceState({ baseline_status: BaselineStatus.Captured });
+    const completeness = buildTraceCompleteness(run, events, state, 0);
+    expect(completeness.file_changes).toBe(TraceCompletenessStatus.Unavailable);
+  });
+
+  it("returns partial when final scan was truncated (T090)", () => {
+    const run = makeRun();
+    const events = [
+      makeEvent(ThreadEventType.FileChangeSummary, {
+        run_id: run.id, scan_truncated: true,
+        added_count: 2, total_count: 2, preview: [],
+        preview_truncated: false,
+      }),
+    ];
+    const state = makeTraceState({ baseline_status: BaselineStatus.Captured });
+    const completeness = buildTraceCompleteness(run, events, state, 0);
+    expect(completeness.file_changes).toBe(TraceCompletenessStatus.Partial);
+  });
+
+  it("verification is always Complete regardless of test events (T097)", () => {
+    const run = makeRun();
+    // With TestCompleted events
+    const c1 = buildTraceCompleteness(run, [
+      makeEvent(ThreadEventType.TestCompleted, { run_id: run.id }),
+    ], makeTraceState(), 0);
+    expect(c1.verification).toBe(TraceCompletenessStatus.Complete);
+    // Without any test events
+    const c2 = buildTraceCompleteness(run, [], makeTraceState(), 0);
+    expect(c2.verification).toBe(TraceCompletenessStatus.Complete);
   });
 
   it("aggregateIssueCompleteness returns no_started_runs when no applicable runs", () => {

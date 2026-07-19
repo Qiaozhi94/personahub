@@ -47,12 +47,22 @@ export class StaleRecoveryService {
           { run_id: run.id, issue_id: result.run.issue_id, thread_id: result.run.thread_id, workspace_id: result.run.workspace_id, status: RS.Interrupted, failure_reason: FR.ServerRestarted },
         );
 
-        try {
-          this.developmentTraceService?.finalizeRun(run.id);
-        } catch {
-          // finalization failure during recovery is non-fatal
+        const workspace = this.workspaceRepo.getById(run.workspace_id);
+        const ownsWorkspace = workspace?.locked_by_run_id === run.id;
+
+        if (ownsWorkspace) {
+          try {
+            this.developmentTraceService?.finalizeRun(run.id);
+          } catch {
+            // finalization failure during recovery is non-fatal
+          }
+          this.workspaceLockService.releaseByRunId(run.id);
+        } else {
+          this.developmentTraceService?.finalizeRunWithoutWorkspace(
+            run.id,
+            SCAN_REASON_CODES.workspaceOwnershipLost,
+          );
         }
-        this.workspaceLockService.releaseByRunId(run.id);
       }
     }
   }

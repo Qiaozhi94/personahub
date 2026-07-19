@@ -100,8 +100,7 @@ export class TraceExportService {
       const evidence = this.evidenceService.resolve([...new Set(allRefs)], { issueId, threadId, runId: run.id });
       const evidenceFailures = evidence.filter((e) => e.status !== "resolved").length;
 
-      const fileCount = this.fileChangeRepo.countByRun(run.id);
-      const completeness = buildTraceCompleteness(run, runEvents, fileCount, traceState, evidenceFailures);
+      const completeness = buildTraceCompleteness(run, runEvents, traceState, evidenceFailures);
 
       const fileScanFailed = runEvents.some((e) => e.type === ThreadEventType.FileChangeScanFailed);
 
@@ -224,11 +223,8 @@ export class TraceExportService {
       } else {
         lines.push(`Total changes: ${rd.fileChanges.length}`);
         if (rd.fileChanges.length > 0) {
-          for (const fc of rd.fileChanges.slice(0, TRACE_LIMITS.eventPreview)) {
+          for (const fc of rd.fileChanges) {
             lines.push(`- ${this.escapeMarkdown(fc.path)} (${fc.change_type})`);
-          }
-          if (rd.fileChanges.length > TRACE_LIMITS.eventPreview) {
-            lines.push(`... and ${rd.fileChanges.length - TRACE_LIMITS.eventPreview} more (see Run evidence API for full list)`);
           }
         }
         lines.push("");

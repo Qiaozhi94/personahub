@@ -31,6 +31,7 @@ class HangingAgentAdapter implements AgentAdapter {
     provider: "hanging",
     supportsApprovalHook: false,
     supportsStructuredTrace: false,
+    supportsFinalMessage: false,
     executionTimeoutMs: 100,
   };
 

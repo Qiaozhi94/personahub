@@ -19,6 +19,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EvidenceSection } from "./EvidenceSection.js";
+import { ValidationInspectorSection } from "./ValidationInspectorSection.js";
+import { UnblockDialog } from "./UnblockDialog.js";
 
 interface IssueInspectorProps {
   issue: IssueWithThread;
@@ -86,6 +88,17 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
 
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelTargetRunId, setCancelTargetRunId] = useState<string | null>(null);
+  const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
+
+  useEffect(() => {
+    function handleUnblockEvent(e: CustomEvent) {
+      if (e.detail?.issueId === issue.id) {
+        setUnblockDialogOpen(true);
+      }
+    }
+    window.addEventListener("personahub:unblock", handleUnblockEvent as EventListener);
+    return () => window.removeEventListener("personahub:unblock", handleUnblockEvent as EventListener);
+  }, [issue.id]);
 
   function openCancelDialog(runId: string) {
     setCancelTargetRunId(runId);
@@ -249,6 +262,14 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
       )}
 
       <EvidenceSection issue={issue} />
+
+      <ValidationInspectorSection issueId={issue.id} />
+
+      <UnblockDialog
+        issueId={issue.id}
+        open={unblockDialogOpen}
+        onOpenChange={() => setUnblockDialogOpen(false)}
+      />
 
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <DialogContent>

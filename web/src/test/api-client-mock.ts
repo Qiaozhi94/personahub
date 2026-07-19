@@ -34,9 +34,25 @@ export const apiClient = {
     listByIssue: vi.fn().mockResolvedValue({ runs: [] }),
     cancel: vi.fn(),
   },
+  validation: {
+    getValidation: vi.fn(),
+    getEvidenceSummary: vi.fn(),
+    unblock: vi.fn(),
+    triggerValidation: vi.fn(),
+  },
+  traces: {
+    getIssueTrace: vi.fn(),
+    getRunEvidence: vi.fn(),
+    exportMarkdown: vi.fn(),
+  },
 };
 
-export const toApiError = vi.fn((error: unknown) => ({
-  code: ErrorCode.INTERNAL_ERROR,
-  message: error instanceof Error ? error.message : "Unknown error",
-}));
+export const toApiError = vi.fn((error: unknown) => {
+  if (error && typeof error === "object" && "code" in error && "message" in error) {
+    return error as { code: string; message: string };
+  }
+  return {
+    code: ErrorCode.INTERNAL_ERROR,
+    message: error instanceof Error ? error.message : "Unknown error",
+  };
+});

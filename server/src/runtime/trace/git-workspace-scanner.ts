@@ -94,7 +94,7 @@ export function captureGitSnapshot(
 
   return {
     scannerType: "git",
-    scanComplete: !result.truncated,
+    scanComplete: !result.truncated && result.stopReason === null,
     scanTruncated: result.truncated,
     stopReason: result.stopReason,
     entries,

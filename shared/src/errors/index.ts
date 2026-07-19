@@ -14,6 +14,13 @@ import type {
   IssueWithRun,
 } from "../types/index.js";
 
+export {
+  type IssueValidationResponse,
+  type EvidenceSummaryResponse,
+  type UnblockInput,
+  type UnblockResponse,
+} from "../types/validation.js";
+
 export enum ErrorCode {
   PROJECT_NAME_REQUIRED = "PROJECT_NAME_REQUIRED",
   PROJECT_NOT_FOUND = "PROJECT_NOT_FOUND",
@@ -34,6 +41,7 @@ export enum ErrorCode {
   ADAPTER_IN_USE = "ADAPTER_IN_USE",
   ADAPTER_REQUIRED = "ADAPTER_REQUIRED",
   ADAPTER_UNAVAILABLE = "ADAPTER_UNAVAILABLE",
+  ADAPTER_ROLE_INVALID = "ADAPTER_ROLE_INVALID",
   RUN_NOT_FOUND = "RUN_NOT_FOUND",
   RUN_INSTRUCTIONS_REQUIRED = "RUN_INSTRUCTIONS_REQUIRED",
   ISSUE_BLOCKED = "ISSUE_BLOCKED",
@@ -41,6 +49,13 @@ export enum ErrorCode {
   INVALID_QUERY = "INVALID_QUERY",
   EVIDENCE_REF_INVALID = "EVIDENCE_REF_INVALID",
   EVIDENCE_SCOPE_MISMATCH = "EVIDENCE_SCOPE_MISMATCH",
+  INVALID_ISSUE_TRANSITION = "INVALID_ISSUE_TRANSITION",
+  VALIDATOR_UNAVAILABLE = "VALIDATOR_UNAVAILABLE",
+  VALIDATOR_RUN_CONFLICT = "VALIDATOR_RUN_CONFLICT",
+  VALIDATION_RESULT_INVALID = "VALIDATION_RESULT_INVALID",
+  EVIDENCE_REQUIREMENTS_NOT_MET = "EVIDENCE_REQUIREMENTS_NOT_MET",
+  EVIDENCE_SUMMARY_NOT_FOUND = "EVIDENCE_SUMMARY_NOT_FOUND",
+  OPERATOR_NOTE_REQUIRED = "OPERATOR_NOTE_REQUIRED",
   INTERNAL_ERROR = "INTERNAL_ERROR",
 }
 
@@ -135,6 +150,7 @@ export interface AdapterConfigListResponse {
 
 export interface AdapterConfigUpdateInput {
   name?: string;
+  role?: string;
   command?: string;
   args?: string[];
   default_model?: string;

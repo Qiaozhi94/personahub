@@ -54,8 +54,8 @@ export class DevelopmentTraceService {
 
     try {
       const result = captureSnapshot(workspace.local_path);
-      if (result.snapshot.stopReason) {
-        this.runTraceRepo.saveBaselineFailure(run.id, result.snapshot.stopReason, now);
+      if (!result.snapshot.scanComplete && !result.snapshot.scanTruncated) {
+        this.runTraceRepo.saveBaselineFailure(run.id, result.snapshot.stopReason ?? SCAN_REASON_CODES.unknown, now);
         return;
       }
       const baselineJson = snapshotToJson(result.snapshot);
@@ -105,7 +105,7 @@ export class DevelopmentTraceService {
     const evidenceFailures = 0;
 
     const completeness = buildTraceCompleteness(
-      run, events, fileChanges.length, state, evidenceFailures,
+      run, events, state, evidenceFailures,
     );
 
     const handoffPayload = buildHandoff({
@@ -126,7 +126,7 @@ export class DevelopmentTraceService {
     const issueGoal = issue?.goal ?? "";
 
     const completeness = buildTraceCompleteness(
-      run, events, 0, state, 0,
+      run, events, state, 0,
     );
 
     const handoffPayload = buildHandoff({

@@ -1,5 +1,6 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import type { RunEvidenceResponse } from "@personahub/shared";
 
 export function useIssueTrace(issueId: string | null) {
   return useQuery({
@@ -9,12 +10,40 @@ export function useIssueTrace(issueId: string | null) {
   });
 }
 
+const EVIDENCE_FILE_LIMIT = 100;
+
 export function useRunEvidence(runId: string | null) {
-  return useQuery({
+  const infinite = useInfiniteQuery<RunEvidenceResponse>({
     queryKey: ["run-evidence", runId],
-    queryFn: () => apiClient.traces.getRunEvidence(runId!),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return apiClient.traces.getRunEvidence(
+        runId!,
+        undefined,
+        cursor,
+        undefined,
+        EVIDENCE_FILE_LIMIT,
+      );
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_after_file_change_id ?? undefined,
     enabled: runId !== null,
   });
+
+  const allFileChanges = infinite.data
+    ? infinite.data.pages.flatMap((p) => p.file_changes)
+    : [];
+
+  return {
+    ...infinite,
+    data: infinite.data
+      ? {
+          ...infinite.data.pages[0],
+          file_changes: allFileChanges,
+        }
+      : undefined,
+    allFileChanges,
+  };
 }
 
 export function useExportTrace() {
