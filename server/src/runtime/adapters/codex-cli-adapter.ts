@@ -12,6 +12,7 @@ import type {
 } from "../types.js";
 import { DEFAULT_EXECUTION_TIMEOUT_MS, CANCEL_TIMEOUT_MS } from "../types.js";
 import { buildChildEnv } from "../workspace-context.js";
+import { resolveExecutable } from "../executable-resolver.js";
 import { normalizeCodexTraceNotification } from "./codex-trace-normalizer.js";
 import { CodexFinalMessageCapture, truncateFinalMessage } from "./codex-final-message-capture.js";
 import {
@@ -182,10 +183,17 @@ export class CodexCliAdapter implements AgentAdapter {
       }
     };
 
+    // T009a: resolve .cmd/.bat shims (Windows) to a real executable so we can
+    // spawn with shell:false; never fall back to shell:true on failure.
+    const { resolved, errorMessage: resolveError } = resolveExecutable(input.adapterConfig.command);
+    if (!resolved) {
+      return failSpawn(resolveError ?? `Failed to resolve executable: ${input.adapterConfig.command}`);
+    }
+
     try {
       childProcess = spawn(
-        input.adapterConfig.command,
-        [...input.adapterConfig.args, "app-server", "--listen", "stdio://"],
+        resolved.executable,
+        [...resolved.prefixArgs, ...input.adapterConfig.args, "app-server", "--listen", "stdio://"],
         {
           cwd: input.workspace.localPath,
           env: buildChildEnv({
@@ -193,7 +201,7 @@ export class CodexCliAdapter implements AgentAdapter {
             local_path: input.workspace.localPath,
           }),
           stdio: ["pipe", "pipe", "pipe"],
-          shell: process.platform === "win32",
+          shell: false,
         },
       );
     } catch (err) {

@@ -6,7 +6,7 @@
 ## Probe Environment
 
 - **Claude Code CLI version**: 2.1.215
-- **Install path**: `C:\Users\Georg\.local\bin\claude.exe` — a real native executable,
+- **Install path**: `C:\Users\...\.local\bin\claude.exe` — a real native executable,
   not a Windows batch shim. Confirmed via `where claude`. This means Claude does **not**
   need the executable-resolver / shim-unwrapping logic that Codex and OpenCode require
   (see T009a); it can be spawned directly with `shell: false`.

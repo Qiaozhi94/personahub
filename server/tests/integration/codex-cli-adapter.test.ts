@@ -20,6 +20,18 @@ vi.mock("node:child_process", async (importOriginal) => {
   };
 });
 
+// T009a: the adapter resolves the configured command through resolveExecutable()
+// before spawning. On this dev machine "codex" resolves to the real installed
+// CLI (a shim to node.exe + codex.js), which would bypass the child_process
+// mock above entirely. Mock the resolver as a passthrough for "codex" so the
+// literal command string still reaches the mocked spawn() unchanged.
+vi.mock("../../src/runtime/executable-resolver.js", () => ({
+  resolveExecutable: vi.fn((command: string) => ({
+    resolved: { executable: command, prefixArgs: [], source: "direct" as const },
+    errorMessage: null,
+  })),
+}));
+
 const { CodexCliAdapter } = await import("../../src/runtime/adapters/codex-cli-adapter.js");
 
 function setupIssue(services: TestServices, tempDir: string) {

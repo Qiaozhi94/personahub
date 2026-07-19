@@ -29,7 +29,7 @@ updated: 2026-07-19
 
   | CLI | 版本 | 路径形态 |
   | --- | --- | --- |
-  | Claude Code | 2.1.215 | `C:\Users\Georg\.local\bin\claude.exe`（真 exe） |
+  | Claude Code | 2.1.215 | `C:\Users\...\.local\bin\claude.exe`（真 exe） |
   | OpenCode | 1.18.3 | `D:\DevSoft\nodejs\opencode.cmd`（批处理 shim → `node_modules/opencode-ai/bin/opencode.exe`） |
   | Codex | 0.144.5 | `D:\DevSoft\nodejs\codex.cmd`（批处理 shim） |
 
@@ -46,7 +46,7 @@ updated: 2026-07-19
 
 - [x] **T001**（`FR-001`, `NFR-004`, `AC-001`）：记录本机Claude Code CLI版本、安装路径解析和Windows启动方式（`shell=false`的可执行文件解析见T009a）；验证`--version`不足以代表OAuth已登录。
 
-  **2026-07-19 完成**：版本 2.1.215，真 exe（`C:\Users\Georg\.local\bin\claude.exe`），无需 T009a shim 解析。真实 auth 探测命令是 `claude auth status --json`（loggedIn/authMethod/exit code），非交互、机器可读；已通过隔离 `HOME`/`USERPROFILE`（复用§5.4的机制，未触碰真实登录态）安全验证登录/未登录两种状态下 `--version` 输出一致（exit 0），确认 `--version` 与鉴权无关。发现 `auth status` 会在其 HOME 目录写入少量 bookkeeping 文件（非 secret），design §5.2"只读"措辞已据此澄清。详见 `server/tests/helpers/claude-protocol-fixtures.md` T001。
+  **2026-07-19 完成**：版本 2.1.215，真 exe（`C:\Users\...\.local\bin\claude.exe`），无需 T009a shim 解析。真实 auth 探测命令是 `claude auth status --json`（loggedIn/authMethod/exit code），非交互、机器可读；已通过隔离 `HOME`/`USERPROFILE`（复用§5.4的机制，未触碰真实登录态）安全验证登录/未登录两种状态下 `--version` 输出一致（exit 0），确认 `--version` 与鉴权无关。发现 `auth status` 会在其 HOME 目录写入少量 bookkeeping 文件（非 secret），design §5.2"只读"措辞已据此澄清。详见 `server/tests/helpers/claude-protocol-fixtures.md` T001。
 
 - [x] **T002**（`FR-001`, `NFR-003`）：验证Claude非交互one-shot、stream JSON、prompt stdin、final message、正常/非零/auth failure/cancel，保存redacted fixtures。
 
@@ -84,14 +84,21 @@ updated: 2026-07-19
 
   按项目"先测试后实现"规则拆为两项：
 
-- [ ] **T009a-1**（`NFR-003`, `NFR-004`）：添加 executable resolver 测试，覆盖：直通 exe（`source="direct"`、`prefixArgs` 为空）、单层 exe 转发 shim、`node + 入口 js` 转发 shim（`prefixArgs` 正确）、目标 exe/入口文件不存在、未知或复杂 batch、PATH 查找、Windows 路径含空格与 Unicode、相对路径。断言解析失败一律产出 unavailable 原因，**任何分支都不得回退 `shell=true`**。
-- [ ] **T009a-2**（`NFR-003`, `NFR-004`, `AC-006`）：实现 resolver 并接入三个 adapter 的启动路径；只支持 fixture 固化的已知 npm shim 形态，参数经 `prefixArgs` 数组传递、禁止字符串拼接重建命令行。同步移除 `codex-cli-adapter.ts` 与 `codex-protocol.ts` 的 `shell: process.platform === "win32"`，三个 adapter 统一 `shell: false`。回归门槛：F002 现有 Codex 启动/probe 测试全绿，证明去掉 shell 后行为不变。
+- [x] **T009a-1**（`NFR-003`, `NFR-004`）：添加 executable resolver 测试，覆盖：直通 exe（`source="direct"`、`prefixArgs` 为空）、单层 exe 转发 shim、`node + 入口 js` 转发 shim（`prefixArgs` 正确）、目标 exe/入口文件不存在、未知或复杂 batch、PATH 查找、Windows 路径含空格与 Unicode、相对路径。断言解析失败一律产出 unavailable 原因，**任何分支都不得回退 `shell=true`**。
+
+  **2026-07-19 完成**：`server/tests/unit/executable-resolver.test.ts`，13 项全绿，用两个真实 fixture 的原始文本（opencode.cmd 单层转发、codex.cmd 的 node+entry.js 转发）作为测试内容，未知 shim 形态和目标缺失均正确返回 `resolved: null`。
+
+- [x] **T009a-2**（`NFR-003`, `NFR-004`, `AC-006`）：实现 resolver 并接入三个 adapter 的启动路径；只支持 fixture 固化的已知 npm shim 形态，参数经 `prefixArgs` 数组传递、禁止字符串拼接重建命令行。同步移除 `codex-cli-adapter.ts` 与 `codex-protocol.ts` 的 `shell: process.platform === "win32"`，三个 adapter 统一 `shell: false`。回归门槛：F002 现有 Codex 启动/probe 测试全绿，证明去掉 shell 后行为不变。
+
+  **2026-07-19 完成**：新增 `server/src/runtime/executable-resolver.ts`，接入 `codex-cli-adapter.ts`（spawn 前解析）和 `codex-protocol.ts`（`validateCodexCommand` 的 `--version` probe），两处 `shell: process.platform === "win32"` 已移除，统一 `shell: false`。Claude/OpenCode adapter 尚未实现（Phase 5/6），届时直接复用同一 resolver。**回归**：`npm run typecheck` 全绿；server 完整测试套件 983 passed / 7 skipped（real-codex-* env-gated）。真实机器 sanity check（`claude`→direct exe，`opencode`→verified_shim，`codex`→verified_shim + node.js prefixArg）与手工探测结果完全一致。**修复了一处因本变更暴露的测试耦合**：`codex-cli-adapter.test.ts` 原先 mock `node:child_process` 拦截字面量 `command==="codex"` 做假脚本替换，但 resolver 会在 spawn 前把 "codex" 解析成本机真实路径，导致 mock 失效、实际跑到真实 Codex CLI；已补充 mock `executable-resolver.js` 为直通（对 "codex" 原样返回），恢复测试隔离性。另确认 `validation-recovery.test.ts` 一处失败是全量套件下的既有 ULID 时序 flaky（单独跑通过），与本变更无关，未修复（超出 T009a-2 范围）。
 
   **阻塞关系**：本组任务阻塞 T037（Claude argv/启动断言）和 T044（OpenCode argv/启动断言）——这两项的 `shell=false` 与"key 不进 argv"断言在解析器就位前无法成立。
 
-- [ ] **T010**（`AC-001`, `AC-006`）：把所有fixtures加入test helpers并附CLI版本/字段说明；运行secret扫描确保无token/key/private path。
+- [x] **T010**（`AC-001`, `AC-006`）：把所有fixtures加入test helpers并附CLI版本/字段说明；运行secret扫描确保无token/key/private path。
 
-**Checkpoint 1**：三个provider的argv、auth probe、final message、trace、cancel、approval能力均由可重放fixture固定；三个adapter均以`shell=false`启动且F002 Codex回归全绿；无法支持的能力已有明确降级。
+  **2026-07-19 完成**：`server/tests/helpers/claude-protocol-fixtures.md`、`opencode-protocol-fixtures.md` 已包含 CLI 版本、argv、事件字段说明。Secret 扫描覆盖本次改动的全部文件（含未跟踪新文件）：`sk-`/`Bearer`/`gh[pousr]_`/`AKIA`/private key header 等模式零命中；额外发现并修复 2 处私有绝对路径泄漏（真实 Windows 用户名 "Georg" 残留在 `claude-protocol-fixtures.md` 和 `tasks.md` 的安装路径示例里），已改为 `C:\Users\...\` 占位符，与 F002 `codex-protocol-fixtures.md` 的既有脱敏约定一致。email/orgId/orgName 此前已正确写为 `[REDACTED]`。
+
+**Checkpoint 1 达成**：三个provider的argv、auth probe、final message、trace、cancel、approval能力均由可重放fixture固定（Claude/OpenCode 为本机真实 CLI 实测，Codex 沿用 F002 既有 fixture）；三个adapter均以`shell=false`启动（Claude 原生无需解析，Codex 已接入 resolver 并回归全绿，OpenCode 待 Phase 6 实现时接入同一 resolver）；无法支持的能力已有明确降级记录（Claude 无原生 exitCode/实时 Blocked 分类，OpenCode 无等价前置拦截、auth 失败信息泛化）。
 
 ## Phase 2：Shared Contract与Schema v6
 

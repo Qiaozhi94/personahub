@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import type { AdapterConfig } from "@personahub/shared/types";
 import type { AdapterValidationResult } from "../types.js";
+import { resolveExecutable } from "../executable-resolver.js";
 
 /**
  * Pure Codex app-server protocol helpers: JSON-RPC framing types/guards,
@@ -76,11 +77,15 @@ export function validateCodexCommand(config: AdapterConfig): AdapterValidationRe
   if (!command) {
     return { available: false, errorMessage: "Command is empty." };
   }
+  const { resolved, errorMessage: resolveError } = resolveExecutable(command);
+  if (!resolved) {
+    return { available: false, errorMessage: resolveError ?? `Command not found: ${command}` };
+  }
   try {
-    const result = spawnSync(command, ["--version"], {
+    const result = spawnSync(resolved.executable, [...resolved.prefixArgs, "--version"], {
       timeout: 10_000,
       encoding: "utf-8",
-      shell: process.platform === "win32",
+      shell: false,
     });
     if (result.error) {
       return { available: false, errorMessage: `Command not found: ${command}` };
