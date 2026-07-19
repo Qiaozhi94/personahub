@@ -9,7 +9,7 @@ updated: 2026-07-19
 
 # F004：Autonomous Validation - 设计
 
-> Status: in-progress | Owner: Sisyphus | Spec: `spec.md`
+> Status: done | Owner: Sisyphus | Spec: `spec.md`
 
 > 2026-07-19 final review reopened T090-T095. The architecture remains accepted, but production context wiring, blocked outcome submission, complete summary/export, per-round validator uniqueness, explicit round reset, and schema invariants must land before final verification.
 

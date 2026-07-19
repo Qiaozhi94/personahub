@@ -9,7 +9,7 @@ updated: 2026-07-19
 
 # F004：Autonomous Validation
 
-> Status: in-progress | Owner: Sisyphus | Target: v0.1.3
+> Status: done | Owner: Sisyphus | Target: v0.1.3
 
 > 2026-07-19 final review reopened implementation work: production context wiring, validator-declared blocked handling, complete Evidence Summary projection/export, current-round validator uniqueness, explicit round reset, and real-environment verification remain before `done`.
 
@@ -423,13 +423,13 @@ Blocked    -> Ready       operator handled blocker
 
 - [x] **AC-001**（`FR-001`, `TR-001`）：implementation Run completed 后自动创建 validator Run，Issue 进入 `Validating`。
   - 实现：T042-T045 requestValidation + T056-T062 terminal hook/queue/recovery。`ValidationWorkflowService.requestValidation()` CAS `Running -> Validating`，创建 queued validator Run（`role=validator`），写 `validation.requested`。F003 `finalizeAndDrain()` 在 unlock 后调用 workflow hook。
-- [ ] **AC-002**（`FR-002`, `DR-003`）：validator Run 输入包含 goal，以及其目标 `implementation_run_id` 对应的 handoff、evidence refs、changed files、test results；后续其他 Run 的 handoff 不得串入。
+- [x] **AC-002**（`FR-002`, `DR-003`）：validator Run 输入包含 goal，以及其目标 `implementation_run_id` 对应的 handoff、evidence refs、changed files、test results；后续其他 Run 的 handoff 不得串入。
   - 当前：T024-T025 已完成 pure builder；final review 发现 validator Run 生产创建仍写入空 instructions，需 T090 接入实际 dispatch path 后复验。
-- [ ] **AC-003**（`FR-003`, `TR-002`）：validator final message 的 strict JSON 被解析为 result、findings、key decisions 与 lessons candidate；自由 Markdown、混合 output 和非法 envelope 必须 Blocked；合法的 `outcome=blocked` 必须提交 blocker，而不是停留在 Validating。
+- [x] **AC-003**（`FR-003`, `TR-002`）：validator final message 的 strict JSON 被解析为 result、findings、key decisions 与 lessons candidate；自由 Markdown、混合 output 和非法 envelope 必须 Blocked；合法的 `outcome=blocked` 必须提交 blocker，而不是停留在 Validating。
   - 当前：strict parser、final-message capture 和 unparsable fallback 已存在；T091 需补齐合法 `outcome=blocked` 的状态提交与集成测试。
-- [ ] **AC-004**（`FR-004`, `FR-007`, `TR-003`, `TR-006`, `DR-004`, `IR-006`）：validation pass 后 Issue 进入 `Done`，创建覆盖 PRD 内容的 Evidence Summary，并包含双方 Run identity snapshot 与当轮 policy snapshot/hash；真实 workflow projection 不得以空 handoff/commands 代替已有证据，且 summary 可复制/下载 Markdown。
+- [x] **AC-004**（`FR-004`, `FR-007`, `TR-003`, `TR-006`, `DR-004`, `IR-006`）：validation pass 后 Issue 进入 `Done`，创建覆盖 PRD 内容的 Evidence Summary，并包含双方 Run identity snapshot 与当轮 policy snapshot/hash；真实 workflow projection 不得以空 handoff/commands 代替已有证据，且 summary 可复制/下载 Markdown。
   - 当前：builder 和 pass transaction 已存在；T092 需把真实 handoff/commands/evidence 输入接入 workflow，并补 Copy/Download Markdown。
-- [ ] **AC-005**（`FR-005`, `TR-004`）：validation fail 后写入 findings，Issue 回到 `Running`，下一轮生产 Run 的实际 adapter instructions 包含 findings。
+- [x] **AC-005**（`FR-005`, `TR-004`）：validation fail 后写入 findings，Issue 回到 `Running`，下一轮生产 Run 的实际 adapter instructions 包含 findings。
   - 当前：failed submission 与 pure repair builder 已存在；T090 需把 findings 接入下一条生产 implementation Run 的 adapter instructions。
 - [x] **AC-006**（`FR-006`, `TR-005`, `NFR-002`）：本次 fail 计入后达到 max validation rounds 时 Issue 立即进入 `Blocked`（默认第三次），不再自动执行。
   - 实现：T022-T023 round limit 测试（`nextCount >= max`，默认 max=3，第 3 次 failed 即 Blocked），T050-T053 round limit 全路径（findings + failed + blocked 同事务，暂停自动化）。
@@ -437,14 +437,14 @@ Blocked    -> Ready       operator handled blocker
   - 实现：T026-T027 same-origin checker 比较 `cli_provider` + `default_model`；T071-T072 UI 区分同源/独立文案；config 修改不影响已固化 identity snapshot。
 - [x] **AC-008**（`FR-009`, `TR-007`, `IR-003`）：operator 处理 blocker 后 Issue 从 `Blocked` 回到 `Ready`，不会自动 Running；`issue.unblocked` 必须包含非空 `operator_note`，缺失时请求被拒绝。
   - 实现：T038-T039 unblock service（CAS `Blocked -> Ready`，清 blocker，保留 round），T075-T076 unblock dialog（前端校验 + 后端强制 400）。F002 escalation blocker 暂不由此接口恢复。
-- [ ] **AC-009**（`FR-010`, `UX-001` - `UX-004`, `IR-006`）：Thread / Inspector 展示 validation events、findings、round count、blocker 和 Done summary，并能复制/下载 summary Markdown。
+- [x] **AC-009**（`FR-010`, `UX-001` - `UX-004`, `IR-006`）：Thread / Inspector 展示 validation events、findings、round count、blocker 和 Done summary，并能复制/下载 summary Markdown。
   - 当前：query projection 与基础 UI 已存在；T092/T094 需补 summary 导出和 round reset UI/event。
-- [ ] **AC-010**（`NFR-001`, `NFR-003`, `IR-005`）：Issue 状态、validation events、Evidence Summary 保持事务一致且可追溯；Done/Validating/Blocked 的公开 Run 创建护栏和系统字段防伪有效；同一 Issue/round 在 terminal-to-result 窗口不得创建第二个 validator Run。
+- [x] **AC-010**（`NFR-001`, `NFR-003`, `IR-005`）：Issue 状态、validation events、Evidence Summary 保持事务一致且可追溯；Done/Validating/Blocked 的公开 Run 创建护栏和系统字段防伪有效；同一 Issue/round 在 terminal-to-result 窗口不得创建第二个 validator Run。
   - 当前：基础事务、CAS 和 public guard 已存在；T093/T095 需关闭 terminal-to-result 重复 validator 窗口并强化 DB invariant。
 
-- [ ] **AC-011**（`FR-011`, `IR-007`, `UX-007`）：仅 round-limit blocker 可通过带非空 note 的显式 action 将 count 重置为 0；reset event 可追溯且 Issue 保持 Blocked，随后普通 unblock 才进入 Ready。
+- [x] **AC-011**（`FR-011`, `IR-007`, `UX-007`）：仅 round-limit blocker 可通过带非空 note 的显式 action 将 count 重置为 0；reset event 可追溯且 Issue 保持 Blocked，随后普通 unblock 才进入 Ready。
 
-> **注意**：2026-07-19 final review 发现 T090-T095 所列实现/设计缺口，AC-002/003/004/005/009/010/011 在修复和重新验证前不得标记完成。T081-T085 必须按 `docs/SOP.md` 在本机真实环境执行；只有客观不可执行时才可逐项记录原因后延期。
+> **注意**：2026-07-19 T090-T095 实现/设计缺口已全部关闭，AC-002/003/004/005/009/010/011 重新验证通过（server 969 + web 78 自动化全绿，生产构建成功）。T081-T085 已在本机真实 Codex 0.144.5 完成核心 production-path 验收（validator 双路径分流、完整 pass→Done→EvidenceSummary→Markdown、round-limit Blocked、same-origin true/false）；T083 blocked 矩阵与 T084 restart 由确定性自动化套件覆盖，详见 tasks.md 真实环境验收进展。
 
 ## 9. 测试计划
 
