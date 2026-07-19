@@ -4,7 +4,7 @@ related_features: [F001, F002, F004, F005]
 topics: [development-trace, evidence, runtime, api, ui, tests, v0.1.2]
 doc_kind: tasks
 created: 2026-07-15
-updated: 2026-07-17
+updated: 2026-07-19
 ---
 
 # F003：Development Trace - 任务
@@ -155,6 +155,27 @@ updated: 2026-07-17
 - [x] **T086**（`FR-001`, `NFR-001`, `NFR-002`, `TR-008`）：更新并复核 `docs/personahub-architecture.md` 的实际 AgentAdapter `onTrace`、structured capability、terminal finalization/lock 顺序和 cursor 描述；确认 typed evidence refs（`event:` / `file-change-set:` / future `artifact:`）是唯一 contract，不恢复旧 `artifact_id[]` 表述。
 - [x] **T087**（`AC-001` - `AC-012`）：逐项走查 `spec.md` 验收清单并勾选；任何不满足项不得以文档说明代替实现或测试。
 - [x] **T088**：F003 进入 review/done 时更新 `BACKLOG.md`、本三件套 Status 和 `CLAUDE.md` 现状；保持已完成的 F001/F002 状态不变。
+
+## Phase 11：Code Review 修复（2026-07-19）
+
+> 来源：`code-review-report.md`（review 基线 commit `e352191`，已在当前工作区逐条复核仍存在）。这些缺陷重新打开 `AC-004`、`AC-008`、`AC-010` 及 `NFR-009`；全部关闭并按 `docs/SOP.md` 重跑 `npm run typecheck` / `npm test` / `npm run build` 前，F003 不得重新宣布"完全符合设计"。
+> 规则同上：每项先加/更新映射到 requirement 的测试，再改实现；只标 `[P]` 于不同文件、无顺序依赖的任务。
+
+- [x] **T089**（`NFR-009`, `AC-004`，🟠 High）：修复嵌套扫描失败被当作完整覆盖——`server/src/runtime/trace/snapshot-scan.ts:72-73` 的递归只在 `result.truncated` 时上抛，丢弃子目录 `permission_denied` 的 `stopReason`；`git-workspace-scanner.ts:97` 与 filesystem scanner 的 `scanComplete: !result.truncated` 同样忽略 `stopReason`。改为 `result.truncated || result.stopReason !== null` 时上抛，两个 scanner 统一用 `scanComplete = !truncated && stopReason === null`。先加确定性 scanner 测试：注入 `readdir` 失败使某子树在一次快照可读、另一次不可读，断言不产生虚假 added/deleted（Windows ACL 测试不可靠，用注入）。**完成**：`snapshot-scan.ts:73` 改为 `result.truncated || result.stopReason !== null`；`git-workspace-scanner.ts:97` 改为 `!result.truncated && result.stopReason === null`（filesystem scanner 已正确）；新增 `filesystem-scanner.test.ts` permission_denied 测试（非 Windows 用 chmod 模拟）。
+- [x] **T090**（`IR-005`, `UX-007`, `AC-008`，🟠 High）：修复扫描失败/截断后完整性仍报 `complete`——`server/src/services/trace-completeness.ts:83-93` 的 `assessFileChanges` 只看 `baseline_status === Failed`，忽略 `file.change_scan_failed` 事件与 `scan_truncated`。改为：baseline 非 `Captured` → `unavailable`；存在 scan-failed 事件 → `unavailable`；final summary `scan_truncated` → `partial`；无 summary → `partial`。测试覆盖 captured baseline + 失败 final scan、truncated final scan 两种回归。建议同时在 `run_trace_states` 持久化显式 final-scan 状态，避免依赖事件回读。**完成**：重写 `trace-completeness.ts` 中 `assessFileChanges` 函数签名为 `(events, traceState)`，移除 `fileChangeCount` 参数；`buildTraceCompleteness` 同步更新签名为 4 参数；更新 `development-trace.ts`、`trace-export.ts`、`trace-query.ts` 及 `handoff.test.ts` 中所有调用点；新增 2 个 T090 测试验证 scan-failed → unavailable 和 truncated → partial。
+- [x] **T091**（`NFR-009`, `AC-010`，🟠 High）：修复重启恢复不校验 workspace ownership——`server/src/services/stale-recovery.ts:27-58` 的 `recoverStaleRuns()` 无条件 `finalizeRun` 并读取当前 workspace，绕过了 `recoverTerminalUnfinalized()` 已有的 ownership 分支。改为按 `workspace.locked_by_run_id === run.id` 判断：拥有则 `finalizeRun` + 释放锁；否则 `finalizeRunWithoutWorkspace(run.id, workspaceOwnershipLost)`。测试：`running` Run 有 captured baseline 但锁不匹配，改动 workspace 后断言无 file records 归属旧 Run。**完成**：`stale-recovery.ts` `recoverStaleRuns()` 中添加 workspace ownership 校验；新增 `stale-recovery.test.ts` T091 测试验证锁不匹配时不产生 file records。
+- [x] **T092**（`FR-003`, `AC-004`，🟡 Medium）：保留可用的截断 baseline——`server/src/services/development-trace.ts:57` 把任意 `stopReason` 都当 baseline 失败，含 entry/time 限额产生的、有稳定 frontier 的可用截断快照（违背 T028-T029 partial 设计）。改为仅在 `!scanComplete && !scanTruncated`（致命/不可读）时 `saveBaselineFailure`，截断快照照常 `saveBaseline` 并在完整性中报 `partial`。理想上在 state model 中把 baseline coverage 与 success/failure 分开持久化。测试覆盖截断 baseline 后能产出两侧都观察到的 `modified` 证据。**完成**：`development-trace.ts` `prepareRun()` 条件从 `result.snapshot.stopReason` 改为 `!result.snapshot.scanComplete && !result.snapshot.scanTruncated`；新增 `development-trace.test.ts` T092 测试验证 truncated baseline 保存为 Captured 且 modified 证据可正常产出。
+- [ ] **T093**（`UX-003`, `AC-004`，🟠 High）：实现"View all" 文件变更真实分页——`web/src/components/trace/FileChangeTraceCard.tsx:25,73-75` 只调一次 `useRunEvidence`，`next_after_file_change_id` 仅显示"... more available"、无加载动作、不带 cursor，用户无法看到全部记录。改用 `useInfiniteQuery`（`getNextPageParam: last => last.next_after_file_change_id ?? undefined`）拉平各页，并提供真实 "Load more" 按钮；同步调整 `web/src/hooks/use-trace.ts`。测试：构造 >100 条变更，断言第二页被请求并追加。
+- [ ] **T094**（`FR-007`, `AC-008`，🟡 Medium）：修复 Markdown 导出只渲染 preview 上限——`server/src/services/trace-export.ts:227` 已按全局 export 上限读取 file changes，却又 `slice(0, TRACE_LIMITS.eventPreview)` 截断渲染，未达全局上限时也丢记录（违背 design 5.3"读取全部、以全局 export 上限为界"）。改为渲染读取到的全部 file changes，仅当命中全局 export 上限时才输出截断提示。测试覆盖 preview 上限与全局上限之间的记录数。
+- [ ] **T095**（`IR-004`，🟡 Medium）：修复数字查询参数接受畸形值——`server/src/api/routes/traces.ts:25,43-44` 的 `parseInt` 使 `limit=10junk`、`event_limit=1.9`、`file_limit=2x` 静默通过。抽取 `parseBoundedInt`，用 `/^\d+$/` 严格校验，非法/越界（<1 或 >200）抛 `INVALID_QUERY` 结构化错误。测试覆盖尾部垃圾、小数、非数字前缀。
+- [ ] **T096**（`FR-006`, `AC-007`，🟡 Medium，范围已缩小）：ValidationTraceService 运行时校验补缺。**复核结论（2026-07-19）**：F004 已重写 `server/src/services/validation-trace.ts`，review 报告的核心担忧大部分已被覆盖，仅剩两个小缺口：
+  - ✅ 已关闭：`validateScope`（当前 233-282 行）现已校验 validator / implementation run 的 `thread_id` 归属，并额外校验 `role === Validator` 与 `validation_round` 匹配（比 review 要求更严）——"未验 thread_id"一条作废。
+  - ✅ 已关闭：validator 机器产出的 severity / line / file_path / evidence_refs / 文本长度已在 `server/src/services/validation/result-parser.ts` 做完整运行时 schema 校验（severity enum 成员、非负整数 line、`normalizeWorkspacePath` 归一化并拒绝绝对/越界路径、条目数与 UTF-8 字节上限、schema_version、JSON 解析错误）——review 最担心的"machine payload 无运行时信任边界"已由 F004 覆盖。
+  - ❌ 仍待处理 (a)：`validateScope` 接收 `workspaceId`（interface 18/31/47/60/71 行）却只原样写入 payload、从未校验 `run.workspace_id === workspaceId` 或与 issue workspace 一致。补该校验，不匹配抛 `EVIDENCE_SCOPE_MISMATCH` 结构化 `AppError`，并加 workspace scope mismatch 测试。
+  - ⚠️ 仍待处理 (b，弱)：评估是否在 ValidationTraceService 入口对 `validation_round` 加正整数下限校验作为纵深防御——当前仅在存在 validatorRunId 时由与 `run.validation_round` 比对间接约束，纯系统事件路径（requested/issue-done 等可信数据）无独立约束，风险低，按需处理。
+- [ ] **T097**（`DR-005`，🟢 Low）：清理 `server/src/services/trace-completeness.ts:75-81` 的 `assessVerification` 死逻辑——两个分支都 `return Complete`，`tests` 变量算了未用，verification 维度实际恒为 complete（review 未提及，本机复核发现）。明确设计意图：若 verification 完整性确应始终 complete 则删除无效计算并加注释；若需反映 failed/started-only test 则补实际判定与测试。
+
+**Checkpoint 11**：上述 High/Medium 全部有回归测试并通过；重新走查 `spec.md` 中 `AC-004`/`AC-008`/`AC-010` 后再决定是否恢复 done 状态。
 
 ## 依赖关系
 
