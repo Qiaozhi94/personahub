@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { Issue, Run, ThreadEvent, AdapterIdentitySnapshot, ValidationPolicySnapshot, ValidationResultEnvelope } from "@personahub/shared/types";
+import type { Issue, Run, ThreadEvent, AdapterIdentitySnapshot, ValidationPolicySnapshot, ValidationResultEnvelope, ValidationFinding } from "@personahub/shared/types";
 import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, ActorType, ValidationBlockReason, ValidationOutcome, TraceCompletenessStatus } from "@personahub/shared/types";
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { RunRepository } from "../../repositories/run.js";
@@ -16,6 +16,7 @@ import { buildPolicySnapshot, hashPolicySnapshot, checkEvidenceRequirements } fr
 import { parseValidationResult } from "./result-parser.js";
 import { buildEvidenceSummary, type EvidenceSummaryBuildInput, type SummaryVerificationEvent } from "./evidence-summary-builder.js";
 import { assembleValidatorContext } from "./context-assembler.js";
+import { findRequestedEvent, findHandoffEvent, findVerificationEvents, resultEventExistsForValidatorRun, getFinalMessage } from "./workflow-queries.js";
 
 export class ValidationWorkflowService {
   constructor(
@@ -131,18 +132,19 @@ export class ValidationWorkflowService {
     if (validatorRun.status !== RunStatus.Completed) return;
     const issue = this.issueRepo.getById(validatorRun.issue_id);
     if (!issue || issue.status !== IssueStatus.Validating) return;
-    const finalMessage = this.getFinalMessage(validatorRunId);
+    const finalMessage = getFinalMessage(this.db, validatorRunId);
     if (!finalMessage) { this.blockIssue(validatorRun.issue_id, ValidationBlockReason.ResultUnparsable, "Validator run has no final message"); return; }
     let parsedResult: ValidationResultEnvelope;
     try { parsedResult = parseValidationResult(finalMessage); }
     catch { this.blockIssue(validatorRun.issue_id, ValidationBlockReason.ResultUnparsable, "Failed to parse validator final message"); return; }
     if (parsedResult.outcome === ValidationOutcome.Passed) void this.processPassed(validatorRun, parsedResult, issue);
     else if (parsedResult.outcome === ValidationOutcome.Failed) void this.processFailed(validatorRun, parsedResult, issue);
+    else if (parsedResult.outcome === ValidationOutcome.Blocked) void this.processBlocked(validatorRun, parsedResult, issue);
   }
 
   private processPassed(validatorRun: Run, result: ValidationResultEnvelope, issue: Issue): void {
     const pendingEvents: ThreadEvent[] = [];
-    const requestedEvent = this.findRequestedEvent(validatorRun.thread_id, validatorRun.id);
+    const requestedEvent = findRequestedEvent(this.threadEventRepo, validatorRun.thread_id, validatorRun.id);
     if (!requestedEvent) return;
     const requestedPayload = requestedEvent.payload_json;
     const implementationRunId = requestedPayload.implementation_run_id as string;
@@ -153,8 +155,8 @@ export class ValidationWorkflowService {
     if (!validatorRun.adapter_identity) { this.blockIssue(issue.id, ValidationBlockReason.RecoveryInconsistent, "Validator run missing adapter identity"); return; }
     const implIdentity = implRun.adapter_identity;
     const valIdentity = validatorRun.adapter_identity;
-    const handoffEvent = this.findHandoffEvent(validatorRun.thread_id, implementationRunId);
-    const verificationEvents = this.findVerificationEvents(validatorRun.thread_id, implementationRunId);
+    const handoffEvent = findHandoffEvent(this.threadEventRepo, validatorRun.thread_id, implementationRunId);
+    const verificationEvents = findVerificationEvents(this.threadEventRepo, validatorRun.thread_id, implementationRunId);
     const fileChanges = this.fileChangeRepo.listByRun(implementationRunId);
     const hasFileChanges = fileChanges.length > 0;
     const gateResult = checkEvidenceRequirements(policySnapshot, {
@@ -185,7 +187,7 @@ export class ValidationWorkflowService {
       const freshValidatorRun = this.runRepo.getById(validatorRun.id);
       if (!freshValidatorRun || freshValidatorRun.status !== RunStatus.Completed) return null;
       if (freshValidatorRun.validation_round !== freshIssue.validation_round_count + 1) return null;
-      if (this.resultEventExistsForValidatorRun(validatorRun.id, validatorRun.thread_id)) return null;
+      if (resultEventExistsForValidatorRun(this.threadEventRepo, validatorRun.thread_id, validatorRun.id)) return null;
       const passEvent = this.threadEventService.write(validatorRun.thread_id, ThreadEventType.ValidationPassed, ActorType.System, null, {
         issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
         validation_round: validatorRun.validation_round, summary: result.summary,
@@ -217,7 +219,7 @@ export class ValidationWorkflowService {
 
   private processFailed(validatorRun: Run, result: ValidationResultEnvelope, issue: Issue): void {
     const pendingEvents: ThreadEvent[] = [];
-    const requestedEvent = this.findRequestedEvent(validatorRun.thread_id, validatorRun.id);
+    const requestedEvent = findRequestedEvent(this.threadEventRepo, validatorRun.thread_id, validatorRun.id);
     if (!requestedEvent) return;
     const requestedPayload = requestedEvent.payload_json;
     const implementationRunId = requestedPayload.implementation_run_id as string;
@@ -231,22 +233,8 @@ export class ValidationWorkflowService {
       const freshValidatorRun = this.runRepo.getById(validatorRun.id);
       if (!freshValidatorRun || freshValidatorRun.status !== RunStatus.Completed) return false;
       if (freshValidatorRun.validation_round !== freshIssue.validation_round_count + 1) return false;
-      if (this.resultEventExistsForValidatorRun(validatorRun.id, validatorRun.thread_id)) return false;
-      for (let i = 0; i < result.findings.length; i++) {
-        const finding = result.findings[i];
-        pendingEvents.push(this.threadEventService.write(
-          validatorRun.thread_id, ThreadEventType.ValidationFinding, ActorType.System, null,
-          {
-            issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
-            validation_round: validatorRun.validation_round,
-            severity: finding.severity, message: finding.message,
-            finding_index: i,
-            suggestion: finding.suggestion, file_path: finding.file_path, line: finding.line,
-            validator_run_id: validatorRun.id, implementation_run_id: implementationRunId,
-          },
-          finding.evidence_refs,
-        ));
-      }
+      if (resultEventExistsForValidatorRun(this.threadEventRepo, validatorRun.thread_id, validatorRun.id)) return false;
+      this.pushFindingEvents(pendingEvents, validatorRun, issue, implementationRunId, result.findings);
       const nextStatus = roundLimitBlocked ? IssueStatus.Blocked : IssueStatus.Running;
       pendingEvents.push(this.threadEventService.write(
         validatorRun.thread_id, ThreadEventType.ValidationFailed, ActorType.System, null,
@@ -305,38 +293,58 @@ export class ValidationWorkflowService {
     }));
   }
 
-  private findRequestedEvent(threadId: string, validatorRunId: string): ThreadEvent | null {
-    return this.threadEventRepo.listByThreadAndTypes(threadId, [ThreadEventType.ValidationRequested], undefined, 50)
-      .find((e) => e.payload_json.validator_run_id === validatorRunId) ?? null;
-  }
-
-  private findHandoffEvent(threadId: string, implementationRunId: string): ThreadEvent | null {
-    return this.threadEventRepo.listByThreadAndTypes(threadId, [ThreadEventType.HandoffCreated], undefined, 10)
-      .find((e) => e.payload_json.run_id === implementationRunId) ?? null;
-  }
-
-  private findVerificationEvents(threadId: string, implementationRunId: string): SummaryVerificationEvent[] {
-    return this.threadEventRepo.listByThreadAndTypes(threadId, [ThreadEventType.TestCompleted], undefined, 200)
-      .filter((e) => e.payload_json.run_id === implementationRunId)
-      .map((e) => ({ id: e.id, kind: (e.payload_json.kind as string) ?? "test", result: (e.payload_json.result as string) ?? "unknown", command: (e.payload_json.command as string) ?? null }));
-  }
-
-  private resultEventExistsForValidatorRun(validatorRunId: string, threadId: string): boolean {
-    const resultTypes: ThreadEventType[] = [
-      ThreadEventType.ValidationPassed,
-      ThreadEventType.ValidationFailed,
-      ThreadEventType.ValidationBlocked,
-    ];
-    const events = this.threadEventRepo.listByThreadAndTypes(threadId, resultTypes, undefined, 200);
-    return events.some((e) => e.payload_json.validator_run_id === validatorRunId);
-  }
-
   blockValidation(issueId: string, validatorRunId: string, reason: ValidationBlockReason): void {
     this.blockIssue(issueId, reason, `Validator run ${validatorRunId} blocked: ${reason}`);
   }
 
-  private getFinalMessage(runId: string): string | null {
-    const row = this.db.prepare("SELECT final_message FROM runs WHERE id = ?").get(runId) as { final_message: string | null } | undefined;
-    return row?.final_message ?? null;
+  private pushFindingEvents(pendingEvents: ThreadEvent[], validatorRun: Run, issue: Issue, implementationRunId: string, findings: ValidationFinding[]): void {
+    for (let i = 0; i < findings.length; i++) {
+      const finding = findings[i];
+      pendingEvents.push(this.threadEventService.write(
+        validatorRun.thread_id, ThreadEventType.ValidationFinding, ActorType.System, null,
+        {
+          issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
+          validation_round: validatorRun.validation_round,
+          severity: finding.severity, message: finding.message, finding_index: i,
+          suggestion: finding.suggestion, file_path: finding.file_path, line: finding.line,
+          validator_run_id: validatorRun.id, implementation_run_id: implementationRunId,
+        },
+        finding.evidence_refs,
+      ));
+    }
+  }
+
+  private processBlocked(validatorRun: Run, result: ValidationResultEnvelope, issue: Issue): void {
+    const pendingEvents: ThreadEvent[] = [];
+    const requestedEvent = findRequestedEvent(this.threadEventRepo, validatorRun.thread_id, validatorRun.id);
+    if (!requestedEvent) return;
+    const implementationRunId = requestedEvent.payload_json.implementation_run_id as string;
+    const reason = ValidationBlockReason.EvidenceMissing;
+    const message = result.summary;
+    const success = this.db.transaction(() => {
+      const freshIssue = this.issueRepo.getById(issue.id);
+      if (!freshIssue || freshIssue.status !== IssueStatus.Validating) return false;
+      const freshValidatorRun = this.runRepo.getById(validatorRun.id);
+      if (!freshValidatorRun || freshValidatorRun.status !== RunStatus.Completed) return false;
+      if (freshValidatorRun.validation_round !== freshIssue.validation_round_count + 1) return false;
+      if (resultEventExistsForValidatorRun(this.threadEventRepo, validatorRun.thread_id, validatorRun.id)) return false;
+      this.pushFindingEvents(pendingEvents, validatorRun, issue, implementationRunId, result.findings);
+      const casResult = this.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Validating, IssueStatus.Blocked, {
+        blocked_reason_code: reason, blocked_reason_message: message,
+      });
+      if (!casResult.success) return false;
+      pendingEvents.push(this.threadEventService.write(
+        validatorRun.thread_id, ThreadEventType.ValidationBlocked, ActorType.System, null,
+        {
+          issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
+          validation_round: validatorRun.validation_round, summary: message, reason_code: reason,
+          finding_count: result.findings.length, missing_evidence: result.missing_evidence,
+          validator_run_id: validatorRun.id, implementation_run_id: implementationRunId,
+        },
+      ));
+      return true;
+    })();
+    if (!success) return;
+    for (const event of pendingEvents) this.threadEventService.broadcast(event);
   }
 }
