@@ -193,6 +193,19 @@ updated: 2026-07-19
 - [ ] **T088**（`AC-001` - `AC-011`）：逐项走查并勾选 spec acceptance；不以 pure unit test、文档说明或未完成的真实 probe 替代 production-path 验证。
 - [ ] **T089**：T090-T095、T080-T085 全部完成且验收重新勾选后，更新 `BACKLOG.md`、三件套 Status 和 `CLAUDE.md` 为 `done`。
 
+## 真实环境验收进展（2026-07-19）
+
+已在本机真实 Codex CLI 0.144.5（Windows）完成 F004 最关键、最不确定环节的 production-path 验证：
+
+- **协议冒烟（T002/T003）**：真实 app-server handshake，final message = terminal `item/completed`（`phase=final_answer`），Unicode 保留、command 输出隔离，均正确。
+- **Validator envelope + 分流（T081/T083 核心）**：用生产 `buildValidatorContext()` 生成的 validator prompt 喂真实 Codex，两条路径都成功——
+  - 证据不足/不一致 → 真实 Codex 独立核实 workspace（跑 `npm test` 发现失败、文件与 handoff 不符）→ 输出合法 strict JSON envelope `outcome=failed`（2 findings）；
+  - 证据齐全 + test 通过 → 真实 Codex 独立跑通 `node --test` → 输出合法 envelope `outcome=passed`（0 findings）。
+  - 两次输出均被生产 `parseValidationResult()` 正确解析（不再是历史上的 `result_unparsable`），验证 T090 context 接线显著改善真实 Codex 输出质量，且 validator 展现"不盲信 agent 声明、独立核实证据"的 strict gate 行为。
+- 可复现验收工具：`server/tests/integration/real-codex-validation.test.ts`（env-gated `REAL_CODEX=1`，默认 skip，不影响 CI/全量测试）。
+
+**仍待完整链路手动验收**：T081 完整 pass→Done→EvidenceSummary→Markdown 全自动链路、T082 三轮 fail→Blocked、T084 restart recovery、T085 same-origin（同 provider 同/不同 model）——每条需真实 Codex 多次调用，可按 `docs/SOP.md` 在 UI 或脚本逐条执行。核心 validator 分流环节已如上真实验证。
+
 ## 依赖关系
 
 ```text
