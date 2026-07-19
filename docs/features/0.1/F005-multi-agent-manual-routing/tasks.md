@@ -105,11 +105,19 @@ updated: 2026-07-19
 - [ ] **T011**（`DR-001` - `DR-005`）：添加shared类型编译/序列化测试，覆盖CliProvider/AuthType/Capability/RunPurpose、public AdapterConfig、write-only inputs、Run routing fields和provider metadata。
 - [ ] **T012**（`DR-001` - `DR-004`）：拆分/扩展shared adapter/run types并re-export；扩展F004 `RunRole`新增非空`consult`、扩展`RunDispatchSource`新增`user_default`，持久化枚举只增不改。
 - [ ] **T013**（`IR-001` - `IR-003`）：先补ErrorCode/HTTP映射测试，再新增auth/key/provider/default/purpose/status/conflict错误。
-- [ ] **T014**（`DR-001` - `DR-005`, `NFR-001`）：添加v6 migration集成测试，覆盖v5升级、重跑、旧Codex oauth解释、旧Run workflow_bound、非空`role='consult'`可插入且无需重建runs、capability backfill、due/default/index和既有summary不变。**default 回填必须单独覆盖**（按 design §4.1 的收紧策略）：Project 恰有 1 个 available adapter → 回填该 adapter；0 个 → 保持 NULL；≥2 个 → 保持 NULL 不瞎猜；含 unavailable adapter 不计入；迁移重跑幂等。断言回填后旧 Project 省略 `adapter_id` 的 dispatch 不再返回 `DEFAULT_ADAPTER_UNAVAILABLE`（单 adapter 场景）。
-- [ ] **T015**（`DR-001` - `DR-005`）：实现`schema-v6.ts`并在`migrations.ts`注册为版本6（v5 已被 F004 占用，勿复用）；保留F004 `runs.role NOT NULL`并由shared enum新增`consult`值。
-- [ ] **T016**（`DR-005`, `FR-009`）：验证F004 **两条** validator 唯一索引在v6仍存在且对manual/system Run同时生效：`idx_runs_one_active_validator`（v4，active）与`idx_runs_validator_per_round`（v5，跨终态每轮唯一）；断言两者语义差异（本轮validator终态后前者放行、后者仍拦截）；不得重复创建冲突索引。
+- [x] **T014**（`DR-001` - `DR-005`, `NFR-001`）：添加v6 migration集成测试，覆盖v5升级、重跑、旧Codex oauth解释、旧Run workflow_bound、非空`role='consult'`可插入且无需重建runs、capability backfill、due/default/index和既有summary不变。**default 回填必须单独覆盖**（按 design §4.1 的收紧策略）：Project 恰有 1 个 available adapter → 回填该 adapter；0 个 → 保持 NULL；≥2 个 → 保持 NULL 不瞎猜；含 unavailable adapter 不计入；迁移重跑幂等。断言回填后旧 Project 省略 `adapter_id` 的 dispatch 不再返回 `DEFAULT_ADAPTER_UNAVAILABLE`（单 adapter 场景）。
 
-**Checkpoint 2**：F004数据无损升级，public/internal secret边界和routing枚举已固定。
+  **2026-07-19 完成**：`server/tests/integration/migration-v6.test.ts`，24 项全绿，覆盖新增列/索引、旧数据默认值、capability_tags 与 default_adapter_config_id 两类 backfill（含 0/1/≥2/含 unavailable 四种边界）、`role='consult'` 可插入且既有 summary/索引不受影响。副作用修复：`migration.test.ts`、`persistence.test.ts` 两处硬编码 `schema_version` 断言（`toBe(5)`）随版本号推进到 6 而失败，已同步更新为 `toBe(6)`；`persistence.test.ts` 的失败还连带触发了一个 EBUSY 文件锁清理错误（断言抛出中断了后续 `db.close()`，导致 `afterEach` 删除临时目录时文件仍被占用）——两处根因相同，一并修复。
+
+- [x] **T015**（`DR-001` - `DR-005`）：实现`schema-v6.ts`并在`migrations.ts`注册为版本6（v5 已被 F004 占用，勿复用）；保留F004 `runs.role NOT NULL`并由shared enum新增`consult`值。
+
+  **2026-07-19 完成**：与 T014 同步实现（TDD 红→绿）。`server/src/db/schema-v6.ts` 落地 design §4.1 全部 SQL：4 个 `agent_configs` 新列、`projects.default_adapter_config_id`、`runs.purpose`/`context_source_run_id`、`issues.validation_dispatch_due_at`、两条新索引，以及 capability_tags/default_adapter_config_id 两条 backfill UPDATE。
+
+- [x] **T016**（`DR-005`, `FR-009`）：验证F004 **两条** validator 唯一索引在v6仍存在且对manual/system Run同时生效：`idx_runs_one_active_validator`（v4，active）与`idx_runs_validator_per_round`（v5，跨终态每轮唯一）；断言两者语义差异（本轮validator终态后前者放行、后者仍拦截）；不得重复创建冲突索引。
+
+  **2026-07-19 完成**：migration-v6.test.ts 新增专门 describe 块，显式验证 manual(user_explicit)→system 与 system→manual 两个方向都会撞上同一条 active-validator 索引（不因 dispatch_source 不同而豁免），并确认 consult Run 不会误撞（角色不同，索引无 dispatch_source 谓词）。另确认 F004 既有的两条强制性测试（migration.test.ts 的 duplicate-queued-validator、migration-v5.test.ts 的 per-round DB uniqueness）在 v6 之上原样通过，索引未被重建/未产生冲突定义。
+
+**Checkpoint 2 达成**：F004数据无损升级（v5→v6 全部旧数据测试通过），public/internal secret边界（`AdapterConfig.has_api_key`/write-only `api_key`）和routing枚举（`RunPurpose`/`RunRole.Consult`/`RunDispatchSource.UserDefault`）已固定。回归：`npm run typecheck`、`npm test`（server+web）、`npm run build` 全绿。
 
 ## Phase 3：Adapter Repository、Public DTO与Default
 
