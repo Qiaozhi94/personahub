@@ -16,7 +16,7 @@ import { buildPolicySnapshot, hashPolicySnapshot, checkEvidenceRequirements } fr
 import { parseValidationResult } from "./result-parser.js";
 import { buildEvidenceSummary, type EvidenceSummaryBuildInput, type SummaryVerificationEvent } from "./evidence-summary-builder.js";
 import { assembleValidatorContext } from "./context-assembler.js";
-import { findRequestedEvent, findHandoffEvent, findVerificationEvents, resultEventExistsForValidatorRun, getFinalMessage } from "./workflow-queries.js";
+import { findRequestedEvent, resultEventExistsForValidatorRun, getFinalMessage, collectImplementationEvidence } from "./workflow-queries.js";
 
 export class ValidationWorkflowService {
   constructor(
@@ -155,27 +155,25 @@ export class ValidationWorkflowService {
     if (!validatorRun.adapter_identity) { this.blockIssue(issue.id, ValidationBlockReason.RecoveryInconsistent, "Validator run missing adapter identity"); return; }
     const implIdentity = implRun.adapter_identity;
     const valIdentity = validatorRun.adapter_identity;
-    const handoffEvent = findHandoffEvent(this.threadEventRepo, validatorRun.thread_id, implementationRunId);
-    const verificationEvents = findVerificationEvents(this.threadEventRepo, validatorRun.thread_id, implementationRunId);
-    const fileChanges = this.fileChangeRepo.listByRun(implementationRunId);
-    const hasFileChanges = fileChanges.length > 0;
+    const ev = collectImplementationEvidence(this.threadEventRepo, this.fileChangeRepo, validatorRun.thread_id, implementationRunId);
+    const hasFileChanges = ev.fileChanges.length > 0;
     const gateResult = checkEvidenceRequirements(policySnapshot, {
-      handoffResolved: handoffEvent !== null, fileChangeSetRefPresent: hasFileChanges,
+      handoffResolved: ev.handoffEvent !== null, fileChangeSetRefPresent: hasFileChanges,
       fileTraceStatus: hasFileChanges ? "complete" as const : "unavailable" as const,
-      confirmedVerifications: verificationEvents.filter((v) => v.result === "passed").map((v) => ({ kind: v.kind, result: v.result })),
+      confirmedVerifications: ev.verifications.filter((v) => v.result === "passed").map((v) => ({ kind: v.kind, result: v.result })),
     });
     if (!gateResult.passed) { this.blockIssue(issue.id, gateResult.blockReason ?? ValidationBlockReason.EvidenceMissing, "Policy gate failed: " + gateResult.missingEvidence.join(", ")); return; }
     const evSummary: EvidenceSummaryBuildInput = {
       issue: { id: issue.id, title: issue.title, goal: issue.goal, thread_id: issue.primary_thread_id! },
       implementationRun: { id: implementationRunId, identity: implIdentity },
       validatorRun: { id: validatorRun.id, identity: valIdentity },
-      policySnapshot, policySnapshotHash, result, handoff: null,
-      verifications: verificationEvents,
-      fileChanges: fileChanges.map((fc) => ({ path: fc.path, change_type: fc.change_type })),
-      commands: [], passEventId: "",
+      policySnapshot, policySnapshotHash, result, handoff: ev.handoff,
+      verifications: ev.verifications,
+      fileChanges: ev.fileChanges,
+      commands: ev.commands, passEventId: "",
       traceCompleteness: {
         commands: TraceCompletenessStatus.Complete,
-        verification: verificationEvents.length > 0 ? TraceCompletenessStatus.Complete : TraceCompletenessStatus.Unavailable,
+        verification: ev.verifications.length > 0 ? TraceCompletenessStatus.Complete : TraceCompletenessStatus.Unavailable,
         file_changes: hasFileChanges ? TraceCompletenessStatus.Complete : TraceCompletenessStatus.Unavailable,
         refs: TraceCompletenessStatus.Complete, reasons: [],
       },

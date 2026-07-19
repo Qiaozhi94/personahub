@@ -3,6 +3,7 @@ import { ThreadEventType, TraceCompletenessStatus } from "@personahub/shared/typ
 import type { ThreadEventRepository } from "../../repositories/thread-event.js";
 import type { FileChangeRepository } from "../../repositories/file-change.js";
 import type { HandoffPayload } from "../handoff-builder.js";
+import { handoffPayloadFromEvent } from "./workflow-queries.js";
 import {
   buildValidatorContext,
   type ValidatorContextResult,
@@ -40,27 +41,8 @@ function collectHandoff(
 ): HandoffPayload | null {
   const event = repo
     .listByThreadAndTypes(threadId, [ThreadEventType.HandoffCreated], undefined, 10)
-    .find((e: ThreadEvent) => e.payload_json.run_id === implRunId);
-  if (!event) return null;
-  const p = event.payload_json;
-  return {
-    issue_id: (p.issue_id as string) ?? "",
-    thread_id: threadId,
-    run_id: implRunId,
-    workspace_id: (p.workspace_id as string) ?? "",
-    issue_goal: (p.issue_goal as string) ?? "",
-    run_status: (p.run_status as string) ?? "completed",
-    summary: (p.summary as string) ?? "",
-    completed_work: (p.completed_work as string[]) ?? [],
-    command_summary: (p.command_summary as HandoffPayload["command_summary"]) ?? { total: 0, succeeded: 0, failed: 0, blocked: 0, unknown: 0 },
-    verification_summary: (p.verification_summary as HandoffPayload["verification_summary"]) ?? { passed: 0, failed: 0, unknown: 0 },
-    file_summary: (p.file_summary as HandoffPayload["file_summary"]) ?? null,
-    known_risks: (p.known_risks as string[]) ?? [],
-    missing_evidence: (p.missing_evidence as string[]) ?? [],
-    next_expected_action: (p.next_expected_action as string) ?? "",
-    evidence_ref_count: (p.evidence_ref_count as number) ?? 0,
-    evidence_refs_truncated: (p.evidence_refs_truncated as boolean) ?? false,
-  };
+    .find((e: ThreadEvent) => e.payload_json.run_id === implRunId) ?? null;
+  return handoffPayloadFromEvent(event, threadId, implRunId);
 }
 
 function collectVerifications(

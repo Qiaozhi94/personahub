@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { IssueStatus, ValidationFindingSeverity } from "@personahub/shared";
 import { useValidationStatus } from "@/hooks/use-validation";
 import { toApiError } from "@/lib/api-client";
@@ -10,6 +11,7 @@ interface ValidationInspectorSectionProps {
 
 export function ValidationInspectorSection({ issueId }: ValidationInspectorSectionProps) {
   const validationQuery = useValidationStatus(issueId);
+  const [copied, setCopied] = useState(false);
 
   if (!issueId) {
     return null;
@@ -57,6 +59,27 @@ export function ValidationInspectorSection({ issueId }: ValidationInspectorSecti
   };
 
   const hasEvidenceSummary = data.evidence_summary !== null;
+  const summaryMarkdown = data.evidence_summary?.summary_markdown ?? "";
+  const handleCopySummary = async () => {
+    try {
+      await navigator.clipboard.writeText(summaryMarkdown);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard unavailable
+    }
+  };
+  const handleDownloadSummary = () => {
+    const blob = new Blob([summaryMarkdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `evidence-summary-${issueId}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <section className="grid gap-2 rounded-lg border border-border bg-card p-3.5">
@@ -148,7 +171,17 @@ export function ValidationInspectorSection({ issueId }: ValidationInspectorSecti
 
       {hasEvidenceSummary ? (
         <div className="border-t border-border pt-1.5">
-          <p className="text-xs font-semibold text-foreground">Evidence Summary</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-foreground">Evidence Summary</p>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={handleCopySummary}>
+                {copied ? "Copied!" : "Copy"}
+              </Button>
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={handleDownloadSummary}>
+                Download
+              </Button>
+            </div>
+          </div>
           <div className="mt-1 max-h-48 overflow-y-auto rounded bg-muted/30 p-2 font-mono text-[10px] leading-relaxed whitespace-pre-wrap">
             {data.evidence_summary!.summary_markdown}
           </div>
