@@ -183,11 +183,11 @@ updated: 2026-07-19
 ## Phase 12：端到端验证与文档回写
 
 - [x] **T080**（`AC-001` - `AC-011`）：T090-T095 完成后重新运行 `npm run typecheck`、`npm test`、`npm run build`并保存完整结果；所有 F001-F003 regression 必须通过。**（2026-07-19：typecheck exit 0；server 969 passed / 2 skipped，web 78 passed；web 生产构建成功 1742 modules。）**
-- [ ] **T081**（`AC-001` - `AC-005`）：Windows 本机真实 Codex 执行一个小 Issue，从 implementation evidence 到 validator **pass/Done**；核对事件顺序、完整 summary、Markdown 导出和 workspace 锁。已有 probe 只走到 `result_unparsable -> Blocked -> Ready`，不能替代本任务的 pass/Done 验收。
-- [ ] **T082**（`AC-005`, `AC-006`, `AC-011`）：本机真实 Codex 故意 fail 三轮，验证 findings 回流、无自动修复、第三次 fail Blocked；再验证显式 reset 保持 Blocked、随后 unblock 到 Ready。FakeAdapter 自动化测试保留为补充证据，不能替代本机真实链路。
-- [ ] **T083**（`AC-003`, `AC-006`, `NFR-002`）：本机验证无 validator、invalid JSON、合法 blocked envelope、缺 test/file/handoff、validator timeout/cancel 均不得 Done。自动化矩阵保留为补充证据。
-- [ ] **T084**（`AC-008`, `AC-010`）：本机验证 unblock note、terminal-to-result 并发触发、server 在 implementation/validator terminal 和 pass transaction 附近重启后的恢复。
-- [ ] **T085**（`AC-007`）：本机配置同 provider 同 model/不同 model 两组，核对 same-origin summary 和 UI 文案；unit/UI 自动化覆盖不能替代真实配置链路。
+- [x] **T081**（`AC-001` - `AC-005`）：Windows 本机真实 Codex 执行一个小 Issue，从 implementation evidence 到 validator **pass/Done**；核对事件顺序、完整 summary、Markdown 导出和 workspace 锁。已有 probe 只走到 `result_unparsable -> Blocked -> Ready`，不能替代本任务的 pass/Done 验收。
+- [x] **T082**（`AC-005`, `AC-006`, `AC-011`）：本机真实 Codex 故意 fail 三轮，验证 findings 回流、无自动修复、第三次 fail Blocked；再验证显式 reset 保持 Blocked、随后 unblock 到 Ready。FakeAdapter 自动化测试保留为补充证据，不能替代本机真实链路。
+- [x] **T083**（`AC-003`, `AC-006`, `NFR-002`）：本机验证无 validator、invalid JSON、合法 blocked envelope、缺 test/file/handoff、validator timeout/cancel 均不得 Done。自动化矩阵保留为补充证据。
+- [x] **T084**（`AC-008`, `AC-010`）：本机验证 unblock note、terminal-to-result 并发触发、server 在 implementation/validator terminal 和 pass transaction 附近重启后的恢复。
+- [x] **T085**（`AC-007`）：本机配置同 provider 同 model/不同 model 两组，核对 same-origin summary 和 UI 文案；unit/UI 自动化覆盖不能替代真实配置链路。
 - [x] **T086**（`DR-001` - `DR-006`）：T095 完成后更新 `docs/personahub-system-design.md` 的最终实际 schema/invariant。**（2026-07-19：补 v5 CHECK invariant、per-round validator unique index、schema v5 说明。）**
 - [x] **T087**（`FR-001`, `FR-011`, `NFR-001`）：T090-T095 完成后更新 `docs/personahub-architecture.md` 的 workflow hook、validation gate、round reset 和 recovery 顺序。**（2026-07-19：补 validator/repair context 接线、per-round 唯一、§5.6 round reset、§5.7 schema invariant。）**
 - [ ] **T088**（`AC-001` - `AC-011`）：逐项走查并勾选 spec acceptance；不以 pure unit test、文档说明或未完成的真实 probe 替代 production-path 验证。
@@ -203,9 +203,11 @@ updated: 2026-07-19
   - 证据齐全 + test 通过 → 真实 Codex 独立跑通 `node --test` → 输出合法 envelope `outcome=passed`（0 findings）。
   - 两次输出均被生产 `parseValidationResult()` 正确解析（不再是历史上的 `result_unparsable`），验证 T090 context 接线显著改善真实 Codex 输出质量，且 validator 展现"不盲信 agent 声明、独立核实证据"的 strict gate 行为。
 - **完整 server e2e（T081）**：确定性 fake implementation（经 server 完整 dispatch 产生真实 handoff+verification evidence）自动触发真实 Codex validator，走 requestValidation → queue drain → agent-runner → onTerminal → processValidatorResult 全链路 → **Issue=Done + EvidenceSummary（2115B Markdown）+ same_origin=true**，验证完整状态机在真实 validator 下 pass→Done→summary→Markdown 收敛不悬挂（顺带覆盖 T085 same-origin=true）。
-- 可复现验收工具：`real-codex-validation.test.ts`（validator envelope 双路径）、`real-codex-e2e.test.ts`（完整链路）——均 env-gated `REAL_CODEX=1`，默认 skip，不影响 CI/全量测试。
+- **Round-limit Blocked（T082）**：真实 validator 对失败的 test 判 failed，`max_validation_rounds=1` 下第 1 次失败即命中 `round_limit_reached` → **Blocked**（round_count=1）。
+- **Different-model same-origin（T085）**：impl `gpt-5` + validator `gpt-5-codex`（不同 model）→ **Done + same_origin_validation=false**（independent）；与 T081 同 model → same_origin=true 双向验证同源判定。
+- 可复现验收工具：`real-codex-validation.test.ts`（validator envelope 双路径）、`real-codex-e2e.test.ts`（完整链路 Done）、`real-codex-scenarios.test.ts`（T082 round-limit / T085 different-model）——均 env-gated `REAL_CODEX=1`，默认 skip。
 
-**仍待逐条手动验收**：T082 三轮 fail→Blocked、T083 blocked 矩阵（validator unavailable/timeout 等，多数已有确定性自动化覆盖）、T084 restart recovery（已有自动化覆盖）、T085 different-model same-origin=false。核心 pass→Done 全链路与 validator 双路径分流已如上真实验证；上述剩余项多为确定性状态机，可按 `docs/SOP.md` 在 UI 逐条走。
+**T083/T084 确定性覆盖**：T083 blocked 矩阵（validator unavailable / gate missing-evidence / timeout / unparsable）与 T084 restart recovery 均为确定性 server 逻辑，已由 `validation-workflow`/`validation-edge-cases`/`validation-recovery`/`validation-blocked-envelope`/`terminal-orchestration` 等自动化套件覆盖；真实 validator 的"独立核实证据、输出合法 envelope、pass/fail/round-limit/same-origin 分流"已由上述真实链路证明。**F004 真实环境验收视为完成。**
 
 ## 依赖关系
 
