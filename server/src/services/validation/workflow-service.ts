@@ -4,6 +4,7 @@ import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, Ac
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { RunRepository } from "../../repositories/run.js";
 import type { AgentConfigRepository } from "../../repositories/agent-config.js";
+import { toPublicAdapter } from "../../repositories/agent-config-dto.js";
 import type { WorkflowTemplateRepository } from "../../repositories/workflow-template.js";
 import type { ValidationPolicyRepository } from "../../repositories/validation-policy.js";
 import type { ThreadEventRepository } from "../../repositories/thread-event.js";
@@ -62,7 +63,7 @@ export class ValidationWorkflowService {
       try { policySnapshot = buildPolicySnapshot(policy.id, policy.version, policy.max_validation_rounds, policy.evidence_requirements_json); }
       catch { this.blockIssueInTx(issue, ValidationBlockReason.WorkflowConfigurationInvalid, "Failed to build policy snapshot", pendingEvents); return null; }
       const snapshotHash = hashPolicySnapshot(policySnapshot);
-      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator);
+      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator).map((r) => toPublicAdapter(r, null));
       const selectorResult = selectValidator({ workflowTemplate: wf, availableValidators });
       if (!selectorResult.selected) {
         this.blockIssueInTx(issue, selectorResult.reason ?? ValidationBlockReason.ValidatorUnavailable, selectorResult.message, pendingEvents);
@@ -151,7 +152,7 @@ export class ValidationWorkflowService {
         this.blockIssueInTx(issue, ValidationBlockReason.RecoveryInconsistent, "Implementation run missing adapter identity", pendingEvents);
         return null;
       }
-      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator);
+      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator).map((r) => toPublicAdapter(r, null));
       const frozenConfig = frozenValidatorConfigId
         ? availableValidators.find((v) => v.id === frozenValidatorConfigId)
         : undefined;

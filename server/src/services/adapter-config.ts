@@ -3,6 +3,7 @@ import type { AdapterConfig, AdapterStatus } from "@personahub/shared/types";
 import { AdapterStatus as AS } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { AgentConfigRepository } from "../repositories/agent-config.js";
+import { toPublicAdapter } from "../repositories/agent-config-dto.js";
 import type { ProjectRepository } from "../repositories/project.js";
 import { AppError } from "../api/errors.js";
 
@@ -82,7 +83,7 @@ export class AdapterConfigService {
     const validation = validateCommand(trimmedCommand);
     const status: AdapterStatus = validation.available ? AS.Available : AS.Unavailable;
 
-    return this.agentConfigRepo.create({
+    const record = this.agentConfigRepo.create({
       project_id: projectId,
       name: trimmedName,
       role,
@@ -93,6 +94,19 @@ export class AdapterConfigService {
       default_model: input.default_model ?? null,
       status,
     });
+
+    // First available adapter for a Project with no default becomes the
+    // default automatically (design §4.1); later adapters never override an
+    // already-set default — only an explicit set-default call can do that.
+    let defaultAdapterConfigId = project.default_adapter_config_id;
+    if (status === AS.Available && defaultAdapterConfigId === null) {
+      const result = this.projectRepo.setDefaultAdapter(projectId, record.id);
+      if (result.success) {
+        defaultAdapterConfigId = record.id;
+      }
+    }
+
+    return toPublicAdapter(record, defaultAdapterConfigId);
   }
 
   list(projectId: string): AdapterConfig[] {
@@ -100,15 +114,16 @@ export class AdapterConfigService {
     if (!project) {
       throw new AppError(ErrorCode.PROJECT_NOT_FOUND, "Project not found.");
     }
-    return this.agentConfigRepo.listByProject(projectId);
+    return this.agentConfigRepo.listByProject(projectId).map((r) => toPublicAdapter(r, project.default_adapter_config_id));
   }
 
   getById(id: string): AdapterConfig {
-    const adapter = this.agentConfigRepo.getById(id);
-    if (!adapter) {
+    const record = this.agentConfigRepo.getById(id);
+    if (!record) {
       throw new AppError(ErrorCode.ADAPTER_NOT_FOUND, "Adapter config not found.");
     }
-    return adapter;
+    const project = this.projectRepo.getById(record.project_id);
+    return toPublicAdapter(record, project?.default_adapter_config_id ?? null);
   }
 
   update(id: string, input: AdapterConfigUpdateServiceInput): AdapterConfig {
@@ -163,7 +178,9 @@ export class AdapterConfigService {
     }
 
     this.agentConfigRepo.update(id, updates);
-    return this.agentConfigRepo.getById(id)!;
+    const record = this.agentConfigRepo.getById(id)!;
+    const project = this.projectRepo.getById(record.project_id);
+    return toPublicAdapter(record, project?.default_adapter_config_id ?? null);
   }
 
   delete(id: string): void {
@@ -174,6 +191,20 @@ export class AdapterConfigService {
 
     if (this.agentConfigRepo.hasRuns(id)) {
       throw new AppError(ErrorCode.ADAPTER_IN_USE, "Cannot delete adapter config that has runs.");
+    }
+
+    const project = this.projectRepo.getById(existing.project_id);
+    const isCurrentDefault = project?.default_adapter_config_id === id;
+    if (isCurrentDefault) {
+      const siblingCount = this.agentConfigRepo.listByProject(existing.project_id).length;
+      if (siblingCount > 1) {
+        throw new AppError(
+          ErrorCode.ADAPTER_IN_USE,
+          "Cannot delete the Project's default adapter while other adapters exist. Set a different default first.",
+        );
+      }
+      // Only adapter left: allow delete, but clear the now-dangling default first.
+      this.projectRepo.clearDefaultAdapter(existing.project_id);
     }
 
     this.agentConfigRepo.delete(id);
@@ -195,6 +226,8 @@ export class AdapterConfigService {
       updated_at: now,
     });
 
-    return this.agentConfigRepo.getById(id)!;
+    const record = this.agentConfigRepo.getById(id)!;
+    const project = this.projectRepo.getById(record.project_id);
+    return toPublicAdapter(record, project?.default_adapter_config_id ?? null);
   }
 }

@@ -121,16 +121,39 @@ updated: 2026-07-19
 
 ## Phase 3：Adapter Repository、Public DTO与Default
 
-- [ ] **T017**（`DR-001`, `NFR-001`）：添加AgentConfigRepository internal record测试，覆盖auth/model/key/capability字段、create/update/clear、非法JSON和key原值只在repository内部可见。
-- [ ] **T018**（`DR-001`）：扩展repository输入/映射/查询；不得返回internal record给route。
-- [ ] **T019**（`DR-001`, `UX-002`）：添加`toPublicAdapter()`测试，使用高辨识secret验证任何层级JSON均无原值，只返回has_api_key/auth status/is_default。
-- [ ] **T020**（`DR-001`, `NFR-001`）：实现显式public DTO builder；禁止spread后删除secret模式。
-- [ ] **T021 [P]**（`FR-004`, `AC-002`）：添加ProjectRepository default adapter测试，覆盖set/clear、cross-project、不available、首个available自动default和删除default guard；并覆盖 default 为 NULL 时省略 `adapter_id` 的 dispatch 返回 `DEFAULT_ADAPTER_UNAVAILABLE`（供 UI 强制显式选择一次）。
-- [ ] **T022**（`FR-004`）：扩展Project repository/service的default字段和CAS更新。
-- [ ] **T023 [P]**（`DR-002`, `DR-003`）：添加RunRepository purpose/non-null consult role/context source/source测试及workflow/consult列表过滤；拒绝null role。
-- [ ] **T024**（`DR-002`, `DR-003`）：扩展Run repository/public mapping，保持F004 validator字段兼容。
+- [x] **T017**（`DR-001`, `NFR-001`）：添加AgentConfigRepository internal record测试，覆盖auth/model/key/capability字段、create/update/clear、非法JSON和key原值只在repository内部可见。
 
-**Checkpoint 3**：secret不能越过service DTO边界，Project default和Run routing可持久化审计。
+  **2026-07-20 完成**：`server/tests/unit/agent-config-repository.test.ts`，10 项全绿，用高辨识 canary secret 验证 create/getById/update（替换/省略保留/null清空）/list 系列方法均返回内部 record 的原始 `api_key`；恶意/非法 capability_tags JSON（非法语法、非数组）均按 design 要求返回空数组并强制 `status=unavailable`，合法值不受影响。
+
+- [x] **T018**（`DR-001`）：扩展repository输入/映射/查询；不得返回internal record给route。
+
+  **2026-07-20 完成**：`AgentConfigRepository` 新增 `AgentConfigRecord` 内部类型（含原始 `api_key`），`create/getById/listByProject/listAvailableByProjectAndRole` 均返回该类型而非 public `AdapterConfig`；`mapRow` 现在真实读取 auth_type/model_provider/api_key/auth_status_message 四列（Phase 2 的占位值已移除）。route 层未直接引用该类型（现有 route 均经由 service）。
+
+- [x] **T019**（`DR-001`, `UX-002`）：添加`toPublicAdapter()`测试，使用高辨识secret验证任何层级JSON均无原值，只返回has_api_key/auth status/is_default。
+
+  **2026-07-20 完成**：`server/tests/unit/agent-config-public-dto.test.ts`，10 项全绿，验证 `JSON.stringify()` 输出不含原始 secret、返回对象上 `"api_key" in dto` 恒为 false（即使记录的 key 为 null 也一样，防止未来误加空字段）、`has_api_key`/`is_default` 投影正确。
+
+- [x] **T020**（`DR-001`, `NFR-001`）：实现显式public DTO builder；禁止spread后删除secret模式。
+
+  **2026-07-20 完成**：`server/src/repositories/agent-config-dto.ts` 的 `toPublicAdapter(record, defaultAdapterConfigId)`，逐字段显式构造，无 spread。`AdapterConfigService` 的 create/list/getById/update/validate 五个方法已改为在返回前调用它（含跨方法查 Project 取 `default_adapter_config_id` 的必要开销）；`ValidationWorkflowService` 的两处 `listAvailableByProjectAndRole` 调用点同步接入（`is_default` 传 `null`，对 validator 选择无意义）。
+
+- [x] **T021 [P]**（`FR-004`, `AC-002`）：添加ProjectRepository default adapter测试，覆盖set/clear、cross-project、不available、首个available自动default和删除default guard；并覆盖 default 为 NULL 时省略 `adapter_id` 的 dispatch 返回 `DEFAULT_ADAPTER_UNAVAILABLE`（供 UI 强制显式选择一次）。
+
+  **2026-07-20 完成，含一处明确延后**：`server/tests/unit/project-default-adapter.test.ts`，11 项全绿，覆盖 set/clear/cross-project/unavailable/not-found 五种结果、首个 available adapter 自动成为 default（第二个不覆盖已有值）、删除 default 时若还有其他 adapter 则拒绝（复用 `ADAPTER_IN_USE`）、若是唯一 adapter 则允许删除并清空 default。**"省略 adapter_id 的 dispatch 返回 DEFAULT_ADAPTER_UNAVAILABLE" 这条未在本任务实现**——它依赖 Run 创建事务里的 `AdapterResolver`（Phase 7 T053-T054），Phase 3 只到 repository/CRUD 层，尚无 Run 派发路径可测；已记录、不遗漏，留给 T053-T054。
+
+- [x] **T022**（`FR-004`）：扩展Project repository/service的default字段和CAS更新。
+
+  **2026-07-20 完成**：`ProjectRepository` 新增 `setDefaultAdapter()`（校验 adapter 存在/同 Project/available，返回判别式结果而非抛异常）和 `clearDefaultAdapter()`。`AdapterConfigService.create()` 在新建 adapter 为 available 且 Project 尚无 default 时自动调用 `setDefaultAdapter`；`delete()` 增加同 Project 内"是否为 default 且是否还有其他 adapter"的判断，二选一走拒绝或清空。
+
+- [x] **T023 [P]**（`DR-002`, `DR-003`）：添加RunRepository purpose/non-null consult role/context source/source测试及workflow/consult列表过滤；拒绝null role。
+
+  **2026-07-20 完成**：`server/tests/unit/run-repository-purpose.test.ts`，8 项全绿，覆盖 purpose 默认 workflow_bound、显式 ad_hoc_consult+role=consult 时 workflow_step 正确为 null（而非误判为 implementation）、validator 角色 workflow_step 恒为 validation、context_source_run_id 写入与回读、`listByIssueAndPurpose()` 正确按 purpose 过滤，以及 `runs.role` 列在原始 SQL 层拒绝 NULL 插入（DB 级防线）+ repository 层确认 consult Run 的 role 既非空字符串也非 null。
+
+- [x] **T024**（`DR-002`, `DR-003`）：扩展Run repository/public mapping，保持F004 validator字段兼容。
+
+  **2026-07-20 完成**：`RunRepository.create()` 新增可选 `purpose`/`context_source_run_id` 入参并写入 v6 新列；`mapRow` 改为真读这两列（移除 Phase 2 占位值）；`workflow_step` 派生逻辑抽成 `deriveWorkflowStep()`，新增 consult 分支（返回 null，此前会被误判为 implementation）；新增 `listByIssueAndPurpose()`。F004 既有 validator 字段（role/validation_round/dispatch_source/adapter_identity）未改动，全部既有测试原样通过。
+
+**Checkpoint 3 达成**：secret不能越过service DTO边界（`AdapterConfigService` 全部对外方法经 `toPublicAdapter()`），Project default（首个自动、显式 set/clear、删除守卫）和Run routing（purpose/context_source_run_id/workflow_step consult 分支）可持久化审计。回归：`npm run typecheck`、`npm test`（server+web）、`npm run build` 全绿。
 
 ## Phase 4：Adapter配置、Auth Material与Registry
 

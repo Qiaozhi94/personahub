@@ -2,6 +2,10 @@ import type Database from "better-sqlite3";
 import type { Project } from "@personahub/shared/types";
 import { generateProjectId } from "../id.js";
 
+export type SetDefaultAdapterResult =
+  | { success: true }
+  | { success: false; reason: "adapter_not_found" | "cross_project" | "unavailable" };
+
 export class ProjectRepository {
   constructor(private db: Database.Database) {}
 
@@ -44,5 +48,37 @@ export class ProjectRepository {
     this.db.prepare(
       "UPDATE projects SET default_workspace_id = ?, updated_at = ? WHERE id = ?"
     ).run(workspaceId, updatedAt, projectId);
+  }
+
+  /**
+   * F005: set the Project's default adapter. SQLite can't enforce
+   * "same project + available" via a column-level FK (design §4.1), so this
+   * repository method validates both explicitly before writing.
+   */
+  setDefaultAdapter(projectId: string, adapterConfigId: string): SetDefaultAdapterResult {
+    const adapter = this.db.prepare(
+      "SELECT project_id, status FROM agent_configs WHERE id = ?"
+    ).get(adapterConfigId) as { project_id: string; status: string } | undefined;
+
+    if (!adapter) {
+      return { success: false, reason: "adapter_not_found" };
+    }
+    if (adapter.project_id !== projectId) {
+      return { success: false, reason: "cross_project" };
+    }
+    if (adapter.status !== "available") {
+      return { success: false, reason: "unavailable" };
+    }
+
+    this.db.prepare(
+      "UPDATE projects SET default_adapter_config_id = ?, updated_at = ? WHERE id = ?"
+    ).run(adapterConfigId, new Date().toISOString(), projectId);
+    return { success: true };
+  }
+
+  clearDefaultAdapter(projectId: string, updatedAt: string = new Date().toISOString()): void {
+    this.db.prepare(
+      "UPDATE projects SET default_adapter_config_id = NULL, updated_at = ? WHERE id = ?"
+    ).run(updatedAt, projectId);
   }
 }
