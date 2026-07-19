@@ -57,13 +57,14 @@ updated: 2026-07-19
 
   **背景**：本机实测（T000）三个 CLI 的路径形态不一致——Claude 是真 exe（`claude.exe`），Codex 和 OpenCode 都是 Windows 批处理 shim（`codex.cmd` / `opencode.cmd`）。Node `spawn` 在 `shell:false` 下无法直接执行 `.cmd`，这正是 F002 基线被迫写成 `shell: process.platform === "win32"` 的原因（见 `runtime/adapters/codex-cli-adapter.ts:196`、`codex-protocol.ts:83`）。若不处理，F005 三个 adapter 会出现"两个走 shell、一个不走"的分裂，`shell=true` 让命令串经过 `cmd.exe`，与 design 反复强调的"instructions/API key 绝不进 argv"的安全论证不自洽。
 
-  **要求**：
-  - 新增共享 executable resolver：给定用户配置的 command，若解析到 `.cmd`/`.bat` shim，则读取并解析出其转发的真实可执行文件路径（实测 `opencode.cmd` 仅一层转发到 `node_modules/opencode-ai/bin/opencode.exe`），失败时给出明确的不可用原因而不是静默回退到 shell。
-  - 三个 adapter（含 Codex）统一改为 `shell: false`；同步移除 `codex-cli-adapter.ts` 与 `codex-protocol.ts` 中的 `shell: process.platform === "win32"`。
-  - 覆盖 Windows 路径含空格、Unicode、相对路径、PATH 查找、shim 目标不存在、非 shim 的普通 exe 直通等情形。
-  - 回归：F002 现有 Codex 启动/probe 测试必须全绿，证明去掉 shell 后行为不变。
+  **关键**：shim 转发形态不止一种，resolver 不能简化为"返回一个 exe 路径"。本机实测 `opencode.cmd` 是单层转发到 `opencode.exe`，而 `codex.cmd` 转发的是 `node.exe + @openai/codex/bin/codex.js + %*`。契约必须能表达"可执行文件 + 前置参数"（design §6.1 的 `ResolvedExecutable { executable, prefixArgs, source }`）。
 
-  **阻塞关系**：本任务阻塞 T037（Claude argv/启动断言）和 T044（OpenCode argv/启动断言）——这两项的 `shell=false` 与"key 不进 argv"断言在解析器就位前无法成立。
+  按项目"先测试后实现"规则拆为两项：
+
+- [ ] **T009a-1**（`NFR-003`, `NFR-004`）：添加 executable resolver 测试，覆盖：直通 exe（`source="direct"`、`prefixArgs` 为空）、单层 exe 转发 shim、`node + 入口 js` 转发 shim（`prefixArgs` 正确）、目标 exe/入口文件不存在、未知或复杂 batch、PATH 查找、Windows 路径含空格与 Unicode、相对路径。断言解析失败一律产出 unavailable 原因，**任何分支都不得回退 `shell=true`**。
+- [ ] **T009a-2**（`NFR-003`, `NFR-004`, `AC-006`）：实现 resolver 并接入三个 adapter 的启动路径；只支持 fixture 固化的已知 npm shim 形态，参数经 `prefixArgs` 数组传递、禁止字符串拼接重建命令行。同步移除 `codex-cli-adapter.ts` 与 `codex-protocol.ts` 的 `shell: process.platform === "win32"`，三个 adapter 统一 `shell: false`。回归门槛：F002 现有 Codex 启动/probe 测试全绿，证明去掉 shell 后行为不变。
+
+  **阻塞关系**：本组任务阻塞 T037（Claude argv/启动断言）和 T044（OpenCode argv/启动断言）——这两项的 `shell=false` 与"key 不进 argv"断言在解析器就位前无法成立。
 
 - [ ] **T010**（`AC-001`, `AC-006`）：把所有fixtures加入test helpers并附CLI版本/字段说明；运行secret扫描确保无token/key/private path。
 
@@ -74,7 +75,7 @@ updated: 2026-07-19
 - [ ] **T011**（`DR-001` - `DR-005`）：添加shared类型编译/序列化测试，覆盖CliProvider/AuthType/Capability/RunPurpose、public AdapterConfig、write-only inputs、Run routing fields和provider metadata。
 - [ ] **T012**（`DR-001` - `DR-004`）：拆分/扩展shared adapter/run types并re-export；扩展F004 `RunRole`新增非空`consult`、扩展`RunDispatchSource`新增`user_default`，持久化枚举只增不改。
 - [ ] **T013**（`IR-001` - `IR-003`）：先补ErrorCode/HTTP映射测试，再新增auth/key/provider/default/purpose/status/conflict错误。
-- [ ] **T014**（`DR-001` - `DR-005`, `NFR-001`）：添加v6 migration集成测试，覆盖v5升级、重跑、旧Codex oauth解释、旧Run workflow_bound、非空`role='consult'`可插入且无需重建runs、capability backfill、due/default/index和既有summary不变。
+- [ ] **T014**（`DR-001` - `DR-005`, `NFR-001`）：添加v6 migration集成测试，覆盖v5升级、重跑、旧Codex oauth解释、旧Run workflow_bound、非空`role='consult'`可插入且无需重建runs、capability backfill、due/default/index和既有summary不变。**default 回填必须单独覆盖**（按 design §4.1 的收紧策略）：Project 恰有 1 个 available adapter → 回填该 adapter；0 个 → 保持 NULL；≥2 个 → 保持 NULL 不瞎猜；含 unavailable adapter 不计入；迁移重跑幂等。断言回填后旧 Project 省略 `adapter_id` 的 dispatch 不再返回 `DEFAULT_ADAPTER_UNAVAILABLE`（单 adapter 场景）。
 - [ ] **T015**（`DR-001` - `DR-005`）：实现`schema-v6.ts`并在`migrations.ts`注册为版本6（v5 已被 F004 占用，勿复用）；保留F004 `runs.role NOT NULL`并由shared enum新增`consult`值。
 - [ ] **T016**（`DR-005`, `FR-009`）：验证F004 **两条** validator 唯一索引在v6仍存在且对manual/system Run同时生效：`idx_runs_one_active_validator`（v4，active）与`idx_runs_validator_per_round`（v5，跨终态每轮唯一）；断言两者语义差异（本轮validator终态后前者放行、后者仍拦截）；不得重复创建冲突索引。
 
@@ -86,7 +87,7 @@ updated: 2026-07-19
 - [ ] **T018**（`DR-001`）：扩展repository输入/映射/查询；不得返回internal record给route。
 - [ ] **T019**（`DR-001`, `UX-002`）：添加`toPublicAdapter()`测试，使用高辨识secret验证任何层级JSON均无原值，只返回has_api_key/auth status/is_default。
 - [ ] **T020**（`DR-001`, `NFR-001`）：实现显式public DTO builder；禁止spread后删除secret模式。
-- [ ] **T021 [P]**（`FR-004`, `AC-002`）：添加ProjectRepository default adapter测试，覆盖set/clear、cross-project、不available、首个available自动default和删除default guard。
+- [ ] **T021 [P]**（`FR-004`, `AC-002`）：添加ProjectRepository default adapter测试，覆盖set/clear、cross-project、不available、首个available自动default和删除default guard；并覆盖 default 为 NULL 时省略 `adapter_id` 的 dispatch 返回 `DEFAULT_ADAPTER_UNAVAILABLE`（供 UI 强制显式选择一次）。
 - [ ] **T022**（`FR-004`）：扩展Project repository/service的default字段和CAS更新。
 - [ ] **T023 [P]**（`DR-002`, `DR-003`）：添加RunRepository purpose/non-null consult role/context source/source测试及workflow/consult列表过滤；拒绝null role。
 - [ ] **T024**（`DR-002`, `DR-003`）：扩展Run repository/public mapping，保持F004 validator字段兼容。
@@ -96,9 +97,9 @@ updated: 2026-07-19
 ## Phase 4：Adapter配置、Auth Material与Registry
 
 - [ ] **T025**（`FR-001`, `FR-002`, `AC-001`）：添加provider/auth字段矩阵测试：Codex/Claude仅OAuth、OpenCode OAuth/API key、互斥字段、switch清key、required provider/model/key、trim/limits。
-- [ ] **T026**（`FR-001`, `FR-002`, `IR-001`）：重构AdapterConfigService使用provider metadata校验并输出public DTO；移除统一`--version`可用性判断。**同时修掉create路径硬编码`capability_tags: []`**（`services/adapter-config.ts`），改为写入用户选择/provider默认的真实capability——否则v6 backfill只修历史数据，新建adapter仍会退化为无能力；补一条"新建adapter的capability_tags非空且与输入一致"的测试。
+- [ ] **T026**（`FR-001`, `FR-002`, `IR-001`）：重构AdapterConfigService使用provider metadata校验并输出public DTO；移除统一`--version`可用性判断。**同时修掉create路径硬编码`capability_tags: []`**（`services/adapter-config.ts`），改为写入用户选择/provider默认的真实capability——否则v6 backfill只修历史数据，新建adapter仍会退化为无能力；补一条"新建adapter的capability_tags非空且与输入一致"的测试。**并落实 `agent_configs.role` 的 deprecated 写入规则**（design §4.1）：create/update contract 不接收 role，服务端由 `capability_tags` 确定性派生（含 validator → `'validator'`，否则 `'implementation'`）仅为满足 NOT NULL；派生值不进 public DTO/API/UI，不参与任何选择逻辑；补测试断言 capability 更新后 role 派生稳定且 validator-only adapter 不会被存成 implementation。
 - [ ] **T027**（`FR-003`）：添加registry/capability测试，覆盖三provider注册/查找、duplicate throw、config provider匹配、auth capability，以及手动routing与自动ValidatorSelector共用`capability_tags`判断。
-- [ ] **T028**（`FR-003`）：注册Codex/Claude/OpenCode adapter singleton并扩展registry接口；实现共享`hasCapability()`并把自动validator候选查询从`agent_configs.role`切换为`capability_tags contains validator`。`listAvailableByProjectAndRole()`有**两个**调用点，必须一并切换，只改其一会让recovery路径继续使用旧真相源：`services/validation/workflow-service.ts`（request主路径）与`services/validation/recovery-service.ts`（重启recovery路径）。切换后该方法应无剩余调用点，直接删除以防回归；旧`agent_configs.role`仅作迁移/展示兼容。
+- [ ] **T028**（`FR-003`）：注册Codex/Claude/OpenCode adapter singleton并扩展registry接口；实现共享`hasCapability()`并把自动validator候选查询从`agent_configs.role`切换为`capability_tags contains validator`。`listAvailableByProjectAndRole()`有**两个**调用点，必须一并切换，只改其一会让recovery路径继续使用旧真相源：`services/validation/workflow-service.ts`（request主路径）与`services/validation/recovery-service.ts`（重启recovery路径）。切换后该方法应无剩余调用点，直接删除以防回归；旧`agent_configs.role`是 deprecated internal field，只用于迁移，**不再用于展示**（UI 的主要角色标签从 `capability_tags` 计算）。
 - [ ] **T029**（`FR-002`, `DR-001`, `NFR-001`）：添加AuthMaterial测试，覆盖API key allowlist/env或temp config、cleanup、异常清理、key不进argv/context/log和unknown provider拒绝。
 - [ ] **T030**（`FR-002`）：实现`runtime/auth-material.ts`及provider mapping，严格按Phase 1实测结果。
 - [ ] **T031**（`FR-001`, `FR-002`, `NFR-004`）：添加provider-specific child env测试，确保只暴露所需CLI auth目录，继续移除SSH agent/git helper/GH tokens，API-key模式不暴露home auth。
@@ -136,8 +137,8 @@ updated: 2026-07-19
 
 - [ ] **T049 [P]**（`FR-005`, `FR-006`, `AC-003`, `AC-004`）：添加RunContextBuilder测试；普通implementation/consult使用latest eligible prior handoff，validator严格绑定`implementation_run_id`对应handoff/evidence/files/tests，并覆盖Validating期间更新consult handoff不得串入、trusted evidence resolver allowlist 拒绝 `run.output` payload、findings、first Run、missing refs、Windows path和size limit。
 - [ ] **T050**（`FR-005`, `FR-006`）：实现带source policy的统一RunContextBuilder并替换F002手拼context；validator设置`context_source_run_id=implementation_run_id`，其他Run记录实际latest source。
-- [ ] **T051 [P]**（`FR-004`, `FR-007`, `AC-002`, `AC-005`）：添加expected-role/purpose classifier矩阵，覆盖Inbox/Ready/Running/Validating/Done/Blocked、multi-capability、forced consult、不能forced workflow和consult role始终非空。
-- [ ] **T052**（`FR-004`, `FR-007`）：实现pure routing classifier；Running期望implementation，Validating期望validator，未命中持久化`role=consult`。
+- [ ] **T051 [P]**（`FR-004`, `FR-007`, `AC-002`, `AC-005`）：添加expected-role/purpose classifier矩阵，覆盖Inbox/Ready/Running/Validating/Done/Blocked、multi-capability、forced consult、不能forced workflow和consult role始终非空；断言 consult 降级**无条件成立**（不检查任何 consult capability），且 `capability_tags` 为空时任何状态都只能 consult、不会误命中 workflow 角色。
+- [ ] **T052**（`FR-004`, `FR-007`）：实现pure routing classifier；Running期望implementation，Validating期望validator，未命中持久化`role=consult`。`AgentCapability` 只有 Implementation/Validator 两个值，classifier 不得引用不存在的 consult capability。
 - [ ] **T053 [P]**（`FR-003`, `FR-004`, `AC-002`）：添加AdapterResolver/ValidatorSelector测试，覆盖explicit/default、same project、available、missing/default stale、确定性source，以及只有`capability_tags`含validator的config才能被自动选择。
 - [ ] **T054**（`FR-003`, `FR-004`）：实现AdapterResolver并同步升级F004 ValidatorSelector；两者复用`hasCapability()`，禁止列表第一项随机fallback或继续以旧role作为能力真相源。
 
@@ -157,13 +158,15 @@ updated: 2026-07-19
 
 ## Phase 9：Validator Grace、互斥与Recovery
 
-- [ ] **T062**（`FR-006`, `FR-009`, `AC-004`, `AC-007`）：修改F004 request测试，implementation完成后同事务进入Validating/requested/set due，但grace窗口内不创建auto validator；同时断言注入grace=0时行为与F004原有"立即创建"完全一致。
-- [ ] **T063**（`FR-006`, `FR-009`）：把F004 validator creation拆为可复用`claimValidatorSlot()`；request path设置持久化due。拆分时必须把基线`workflow-service.ts`中**成对存在的两条前置检查**（`getActiveValidator` + `getValidatorRunByRound`）一起搬进来，只搬active那条会引入per-round回归。
+- [ ] **T061a**（`TR-004`, `FR-006`）：添加`validation.dispatch_pending`事件契约测试：shared payload 类型、写入时机（Phase A）、payload 含冻结的 round/implementation_run_id/policy snapshot+hash/due_at 且**不含**任何 validator 身份；断言 `validation.requested` 未在 Phase A 写出。
+- [ ] **T061b**（`TR-004`, `FR-006`）：实现 Phase A pending dispatch 事务与 `validation.dispatch_pending` 事件。**严禁**改写 `validation.requested` 的既有语义——它是 validator-bound 事件，`findRequestedEvent()` 按 `validator_run_id` 反查，workflow-service 有三个调用点，recovery-service 会补建，validation query 与 SSE replay 同样依赖；`validation.requested` 仍只在 Phase B 创建出真实 validator Run 后写出。
+- [ ] **T062**（`FR-006`, `FR-009`, `AC-004`, `AC-007`）：修改F004 request测试：implementation完成后同事务进入Validating、写`validation.dispatch_pending`、set due，grace窗口内不创建auto validator且**不写`validation.requested`**；grace到期进入Phase B后才写出携带真实validator身份的`validation.requested`；同时断言注入grace=0时最终事件序列与F004原有"立即创建"等价。
+- [ ] **T063**（`FR-006`, `FR-009`）：把F004 validator creation拆为可复用`claimValidatorSlot()`（即 Phase B），Phase A 只设置持久化due并冻结上下文。拆分时必须把基线`workflow-service.ts`中**成对存在的两条前置检查**（`getActiveValidator` + `getValidatorRunByRound`）一起搬进来，只搬active那条会引入per-round回归。Phase B 直接读取 Phase A 冻结的 round/implementation_run_id/policy snapshot，不重新推导，避免grace期间consult handoff导致被验证对象漂移。
 - [ ] **T064**（`FR-009`, `DR-005`）：添加manual-wins race测试：grace内explicit validator创建、清due、scheduler loser幂等、只有一个Run。
 - [ ] **T065**（`FR-009`, `DR-005`）：添加auto-wins race测试：due/default-now先创建，manual loser收到409+active summary、无重复event。
 - [ ] **T065a**（`FR-009`, `DR-005`, `AC-007`）：添加**per-round冲突**测试：本轮validator已进入终态（completed/failed/被`issue_state_changed_before_start`取消）后，manual与scheduler分别尝试为同一轮再创建validator，断言两者都被`idx_runs_validator_per_round`拒绝（active为空、不得落入未定义分支）、不bump round、不产生重复Run；manual收到409+该终态run摘要，scheduler幂等结束；重新验证只能经fail→Running→新round路径。
 - [ ] **T066**（`FR-006`, `FR-009`）：实现claim transaction和unique conflict映射；**冲突分流必须区分active冲突与per-round冲突两类**（见design §8.2表），loser分支不得无条件读active validator（per-round冲突时为null）。应用层检查仅优化信息。
-- [ ] **T067**（`US4`, `FR-009`）：添加ValidationDispatchScheduler fake clock测试，覆盖due前不跑、due后跑、多个Issue、shutdown、不重入和default unavailable Blocked。
+- [ ] **T067**（`US4`, `FR-009`）：添加ValidationDispatchScheduler fake clock测试，覆盖due前不跑、due后跑、多个Issue、shutdown、不重入，以及**无可用 validator 时 Blocked**。注意：到期自动派发走 `ValidatorSelector`（`capability_tags` 含 validator），**不是** Project default adapter；测试须包含"Project default 只有 implementation capability、但项目存在其他 validator adapter"的场景，断言自动验证正常进行而非 Blocked。
 - [ ] **T068**（`US4`）：实现1秒scheduler和集中10秒常量；spawn在transaction commit后。`MANUAL_VALIDATOR_GRACE_MS`必须**可注入**（构造参数/DI，默认10s），F004既有自动验证测试注入0ms还原"立即创建"语义；验收标准：F004现有验证套件的运行耗时不因本任务显著增加，也不得引入基于真实时钟的等待。
 - [ ] **T069**（`FR-006`, `AC-004`）：添加manual Claude/OpenCode validator pass/fail集成测试，EvidenceSummary identity/same-origin/source正确，完全复用F004 parser/gate/state。
 - [ ] **T070**（`FR-006`）：接通manual validator terminal到F004 ValidationWorkflowService，不新增parser/result route。
@@ -189,9 +192,9 @@ updated: 2026-07-19
 
 - [ ] **T083**（`UX-002`, `AC-001`）：先添加apiClient/use-adapters测试，覆盖provider metadata、新fields、key write-only、default mutation和validate errors。
 - [ ] **T084**（`UX-002`）：扩展apiClient/hooks query keys和mutations。
-- [ ] **T085**（`FR-001`, `FR-002`, `UX-002`）：添加动态Adapter dialog测试，覆盖provider/auth切换、required fields、OAuth instructions、API key configured/replace/clear、capability选择和不回填key。
+- [ ] **T085**（`FR-001`, `FR-002`, `UX-002`）：添加动态Adapter dialog测试，覆盖provider/auth切换、required fields、OAuth instructions、API key configured/replace/clear、capability选择（**只有 Implementation / Validator 两个复选框，不得出现 Consult**）和不回填key。
 - [ ] **T086**（`FR-001`, `FR-002`）：重构AdapterSettings provider-specific表单，必要时拆分`AdapterAuthFields`避免350行。
-- [ ] **T087**（`UX-002`, `FR-004`）：添加adapter list/default UI测试，覆盖provider/model/capability/auth/status/reason/default badge/set default/delete guard。
+- [ ] **T087**（`UX-002`, `FR-004`）：添加adapter list/default UI测试，覆盖provider/model/capability/auth/status/reason/default badge/set default/delete guard；status 必须同时展示 `last_checked_at`，文案表达"最近一次验证结果"而非实时状态（design §5.2）。
 - [ ] **T088**（`UX-002`, `FR-004`）：实现adapter cards/default action和honest approval capability note。
 
 ## Phase 12：Composer、Thread与Inspector UI
@@ -200,7 +203,7 @@ updated: 2026-07-19
 - [ ] **T090**（`UX-001`, `UX-004`）：实现独立`AgentSelector.tsx`并替换ThreadView原生条件select；未选时发送omitted adapter_id使用server default。
 - [ ] **T091**（`FR-007`, `UX-003`, `AC-005`）：添加composer routing测试，Running implementation/validator consult、Validating validator/mismatch consult、显式consult和终态disabled。
 - [ ] **T092**（`FR-007`, `UX-003`）：显示服务端推导预览；实际Run card始终以后端返回metadata为准。
-- [ ] **T093**（`FR-009`, `US4`）：添加Validating grace UI测试，倒计时仅提示、Use default now mutation、manual winner/conflict和刷新due状态。
+- [ ] **T093**（`FR-009`, `US4`）：添加Validating grace UI测试，倒计时仅提示、**"Start automatic validator now"** mutation、manual winner/conflict和刷新due状态。文案不得写"Use default now"或以任何方式暗示使用 Project default——自动验证走 `ValidatorSelector`，与 Project default 是两回事。
 - [ ] **T094**（`FR-009`）：实现grace banner/action，不用前端timer直接创建auto Run。
 - [ ] **T095**（`UX-003`, `TR-002`）：添加Thread Run card测试，workflow/consult badge、provider/model/source、context handoff链接和“不改变workflow”文字；覆盖`run.cancelled(reason=issue_state_changed_before_start)`展示明确的“指令因进入验证被取消、请重发”文案，不误示为已执行。
 - [ ] **T096**（`UX-003`）：扩展ThreadEvent/Run renderer；unknown provider/purpose安全fallback。
@@ -258,7 +261,8 @@ F003 + F004 implemented
 | `FR-003` Registry / capability真相源 | T027-T028, T053-T054 |
 | `FR-004` 手动选择/default | T021-T022, T051-T058, T075-T080, T089-T092 |
 | `FR-005` Handoff context | T004, T006, T035-T050, T095-T098 |
-| `FR-006` 手动validator | T041, T048, T062-T072, T093-T094 |
+| `FR-006` 手动validator | T041, T048, T061a-T061b（两阶段dispatch）, T062-T072, T093-T094 |
+| `TR-004` dispatch_pending事件 | T061a-T061b, T062, T082 |
 | `FR-007` consult分类 | T051-T060, T077-T079, T091-T098 |
 | `FR-008` escalation | T003, T008-T009, T031-T032, T039-T040, T046-T047, T059-T060, T104 |
 | `FR-009` validator互斥 | T016, T062-T072（含T065a per-round冲突）, T093-T094, T103 |

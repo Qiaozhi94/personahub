@@ -100,7 +100,8 @@ F001-F004 交付后，PersonaHub 能自动完成"一个 implementation agent + �
 
 **验收场景**：
 
-1. Given Issue 处于 `Validating`，when 用户手动指定一个 adapter 处理这一轮，then 该 Run 被标记为 validator 角色，其输出按 F004 `FR-003` 的规则解析为 pass/fail/blocked。
+1. Given Issue 处于 `Validating`，when 用户手动指定一个**具备 validator capability** 的 adapter 处理这一轮，then 该 Run 被标记为 validator 角色，其输出按 F004 `FR-003` 的规则解析为 pass/fail/blocked。
+   - 补充：若用户指定的 adapter **不具备** validator capability，则按 `FR-007` 判定为咨询性 Run，不驱动状态机——不是"Validating 时指定谁谁就是 validator"。
 2. Given 手动指定的 validator 与 implementation 使用不同的 `cli_provider`，when validation passed，then Evidence Summary 中 `same_origin_validation` 标记为 `false`。
 3. Given 用户在 Issue 处于 `Validating` 时没有手动指定，when 达到系统默认的等待时间或用户明确不介入，then 沿用 F004 已有的自动 validator 逻辑，不因为本 feature 的存在而破坏原有自动闭环。
 
@@ -326,11 +327,12 @@ F002 定义的凭据隔离和 escalation 机制应当对 Claude Code、OpenCode 
 - **TR-001**：手动创建 Run 时，`run.queued` payload 应当标注该 Run 是否为用户手动指定 adapter。
 - **TR-002**：咨询性 Run 完成时，应当有明确的 trace 记录其"不驱动状态机"的性质，避免用户误以为它是正式的 workflow 步骤。
 - **TR-003**：其余事件沿用 F002 / F003 / F004 已定义的 `run.*` / `validation.*` / `handoff.*` 事件，不新增重复概念。
+- **TR-004**：进入 `Validating` 但尚未选定 validator 的等待窗口，应当有独立的 `validation.dispatch_pending` 事件记录（携带冻结的 round / implementation_run_id / policy snapshot 与到期时间）。F004 已有的 `validation.requested` 是 validator-bound 事件（payload 含 `validator_run_id`，并被多处按该字段反查），必须保持原语义、在真正创建 validator Run 时才写出，不得改写为 pending 事件。
 
 ### API / 接口需求
 
 - **IR-001**：Adapter config 的创建/更新接口应当支持 `auth_type` 和 OpenCode 特有的 provider/model/API key 字段。
-- **IR-002**：F002 的创建 Run 接口（`adapter_id` 已必填）应当支持标注该 Run 的 purpose（workflow-bound / ad-hoc consult）。
+- **IR-002**：F002 的创建 Run 接口应当把 `adapter_id` 由必填改为**可选**——省略时解析 Project 默认 adapter（见 `FR-004`）——并支持标注该 Run 的 purpose（workflow-bound / ad-hoc consult）。
 - **IR-003**：读取 Issue 的接口应当能区分展示 workflow-bound Run 和咨询性 Run。
 
 ### UX 需求
@@ -450,7 +452,7 @@ Ad-hoc Consult Run
 | Claude Code / OpenCode 的会话模型、escalation 能力未实测 | Adapter 实现可能返工 | 参考已有源码调研证据：multica 对 Claude 的实现是 `claude -p --output-format stream-json`，stdin 传 prompt，`--resume <id>` 续接会话，cancellation 走 context cancel + ~10s WaitDelay；Claude 有真实的 `control_request` 前置审批通道（multica 已写好处理函数但未接入分发逻辑）；OpenCode 无此通道，只能走 `--dangerously-skip-permissions` 之类的 flag 网关。这些是二手证据，实现前仍需用本地实际安装的 CLI 版本做能力 probe，参考 F002 对 Codex 的 probe 方式。 |
 | OpenCode 的 API key 明文存储 | 本地文件/DB 被其他进程或备份泄露读取的风险 | 已按 `DR-001` 决定沿用 multica/clowder 的做法（明文 + 打码展示 + 文件权限保护），不做额外加密；如果后续认为风险不可接受，作为独立安全加固任务处理，不影响本 feature 交付 |
 | 手动 validator 和自动 validator 的边界不清楚，可能两套逻辑打架 | 状态机出现不一致或产生重复 Run | `FR-006` 复用 F004 现有解析规则；`FR-009` + `DR-005` 用数据库级 partial unique 约束保证同一 Issue 同一时刻只有一条 pending validator Run，参考 multica `agent_task_queue` 的唯一约束模式 |
-| 咨询性 Run 和 workflow-bound Run 的判定规则不清楚，可能误判 | 用户咨询性请求被误当成 validator，或反之 | `FR-007` 采用"@ 是否命中当前期望角色"作为判定信号（参考 clowder-ai Message/Invocation 解耦模式），不要求用户每次显式声明；边界场景（例如 @ 了一个同时具备多种能力的 adapter）留到 design 阶段细化 |
+| 咨询性 Run 和 workflow-bound Run 的判定规则不清楚，可能误判 | 用户咨询性请求被误当成 validator，或反之 | `FR-007` 采用"@ 是否命中当前期望角色"作为判定信号（参考 clowder-ai Message/Invocation 解耦模式），不要求用户每次显式声明；多能力 adapter 的边界已在 design 第 7.2 节定稿：Issue 状态决定本次唯一角色，不由 adapter 自选 |
 
 ## 12. 待确认问题
 

@@ -85,10 +85,13 @@ export enum AdapterAuthType {
   ApiKey = "api_key",
 }
 
+// 只描述"能承担哪个 workflow 角色"。consult 不是 capability——
+// 三个已接入 CLI 天然都能对话，把它做成可禁用只会凭空造出一个失败模式
+// （用户取消勾选 -> mismatch 时无法降级 -> 报错），对用户没有价值。
+// consult 是 routing 的 purpose/role，见 RunPurpose / RunRole。
 export enum AgentCapability {
   Implementation = "implementation",
   Validator = "validator",
-  Consult = "consult",
 }
 
 export enum RunPurpose {
@@ -200,8 +203,23 @@ CREATE INDEX IF NOT EXISTS idx_runs_issue_purpose_created
 - F005 通过 shared enum 新增 `role='consult'`，继续使用 F004 的 `role TEXT NOT NULL`；无需重建 `runs` 表，也不得把 consult 伪存成 implementation。现有 partial unique index只匹配`role='validator'`，语义不变。
 - 旧adapter解释为oauth，因为Codex既有登录态由CLI管理；旧Run为workflow_bound。
 - `default_adapter_config_id`因SQLite ALTER限制不加列级FK，由service验证同Project，删除adapter前检查并清/拒绝。新建首个available adapter若Project尚无default，自动设为default；后续只能显式修改。
+- **旧 Project 必须回填 default，否则是回归**：升级前的 Project 已有 Codex adapter，迁移后该列为 `NULL`；而 F005 把 `adapter_id` 改为 optional 后，省略 adapter 的 dispatch 会直接返回 `DEFAULT_ADAPTER_UNAVAILABLE`，等于打断既有 F002 使用路径。回填策略**不采用"按 created_at 取第一条 available"**——那正是 §7.1 明令禁止的"列表第一项"启发式，会把一个任意选择固化成用户以为自己设过的默认值。采用收紧版：
+
+  ```text
+  Project 恰好有 1 个 available adapter -> 回填为该 adapter
+  Project 有 0 个或 ≥2 个 available adapter -> 保持 NULL
+  ```
+
+  留 `NULL` 的 Project 由 UI 在首次省略 adapter 的 dispatch 时强制用户显式选择一次 default（`DEFAULT_ADAPTER_UNAVAILABLE` 的前端处理，见 §10.2）。单 adapter 场景（升级用户的绝大多数）零感知，多 adapter 场景不替用户瞎猜。
 - `api_key`明文存储。DB/runtime文件继续由本地文件权限保护，备份泄漏风险在UI帮助文本中明确；日志、error details、events禁止包含该列。
-- capability继续存`capability_tags` JSON；v6 migration把空数组按原`agent_configs.role`补为 `[implementation,consult]` 或 `[validator,consult]`。注意现状：`services/adapter-config.ts` 创建adapter时硬编码写入`capability_tags: []`，因此**现有全部adapter该字段都是空数组**；migration backfill只修历史数据，create路径必须在T026同步改为按provider/用户选择写入真实capability，否则新建adapter会立刻退化为无能力。迁移完成后`capability_tags`是能力判断唯一真相源，旧`agent_configs.role`只保留为兼容/主要展示角色，不再用于routing或自动ValidatorSelector。Repository解析非法JSON时将adapter标 unavailable，不猜能力。
+- **`agent_configs.role` 正式标记为 deprecated internal field**。该列是 `NOT NULL DEFAULT 'implementation'`，而 F005 的新 create/update contract 只接收 `capability_tags`、不再接收 role。若不定义写入规则，validator-only adapter 会静静地持久化成 `role='implementation'`，形成新的双真相源。规则：
+  - 不在任何 public DTO、API response 或 UI 中出现；
+  - 写入规则确定性派生自 `capability_tags`，仅为满足 NOT NULL 约束：含 `validator` 写 `'validator'`，否则写 `'implementation'`（含仅 implementation、以及既不含 validator 也不含 implementation 的边界情形）；
+  - 该派生值**绝不参与 routing 或 validator 选择**，`capability_tags` 是唯一真相源；
+  - repository/service/migration 测试必须断言 capability 更新后 role 派生值稳定且不影响任何选择逻辑。
+
+  不新增 `primary_capability` 字段——UI 的主要角色标签可直接从 `capability_tags` 计算，没必要再引入一列。
+- capability继续存`capability_tags` JSON；v6 migration把空数组按原`agent_configs.role`补为 `[implementation]` 或 `[validator]`。注意现状：`services/adapter-config.ts` 创建adapter时硬编码写入`capability_tags: []`，因此**现有全部adapter该字段都是空数组**；migration backfill只修历史数据，create路径必须在T026同步改为按provider/用户选择写入真实capability，否则新建adapter会立刻退化为无能力。迁移完成后`capability_tags`是能力判断唯一真相源，旧`agent_configs.role`只保留为兼容/主要展示角色，不再用于routing或自动ValidatorSelector。Repository解析非法JSON时将adapter标 unavailable，不猜能力。
 - `validation_dispatch_due_at`仅在Validating grace window存在；validator成功创建后同transaction清空。
 
 ### 4.2 Secret-safe repository model
@@ -239,6 +257,14 @@ UI展示provider-specific登录指令和“Validate login”操作：
 4. probe成功更新available/last_checked_at；失败更新unavailable和经过清洗的`auth_status_message`。
 
 具体auth probe命令必须在Phase 1对本机版本确认。若CLI没有稳定的非交互auth status命令，使用最小无workspace写入的prompt probe；失败不得被`--version`成功误判为已登录。
+
+**availability 是"最近一次验证结果"，不是实时状态**。P0 采用 validate-on-demand，不做周期性后台 probe，因此列表里的 available 可能已经过期（OAuth 在上次验证后失效）。UI 与文案必须如实表达这一点，不得声称实时：
+
+- 列表展示状态时**必须同时展示 `last_checked_at`**，让用户知道这是何时的结论；
+- **dispatch 或 Run 期间遭遇 auth failure，必须把该 adapter 更新为 unavailable** 并保存清洗后的原因——这是过期状态的主要收敛路径，比后台轮询更省资源也更准确；
+- 周期性 probe 标为后续增强，需要时再明确 scheduler、频率和资源边界，P0 不做。
+
+spec US1 场景 4「查看 Agents 列表时显示失效」据此理解为：列表反映最近一次验证 + 任何一次失败 dispatch 的收敛结果，而非打开页面即实时探测。
 
 ### 5.3 OpenCode API key material
 
@@ -300,14 +326,36 @@ F005 同时修改 F004 的自动validator候选查询：必须改为`status=avai
 | OpenCode | `opencode.cmd`，批处理 shim | 否 |
 | Codex | `codex.cmd`，批处理 shim | 否 |
 
-Node 的 `spawn` 在 `shell:false` 下无法直接执行 `.cmd`，F002 当时选择开 shell 绕过。正确解法是在启动前做一次可执行文件解析：`.cmd`/`.bat` shim 通常只是一层转发（实测 `opencode.cmd` 转发到 `node_modules/opencode-ai/bin/opencode.exe`），解析出真实 exe 路径后即可全部走 `shell=false`。
+Node 的 `spawn` 在 `shell:false` 下无法直接执行 `.cmd`，F002 当时选择开 shell 绕过。
 
-因此设计上新增一个共享的 executable resolver，位于 adapter 启动路径之前、对三个 provider 一视同仁：
+**shim 的转发形态不止一种**，resolver 不能简化为"解析出真实 exe 路径"。本机实测两种都存在：
 
-- 输入用户配置的 command，经 PATH 查找后若命中 shim，则解析其转发目标；
-- 解析失败**不得静默回退到 `shell=true`**，而是把该 adapter 标为 unavailable 并给出明确原因——否则安全降级会在用户无感知的情况下发生；
-- 非 shim 的普通可执行文件直通，不做多余处理；
-- Codex 一并切换，`shell: process.platform === "win32"` 从基线移除，F002 既有启动/probe 测试作为回归门槛。
+```bat
+:: opencode.cmd —— 单层转发到真实 exe
+"%dp0%\node_modules\opencode-ai\bin\opencode.exe" %*
+
+:: codex.cmd —— 转发到 node.exe + 入口 js + 用户参数
+"%_prog%" "%dp0%\node_modules\@openai\codex\bin\codex.js" %*
+```
+
+若 resolver 只返回一个路径，Codex 在 `shell=false` 下无法保持原行为。因此解析结果必须能表达"可执行文件 + 前置参数"：
+
+```ts
+interface ResolvedExecutable {
+  executable: string;      // 真实可执行文件绝对路径
+  prefixArgs: string[];    // 置于用户 args 之前，如 [".../codex.js"]
+  source: "direct" | "verified_shim";
+}
+```
+
+共享的 executable resolver 位于 adapter 启动路径之前、对三个 provider 一视同仁：
+
+- **只支持经 fixture 固化的已知 npm shim 形态**，不做通用 batch 解释——通用解析会扩大命令注入面和误解析风险；
+- 解析出的目标可执行文件与入口文件必须存在,否则视为解析失败；
+- 参数边界通过 `prefixArgs` 数组传递，**不得**用字符串拼接重建命令行；
+- 未知/复杂 batch 文件、解析失败：把该 adapter 标为 unavailable 并给出明确原因，**既不执行、也不回退 `shell=true`**——否则安全降级会在用户无感知的情况下发生；
+- 非 shim 的普通可执行文件走 `source="direct"`，`prefixArgs` 为空，不做多余处理；
+- Codex 一并切换，`shell: process.platform === "win32"` 从基线移除（`runtime/adapters/codex-cli-adapter.ts`、`codex-protocol.ts`），F002 既有启动/probe 测试作为回归门槛。
 
 对应任务见 `tasks.md` T009a，它阻塞 Claude（T037）和 OpenCode（T044）的 argv 断言。
 
@@ -380,9 +428,10 @@ Done / Blocked          -> no Run allowed
 
 1. 请求`purpose=ad_hoc_consult`时始终consult（仅非终态）。
 2. `purpose=auto`/omitted时，selected adapter capability包含expected role => workflow_bound +该role。
-3. 不包含expected role => ad_hoc_consult + role=consult。
+3. 不包含expected role => ad_hoc_consult + role=consult。这条降级**无条件成立**，不检查任何 consult capability——consult 不是 adapter 能力（§3），所以不存在"该 adapter 不能 consult"的情形，也就不会出现"既不能承接 workflow 又不能降级"的死角。
 4. Validating时只有validator capability可命中；implementation-only adapter不会误推进validation。
 5. `capability_tags`可包含多项；当前Issue状态决定本次唯一role，不由adapter自行选择。
+6. `capability_tags` 为空（例如 JSON 非法被判 unavailable 之外的边界）时，任何状态下都只能 consult，不会误命中 workflow 角色。
 
 这细化了spec `FR-007`：Running阶段期望implementation；“Running时@ validator”是consult，“Validating时@ validator”才是workflow-bound。否则F004 fail后的用户修复Run无法回到自动验证闭环。
 
@@ -429,15 +478,57 @@ Done/Blocked下所有queued Run、以及状态已推进后不再匹配的impleme
 
 ## 8. 手动/自动Validator互斥
 
-### 8.1 10秒grace window
+### 8.1 10秒grace window与两阶段dispatch
 
-F005修改F004 request流程：implementation完成后仍在同一事务进入Validating并写`validation.requested`，但不立即创建自动Run；设置`validation_dispatch_due_at = now + 10s`。UI立即显示“Choose a validator within 10s / Use default now”。
+**为什么必须两阶段**：F004 的 `validation.requested` 是**validator-bound**事件——payload 携带 `validator_run_id` / `validator_adapter_config_id`，`findRequestedEvent(repo, threadId, validatorRunId)` 按 `validator_run_id` 反查，workflow-service 有三个调用点，recovery-service 还会补建该事件，validation query 和 SSE replay 也依赖它。grace window 开始的那一刻 validator Run 尚不存在，因此**不可能**写出符合现有 contract 的 `validation.requested`；若先写空 ID，F004 的查询、recovery、result submission 和 Evidence Summary 会同时失去关联依据。
+
+因此 F005 把原本的一次 request 拆成两个事务，**不改动 `validation.requested` 的既有语义**：
+
+```text
+Phase A — pending dispatch（implementation 完成时）
+  -> Issue = Validating
+  -> 冻结 round / implementation_run_id / policy snapshot + hash
+  -> 持久化 validation_dispatch_due_at = now + MANUAL_VALIDATOR_GRACE_MS
+  -> 写 validation.dispatch_pending（新事件，不含 validator 身份）
+
+Phase B — winner claim（手动选择 或 scheduler 到期）
+  -> claimValidatorSlot() 创建真实 validator Run
+  -> 清 validation_dispatch_due_at
+  -> 写 validation.requested（沿用 F004 payload，携带真实 validator 身份）
+  -> 写 run.queued
+```
+
+**方案选择**：新增 `validation.dispatch_pending` 事件，而不是把 `validation.requested` 重新定义为 pending 事件。后者波及最广——要改一个已有多方消费者（三个 `findRequestedEvent` 调用点、recovery 补建逻辑、validation query、SSE replay）的既有契约，收益却与前者相同。实现时**不得**选择重定义方案。
+
+Phase A 冻结的 round / implementation_run_id / policy snapshot + hash 必须持久化，Phase B 直接读取，不重新推导——否则 grace 期间若有 consult Run 产生新 handoff，被验证对象会漂移（§6.5 已有的同一约束）。
+
+`validation.dispatch_pending` payload 只含 Phase A 已知的信息：
+
+```json
+{
+  "issue_id": "...", "thread_id": "...", "workspace_id": "...",
+  "validation_round": 3,
+  "implementation_run_id": "...",
+  "policy_id": "...", "policy_version": 2,
+  "policy_snapshot": { }, "policy_snapshot_hash": "sha256:...",
+  "dispatch_due_at": "2026-07-19T13:05:10.000Z"
+}
+```
 
 计时不是前端定时器真相：`ValidationDispatchScheduler`每秒查询due Issue，server startup也reconcile。10秒是集中常量`MANUAL_VALIDATOR_GRACE_MS`，P0不做用户配置。
 
 `MANUAL_VALIDATOR_GRACE_MS` 必须**可注入**（构造参数或依赖注入，默认 10s），不能写死读取模块常量。理由：这条 grace 改变了 F004 既有自动闭环的时序——implementation 完成后不再立即产生 validator Run。F004 现有的自动验证集成测试如果只能等真实 10 秒，要么整体变慢，要么退化成时间敏感的脆测试。测试注入 0ms 即可保持 F004 原有的"立即创建"语义，回归成本为零。
 
-`POST /api/issues/:id/validation`沿用F004接口，F005语义为“Use default now”：清due并尝试创建默认validator。
+**两种 default 必须分开,不得合并**：
+
+| | 用途 | 解析方式 |
+| --- | --- | --- |
+| Project default adapter | composer 省略 `adapter_id` 时的普通/手动 Run | `AdapterResolver`，§7.1 |
+| 自动 validator | grace 到期或用户点"立即开始自动验证" | **始终** `ValidatorSelector`：`status=available AND capability_tags contains 'validator'` |
+
+Project default 完全可能是一个只有 implementation capability 的 adapter。若实现者把两者合并，Project 明明有可用 validator，也会因为通用 default 不具备 validator capability 而错误 Blocked。自动路径永远走 `ValidatorSelector`，与 F004 既有行为一致。
+
+因此 UI 文案用 **"Start automatic validator now"**，不用"Use default now"——后者会暗示使用 Project default。`POST /api/issues/:id/validation`沿用F004接口，F005语义为"立即结束 grace 并按 `ValidatorSelector` 创建自动 validator"：清due并进入 Phase B。
 
 ### 8.2 Winner transaction
 
@@ -516,7 +607,7 @@ GET /api/adapter-providers
 
 ### 10.1 Adapter Settings
 
-创建/编辑dialog：provider -> auth type -> provider-specific字段逐级显示；capability用Implementation/Validator/Consult复选框。API key输入永不回填，已配置显示“Configured ••••”；替换/clear是显式动作。
+创建/编辑dialog：provider -> auth type -> provider-specific字段逐级显示；capability用 Implementation / Validator 两个复选框（**没有 Consult 复选框**，见§3：consult 不是可配置能力，任何 adapter 都能承接咨询）。API key输入永不回填，已配置显示“Configured ••••”；替换/clear是显式动作。
 
 列表展示provider、model、capabilities、OAuth logged in/API key configured、availability和default badge。不可用原因使用清洗后的message。OAuth区域给出可复制登录命令和“Validate login”，不声称PersonaHub完成登录。
 
@@ -526,7 +617,7 @@ selector始终可见，不因只有一个adapter而隐藏：
 
 - 第一项为Project default并标名称/provider；
 - available adapters可选；unavailable保留但disabled并说明原因；
-- 显示capability和当前推导结果（“Implementation workflow”/“Validator workflow”/“Consult only”）；
+- 显示capability和当前推导结果（"Implementation workflow"/"Validator workflow"/"Consult（不改变 Issue 状态）"，后者是未命中期望角色时的降级结果，不是 adapter 的一种配置）；
 - Validating grace期间显示倒计时仅作提示，server due timestamp是真相；提供“Use default validator now”。
 
 发送后card显示实际adapter/provider/source，避免default在之后修改造成历史误解。
@@ -628,6 +719,11 @@ Run cards增加purpose badge和provider/model；consult使用中性样式和明�
 | Project持久化default adapter | 未选择时必须确定且可解释 | 列表第一项；删除/排序后行为漂移 |
 | 服务端推导workflow-bound | 防止客户端错误/恶意驱动状态机 | 客户端直接传role；不可信 |
 | 允许显式强制consult，不允许强制workflow | consult是安全降级，workflow需要状态/capability证明 | 完全无purpose字段；难满足IR-002和高级用法 |
+| consult 不做成 adapter capability | 三个CLI天然都能对话；可禁用只会造出"无法降级"的死角，用户得不到任何好处 | 保留Consult复选框；配置项不产生任何行为差异，是假配置 |
+| 两阶段dispatch + 新增dispatch_pending事件 | `validation.requested`是validator-bound且有多方消费者，grace开始时validator尚不存在 | 重定义requested为pending；波及三个findRequestedEvent调用点、recovery补建、query与SSE replay |
+| 两种default严格分离 | Project default可能只有implementation能力，合并会导致有validator却Blocked | 自动验证复用Project default；引入"default必须具备validator能力"的强约束，削弱其通用用途 |
+| 旧Project default只在唯一available时回填 | 避免把任意选择固化成用户以为设过的默认值 | 按created_at取第一条；正是§7.1禁止的启发式 |
+| `agent_configs.role`标deprecated并由capability派生 | 满足NOT NULL又不产生第二个真相源 | 新增primary_capability列；可从capability_tags算出，无需加列 |
 | Running期望implementation | 保证F004 fail后的修复Run能继续闭环 | Running所有@均consult；闭环无法推进 |
 | 10秒持久化grace | 满足手动validator介入且可跨重启 | F004立即创建；用户几乎无法抢先；纯前端timer不可靠 |
 | DB partial unique决定validator winner | 跨async callback/restart正确 | 进程内mutex；无法覆盖DB race |
@@ -661,7 +757,7 @@ Run cards增加purpose badge和provider/model；consult使用中性样式和明�
 - **已关闭：OAuth实现范围**——CLI-owned login + PersonaHub validation，不实现内置OAuth。
 - **已关闭：OpenCode secret存储**——本地SQLite明文，HTTP/event/log完全不返回。
 - **已关闭：workflow/consult判定**——按Issue expected role和capability推导；Running期望implementation；客户端可强制consult但不能强制workflow。
-- **已关闭：manual/auto validator时序**——10秒持久化grace + F004 partial unique winner；“Use default now”复用validation endpoint。
+- **已关闭：manual/auto validator时序**——两阶段dispatch（`validation.dispatch_pending` -> `validation.requested`）+ 10秒持久化grace + F004 unique index winner；"Start automatic validator now"复用validation endpoint，自动验证走`ValidatorSelector`而非Project default。
 - **已关闭：OpenCode escalation**——credential isolation是主防线，不宣称协议级前置拦截。
 - **已关闭：default行为**——Project显式持久化default，不随机fallback。
 
