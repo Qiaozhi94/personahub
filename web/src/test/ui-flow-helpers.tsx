@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import {
   AdapterStatus,
+  AdapterAuthType,
+  RunPurpose,
   IssuePriority,
   IssueStatus,
   IssueType,
@@ -106,6 +108,11 @@ export function createAdapter(overrides: Partial<AdapterConfig> = {}): AdapterCo
     last_checked_at: TIMESTAMP,
     created_at: TIMESTAMP,
     updated_at: TIMESTAMP,
+    auth_type: AdapterAuthType.OAuth,
+    model_provider: null,
+    has_api_key: false,
+    auth_status_message: null,
+    is_default: false,
     ...overrides,
   };
 }
@@ -130,6 +137,8 @@ export function createRun(overrides: Partial<Run> = {}): Run {
     dispatch_source: RunDispatchSource.UserExplicit,
     adapter_identity: null,
     has_final_message: false,
+    purpose: RunPurpose.WorkflowBound,
+    context_source_run_id: null,
     created_at: TIMESTAMP,
     updated_at: "2026-07-16T00:01:00.000Z",
     ...overrides,

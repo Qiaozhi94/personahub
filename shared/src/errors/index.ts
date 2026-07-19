@@ -12,6 +12,9 @@ import type {
   AdapterConfig,
   RunStatus,
   IssueWithRun,
+  CliProvider,
+  AdapterAuthType,
+  AgentCapability,
 } from "../types/index.js";
 
 export {
@@ -56,6 +59,12 @@ export enum ErrorCode {
   EVIDENCE_REQUIREMENTS_NOT_MET = "EVIDENCE_REQUIREMENTS_NOT_MET",
   EVIDENCE_SUMMARY_NOT_FOUND = "EVIDENCE_SUMMARY_NOT_FOUND",
   OPERATOR_NOTE_REQUIRED = "OPERATOR_NOTE_REQUIRED",
+  ADAPTER_AUTH_INVALID = "ADAPTER_AUTH_INVALID",
+  ADAPTER_API_KEY_REQUIRED = "ADAPTER_API_KEY_REQUIRED",
+  ADAPTER_MODEL_PROVIDER_UNSUPPORTED = "ADAPTER_MODEL_PROVIDER_UNSUPPORTED",
+  DEFAULT_ADAPTER_UNAVAILABLE = "DEFAULT_ADAPTER_UNAVAILABLE",
+  RUN_PURPOSE_INVALID = "RUN_PURPOSE_INVALID",
+  RUN_NOT_ALLOWED_FOR_ISSUE_STATUS = "RUN_NOT_ALLOWED_FOR_ISSUE_STATUS",
   INTERNAL_ERROR = "INTERNAL_ERROR",
 }
 
@@ -132,12 +141,19 @@ export interface ThreadEventListResponse {
 }
 
 export interface AdapterConfigCreateInput {
-  cli_provider: string;
+  cli_provider: CliProvider;
+  auth_type: AdapterAuthType;
   name: string;
   role?: string;
   command: string;
   args?: string[];
   default_model?: string;
+  /** Required for opencode api_key auth; unused/rejected otherwise. */
+  model_provider?: string;
+  /** Write-only: never echoed back in any response. */
+  api_key?: string;
+  capability_tags: AgentCapability[];
+  make_default?: boolean;
 }
 
 export interface AdapterConfigCreateResponse {
@@ -154,6 +170,11 @@ export interface AdapterConfigUpdateInput {
   command?: string;
   args?: string[];
   default_model?: string;
+  auth_type?: AdapterAuthType;
+  model_provider?: string;
+  /** omitted preserves; null clears; non-empty string replaces. */
+  api_key?: string | null;
+  capability_tags?: AgentCapability[];
 }
 
 export interface AdapterConfigUpdateResponse {
@@ -166,7 +187,10 @@ export interface AdapterConfigValidateResponse {
 
 export interface RunCreateInput {
   instructions: string;
-  adapter_id: string;
+  /** Omitted => resolve Project default adapter. */
+  adapter_id?: string;
+  /** Default "auto"; client cannot request "workflow_bound" — the server derives it. */
+  purpose?: "auto" | "ad_hoc_consult";
 }
 
 export interface RunCreateResponse {

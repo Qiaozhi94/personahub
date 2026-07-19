@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { AdapterConfigCreateInput } from "@personahub/shared";
+import { AdapterConfigCreateInput, CliProvider } from "@personahub/shared";
 import { AdapterSettings } from "@/components/adapter/AdapterSettings";
 import { createAdapter, renderWithQuery } from "@/test/ui-flow-helpers";
 
@@ -49,7 +49,7 @@ describe("AdapterSettings - role configuration", () => {
 
     await waitFor(() => {
       expect(apiClient.adapters.create).toHaveBeenCalledWith("prj_1", expect.objectContaining({
-        cli_provider: "codex",
+        cli_provider: CliProvider.Codex,
         name: "Validator",
         command: "codex",
         role: "validator",

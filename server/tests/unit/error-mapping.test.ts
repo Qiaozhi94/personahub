@@ -144,4 +144,40 @@ describe("Error Status Mapping", () => {
       expect(getErrorStatus(ErrorCode.ADAPTER_ROLE_INVALID)).toBe(400);
     });
   });
+
+  describe("F005 manual routing error codes (design §9.5)", () => {
+    it("ADAPTER_AUTH_INVALID exists and maps to 400", () => {
+      expect(ErrorCode.ADAPTER_AUTH_INVALID).toBe("ADAPTER_AUTH_INVALID");
+      expect(getErrorStatus(ErrorCode.ADAPTER_AUTH_INVALID)).toBe(400);
+    });
+
+    it("ADAPTER_API_KEY_REQUIRED exists and maps to 400", () => {
+      expect(ErrorCode.ADAPTER_API_KEY_REQUIRED).toBe("ADAPTER_API_KEY_REQUIRED");
+      expect(getErrorStatus(ErrorCode.ADAPTER_API_KEY_REQUIRED)).toBe(400);
+    });
+
+    it("ADAPTER_MODEL_PROVIDER_UNSUPPORTED exists and maps to 400", () => {
+      expect(ErrorCode.ADAPTER_MODEL_PROVIDER_UNSUPPORTED).toBe("ADAPTER_MODEL_PROVIDER_UNSUPPORTED");
+      expect(getErrorStatus(ErrorCode.ADAPTER_MODEL_PROVIDER_UNSUPPORTED)).toBe(400);
+    });
+
+    it("DEFAULT_ADAPTER_UNAVAILABLE exists and maps to 409", () => {
+      expect(ErrorCode.DEFAULT_ADAPTER_UNAVAILABLE).toBe("DEFAULT_ADAPTER_UNAVAILABLE");
+      expect(getErrorStatus(ErrorCode.DEFAULT_ADAPTER_UNAVAILABLE)).toBe(409);
+    });
+
+    it("RUN_PURPOSE_INVALID exists and maps to 400", () => {
+      expect(ErrorCode.RUN_PURPOSE_INVALID).toBe("RUN_PURPOSE_INVALID");
+      expect(getErrorStatus(ErrorCode.RUN_PURPOSE_INVALID)).toBe(400);
+    });
+
+    it("RUN_NOT_ALLOWED_FOR_ISSUE_STATUS exists and maps to 409", () => {
+      expect(ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS).toBe("RUN_NOT_ALLOWED_FOR_ISSUE_STATUS");
+      expect(getErrorStatus(ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS)).toBe(409);
+    });
+
+    it("VALIDATOR_RUN_CONFLICT (already existed for F004) still maps to 409 — reused for F005 manual/auto race, not redefined", () => {
+      expect(getErrorStatus(ErrorCode.VALIDATOR_RUN_CONFLICT)).toBe(409);
+    });
+  });
 });

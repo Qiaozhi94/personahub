@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
-import type { AdapterConfig, AdapterStatus } from "@personahub/shared/types";
+import type { AdapterConfig, AdapterStatus, AgentCapability } from "@personahub/shared/types";
+import { AdapterAuthType } from "@personahub/shared/types";
 import { generateAdapterConfigId } from "../id.js";
 
 export interface AdapterConfigCreateInput {
@@ -50,12 +51,23 @@ function mapRow(row: AdapterConfigRow): AdapterConfig {
     cli_provider: row.cli_provider,
     command: row.command,
     args: JSON.parse(row.args ?? "[]") as string[],
-    capability_tags: JSON.parse(row.capability_tags ?? "[]") as string[],
+    capability_tags: JSON.parse(row.capability_tags ?? "[]") as AgentCapability[],
     default_model: row.default_model,
     status: row.status as AdapterStatus,
     last_checked_at: row.last_checked_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    // F005 schema v6 (T015) adds agent_configs.auth_type/model_provider/api_key/
+    // auth_status_message columns; Phase 3 (T017-T020) wires real reads and an
+    // explicit secret-safe public DTO builder. `is_default` is never a DB column
+    // here (design §4.2) — it's a Project-scoped projection only the service
+    // layer can compute; the repository has no Project context to derive it,
+    // so this placeholder is honestly false, not a real answer, until then.
+    auth_type: AdapterAuthType.OAuth,
+    model_provider: null,
+    has_api_key: false,
+    auth_status_message: null,
+    is_default: false,
   };
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { Trash2, RefreshCw, Cpu, AlertTriangle } from "lucide-react";
-import { AdapterStatus, type AdapterConfig, type AdapterConfigCreateInput } from "@personahub/shared";
+import { AdapterStatus, CliProvider, AdapterAuthType, AgentCapability, type AdapterConfig, type AdapterConfigCreateInput } from "@personahub/shared";
 import { useAdapters, useCreateAdapter, useUpdateAdapter, useDeleteAdapter, useValidateAdapter } from "@/hooks/use-adapters";
 import { toApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -247,12 +247,19 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
       );
     } else {
       const input: AdapterConfigCreateInput = {
-        cli_provider: "codex",
+        cli_provider: CliProvider.Codex,
+        auth_type: AdapterAuthType.OAuth,
         name,
         role,
         command,
         args: args.length > 0 ? args : undefined,
         default_model: defaultModel.trim() || undefined,
+        // F005 Phase 11 (T085-T086) replaces this single-role selector with a
+        // real Implementation/Validator capability picker; until then this
+        // dialog only creates Codex/OAuth adapters, so deriving a one-item
+        // capability list from the existing role field is behaviorally
+        // equivalent to F002, not a new feature.
+        capability_tags: role === "validator" ? [AgentCapability.Validator] : [AgentCapability.Implementation],
       };
       createAdapter.mutate(input, { onSuccess: handleOpenChange });
     }

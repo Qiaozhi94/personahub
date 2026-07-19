@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import type { Run, RunStatus, FailureReason, RunRole, RunDispatchSource, AdapterIdentitySnapshot } from "@personahub/shared/types";
-import { RunRole as RR, RunDispatchSource as RDS } from "@personahub/shared/types";
+import { RunRole as RR, RunDispatchSource as RDS, RunPurpose } from "@personahub/shared/types";
 import { generateRunId } from "../id.js";
 
 export interface RunCreateInput {
@@ -66,6 +66,12 @@ function mapRow(row: RunRow): Run {
       ? (JSON.parse(row.adapter_identity_json) as AdapterIdentitySnapshot)
       : null,
     has_final_message: row.final_message !== null,
+    // F005 schema v6 (T015) adds runs.purpose/context_source_run_id columns and
+    // RunRow/mapRow will read real values; Phase 8 (T055-T056) starts writing
+    // non-default purpose/context source. Until then every existing Run is
+    // workflow_bound with no context source, matching v6's migration DEFAULT.
+    purpose: RunPurpose.WorkflowBound,
+    context_source_run_id: null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

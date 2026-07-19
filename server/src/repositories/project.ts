@@ -18,6 +18,8 @@ export class ProjectRepository {
       description,
       default_workspace_id: null,
       default_coordinator_agent_id: null,
+      // F005 schema v6 adds this column; a freshly created Project has no default yet.
+      default_adapter_config_id: null,
       created_at: now,
       updated_at: now,
     };

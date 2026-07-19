@@ -1,4 +1,5 @@
 import type { RunRole, RunDispatchSource, AdapterIdentitySnapshot, ValidationBlockReason } from "./validation.js";
+import type { AdapterAuthType, AgentCapability, RunPurpose } from "./adapter.js";
 
 export interface Project {
   id: string;
@@ -6,6 +7,8 @@ export interface Project {
   description: string | null;
   default_workspace_id: string | null;
   default_coordinator_agent_id: string | null;
+  /** F005: Project-level default adapter, resolved when a Run omits adapter_id. */
+  default_adapter_config_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -229,6 +232,10 @@ export interface Run {
   dispatch_source: RunDispatchSource;
   adapter_identity: AdapterIdentitySnapshot | null;
   has_final_message: boolean;
+  /** F005: workflow_bound (drives Issue state machine) vs ad_hoc_consult. */
+  purpose: RunPurpose;
+  /** F005: Run whose Handoff Packet/evidence this Run's context was assembled from; null for the first Run. */
+  context_source_run_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -241,12 +248,28 @@ export interface AdapterConfig {
   cli_provider: string;
   command: string;
   args: string[];
-  capability_tags: string[];
+  capability_tags: AgentCapability[];
   default_model: string | null;
   status: AdapterStatus;
   last_checked_at: string | null;
   created_at: string;
   updated_at: string;
+  auth_type: AdapterAuthType;
+  model_provider: string | null;
+  /** Write-only secret projection: whether an API key is configured. Never carries the raw value. */
+  has_api_key: boolean;
+  auth_status_message: string | null;
+  /** Service-computed projection against Project.default_adapter_config_id; not a DB column on agent_configs. */
+  is_default: boolean;
+}
+
+export interface ProjectDefaultAdapterInput {
+  /** null only allowed when the Project has no adapters left to default to. */
+  adapter_id: string | null;
+}
+
+export interface ProjectDefaultAdapterResponse {
+  adapter: AdapterConfig | null;
 }
 
 export interface IssueWithRun extends Issue {
@@ -264,3 +287,4 @@ export interface RunSummary {
 
 export * from "./trace.js";
 export * from "./validation.js";
+export * from "./adapter.js";

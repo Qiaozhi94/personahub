@@ -1,13 +1,20 @@
 import type { ValidationFindingSeverity, VerificationKind } from "./trace.js";
 import type { IssueStatus, RunSummary, Issue, Run } from "./index.js";
 
+// Extended by F005: adds a persisted, non-null Consult value for ad-hoc
+// Runs that don't drive the Issue state machine. Never write null/implementation
+// as a stand-in for consult — see design.md §4.1.
 export enum RunRole {
   Implementation = "implementation",
   Validator = "validator",
+  Consult = "consult",
 }
 
+// Extended by F005: adds UserDefault for Runs dispatched via the Project's
+// persisted default adapter (as opposed to an explicit user selection).
 export enum RunDispatchSource {
   UserExplicit = "user_explicit",
+  UserDefault = "user_default",
   System = "system",
 }
 
