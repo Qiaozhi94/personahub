@@ -171,18 +171,18 @@ updated: 2026-07-19
 
 > 以下任务由 2026-07-19 final review 新增，按本文档位置先于最终端到端验证执行；任务 ID 保留在原有 T001-T089 之后，避免改写历史引用。
 
-- [ ] **T090**（`FR-002`, `FR-005`, `AC-002`, `AC-005`）：把 `buildValidatorContext()` 接入 validator Run 生产创建/dispatch instructions，把 `buildRepairContext()` 接入下一条用户发起的 implementation Run；添加集成测试断言实际 adapter 收到 goal、目标 implementation handoff/files/tests/refs、固化 policy 和 latest findings，且不串入 consult/其他 Run。
-- [ ] **T091**（`FR-003`, `AC-003`）：补齐 strict envelope `outcome=blocked` 的 production submission path；同事务持久化 blocker columns + `validation.blocked` 并进入 Blocked，覆盖 missing evidence/findings reason、重复 callback、restart recovery。
-- [ ] **T092**（`FR-007`, `FR-010`, `AC-004`, `AC-009`, `IR-006`）：workflow 构建 Evidence Summary 时传入真实 implementation handoff、commands、verification 和 file evidence，不得用 `handoff:null`/`commands:[]` 代替已有数据；Inspector 增加 Copy Markdown / Download Markdown，并补 API/UI/E2E 测试。
-- [ ] **T093**（`DR-007`, `NFR-001`, `AC-010`）：增加同一 `issue_id + validation_round` 仅一条 validator Run 的 DB/service invariant；显式 trigger 遇到 current-round terminal Run 时处理/返回现有 Run，不新建；覆盖 terminal-to-result 并发窗口、unique conflict、restart。
-- [ ] **T094**（`FR-011`, `AC-011`, `IR-007`, `UX-007`）：实现仅限 `round_limit_reached` blocker 的显式 round reset service/API/event/UI；要求非空 note，count 置 0 后 Issue 仍 Blocked，普通 unblock 保持 count；补事务、SSE replay、权限/状态和 UI 测试。
-- [ ] **T095**（`DR-004`, `DR-007`, `NFR-001`, `AC-010`）：强化 schema/migration invariant：Evidence Summary `validation_result='passed'`、same-origin boolean、policy hash 形状和 per-round validator unique index；覆盖空库、v3升级、重跑和非法写入。若已有数据库记录 schema v4，使用 v5 migration，不得只修改 v4 常量后假设旧库重跑。
+- [x] **T090**（`FR-002`, `FR-005`, `AC-002`, `AC-005`）：把 `buildValidatorContext()` 接入 validator Run 生产创建/dispatch instructions，把 `buildRepairContext()` 接入下一条用户发起的 implementation Run；添加集成测试断言实际 adapter 收到 goal、目标 implementation handoff/files/tests/refs、固化 policy 和 latest findings，且不串入 consult/其他 Run。
+- [x] **T091**（`FR-003`, `AC-003`）：补齐 strict envelope `outcome=blocked` 的 production submission path；同事务持久化 blocker columns + `validation.blocked` 并进入 Blocked，覆盖 missing evidence/findings reason、重复 callback、restart recovery。
+- [x] **T092**（`FR-007`, `FR-010`, `AC-004`, `AC-009`, `IR-006`）：workflow 构建 Evidence Summary 时传入真实 implementation handoff、commands、verification 和 file evidence，不得用 `handoff:null`/`commands:[]` 代替已有数据；Inspector 增加 Copy Markdown / Download Markdown，并补 API/UI/E2E 测试。
+- [x] **T093**（`DR-007`, `NFR-001`, `AC-010`）：增加同一 `issue_id + validation_round` 仅一条 validator Run 的 DB/service invariant；显式 trigger 遇到 current-round terminal Run 时处理/返回现有 Run，不新建；覆盖 terminal-to-result 并发窗口、unique conflict、restart。
+- [x] **T094**（`FR-011`, `AC-011`, `IR-007`, `UX-007`）：实现仅限 `round_limit_reached` blocker 的显式 round reset service/API/event/UI；要求非空 note，count 置 0 后 Issue 仍 Blocked，普通 unblock 保持 count；补事务、SSE replay、权限/状态和 UI 测试。
+- [x] **T095**（`DR-004`, `DR-007`, `NFR-001`, `AC-010`）：强化 schema/migration invariant：Evidence Summary `validation_result='passed'`、same-origin boolean、policy hash 形状和 per-round validator unique index；覆盖空库、v3升级、重跑和非法写入。若已有数据库记录 schema v4，使用 v5 migration，不得只修改 v4 常量后假设旧库重跑。
 
 **Checkpoint 11**：final review 的实现缺口已关闭，AC-002/003/004/005/009/010/011 有 production-path 测试，不再以 pure builder 或文档说明代替接线验证。
 
 ## Phase 12：端到端验证与文档回写
 
-- [ ] **T080**（`AC-001` - `AC-011`）：T090-T095 完成后重新运行 `npm run typecheck`、`npm test`、`npm run build`并保存完整结果；所有 F001-F003 regression 必须通过。
+- [x] **T080**（`AC-001` - `AC-011`）：T090-T095 完成后重新运行 `npm run typecheck`、`npm test`、`npm run build`并保存完整结果；所有 F001-F003 regression 必须通过。**（2026-07-19：typecheck exit 0；server 969 passed / 2 skipped，web 78 passed；web 生产构建成功 1742 modules。）**
 - [ ] **T081**（`AC-001` - `AC-005`）：Windows 本机真实 Codex 执行一个小 Issue，从 implementation evidence 到 validator **pass/Done**；核对事件顺序、完整 summary、Markdown 导出和 workspace 锁。已有 probe 只走到 `result_unparsable -> Blocked -> Ready`，不能替代本任务的 pass/Done 验收。
 - [ ] **T082**（`AC-005`, `AC-006`, `AC-011`）：本机真实 Codex 故意 fail 三轮，验证 findings 回流、无自动修复、第三次 fail Blocked；再验证显式 reset 保持 Blocked、随后 unblock 到 Ready。FakeAdapter 自动化测试保留为补充证据，不能替代本机真实链路。
 - [ ] **T083**（`AC-003`, `AC-006`, `NFR-002`）：本机验证无 validator、invalid JSON、合法 blocked envelope、缺 test/file/handoff、validator timeout/cancel 均不得 Done。自动化矩阵保留为补充证据。
