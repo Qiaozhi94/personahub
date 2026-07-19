@@ -44,12 +44,28 @@ updated: 2026-07-19
 
 ## Phase 1：Claude Code / OpenCode协议与鉴权Probe
 
-- [ ] **T001**（`FR-001`, `NFR-004`, `AC-001`）：记录本机Claude Code CLI版本、安装路径解析和Windows启动方式（`shell=false`的可执行文件解析见T009a）；验证`--version`不足以代表OAuth已登录。
-- [ ] **T002**（`FR-001`, `NFR-003`）：验证Claude非交互one-shot、stream JSON、prompt stdin、final message、正常/非零/auth failure/cancel，保存redacted fixtures。
-- [ ] **T003**（`FR-008`, `NFR-003`, `AC-006`）：验证Claude `control_request/control_response`真实字段和permission mode；用无远端副作用fixture确认git push请求可在执行前拒绝，不使用bypass模式。
-- [ ] **T004**（`FR-005`, `FR-006`）：验证Claude command/tool lifecycle能否映射F003 RunTraceSignal、final message能否满足F004 parser；不能确认的capability明确记录为false。
-- [ ] **T005**（`FR-002`, `NFR-004`, `AC-001`）：记录OpenCode CLI版本、OAuth auth status/login、API-key最小调用、provider/model参数和Windows启动方式。
-- [ ] **T006**（`FR-002`, `FR-005`）：验证OpenCode one-shot、JSON/structured输出、prompt传递、final message、正常/非零/auth failure/cancel，保存redacted fixtures。
+- [x] **T001**（`FR-001`, `NFR-004`, `AC-001`）：记录本机Claude Code CLI版本、安装路径解析和Windows启动方式（`shell=false`的可执行文件解析见T009a）；验证`--version`不足以代表OAuth已登录。
+
+  **2026-07-19 完成**：版本 2.1.215，真 exe（`C:\Users\Georg\.local\bin\claude.exe`），无需 T009a shim 解析。真实 auth 探测命令是 `claude auth status --json`（loggedIn/authMethod/exit code），非交互、机器可读；已通过隔离 `HOME`/`USERPROFILE`（复用§5.4的机制，未触碰真实登录态）安全验证登录/未登录两种状态下 `--version` 输出一致（exit 0），确认 `--version` 与鉴权无关。发现 `auth status` 会在其 HOME 目录写入少量 bookkeeping 文件（非 secret），design §5.2"只读"措辞已据此澄清。详见 `server/tests/helpers/claude-protocol-fixtures.md` T001。
+
+- [x] **T002**（`FR-001`, `NFR-003`）：验证Claude非交互one-shot、stream JSON、prompt stdin、final message、正常/非零/auth failure/cancel，保存redacted fixtures。
+
+  **2026-07-19 完成**：确认必需 argv 为 `-p --output-format stream-json --verbose`（`--verbose` 硬性必需，缺失即 argv 级报错无 JSON）；prompt 走 stdin（argv 传参需显式关闭 stdin，否则触发 ~3s stall）。终态事件 `type:"result"`，`.result` 为最终消息。区分两类失败：graceful in-band（认证失败/模型不存在，进程正常退出但 `is_error:true`）vs 硬 spawn 失败（未知 flag/缺 `--verbose`，纯文本 stderr 无 JSON）。`SIGINT` 取消：子进程以 `code:null,signal:"SIGINT"` 退出且不产出 `result` 事件。工具名 Windows 上是 `PowerShell` 不是 `Bash`。详见 fixtures 文档 T002。
+
+- [x] **T003**（`FR-008`, `NFR-003`, `AC-006`）：验证Claude 真实的前置审批机制并确认permission mode；用无远端副作用fixture确认git push请求可在执行前拒绝，不使用bypass模式。
+
+  **2026-07-19 完成，重大修正**：真实机制**不是** `control_request/control_response`（这是二手证据的误判，那是 multica 针对 SDK 嵌入式 JS 库场景写的 `canUseTool` 回调，对子进程 spawn 独立二进制的 adapter 不适用）。真实前置拦截通道是 **`PreToolUse` hook**：spawn 时经 `--settings`（支持内联 JSON）注册一个 hook，Claude Code 在每次匹配工具调用前同步 spawn 该 hook 脚本、等待其 stdout 返回 `{"hookSpecificOutput":{"permissionDecision":"deny",...}}` 决定是否放行。已用本机真实 CLI + 指向本地 bare 仓库的安全 fixture 完整验证：`git push` 被 hook 拒绝后目标仓库零 ref，确认是真正的执行前拦截。design.md §6.3/§14、spec.md NFR-003/风险表/Q1 已据此修正，不再依赖 multica `handleControlRequest`。详见 fixtures 文档 T003（含 Claude 自身内置的"multiple operations"风险命令守卫的旁证）。
+
+- [x] **T004**（`FR-005`, `FR-006`）：验证Claude command/tool lifecycle能否映射F003 RunTraceSignal、final message能否满足F004 parser；不能确认的capability明确记录为false。
+
+  **2026-07-19 完成**：final message（`result.result`）与 F004 `parseValidationResult()` 完全兼容，无需改动。`RunTraceSignal` 映射两处**确认的能力缺口**：(1) 无原生 `exitCode` 字段（PowerShell tool_result 只有 `is_error` 布尔值，`durationMs` 可由 `tool_use`/`tool_result` 两个 timestamp 相减得出，非原生但可计算）；(2) `Blocked` 分类无法实时判定，只能在整个 Run 结束、拿到 `result.permission_denials[]` 后按 `tool_use_id` 回填——两者均按 design "unknown 降低 completeness、不导致 Run 失败" 原则处理，不阻塞 F005。详见 fixtures 文档 T004。
+- [x] **T005**（`FR-002`, `NFR-004`, `AC-001`）：记录OpenCode CLI版本、OAuth auth status/login、API-key最小调用、provider/model参数和Windows启动方式。
+
+  **2026-07-19 完成，含重大发现**：版本 1.18.3，`.cmd` shim（需 T009a resolver）。`opencode auth list` 是人类可读 ANSI 输出，**退出码不随凭据数量变化**，不能作为机器可读的 auth 探测信号（design §5.2 的"用最小 prompt probe"兜底方案确认必要且足够）。**关键发现**：省略 `-m/--model` 时，OpenCode 在目标 provider 无凭据的情况下会**静默换用内置免费模型**（如 `opencode/hy3-free`）成功返回，不报错——因此 `validate()` 必须**始终显式传 `-m <provider>/<model>`**，不能靠"跑通了"判断凭据有效；显式指定缺凭据的 provider/model 后确认能正确失败，但错误是泛化的 `"UnknownError"`，不像 Claude 有结构化的 auth 失败原因，`auth_status_message` 天然不如 Claude 具体。详见 `server/tests/helpers/opencode-protocol-fixtures.md` T005。
+
+- [x] **T006**（`FR-002`, `FR-005`）：验证OpenCode one-shot、JSON/structured输出、prompt传递、final message、正常/非零/auth failure/cancel，保存redacted fixtures。
+
+  **2026-07-19 完成**：`opencode run --format json` 是 NDJSON 事件流；**没有单一终态事件**（不像 Claude 的 `result` 或预期中的单一 final message），最终消息需由 normalizer 从最后一个 `step_finish.reason=="stop"` 之前的 `text` part 拼接得出——仍是纯字符串，与 F004 parser 兼容。`tool_use` 事件比 Claude 更丰富：`part.state.metadata.exit` 直接给出结构化 exit code（**这是相对 Claude 的能力优势**），`time.start/end` 同一事件内即可算 duration，无需跨事件关联。工具名是小写 `bash`（Windows 上也是），进一步确认 normalizer 不能硬编码任何单一工具名。详见 fixtures 文档 T006。
 - [ ] **T007**（`FR-002`, `DR-001`）：确定经实测可用的OpenCode API-key provider allowlist和env/临时config映射；验证key不需进入argv或workspace。
 - [ ] **T008**（`FR-008`, `NFR-003`, `AC-006`）：确认OpenCode无等价消息级approval通道；验证credential-isolated env下push失败可被稳定识别，记录真实能力说明。
 - [ ] **T009**（`NFR-001`, `NFR-004`）：验证三个CLI在不恢复完整HOME/USERPROFILE时所需的最小auth目录变量/路径；若某OAuth路径无法隔离，按design标unavailable而非放宽git凭据环境。
@@ -115,8 +131,8 @@ updated: 2026-07-19
 - [ ] **T036**（`FR-001`, `FR-005`）：实现独立`claude-code-normalizer.ts`，raw stream不进入领域层。
 - [ ] **T037**（`FR-001`, `NFR-004`）：添加Claude adapter启动/argv/stdin/cwd/env/auth/cancel/exit-once测试，`shell=false`且instructions不得在argv。**依赖T009a**。
 - [ ] **T038**（`FR-001`）：实现`ClaudeCodeAdapter` one-shot lifecycle和F003/F004 contracts。
-- [ ] **T039**（`FR-008`, `NFR-003`, `AC-006`）：添加Claude control request安全测试，git push拒绝->pre-execution escalation，普通请求按P0策略处理，bypass flag永不出现。
-- [ ] **T040**（`FR-008`）：接入approval response和AgentRunner escalation；hook缺失时capability降级但credential isolation继续。
+- [ ] **T039**（`FR-008`, `NFR-003`, `AC-006`）：添加Claude `PreToolUse` hook 安全测试（**不是** control_request/response，见 T003 修正），覆盖 hook script 对 git push/force push 的 deny 决策、`--settings` 注入是否正确生效、普通请求按P0策略处理（hook 不干预）、bypass flag永不出现。
+- [ ] **T040**（`FR-008`）：实现 PersonaHub 侧的 `PreToolUse` hook script（读 stdin 的 `tool_input.command`，按 `push_credentials_enabled` 决定 deny/allow，写 `hookSpecificOutput` 到 stdout）并在 spawn 时经 `--settings` 注入；接入 AgentRunner escalation；hook 注入失败或 `--settings` 不可用时 capability 降级但 credential isolation 继续。
 - [ ] **T041**（`FR-005`, `FR-006`）：添加Claude implementation/validator Fake CLI集成测试，确认handoff context、structured trace和F004 pass/fail复用。
 
 **Checkpoint 5**：Claude可作为implementation/consult/validator运行，前置approval能力与实际fixture一致。

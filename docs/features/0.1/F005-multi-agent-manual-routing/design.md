@@ -35,7 +35,7 @@ Thread command
 - OpenCode API key明文保存在本地SQLite；Repository内部可读，任何HTTP response、ThreadEvent、log均不得返回原值。
 - `workflow_bound`不能由客户端强制声明；服务端根据Issue状态和adapter capability推导。客户端只能显式请求更安全的`ad_hoc_consult`。
 - F004 已有的两条validator唯一索引（active + per-round，见§4.1）继续作为手动/自动互斥底线；F005增加10秒持久化grace window，让用户有机会手动选择跨provider validator。
-- Claude Code接入协议级approval request作为前置可观测性/拒绝通道；OpenCode明确没有等价保证，仍以F002 credential isolation为安全主线。
+- Claude Code接入`PreToolUse` hook（经`--settings`注册，已本机实测确认，见§6.3）作为前置可观测性/拒绝通道；OpenCode明确没有等价保证，仍以F002 credential isolation为安全主线。
 - 不引入并行执行；咨询Run、implementation、validator都使用同一workspace FIFO锁。
 
 ## 2. 当前基线与影响面
@@ -370,16 +370,24 @@ interface ResolvedExecutable {
 
 ### 6.3 ClaudeCodeAdapter
 
-预期使用Claude CLI的非交互print + stream-json模式，prompt经stdin或明确argv传递，`cwd=workspace`、`shell=false`（启动方式统一见§6.1"统一进程启动"；Claude 本身是真 exe，无需 shim 解析）。最终argv以probe为准，禁止把instructions/API key拼进命令行。
+已用本机真实 Claude Code CLI 2.1.215 完成实测（`server/tests/helpers/claude-protocol-fixtures.md` T001-T004），确认调用形态：`claude -p --output-format stream-json --verbose`，`--verbose` 在此组合下是**硬性必需**参数（缺失即 argv 级报错，无 JSON 输出）；prompt 经 **stdin** 传递（避免 argv 传参时约 3 秒的 stdin 等待和噪音告警），`cwd=workspace`、`shell=false`（启动方式统一见§6.1"统一进程启动"；Claude 本身是真 exe，无需 shim 解析）。instructions/API key 均不进 argv。
 
-权限：
+事件流是 NDJSON，`type: "result"` 是唯一的终态行，其 `.result` 字段即最终消息，映射为 `RunExitResult.finalMessage`；`is_error`/`api_error_status`/`terminal_reason` 区分"运行完成但报告错误"（认证失败、模型不存在等，进程退出码非零但仍有完整 JSON）与"进程级失败"（未知 flag、缺 `--verbose`，纯文本 stderr、零 JSON 行）两类失败，normalizer 必须分别处理。工具调用名在 Windows 上是 `PowerShell`，不是 `Bash`。
 
+**权限（已修正，见 T003）**：Claude 在 `-p --output-format stream-json` 下**没有** `control_request`/`control_response` 这种可被调用方拦截的流内消息（工具被拒时只在事后的 `tool_result`/`permission_denials` 里体现）。真实的前置拦截通道是 **`PreToolUse` hook**：
+
+- spawn 时通过 `--settings`（支持内联 JSON 字符串，无需管理临时文件）注册：
+  ```json
+  { "hooks": { "PreToolUse": [ { "matcher": "PowerShell", "hooks": [ { "type": "command", "command": "node \"<hook-script>\"" } ] } ] } }
+  ```
+- `<hook-script>` 是 PersonaHub 自带的独立短生命周期脚本，Claude Code 在每次匹配的工具调用前同步 spawn 它、把 `{tool_name, tool_input, ...}` 经 stdin 喂给它，并等待其 stdout 返回 `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"..."}}` 来决定是否放行；
+- hook script 按 `push_credentials_enabled` 检查 `tool_input.command` 是否匹配 git push / force push，是则 `deny` 并触发 `PreExecutionApprovalRejected`；
 - 不使用`bypassPermissions`/危险自动批准flag；
-- 接收到真实`control_request`时，git push/force push按F002策略拒绝并触发`PreExecutionApprovalRejected`；
 - 其他请求按F002现有P0策略允许并记录structured trace；
-- 即使协议hook缺失，child env credential isolation仍生效；capability UI区分“pre-execution approval available/unavailable”。
+- hook 机制本身依赖 `--settings` 能否正确注册（已验证可行）；即使未来版本行为有变，child env credential isolation仍生效作为兜底；capability UI区分"pre-execution approval available/unavailable"。
+- **不参考**multica `claude.go` 的 `handleControlRequest`——该函数针对 SDK 以 JS 库形式嵌入调用的场景（`canUseTool` 回调），对子进程 spawn 独立 `claude` 二进制的 adapter 不适用。
 
-取消使用CLI协议/进程signal的最温和路径，超时后强制终止；必须保证onExit只触发一次。
+取消使用`SIGINT`：已验证子进程收到 `SIGINT` 后立即以 `code:null, signal:"SIGINT"` 退出，且**不会**再产出 `result` 事件——adapter 的 onExit-once 逻辑必须把这个组合本身当作终态"已取消"，不能等待一个不会到来的 `result` 行；超时后强制终止（SIGKILL 兜底）；必须保证onExit只触发一次。
 
 ### 6.4 OpenCodeAdapter
 
@@ -658,8 +666,8 @@ Run cards增加purpose badge和provider/model；consult使用中性样式和明�
 | OAuth+API key同时提供 | 400；不猜优先级 |
 | default adapter不可用 | dispatch失败并明确提示，不随机fallback |
 | handoff不存在/refs missing | 第一轮正常；missing ref显式进入context completeness |
-| Claude control request git push | 前置拒绝 + escalation + Blocked |
-| Claude hook不可用 | credential isolation仍挡push，capability如实降级 |
+| Claude `PreToolUse` hook 拦截 git push | 前置拒绝 + escalation + Blocked |
+| Claude `--settings`/hook 注入失败或不可用 | credential isolation仍挡push，capability如实降级 |
 | OpenCode git push | credential isolation主防线；不承诺前置拦截 |
 | adapter raw protocol malformed | trace partial；Run可继续，validator缺可靠finalMessage则Blocked |
 | concurrent manual/auto validator | DB unique决定winner；无重复Run |

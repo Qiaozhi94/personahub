@@ -346,7 +346,7 @@ F002 定义的凭据隔离和 escalation 机制应当对 Claude Code、OpenCode 
 
 - **NFR-001**：本 feature 应本地优先运行，不依赖云账号，OAuth 登录态和 API key 均存储在本地。
 - **NFR-002**：多 adapter 并存不改变 workspace 写锁语义——同一 workspace 同一时刻仍然只有一个 Run 在写。
-- **NFR-003**：Claude Code、OpenCode 的危险操作处理能力边界需要如实展示，不得夸大保证。两者能力不对等：Claude Code 的 `stream-json` 协议有真实的 `control_request`/`control_response` 前置审批通道（参考 multica `claude.go` 已经写好但未接入生产分发逻辑的 `handleControlRequest`，因为默认传了 `--permission-mode bypassPermissions`），本 feature 应当接入这个通道实现真正的前置拦截；OpenCode 没有等价的消息级协议（clowder-ai `opencode-auto-approval.ts` 只是探测 CLI flag 兼容性，不是审批协议），只能完全依赖 F002 已定的凭据隔离作为主防线，不能对 OpenCode 承诺前置拦截能力。
+- **NFR-003**：Claude Code、OpenCode 的危险操作处理能力边界需要如实展示，不得夸大保证。两者能力不对等，但真实机制与早期二手调研不同——已用本机 Claude Code CLI 2.1.215 实测确认：`stream-json` 协议本身**没有** `control_request`/`control_response` 消息（工具调用被拒绝时只在事后的 `tool_result`/`permission_denials` 里体现，不存在调用方可以拦截决策的实时请求/响应对）；真实的前置拦截通道是 **`PreToolUse` hook**——spawn 时通过 `--settings`（支持内联 JSON，无需管理文件生命周期）注册一个 `PreToolUse` hook，Claude Code 会在每次匹配的工具调用前，把该工具调用同步派发给一个独立的短生命周期子进程（hook script），并等待其通过 stdout 返回 `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",...}}` 来决定是否放行；已用本机真实、无副作用的 fixture（git remote 指向本地 bare 仓库）完整验证：`git push` 被 hook 拒绝后目标仓库零 ref，确认是真正的执行前拦截，不是事后报错。本 feature 应当接入这个 `PreToolUse` hook 通道实现前置拦截，而不是 multica `claude.go` 里针对 SDK 嵌入式 JS 库场景写的 `handleControlRequest`（那是 `canUseTool` JS 回调，只对以库形式嵌入 Node 进程的调用方有效，对以子进程方式 spawn 独立 `claude` 二进制的 adapter 不适用）。OpenCode 没有等价的消息级协议或 hook 系统（clowder-ai `opencode-auto-approval.ts` 只是探测 CLI flag 兼容性，不是审批协议），只能完全依赖 F002 已定的凭据隔离作为主防线，不能对 OpenCode 承诺前置拦截能力。详见 `server/tests/helpers/claude-protocol-fixtures.md` T003。
 - **NFR-004**：Windows 环境下 OAuth 登录流程和 API key 存储方式需要验证兼容性。
 
 ## 5. 关键实体 / 概念
@@ -449,7 +449,7 @@ Ad-hoc Consult Run
 
 | 风险 | 影响 | 缓解 |
 | --- | --- | --- |
-| Claude Code / OpenCode 的会话模型、escalation 能力未实测 | Adapter 实现可能返工 | 参考已有源码调研证据：multica 对 Claude 的实现是 `claude -p --output-format stream-json`，stdin 传 prompt，`--resume <id>` 续接会话，cancellation 走 context cancel + ~10s WaitDelay；Claude 有真实的 `control_request` 前置审批通道（multica 已写好处理函数但未接入分发逻辑）；OpenCode 无此通道，只能走 `--dangerously-skip-permissions` 之类的 flag 网关。这些是二手证据，实现前仍需用本地实际安装的 CLI 版本做能力 probe，参考 F002 对 Codex 的 probe 方式。 |
+| Claude Code / OpenCode 的会话模型、escalation 能力未实测 | Adapter 实现可能返工 | **已用本机真实 CLI（Claude 2.1.215）完成 probe，二手证据已被替换为一手结论**：`claude -p --output-format stream-json --verbose` 是正确调用形态（`--verbose` 在此组合下是硬性必需参数，缺失即 argv 级报错）；prompt 经 stdin 传递（避免 argv 传参时约 3 秒的 stdin 等待和告警）；终态事件为 `result`，`.result` 字段即最终消息；cancel 走 `SIGINT`，子进程以 `code:null, signal:"SIGINT"` 退出且**不会**再产出 `result` 事件；Claude 真实的前置拦截通道是 `PreToolUse` hook（经 `--settings` 注册），不是 multica `claude.go` 里针对 SDK 嵌入式场景的 `control_request`/`handleControlRequest`，已用无副作用 fixture 验证 hook 能在 `git push` 真正执行前拦截。OpenCode 尚未实测，仍按未验证处理，need 本地 probe 确认。 |
 | OpenCode 的 API key 明文存储 | 本地文件/DB 被其他进程或备份泄露读取的风险 | 已按 `DR-001` 决定沿用 multica/clowder 的做法（明文 + 打码展示 + 文件权限保护），不做额外加密；如果后续认为风险不可接受，作为独立安全加固任务处理，不影响本 feature 交付 |
 | 手动 validator 和自动 validator 的边界不清楚，可能两套逻辑打架 | 状态机出现不一致或产生重复 Run | `FR-006` 复用 F004 现有解析规则；`FR-009` + `DR-005` 用数据库级 partial unique 约束保证同一 Issue 同一时刻只有一条 pending validator Run，参考 multica `agent_task_queue` 的唯一约束模式 |
 | 咨询性 Run 和 workflow-bound Run 的判定规则不清楚，可能误判 | 用户咨询性请求被误当成 validator，或反之 | `FR-007` 采用"@ 是否命中当前期望角色"作为判定信号（参考 clowder-ai Message/Invocation 解耦模式），不要求用户每次显式声明；多能力 adapter 的边界已在 design 第 7.2 节定稿：Issue 状态决定本次唯一角色，不由 adapter 自选 |
@@ -458,7 +458,7 @@ Ad-hoc Consult Run
 
 目前没有遗留的开放问题，以下四项均已关闭：
 
-- **Q1（已关闭）**：Claude Code 有真实的 `control_request` 前置审批通道（参考 multica `claude.go`），本 feature 应接入；OpenCode 无此通道，完全依赖 `NFR-003` 已定的凭据隔离主防线。二手证据，实现前仍需本地 probe 确认。
+- **Q1（已关闭，一手实测修正）**：Claude Code 的真实前置审批通道是 `PreToolUse` hook（经 `--settings` 注册的独立 hook 子进程），**不是**早期二手调研假设的 `control_request`/`control_response` 流内消息（那是 multica `claude.go` 针对 SDK 嵌入式 JS 库场景写的 `canUseTool` 回调，对子进程 spawn 独立二进制的 adapter 不适用）；本 feature 应接入 `PreToolUse` hook 机制。已用本机 Claude Code 2.1.215、无副作用的本地 bare 仓库 fixture 完整验证 `git push` 可在执行前被拦截，见 `server/tests/helpers/claude-protocol-fixtures.md` T003。OpenCode 无此通道，完全依赖 `NFR-003` 已定的凭据隔离主防线，仍待本地 probe 确认（Phase 1 T005-T008）。
 - **Q2（已关闭）**：OpenCode API key 明文存储，不加密，见 `DR-001`。
 - **Q3（已关闭）**：workflow-bound / 咨询性判定用"@ 是否命中当前期望角色"，见 `FR-007`。
 - **Q4（已关闭）**：手动/自动 validator 互斥用数据库唯一约束，见 `FR-009`、`DR-005`。
@@ -479,7 +479,7 @@ Ad-hoc Consult Run
 
 - 本 feature 的 `design.md` / `tasks.md` 已于 2026-07-16 完成并清空设计开放问题；代码开发应按其中的 schema、接口、协议 probe、状态机互斥和安全降级顺序推进。
 - Claude Code / OpenCode 的具体 adapter 实现应参考 F002 `CodexCliAdapter` 的落地经验（one-shot invocation、`WorkspaceContext` 凭据隔离、CAS 状态机等），不重新发明这些机制。
-- Claude Code 的 `control_request` 前置审批接入方式，可以直接参考 multica `claude.go` 里已经写好但未接入的 `handleControlRequest` 函数形状，不需要从协议文档从零摸索。
+- Claude Code 的前置审批接入方式已由本机实测确认（`--settings` 注册 `PreToolUse` hook，见 T003 修正），不再参考 multica `claude.go` 的 `handleControlRequest`（该函数针对 SDK 嵌入式场景，对子进程 spawn 独立二进制的 adapter 不适用）；hook script 的具体接口形状见 `server/tests/helpers/claude-protocol-fixtures.md`。
 - `FR-007`（@ 是否命中期望角色）和 `FR-009`（DB 唯一约束防重复）这两条机制在 design.md 阶段需要落到具体的 schema 和判定代码，但方向已经不需要再讨论。
 
 ## 15. 参考
