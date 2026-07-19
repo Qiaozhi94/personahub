@@ -33,14 +33,14 @@ describe("Database Migration", () => {
   it("creates schema_version table", () => {
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(4);
+    expect(row.v).toBe(5);
   });
 
   it("is idempotent - running twice does not error", () => {
     applyMigrations(db);
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(4);
+    expect(row.v).toBe(5);
   });
 
   it("creates all 12 tables", () => {

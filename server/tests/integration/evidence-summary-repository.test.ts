@@ -164,12 +164,10 @@ describe("EvidenceSummaryRepository", () => {
       expect(summary.same_origin_validation).toBe(false);
     });
 
-    it("maps validation_result=failed", () => {
-      const summary = repo.createIfAbsent(makeCreateInput({
+    it("rejects a non-passed validation_result (v5 passed-only invariant)", () => {
+      expect(() => repo.createIfAbsent(makeCreateInput({
         validation_result: ValidationOutcome.Failed,
-      }));
-
-      expect(summary.validation_result).toBe(ValidationOutcome.Failed);
+      }))).toThrow();
     });
 
     it("does not overwrite history when issue already has a summary (createIfAbsent semantics)", () => {
