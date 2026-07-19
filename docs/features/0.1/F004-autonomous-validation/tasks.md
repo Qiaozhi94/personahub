@@ -188,8 +188,8 @@ updated: 2026-07-19
 - [ ] **T083**（`AC-003`, `AC-006`, `NFR-002`）：本机验证无 validator、invalid JSON、合法 blocked envelope、缺 test/file/handoff、validator timeout/cancel 均不得 Done。自动化矩阵保留为补充证据。
 - [ ] **T084**（`AC-008`, `AC-010`）：本机验证 unblock note、terminal-to-result 并发触发、server 在 implementation/validator terminal 和 pass transaction 附近重启后的恢复。
 - [ ] **T085**（`AC-007`）：本机配置同 provider 同 model/不同 model 两组，核对 same-origin summary 和 UI 文案；unit/UI 自动化覆盖不能替代真实配置链路。
-- [ ] **T086**（`DR-001` - `DR-006`）：T095 完成后更新 `docs/personahub-system-design.md` 的最终实际 schema/invariant。
-- [ ] **T087**（`FR-001`, `FR-011`, `NFR-001`）：T090-T095 完成后更新 `docs/personahub-architecture.md` 的 workflow hook、validation gate、round reset 和 recovery 顺序。
+- [x] **T086**（`DR-001` - `DR-006`）：T095 完成后更新 `docs/personahub-system-design.md` 的最终实际 schema/invariant。**（2026-07-19：补 v5 CHECK invariant、per-round validator unique index、schema v5 说明。）**
+- [x] **T087**（`FR-001`, `FR-011`, `NFR-001`）：T090-T095 完成后更新 `docs/personahub-architecture.md` 的 workflow hook、validation gate、round reset 和 recovery 顺序。**（2026-07-19：补 validator/repair context 接线、per-round 唯一、§5.6 round reset、§5.7 schema invariant。）**
 - [ ] **T088**（`AC-001` - `AC-011`）：逐项走查并勾选 spec acceptance；不以 pure unit test、文档说明或未完成的真实 probe 替代 production-path 验证。
 - [ ] **T089**：T090-T095、T080-T085 全部完成且验收重新勾选后，更新 `BACKLOG.md`、三件套 Status 和 `CLAUDE.md` 为 `done`。
 

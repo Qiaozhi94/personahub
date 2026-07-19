@@ -204,6 +204,10 @@ implementation Run completed
        Issue Running -> Validating
        validation.requested (固化 implementation_run_id、policy snapshot/hash、双方 identity)
        create queued validator Run (role=validator, workflow_step=validation, dispatch_source=system)
+         instructions = buildValidatorContext()：目标 implementation 的 handoff/命令/验证/
+         文件证据 + 固化 policy + prior findings + 严格 JSON envelope 契约（F004 T090，
+         scoped 到该 implementation_run_id，不串入其它 Run）
+       同 Issue+round 已有 validator Run 时返回现有 Run 不新建（per-round 唯一，F004 T093）
   -> normal workspace queue dispatch
 ```
 
@@ -217,7 +221,8 @@ validator Run completed
        2. Deterministic policy gate (evidence requirements from requested snapshot)
        3. Round limit check (nextCount = validation_round_count + 1)
        passed  -> validation.passed + EvidenceSummary + issue.done -> Done
-       failed  -> findings + validation.failed + round++ -> Running
+       failed  -> findings + validation.failed + round++ -> Running（下一条用户发起的
+                  implementation Run 由 buildRepairContext() 注入上一轮 findings，F004 T090）
        blocked -> validation.blocked + blocker columns -> Blocked
 ```
 
@@ -254,6 +259,19 @@ API server 启动时的恢复顺序扩展为：
    - Validating 但无 active/terminal validator -> 重建一次或 Blocked。
    - Done 缺 validation.passed 或 summary -> 记录 diagnostic，停止该 Issue 自动化。
 3. **listen / drain queue**：开始正常服务。
+
+### 5.6 显式 Round Reset（F004 FR-011）
+
+`round_limit_reached` 到达 Blocked 后，运营者可显式重置轮次（`POST /api/issues/:id/reset-rounds`，要求非空 note）：
+
+- 仅 `round_limit_reached` blocker 可用；其它 blocker 拒绝。
+- 同事务将 `validation_round_count` 置 0 并写 `validation.round_reset` 事件，但 **Issue 仍保持 Blocked** —— 需另行 `unblock` 才恢复 Ready，使"授予更多轮次"成为显式两步操作。
+- 与普通 `unblock` 的区别：unblock 清 blocker -> Ready 但保留 round count；reset 清 count 但保留 Blocked。
+
+### 5.7 Schema Invariant（F004 T095，schema v5）
+
+- `evidence_summaries` CHECK：`validation_result='passed'`、`same_origin_validation IN (0,1)`、`policy_snapshot_hash LIKE 'sha256:%'`。
+- `idx_runs_validator_per_round (issue_id, validation_round) WHERE role='validator'`：DB 层强制 per-round validator 唯一，与 §5.2 service 层 double-guard。
 
 ## 6. 存储层
 

@@ -191,7 +191,7 @@ Run
   error_message
   role                    # F004: implementation | validator | consult
   workflow_step           # F004: "implementation" | "validation" | null (derived from role)
-  validation_round        # F004: round number for validator Runs
+  validation_round        # F004: round number for validator Runs; v5 partial unique idx (issue_id, validation_round) WHERE role='validator'
   dispatch_source         # F004: user_explicit | system
   final_message           # F004: validator final agent message (internal, not in public Run DTO)
   adapter_identity_json   # F004: snapshot of adapter config identity at Run creation
@@ -204,17 +204,25 @@ EvidenceSummary         # F004: deterministic Done projection, one per Issue
   thread_id
   validator_run_id
   implementation_run_id
-  validation_result       # "passed" | "failed" | "blocked"
+  validation_result       # v5 CHECK 恒为 "passed"（Evidence Summary 仅在验证通过时生成）
   evidence_refs           # aggregated evidence refs (max 500, deduplicated)
   summary_markdown        # deterministic Markdown (max 256 KiB)
-  same_origin_validation  # 1 if provider+model match, 0 otherwise
+  same_origin_validation  # 1 if provider+model match, 0 otherwise; v5 CHECK: IN (0,1)
   implementation_identity_json   # AdapterIdentitySnapshot at Run creation
   validator_identity_json        # AdapterIdentitySnapshot at Run creation
   policy_id
   policy_version
   policy_snapshot_json    # complete policy snapshot at request time
-  policy_snapshot_hash    # SHA-256 of canonical JSON
+  policy_snapshot_hash    # SHA-256 of canonical JSON; v5 CHECK: LIKE 'sha256:%'
   created_at
+
+# Schema 当前版本 v5（v1→v5 顺序 migration）。F004 关键 DB invariant：
+#   - evidence_summaries CHECK：validation_result='passed'、same_origin_validation IN (0,1)、
+#     policy_snapshot_hash LIKE 'sha256:%'（SQLite 无法 ALTER-ADD CHECK，v5 create-copy-drop-rename 重建该表）
+#   - idx_runs_one_active_validator (issue_id) WHERE role='validator' AND status IN (queued,running)
+#     —— 同 Issue 至多一个活跃 validator
+#   - idx_runs_validator_per_round (issue_id, validation_round) WHERE role='validator'
+#     —— 同 Issue+round 至多一条 validator Run（terminal 也计），与 service 层唯一性（T093）双层保证
 
 Artifact
   id
