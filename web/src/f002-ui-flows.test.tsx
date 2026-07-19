@@ -59,13 +59,14 @@ describe("F002 UI flows", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
-      expect(apiClient.adapters.create).toHaveBeenCalledWith("prj_1", {
+      expect(apiClient.adapters.create).toHaveBeenCalledWith("prj_1", expect.objectContaining({
         cli_provider: "codex",
         name: "Codex CLI",
         command: "codex",
         args: ["--quiet", "--json"],
         default_model: "gpt-5",
-      });
+        role: "implementation",
+      }));
     });
   });
 
@@ -82,12 +83,13 @@ describe("F002 UI flows", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
-      expect(apiClient.adapters.update).toHaveBeenCalledWith("agt_1", {
+      expect(apiClient.adapters.update).toHaveBeenCalledWith("agt_1", expect.objectContaining({
         name: "Codex Primary",
         command: "codex-new",
         args: ["--quiet"],
         default_model: "gpt-5",
-      });
+        role: "implementation",
+      }));
     });
   });
 

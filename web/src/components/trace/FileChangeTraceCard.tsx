@@ -22,7 +22,14 @@ export function FileChangeTraceCard({ event }: FileChangeTraceCardProps) {
   const previewTruncated = Boolean(payload.preview_truncated);
   const recovered = Boolean(payload.recovered_after_restart);
 
-  const evidenceQuery = useRunEvidence(viewAll ? runId ?? null : null);
+  const {
+    isLoading: evidenceLoading,
+    isError: evidenceError,
+    allFileChanges,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useRunEvidence(viewAll ? runId ?? null : null);
 
   if (event.type === "file.change_scan_failed") {
     const reasonCode = String(payload.reason_code ?? "unknown");
@@ -40,8 +47,6 @@ export function FileChangeTraceCard({ event }: FileChangeTraceCardProps) {
   }
 
   const showViewAll = (previewTruncated || totalCount > 5) && runId;
-  const allFileChanges = evidenceQuery.data?.file_changes ?? [];
-  const evidenceError = evidenceQuery.isError;
 
   return (
     <div className="rounded-md border border-border bg-muted/20 px-3 py-2">
@@ -59,21 +64,32 @@ export function FileChangeTraceCard({ event }: FileChangeTraceCardProps) {
         {deleted > 0 ? <span className="text-destructive">-{deleted} deleted</span> : null}
         {renamed > 0 ? <span className="text-muted-foreground">{renamed} renamed</span> : null}
       </div>
-      {viewAll && evidenceQuery.isLoading ? (
+      {viewAll && evidenceLoading ? (
         <p className="mt-1.5 text-[10px] text-muted-foreground">Loading...</p>
       ) : viewAll && evidenceError ? (
         <p className="mt-1.5 text-[10px] text-destructive">Failed to load file changes</p>
       ) : viewAll && allFileChanges.length === 0 ? (
         <p className="mt-1.5 text-[10px] text-muted-foreground">No file changes recorded</p>
       ) : viewAll ? (
-        <ul className="mt-1.5 space-y-0.5 font-mono text-[10px] text-muted-foreground max-h-[200px] overflow-auto">
-          {allFileChanges.map((fc) => (
-            <li key={fc.id}>{fc.path} ({fc.change_type})</li>
-          ))}
-          {evidenceQuery.data?.next_after_file_change_id ? (
-            <li className="text-muted-foreground/60">... more available</li>
+        <>
+          <ul className="mt-1.5 space-y-0.5 font-mono text-[10px] text-muted-foreground max-h-[200px] overflow-auto">
+            {allFileChanges.map((fc) => (
+              <li key={fc.id}>{fc.path} ({fc.change_type})</li>
+            ))}
+          </ul>
+          {hasNextPage ? (
+            <div className="mt-1">
+              <button
+                type="button"
+                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                disabled={!hasNextPage || isFetchingNextPage}
+                onClick={() => fetchNextPage()}
+              >
+                {isFetchingNextPage ? "Loading more..." : "Load more"}
+              </button>
+            </div>
           ) : null}
-        </ul>
+        </>
       ) : preview && preview.length > 0 ? (
         <ul className="mt-1.5 space-y-0.5 font-mono text-[10px] text-muted-foreground">
           {preview.slice(0, 5).map((p, i) => (

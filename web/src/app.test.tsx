@@ -246,6 +246,8 @@ describe("App - with issue selected", () => {
           priority: IssuePriority.Normal,
           labels: [],
           validation_round_count: 0,
+          blocked_reason_code: null,
+          blocked_reason_message: null,
           created_at: "2026-07-13T00:00:00.000Z",
           updated_at: "2026-07-13T00:00:00.000Z",
         },
@@ -269,6 +271,8 @@ describe("App - with issue selected", () => {
         priority: IssuePriority.Normal,
         labels: [],
         validation_round_count: 0,
+        blocked_reason_code: null,
+        blocked_reason_message: null,
         created_at: "2026-07-13T00:00:00.000Z",
         updated_at: "2026-07-13T00:00:00.000Z",
         primary_thread: {

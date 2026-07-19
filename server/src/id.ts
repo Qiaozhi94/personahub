@@ -31,3 +31,7 @@ export function generateAdapterConfigId(): string {
 export function generateFileChangeId(): string {
   return `fcg_${ulid()}`;
 }
+
+export function generateEvidenceSummaryId(): string {
+  return `evs_${ulid()}`;
+}

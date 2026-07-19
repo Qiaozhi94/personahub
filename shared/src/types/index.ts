@@ -1,3 +1,5 @@
+import type { RunRole, RunDispatchSource, AdapterIdentitySnapshot, ValidationBlockReason } from "./validation.js";
+
 export interface Project {
   id: string;
   name: string;
@@ -37,6 +39,8 @@ export interface Issue {
   priority: IssuePriority;
   labels: string[];
   validation_round_count: number;
+  blocked_reason_code: ValidationBlockReason | string | null;
+  blocked_reason_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -142,6 +146,9 @@ export enum ThreadEventType {
   ValidationPassed = "validation.passed",
   ValidationFailed = "validation.failed",
   ValidationBlocked = "validation.blocked",
+  IssueDone = "issue.done",
+  IssueUnblocked = "issue.unblocked",
+  ValidationRoundReset = "validation.round_reset",
 }
 
 export enum ActorType {
@@ -216,6 +223,12 @@ export interface Run {
   completed_at: string | null;
   exit_code: number | null;
   error_message: string | null;
+  role: RunRole;
+  workflow_step: "implementation" | "validation" | null;
+  validation_round: number | null;
+  dispatch_source: RunDispatchSource;
+  adapter_identity: AdapterIdentitySnapshot | null;
+  has_final_message: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -250,3 +263,4 @@ export interface RunSummary {
 }
 
 export * from "./trace.js";
+export * from "./validation.js";

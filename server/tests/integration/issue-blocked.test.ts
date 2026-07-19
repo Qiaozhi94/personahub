@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
 import { RunStatus, IssueStatus, FailureReason, AdapterStatus } from "@personahub/shared/types";
+import { ErrorCode } from "@personahub/shared/errors";
+import { AppError } from "../../src/api/errors.js";
 
 function setupTestRun(services: TestServices, tempDir: string, status: RunStatus = RunStatus.Queued) {
   const project = services.projectService.create("Test", "desc");
@@ -55,17 +57,21 @@ describe("Issue Blocked prevents queued Run", () => {
     expect(cancelledRun!.status).toBe(RunStatus.Cancelled);
   });
 
-  it("throws ISSUE_BLOCKED when creating Run on blocked Issue", () => {
-    const { issue } = setupTestRun(services, tempDir, RunStatus.Queued);
+  it("rejects creating Run on blocked Issue with INVALID_ISSUE_TRANSITION", () => {
+    const { issue, adapter } = setupTestRun(services, tempDir, RunStatus.Queued);
 
     services.issueRepo.updateStatus(issue.id, {
       status: IssueStatus.Blocked,
       updatedAt: new Date().toISOString(),
     });
 
-    expect(() =>
-      services.runService.create(issue.id, "adp_test", "test instructions"),
-    ).toThrow(/blocked/i);
+    try {
+      services.runService.create(issue.id, adapter.id, "test instructions");
+      expect.fail("Should have thrown");
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect((e as AppError).code).toBe(ErrorCode.INVALID_ISSUE_TRANSITION);
+    }
   });
 
   it("startNextQueuedRun skips blocked Issue and returns null", () => {

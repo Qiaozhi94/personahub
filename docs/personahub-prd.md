@@ -4,7 +4,7 @@ related_features: []
 topics: [prd, product, agent-team-os, issue-managed-workflow, room-collaboration, topology-aware-automation, evidence-grounded, artifact-centered]
 doc_kind: prd
 created: 2026-07-11
-updated: 2026-07-18
+updated: 2026-07-19
 ---
 
 # PersonaHub PRD: Personal AI Agent Team OS
@@ -15,6 +15,7 @@ updated: 2026-07-18
 
 | 日期 | 来源提交 | 修订目的 | 修订内容 |
 | --- | --- | --- | --- |
+| 2026-07-19 | （F004 final review） | 统一 Autonomous Validation 的轮次、安全恢复和 Evidence Summary 验收口径 | 明确 Issue 累计 failed count / Run round 的职责、第三次 failed 即 Blocked、普通 unblock 保留轮次、round-limit 只能通过独立带 note 的 reset action 清零，以及 Done Evidence Summary 支持复制/下载已持久化 Markdown |
 | 2026-07-18 | `4d13cab` | 避免 v0.4 在 Workflow 抽象尚未经过跨场景验证时，同时铺开多个浅层非 coding workflow；让后续自动编排有可评价的数据基础 | 将 v0.4 调整为“扩展契约 + 按任务范式逐个验证的垂直切片”，优先做 Windows Troubleshooting，再按实测进入 knowledge/research 与 writing；明确多种 Issue Type 可以保留为方向，但不承诺同一版本全部成熟交付；将最小 AgentOps 原始信号前置到 v0.1–v0.3，v0.5 仍负责完整评价、分析 UI 与 trust scoring |
 | 2026-07-12 | `9c79555` | 在 Coordinator 自动编排前增加一条可独立交付的多 Agent 协作路径 | 新增 v0.1.4 手动多 Agent 路由：补齐 Codex / Claude Code / OpenCode adapter 与鉴权范围，在 Thread 中手动选择下一位 Agent，并通过 Handoff Packet 和 evidence refs 避免复制上下文；相应调整 v0.1 完成判据和 v0.2 Coordinator 边界 |
 | 2026-07-12 | `4af80c1` | 建立 PersonaHub 第一版正式产品真相源 | 创建完整 PRD，确定个人优先的 Agent Team OS 定位，以及 Project / Workspace / Issue / Thread / Room、Workflow Template、Validation、Evidence、Memory、Skill 等核心概念；给出 v0.1–v0.9 路线、信息架构、安全边界与 MVP 验收标准 |
@@ -626,6 +627,7 @@ Trace 不是一级产品概念，而是 Thread 内部自动生成的证据事件
 - validation.finding
 - validation.passed
 - validation.failed
+- validation.round_reset
 - memory.candidate_created
 - skill.candidate_created
 - provenance_gate.required
@@ -783,7 +785,7 @@ Validator 独立性：默认策略下，validator agent 的 `cli_provider` 与 `
 
 P0 影响：P0 阶段按第 8 节约定只接入一个 coding CLI adapter。为避免单 adapter 下所有 Done Issue 都被标记为"同源验证"，Project 设置应支持为同一 `cli_provider` 配置至少两个不同的 `default_model`，implementation agent 与 validator agent 分别使用不同 model，以满足"至少一项不同"的最低独立性要求。若用户环境下确实只有一个可用 model，则如实标记"同源验证"，不额外伪装成跨模型验证。
 
-失败收敛上限：Issue 和 Run 均记录 `validation_round_count`，Workflow Template / Validation Policy 可配置 `max_validation_rounds`（默认建议 3）。超过上限即视为"多轮 agent validation 无法收敛"，Issue 自动转 Blocked，而不是无限循环 Running -> Validating。
+失败收敛上限：Issue 记录已形成 failed 结果的累计 `validation_round_count`，每条 validator Run 记录自身不可变的 `validation_round`。Workflow Template / Validation Policy 可配置 `max_validation_rounds`（默认建议 3）；本次 failed 计入后 `validation_round_count >= max_validation_rounds` 即视为“多轮 agent validation 无法收敛”，因此默认第三次 failed 直接使 Issue 转 Blocked，不允许第四次自动验证。
 
 状态流转：
 
@@ -794,7 +796,7 @@ Running -> Validating -> Blocked
 Blocked -> Ready
 ```
 
-Blocked 恢复：Blocked 是需要 operator escalation 处理的暂停态，不是终态。operator 在 Thread / Inspector 中完成 escalation 处理（例如授权、补充信息、人工解决需求冲突、重置 `validation_round_count`）后，Issue 回到 Ready，等待用户重新触发 Running。系统不会自动把 Blocked 直接推回 Running，避免在 operator 尚未确认的情况下重新自动执行。
+Blocked 恢复：Blocked 是需要 operator escalation 处理的暂停态，不是终态。operator 在 Thread / Inspector 中完成 escalation 处理（例如授权、补充信息、人工解决需求冲突）后，Issue 回到 Ready，等待用户重新触发 Running。普通 unblock 保留 `validation_round_count`，不会隐式清零。若 blocker 是 `round_limit_reached` 且 operator 决定授予新的完整验证预算，必须先执行独立、显式、带说明且可追溯的 round reset action；reset 后 Issue 仍保持 Blocked，再由 operator 另行 unblock。系统不会自动把 Blocked 直接推回 Running。
 
 通过条件：
 
@@ -997,7 +999,7 @@ Done 为终态；Blocked 只能回到 Ready，不会自动跳回 Running。
 - Evidence refs。
 - Message / event stats。
 - Blockers。
-- Done evidence summary。
+- Done evidence summary，以及复制/下载其已持久化 Markdown 的操作。
 
 ## 11. 自动化与安全边界
 

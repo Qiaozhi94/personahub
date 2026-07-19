@@ -145,6 +145,7 @@ export class AgentRunner {
       exitCode: null,
       failureReason: FR.ExecutionTimeout,
       errorMessage: "Execution timed out",
+      finalMessage: null,
     }, onTerminal, onEscalation);
   }
 
@@ -259,7 +260,7 @@ export class AgentRunner {
     }
 
     if (result.exitCode === 0 && !result.failureReason) {
-      this.deps.runService.transitionToCompleted(run.id, 0);
+      this.deps.runService.transitionToCompleted(run.id, 0, result.finalMessage);
     } else if (result.failureReason === FR.SpawnFailed) {
       this.deps.runService.transitionToFailed(
         run.id,
@@ -282,7 +283,7 @@ export class AgentRunner {
         result.errorMessage,
       );
     } else {
-      this.deps.runService.transitionToCompleted(run.id, result.exitCode ?? 0);
+      this.deps.runService.transitionToCompleted(run.id, result.exitCode ?? 0, result.finalMessage);
     }
 
     onTerminal?.(run.id, workspaceId);

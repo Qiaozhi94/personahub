@@ -29,6 +29,7 @@ export interface RunExitResult {
   exitCode: number | null;
   failureReason: FailureReason | null;
   errorMessage: string | null;
+  finalMessage: string | null;
 }
 
 export interface RunHandle {
@@ -43,6 +44,7 @@ export interface AgentAdapterCapabilities {
   provider: string;
   supportsApprovalHook: boolean;
   supportsStructuredTrace: boolean;
+  supportsFinalMessage: boolean;
   executionTimeoutMs: number;
 }
 

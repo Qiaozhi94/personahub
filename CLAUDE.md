@@ -4,7 +4,9 @@
 
 ## 现状
 
-F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完成代码、行为验收及关键 UI 自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`。F003（Development Trace）已完成全部 88 个任务的代码实现和自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`；真实 Codex CLI 手动 probe 和端到端验证（T001、T081-T084）待用户在真实环境中执行。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
+F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完成代码、行为验收及关键 UI 自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`。F003（Development Trace）已完成全部 88 个任务的代码实现和自动化测试，typecheck、server/web 自动化测试和生产构建均通过，状态为 `done`；真实 Codex CLI 手动 probe 和端到端验证（T001、T081-T084）待用户在真实环境中执行。
+
+F004（Autonomous Validation）已完成全部实现（T090-T095 final review 缺口修复）、自动化测试（server 969 + web 78 全绿，生产构建成功）与文档回写，并在本机真实 Codex CLI 0.144.5 完成核心 production-path 验收（validator envelope 双路径分流、完整 pass→Done→EvidenceSummary→Markdown、round-limit Blocked、same-origin true/false），状态为 `done`；T083 blocked 矩阵与 T084 restart 由确定性自动化套件覆盖。真实验收工具（env-gated `REAL_CODEX=1`，默认 skip）见 `server/tests/integration/real-codex-*.test.ts`。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
 
 ## 当前结构
 

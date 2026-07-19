@@ -1,9 +1,10 @@
 ---
-feature_ids: []
-related_features: []
+feature_ids: [F004]
+related_features: [F001, F002, F003]
 topics: [design, data-model, agent-team-os]
 doc_kind: design
 created: 2026-07-11
+updated: 2026-07-19
 ---
 
 # PersonaHub 系统设计草案：数据模型
@@ -19,6 +20,8 @@ PRD 第 5 节"核心概念"是这些实体的产品语义来源，本文档只�
 模块划分、运行时/进程模型、存储与通信层等"整体怎么搭"的设计见 `docs/personahub-architecture.md`，本文档不重复定义，只提供该文档引用的字段级 schema。
 
 ## 数据模型草案
+
+> F004 (Autonomous Validation) 新增/修改字段以 `# F004` 标记。完整 schema 细节见 `docs/features/0.1/F004-autonomous-validation/design.md` §3-4。
 
 ```text
 Project
@@ -67,6 +70,8 @@ Issue
   priority
   labels
   validation_round_count
+  blocked_reason_code        # F004: ValidationBlockReason | string | null
+  blocked_reason_message     # F004: human-readable blocker description | null
   created_at
   updated_at
 
@@ -164,13 +169,12 @@ ValidationPolicy
   issue_type
   pass_conditions_json
   fail_conditions_json
-  evidence_requirements_json
-  max_validation_rounds
+  evidence_requirements_json   # F004: ValidationEvidenceRequirements
+  max_validation_rounds        # F004: default 3, 3rd failed -> Blocked
   status
   version
   created_at
   updated_at
-  max_validation_rounds
 
 Run
   id
@@ -185,16 +189,40 @@ Run
   completed_at
   exit_code
   error_message
+  role                    # F004: implementation | validator | consult
+  workflow_step           # F004: "implementation" | "validation" | null (derived from role)
+  validation_round        # F004: round number for validator Runs; v5 partial unique idx (issue_id, validation_round) WHERE role='validator'
+  dispatch_source         # F004: user_explicit | system
+  final_message           # F004: validator final agent message (internal, not in public Run DTO)
+  adapter_identity_json   # F004: snapshot of adapter config identity at Run creation
   created_at
   updated_at
 
-EvidenceSummary
+EvidenceSummary         # F004: deterministic Done projection, one per Issue
   id
   issue_id
-  content_markdown
-  validation_result
-  source_event_ids
+  thread_id
+  validator_run_id
+  implementation_run_id
+  validation_result       # v5 CHECK 恒为 "passed"（Evidence Summary 仅在验证通过时生成）
+  evidence_refs           # aggregated evidence refs (max 500, deduplicated)
+  summary_markdown        # deterministic Markdown (max 256 KiB)
+  same_origin_validation  # 1 if provider+model match, 0 otherwise; v5 CHECK: IN (0,1)
+  implementation_identity_json   # AdapterIdentitySnapshot at Run creation
+  validator_identity_json        # AdapterIdentitySnapshot at Run creation
+  policy_id
+  policy_version
+  policy_snapshot_json    # complete policy snapshot at request time
+  policy_snapshot_hash    # SHA-256 of canonical JSON; v5 CHECK: LIKE 'sha256:%'
   created_at
+
+# Schema 当前版本 v5（v1→v5 顺序 migration）。F004 关键 DB invariant：
+#   - evidence_summaries CHECK：validation_result='passed'、same_origin_validation IN (0,1)、
+#     policy_snapshot_hash LIKE 'sha256:%'（SQLite 无法 ALTER-ADD CHECK，v5 create-copy-drop-rename 重建该表）
+#   - idx_runs_one_active_validator (issue_id) WHERE role='validator' AND status IN (queued,running)
+#     —— 同 Issue 至多一个活跃 validator
+#   - idx_runs_validator_per_round (issue_id, validation_round) WHERE role='validator'
+#     —— 同 Issue+round 至多一条 validator Run（terminal 也计），与 service 层唯一性（T093）双层保证
 
 Artifact
   id

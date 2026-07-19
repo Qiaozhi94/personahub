@@ -171,7 +171,7 @@ export class TraceQueryService {
     const evidence = this.evidenceService.resolve(allRefs, { issueId, threadId, runId: run.id });
     const evidenceFailures = evidence.filter((e) => e.status !== "resolved").length;
 
-    return buildTraceCompleteness(run, runEvents, fileCount, traceState, evidenceFailures);
+    return buildTraceCompleteness(run, runEvents, traceState, evidenceFailures);
   }
 
   private validateEventCursor(afterEventId: string | undefined, threadId: string): void {

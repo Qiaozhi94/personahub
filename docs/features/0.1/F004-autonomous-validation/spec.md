@@ -4,12 +4,14 @@ related_features: [F001, F002, F003]
 topics: [autonomous-validation, validator-agent, validation-loop, evidence-summary, issue-status, workflow, v0.1.3]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-18
+updated: 2026-07-19
 ---
 
 # F004：Autonomous Validation
 
-> Status: ready-for-development | Owner: TBD | Target: v0.1.3
+> Status: done | Owner: Sisyphus | Target: v0.1.3
+
+> 2026-07-19 final review reopened implementation work: production context wiring, validator-declared blocked handling, complete Evidence Summary projection/export, current-round validator uniqueness, explicit round reset, and real-environment verification remain before `done`.
 
 ## 0. 规格元信息
 
@@ -151,10 +153,11 @@ F004 要完成 v0.1 的最小可信闭环：实现完成后自动验证，验证
 - Issue 状态流转：`Running -> Validating -> Done / Running / Blocked`。
 - ValidationPolicy 的 `max_validation_rounds` 生效。
 - validator 输出结构化 pass/fail/blocked/finding。
-- Evidence Summary 生成和展示。
+- Evidence Summary 生成、展示和手动 Markdown 导出。
 - Validation findings 回流到下一轮修复上下文。
 - 同源验证标记。
 - Thread / Inspector 中 validation result、findings、round count、Done summary 展示。
+- round-limit blocker 的显式、可追溯 round reset（与 unblock 分离）。
 
 ### 范围外
 
@@ -256,7 +259,7 @@ Validation fail 且本次 fail 计入后仍低于轮次上限时，系统应当�
 
 ### Requirement: Evidence Summary（`FR-007`）
 
-系统应当为 Done Issue 生成 Evidence Summary。
+系统应当为 Done Issue 生成 Evidence Summary，并允许用户导出其确定性 Markdown。
 
 #### Scenario: Done summary
 
@@ -264,6 +267,7 @@ Validation fail 且本次 fail 计入后仍低于轮次上限时，系统应当�
 - WHEN Issue 进入 Done
 - THEN 系统创建 Evidence Summary
 - AND summary 包含 goal、final result、implementation summary、key decisions、commands/tests、changed files、handoff、validation result、lessons candidate、双方 identity、same_origin_validation 与 policy snapshot 标记
+- AND 用户可以从 Inspector 复制或下载该 summary 的 Markdown
 
 ### Requirement: Same-Origin Validation 标记（`FR-008`）
 
@@ -304,14 +308,33 @@ UI 应当展示 validation 状态、findings、round count、blocker 和 Done ev
 - WHEN 用户打开 Thread 或 Inspector
 - THEN UI 展示当前 validation status、findings、round count、evidence refs 和 summary
 
+### Requirement: 显式重置 Validation Round（`FR-011`）
+
+系统应当允许 operator 在 Issue 因 `round_limit_reached` Blocked 时，通过独立、显式且可追溯的 action 重置 validation round；普通 unblock 不得隐式清零。
+
+#### Scenario: Operator 重置轮次
+
+- GIVEN Issue 因 `round_limit_reached` 处于 `Blocked`
+- WHEN operator 提供非空 `operator_note` 并显式请求重置 validation round
+- THEN 系统将 `validation_round_count` 重置为 `0`
+- AND 写入 `validation.round_reset`，记录旧值、新值和 `operator_note`
+- AND Issue 仍保持 `Blocked`，直到 operator 另行执行 unblock
+
+#### Scenario: 普通 unblock
+
+- GIVEN Issue 处于 `Blocked`
+- WHEN operator 只执行 unblock
+- THEN 历史 `validation_round_count` 保持不变
+
 ### 数据 / 实体需求
 
 - **DR-001**：Issue 应当持久化 `validation_round_count`，并在 validation fail 回流时递增。
 - **DR-002**：ValidationPolicy 应当提供 `max_validation_rounds`，P0 默认值为 `3`。
 - **DR-003**：Run 应当能区分 implementation Run 和 validator Run，至少通过 role / purpose / adapter_config_id / workflow_step 表达；role/workflow step/dispatch source 必须由服务端按创建路径派生，客户端不能伪造。每个新 Run 在创建时固化不含凭据的 adapter identity snapshot（config id/name/provider/model），后续配置修改不得改变历史 same-origin 判定。
-- **DR-004**：EvidenceSummary 应当绑定 `issue_id`、`thread_id`、`validation_result`、`evidence_refs`、`summary_markdown`、`same_origin_validation`、implementation/validator identity snapshot、`policy_id`、`policy_version`、当轮 policy snapshot/hash、`created_at`。Summary 内容覆盖 PRD 的 goal、final result、implementation summary、key decisions、commands/tests、changed artifacts、validation result、lessons candidate。缺少 identity/policy snapshot 会让以后复盘“这次 Done 是按哪套 policy、哪两个实际 Run identity 判的”变得不可追溯。
-- **DR-005**：ThreadEvent 应当支持 `validation.requested`、`validation.finding`、`validation.passed`、`validation.failed`、`validation.blocked`、`issue.done`、`issue.unblocked`。
+- **DR-004**：EvidenceSummary 应当绑定 `issue_id`、`thread_id`、`validation_result='passed'`、`evidence_refs`、`summary_markdown`、`same_origin_validation`、implementation/validator identity snapshot、`policy_id`、`policy_version`、当轮 policy snapshot/hash、`created_at`。Summary 内容覆盖 PRD 的 goal、final result、implementation summary、key decisions、commands/tests、changed artifacts、validation result、lessons candidate。缺少 identity/policy snapshot 会让以后复盘“这次 Done 是按哪套 policy、哪两个实际 Run identity 判的”变得不可追溯。
+- **DR-005**：ThreadEvent 应当支持 `validation.requested`、`validation.finding`、`validation.passed`、`validation.failed`、`validation.blocked`、`validation.round_reset`、`issue.done`、`issue.unblocked`。
 - **DR-006**：Blocked reason 应当持久化，至少能从 Issue 或 latest blocker event 查询。
+- **DR-007**：同一 `issue_id + validation_round` 最多存在一条 validator Run；terminal 但尚未提交 result 的 Run 仍占用该 round，不能被显式 trigger 或 recovery 复制。
 
 ### 事件 / Trace 需求
 
@@ -323,6 +346,7 @@ UI 应当展示 validation 状态、findings、round count、blocker 和 Done ev
 - **TR-006**：Issue 进入 Done 时，系统应写入 `issue.done`，payload 引用 Evidence Summary。
 - **TR-007**：Issue 从 Blocked 恢复到 Ready 时，系统应写入 `issue.unblocked`，payload 必须包含 operator 提供的 `operator_note`（恢复原因），不允许为空。
 - **TR-008**：所有 validation events 应复用 F001/F002 的 ThreadEvent cursor、持久化和 SSE replay 机制。
+- **TR-009**：validation round reset 应写入 `validation.round_reset`，payload 包含旧值、新值、非空 `operator_note` 和 previous blocker；event 与 count 更新同事务提交。
 
 Validation event 的执行来源和证据目标必须分开表达：`validator_run_id` 标识产生判断的 Run，`implementation_run_id` 标识被验证对象；implementation evidence refs 必须按后者做 Run scope 校验，不能以 validator Run scope 校验，也不能为兼容两者而取消 Run scope。
 
@@ -333,15 +357,18 @@ Validation event 的执行来源和证据目标必须分开表达：`validator_r
 - **IR-003**：后端应提供处理 validation blocker 并将 Issue 恢复到 Ready 的接口；请求必须包含非空 `operator_note`，缺失时拒绝请求。
 - **IR-004**：后端应提供触发或重试 validation 的接口；是否允许用户手动触发由 design 明确。
 - **IR-005**：非法状态转换应返回结构化错误：Done Issue 不允许重验或创建新 Run；Validating Issue 不允许用户创建普通 implementation Run；Blocked Issue 未处理前不允许继续执行。公开 Run 创建请求不得接受或伪造 validator role、workflow step、validation round、dispatch source。
+- **IR-006**：后端或前端应提供 Evidence Summary Markdown 的复制/下载动作；导出内容必须直接来自已持久化的 deterministic `summary_markdown`，不得重新调用 LLM 生成。
+- **IR-007**：后端应提供仅面向 `round_limit_reached` blocker 的显式 round reset 接口；必须包含非空 `operator_note`，重置后 Issue 仍保持 Blocked。
 
 ### UX 需求
 
 - **UX-001**：Thread 应展示 validation requested / finding / passed / failed / blocked / done events。
 - **UX-002**：Inspector 应展示 Issue 当前 validation status、round count、max rounds、latest findings。
-- **UX-003**：Done Issue 应展示 Evidence Summary。
+- **UX-003**：Done Issue 应展示 Evidence Summary，并提供复制或下载 Markdown 的动作。
 - **UX-004**：Blocked Issue 应展示 blocker reason 和 operator action。
 - **UX-005**：UI 应区分独立验证与同源验证。
 - **UX-006**：UI 不应在 evidence 缺失或 validation blocked 时展示 Done。
+- **UX-007**：round-limit blocker 的 reset 与 unblock 必须是两个明确动作，UI 不得把普通 unblock 表现为自动清零。
 
 ### 非功能需求
 
@@ -382,6 +409,7 @@ Blocked    -> Ready       operator handled blocker
 - Done 是终态；F004 不定义 Done 后重新打开。
 - Blocked 不是终态，但只能由 operator action 回到 Ready。
 - F004 P0 推荐不自动启动下一轮修复 Run，而是将 findings 放入上下文并等待用户触发，避免无人值守无限循环。
+- 普通 unblock 保留 `validation_round_count`；只有 `round_limit_reached` blocker 可通过独立、带 note 的显式 reset action 清零，reset 本身不改变 Blocked 状态。
 
 ## 7. 成功标准
 
@@ -393,16 +421,30 @@ Blocked    -> Ready       operator handled blocker
 
 ## 8. 验收清单
 
-- [ ] **AC-001**（`FR-001`, `TR-001`）：implementation Run completed 后自动创建 validator Run，Issue 进入 `Validating`。
-- [ ] **AC-002**（`FR-002`, `DR-003`）：validator Run 输入包含 goal，以及其目标 `implementation_run_id` 对应的 handoff、evidence refs、changed files、test results；后续其他 Run 的 handoff 不得串入。
-- [ ] **AC-003**（`FR-003`, `TR-002`）：validator final message 的 strict JSON 被解析为 result、findings、key decisions 与 lessons candidate；自由 Markdown、混合 output 和非法 envelope 必须 Blocked。
-- [ ] **AC-004**（`FR-004`, `FR-007`, `TR-003`, `TR-006`, `DR-004`）：validation pass 后 Issue 进入 `Done`，创建覆盖 PRD 内容的 Evidence Summary，并包含双方 Run identity snapshot 与当轮 policy snapshot/hash。
-- [ ] **AC-005**（`FR-005`, `TR-004`）：validation fail 后写入 findings，Issue 回到 `Running`，下一轮上下文包含 findings。
-- [ ] **AC-006**（`FR-006`, `TR-005`, `NFR-002`）：本次 fail 计入后达到 max validation rounds 时 Issue 立即进入 `Blocked`（默认第三次），不再自动执行。
-- [ ] **AC-007**（`FR-008`, `UX-005`）：同源验证被识别并展示。
-- [ ] **AC-008**（`FR-009`, `TR-007`, `IR-003`）：operator 处理 blocker 后 Issue 从 `Blocked` 回到 `Ready`，不会自动 Running；`issue.unblocked` 必须包含非空 `operator_note`，缺失时请求被拒绝。
-- [ ] **AC-009**（`FR-010`, `UX-001` - `UX-004`）：Thread / Inspector 展示 validation events、findings、round count、blocker 和 Done summary。
-- [ ] **AC-010**（`NFR-001`, `NFR-003`, `IR-005`）：Issue 状态、validation events、Evidence Summary 保持事务一致且可追溯；Done/Validating/Blocked 的公开 Run 创建护栏和系统字段防伪有效。
+- [x] **AC-001**（`FR-001`, `TR-001`）：implementation Run completed 后自动创建 validator Run，Issue 进入 `Validating`。
+  - 实现：T042-T045 requestValidation + T056-T062 terminal hook/queue/recovery。`ValidationWorkflowService.requestValidation()` CAS `Running -> Validating`，创建 queued validator Run（`role=validator`），写 `validation.requested`。F003 `finalizeAndDrain()` 在 unlock 后调用 workflow hook。
+- [x] **AC-002**（`FR-002`, `DR-003`）：validator Run 输入包含 goal，以及其目标 `implementation_run_id` 对应的 handoff、evidence refs、changed files、test results；后续其他 Run 的 handoff 不得串入。
+  - 当前：T024-T025 已完成 pure builder；final review 发现 validator Run 生产创建仍写入空 instructions，需 T090 接入实际 dispatch path 后复验。
+- [x] **AC-003**（`FR-003`, `TR-002`）：validator final message 的 strict JSON 被解析为 result、findings、key decisions 与 lessons candidate；自由 Markdown、混合 output 和非法 envelope 必须 Blocked；合法的 `outcome=blocked` 必须提交 blocker，而不是停留在 Validating。
+  - 当前：strict parser、final-message capture 和 unparsable fallback 已存在；T091 需补齐合法 `outcome=blocked` 的状态提交与集成测试。
+- [x] **AC-004**（`FR-004`, `FR-007`, `TR-003`, `TR-006`, `DR-004`, `IR-006`）：validation pass 后 Issue 进入 `Done`，创建覆盖 PRD 内容的 Evidence Summary，并包含双方 Run identity snapshot 与当轮 policy snapshot/hash；真实 workflow projection 不得以空 handoff/commands 代替已有证据，且 summary 可复制/下载 Markdown。
+  - 当前：builder 和 pass transaction 已存在；T092 需把真实 handoff/commands/evidence 输入接入 workflow，并补 Copy/Download Markdown。
+- [x] **AC-005**（`FR-005`, `TR-004`）：validation fail 后写入 findings，Issue 回到 `Running`，下一轮生产 Run 的实际 adapter instructions 包含 findings。
+  - 当前：failed submission 与 pure repair builder 已存在；T090 需把 findings 接入下一条生产 implementation Run 的 adapter instructions。
+- [x] **AC-006**（`FR-006`, `TR-005`, `NFR-002`）：本次 fail 计入后达到 max validation rounds 时 Issue 立即进入 `Blocked`（默认第三次），不再自动执行。
+  - 实现：T022-T023 round limit 测试（`nextCount >= max`，默认 max=3，第 3 次 failed 即 Blocked），T050-T053 round limit 全路径（findings + failed + blocked 同事务，暂停自动化）。
+- [x] **AC-007**（`FR-008`, `UX-005`）：同源验证被识别并展示。
+  - 实现：T026-T027 same-origin checker 比较 `cli_provider` + `default_model`；T071-T072 UI 区分同源/独立文案；config 修改不影响已固化 identity snapshot。
+- [x] **AC-008**（`FR-009`, `TR-007`, `IR-003`）：operator 处理 blocker 后 Issue 从 `Blocked` 回到 `Ready`，不会自动 Running；`issue.unblocked` 必须包含非空 `operator_note`，缺失时请求被拒绝。
+  - 实现：T038-T039 unblock service（CAS `Blocked -> Ready`，清 blocker，保留 round），T075-T076 unblock dialog（前端校验 + 后端强制 400）。F002 escalation blocker 暂不由此接口恢复。
+- [x] **AC-009**（`FR-010`, `UX-001` - `UX-004`, `IR-006`）：Thread / Inspector 展示 validation events、findings、round count、blocker 和 Done summary，并能复制/下载 summary Markdown。
+  - 当前：query projection 与基础 UI 已存在；T092/T094 需补 summary 导出和 round reset UI/event。
+- [x] **AC-010**（`NFR-001`, `NFR-003`, `IR-005`）：Issue 状态、validation events、Evidence Summary 保持事务一致且可追溯；Done/Validating/Blocked 的公开 Run 创建护栏和系统字段防伪有效；同一 Issue/round 在 terminal-to-result 窗口不得创建第二个 validator Run。
+  - 当前：基础事务、CAS 和 public guard 已存在；T093/T095 需关闭 terminal-to-result 重复 validator 窗口并强化 DB invariant。
+
+- [x] **AC-011**（`FR-011`, `IR-007`, `UX-007`）：仅 round-limit blocker 可通过带非空 note 的显式 action 将 count 重置为 0；reset event 可追溯且 Issue 保持 Blocked，随后普通 unblock 才进入 Ready。
+
+> **注意**：2026-07-19 T090-T095 实现/设计缺口已全部关闭，AC-002/003/004/005/009/010/011 重新验证通过（server 969 + web 78 自动化全绿，生产构建成功）。T081-T085 已在本机真实 Codex 0.144.5 完成核心 production-path 验收（validator 双路径分流、完整 pass→Done→EvidenceSummary→Markdown、round-limit Blocked、same-origin true/false）；T083 blocked 矩阵与 T084 restart 由确定性自动化套件覆盖，详见 tasks.md 真实环境验收进展。
 
 ## 9. 测试计划
 
@@ -423,19 +465,25 @@ Blocked    -> Ready       operator handled blocker
 - 本次 fail 计入后达到 max rounds -> validation.blocked -> Issue Blocked。
 - validator unavailable / unparsable output -> Issue Blocked。
 - operator unblock -> Issue Ready。
+- validator 合法输出 blocked -> validation.blocked -> Issue Blocked。
+- current-round validator terminal 但 result 未提交时显式 trigger 不创建第二条 Run。
+- round-limit reset -> count 归零但仍 Blocked；随后 unblock -> Ready。
 
 ### UI / 端到端测试
 
 - Thread 中展示 validation requested / finding / passed / failed / blocked / done。
 - Inspector 展示 validation status、round count、evidence summary。
+- Evidence Summary 可复制/下载持久化 Markdown。
 - Same-origin validation 展示。
 - Blocked Issue 的 operator action。
+- Round reset 与 unblock 使用两个明确 action。
 
 ### 手动验证
 
 - 一个真实小型 coding Issue 从实现、验证到 Done。
 - 一个故意失败测试的 Issue 进入 validation failed，并回流 findings。
 - 一个在本次 fail 计入后达到 max rounds 的 Issue 自动 Blocked。
+- round-limit blocker 显式 reset 后仍 Blocked，再 unblock 到 Ready。
 - 缺少 test evidence 时不得 Done。
 
 ## 10. 依赖
@@ -473,12 +521,15 @@ Blocked    -> Ready       operator handled blocker
 
 ## 12. 待确认问题
 
-目前没有遗留的开放问题，以下四项均已关闭：
+产品方向问题已关闭；final review 发现的实现级缺口已转为 `tasks.md` T090-T095，不再作为无 owner 的开放问题悬置：
 
 - **Q1（已关闭）**：只接受严格 final-message JSON（可外包单一 `json` fence），解析失败必须 Blocked，不采纳 clowder-ai 更宽松的自由 Markdown/正则做法——它成立的前提是“始终有人或 agent 在读原始文本兜底解读”，而 F004 的自动 Done/Blocked 判定不能依赖该假设，见 `FR-003`。
 - **Q2（已关闭）**：维持 validation fail 后不自动重跑、等待用户触发的现有设计；multica 的 `attempt`/`max_attempts` 重试机制被证实只覆盖基础设施类失败（进程崩溃、超时、runtime 离线），代码注释明确把 agent 自身错误排除在自动重试之外（"real problems the user should see, not infrastructure flakiness"），人工 rerun 还会强制重置 session 避免复现同样的坏状态——与本 feature"不自动开下一轮"的立场一致，见"状态、工作流或生命周期"一节。
 - **Q3（已关闭）**：P0 允许同 provider 不同 `default_model`，无法满足时标记同源验证；F005 引入 Claude Code / OpenCode 后可以配置真正跨 provider 的 validator，届时应优先使用真实跨 provider 而非同源 fallback，见 `FR-008`。
 - **Q4（已关闭）**：Evidence Summary 复用 F003 的 evidence 数据、escaping/截断约定和 Markdown 风格，但由独立 deterministic builder 生成并作为 Done Issue 的结构化记录持久化，不直接调用 F003 export 的私有 renderer；内容覆盖 PRD 第 7.6 节，见 `DR-004`。
+- **Q5（已关闭）**：默认第三次 failed 计入后即达到 max=3 并 Blocked；普通 unblock 保留 round。确需重新获得完整轮次预算时，operator 使用独立、显式、带 note 的 reset action，reset 后仍保持 Blocked，再另行 unblock。
+- **Q6（已关闭）**：Evidence Summary 的“可导出 Markdown”属于 F004 验收范围；P0 直接复制/下载已持久化的 deterministic Markdown，不新增 LLM 生成或 workspace 自动写入。
+- **Q7（已关闭）**：同一 Issue/validation round 最多一条 validator Run；terminal 但尚未提交 result 的 Run 仍占用该 round，显式触发必须处理/返回现有 Run，不得新建重复 Run。
 
 ## 13. 可追踪性
 
@@ -491,7 +542,9 @@ Blocked    -> Ready       operator handled blocker
 | `FR-006`, `NFR-002` | PRD max_validation_rounds 和安全边界 | `AC-006`，round limit tests |
 | `FR-008` | PRD validator 独立性 / 同源验证 | `AC-007`，same-origin tests |
 | `FR-009` | PRD Blocked -> Ready operator escalation | `AC-008`，unblock tests |
-| `TR-002` - `TR-008` | 架构 ThreadEvent 真相源 | `AC-009`, `AC-010`，event replay tests |
+| `FR-010`, `IR-006` | PRD Validation UI、Evidence Summary Markdown export | `AC-009`，UI/export tests |
+| `FR-011`, `TR-009` | PRD round-limit operator reset | `AC-011`，reset transaction/event/UI tests |
+| `TR-002` - `TR-009` | 架构 ThreadEvent 真相源 | `AC-009` - `AC-011`，event replay tests |
 
 ## 14. 实现备注
 

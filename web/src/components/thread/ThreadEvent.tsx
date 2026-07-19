@@ -64,6 +64,7 @@ function getBorderClass(type: string): string {
       return "border-l-destructive";
     case ThreadEventType.RunCompleted:
     case ThreadEventType.ValidationPassed:
+    case ThreadEventType.IssueDone:
       return "border-l-success";
     case ThreadEventType.RunInterrupted:
     case ThreadEventType.RunOutputTruncated:
@@ -73,6 +74,7 @@ function getBorderClass(type: string): string {
       return "border-l-warning";
     case ThreadEventType.RunCancelled:
     case ThreadEventType.ValidationRequested:
+    case ThreadEventType.IssueUnblocked:
       return "border-l-secondary";
     default:
       return "border-l-brand";
@@ -91,6 +93,8 @@ const F003_TRACE_TYPES = new Set<string>([
   ThreadEventType.ValidationPassed,
   ThreadEventType.ValidationFailed,
   ThreadEventType.ValidationBlocked,
+  ThreadEventType.IssueDone,
+  ThreadEventType.IssueUnblocked,
 ]);
 
 function renderTraceCard(event: ThreadEventData): React.ReactNode | null {
@@ -110,6 +114,8 @@ function renderTraceCard(event: ThreadEventData): React.ReactNode | null {
     case ThreadEventType.ValidationPassed:
     case ThreadEventType.ValidationFailed:
     case ThreadEventType.ValidationBlocked:
+    case ThreadEventType.IssueDone:
+    case ThreadEventType.IssueUnblocked:
       return <ValidationTraceCard event={event} />;
     default:
       return null;

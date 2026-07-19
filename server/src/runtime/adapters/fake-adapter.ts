@@ -19,6 +19,8 @@ export interface FakeAdapterOptions {
   errorMessage?: string | null;
   traceSignals?: RunTraceSignal[];
   supportsStructuredTrace?: boolean;
+  supportsFinalMessage?: boolean;
+  finalMessage?: string | null;
 }
 
 export class FakeAgentAdapter implements AgentAdapter {
@@ -31,6 +33,7 @@ export class FakeAgentAdapter implements AgentAdapter {
       provider: "fake",
       supportsApprovalHook: false,
       supportsStructuredTrace: options.supportsStructuredTrace ?? true,
+      supportsFinalMessage: options.supportsFinalMessage ?? true,
       executionTimeoutMs: DEFAULT_EXECUTION_TIMEOUT_MS,
     };
 
@@ -43,6 +46,8 @@ export class FakeAgentAdapter implements AgentAdapter {
       errorMessage: options.errorMessage ?? null,
       traceSignals: options.traceSignals ?? [],
       supportsStructuredTrace: options.supportsStructuredTrace ?? true,
+      supportsFinalMessage: options.supportsFinalMessage ?? true,
+      finalMessage: options.finalMessage ?? null,
     };
   }
 
@@ -102,6 +107,7 @@ export class FakeAgentAdapter implements AgentAdapter {
           exitCode: opts.exitCode,
           failureReason: opts.failureReason,
           errorMessage: opts.errorMessage,
+          finalMessage: opts.finalMessage,
         };
         for (const cb of exitCallbacks) {
           cb(result);

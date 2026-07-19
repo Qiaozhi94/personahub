@@ -70,7 +70,7 @@ export function scanTree(
 
     if (lstat.isDirectory()) {
       const result = scanTree(workspacePath, absPath, entries, limits, deadline);
-      if (result.truncated) return result;
+      if (result.truncated || result.stopReason !== null) return result;
     } else if (lstat.isFile()) {
       const { fingerprint, size } = fingerprintFile(absPath, limits.hashedBytesPerFile);
       entries.set(relPath, { path: relPath, fingerprint, size });

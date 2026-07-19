@@ -6,6 +6,7 @@ import { threadRoutes } from "./routes/threads.js";
 import { adapterRoutes } from "./routes/adapters.js";
 import { runRoutes } from "./routes/runs.js";
 import { traceRoutes } from "./routes/traces.js";
+import { validationRoutes } from "./routes/validation.js";
 import type { ProjectService } from "../services/project.js";
 import type { WorkspaceService } from "../services/workspace.js";
 import type { IssueService } from "../services/issue.js";
@@ -17,6 +18,12 @@ import type { ThreadEventService } from "../services/thread-event.js";
 import type { TraceQueryService } from "../services/trace-query.js";
 import type { TraceExportService } from "../services/trace-export.js";
 import type { EventBus } from "../runtime/event-bus.js";
+import type { ValidationQueryService } from "../services/validation/query.js";
+import type { ValidationRecoveryActionService } from "../services/validation/recovery-action.js";
+import type { ValidationWorkflowService } from "../services/validation/workflow-service.js";
+import type { EvidenceSummaryRepository } from "../repositories/evidence-summary.js";
+import type { IssueRepository } from "../repositories/issue.js";
+import type { RunRepository } from "../repositories/run.js";
 
 export interface Services {
   projectService: ProjectService;
@@ -30,6 +37,12 @@ export interface Services {
   eventBus: EventBus;
   traceQueryService: TraceQueryService;
   traceExportService: TraceExportService;
+  validationQueryService: ValidationQueryService;
+  validationRecoveryActionService: ValidationRecoveryActionService;
+  validationWorkflowService: ValidationWorkflowService;
+  evidenceSummaryRepo: EvidenceSummaryRepository;
+  issueRepo: IssueRepository;
+  runRepo: RunRepository;
 }
 
 export function registerRoutes(app: FastifyInstance, services: Services): void {
@@ -49,5 +62,13 @@ export function registerRoutes(app: FastifyInstance, services: Services): void {
   app.register(traceRoutes, {
     traceQueryService: services.traceQueryService,
     traceExportService: services.traceExportService,
+  });
+  app.register(validationRoutes, {
+    validationQueryService: services.validationQueryService,
+    validationRecoveryActionService: services.validationRecoveryActionService,
+    validationWorkflowService: services.validationWorkflowService,
+    evidenceSummaryRepo: services.evidenceSummaryRepo,
+    issueRepo: services.issueRepo,
+    runRepo: services.runRepo,
   });
 }

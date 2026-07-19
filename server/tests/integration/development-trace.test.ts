@@ -15,6 +15,8 @@ import {
 } from "@personahub/shared/types";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { captureFilesystemSnapshot } from "../../src/runtime/trace/filesystem-workspace-scanner.js";
+import { snapshotToJson } from "../../src/runtime/trace/workspace-scanner.js";
 
 function setupIssueAndRun(services: TestServices, tempDir: string) {
   const project = services.projectService.create("Test", "desc");
@@ -334,5 +336,66 @@ describe("ValidationTraceService (T048)", () => {
         validationRound: 1, target: "impl", policyId: "p",
       }),
     ).toThrow();
+  });
+});
+
+describe("DevelopmentTraceService truncated baseline (T092)", () => {
+  let services: TestServices;
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+    services = createTestServices();
+  });
+  afterEach(() => {
+    disposeTestServices(services);
+  });
+
+  it("saves truncated snapshot as baseline and produces modified evidence", () => {
+    const { run, issue } = setupIssueAndRun(services, tempDir);
+
+    // Create enough files to exceed a small entry limit
+    for (let i = 0; i < 60; i++) {
+      writeFileSync(join(tempDir, `file${i}.ts`), `content${i}`);
+    }
+
+    const now = new Date().toISOString();
+
+    // Capture a truncated snapshot with maxEntries=30
+    const smallLimits = {
+      wallTimeMs: 10000, maxEntries: 30, hashedBytesPerFile: 8 * 1024 * 1024, persistedChanges: 5000,
+    };
+    const truncatedSnapshot = captureFilesystemSnapshot(tempDir, smallLimits);
+    expect(truncatedSnapshot.scanTruncated).toBe(true);
+    expect(truncatedSnapshot.scanComplete).toBe(false);
+
+    // Save as baseline via repo directly
+    services.runTraceRepo.createPending(run.id, CommandTraceCapability.Supported, now);
+    const baselineJson = snapshotToJson(truncatedSnapshot);
+    services.runTraceRepo.saveBaseline(run.id, truncatedSnapshot.scannerType, baselineJson, now);
+
+    // Verify baseline is Captured (not Failed) despite truncation
+    const state = services.runTraceRepo.get(run.id);
+    expect(state!.baseline_status).toBe(BaselineStatus.Captured);
+
+    // Modify a file that IS in the truncated snapshot
+    const firstFilePath = [...truncatedSnapshot.entries.keys()][0];
+    writeFileSync(join(tempDir, firstFilePath), "modified content");
+
+    // Start and complete the run, then finalize
+    services.runRepo.transitionStatus(run.id, RunStatus.Queued, RunStatus.Running, { started_at: now });
+    services.runRepo.transitionStatus(run.id, RunStatus.Running, RunStatus.Completed, {
+      completed_at: new Date().toISOString(), exit_code: 0,
+    });
+
+    const result = services.developmentTraceService.finalizeRun(run.id);
+    expect(result.finalized).toBe(true);
+
+    // File event should show scan_truncated and detect the modified file
+    const events = services.threadEventService.listByThread(issue.primary_thread_id!);
+    const fileEvent = events.find(e => e.type === ThreadEventType.FileChangeSummary)!;
+    expect(fileEvent).toBeDefined();
+    expect(fileEvent.payload_json.scan_truncated).toBe(true);
+    expect(fileEvent.payload_json.modified_count).toBe(1);
   });
 });

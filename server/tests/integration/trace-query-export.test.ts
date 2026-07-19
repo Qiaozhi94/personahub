@@ -182,6 +182,34 @@ describe("TraceExportService (T063)", () => {
     expect(result.filename).not.toMatch(/[<>:"/\\|?*]/);
   });
 
+  it("renders all file changes without preview truncation when below global cap (T094)", () => {
+    const { issue, adapter } = setupIssueAndRun(services, tempDir);
+    const run = services.runRepo.create({
+      issue_id: issue.id, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
+      adapter_config_id: adapter.id, instructions: "test", status: RunStatus.Queued,
+    });
+    services.runRepo.transitionStatus(run.id, RunStatus.Queued, RunStatus.Running, { started_at: new Date().toISOString() });
+    services.runTraceRepo.createPending(run.id, CommandTraceCapability.Supported, new Date().toISOString());
+
+    // Create 150 file changes (between eventPreview=100 and exportChanges=5000)
+    const now = new Date().toISOString();
+    const changes = Array.from({ length: 150 }, (_, i) => ({
+      path: `src/file${i}.ts`, previous_path: null,
+      change_type: FileChangeType.Added,
+      before_fingerprint: null, after_fingerprint: `h${i}`,
+    }));
+    services.fileChangeRepo.replaceForRun(run.id, changes, now);
+
+    const result = services.traceExportService.exportIssueTraceMarkdown(issue.id);
+
+    // All 150 changes should be rendered (no per-Run slice)
+    for (let i = 0; i < 150; i++) {
+      expect(result.content).toContain(`src/file${i}.ts`);
+    }
+    // No per-Run truncation message (handled globally only when export cap hit)
+    expect(result.content).not.toContain("more (see Run evidence API for full list)");
+  });
+
   it("throws structured ISSUE_NOT_FOUND for a missing issue (IR-004)", () => {
     let caught: unknown;
     try {

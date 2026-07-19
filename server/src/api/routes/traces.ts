@@ -9,6 +9,18 @@ export interface TraceRoutesOptions {
   traceExportService: TraceExportService;
 }
 
+function parseBoundedInt(raw: string | undefined, fallback: number): number {
+  if (raw === undefined) return fallback;
+  if (!/^\d+$/.test(raw)) {
+    throw new AppError(ErrorCode.INVALID_QUERY, "Invalid limit parameter.");
+  }
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1 || value > 200) {
+    throw new AppError(ErrorCode.INVALID_QUERY, "limit must be between 1 and 200.");
+  }
+  return value;
+}
+
 export const traceRoutes: FastifyPluginAsync<TraceRoutesOptions> = async (
   app: FastifyInstance,
   opts: TraceRoutesOptions,
@@ -22,10 +34,7 @@ export const traceRoutes: FastifyPluginAsync<TraceRoutesOptions> = async (
       limit?: string;
     };
 
-    const limit = query.limit ? parseInt(query.limit, 10) : 100;
-    if (isNaN(limit) || limit < 1 || limit > 200) {
-      throw new AppError(ErrorCode.INVALID_QUERY, "limit must be between 1 and 200.");
-    }
+    const limit = parseBoundedInt(query.limit, 100);
 
     const result = traceQueryService.getIssueTrace(issueId, query.after_event_id, limit);
     return reply.send(result);
@@ -40,14 +49,8 @@ export const traceRoutes: FastifyPluginAsync<TraceRoutesOptions> = async (
       file_limit?: string;
     };
 
-    const eventLimit = query.event_limit ? parseInt(query.event_limit, 10) : 100;
-    const fileLimit = query.file_limit ? parseInt(query.file_limit, 10) : 100;
-    if (isNaN(eventLimit) || eventLimit < 1 || eventLimit > 200) {
-      throw new AppError(ErrorCode.INVALID_QUERY, "event_limit must be between 1 and 200.");
-    }
-    if (isNaN(fileLimit) || fileLimit < 1 || fileLimit > 200) {
-      throw new AppError(ErrorCode.INVALID_QUERY, "file_limit must be between 1 and 200.");
-    }
+    const eventLimit = parseBoundedInt(query.event_limit, 100);
+    const fileLimit = parseBoundedInt(query.file_limit, 100);
 
     const result = traceQueryService.getRunEvidence(
       runId,

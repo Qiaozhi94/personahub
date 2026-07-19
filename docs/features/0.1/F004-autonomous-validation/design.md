@@ -4,12 +4,14 @@ related_features: [F001, F002, F003, F005]
 topics: [autonomous-validation, workflow-engine, validator, evidence-summary, issue-state, recovery]
 doc_kind: design
 created: 2026-07-16
-updated: 2026-07-18
+updated: 2026-07-19
 ---
 
 # F004：Autonomous Validation - 设计
 
-> Status: ready-for-development | Owner: TBD | Spec: `spec.md`
+> Status: done | Owner: Sisyphus | Spec: `spec.md`
+
+> 2026-07-19 final review reopened T090-T095. The architecture remains accepted, but production context wiring, blocked outcome submission, complete summary/export, per-round validator uniqueness, explicit round reset, and schema invariants must land before final verification.
 
 ## 1. 技术概要
 
@@ -186,6 +188,7 @@ F003 已经持久化 `validation.requested/finding/passed/failed/blocked` 五类
 ```ts
 IssueDone = "issue.done"
 IssueUnblocked = "issue.unblocked"
+ValidationRoundReset = "validation.round_reset"
 ```
 
 `Issue` 增加：
@@ -220,22 +223,26 @@ CREATE TABLE IF NOT EXISTS evidence_summaries (
   thread_id TEXT NOT NULL REFERENCES threads(id),
   validator_run_id TEXT NOT NULL REFERENCES runs(id),
   implementation_run_id TEXT NOT NULL REFERENCES runs(id),
-  validation_result TEXT NOT NULL,
+  validation_result TEXT NOT NULL CHECK (validation_result = 'passed'),
   evidence_refs TEXT NOT NULL,
   summary_markdown TEXT NOT NULL,
-  same_origin_validation INTEGER NOT NULL,
+  same_origin_validation INTEGER NOT NULL CHECK (same_origin_validation IN (0, 1)),
   implementation_identity_json TEXT NOT NULL,
   validator_identity_json TEXT NOT NULL,
   policy_id TEXT NOT NULL,
   policy_version INTEGER NOT NULL,
   policy_snapshot_json TEXT NOT NULL,
-  policy_snapshot_hash TEXT NOT NULL,
+  policy_snapshot_hash TEXT NOT NULL CHECK (policy_snapshot_hash LIKE 'sha256:%'),
   created_at TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_one_active_validator
   ON runs(issue_id)
   WHERE role = 'validator' AND status IN ('queued', 'running');
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_one_validator_per_round
+  ON runs(issue_id, validation_round)
+  WHERE role = 'validator';
 
 CREATE INDEX IF NOT EXISTS idx_runs_issue_role_created
   ON runs(issue_id, role, created_at DESC);
@@ -257,8 +264,11 @@ CREATE INDEX IF NOT EXISTS idx_runs_issue_role_created
 - v1-v3 Run 全部迁移为 implementation/user_explicit；这是对已有行为的真实解释。历史 `adapter_identity_json` 可为 null，新建 Run 由 service 强制非空。
 - `issue_id UNIQUE` 保证 Done projection 每个 Issue 只有一份。F004 不支持 reopen；重放 terminal hook 使用 `INSERT ... ON CONFLICT DO NOTHING` 加状态 CAS，不能覆盖历史 Done 证据。
 - active validator partial unique index既保护 F004 重复 callback，也直接成为 F005 手动/自动互斥的数据库底线。
+- per-round unique index 关闭 validator terminal 到 result transaction 之间的并发空窗；同一 Issue/round 无论 Run 已 queued、running 还是 terminal，都不得创建第二条 validator Run。显式补建与 recovery 必须先处理或返回已有 current-round Run。
+- Evidence Summary 是 Done projection，`validation_result` 在 v0.1 只能为 `passed`；failed/blocked 只存在于 ThreadEvent，不创建伪 Done summary。
 - migration 前若意外已有重复 pending validator（理论上旧 schema 无 role，不会出现），迁移测试必须失败并报告，不静默删除数据。
 - SQLite `ALTER TABLE` 和建表在 migration transaction 内执行；版本号只在全部成功后更新。
+- F004 尚未合并/发布时可直接修订 v4 建表与索引；若任何已保留数据库已经记录 schema version 4，则必须新增 v5 migration 落这些 invariant，不能只改 `schema-v4.ts` 后假设旧库会重跑。
 
 ### 4.2 Workflow 与 ValidationPolicy seed
 
@@ -425,7 +435,9 @@ validator      -> Validating，且 validation_round 等于当前 round
 4. 写 `validation.requested`，固化 `implementation_run_id`、validator Run/config、implementation identity、完整 policy snapshot/hash，refs 指向 implementation handoff/file/test evidence。
 5. 写 `run.queued`，因此对外 event sequence 仍是 requested 在 queued 之前。
 
-若 implementation identity缺失或 policy/validator 配置无效，第 1 步不单独提交，改为同 transaction `Running -> Blocked` + `validation.blocked`。DB unique conflict表示另一路已创建 validator；重新读取 active Run，若 round/Issue 匹配则幂等成功，否则以 `recovery_inconsistent` Blocked。
+若 Issue 已 Validating，先查 current-round validator（不限于 active status）：queued/running 返回现有 Run；terminal 且尚无 result event 时先进入统一 result submission/recovery，不创建重复 Run；已有 result 时按幂等结果返回。
+
+若 implementation identity缺失或 policy/validator 配置无效，第 1 步不单独提交，改为同 transaction `Running -> Blocked` + `validation.blocked`。DB unique conflict表示另一路已创建 validator；重新读取该 Issue/round 的 Run，若 scope 匹配则幂等返回，否则以 `recovery_inconsistent` Blocked。
 
 事务提交后按 event sequence 广播，再让 queue 尝试取得 workspace lock。不得在 transaction 内 spawn adapter。
 
@@ -436,6 +448,7 @@ validator      -> Validating，且 validation_round 等于当前 round
 - `completed`：解析 finalMessage并进入 outcome submission。
 - `failed/cancelled/interrupted`：Blocked `validator_run_failed`，不增加 failed round count。
 - duplicate callback：如果 Issue 已不是 Validating或已有该 run 的 result event，幂等返回。
+- strict envelope 的 `outcome=blocked`：写 `validation.blocked`、持久化 reason/missing evidence，并将 Issue 置 Blocked；不得无动作返回或永久停留 Validating。
 
 Outcome submission 先在事务外完成 parse、evidence resolve、summary draft；事务内重新校验 Issue/Run/round，防止 stale result 覆盖新状态。
 
@@ -473,8 +486,16 @@ else -> Running
 
 - `operator_note.trim()` 长度 1-4000；
 - transaction CAS `Blocked -> Ready`，清 blocker columns，写 `issue.unblocked`；
-- 不重置 `validation_round_count`，历史 round 继续受上限约束；若是 round limit，operator 必须先通过独立 policy/config 操作提高上限或新建 Issue，单纯 unblock 后再次 fail仍会 Blocked。
+- 普通 unblock 不重置 `validation_round_count`，历史 round 继续受上限约束。
 - 不自动创建/启动 Run。
+
+Round reset 与 unblock 是两个动作：
+
+- 仅 `blocked_reason_code=round_limit_reached` 时允许 reset；
+- 请求必须包含 `operator_note.trim()` 长度 1-4000；
+- transaction 内将 `validation_round_count` 从旧值置 0，并写 `validation.round_reset`（old/new/note）；
+- Issue 仍为 Blocked，blocker 不清除；operator 随后显式 unblock 才进入 Ready；
+- 普通 unblock 永远不隐式清零。
 
 ### 6.7 Recovery
 
@@ -526,7 +547,7 @@ Done且存在返回 `{ evidence_summary }`；非 Done或尚无 summary 返回 40
 POST /api/issues/:issue_id/validation
 ```
 
-F004 仅允许以下幂等语义：Issue 已 `Validating` 且尚无 active validator时补建默认 validator；正常 implementation completion仍自动调用同一 service。Running/Ready/Blocked/Done 返回 `INVALID_ISSUE_TRANSITION`。若已有 active validator，返回现有 Run而不是创建重复记录。
+F004 仅允许以下幂等语义：Issue 已 `Validating` 且当前 round 没有任何 validator Run 时补建默认 validator；正常 implementation completion仍自动调用同一 service。Running/Ready/Blocked/Done 返回 `INVALID_ISSUE_TRANSITION`。若当前 round 已有 queued/running Run，返回现有 Run；若已有 terminal Run但尚无 result，先处理/恢复该 Run，不能创建第二条。
 
 若显式补建时发现 validator/config 不可用，service 仍按统一状态机提交 `validation.blocked` + Issue Blocked；HTTP 返回 409 `VALIDATOR_UNAVAILABLE` 并携带更新后的 blocker metadata。该 409 是“请求未能创建 validator，但状态已安全收敛”的领域结果，不是无副作用回滚。
 
@@ -541,7 +562,22 @@ Content-Type: application/json
 
 成功返回更新后的 Issue。空 note -> `OPERATOR_NOTE_REQUIRED` (400)；非 Blocked或非 validation blocker -> `INVALID_ISSUE_TRANSITION` (409)。F002 escalation blocker暂不由此接口恢复，避免扩大 scope。
 
-### 7.5 新错误码
+### 7.5 Explicit round reset
+
+```http
+POST /api/issues/:issue_id/validation-rounds/reset
+Content-Type: application/json
+
+{ "operator_note": "Requirements changed; grant a fresh validation budget." }
+```
+
+仅 `round_limit_reached` blocker 允许。成功返回仍为 Blocked 的 Issue 和 reset event identity；空 note 为 400，其他 blocker/status 为 409。reset 与 unblock 分离，避免一个看似普通的恢复动作静默抹除安全计数。
+
+### 7.6 Evidence Summary Markdown export
+
+Inspector 直接从 `EvidenceSummary.summary_markdown` 提供 Copy Markdown / Download `.md`。不重新渲染、不调用 LLM、不自动写入 workspace；文件名使用经过清理的 Issue title/id。现有 GET summary contract 足以支持前端下载，无需新增生成型 API。
+
+### 7.7 新错误码
 
 | ErrorCode | HTTP | 场景 |
 | --- | --- | --- |
@@ -552,6 +588,7 @@ Content-Type: application/json
 | `EVIDENCE_REQUIREMENTS_NOT_MET` | 409 | result声称 pass但 deterministic gate失败 |
 | `EVIDENCE_SUMMARY_NOT_FOUND` | 404 | Issue无 Done summary |
 | `OPERATOR_NOTE_REQUIRED` | 400 | unblock note为空 |
+| `VALIDATION_ROUND_RESET_NOT_ALLOWED` | 409 | 非 round-limit blocker 或状态不允许 reset |
 
 ## 8. Event / Trace 设计
 
@@ -592,6 +629,7 @@ Content-Type: application/json
 - `validation.passed`：summary、finding_count=0、validator/implementation Run、policy id/version、same_origin_validation。
 - `validation.failed`：summary、finding_count、next_status (`Running|Blocked`)。
 - `validation.blocked`：reason_code、summary、missing_evidence、validator_run_id可空。
+- `validation.round_reset`：previous_round_count、new_round_count=0、operator_note、previous_block_reason；Issue status 仍为 Blocked。
 - `issue.done`：previous_status、evidence_summary_id、validation_event_id。
 - `issue.unblocked`：previous_status、status=Ready、operator_note、previous_block_reason。
 
@@ -638,9 +676,11 @@ Same-origin 只比较 implementation/validator Run 创建时写入 `runs.adapter
 
 ### 10.2 Inspector
 
-新增 `Validation` section：当前状态、`round / max`、active validator、latest findings、blocker、same-origin badge。Done显示完整 summary；Blocked显示 reason和“Resolve blocker”按钮。
+新增 `Validation` section：当前状态、`round / max`、active validator、latest findings、blocker、same-origin badge。Done显示完整 summary；Blocked显示 reason和“Resolve blocker”按钮；round-limit blocker 另显示明确的“Reset validation rounds”操作，并说明 reset 不会自动 unblock。
 
 Unblock dialog要求 note，前端只做便利校验，后端仍强制。成功后刷新 issue/validation/events/runs；不会自动发送指令。
+
+Done summary 区域提供 Copy Markdown 与 Download Markdown，内容直接使用持久化 `summary_markdown`。
 
 ### 10.3 Adapter Settings
 
@@ -718,6 +758,8 @@ F004 在既有 Codex配置表单增加 role选择和只读 capability提示。�
 | validator用显式role选择 | 固定workflow角色、确定性、可解释 | 自动把implementation config复用；掩盖缺配置 |
 | 第N次fail计入后与max比较 | max=3直观表示最多三次失败结果 | 超过后第4次才Block；多跑一轮 |
 | Blocked恢复到Ready且保留round | operator action不等于任务正在运行，历史不能抹除 | 回Running/清零；制造错误状态或绕过limit |
+| round reset独立于unblock | 清零是安全预算变更，必须显式、带note且可追溯 | unblock隐式清零；用户无法判断历史是否被抹除 |
+| 同一Issue/round仅一条validator Run | 关闭terminal到result提交之间的重复创建窗口 | 只限制queued/running；在线race可重复验证同一round |
 
 ### 13.1 Requirement → Design映射
 
@@ -733,10 +775,11 @@ F004 在既有 Codex配置表单增加 role选择和只读 capability提示。�
 | `FR-008` Same-Origin | 9 identity比较与历史限制、10 UI |
 | `FR-009` Blocked恢复 | 6.6恢复规则、7.4 API |
 | `FR-010` Validation UI | 7.1 query projection、10 Thread/Inspector |
+| `FR-011` Round reset | 6.6显式reset规则、7.5 API、8 event、10 Inspector |
 
 ## 14. 待确认设计问题
 
-目前没有未关闭的设计问题：
+产品级设计问题已关闭；final review 发现的实现缺口已转为 T090-T095：
 
 - **已关闭：validator输出协议**——使用 final agent message严格JSON；真实Codex final message字段由实现probe验证，字段差异只改adapter normalizer，不改领域contract。
 - **已关闭：下一轮修复是否自动启动**——不自动，等待用户明确发起。
@@ -744,6 +787,9 @@ F004 在既有 Codex配置表单增加 role选择和只读 capability提示。�
 - **已关闭：同源验证**——允许并标记；不把同源伪装成跨provider独立验证。
 - **已关闭：round上限边界**——本次fail计入后 `>= max` 即Blocked。
 - **已关闭：手动触发**——公开接口只补建当前Validating的默认validator，不允许任意状态重验Done或绕过Blocked。
+- **已关闭：round reset**——普通 unblock 保留 round；仅 round-limit blocker 可通过独立、带 note 的 reset action 清零，reset 后仍 Blocked。
+- **已关闭：summary export**——F004 提供复制/下载已持久化 Markdown，不自动写 workspace。
+- **已关闭：terminal validator race**——同一 Issue/round 全生命周期唯一；terminal 未提交 result 时处理/返回现有 Run，不重建。
 
 - **已关闭：Codex final-message 契约**——真实 Codex `0.144.5`（Windows）probe 完成，final message = `item/completed` 中 `phase === "final_answer"` 的 agentMessage `text`（禁止累加 delta、禁止依赖 turn/completed），命令输出隔离与 Unicode 已验证，见 §5.1。
 

@@ -13,6 +13,7 @@ import { AgentConfigRepository } from "./repositories/agent-config.js";
 import { RunRepository } from "./repositories/run.js";
 import { RunTraceRepository } from "./repositories/run-trace.js";
 import { FileChangeRepository } from "./repositories/file-change.js";
+import { EvidenceSummaryRepository } from "./repositories/evidence-summary.js";
 import { EvidenceService } from "./services/evidence.js";
 import { DevelopmentTraceService } from "./services/development-trace.js";
 import { ValidationTraceService } from "./services/validation-trace.js";
@@ -27,6 +28,10 @@ import { ThreadEventService } from "./services/thread-event.js";
 import { WorkspaceLockService } from "./services/workspace-lock.js";
 import { RunService } from "./services/run.js";
 import { StaleRecoveryService } from "./services/stale-recovery.js";
+import { ValidationQueryService } from "./services/validation/query.js";
+import { ValidationRecoveryActionService } from "./services/validation/recovery-action.js";
+import { ValidationRecoveryService } from "./services/validation/recovery-service.js";
+import { ValidationWorkflowService } from "./services/validation/workflow-service.js";
 import { RunDispatchService } from "./services/run-dispatch.js";
 import { EventBus } from "./runtime/event-bus.js";
 import { AgentAdapterRegistry } from "./runtime/adapter-registry.js";
@@ -73,7 +78,7 @@ async function main() {
   const workspaceLockService = new WorkspaceLockService(workspaceRepo);
   const runService = new RunService(
     runRepo, threadEventService, issueRepo, workspaceRepo,
-    agentConfigRepo, workspaceLockService, db,
+    agentConfigRepo, workspaceLockService, threadEventRepo, db,
   );
 
   const adapterRegistry = new AgentAdapterRegistry();
@@ -102,10 +107,18 @@ async function main() {
     issueRepo, runRepo, threadEventRepo, fileChangeRepo, runTraceRepo, evidenceService,
   );
 
+  const evidenceSummaryRepo = new EvidenceSummaryRepository(db);
+  const validationWorkflowService = new ValidationWorkflowService(
+    db, issueRepo, runRepo, threadEventService, threadEventRepo,
+    validationTraceService, agentConfigRepo, workflowTemplateRepo,
+    validationPolicyRepo, evidenceSummaryRepo, fileChangeRepo,
+  );
+
   const runDispatchService = new RunDispatchService(
     runService, workspaceLockService, adapterRegistry,
     agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
-    threadEventService, agentRunner, developmentTraceService, runTraceRepo, db,
+    threadEventService, agentRunner, developmentTraceService, runTraceRepo,
+    validationWorkflowService, db,
   );
 
   const staleRecoveryService = new StaleRecoveryService(
@@ -114,6 +127,12 @@ async function main() {
   );
 
   await staleRecoveryService.runAll();
+
+  const validationRecoveryService = new ValidationRecoveryService(
+    issueRepo, runRepo, validationWorkflowService,
+    threadEventRepo, agentConfigRepo,
+  );
+  await validationRecoveryService.reconcile();
 
   const app = Fastify({ logger: true });
 
@@ -150,6 +169,16 @@ async function main() {
     eventBus,
     traceQueryService,
     traceExportService,
+    validationQueryService: new ValidationQueryService(
+      issueRepo, runRepo, evidenceSummaryRepo, validationPolicyRepo, threadEventRepo,
+    ),
+    validationRecoveryActionService: new ValidationRecoveryActionService(
+      issueRepo, validationTraceService, db,
+    ),
+    validationWorkflowService,
+    evidenceSummaryRepo,
+    issueRepo,
+    runRepo,
   });
 
   app.addHook("onClose", async () => {

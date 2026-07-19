@@ -7,6 +7,7 @@ import type { ProjectRepository } from "../repositories/project.js";
 import { AppError } from "../api/errors.js";
 
 const VALID_PROVIDERS = new Set(["codex"]);
+const VALID_ROLES = new Set(["implementation", "validator"]);
 
 export interface AdapterConfigCreateServiceInput {
   name: string;
@@ -19,6 +20,7 @@ export interface AdapterConfigCreateServiceInput {
 
 export interface AdapterConfigUpdateServiceInput {
   name?: string;
+  role?: string;
   command?: string;
   args?: string[];
   default_model?: string | null;
@@ -63,6 +65,11 @@ export class AdapterConfigService {
       throw new AppError(ErrorCode.ADAPTER_COMMAND_REQUIRED, "Adapter name is required.", "name");
     }
 
+    const role = input.role ?? "implementation";
+    if (!VALID_ROLES.has(role)) {
+      throw new AppError(ErrorCode.ADAPTER_ROLE_INVALID, `Invalid adapter role: ${role}. Allowed: implementation, validator.`, "role");
+    }
+
     if (!VALID_PROVIDERS.has(input.cli_provider)) {
       throw new AppError(ErrorCode.ADAPTER_PROVIDER_UNSUPPORTED, `Unsupported provider: ${input.cli_provider}. Supported: codex.`);
     }
@@ -78,7 +85,7 @@ export class AdapterConfigService {
     return this.agentConfigRepo.create({
       project_id: projectId,
       name: trimmedName,
-      role: input.role ?? "implementation",
+      role,
       cli_provider: input.cli_provider,
       command: trimmedCommand,
       args: input.args ?? [],
@@ -112,6 +119,7 @@ export class AdapterConfigService {
 
     const updates: {
       name?: string;
+      role?: string;
       command?: string;
       args?: string[];
       default_model?: string | null;
@@ -126,6 +134,13 @@ export class AdapterConfigService {
         throw new AppError(ErrorCode.ADAPTER_COMMAND_REQUIRED, "Adapter name cannot be empty.", "name");
       }
       updates.name = trimmed;
+    }
+
+    if (input.role !== undefined) {
+      if (!VALID_ROLES.has(input.role)) {
+        throw new AppError(ErrorCode.ADAPTER_ROLE_INVALID, `Invalid adapter role: ${input.role}. Allowed: implementation, validator.`, "role");
+      }
+      updates.role = input.role;
     }
 
     if (input.command !== undefined) {

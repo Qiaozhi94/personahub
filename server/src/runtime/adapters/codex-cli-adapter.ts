@@ -13,6 +13,7 @@ import type {
 import { DEFAULT_EXECUTION_TIMEOUT_MS, CANCEL_TIMEOUT_MS } from "../types.js";
 import { buildChildEnv } from "../workspace-context.js";
 import { normalizeCodexTraceNotification } from "./codex-trace-normalizer.js";
+import { CodexFinalMessageCapture, truncateFinalMessage } from "./codex-final-message-capture.js";
 import {
   type JsonRpcRequest,
   type JsonRpcResponse,
@@ -33,6 +34,7 @@ export class CodexCliAdapter implements AgentAdapter {
     provider: "codex",
     supportsApprovalHook: true,
     supportsStructuredTrace: true,
+    supportsFinalMessage: true,
     executionTimeoutMs: DEFAULT_EXECUTION_TIMEOUT_MS,
   };
 
@@ -57,6 +59,7 @@ export class CodexCliAdapter implements AgentAdapter {
     let credentialFailureDetected = false;
     let threadId: string | null = null;
     let turnId: string | null = null;
+    const finalMessageCapture = new CodexFinalMessageCapture();
 
     const callExit = (result: RunExitResult) => {
       if (exited) return;
@@ -68,7 +71,7 @@ export class CodexCliAdapter implements AgentAdapter {
     };
 
     const failSpawn = (errorMessage: string): RunHandle => {
-      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage });
+      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage, finalMessage: null });
       return createHandle();
     };
 
@@ -128,11 +131,7 @@ export class CodexCliAdapter implements AgentAdapter {
             gitPushAttempted = true;
             sendResponse(msg.id, { decision: "cancel" });
             escalationTriggered = true;
-            finish({
-              exitCode: null,
-              failureReason: FR.PreExecutionApprovalRejected,
-              errorMessage: typeof command === "string" ? command : JSON.stringify(command),
-            });
+            finish({ exitCode: null, failureReason: FR.PreExecutionApprovalRejected, errorMessage: typeof command === "string" ? command : JSON.stringify(command), finalMessage: null });
           } else {
             sendResponse(msg.id, { decision: "accept" });
           }
@@ -148,17 +147,15 @@ export class CodexCliAdapter implements AgentAdapter {
           }
         }
 
+        finalMessageCapture.handleNotification(msg.method, msg.params);
+
         if (msg.method === "turn/completed") {
           turnCompleted = true;
           const turn = msg.params?.turn as { status?: string; error?: { message?: string } } | undefined;
           if (turn?.status === "completed" || !turn?.status) {
-            finish({ exitCode: 0, failureReason: null, errorMessage: null });
+            finish({ exitCode: 0, failureReason: null, errorMessage: null, finalMessage: truncateFinalMessage(finalMessageCapture.getFinalMessage()) });
           } else {
-            finish({
-              exitCode: null,
-              failureReason: FR.OutputParseFailed,
-              errorMessage: turn.error?.message ?? `Codex turn ${turn.status}`,
-            });
+            finish({ exitCode: null, failureReason: FR.OutputParseFailed, errorMessage: turn.error?.message ?? `Codex turn ${turn.status}`, finalMessage: null });
           }
           return;
         }
@@ -169,11 +166,7 @@ export class CodexCliAdapter implements AgentAdapter {
             emitOutput("stdout", delta);
             if (!escalationTriggered && isGitPushOutput(delta) && !input.workspace.pushCredentialsEnabled) {
               escalationTriggered = true;
-              finish({
-                exitCode: null,
-                failureReason: FR.PostHocEscalation,
-                errorMessage: delta.trim().slice(0, 200),
-              });
+              finish({ exitCode: null, failureReason: FR.PostHocEscalation, errorMessage: delta.trim().slice(0, 200), finalMessage: null });
             }
           }
           return;
@@ -200,7 +193,7 @@ export class CodexCliAdapter implements AgentAdapter {
             local_path: input.workspace.localPath,
           }),
           stdio: ["pipe", "pipe", "pipe"],
-          shell: false,
+          shell: process.platform === "win32",
         },
       );
     } catch (err) {
@@ -238,36 +231,20 @@ export class CodexCliAdapter implements AgentAdapter {
     });
 
     childProcess.on("error", (err) => {
-      callExit({
-        exitCode: null,
-        failureReason: FR.SpawnFailed,
-        errorMessage: `Process error: ${err.message}`,
-      });
+      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage: `Process error: ${err.message}`, finalMessage: null });
     });
 
     childProcess.on("exit", (code, signal) => {
       if (!exited && !turnCompleted) {
         if (escalationTriggered) return;
         if (code !== null && code !== 0) {
-          const isCredentialIssue = gitPushAttempted
-            && !input.workspace.pushCredentialsEnabled
-            && credentialFailureDetected;
-          const failureReason: FailureReason = isCredentialIssue
-            ? FR.CredentialIsolationBlocked
-            : FR.AdapterExitNonzero;
-          callExit({
-            exitCode: code,
-            failureReason,
-            errorMessage: `Process exited with code ${code}`,
-          });
+          const isCredentialIssue = gitPushAttempted && !input.workspace.pushCredentialsEnabled && credentialFailureDetected;
+          const failureReason: FailureReason = isCredentialIssue ? FR.CredentialIsolationBlocked : FR.AdapterExitNonzero;
+          callExit({ exitCode: code, failureReason, errorMessage: `Process exited with code ${code}`, finalMessage: null });
         } else if (signal) {
-          callExit({
-            exitCode: null,
-            failureReason: FR.SpawnFailed,
-            errorMessage: `Process killed by signal ${signal}`,
-          });
+          callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage: `Process killed by signal ${signal}`, finalMessage: null });
         } else {
-          callExit({ exitCode: code ?? 0, failureReason: null, errorMessage: null });
+          callExit({ exitCode: code ?? 0, failureReason: null, errorMessage: null, finalMessage: null });
         }
       }
     });
@@ -298,11 +275,7 @@ export class CodexCliAdapter implements AgentAdapter {
         turnId = turn.id;
       }
     }).catch((err) => {
-      finish({
-        exitCode: null,
-        failureReason: FR.OutputParseFailed,
-        errorMessage: `Codex protocol startup failed: ${String(err)}`,
-      });
+      finish({ exitCode: null, failureReason: FR.OutputParseFailed, errorMessage: `Codex protocol startup failed: ${String(err)}`, finalMessage: null });
     });
 
     function createHandle(): RunHandle {
@@ -334,7 +307,7 @@ export class CodexCliAdapter implements AgentAdapter {
             void 0;
           }
           if (!exited) {
-            finish({ exitCode: null, failureReason: null, errorMessage: null });
+            finish({ exitCode: null, failureReason: null, errorMessage: null, finalMessage: null });
           }
         },
       };
