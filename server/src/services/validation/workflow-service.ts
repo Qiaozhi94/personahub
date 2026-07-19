@@ -15,6 +15,7 @@ import { selectValidator } from "./validator-selector.js";
 import { buildPolicySnapshot, hashPolicySnapshot, checkEvidenceRequirements } from "./policy-gate.js";
 import { parseValidationResult } from "./result-parser.js";
 import { buildEvidenceSummary, type EvidenceSummaryBuildInput, type SummaryVerificationEvent } from "./evidence-summary-builder.js";
+import { assembleValidatorContext } from "./context-assembler.js";
 
 export class ValidationWorkflowService {
   constructor(
@@ -86,6 +87,24 @@ export class ValidationWorkflowService {
         adapter_config_id: selectorResult.selected.id, instructions: "", status: RunStatus.Queued,
         role: RunRole.Validator, dispatch_source: RunDispatchSource.System, validation_round: round, adapter_identity: validatorIdentity,
       });
+      try {
+        const ctx = assembleValidatorContext(
+          { threadEventRepo: this.threadEventRepo, fileChangeRepo: this.fileChangeRepo },
+          {
+            issue: { title: issue.title, goal: issue.goal },
+            threadId: issue.primary_thread_id!,
+            implementationRunId,
+            implementationRun: { id: implementationRunId, identity: implRun.adapter_identity! },
+            validatorRun: { id: validatorRun.id, identity: validatorIdentity },
+            policySnapshot, policySnapshotHash: snapshotHash, validationRound: round,
+          },
+        );
+        this.runRepo.updateInstructions(validatorRun.id, ctx.markdown);
+      } catch {
+        const freshIssue = this.issueRepo.getById(issueId);
+        if (freshIssue) this.blockIssueInTx(freshIssue, ValidationBlockReason.WorkflowConfigurationInvalid, "Failed to build validator context", pendingEvents);
+        return null;
+      }
       pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.ValidationRequested, ActorType.System, null, {
         issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
         validation_round: round, target: "implementation_result", policy_id: policy.id, policy_version: policy.version,

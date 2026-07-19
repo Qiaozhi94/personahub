@@ -9,6 +9,9 @@ import type { AgentConfigRepository } from "../repositories/agent-config.js";
 import type { ThreadEventService } from "./thread-event.js";
 import type { WorkspaceLockService } from "./workspace-lock.js";
 import { AppError } from "../api/errors.js";
+import type { ThreadEventRepository } from "../repositories/thread-event.js";
+import { collectPriorFindings } from "./validation/context-assembler.js";
+import { buildRepairContext } from "./validation/context-builder.js";
 
 export interface RunCreateServiceInput {
   instructions: string;
@@ -23,6 +26,7 @@ export class RunService {
     private workspaceRepo: WorkspaceRepository,
     private agentConfigRepo: AgentConfigRepository,
     private workspaceLockService: WorkspaceLockService,
+    private threadEventRepo: ThreadEventRepository,
     private db: Database.Database,
   ) {}
 
@@ -63,6 +67,19 @@ export class RunService {
       default_model: adapter.default_model,
     };
 
+    // Repair context: when this Issue has already been through a failed
+    // validation round and looped back to Running, surface the latest round's
+    // findings to the next implementation agent so it knows what to fix.
+    let finalInstructions = trimmedInstructions;
+    if (issue.status === IS.Running && issue.validation_round_count > 0) {
+      const allFindings = collectPriorFindings(this.threadEventRepo, threadId);
+      if (allFindings.length > 0) {
+        const latestRound = Math.max(...allFindings.map((f) => f.validation_round));
+        const latestFindings = allFindings.filter((f) => f.validation_round === latestRound);
+        finalInstructions = buildRepairContext({ baseInstructions: trimmedInstructions, latestFailedFindings: latestFindings, validationRound: latestRound });
+      }
+    }
+
     const { run, event } = this.db.transaction(() => {
       const freshIssue = this.issueRepo.getById(issueId);
       if (!freshIssue) {
@@ -80,7 +97,7 @@ export class RunService {
         thread_id: threadId,
         workspace_id: workspace.id,
         adapter_config_id: adapterId,
-        instructions: trimmedInstructions,
+        instructions: finalInstructions,
         status: RS.Queued,
         role: RunRole.Implementation,
         dispatch_source: RunDispatchSource.UserExplicit,

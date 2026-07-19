@@ -106,7 +106,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   const workspaceLockService = new WorkspaceLockService(workspaceRepo);
   const runService = new RunService(
     runRepo, threadEventService, issueRepo, workspaceRepo,
-    agentConfigRepo, workspaceLockService, db,
+    agentConfigRepo, workspaceLockService, threadEventRepo, db,
   );
 
   const evidenceService = new EvidenceService(threadEventRepo, fileChangeRepo, runRepo, runTraceRepo);

@@ -78,7 +78,7 @@ async function main() {
   const workspaceLockService = new WorkspaceLockService(workspaceRepo);
   const runService = new RunService(
     runRepo, threadEventService, issueRepo, workspaceRepo,
-    agentConfigRepo, workspaceLockService, db,
+    agentConfigRepo, workspaceLockService, threadEventRepo, db,
   );
 
   const adapterRegistry = new AgentAdapterRegistry();
