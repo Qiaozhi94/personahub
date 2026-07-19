@@ -116,6 +116,83 @@ export class ThreadEventRepository {
     return rows.map(mapRow);
   }
 
+  getLatestByTypeAndPayload(
+    threadId: string,
+    type: ThreadEventType,
+    payloadKey: string,
+    payloadValue: string,
+  ): ThreadEvent | null {
+    const row = this.db.prepare(
+      `SELECT * FROM thread_events
+       WHERE thread_id = ? AND type = ?
+         AND json_extract(payload_json, '$.' || ?) = ?
+       ORDER BY event_sequence DESC LIMIT 1`
+    ).get(threadId, type, payloadKey, payloadValue) as ThreadEventRow | undefined;
+    return row ? mapRow(row) : null;
+  }
+
+  existsByTypeAndPayload(
+    threadId: string,
+    type: ThreadEventType,
+    payloadKey: string,
+    payloadValue: string,
+  ): boolean {
+    const row = this.db.prepare(
+      `SELECT 1 FROM thread_events
+       WHERE thread_id = ? AND type = ?
+         AND json_extract(payload_json, '$.' || ?) = ?
+       LIMIT 1`
+    ).get(threadId, type, payloadKey, payloadValue);
+    return row !== undefined;
+  }
+
+  listByThreadTypeAndPayload(
+    threadId: string,
+    types: ThreadEventType[],
+    payloadKey: string,
+    payloadValue: string,
+    limit = 200,
+  ): ThreadEvent[] {
+    if (types.length === 0) return [];
+    const placeholders = types.map(() => "?").join(", ");
+    const rows = this.db.prepare(
+      `SELECT * FROM thread_events
+       WHERE thread_id = ? AND type IN (${placeholders})
+         AND json_extract(payload_json, '$.' || ?) = ?
+       ORDER BY event_sequence DESC LIMIT ?`
+    ).all(threadId, ...types, payloadKey, payloadValue, limit) as ThreadEventRow[];
+    return rows.map(mapRow);
+  }
+
+  getLatestByThreadAndTypes(
+    threadId: string,
+    types: ThreadEventType[],
+  ): ThreadEvent | null {
+    if (types.length === 0) return null;
+    const placeholders = types.map(() => "?").join(", ");
+    const row = this.db.prepare(
+      `SELECT * FROM thread_events
+       WHERE thread_id = ? AND type IN (${placeholders})
+       ORDER BY event_sequence DESC LIMIT 1`
+    ).get(threadId, ...types) as ThreadEventRow | undefined;
+    return row ? mapRow(row) : null;
+  }
+
+  listLatestByThreadAndTypes(
+    threadId: string,
+    types: ThreadEventType[],
+    limit: number,
+  ): ThreadEvent[] {
+    if (types.length === 0) return [];
+    const placeholders = types.map(() => "?").join(", ");
+    const rows = this.db.prepare(
+      `SELECT * FROM thread_events
+       WHERE thread_id = ? AND type IN (${placeholders})
+       ORDER BY event_sequence DESC LIMIT ?`
+    ).all(threadId, ...types, limit) as ThreadEventRow[];
+    return rows.map(mapRow);
+  }
+
   getNextSequence(): number {
     const row = this.db.prepare(
       "SELECT COALESCE(MAX(event_sequence), 0) + 1 as next_seq FROM thread_events"

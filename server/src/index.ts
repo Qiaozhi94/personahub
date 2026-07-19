@@ -130,9 +130,14 @@ async function main() {
 
   const validationRecoveryService = new ValidationRecoveryService(
     issueRepo, runRepo, validationWorkflowService,
-    threadEventRepo, agentConfigRepo,
+    threadEventRepo, agentConfigRepo, db, threadEventService,
   );
   await validationRecoveryService.reconcile();
+
+  const allWorkspaces = workspaceRepo.listAll();
+  for (const ws of allWorkspaces) {
+    await runDispatchService.drainWorkspace(ws.id);
+  }
 
   const app = Fastify({ logger: true });
 

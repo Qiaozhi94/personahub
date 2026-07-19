@@ -102,6 +102,11 @@ export class WorkspaceRepository {
     ).run(now, runId);
   }
 
+  listAll(): Workspace[] {
+    const rows = this.db.prepare("SELECT * FROM workspaces").all() as WorkspaceRow[];
+    return rows.map(mapRow);
+  }
+
   listLockedWorkspaces(): Workspace[] {
     const rows = this.db.prepare(
       "SELECT * FROM workspaces WHERE lock_state = 'locked'"

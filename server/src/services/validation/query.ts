@@ -89,14 +89,11 @@ export class ValidationQueryService {
   }
 
   private getLatestResult(threadId: string): ValidationResultSummary | null {
-    const events = this.threadEventRepo.listByThreadAndTypes(
+    const event = this.threadEventRepo.getLatestByThreadAndTypes(
       threadId,
       [...RESULT_EVENT_TYPES],
-      undefined,
-      1000,
     );
-    if (events.length === 0) return null;
-    const event = events[events.length - 1];
+    if (!event) return null;
     return this.mapResultEvent(event);
   }
 
@@ -132,10 +129,9 @@ export class ValidationQueryService {
     );
     if (targetRound === null) return [];
 
-    const findingEvents = this.threadEventRepo.listByThreadAndTypes(
+    const findingEvents = this.threadEventRepo.listLatestByThreadAndTypes(
       threadId,
       [ThreadEventType.ValidationFinding],
-      undefined,
       1000,
     );
 
@@ -143,6 +139,11 @@ export class ValidationQueryService {
       .filter(
         (e) =>
           (e.payload_json.validation_round as number) === targetRound,
+      )
+      .sort(
+        (a, b) =>
+          ((a.payload_json.finding_index as number) ?? 0) -
+          ((b.payload_json.finding_index as number) ?? 0),
       );
 
     return roundFindings
@@ -172,15 +173,11 @@ export class ValidationQueryService {
     if (latestResult) return latestResult.validation_round;
 
     if (issue.status === IssueStatus.Validating) {
-      const requestedEvents = this.threadEventRepo.listByThreadAndTypes(
+      const lastRequested = this.threadEventRepo.getLatestByThreadAndTypes(
         threadId,
         [ThreadEventType.ValidationRequested],
-        undefined,
-        1000,
       );
-      if (requestedEvents.length > 0) {
-        const lastRequested =
-          requestedEvents[requestedEvents.length - 1];
+      if (lastRequested) {
         return (
           (lastRequested.payload_json
             .validation_round as number) ?? null
@@ -202,15 +199,11 @@ export class ValidationQueryService {
     if (latestResult) return latestResult.validation_round;
 
     if (threadId && issue.status === IssueStatus.Validating) {
-      const requestedEvents = this.threadEventRepo.listByThreadAndTypes(
+      const lastRequested = this.threadEventRepo.getLatestByThreadAndTypes(
         threadId,
         [ThreadEventType.ValidationRequested],
-        undefined,
-        1000,
       );
-      if (requestedEvents.length > 0) {
-        const lastRequested =
-          requestedEvents[requestedEvents.length - 1];
+      if (lastRequested) {
         return (
           (lastRequested.payload_json
             .validation_round as number) ?? null
@@ -234,15 +227,12 @@ export class ValidationQueryService {
   } | null {
     if (!issue.blocked_reason_code || !threadId) return null;
 
-    const blockedEvents = this.threadEventRepo.listByThreadAndTypes(
+    const latestBlocked = this.threadEventRepo.getLatestByThreadAndTypes(
       threadId,
       [ThreadEventType.ValidationBlocked],
-      undefined,
-      1000,
     );
-    if (blockedEvents.length === 0) return null;
+    if (!latestBlocked) return null;
 
-    const latestBlocked = blockedEvents[blockedEvents.length - 1];
     return {
       reason_code: issue.blocked_reason_code,
       message: issue.blocked_reason_message ?? "",

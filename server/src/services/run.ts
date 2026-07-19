@@ -50,6 +50,10 @@ export class RunService {
       throw new AppError(ErrorCode.ADAPTER_UNAVAILABLE, "Adapter is not available.");
     }
 
+    if (adapter.role !== RunRole.Implementation) {
+      throw new AppError(ErrorCode.ADAPTER_UNAVAILABLE, "Implementation run requires an implementation adapter.");
+    }
+
     const workspace = this.workspaceRepo.getById(issue.workspace_id);
     if (!workspace) {
       throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, "Workspace not found for issue.");
@@ -70,8 +74,11 @@ export class RunService {
     // Repair context: when this Issue has already been through a failed
     // validation round and looped back to Running, surface the latest round's
     // findings to the next implementation agent so it knows what to fix.
+    const isRepairCandidate =
+      (issue.status === IS.Running || issue.status === IS.Ready) &&
+      issue.validation_round_count > 0;
     let finalInstructions = trimmedInstructions;
-    if (issue.status === IS.Running && issue.validation_round_count > 0) {
+    if (isRepairCandidate) {
       const allFindings = collectPriorFindings(this.threadEventRepo, threadId);
       if (allFindings.length > 0) {
         const latestRound = Math.max(...allFindings.map((f) => f.validation_round));

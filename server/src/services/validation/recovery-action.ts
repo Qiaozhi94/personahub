@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { Issue } from "@personahub/shared/types";
+import type { Issue, ThreadEvent } from "@personahub/shared/types";
 import { IssueStatus, ValidationBlockReason } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { IssueRepository } from "../../repositories/issue.js";
@@ -95,7 +95,7 @@ export class ValidationRecoveryActionService {
    * unblock is still required to resume), so the operator consciously grants
    * more rounds. A non-empty note is required.
    */
-  resetRounds(issueId: string, operatorNote: string): Issue {
+  resetRounds(issueId: string, operatorNote: string): { issue: Issue; event: ThreadEvent } {
     const trimmed = operatorNote.trim();
     if (!trimmed) {
       throw new AppError(ErrorCode.OPERATOR_NOTE_REQUIRED, "Operator note is required.");
@@ -139,6 +139,6 @@ export class ValidationRecoveryActionService {
     })();
 
     this.validationTraceService.broadcast(result.event);
-    return result.issue;
+    return { issue: result.issue, event: result.event };
   }
 }

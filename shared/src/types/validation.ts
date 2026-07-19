@@ -1,5 +1,5 @@
 import type { ValidationFindingSeverity, VerificationKind } from "./trace.js";
-import type { IssueStatus, RunSummary, Issue } from "./index.js";
+import type { IssueStatus, RunSummary, Issue, Run } from "./index.js";
 
 export enum RunRole {
   Implementation = "implementation",
@@ -138,4 +138,13 @@ export interface UnblockInput {
 
 export interface UnblockResponse {
   issue: Issue;
+}
+
+export interface TriggerValidationResponse {
+  run: Run;
+}
+
+export interface ResetValidationRoundsResponse {
+  issue: Issue;
+  event_id: string;
 }

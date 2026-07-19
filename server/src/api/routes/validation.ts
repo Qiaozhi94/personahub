@@ -5,7 +5,8 @@ import type { ValidationWorkflowService } from "../../services/validation/workfl
 import type { EvidenceSummaryRepository } from "../../repositories/evidence-summary.js";
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { RunRepository } from "../../repositories/run.js";
-import { IssueStatus, RunRole } from "@personahub/shared/types";
+import type { RunDispatchService } from "../../services/run-dispatch.js";
+import { IssueStatus, RunRole, RunStatus } from "@personahub/shared/types";
 import { AppError } from "../errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
 
@@ -16,6 +17,7 @@ export interface ValidationRoutesOptions {
   evidenceSummaryRepo: EvidenceSummaryRepository;
   issueRepo: IssueRepository;
   runRepo: RunRepository;
+  runDispatchService: RunDispatchService;
 }
 
 export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = async (app, opts) => {
@@ -26,6 +28,7 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
     evidenceSummaryRepo,
     issueRepo,
     runRepo,
+    runDispatchService,
   } = opts;
 
   app.get("/api/issues/:issue_id/validation", async (request) => {
@@ -57,14 +60,14 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
     return { issue };
   });
 
-  app.post("/api/issues/:issue_id/reset-rounds", async (request) => {
+  app.post("/api/issues/:issue_id/validation-rounds/reset", async (request) => {
     const { issue_id } = request.params as { issue_id: string };
     const body = (request.body ?? {}) as { operator_note?: string };
     if (!body.operator_note || typeof body.operator_note !== "string") {
       throw new AppError(ErrorCode.OPERATOR_NOTE_REQUIRED, "Operator note is required.");
     }
-    const issue = validationRecoveryActionService.resetRounds(issue_id, body.operator_note);
-    return { issue };
+    const { issue, event } = validationRecoveryActionService.resetRounds(issue_id, body.operator_note);
+    return { issue, event_id: event.id };
   });
 
   app.post("/api/issues/:issue_id/validation", async (request) => {
@@ -79,10 +82,24 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
         `Cannot trigger validation for issue in status ${issue.status}.`,
       );
     }
-    const activeValidator = runRepo.getActiveValidator(issue_id);
-    if (activeValidator) {
-      return { run: activeValidator };
+
+    const currentRound = issue.validation_round_count + 1;
+    const existingValidator = runRepo.getValidatorRunByRound(issue_id, currentRound);
+    if (existingValidator) {
+      if (existingValidator.status === RunStatus.Queued) {
+        await runDispatchService.drainWorkspace(issue.workspace_id);
+        return { run: runRepo.getById(existingValidator.id)! };
+      }
+      if (existingValidator.status === RunStatus.Completed ||
+          existingValidator.status === RunStatus.Failed ||
+          existingValidator.status === RunStatus.Cancelled ||
+          existingValidator.status === RunStatus.Interrupted) {
+        validationWorkflowService.processValidatorResult(existingValidator.id);
+        return { run: runRepo.getById(existingValidator.id)! };
+      }
+      return { run: existingValidator };
     }
+
     const implRun = runRepo.getLatestCompletedByRole(issue_id, RunRole.Implementation);
     if (!implRun) {
       throw new AppError(
@@ -104,6 +121,7 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
         "Could not create validator run.",
       );
     }
+    await runDispatchService.drainWorkspace(issue.workspace_id);
     return { run: validatorRun };
   });
 };

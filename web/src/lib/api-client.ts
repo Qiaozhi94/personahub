@@ -14,6 +14,8 @@ import {
   type IssueListResponse,
   type IssueTraceResponse,
   type IssueValidationResponse,
+  type TriggerValidationResponse,
+  type ResetValidationRoundsResponse,
   type ProjectCreateResponse,
   type ProjectGetResponse,
   type ProjectListResponse,
@@ -174,12 +176,12 @@ export const apiClient = {
         body: JSON.stringify({ operator_note: operatorNote } satisfies UnblockInput),
       }),
     resetRounds: (issueId: string, operatorNote: string) =>
-      apiFetch<UnblockResponse>(`/issues/${issueId}/reset-rounds`, {
+      apiFetch<ResetValidationRoundsResponse>(`/issues/${issueId}/validation-rounds/reset`, {
         method: "POST",
         body: JSON.stringify({ operator_note: operatorNote } satisfies UnblockInput),
       }),
     triggerValidation: (issueId: string) =>
-      apiFetch<IssueValidationResponse>(`/issues/${issueId}/validation`, {
+      apiFetch<TriggerValidationResponse>(`/issues/${issueId}/validation`, {
         method: "POST",
       }),
   },

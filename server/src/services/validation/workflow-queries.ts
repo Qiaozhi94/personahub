@@ -17,10 +17,11 @@ export function findRequestedEvent(
   threadId: string,
   validatorRunId: string,
 ): ThreadEvent | null {
-  return (
-    repo
-      .listByThreadAndTypes(threadId, [ThreadEventType.ValidationRequested], undefined, 50)
-      .find((e) => e.payload_json.validator_run_id === validatorRunId) ?? null
+  return repo.getLatestByTypeAndPayload(
+    threadId,
+    ThreadEventType.ValidationRequested,
+    "validator_run_id",
+    validatorRunId,
   );
 }
 
@@ -29,10 +30,11 @@ export function findHandoffEvent(
   threadId: string,
   implementationRunId: string,
 ): ThreadEvent | null {
-  return (
-    repo
-      .listByThreadAndTypes(threadId, [ThreadEventType.HandoffCreated], undefined, 10)
-      .find((e) => e.payload_json.run_id === implementationRunId) ?? null
+  return repo.getLatestByTypeAndPayload(
+    threadId,
+    ThreadEventType.HandoffCreated,
+    "run_id",
+    implementationRunId,
   );
 }
 
@@ -41,15 +43,22 @@ export function findVerificationEvents(
   threadId: string,
   implementationRunId: string,
 ): SummaryVerificationEvent[] {
-  return repo
-    .listByThreadAndTypes(threadId, [ThreadEventType.TestCompleted], undefined, 200)
-    .filter((e) => e.payload_json.run_id === implementationRunId)
-    .map((e) => ({
-      id: e.id,
-      kind: (e.payload_json.kind as string) ?? "test",
-      result: (e.payload_json.result as string) ?? "unknown",
-      command: (e.payload_json.command as string) ?? null,
-    }));
+  const raw = repo.listByThreadTypeAndPayload(
+    threadId,
+    [ThreadEventType.TestCompleted],
+    "run_id",
+    implementationRunId,
+    201,
+  );
+  const truncated = raw.length > 200;
+  const chronological = raw.slice(0, 200).reverse();
+  return chronological.map((e) => ({
+    id: e.id,
+    kind: (e.payload_json.kind as string) ?? "test",
+    result: (e.payload_json.result as string) ?? "unknown",
+    command: (e.payload_json.command as string) ?? null,
+    _truncated: truncated,
+  })) as SummaryVerificationEvent[];
 }
 
 export function resultEventExistsForValidatorRun(
@@ -57,13 +66,22 @@ export function resultEventExistsForValidatorRun(
   threadId: string,
   validatorRunId: string,
 ): boolean {
-  const events = repo.listByThreadAndTypes(
+  return repo.existsByTypeAndPayload(
     threadId,
-    [ThreadEventType.ValidationPassed, ThreadEventType.ValidationFailed, ThreadEventType.ValidationBlocked],
-    undefined,
-    200,
+    ThreadEventType.ValidationPassed,
+    "validator_run_id",
+    validatorRunId,
+  ) || repo.existsByTypeAndPayload(
+    threadId,
+    ThreadEventType.ValidationFailed,
+    "validator_run_id",
+    validatorRunId,
+  ) || repo.existsByTypeAndPayload(
+    threadId,
+    ThreadEventType.ValidationBlocked,
+    "validator_run_id",
+    validatorRunId,
   );
-  return events.some((e) => e.payload_json.validator_run_id === validatorRunId);
 }
 
 export function getFinalMessage(db: Database.Database, runId: string): string | null {
@@ -106,15 +124,22 @@ export function collectCommands(
   threadId: string,
   implementationRunId: string,
 ): SummaryCommand[] {
-  return repo
-    .listByThreadAndTypes(threadId, [ThreadEventType.CommandCompleted], undefined, 200)
-    .filter((e) => e.payload_json.run_id === implementationRunId)
-    .map((e) => ({
-      id: e.id,
-      command: (e.payload_json.command as string) ?? "",
-      outcome: (e.payload_json.outcome as string) ?? "unknown",
-      output_summary: (e.payload_json.summary as string) ?? null,
-    }));
+  const raw = repo.listByThreadTypeAndPayload(
+    threadId,
+    [ThreadEventType.CommandCompleted],
+    "run_id",
+    implementationRunId,
+    201,
+  );
+  const truncated = raw.length > 200;
+  const chronological = raw.slice(0, 200).reverse();
+  return chronological.map((e) => ({
+    id: e.id,
+    command: (e.payload_json.command as string) ?? "",
+    outcome: (e.payload_json.outcome as string) ?? "unknown",
+    output_summary: (e.payload_json.summary as string) ?? null,
+    _truncated: truncated,
+  })) as SummaryCommand[];
 }
 
 export interface ImplementationEvidence {
@@ -123,6 +148,8 @@ export interface ImplementationEvidence {
   verifications: SummaryVerificationEvent[];
   fileChanges: { path: string; change_type: string }[];
   commands: SummaryCommand[];
+  verificationsTruncated: boolean;
+  commandsTruncated: boolean;
 }
 
 /** Gathers the full implementation evidence set used by both the policy gate and the Evidence Summary. */
@@ -133,11 +160,15 @@ export function collectImplementationEvidence(
   implementationRunId: string,
 ): ImplementationEvidence {
   const handoffEvent = findHandoffEvent(threadEventRepo, threadId, implementationRunId);
+  const verifications = findVerificationEvents(threadEventRepo, threadId, implementationRunId);
+  const commands = collectCommands(threadEventRepo, threadId, implementationRunId);
   return {
     handoffEvent,
     handoff: handoffPayloadFromEvent(handoffEvent, threadId, implementationRunId),
-    verifications: findVerificationEvents(threadEventRepo, threadId, implementationRunId),
+    verifications,
     fileChanges: fileChangeRepo.listByRun(implementationRunId).map((fc) => ({ path: fc.path, change_type: fc.change_type })),
-    commands: collectCommands(threadEventRepo, threadId, implementationRunId),
+    commands,
+    verificationsTruncated: verifications.length > 0 && (verifications[0] as unknown as Record<string, unknown>)._truncated === true,
+    commandsTruncated: commands.length > 0 && (commands[0] as unknown as Record<string, unknown>)._truncated === true,
   };
 }

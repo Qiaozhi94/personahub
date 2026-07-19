@@ -39,9 +39,12 @@ function collectHandoff(
   threadId: string,
   implRunId: string,
 ): HandoffPayload | null {
-  const event = repo
-    .listByThreadAndTypes(threadId, [ThreadEventType.HandoffCreated], undefined, 10)
-    .find((e: ThreadEvent) => e.payload_json.run_id === implRunId) ?? null;
+  const event = repo.getLatestByTypeAndPayload(
+    threadId,
+    ThreadEventType.HandoffCreated,
+    "run_id",
+    implRunId,
+  );
   return handoffPayloadFromEvent(event, threadId, implRunId);
 }
 
@@ -49,17 +52,24 @@ function collectVerifications(
   repo: ThreadEventRepository,
   threadId: string,
   implRunId: string,
-): ContextVerificationEvent[] {
-  return repo
-    .listByThreadAndTypes(threadId, [ThreadEventType.TestCompleted], undefined, 200)
-    .filter((e: ThreadEvent) => e.payload_json.run_id === implRunId)
-    .map((e: ThreadEvent) => ({
-      id: e.id,
-      kind: (e.payload_json.kind as string) ?? "test",
-      result: (e.payload_json.result as string) ?? "unknown",
-      command: (e.payload_json.command as string) ?? null,
-      evidence_ref: `event:${e.id}`,
-    }));
+): { items: ContextVerificationEvent[]; truncated: boolean } {
+  const raw = repo.listByThreadTypeAndPayload(
+    threadId,
+    [ThreadEventType.TestCompleted],
+    "run_id",
+    implRunId,
+    201,
+  );
+  const truncated = raw.length > 200;
+  const chronological = raw.slice(0, 200).reverse();
+  const items = chronological.map((e: ThreadEvent) => ({
+    id: e.id,
+    kind: (e.payload_json.kind as string) ?? "test",
+    result: (e.payload_json.result as string) ?? "unknown",
+    command: (e.payload_json.command as string) ?? null,
+    evidence_ref: `event:${e.id}`,
+  }));
+  return { items, truncated };
 }
 
 /**
@@ -71,7 +81,8 @@ export function collectPriorFindings(
   threadId: string,
 ): ContextPriorFinding[] {
   return repo
-    .listByThreadAndTypes(threadId, [ThreadEventType.ValidationFinding], undefined, 200)
+    .listLatestByThreadAndTypes(threadId, [ThreadEventType.ValidationFinding], 200)
+    .reverse()
     .map((e: ThreadEvent) => ({
       validation_round: (e.payload_json.validation_round as number) ?? 0,
       severity: (e.payload_json.severity as string) ?? "info",
@@ -87,7 +98,9 @@ export function assembleValidatorContext(
   params: AssembleValidatorContextParams,
 ): ValidatorContextResult {
   const handoff = collectHandoff(deps.threadEventRepo, params.threadId, params.implementationRunId);
-  const verifications = collectVerifications(deps.threadEventRepo, params.threadId, params.implementationRunId);
+  const verificationResult = collectVerifications(deps.threadEventRepo, params.threadId, params.implementationRunId);
+  const verifications = verificationResult.items;
+  const verificationsTruncated = verificationResult.truncated;
   const fileChanges = deps.fileChangeRepo
     .listByRun(params.implementationRunId)
     .map((fc) => ({ path: fc.path, change_type: fc.change_type }));
@@ -96,7 +109,9 @@ export function assembleValidatorContext(
   const hasVerif = verifications.length > 0;
   const traceCompleteness: TraceCompleteness = {
     commands: TraceCompletenessStatus.Complete,
-    verification: hasVerif ? TraceCompletenessStatus.Complete : TraceCompletenessStatus.Unavailable,
+    verification: hasVerif
+      ? (verificationsTruncated ? TraceCompletenessStatus.Partial : TraceCompletenessStatus.Complete)
+      : TraceCompletenessStatus.Unavailable,
     file_changes: hasFiles ? TraceCompletenessStatus.Complete : TraceCompletenessStatus.Unavailable,
     refs: TraceCompletenessStatus.Complete,
     reasons: [],

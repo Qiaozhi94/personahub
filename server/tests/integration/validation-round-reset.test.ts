@@ -22,8 +22,8 @@ describe("T094 explicit round reset", () => {
 
     const result = services.validationRecoveryActionService.resetRounds(issue.id, "Granting more rounds");
 
-    expect(result.status).toBe(IssueStatus.Blocked);
-    expect(result.validation_round_count).toBe(0);
+    expect(result.issue.status).toBe(IssueStatus.Blocked);
+    expect(result.issue.validation_round_count).toBe(0);
     const fresh = services.issueRepo.getById(issue.id)!;
     expect(fresh.status).toBe(IssueStatus.Blocked);
     expect(fresh.validation_round_count).toBe(0);

@@ -157,7 +157,7 @@ describe("Validation routes (T063-T066)", () => {
     });
   });
 
-  describe("POST /api/issues/:issue_id/reset-rounds", () => {
+  describe("POST /api/issues/:issue_id/validation-rounds/reset", () => {
     function blockRoundLimit(issueId: string, reason: string, roundCount: number) {
       services.db.prepare("UPDATE issues SET status = ?, blocked_reason_code = ?, blocked_reason_message = ?, validation_round_count = ? WHERE id = ?")
         .run(IssueStatus.Blocked, reason, "blocked", roundCount, issueId);
@@ -168,7 +168,7 @@ describe("Validation routes (T063-T066)", () => {
       blockRoundLimit(issue.id, "round_limit_reached", 3);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/reset-rounds`,
+        method: "POST", url: `/api/issues/${issue.id}/validation-rounds/reset`,
         payload: { operator_note: "granting more rounds" },
       });
       expect(res.statusCode).toBe(200);
@@ -182,7 +182,7 @@ describe("Validation routes (T063-T066)", () => {
       blockRoundLimit(issue.id, "round_limit_reached", 3);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/reset-rounds`, payload: {},
+        method: "POST", url: `/api/issues/${issue.id}/validation-rounds/reset`, payload: {},
       });
       expect(res.statusCode).toBe(400);
     });
@@ -192,7 +192,7 @@ describe("Validation routes (T063-T066)", () => {
       blockRoundLimit(issue.id, "evidence_missing", 1);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/reset-rounds`,
+        method: "POST", url: `/api/issues/${issue.id}/validation-rounds/reset`,
         payload: { operator_note: "x" },
       });
       expect(res.statusCode).toBeGreaterThanOrEqual(400);

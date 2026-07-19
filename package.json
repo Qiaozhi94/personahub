@@ -16,6 +16,7 @@
     "build:shared": "npm -w @personahub/shared run build",
     "build:server": "npm -w @personahub/server run build",
     "build:web": "npm -w @personahub/web run build",
+    "pretest": "npm run build:shared",
     "test": "npm -w @personahub/server run test && npm -w @personahub/web run test",
     "typecheck": "npm -w @personahub/server run typecheck && npm -w @personahub/web run typecheck"
   },

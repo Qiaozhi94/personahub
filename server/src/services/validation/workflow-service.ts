@@ -17,6 +17,8 @@ import { parseValidationResult } from "./result-parser.js";
 import { buildEvidenceSummary, type EvidenceSummaryBuildInput, type SummaryVerificationEvent } from "./evidence-summary-builder.js";
 import { assembleValidatorContext } from "./context-assembler.js";
 import { findRequestedEvent, resultEventExistsForValidatorRun, getFinalMessage, collectImplementationEvidence } from "./workflow-queries.js";
+import { AppError } from "../../api/errors.js";
+import { ErrorCode } from "@personahub/shared/errors";
 
 export class ValidationWorkflowService {
   constructor(
@@ -112,6 +114,94 @@ export class ValidationWorkflowService {
         validation_round: round, target: "implementation_result", policy_id: policy.id, policy_version: policy.version,
         policy_snapshot: policySnapshot, policy_snapshot_hash: snapshotHash,
         validator_run_id: validatorRun.id, implementation_run_id: implementationRunId, requested_by_run_id: implementationRunId,
+        validator_adapter_config_id: selectorResult.selected.id,
+      }));
+      pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.RunQueued, ActorType.System, null, {
+        run_id: validatorRun.id, issue_id: issueId, thread_id: issue.primary_thread_id!,
+        workspace_id: issue.workspace_id, status: RunStatus.Queued, role: RunRole.Validator, validation_round: round,
+      }));
+      return validatorRun;
+    })();
+    for (const event of pendingEvents) this.threadEventService.broadcast(event);
+    return result;
+  }
+
+  rebuildStuckValidation(
+    issueId: string,
+    implementationRunId: string,
+    frozenPolicySnapshot: ValidationPolicySnapshot,
+    frozenPolicySnapshotHash: string,
+    frozenValidatorConfigId?: string,
+  ): Run | null {
+    const pendingEvents: ThreadEvent[] = [];
+    const result = this.db.transaction(() => {
+      const issue = this.issueRepo.getById(issueId);
+      if (!issue) return null;
+      if (issue.status !== IssueStatus.Validating) return null;
+      const active = this.runRepo.getActiveValidator(issueId);
+      if (active) return null;
+      const existing = this.runRepo.getValidatorRunByRound(issueId, issue.validation_round_count + 1);
+      if (existing) return null;
+      const implRun = this.runRepo.getById(implementationRunId);
+      if (!implRun || implRun.status !== RunStatus.Completed || implRun.role !== RunRole.Implementation) {
+        this.blockIssueInTx(issue, ValidationBlockReason.RecoveryInconsistent, `Cannot rebuild validation: implementation run ${implementationRunId} is missing or invalid`, pendingEvents);
+        return null;
+      }
+      if (!implRun.adapter_identity) {
+        this.blockIssueInTx(issue, ValidationBlockReason.RecoveryInconsistent, "Implementation run missing adapter identity", pendingEvents);
+        return null;
+      }
+      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator);
+      const frozenConfig = frozenValidatorConfigId
+        ? availableValidators.find((v) => v.id === frozenValidatorConfigId)
+        : undefined;
+      if (frozenValidatorConfigId && !frozenConfig) {
+        this.blockIssueInTx(issue, ValidationBlockReason.ValidatorUnavailable, `Frozen validator config ${frozenValidatorConfigId} is no longer available`, pendingEvents);
+        return null;
+      }
+      const selected = frozenConfig ?? availableValidators[0];
+      if (!selected && availableValidators.length === 0) {
+        this.blockIssueInTx(issue, ValidationBlockReason.ValidatorUnavailable, "No validator available during recovery", pendingEvents);
+        return null;
+      }
+      const round = issue.validation_round_count + 1;
+      const validatorIdentity: AdapterIdentitySnapshot = {
+        adapter_config_id: selected.id, name: selected.name,
+        cli_provider: selected.cli_provider, default_model: selected.default_model,
+      };
+      const validatorRun = this.runRepo.create({
+        issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
+        adapter_config_id: selected.id, instructions: "", status: RunStatus.Queued,
+        role: RunRole.Validator, dispatch_source: RunDispatchSource.System, validation_round: round, adapter_identity: validatorIdentity,
+      });
+      try {
+        const ctx = assembleValidatorContext(
+          { threadEventRepo: this.threadEventRepo, fileChangeRepo: this.fileChangeRepo },
+          {
+            issue: { title: issue.title, goal: issue.goal },
+            threadId: issue.primary_thread_id!,
+            implementationRunId,
+            implementationRun: { id: implementationRunId, identity: implRun.adapter_identity! },
+            validatorRun: { id: validatorRun.id, identity: validatorIdentity },
+            policySnapshot: frozenPolicySnapshot, policySnapshotHash: frozenPolicySnapshotHash, validationRound: round,
+          },
+        );
+        this.runRepo.updateInstructions(validatorRun.id, ctx.markdown);
+      } catch {
+        this.blockIssueInTx(issue, ValidationBlockReason.WorkflowConfigurationInvalid, "Failed to build validator context", pendingEvents);
+        return null;
+      }
+      const originalRequested = this.threadEventRepo.getLatestByTypeAndPayload(
+        issue.primary_thread_id!, ThreadEventType.ValidationRequested, "issue_id", issueId,
+      );
+      const policyId = (originalRequested?.payload_json.policy_id as string) ?? frozenPolicySnapshot.policy_id;
+      const policyVersion = (originalRequested?.payload_json.policy_version as number) ?? frozenPolicySnapshot.version;
+      pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.ValidationRequested, ActorType.System, null, {
+        issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
+        validation_round: round, target: "implementation_result", policy_id: policyId, policy_version: policyVersion,
+        policy_snapshot: frozenPolicySnapshot, policy_snapshot_hash: frozenPolicySnapshotHash,
+        validator_run_id: validatorRun.id, implementation_run_id: implementationRunId, requested_by_run_id: implementationRunId,
+        validator_adapter_config_id: validatorIdentity.adapter_config_id,
       }));
       pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.RunQueued, ActorType.System, null, {
         run_id: validatorRun.id, issue_id: issueId, thread_id: issue.primary_thread_id!,
@@ -138,9 +228,38 @@ export class ValidationWorkflowService {
     let parsedResult: ValidationResultEnvelope;
     try { parsedResult = parseValidationResult(finalMessage); }
     catch { this.blockIssue(validatorRun.issue_id, ValidationBlockReason.ResultUnparsable, "Failed to parse validator final message"); return; }
-    if (parsedResult.outcome === ValidationOutcome.Passed) void this.processPassed(validatorRun, parsedResult, issue);
-    else if (parsedResult.outcome === ValidationOutcome.Failed) void this.processFailed(validatorRun, parsedResult, issue);
-    else if (parsedResult.outcome === ValidationOutcome.Blocked) void this.processBlocked(validatorRun, parsedResult, issue);
+    if (parsedResult.outcome === ValidationOutcome.Passed) {
+      try { this.processPassed(validatorRun, parsedResult, issue); }
+      catch (error) {
+        if (!this.handleEvidenceScopeError(error, issue.id)) throw error;
+      }
+    } else if (parsedResult.outcome === ValidationOutcome.Failed) {
+      try { this.processFailed(validatorRun, parsedResult, issue); }
+      catch (error) {
+        if (!this.handleEvidenceScopeError(error, issue.id)) throw error;
+      }
+    } else if (parsedResult.outcome === ValidationOutcome.Blocked) {
+      try { this.processBlocked(validatorRun, parsedResult, issue); }
+      catch (error) {
+        if (!this.handleEvidenceScopeError(error, issue.id)) throw error;
+      }
+    }
+  }
+
+  private handleEvidenceScopeError(error: unknown, issueId: string): boolean {
+    if (error instanceof AppError &&
+        (error.code === ErrorCode.EVIDENCE_SCOPE_MISMATCH ||
+         error.code === ErrorCode.EVIDENCE_REF_INVALID)) {
+      this.blockIssue(
+        issueId,
+        error.code === ErrorCode.EVIDENCE_SCOPE_MISMATCH
+          ? ValidationBlockReason.EvidenceScopeMismatch
+          : ValidationBlockReason.EvidenceMissing,
+        error.message,
+      );
+      return true;
+    }
+    return false;
   }
 
   private processPassed(validatorRun: Run, result: ValidationResultEnvelope, issue: Issue): void {
@@ -173,13 +292,14 @@ export class ValidationWorkflowService {
       fileChanges: ev.fileChanges,
       commands: ev.commands, passEventId: "",
       traceCompleteness: {
-        commands: TraceCompletenessStatus.Complete,
-        verification: ev.verifications.length > 0 ? TraceCompletenessStatus.Complete : TraceCompletenessStatus.Unavailable,
+        commands: ev.commandsTruncated ? TraceCompletenessStatus.Partial : TraceCompletenessStatus.Complete,
+        verification: ev.verifications.length > 0 ? (ev.verificationsTruncated ? TraceCompletenessStatus.Partial : TraceCompletenessStatus.Complete) : TraceCompletenessStatus.Unavailable,
         file_changes: hasFileChanges ? TraceCompletenessStatus.Complete : TraceCompletenessStatus.Unavailable,
         refs: TraceCompletenessStatus.Complete, reasons: [],
       },
     };
     const summaryBuildResult = buildEvidenceSummary(evSummary);
+    const sameOriginValidation = summaryBuildResult.sameOriginValidation;
     const evidenceSummaryOrNull = this.db.transaction(() => {
       const freshIssue = this.issueRepo.getById(issue.id);
       if (!freshIssue || freshIssue.status !== IssueStatus.Validating) return null;
@@ -187,10 +307,19 @@ export class ValidationWorkflowService {
       if (!freshValidatorRun || freshValidatorRun.status !== RunStatus.Completed) return null;
       if (freshValidatorRun.validation_round !== freshIssue.validation_round_count + 1) return null;
       if (resultEventExistsForValidatorRun(this.threadEventRepo, validatorRun.thread_id, validatorRun.id)) return null;
-      const passEvent = this.threadEventService.write(validatorRun.thread_id, ThreadEventType.ValidationPassed, ActorType.System, null, {
-        issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
-        validation_round: validatorRun.validation_round, summary: result.summary,
-        validator_run_id: validatorRun.id, implementation_run_id: implementationRunId, result: "passed", finding_count: 0,
+      const passEvent = this.validationTraceService.writePassed({
+        issueId: issue.id,
+        threadId: validatorRun.thread_id,
+        workspaceId: issue.workspace_id,
+        validationRound: validatorRun.validation_round!,
+        summary: result.summary,
+        findingCount: 0,
+        policyId: policySnapshot.policy_id,
+        policyVersion: policySnapshot.version,
+        sameOriginValidation,
+        validatorRunId: validatorRun.id,
+        implementationRunId,
+        evidenceRefs: result.evidence_refs,
       });
       pendingEvents.push(passEvent);
       const finalSummary = buildEvidenceSummary({ ...evSummary, passEventId: passEvent.id });
@@ -205,11 +334,16 @@ export class ValidationWorkflowService {
       });
       const casResult = this.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Validating, IssueStatus.Done);
       if (!casResult.success) return null;
-      pendingEvents.push(this.threadEventService.write(validatorRun.thread_id, ThreadEventType.IssueDone, ActorType.System, null, {
-        issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
-        validation_round: validatorRun.validation_round, previous_status: IssueStatus.Validating,
-        evidence_summary_id: summaryRecord.id, validation_event_id: passEvent.id,
-      }, finalSummary.evidenceRefs));
+      pendingEvents.push(this.validationTraceService.writeIssueDone({
+        issueId: issue.id,
+        threadId: validatorRun.thread_id,
+        workspaceId: issue.workspace_id,
+        validationRound: validatorRun.validation_round!,
+        previousStatus: IssueStatus.Validating,
+        evidenceSummaryId: summaryRecord.id,
+        validationEventId: passEvent.id,
+        evidenceRefs: finalSummary.evidenceRefs,
+      }));
       return summaryRecord;
     })();
     if (!evidenceSummaryOrNull) return;
@@ -235,15 +369,18 @@ export class ValidationWorkflowService {
       if (resultEventExistsForValidatorRun(this.threadEventRepo, validatorRun.thread_id, validatorRun.id)) return false;
       this.pushFindingEvents(pendingEvents, validatorRun, issue, implementationRunId, result.findings);
       const nextStatus = roundLimitBlocked ? IssueStatus.Blocked : IssueStatus.Running;
-      pendingEvents.push(this.threadEventService.write(
-        validatorRun.thread_id, ThreadEventType.ValidationFailed, ActorType.System, null,
-        {
-          issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
-          validation_round: validatorRun.validation_round, summary: result.summary,
-          finding_count: result.findings.length, next_status: nextStatus,
-          validator_run_id: validatorRun.id, implementation_run_id: implementationRunId,
-        },
-      ));
+      pendingEvents.push(this.validationTraceService.writeFailed({
+        issueId: issue.id,
+        threadId: validatorRun.thread_id,
+        workspaceId: issue.workspace_id,
+        validationRound: validatorRun.validation_round!,
+        summary: result.summary,
+        findingCount: result.findings.length,
+        nextStatus,
+        validatorRunId: validatorRun.id,
+        implementationRunId,
+        evidenceRefs: result.evidence_refs,
+      }));
       if (roundLimitBlocked) {
         const casResult = this.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Validating, IssueStatus.Blocked, {
           validation_round_count: nextCount,
@@ -251,15 +388,19 @@ export class ValidationWorkflowService {
           blocked_reason_message: `Validation round limit reached (${nextCount}/${maxRounds})`,
         });
         if (!casResult.success) return false;
-        pendingEvents.push(this.threadEventService.write(
-          validatorRun.thread_id, ThreadEventType.ValidationBlocked, ActorType.System, null,
-          {
-            issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
-            validation_round: validatorRun.validation_round, summary: result.summary,
-            reason_code: ValidationBlockReason.RoundLimitReached,
-            validator_run_id: validatorRun.id, implementation_run_id: implementationRunId,
-          },
-        ));
+        pendingEvents.push(this.validationTraceService.writeBlocked({
+          issueId: issue.id,
+          threadId: validatorRun.thread_id,
+          workspaceId: issue.workspace_id,
+          validationRound: validatorRun.validation_round!,
+          summary: result.summary,
+          reasonCode: ValidationBlockReason.RoundLimitReached,
+          findingCount: result.findings.length,
+          missingEvidence: result.missing_evidence,
+          validatorRunId: validatorRun.id,
+          implementationRunId,
+          evidenceRefs: result.evidence_refs,
+        }));
       } else {
         const casResult = this.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Validating, IssueStatus.Running, {
           validation_round_count: nextCount,
@@ -299,17 +440,21 @@ export class ValidationWorkflowService {
   private pushFindingEvents(pendingEvents: ThreadEvent[], validatorRun: Run, issue: Issue, implementationRunId: string, findings: ValidationFinding[]): void {
     for (let i = 0; i < findings.length; i++) {
       const finding = findings[i];
-      pendingEvents.push(this.threadEventService.write(
-        validatorRun.thread_id, ThreadEventType.ValidationFinding, ActorType.System, null,
-        {
-          issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
-          validation_round: validatorRun.validation_round,
-          severity: finding.severity, message: finding.message, finding_index: i,
-          suggestion: finding.suggestion, file_path: finding.file_path, line: finding.line,
-          validator_run_id: validatorRun.id, implementation_run_id: implementationRunId,
-        },
-        finding.evidence_refs,
-      ));
+      pendingEvents.push(this.validationTraceService.writeFinding({
+        issueId: issue.id,
+        threadId: validatorRun.thread_id,
+        workspaceId: issue.workspace_id,
+        validationRound: validatorRun.validation_round!,
+        severity: finding.severity,
+        message: finding.message,
+        suggestion: finding.suggestion ?? undefined,
+        filePath: finding.file_path ?? undefined,
+        line: finding.line ?? undefined,
+        findingIndex: i,
+        validatorRunId: validatorRun.id,
+        implementationRunId: implementationRunId,
+        evidenceRefs: finding.evidence_refs,
+      }));
     }
   }
 
@@ -332,15 +477,19 @@ export class ValidationWorkflowService {
         blocked_reason_code: reason, blocked_reason_message: message,
       });
       if (!casResult.success) return false;
-      pendingEvents.push(this.threadEventService.write(
-        validatorRun.thread_id, ThreadEventType.ValidationBlocked, ActorType.System, null,
-        {
-          issue_id: issue.id, thread_id: validatorRun.thread_id, workspace_id: issue.workspace_id,
-          validation_round: validatorRun.validation_round, summary: message, reason_code: reason,
-          finding_count: result.findings.length, missing_evidence: result.missing_evidence,
-          validator_run_id: validatorRun.id, implementation_run_id: implementationRunId,
-        },
-      ));
+      pendingEvents.push(this.validationTraceService.writeBlocked({
+        issueId: issue.id,
+        threadId: validatorRun.thread_id,
+        workspaceId: issue.workspace_id,
+        validationRound: validatorRun.validation_round!,
+        summary: message,
+        reasonCode: reason,
+        findingCount: result.findings.length,
+        missingEvidence: result.missing_evidence,
+        validatorRunId: validatorRun.id,
+        implementationRunId,
+        evidenceRefs: result.evidence_refs,
+      }));
       return true;
     })();
     if (!success) return;

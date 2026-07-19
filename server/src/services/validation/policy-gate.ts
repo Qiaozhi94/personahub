@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import {
   ValidationBlockReason,
+  VerificationKind,
   VerificationResult,
   type ValidationPolicySnapshot,
   type ValidationEvidenceRequirements,
@@ -89,13 +90,32 @@ export function buildPolicySnapshot(
   }
 
   const obj = parsed as Record<string, unknown>;
+
+  // Fail closed: reject non-boolean / non-array values instead of silently coercing
+  if (typeof obj.require_handoff !== "boolean" ||
+      typeof obj.require_file_trace !== "boolean" ||
+      typeof obj.require_verification !== "boolean") {
+    throw new PolicySnapshotError("invalid_requirements", "require_handoff, require_file_trace, and require_verification must be boolean");
+  }
+  if (!Array.isArray(obj.accepted_verification_kinds) ||
+      !(obj.accepted_verification_kinds as string[]).every((k) => typeof k === "string")) {
+    throw new PolicySnapshotError("invalid_requirements", "accepted_verification_kinds must be an array of strings");
+  }
+
+  const VALID_VERIFICATION_KINDS = new Set<string>(Object.values(VerificationKind));
+  if (!(obj.accepted_verification_kinds as string[]).every((k) => VALID_VERIFICATION_KINDS.has(k))) {
+    throw new PolicySnapshotError("invalid_requirements", "accepted_verification_kinds contains unknown kind");
+  }
+
+  if (obj.schema_version !== undefined && obj.schema_version !== 1) {
+    throw new PolicySnapshotError("invalid_requirements", `Unsupported policy schema version: ${obj.schema_version}`);
+  }
+
   const requirements: ValidationEvidenceRequirements = {
-    require_handoff: obj.require_handoff === true,
-    require_file_trace: obj.require_file_trace === true,
-    require_verification: obj.require_verification === true,
-    accepted_verification_kinds: Array.isArray(obj.accepted_verification_kinds)
-      ? (obj.accepted_verification_kinds as string[]).filter((k) => typeof k === "string") as ValidationEvidenceRequirements["accepted_verification_kinds"]
-      : [],
+    require_handoff: obj.require_handoff,
+    require_file_trace: obj.require_file_trace,
+    require_verification: obj.require_verification,
+    accepted_verification_kinds: obj.accepted_verification_kinds as ValidationEvidenceRequirements["accepted_verification_kinds"],
   };
 
   const snapshot: ValidationPolicySnapshot = {

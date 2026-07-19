@@ -70,5 +70,6 @@ export function registerRoutes(app: FastifyInstance, services: Services): void {
     evidenceSummaryRepo: services.evidenceSummaryRepo,
     issueRepo: services.issueRepo,
     runRepo: services.runRepo,
+    runDispatchService: services.runDispatchService,
   });
 }

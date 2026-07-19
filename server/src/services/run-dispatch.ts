@@ -228,6 +228,10 @@ export class RunDispatchService {
     return run;
   }
 
+  async drainWorkspace(workspaceId: string): Promise<void> {
+    await this.startNextQueuedRun(workspaceId);
+  }
+
   private async startAdapter(run: Run): Promise<void> {
     const adapterConfig = this.agentConfigRepo.getById(run.adapter_config_id);
     if (!adapterConfig) {

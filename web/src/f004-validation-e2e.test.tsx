@@ -6,6 +6,7 @@ import {
   IssueStatus,
   ThreadEventType,
   ThreadType,
+  TraceCompletenessStatus,
   ValidationFindingSeverity,
   ValidationOutcome,
 } from "@personahub/shared";
@@ -65,6 +66,20 @@ const baseIssue: IssueWithThread = {
 describe("F004 Validation E2E UI flows", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(apiClient.traces.getIssueTrace).mockResolvedValue({
+      issue: baseIssue,
+      runs: [],
+      events: [],
+      evidence: [],
+      issue_completeness: {
+        commands: TraceCompletenessStatus.Complete,
+        verification: TraceCompletenessStatus.Complete,
+        file_changes: TraceCompletenessStatus.Complete,
+        refs: TraceCompletenessStatus.Complete,
+        reasons: [],
+      },
+      next_after_event_id: null,
+    });
   });
 
   it("shows pass-to-Done flow: requested -> passed -> done", async () => {

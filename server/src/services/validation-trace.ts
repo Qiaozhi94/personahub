@@ -146,16 +146,34 @@ export class ValidationTraceService {
     );
   }
 
-  writePassed(input: ValidationResultInput): ThreadEvent {
-    return this.writeResult(ThreadEventType.ValidationPassed, input, { result: "passed" });
+  writePassed(input: ValidationResultInput & {
+    findingCount?: number;
+    policyId?: string;
+    policyVersion?: number;
+    sameOriginValidation?: boolean;
+  }): ThreadEvent {
+    return this.writeResult(ThreadEventType.ValidationPassed, input, {
+      result: "passed",
+      finding_count: input.findingCount ?? 0,
+      policy_id: input.policyId ?? null,
+      policy_version: input.policyVersion ?? null,
+      same_origin_validation: input.sameOriginValidation ?? false,
+    });
   }
 
-  writeFailed(input: ValidationResultInput & { findingCount: number }): ThreadEvent {
-    return this.writeResult(ThreadEventType.ValidationFailed, input, { result: "failed", finding_count: input.findingCount });
+  writeFailed(input: ValidationResultInput & {
+    findingCount: number;
+    nextStatus: string;
+  }): ThreadEvent {
+    return this.writeResult(ThreadEventType.ValidationFailed, input, { result: "failed", finding_count: input.findingCount, next_status: input.nextStatus });
   }
 
-  writeBlocked(input: ValidationResultInput & { reasonCode: string }): ThreadEvent {
-    return this.writeResult(ThreadEventType.ValidationBlocked, input, { result: "blocked", reason_code: input.reasonCode });
+  writeBlocked(input: ValidationResultInput & {
+    reasonCode: string;
+    findingCount?: number;
+    missingEvidence?: string[];
+  }): ThreadEvent {
+    return this.writeResult(ThreadEventType.ValidationBlocked, input, { result: "blocked", reason_code: input.reasonCode, finding_count: input.findingCount ?? 0, missing_evidence: input.missingEvidence ?? [] });
   }
 
   writeIssueDone(input: IssueDoneInput): ThreadEvent {

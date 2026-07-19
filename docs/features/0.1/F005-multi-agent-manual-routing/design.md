@@ -4,7 +4,7 @@ related_features: [F002, F003, F004]
 topics: [multi-adapter, claude-code, opencode, manual-routing, auth, handoff, validator-race]
 doc_kind: design
 created: 2026-07-16
-updated: 2026-07-16
+updated: 2026-07-19
 ---
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）- 设计
@@ -34,7 +34,7 @@ Thread command
 - OAuth由各 CLI自身管理；PersonaHub只引导用户在外部终端登录并验证登录态，不实现OAuth callback/token exchange，也不复制CLI token。
 - OpenCode API key明文保存在本地SQLite；Repository内部可读，任何HTTP response、ThreadEvent、log均不得返回原值。
 - `workflow_bound`不能由客户端强制声明；服务端根据Issue状态和adapter capability推导。客户端只能显式请求更安全的`ad_hoc_consult`。
-- F004 active validator partial unique index继续作为手动/自动互斥底线；F005增加10秒持久化grace window，让用户有机会手动选择跨provider validator。
+- F004 已有的两条validator唯一索引（active + per-round，见§4.1）继续作为手动/自动互斥底线；F005增加10秒持久化grace window，让用户有机会手动选择跨provider validator。
 - Claude Code接入协议级approval request作为前置可观测性/拒绝通道；OpenCode明确没有等价保证，仍以F002 credential isolation为安全主线。
 - 不引入并行执行；咨询Run、implementation、validator都使用同一workspace FIFO锁。
 
@@ -48,7 +48,7 @@ Thread command
 | F002 `POST /issues/:id/runs` | one-shot dispatch | adapter可选、purpose推导、routing metadata |
 | F003 `RunTraceSignal`/handoff/evidence | 跨agent context、trace | 新adapter normalizer/capability |
 | F004 Run role/state machine/parser | 手动validator完全复用 | 增加grace scheduler和manual winner |
-| F004 active validator unique index | race正确性 | 不创建第二个锁/索引 |
+| F004 validator unique index（active + per-round） | race正确性 | 不新建索引；claim按冲突类型分流 |
 | 既有三栏UI | adapter settings/composer/Thread/Inspector | provider/auth/default/purpose展示 |
 
 ### 2.2 不得跨越的边界
@@ -62,9 +62,9 @@ Thread command
 ### 2.3 文件影响面
 
 - **shared**：provider/auth/purpose/capability/routing types与API contract。
-- **server/db**：schema v5，adapter auth、Project default、Run purpose、validation dispatch due time。
+- **server/db**：schema v6（v5 已被 F004 占用），adapter auth、Project default、Run purpose、validation dispatch due time。
 - **server/repositories/services**：secret-safe adapter config、default adapter、routing classifier、context、grace scheduler。
-- **server/runtime**：Claude/OpenCode adapter、protocol normalizers、auth material、provider registry。
+- **server/runtime**：Claude/OpenCode adapter、protocol normalizers、auth material、provider registry、共享 executable resolver（含 Codex 启动方式收敛）。
 - **server/api**：adapter auth fields、default adapter endpoint、Run request/response。
 - **web**：多provider表单、masked auth状态、default选择、composer agent selector、consult badge。
 - **tests/docs**：真实CLI probe、cross-adapter security、race/recovery和架构回写。
@@ -166,7 +166,9 @@ interface RunCreateInput {
 
 ## 4. 数据模型 / Migration
 
-### 4.1 Schema v5
+### 4.1 Schema v6
+
+> 版本号说明：F004 已实际落地到 `server/src/db/schema-v5.ts` 并在 `migrations.ts` 注册到 5，因此 F005 的迁移是 **v6**（`schema-v6.ts`），不是设计初稿写的 v5。
 
 ```sql
 ALTER TABLE agent_configs ADD COLUMN auth_type TEXT NOT NULL DEFAULT 'oauth';
@@ -191,12 +193,15 @@ CREATE INDEX IF NOT EXISTS idx_runs_issue_purpose_created
 
 说明：
 
-- F004已提供`role/workflow_step/validation_round/dispatch_source`和active validator唯一索引，v5不重复创建。
+- F004已提供`role/workflow_step/validation_round/dispatch_source`和两条validator唯一索引，v6不重复创建：
+  - `idx_runs_one_active_validator`（v4）：`WHERE role='validator' AND status IN ('queued','running')`，只约束**在跑的**validator；
+  - `idx_runs_validator_per_round`（v5）：`UNIQUE(issue_id, validation_round) WHERE role='validator' AND validation_round IS NOT NULL`，**跨终态**约束每轮至多一条validator Run。
+  两条语义不同，§8.2 的 claim 冲突处理必须分别对待。
 - F005 通过 shared enum 新增 `role='consult'`，继续使用 F004 的 `role TEXT NOT NULL`；无需重建 `runs` 表，也不得把 consult 伪存成 implementation。现有 partial unique index只匹配`role='validator'`，语义不变。
 - 旧adapter解释为oauth，因为Codex既有登录态由CLI管理；旧Run为workflow_bound。
 - `default_adapter_config_id`因SQLite ALTER限制不加列级FK，由service验证同Project，删除adapter前检查并清/拒绝。新建首个available adapter若Project尚无default，自动设为default；后续只能显式修改。
 - `api_key`明文存储。DB/runtime文件继续由本地文件权限保护，备份泄漏风险在UI帮助文本中明确；日志、error details、events禁止包含该列。
-- capability继续存`capability_tags` JSON；v5 migration把空数组按原`agent_configs.role`补为 `[implementation,consult]` 或 `[validator,consult]`。迁移完成后`capability_tags`是能力判断唯一真相源，旧`agent_configs.role`只保留为兼容/主要展示角色，不再用于routing或自动ValidatorSelector。Repository解析非法JSON时将adapter标 unavailable，不猜能力。
+- capability继续存`capability_tags` JSON；v6 migration把空数组按原`agent_configs.role`补为 `[implementation,consult]` 或 `[validator,consult]`。注意现状：`services/adapter-config.ts` 创建adapter时硬编码写入`capability_tags: []`，因此**现有全部adapter该字段都是空数组**；migration backfill只修历史数据，create路径必须在T026同步改为按provider/用户选择写入真实capability，否则新建adapter会立刻退化为无能力。迁移完成后`capability_tags`是能力判断唯一真相源，旧`agent_configs.role`只保留为兼容/主要展示角色，不再用于routing或自动ValidatorSelector。Repository解析非法JSON时将adapter标 unavailable，不猜能力。
 - `validation_dispatch_due_at`仅在Validating grace window存在；validator成功创建后同transaction清空。
 
 ### 4.2 Secret-safe repository model
@@ -274,7 +279,37 @@ F002当前把HOME/USERPROFILE改到workspace，并只对白名单`CODEX_HOME`恢
 
 Config ID选择和provider实现选择分离：Run固定`adapter_config_id`，Registry根据该config的provider解析实现，不能接受客户端直接提供provider绕过Project scope。
 
-F005 同时修改 F004 `ValidatorSelector`：自动validator候选必须查询`status=available AND capability_tags contains 'validator'`，不再调用`listAvailableByProjectAndRole()`。手动routing和自动selection复用同一个`hasCapability(config, capability)`纯函数及JSON校验，防止双真相源；`agent_configs.role`仅用于旧数据迁移和UI主要角色标签。
+F005 同时修改 F004 的自动validator候选查询：必须改为`status=available AND capability_tags contains 'validator'`，不再调用`listAvailableByProjectAndRole()`。
+
+注意 `listAvailableByProjectAndRole()` 在基线上有**两个**调用点，必须一并切换，否则 recovery 路径会继续以旧 `agent_configs.role` 作真相源，形成双真相源：
+
+- `server/src/services/validation/workflow-service.ts`（validation request 主路径）
+- `server/src/services/validation/recovery-service.ts`（重启 recovery 路径）
+
+手动routing和自动selection复用同一个`hasCapability(config, capability)`纯函数及JSON校验；`agent_configs.role`仅用于旧数据迁移和UI主要角色标签。切换完成后 `listAvailableByProjectAndRole()` 应无剩余调用点，可直接删除以防回归。
+
+**统一进程启动：可执行文件解析与 `shell=false`**
+
+三个 adapter 必须统一以 `shell=false` 启动子进程。这不是风格偏好，而是本设计其余安全论证的前提：`shell=true` 时命令串要经 `cmd.exe` 解释，"instructions 绝不进 argv"（§6.3）和"API key 绝不进 argv"（§5.3）就失去了确定性保证，而三个 provider 若在这一点上不一致，安全边界也无法统一表述。
+
+基线现状与之冲突，需在实现时一并收敛。F002 的 Codex 路径当前是 `shell: process.platform === "win32"`（`runtime/adapters/codex-cli-adapter.ts`、`codex-protocol.ts`），原因是本机实测三个 CLI 的安装形态并不一致：
+
+| CLI | 路径形态 | `shell=false` 可直接启动 |
+| --- | --- | --- |
+| Claude Code | `claude.exe`，真 exe | 是 |
+| OpenCode | `opencode.cmd`，批处理 shim | 否 |
+| Codex | `codex.cmd`，批处理 shim | 否 |
+
+Node 的 `spawn` 在 `shell:false` 下无法直接执行 `.cmd`，F002 当时选择开 shell 绕过。正确解法是在启动前做一次可执行文件解析：`.cmd`/`.bat` shim 通常只是一层转发（实测 `opencode.cmd` 转发到 `node_modules/opencode-ai/bin/opencode.exe`），解析出真实 exe 路径后即可全部走 `shell=false`。
+
+因此设计上新增一个共享的 executable resolver，位于 adapter 启动路径之前、对三个 provider 一视同仁：
+
+- 输入用户配置的 command，经 PATH 查找后若命中 shim，则解析其转发目标；
+- 解析失败**不得静默回退到 `shell=true`**，而是把该 adapter 标为 unavailable 并给出明确原因——否则安全降级会在用户无感知的情况下发生；
+- 非 shim 的普通可执行文件直通，不做多余处理；
+- Codex 一并切换，`shell: process.platform === "win32"` 从基线移除，F002 既有启动/probe 测试作为回归门槛。
+
+对应任务见 `tasks.md` T009a，它阻塞 Claude（T037）和 OpenCode（T044）的 argv 断言。
 
 ### 6.2 Protocol probe与normalizer
 
@@ -287,7 +322,7 @@ F005 同时修改 F004 `ValidatorSelector`：自动validator候选必须查询`s
 
 ### 6.3 ClaudeCodeAdapter
 
-预期使用Claude CLI的非交互print + stream-json模式，prompt经stdin或明确argv传递，`cwd=workspace`、`shell=false`。最终argv以probe为准，禁止把instructions/API key拼进命令行。
+预期使用Claude CLI的非交互print + stream-json模式，prompt经stdin或明确argv传递，`cwd=workspace`、`shell=false`（启动方式统一见§6.1"统一进程启动"；Claude 本身是真 exe，无需 shim 解析）。最终argv以probe为准，禁止把instructions/API key拼进命令行。
 
 权限：
 
@@ -300,7 +335,7 @@ F005 同时修改 F004 `ValidatorSelector`：自动validator候选必须查询`s
 
 ### 6.4 OpenCodeAdapter
 
-使用probe确认的one-shot命令和结构化输出模式。OpenCode无消息级approval保证：
+使用probe确认的one-shot命令和结构化输出模式，同样`cwd=workspace`、`shell=false`；OpenCode 本机为 `.cmd` shim，必须经§6.1的 executable resolver 解析后启动。OpenCode无消息级approval保证：
 
 - 不对UI宣称pre-execution interception；
 - 依赖credential-isolated env阻止push，结合stderr/structured command结果触发`CredentialIsolationBlocked`；
@@ -400,6 +435,8 @@ F005修改F004 request流程：implementation完成后仍在同一事务进入Va
 
 计时不是前端定时器真相：`ValidationDispatchScheduler`每秒查询due Issue，server startup也reconcile。10秒是集中常量`MANUAL_VALIDATOR_GRACE_MS`，P0不做用户配置。
 
+`MANUAL_VALIDATOR_GRACE_MS` 必须**可注入**（构造参数或依赖注入，默认 10s），不能写死读取模块常量。理由：这条 grace 改变了 F004 既有自动闭环的时序——implementation 完成后不再立即产生 validator Run。F004 现有的自动验证集成测试如果只能等真实 10 秒，要么整体变慢，要么退化成时间敏感的脆测试。测试注入 0ms 即可保持 F004 原有的"立即创建"语义，回归成本为零。
+
 `POST /api/issues/:id/validation`沿用F004接口，F005语义为“Use default now”：清due并尝试创建默认validator。
 
 ### 8.2 Winner transaction
@@ -408,12 +445,22 @@ F005修改F004 request流程：implementation完成后仍在同一事务进入Va
 
 1. 确认Issue仍Validating；
 2. 确认round与requested event一致；
-3. 尝试插入`role=validator,status=queued`；
-4. DB partial unique index决定唯一winner；
-5. winner清`validation_dispatch_due_at`并写run.queued；
-6. loser读取active validator并返回：自动loser幂等结束，手动loser返回`VALIDATOR_RUN_CONFLICT`和active run摘要。
+3. 前置检查：先查 active validator（`getActiveValidator`），再查本轮 validator（`getValidatorRunByRound`）——这两条检查在基线 `workflow-service.ts` 中已经成对存在，拆出 `claimValidatorSlot()` 时必须**两条都搬**，只搬 active 那条会引入回归；
+4. 尝试插入`role=validator,status=queued`；
+5. 两条DB唯一索引共同决定winner（见§4.1）；
+6. winner清`validation_dispatch_due_at`并写run.queued；
+7. loser按冲突类型分流，见下表。
 
-应用层前置检查只改善错误信息，不承担正确性。Consult Run不命中唯一索引，允许在Validating期间排队/执行，但仍受workspace锁。
+**冲突分流**（前置检查和索引冲突走同一套语义，前置检查只是提前拿到更好的错误信息）：
+
+| 冲突类型 | 判定 | 自动loser（scheduler） | 手动loser（用户请求） |
+| --- | --- | --- | --- |
+| active 冲突：本轮已有 `queued`/`running` validator | 命中 `idx_runs_one_active_validator` | 幂等结束，不写event | `VALIDATOR_RUN_CONFLICT` 409 + active run 摘要 |
+| per-round 冲突：本轮已有 validator 但已终态（completed/failed/cancelled） | 命中 `idx_runs_validator_per_round`，且 active 为空 | 幂等结束，不写event | `VALIDATOR_RUN_CONFLICT` 409 + 该终态 run 摘要及"本轮已验证过"说明 |
+
+per-round 冲突是 active 索引挡不住的真实场景：本轮 validator 已被 `issue_state_changed_before_start` 取消或已失败时，active 为空但 per-round 索引仍然拦截插入。**此时一律拒绝，不允许同轮重试、不 bump round**——这维持 F004 既有的"每轮至多一条 validator"语义，重新验证必须走 F004 正常的 fail→Running→下一轮路径产生新 round。设计上不得出现"active 为空即可插入"的假设，loser 分支必须先区分是哪一条索引冲突，不能无条件读 active validator（那样在 per-round 冲突时会拿到 null 并落入未定义状态）。
+
+应用层前置检查只改善错误信息，不承担正确性。Consult Run不命中任一唯一索引，允许在Validating期间排队/执行，但仍受workspace锁。
 
 ### 8.3 Crash/restart
 
@@ -463,7 +510,7 @@ GET /api/adapter-providers
 | `DEFAULT_ADAPTER_UNAVAILABLE` | 409 | 未配置/失效/default跨Project |
 | `RUN_PURPOSE_INVALID` | 400 | 客户端尝试强制workflow-bound/未知值 |
 | `RUN_NOT_ALLOWED_FOR_ISSUE_STATUS` | 409 | Done/Blocked派发 |
-| `VALIDATOR_RUN_CONFLICT` | 409 | 手动validator输掉唯一slot |
+| `VALIDATOR_RUN_CONFLICT` | 409 | 手动validator输掉唯一slot（active冲突），或本轮已有终态validator（per-round冲突）；response需区分两者以给出正确文案 |
 
 ## 10. UI设计
 
@@ -514,6 +561,7 @@ Run cards增加purpose badge和provider/model；consult使用中性样式和明�
 | 场景 | 行为 |
 | --- | --- |
 | CLI未安装 | validate unavailable；selector disabled |
+| shim无法解析出真实可执行文件 | adapter标unavailable并说明原因；**不回退`shell=true`** |
 | OAuth过期/未登录 | auth probe unavailable，不把version成功当可用 |
 | API key错误 | validate清洗错误；DB保留key供用户替换，不回显 |
 | OAuth+API key同时提供 | 400；不猜优先级 |
@@ -524,6 +572,7 @@ Run cards增加purpose badge和provider/model；consult使用中性样式和明�
 | OpenCode git push | credential isolation主防线；不承诺前置拦截 |
 | adapter raw protocol malformed | trace partial；Run可继续，validator缺可靠finalMessage则Blocked |
 | concurrent manual/auto validator | DB unique决定winner；无重复Run |
+| 本轮validator已终态后再次claim | per-round索引拦截；manual收409+终态run摘要，scheduler幂等结束；不bump round |
 | consult在Validating期间完成 | Issue保持Validating；scheduler/validator照常 |
 | consult触发危险操作 | Issue Blocked，取消其余queued workflow Run |
 | server grace期间重启 | 按due_at恢复剩余等待/立即dispatch |
@@ -551,14 +600,14 @@ Run cards增加purpose badge和provider/model；consult使用中性样式和明�
 
 ### 13.3 Integration
 
-- v4 -> v5 migration、旧config/Run兼容、secret不出API/event。
+- v5 -> v6 migration、旧config/Run兼容、secret不出API/event。
 - 三provider create/update/validate/list/default。
 - explicit/default dispatch routing metadata。
 - Codex -> Claude -> OpenCode顺序Run自动携带上一handoff。
 - Ready/Running implementation命中、Validating validator命中、mismatch consult。
 - consult不改状态/round；escalation仍Blocked。
 - manual validator pass/fail复用F004 summary/state machine。
-- manual/auto并发race两种winner、HTTP conflict、无重复queued/running validator。
+- manual/auto并发race两种winner、active冲突与per-round冲突两类HTTP conflict、无重复queued/running validator。
 - grace restart recovery。
 - 三provider credential isolation/escalation。
 
@@ -582,7 +631,11 @@ Run cards增加purpose badge和provider/model；consult使用中性样式和明�
 | Running期望implementation | 保证F004 fail后的修复Run能继续闭环 | Running所有@均consult；闭环无法推进 |
 | 10秒持久化grace | 满足手动validator介入且可跨重启 | F004立即创建；用户几乎无法抢先；纯前端timer不可靠 |
 | DB partial unique决定validator winner | 跨async callback/restart正确 | 进程内mutex；无法覆盖DB race |
+| per-round冲突一律拒绝，不同轮重试 | 维持F004"每轮至多一条validator"既有语义，重验走正常fail→Running→新round | 允许同轮重插；破坏round与证据的一一对应 |
+| grace常量可注入 | F004既有自动闭环测试注入0ms即可保持原时序，不因F005变慢或变脆 | 硬编码模块常量；F004回归测试被迫真等10秒 |
 | provider-specific最小auth env | 兼顾CLI登录与git凭据隔离 | 恢复完整HOME；可能读取git凭据 |
+| 三adapter统一shell=false + shim解析 | argv安全论证需要确定性，三provider不能各行其是；顺带收掉F002的Windows shell=true | 保留shell=true；instructions/API key的argv保证失效 |
+| shim解析失败标unavailable，不回退shell | 安全降级不得在用户无感知时发生 | 静默回退；边界被悄悄放宽 |
 | OpenCode不承诺前置approval | 没有可靠协议证据，诚实表达能力 | 根据flag宣称等价approval；误导安全性 |
 | 同一workspace继续FIFO | 维持F002证据归因和写安全 | 多agent并行写；超出v0.1 |
 

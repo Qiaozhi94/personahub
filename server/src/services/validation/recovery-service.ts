@@ -1,10 +1,12 @@
+import type Database from "better-sqlite3";
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { RunRepository } from "../../repositories/run.js";
 import type { ThreadEventRepository } from "../../repositories/thread-event.js";
 import type { AgentConfigRepository } from "../../repositories/agent-config.js";
 import type { ValidationWorkflowService } from "./workflow-service.js";
-import type { Issue, AdapterIdentitySnapshot } from "@personahub/shared/types";
-import { IssueStatus, RunRole, RunStatus, RunDispatchSource, ThreadEventType, ActorType, ValidationBlockReason } from "@personahub/shared/types";
+import type { ThreadEventService } from "../thread-event.js";
+import type { Issue, ThreadEvent, ValidationPolicySnapshot } from "@personahub/shared/types";
+import { IssueStatus, RunRole, ThreadEventType, ActorType, ValidationBlockReason } from "@personahub/shared/types";
 
 export class ValidationRecoveryService {
   constructor(
@@ -13,6 +15,8 @@ export class ValidationRecoveryService {
     private validationWorkflowService: ValidationWorkflowService,
     private threadEventRepo: ThreadEventRepository,
     private agentConfigRepo: AgentConfigRepository,
+    private db: Database.Database,
+    private threadEventService: ThreadEventService,
   ) {}
 
   async reconcile(): Promise<void> {
@@ -27,7 +31,7 @@ export class ValidationRecoveryService {
       if (!issue.primary_thread_id) continue;
       const implRun = this.runRepo.getLatestCompletedByRole(issue.id, RunRole.Implementation);
       if (!implRun || !implRun.adapter_identity) continue;
-      if (this.hasValidationBeenRequested(issue)) continue;
+      if (this.hasValidationBeenRequestedForRun(issue, implRun.id)) continue;
       this.validationWorkflowService.requestValidation(issue.id, implRun.id);
     }
   }
@@ -47,97 +51,69 @@ export class ValidationRecoveryService {
     for (const issue of stuckIssues) {
       if (!issue.primary_thread_id) continue;
       if (this.findLatestTerminalValidator(issue.id)) continue;
-      const requestedEvent = this.findValidationRequestedEvent(issue);
+      const requestedEvent = this.threadEventRepo.getLatestByTypeAndPayload(
+        issue.primary_thread_id!,
+        ThreadEventType.ValidationRequested,
+        "issue_id",
+        issue.id,
+      );
       if (requestedEvent) {
         const implRunId = requestedEvent.payload_json.implementation_run_id as string;
-        this.rebuildValidatorForIssue(issue, implRunId);
+        const frozenSnapshot = requestedEvent.payload_json.policy_snapshot as ValidationPolicySnapshot;
+        const frozenHash = requestedEvent.payload_json.policy_snapshot_hash as string;
+        const frozenValidatorConfigId = requestedEvent.payload_json.validator_adapter_config_id as string | undefined;
+        if (frozenSnapshot && frozenHash) {
+          this.validationWorkflowService.rebuildStuckValidation(
+            issue.id, implRunId, frozenSnapshot, frozenHash, frozenValidatorConfigId,
+          );
+        } else {
+          this.blockIssueInRecovery(issue, ValidationBlockReason.RecoveryInconsistent, "Original validation.requested missing frozen policy snapshot");
+        }
       } else {
         this.blockIssueInRecovery(issue, ValidationBlockReason.RecoveryInconsistent, "No validation.requested event found during recovery for Validating issue");
       }
     }
   }
 
-  private rebuildValidatorForIssue(issue: Issue, implRunId: string): void {
-    const validators = this.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator);
-    if (validators.length === 0) {
-      this.blockIssueInRecovery(issue, ValidationBlockReason.ValidatorUnavailable, "No validator available during recovery");
-      return;
-    }
-    const selected = validators[0];
-    const round = issue.validation_round_count + 1;
-    const validatorIdentity: AdapterIdentitySnapshot = {
-      adapter_config_id: selected.id,
-      name: selected.name,
-      cli_provider: selected.cli_provider,
-      default_model: selected.default_model,
-    };
-    const validatorRun = this.runRepo.create({
-      issue_id: issue.id,
-      thread_id: issue.primary_thread_id!,
-      workspace_id: issue.workspace_id,
-      adapter_config_id: selected.id,
-      instructions: "",
-      status: RunStatus.Queued,
-      role: RunRole.Validator,
-      dispatch_source: RunDispatchSource.System,
-      validation_round: round,
-      adapter_identity: validatorIdentity,
-    });
-    this.threadEventRepo.create({
-      thread_id: issue.primary_thread_id!,
-      type: ThreadEventType.RunQueued,
-      actor_type: ActorType.System,
-      actor_id: null,
-      payload: {
-        run_id: validatorRun.id,
-        issue_id: issue.id,
-        thread_id: issue.primary_thread_id!,
-        workspace_id: issue.workspace_id,
-        status: RunStatus.Queued,
-        role: RunRole.Validator,
-        validation_round: round,
-      },
-      evidence_refs: [],
-    });
-  }
-
   private blockIssueInRecovery(issue: Issue, reason: ValidationBlockReason, message: string): void {
-    this.issueRepo.compareAndSetStatus(issue.id, issue.status, IssueStatus.Blocked, {
-      blocked_reason_code: reason,
-      blocked_reason_message: message,
-    });
-    this.threadEventRepo.create({
-      thread_id: issue.primary_thread_id!,
-      type: ThreadEventType.ValidationBlocked,
-      actor_type: ActorType.System,
-      actor_id: null,
-      payload: {
-        issue_id: issue.id,
-        thread_id: issue.primary_thread_id!,
-        workspace_id: issue.workspace_id,
-        validation_round: issue.validation_round_count + 1,
-        summary: message,
-        reason_code: reason,
-      },
-      evidence_refs: [],
-    });
+    const pendingEvents: ThreadEvent[] = [];
+    const blocked = this.db.transaction(() => {
+      const casResult = this.issueRepo.compareAndSetStatus(issue.id, issue.status, IssueStatus.Blocked, {
+        blocked_reason_code: reason,
+        blocked_reason_message: message,
+      });
+      if (!casResult.success) return false;
+      pendingEvents.push(this.threadEventService.write(
+        issue.primary_thread_id!,
+        ThreadEventType.ValidationBlocked,
+        ActorType.System,
+        null,
+        {
+          issue_id: issue.id,
+          thread_id: issue.primary_thread_id!,
+          workspace_id: issue.workspace_id,
+          validation_round: issue.validation_round_count + 1,
+          summary: message,
+          reason_code: reason,
+        },
+      ));
+      return true;
+    })();
+    if (blocked) {
+      for (const event of pendingEvents) this.threadEventService.broadcast(event);
+    }
   }
 
-  private hasValidationBeenRequested(issue: Issue): boolean {
-    const events = this.threadEventRepo.listByThreadAndTypes(
-      issue.primary_thread_id!, [ThreadEventType.ValidationRequested], undefined, 1,
+  private hasValidationBeenRequestedForRun(issue: Issue, implRunId: string): boolean {
+    return this.threadEventRepo.existsByTypeAndPayload(
+      issue.primary_thread_id!,
+      ThreadEventType.ValidationRequested,
+      "implementation_run_id",
+      implRunId,
     );
-    return events.length > 0;
   }
 
   private findLatestTerminalValidator(issueId: string) {
     return this.runRepo.getLatestTerminalByRole(issueId, RunRole.Validator);
-  }
-
-  private findValidationRequestedEvent(issue: Issue) {
-    const events = this.threadEventRepo.listByThreadAndTypes(
-      issue.primary_thread_id!, [ThreadEventType.ValidationRequested], undefined, 10,
-    );
-    return events.find((e) => e.payload_json.issue_id === issue.id) ?? null;
   }
 }

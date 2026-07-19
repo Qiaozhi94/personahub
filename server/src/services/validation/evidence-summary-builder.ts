@@ -104,6 +104,7 @@ function dedupePreserveOrder(refs: string[]): string[] {
 export function aggregateEvidenceRefs(input: EvidenceSummaryBuildInput): string[] {
   const refs: string[] = [];
   refs.push(`event:${input.passEventId}`);
+  refs.push(...input.result.evidence_refs);
   if (input.handoff) {
     refs.push(`file-change-set:${input.implementationRun.id}`);
   }

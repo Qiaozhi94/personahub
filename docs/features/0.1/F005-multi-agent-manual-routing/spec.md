@@ -4,7 +4,7 @@ related_features: [F002, F003, F004]
 topics: [agent-adapter, claude-code, opencode, manual-routing, multi-agent, v0.1.4]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-16
+updated: 2026-07-19
 ---
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）
@@ -103,6 +103,8 @@ F001-F004 交付后，PersonaHub 能自动完成"一个 implementation agent + �
 1. Given Issue 处于 `Validating`，when 用户手动指定一个 adapter 处理这一轮，then 该 Run 被标记为 validator 角色，其输出按 F004 `FR-003` 的规则解析为 pass/fail/blocked。
 2. Given 手动指定的 validator 与 implementation 使用不同的 `cli_provider`，when validation passed，then Evidence Summary 中 `same_origin_validation` 标记为 `false`。
 3. Given 用户在 Issue 处于 `Validating` 时没有手动指定，when 达到系统默认的等待时间或用户明确不介入，then 沿用 F004 已有的自动 validator 逻辑，不因为本 feature 的存在而破坏原有自动闭环。
+
+**对 F004 既有时序的已知影响**：为了给用户留出手动介入的机会，本 feature 会让 implementation 完成后**不再立即**创建自动 validator Run，而是先进入一段默认 10 秒的等待窗口（见 design 第 8.1 节）。这是对 F004 自动闭环时序的有意变更，最终结果（自动 validator 照常产生、状态机照常推进）不变。该等待时长必须是可注入的常量，测试中注入 0ms 即还原 F004 原有的"立即创建"语义，既有 F004 自动验证测试不得因此变慢或变成时间敏感的脆测试。
 
 ### US5：自由咨询式 Run，不驱动 Issue 状态机（Priority: P2）
 
@@ -300,13 +302,24 @@ F002 定义的凭据隔离和 escalation 机制应当对 Claude Code、OpenCode 
 - WHEN 用户此时尝试手动指定另一个 adapter 也承接 validator 角色
 - THEN 系统拒绝该请求，并提示已有一条 validator Run 在进行中
 
+#### Scenario: 本轮 validator 已终态
+
+- GIVEN 当前 validation round 已经产生过一条 validator Run，且该 Run 已进入终态（完成、失败或被取消）
+- WHEN 用户或系统尝试为**同一轮**再创建一条 validator Run
+- THEN 系统拒绝，并说明本轮已经验证过
+- AND 重新验证只能通过 F004 既有的 fail → `Running` → 下一轮路径产生新的 round，不允许在同一轮内重试
+
 ### 数据 / 实体需求
 
 - **DR-001**：Adapter config 应当支持 `auth_type`（`oauth` / `api_key`）；`api_key` 方式下的凭据字段**沿用 multica / clowder-ai 的存储方式**——不做额外加密，明文存储在本地（DB 列或本地配置文件），只在 API 响应/UI 展示时打码（如 `****`），并通过本地文件/数据库的访问权限做基本保护。这是有意识的从简决定，不是遗漏；如果后续需要更强的机密性保证（例如 OS keychain 集成），作为独立的安全加固任务另行评估，不在本 feature 阻塞。
 - **DR-002**：Run 应当增加区分"workflow-bound"（implementation / validator，驱动 Issue 状态机）和"ad-hoc consult"（咨询性，不驱动状态机）的字段；Run role 保持非空，咨询性 Run 使用持久化值 `consult`，不得写成 `null` 或伪装成 `implementation`。
 - **DR-003**：Run 应当能记录是否由用户手动指定 adapter（区别于系统默认），用于审计和回溯。
 - **DR-004**：其余 Run / ThreadEvent 字段沿用 F002 既有定义，不重复设计。
-- **DR-005**：Run 表应当增加一条数据库级 partial unique 约束，保证同一 `issue_id` 同一时刻最多只有一条 `role = validator` 且 `status IN (queued, running)` 的记录，作为 `FR-009` 互斥规则的强制手段（参考 multica `agent_task_queue` 的同类约束，以及 F001 primary Thread 唯一性约束的既有先例）。应用层可以有一次前置检查作为优化（减少无意义的失败），但正确性以这条 DB 约束为准，不依赖进程内锁——同一时刻先提交成功的一方获胜，另一方收到明确的冲突错误，不产生重复 Run。
+- **DR-005**：`FR-009` 的互斥以数据库级约束为强制手段，不依赖进程内锁。F004 已经落地了**两条**语义不同的 validator 唯一索引，F005 直接复用、不新建第三条：
+  - `idx_runs_one_active_validator`：同一 `issue_id` 最多一条 `role = validator` 且 `status IN (queued, running)` 的记录，约束"同时在跑的"；
+  - `idx_runs_validator_per_round`：同一 `(issue_id, validation_round)` 最多一条 `role = validator` 的记录，**跨终态**约束"每轮至多一条"。
+
+  两条索引覆盖不同场景：本轮 validator 已终态时，第一条不再拦截而第二条仍然拦截。冲突处理必须区分是哪一条命中，不能假设"没有 active validator 就可以插入"。应用层可以有前置检查作为优化（减少无意义的失败），但正确性以这两条 DB 约束为准——同一时刻先提交成功的一方获胜，另一方收到明确的冲突错误，不产生重复 Run。
 
 ### 事件 / Trace 需求
 
@@ -379,7 +392,7 @@ Ad-hoc Consult Run
 - [ ] **AC-004**（`FR-006`）：手动指定的 validator Run 的 pass/fail 输出正确驱动 Issue 到 `Done` 或回到 `Running`，Evidence Summary 正确记录 `validator_identity` 和 `same_origin_validation`；validator context严格绑定目标`implementation_run_id`。
 - [ ] **AC-005**（`FR-007`）：@ 命中当前期望角色时判定为 workflow-bound，未命中时判定为咨询性且不改变 Issue 状态；两种情况在 Thread 中都留下完整记录。
 - [ ] **AC-006**（`FR-008`）：Claude Code、OpenCode 触发危险 git 操作时，行为与 Codex 一致，同样被凭据隔离挡住并触发 escalation。
-- [ ] **AC-007**（`FR-009`, `DR-005`）：同一 Issue 同一时刻只能有一条 pending validator Run；无论是手动介入还是系统自动触发先到，后到的一方都会被数据库唯一约束拒绝，不产生重复 Run。
+- [ ] **AC-007**（`FR-009`, `DR-005`）：同一 Issue 同一时刻只能有一条 pending validator Run；无论是手动介入还是系统自动触发先到，后到的一方都会被数据库唯一约束拒绝，不产生重复 Run。本轮 validator 已终态时，同轮再创建同样被拒绝（per-round 约束），两类冲突都返回明确错误而不是落入未定义状态。
 
 ## 9. 测试计划
 

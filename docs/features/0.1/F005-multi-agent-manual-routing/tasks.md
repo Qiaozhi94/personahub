@@ -4,7 +4,7 @@ related_features: [F002, F003, F004]
 topics: [multi-adapter, manual-routing, claude-code, opencode, auth, security, v0.1.4]
 doc_kind: tasks
 created: 2026-07-16
-updated: 2026-07-17
+updated: 2026-07-19
 ---
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）- 任务
@@ -21,9 +21,30 @@ updated: 2026-07-17
 - 不实现Coordinator自动推荐、多agent并行、Room、更多provider或OS keychain。
 - 每项先补测试再实现；标`[P]`仅表示文件和依赖真正独立。
 
+## Phase 0：环境前置确认（开工第一件事）
+
+- [x] **T000**（`NFR-004`, `AC-001`）：确认本机 Claude Code CLI 与 OpenCode CLI 的实际安装状态与版本，记录在 Phase 1 fixture 说明中。整个 Phase 1（T001-T010）依赖这两个 CLI 真实可执行，不允许用推测或二手文档替代。
+
+  **2026-07-19 实测结果——三者全部可用，落到「两者都可用」分支，Phase 1 全量推进**：
+
+  | CLI | 版本 | 路径形态 |
+  | --- | --- | --- |
+  | Claude Code | 2.1.215 | `C:\Users\Georg\.local\bin\claude.exe`（真 exe） |
+  | OpenCode | 1.18.3 | `D:\DevSoft\nodejs\opencode.cmd`（批处理 shim → `node_modules/opencode-ai/bin/opencode.exe`） |
+  | Codex | 0.144.5 | `D:\DevSoft\nodejs\codex.cmd`（批处理 shim） |
+
+  由此派生出 T009a（`.cmd` shim 解析 + 统一 `shell=false`）。
+
+  按结论选择排期（保留供环境变化时复用）：
+  - **两者都可用**：按既定顺序推进 Phase 1 全部任务。
+  - **只有一个可用**：先完成该 provider 的 probe 与对应 adapter phase（Claude 走 Phase 5、OpenCode 走 Phase 6），另一 provider 的 probe 任务保持未勾选；Phase 2/3/7（schema、repository、routing纯逻辑）不依赖任何 CLI，可并行推进。
+  - **两者都不可用**：只做 Phase 2/3/7 及 Phase 10 中不依赖 adapter 的部分，Checkpoint 1/5/6 与 AC-001/AC-006 挂起，不得标记为通过。
+
+  无论哪种情况，缺失 provider 的 capability 一律按 design 的降级路径标 unavailable，不得凭猜测填 fixture 或声明能力。
+
 ## Phase 1：Claude Code / OpenCode协议与鉴权Probe
 
-- [ ] **T001**（`FR-001`, `NFR-004`, `AC-001`）：记录本机Claude Code CLI版本、安装路径解析和Windows shell=false启动方式；验证`--version`不足以代表OAuth已登录。
+- [ ] **T001**（`FR-001`, `NFR-004`, `AC-001`）：记录本机Claude Code CLI版本、安装路径解析和Windows启动方式（`shell=false`的可执行文件解析见T009a）；验证`--version`不足以代表OAuth已登录。
 - [ ] **T002**（`FR-001`, `NFR-003`）：验证Claude非交互one-shot、stream JSON、prompt stdin、final message、正常/非零/auth failure/cancel，保存redacted fixtures。
 - [ ] **T003**（`FR-008`, `NFR-003`, `AC-006`）：验证Claude `control_request/control_response`真实字段和permission mode；用无远端副作用fixture确认git push请求可在执行前拒绝，不使用bypass模式。
 - [ ] **T004**（`FR-005`, `FR-006`）：验证Claude command/tool lifecycle能否映射F003 RunTraceSignal、final message能否满足F004 parser；不能确认的capability明确记录为false。
@@ -32,18 +53,30 @@ updated: 2026-07-17
 - [ ] **T007**（`FR-002`, `DR-001`）：确定经实测可用的OpenCode API-key provider allowlist和env/临时config映射；验证key不需进入argv或workspace。
 - [ ] **T008**（`FR-008`, `NFR-003`, `AC-006`）：确认OpenCode无等价消息级approval通道；验证credential-isolated env下push失败可被稳定识别，记录真实能力说明。
 - [ ] **T009**（`NFR-001`, `NFR-004`）：验证三个CLI在不恢复完整HOME/USERPROFILE时所需的最小auth目录变量/路径；若某OAuth路径无法隔离，按design标unavailable而非放宽git凭据环境。
+- [ ] **T009a**（`NFR-003`, `NFR-004`, `AC-006`）：实现统一的 CLI 可执行文件解析，让三个 adapter 都能真正以 `shell=false` 启动。
+
+  **背景**：本机实测（T000）三个 CLI 的路径形态不一致——Claude 是真 exe（`claude.exe`），Codex 和 OpenCode 都是 Windows 批处理 shim（`codex.cmd` / `opencode.cmd`）。Node `spawn` 在 `shell:false` 下无法直接执行 `.cmd`，这正是 F002 基线被迫写成 `shell: process.platform === "win32"` 的原因（见 `runtime/adapters/codex-cli-adapter.ts:196`、`codex-protocol.ts:83`）。若不处理，F005 三个 adapter 会出现"两个走 shell、一个不走"的分裂，`shell=true` 让命令串经过 `cmd.exe`，与 design 反复强调的"instructions/API key 绝不进 argv"的安全论证不自洽。
+
+  **要求**：
+  - 新增共享 executable resolver：给定用户配置的 command，若解析到 `.cmd`/`.bat` shim，则读取并解析出其转发的真实可执行文件路径（实测 `opencode.cmd` 仅一层转发到 `node_modules/opencode-ai/bin/opencode.exe`），失败时给出明确的不可用原因而不是静默回退到 shell。
+  - 三个 adapter（含 Codex）统一改为 `shell: false`；同步移除 `codex-cli-adapter.ts` 与 `codex-protocol.ts` 中的 `shell: process.platform === "win32"`。
+  - 覆盖 Windows 路径含空格、Unicode、相对路径、PATH 查找、shim 目标不存在、非 shim 的普通 exe 直通等情形。
+  - 回归：F002 现有 Codex 启动/probe 测试必须全绿，证明去掉 shell 后行为不变。
+
+  **阻塞关系**：本任务阻塞 T037（Claude argv/启动断言）和 T044（OpenCode argv/启动断言）——这两项的 `shell=false` 与"key 不进 argv"断言在解析器就位前无法成立。
+
 - [ ] **T010**（`AC-001`, `AC-006`）：把所有fixtures加入test helpers并附CLI版本/字段说明；运行secret扫描确保无token/key/private path。
 
-**Checkpoint 1**：三个provider的argv、auth probe、final message、trace、cancel、approval能力均由可重放fixture固定；无法支持的能力已有明确降级。
+**Checkpoint 1**：三个provider的argv、auth probe、final message、trace、cancel、approval能力均由可重放fixture固定；三个adapter均以`shell=false`启动且F002 Codex回归全绿；无法支持的能力已有明确降级。
 
-## Phase 2：Shared Contract与Schema v5
+## Phase 2：Shared Contract与Schema v6
 
 - [ ] **T011**（`DR-001` - `DR-005`）：添加shared类型编译/序列化测试，覆盖CliProvider/AuthType/Capability/RunPurpose、public AdapterConfig、write-only inputs、Run routing fields和provider metadata。
 - [ ] **T012**（`DR-001` - `DR-004`）：拆分/扩展shared adapter/run types并re-export；扩展F004 `RunRole`新增非空`consult`、扩展`RunDispatchSource`新增`user_default`，持久化枚举只增不改。
 - [ ] **T013**（`IR-001` - `IR-003`）：先补ErrorCode/HTTP映射测试，再新增auth/key/provider/default/purpose/status/conflict错误。
-- [ ] **T014**（`DR-001` - `DR-005`, `NFR-001`）：添加v5 migration集成测试，覆盖v4升级、重跑、旧Codex oauth解释、旧Run workflow_bound、非空`role='consult'`可插入且无需重建runs、capability backfill、due/default/index和既有summary不变。
-- [ ] **T015**（`DR-001` - `DR-005`）：实现`schema-v5.ts`并注册migration；保留F004 `runs.role NOT NULL`并由shared enum新增`consult`值，版本号若因实际前序迁移变化只顺延编号。
-- [ ] **T016**（`DR-005`, `FR-009`）：验证F004 active validator partial unique index在v5仍存在且对manual/system Run同时生效；不得重复创建冲突索引。
+- [ ] **T014**（`DR-001` - `DR-005`, `NFR-001`）：添加v6 migration集成测试，覆盖v5升级、重跑、旧Codex oauth解释、旧Run workflow_bound、非空`role='consult'`可插入且无需重建runs、capability backfill、due/default/index和既有summary不变。
+- [ ] **T015**（`DR-001` - `DR-005`）：实现`schema-v6.ts`并在`migrations.ts`注册为版本6（v5 已被 F004 占用，勿复用）；保留F004 `runs.role NOT NULL`并由shared enum新增`consult`值。
+- [ ] **T016**（`DR-005`, `FR-009`）：验证F004 **两条** validator 唯一索引在v6仍存在且对manual/system Run同时生效：`idx_runs_one_active_validator`（v4，active）与`idx_runs_validator_per_round`（v5，跨终态每轮唯一）；断言两者语义差异（本轮validator终态后前者放行、后者仍拦截）；不得重复创建冲突索引。
 
 **Checkpoint 2**：F004数据无损升级，public/internal secret边界和routing枚举已固定。
 
@@ -63,9 +96,9 @@ updated: 2026-07-17
 ## Phase 4：Adapter配置、Auth Material与Registry
 
 - [ ] **T025**（`FR-001`, `FR-002`, `AC-001`）：添加provider/auth字段矩阵测试：Codex/Claude仅OAuth、OpenCode OAuth/API key、互斥字段、switch清key、required provider/model/key、trim/limits。
-- [ ] **T026**（`FR-001`, `FR-002`, `IR-001`）：重构AdapterConfigService使用provider metadata校验并输出public DTO；移除统一`--version`可用性判断。
+- [ ] **T026**（`FR-001`, `FR-002`, `IR-001`）：重构AdapterConfigService使用provider metadata校验并输出public DTO；移除统一`--version`可用性判断。**同时修掉create路径硬编码`capability_tags: []`**（`services/adapter-config.ts`），改为写入用户选择/provider默认的真实capability——否则v6 backfill只修历史数据，新建adapter仍会退化为无能力；补一条"新建adapter的capability_tags非空且与输入一致"的测试。
 - [ ] **T027**（`FR-003`）：添加registry/capability测试，覆盖三provider注册/查找、duplicate throw、config provider匹配、auth capability，以及手动routing与自动ValidatorSelector共用`capability_tags`判断。
-- [ ] **T028**（`FR-003`）：注册Codex/Claude/OpenCode adapter singleton并扩展registry接口；实现共享`hasCapability()`并把F004 ValidatorSelector从`agent_configs.role`查询切换为`capability_tags contains validator`，旧role仅作迁移/展示兼容。
+- [ ] **T028**（`FR-003`）：注册Codex/Claude/OpenCode adapter singleton并扩展registry接口；实现共享`hasCapability()`并把自动validator候选查询从`agent_configs.role`切换为`capability_tags contains validator`。`listAvailableByProjectAndRole()`有**两个**调用点，必须一并切换，只改其一会让recovery路径继续使用旧真相源：`services/validation/workflow-service.ts`（request主路径）与`services/validation/recovery-service.ts`（重启recovery路径）。切换后该方法应无剩余调用点，直接删除以防回归；旧`agent_configs.role`仅作迁移/展示兼容。
 - [ ] **T029**（`FR-002`, `DR-001`, `NFR-001`）：添加AuthMaterial测试，覆盖API key allowlist/env或temp config、cleanup、异常清理、key不进argv/context/log和unknown provider拒绝。
 - [ ] **T030**（`FR-002`）：实现`runtime/auth-material.ts`及provider mapping，严格按Phase 1实测结果。
 - [ ] **T031**（`FR-001`, `FR-002`, `NFR-004`）：添加provider-specific child env测试，确保只暴露所需CLI auth目录，继续移除SSH agent/git helper/GH tokens，API-key模式不暴露home auth。
@@ -79,7 +112,7 @@ updated: 2026-07-17
 
 - [ ] **T035**（`FR-001`, `FR-005`）：使用Phase 1 fixture添加Claude protocol normalizer测试，覆盖output/final/command trace/control request/unknown/malformed/dedupe/limits。
 - [ ] **T036**（`FR-001`, `FR-005`）：实现独立`claude-code-normalizer.ts`，raw stream不进入领域层。
-- [ ] **T037**（`FR-001`, `NFR-004`）：添加Claude adapter启动/argv/stdin/cwd/env/auth/cancel/exit-once测试，instructions不得在argv。
+- [ ] **T037**（`FR-001`, `NFR-004`）：添加Claude adapter启动/argv/stdin/cwd/env/auth/cancel/exit-once测试，`shell=false`且instructions不得在argv。**依赖T009a**。
 - [ ] **T038**（`FR-001`）：实现`ClaudeCodeAdapter` one-shot lifecycle和F003/F004 contracts。
 - [ ] **T039**（`FR-008`, `NFR-003`, `AC-006`）：添加Claude control request安全测试，git push拒绝->pre-execution escalation，普通请求按P0策略处理，bypass flag永不出现。
 - [ ] **T040**（`FR-008`）：接入approval response和AgentRunner escalation；hook缺失时capability降级但credential isolation继续。
@@ -91,7 +124,7 @@ updated: 2026-07-17
 
 - [ ] **T042**（`FR-002`, `FR-005`）：使用Phase 1 fixture添加OpenCode normalizer测试，覆盖OAuth/API-key共同输出、final/trace/unknown/malformed/limits。
 - [ ] **T043**（`FR-002`, `FR-005`）：实现`opencode-normalizer.ts`；不从自由日志伪造confirmed command/test。
-- [ ] **T044**（`FR-002`, `NFR-004`）：添加OpenCode argv/stdin/cwd/env/auth material cleanup/cancel/exit-once测试；key不得进argv。
+- [ ] **T044**（`FR-002`, `NFR-004`）：添加OpenCode argv/stdin/cwd/env/auth material cleanup/cancel/exit-once测试；`shell=false`且key不得进argv。**依赖T009a**（OpenCode 本机为 `.cmd` shim）。
 - [ ] **T045**（`FR-002`）：实现`OpenCodeAdapter` one-shot lifecycle和auth material finally cleanup。
 - [ ] **T046**（`FR-008`, `NFR-003`, `AC-006`）：添加OpenCode credential isolation测试，push失败->escalation/Blocked，且capability明确`supportsApprovalHook=false`。
 - [ ] **T047**（`FR-008`）：接入credential failure normalizer/AgentRunner escalation；不得新增虚假的pre-execution event。
@@ -124,13 +157,14 @@ updated: 2026-07-17
 
 ## Phase 9：Validator Grace、互斥与Recovery
 
-- [ ] **T062**（`FR-006`, `FR-009`, `AC-004`, `AC-007`）：修改F004 request测试，implementation完成后同事务进入Validating/requested/set due，但10秒内不创建auto validator。
-- [ ] **T063**（`FR-006`, `FR-009`）：把F004 validator creation拆为可复用`claimValidatorSlot()`；request path设置持久化due。
+- [ ] **T062**（`FR-006`, `FR-009`, `AC-004`, `AC-007`）：修改F004 request测试，implementation完成后同事务进入Validating/requested/set due，但grace窗口内不创建auto validator；同时断言注入grace=0时行为与F004原有"立即创建"完全一致。
+- [ ] **T063**（`FR-006`, `FR-009`）：把F004 validator creation拆为可复用`claimValidatorSlot()`；request path设置持久化due。拆分时必须把基线`workflow-service.ts`中**成对存在的两条前置检查**（`getActiveValidator` + `getValidatorRunByRound`）一起搬进来，只搬active那条会引入per-round回归。
 - [ ] **T064**（`FR-009`, `DR-005`）：添加manual-wins race测试：grace内explicit validator创建、清due、scheduler loser幂等、只有一个Run。
 - [ ] **T065**（`FR-009`, `DR-005`）：添加auto-wins race测试：due/default-now先创建，manual loser收到409+active summary、无重复event。
-- [ ] **T066**（`FR-006`, `FR-009`）：实现claim transaction和unique conflict映射；应用层检查仅优化信息。
+- [ ] **T065a**（`FR-009`, `DR-005`, `AC-007`）：添加**per-round冲突**测试：本轮validator已进入终态（completed/failed/被`issue_state_changed_before_start`取消）后，manual与scheduler分别尝试为同一轮再创建validator，断言两者都被`idx_runs_validator_per_round`拒绝（active为空、不得落入未定义分支）、不bump round、不产生重复Run；manual收到409+该终态run摘要，scheduler幂等结束；重新验证只能经fail→Running→新round路径。
+- [ ] **T066**（`FR-006`, `FR-009`）：实现claim transaction和unique conflict映射；**冲突分流必须区分active冲突与per-round冲突两类**（见design §8.2表），loser分支不得无条件读active validator（per-round冲突时为null）。应用层检查仅优化信息。
 - [ ] **T067**（`US4`, `FR-009`）：添加ValidationDispatchScheduler fake clock测试，覆盖due前不跑、due后跑、多个Issue、shutdown、不重入和default unavailable Blocked。
-- [ ] **T068**（`US4`）：实现1秒scheduler和集中10秒常量；spawn在transaction commit后。
+- [ ] **T068**（`US4`）：实现1秒scheduler和集中10秒常量；spawn在transaction commit后。`MANUAL_VALIDATOR_GRACE_MS`必须**可注入**（构造参数/DI，默认10s），F004既有自动验证测试注入0ms还原"立即创建"语义；验收标准：F004现有验证套件的运行耗时不因本任务显著增加，也不得引入基于真实时钟的等待。
 - [ ] **T069**（`FR-006`, `AC-004`）：添加manual Claude/OpenCode validator pass/fail集成测试，EvidenceSummary identity/same-origin/source正确，完全复用F004 parser/gate/state。
 - [ ] **T070**（`FR-006`）：接通manual validator terminal到F004 ValidationWorkflowService，不新增parser/result route。
 - [ ] **T071**（`FR-009`, `NFR-001`）：添加restart recovery测试，覆盖due未到/已到、manual已提交响应丢失、Validating due空无Run inconsistency和terminal validator。
@@ -194,6 +228,7 @@ updated: 2026-07-17
 
 ```text
 F003 + F004 implemented
+  -> Phase 0 环境前置确认
   -> Phase 1 real CLI probes
   -> Phase 2 contracts/schema
   -> Phase 3 repositories
@@ -208,6 +243,7 @@ F003 + F004 implemented
 ```
 
 - T001-T010阻塞对应adapter实现，但不阻塞schema/public DTO和routing纯逻辑。
+- T009a（shell=false可执行文件解析）阻塞T037/T044的启动与argv断言，且会改动F002 Codex基线，需连带跑F002回归。
 - Claude Phase 5和OpenCode Phase 6可在共享auth/registry完成后并行。
 - T049-T054阻塞ManualRoutingService；不得在route/UI复制分类规则。
 - T062-T072只能在F004状态机测试通过后修改，Checkpoint 9是API/UI的硬门槛。
@@ -225,12 +261,12 @@ F003 + F004 implemented
 | `FR-006` 手动validator | T041, T048, T062-T072, T093-T094 |
 | `FR-007` consult分类 | T051-T060, T077-T079, T091-T098 |
 | `FR-008` escalation | T003, T008-T009, T031-T032, T039-T040, T046-T047, T059-T060, T104 |
-| `FR-009` validator互斥 | T016, T062-T072, T093-T094, T103 |
+| `FR-009` validator互斥 | T016, T062-T072（含T065a per-round冲突）, T093-T094, T103 |
 | `DR-001` secret/auth | T007, T011-T020, T025-T034, T073-T074, T081, T105 |
-| `NFR-002/003/004` lock/security/Windows | T001-T010, T031-T032, T039-T047, T061, T101-T106 |
+| `NFR-002/003/004` lock/security/Windows | T001-T010（含T009a shell=false解析）, T031-T032, T039-T047, T061, T101-T106 |
 
 ## 备注
 
 - spec第14节原有“design.md暂不编写”阶段性说明已在本设计完成时同步修订；后续只需随实现更新状态，不应恢复旧说明。
-- 如果本地未安装某CLI，Phase 1不能用猜测替代；可先完成不依赖该provider的任务，但对应adapter checkpoint和最终AC-001/006必须在可用环境验证。
+- 如果本地未安装某CLI，Phase 1不能用猜测替代；可先完成不依赖该provider的任务，但对应adapter checkpoint和最终AC-001/006必须在可用环境验证。具体排期切法见T000。
 - F005不要求Claude/OpenCode具备完全相同的structured trace强度；差异必须通过capability和trace completeness如实表达，F004 Done gate不能因此放宽。

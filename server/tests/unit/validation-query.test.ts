@@ -167,14 +167,14 @@ describe("F004 T040: ValidationQueryService", () => {
   });
 
   describe("latest_findings", () => {
-    function writeFinding(round: number, message: string): void {
+    function writeFinding(round: number, message: string, findingIndex = 0): void {
       services.threadEventService.write(threadId, ThreadEventType.ValidationFinding, ActorType.System, null, {
         issue_id: issueId,
         thread_id: threadId,
         validation_round: round,
         severity: "error",
         message,
-        finding_index: 0,
+        finding_index: findingIndex,
       });
     }
 
@@ -183,12 +183,14 @@ describe("F004 T040: ValidationQueryService", () => {
         issue_id: issueId, thread_id: threadId, validation_round: 2, summary: "fail", finding_count: 2,
       });
       writeFinding(1, "old finding");
-      writeFinding(2, "latest finding 1");
-      writeFinding(2, "latest finding 2");
+      writeFinding(2, "latest finding 1", 0);
+      writeFinding(2, "latest finding 2", 1);
 
       const result = service.getValidationStatus(issueId);
       expect(result.latest_findings).toHaveLength(2);
       expect(result.latest_findings.every(f => f.validation_round === 2)).toBe(true);
+      expect(result.latest_findings.map(f => f.finding_index)).toEqual([0, 1]);
+      expect(result.latest_findings.map(f => f.message)).toEqual(["latest finding 1", "latest finding 2"]);
     });
 
     it("returns empty when no findings for latest round", () => {

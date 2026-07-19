@@ -21,6 +21,8 @@ function createRecoveryService(services: TestServices): ValidationRecoveryServic
     services.validationWorkflowService,
     services.threadEventRepo,
     services.agentConfigRepo,
+    services.db,
+    services.threadEventService,
   );
 }
 
@@ -138,6 +140,52 @@ describe("ValidationRecoveryService (T060-T061)", () => {
   });
 
   describe("T060-3: Validating with no active/terminal validator", () => {
+    it("reuses the validator adapter frozen by the latest request", async () => {
+      const { project, issue, implRun } = setupFixture(services, tempDir);
+      const frozenValidator = services.agentConfigRepo.create({
+        project_id: project.id,
+        name: "Frozen Val",
+        role: "validator",
+        cli_provider: "codex",
+        command: "codex",
+        args: [],
+        capability_tags: [],
+        default_model: "gpt-5",
+        status: AdapterStatus.Available,
+      });
+      const availableValidators = services.agentConfigRepo.listAvailableByProjectAndRole(
+        project.id,
+        RunRole.Validator,
+      );
+      expect(availableValidators[0]?.id).not.toBe(frozenValidator.id);
+
+      services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Validating);
+      services.threadEventService.write(issue.primary_thread!.id, ThreadEventType.ValidationRequested, ActorType.System, null, {
+        issue_id: issue.id, thread_id: issue.primary_thread!.id,
+        validation_round: 1, target: "implementation_result",
+        policy_id: "vpl_coding_default", policy_version: 1,
+        implementation_run_id: implRun.id,
+        validator_run_id: "__incomplete__",
+        validator_adapter_config_id: frozenValidator.id,
+        policy_snapshot: { policy_id: "vpl_coding_default", version: 1, max_validation_rounds: 3, evidence_requirements: { require_handoff: true, require_file_trace: true, require_verification: true, accepted_verification_kinds: ["test"] } },
+        policy_snapshot_hash: "sha256:abc",
+      });
+
+      const recovery = createRecoveryService(services);
+      await recovery.reconcile();
+
+      const activeValidator = services.runRepo.getActiveValidator(issue.id);
+      expect(activeValidator?.adapter_config_id).toBe(frozenValidator.id);
+      expect(activeValidator?.adapter_identity?.adapter_config_id).toBe(frozenValidator.id);
+      const replayedRequest = services.threadEventRepo.getLatestByTypeAndPayload(
+        issue.primary_thread!.id,
+        ThreadEventType.ValidationRequested,
+        "validator_run_id",
+        activeValidator!.id,
+      );
+      expect(replayedRequest?.payload_json.validator_adapter_config_id).toBe(frozenValidator.id);
+    });
+
     it("rebuilds validator when requested event exists but creation incomplete", async () => {
       const { issue, implRun } = setupFixture(services, tempDir);
       services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Validating);
@@ -158,6 +206,14 @@ describe("ValidationRecoveryService (T060-T061)", () => {
       const activeValidator = services.runRepo.getActiveValidator(issue.id);
       expect(activeValidator).not.toBeNull();
       expect(activeValidator!.validation_round).toBe(1);
+      expect(activeValidator!.instructions).toContain("## Validation Policy");
+      const requestedEvent = services.threadEventRepo.getLatestByTypeAndPayload(
+        issue.primary_thread!.id,
+        ThreadEventType.ValidationRequested,
+        "validator_run_id",
+        activeValidator!.id,
+      );
+      expect(requestedEvent).not.toBeNull();
     });
 
     it("blocks issue when no validator config available", async () => {
