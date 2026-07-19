@@ -194,6 +194,15 @@ export class RunRepository {
     return row ? mapRow(row) : null;
   }
 
+  getValidatorRunByRound(issueId: string, round: number): Run | null {
+    const row = this.db.prepare(
+      `SELECT * FROM runs
+       WHERE issue_id = ? AND role = 'validator' AND validation_round = ?
+       ORDER BY created_at ASC, id ASC LIMIT 1`,
+    ).get(issueId, round) as RunRow | undefined;
+    return row ? mapRow(row) : null;
+  }
+
   getLatestTerminalByRole(issueId: string, role: RunRole): Run | null {
     const roleStr = role as string;
     const row = this.db.prepare(

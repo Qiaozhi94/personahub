@@ -41,7 +41,8 @@ export class ValidationWorkflowService {
       if (issue.status === IssueStatus.Validating) {
         const active = this.runRepo.getActiveValidator(issueId);
         if (active) return active;
-        // No active validator - proceed to create one (manual retry path)
+        const existing = this.runRepo.getValidatorRunByRound(issueId, issue.validation_round_count + 1);
+        if (existing) return existing; // per-round uniqueness: never create a 2nd validator for this round
       } else if (issue.status !== IssueStatus.Running) {
         return null;
       }
