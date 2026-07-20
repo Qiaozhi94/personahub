@@ -1,6 +1,7 @@
 # Editor / tooling artifacts
 .history/
 .claude/settings.local.json
+.claude/worktrees/
 .sisyphus/
 .playwright-mcp/
 
