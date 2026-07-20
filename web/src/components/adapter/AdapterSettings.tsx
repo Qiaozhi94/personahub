@@ -31,6 +31,14 @@ const STATUS_LABEL: Record<AdapterStatus, string> = {
   [AdapterStatus.Unknown]: "unknown",
 };
 
+// AdapterConfig no longer carries a `role` field (F005 design §4.1: the
+// deprecated agent_configs.role column never leaves the server). The UI's
+// primary-role label is computed client-side from capability_tags instead,
+// same precedence as the server's deriveRole().
+function primaryRole(capabilityTags: AgentCapability[]): "validator" | "implementation" {
+  return capabilityTags.includes(AgentCapability.Validator) ? "validator" : "implementation";
+}
+
 export function AdapterSettings({ projectId }: AdapterSettingsProps) {
   const { data, isLoading } = useAdapters(projectId);
   const adapters = data?.adapters ?? [];
@@ -90,7 +98,7 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
         </div>
       )}
 
-      {adapters.length > 0 && !adapters.some((a) => a.role === "validator") ? (
+      {adapters.length > 0 && !adapters.some((a) => primaryRole(a.capability_tags) === "validator") ? (
         <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/5 px-2.5 py-1.5 text-[11px] text-warning">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           No validator configured — auto-validation requires at least one validator adapter
@@ -144,7 +152,7 @@ function AdapterRow({ adapter, projectId, onEdit }: AdapterRowProps) {
         {adapter.name}
       </button>
       <Badge variant="secondary" className="shrink-0 text-[9px]">
-        {adapter.role}
+        {primaryRole(adapter.capability_tags)}
       </Badge>
       <Badge variant={STATUS_VARIANT[adapter.status]} className="shrink-0 text-[10px]">
         {STATUS_LABEL[adapter.status]}
@@ -191,7 +199,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
   const [command, setCommand] = useState(editingAdapter?.command ?? "");
   const [argsInput, setArgsInput] = useState(editingAdapter?.args?.join(", ") ?? "");
   const [defaultModel, setDefaultModel] = useState(editingAdapter?.default_model ?? "");
-  const [role, setRole] = useState(editingAdapter?.role ?? "implementation");
+  const [role, setRole] = useState(editingAdapter ? primaryRole(editingAdapter.capability_tags) : "implementation");
 
   useEffect(() => {
     if (open) {
@@ -199,7 +207,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
       setCommand(editingAdapter?.command ?? "");
       setArgsInput(editingAdapter?.args?.join(", ") ?? "");
       setDefaultModel(editingAdapter?.default_model ?? "");
-      setRole(editingAdapter?.role ?? "implementation");
+      setRole(editingAdapter ? primaryRole(editingAdapter.capability_tags) : "implementation");
     }
   }, [open, editingAdapter]);
 
@@ -214,7 +222,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
     setCommand(editingAdapter?.command ?? "");
     setArgsInput(editingAdapter?.args?.join(", ") ?? "");
     setDefaultModel(editingAdapter?.default_model ?? "");
-    setRole(editingAdapter?.role ?? "implementation");
+    setRole(editingAdapter ? primaryRole(editingAdapter.capability_tags) : "implementation");
     createAdapter.reset();
     updateAdapter.reset();
   }
@@ -318,7 +326,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label="Role"
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e) => setRole(e.target.value as "validator" | "implementation")}
             >
               <option value="implementation">implementation</option>
               <option value="validator">validator</option>

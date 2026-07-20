@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
-import { IssueStatus, AdapterStatus } from "@personahub/shared/types";
+import { IssueStatus, AdapterStatus, AgentCapability } from "@personahub/shared/types";
 import { CodexCliAdapter } from "../../src/runtime/adapters/codex-cli-adapter.js";
 
 // Real Codex end-to-end (F004 T081 seam): only runs with REAL_CODEX=1.
@@ -46,8 +46,8 @@ describe.skipIf(!REAL)("Real Codex end-to-end validation (T081)", () => {
         .run(JSON.stringify({ schema_version: 1, require_handoff: true, require_file_trace: false, require_verification: true, accepted_verification_kinds: ["test", "lint", "typecheck", "build"] }), issue.validation_policy_id);
 
       services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
-      services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
-      const implAdapterId = services.agentConfigRepo.listAvailableByProjectAndRole(project.id, "implementation" as never)[0].id;
+      services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5", status: AdapterStatus.Available });
+      const implAdapterId = services.agentConfigRepo.listAvailableByProjectAndCapability(project.id, AgentCapability.Implementation)[0].id;
 
       // Dispatch the implementation; the whole chain runs via async callbacks.
       await services.runDispatchService.dispatch(issue.id, implAdapterId, "Run npm test to verify the greeting helper.");

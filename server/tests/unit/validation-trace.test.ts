@@ -9,6 +9,7 @@ import {
   AdapterStatus,
   IssueStatus,
   ValidationBlockReason,
+  AgentCapability,
   type AdapterIdentitySnapshot,
   type ThreadEvent,
 } from "@personahub/shared/types";
@@ -42,7 +43,7 @@ function setupIssueWithImplAndValidatorRuns(services: TestServices, tempDir: str
   });
   const valAdapter = services.agentConfigRepo.create({
     project_id: project.id, name: "Val", role: "validator",
-    cli_provider: "codex", command: "codex", args: [], capability_tags: [],
+    cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator],
     default_model: "gpt-5", status: AdapterStatus.Available,
   });
 

@@ -98,7 +98,6 @@ export function createAdapter(overrides: Partial<AdapterConfig> = {}): AdapterCo
     id: "agt_1",
     project_id: "prj_1",
     name: "Codex CLI",
-    role: "implementation",
     cli_provider: "codex",
     command: "codex",
     args: ["--quiet"],

@@ -8,7 +8,7 @@ import {
   type ValidatorSelectorInput,
 } from "../../src/services/validation/validator-selector.js";
 import {
-  AdapterRole,
+  AgentCapability,
   ValidationBlockReason,
   type AdapterConfig,
   type WorkflowTemplate,
@@ -45,11 +45,10 @@ function makeConfig(overrides: Partial<AdapterConfig> = {}): AdapterConfig {
     id: "agc_1",
     project_id: "prj_1",
     name: "Codex Reviewer",
-    role: AdapterRole.Validator,
     cli_provider: "codex",
     command: "codex",
     args: [],
-    capability_tags: [],
+    capability_tags: [AgentCapability.Validator],
     default_model: "gpt-5",
     status: "available",
     last_checked_at: null,
@@ -151,8 +150,8 @@ describe("F004 T028: Validator Selector", () => {
   describe("role/status filtering", () => {
     it("filters out implementation role configs", () => {
       const configs = [
-        makeConfig({ id: "agc_impl", role: AdapterRole.Implementation }),
-        makeConfig({ id: "agc_val", role: AdapterRole.Validator }),
+        makeConfig({ id: "agc_impl", capability_tags: [AgentCapability.Implementation] }),
+        makeConfig({ id: "agc_val", capability_tags: [AgentCapability.Validator] }),
       ];
       const result = selectValidator(defaultInput({ availableValidators: configs }));
       expect(result.selected).not.toBeNull();
@@ -169,7 +168,7 @@ describe("F004 T028: Validator Selector", () => {
     });
 
     it("does not fallback to implementation config", () => {
-      const configs = [makeConfig({ id: "agc_impl", role: AdapterRole.Implementation })];
+      const configs = [makeConfig({ id: "agc_impl", capability_tags: [AgentCapability.Implementation] })];
       const result = selectValidator(defaultInput({ availableValidators: configs }));
       expect(result.selected).toBeNull();
       expect(result.reason).toBe(ValidationBlockReason.ValidatorUnavailable);

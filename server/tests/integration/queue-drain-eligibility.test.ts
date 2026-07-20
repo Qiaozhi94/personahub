@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-import { IssueStatus, RunRole, RunDispatchSource, RunStatus, AdapterStatus } from "@personahub/shared/types";
+import { IssueStatus, RunRole, RunDispatchSource, RunStatus, AdapterStatus, AgentCapability } from "@personahub/shared/types";
 
 function setupFixture(services: TestServices, tempDir: string) {
   const project = services.projectService.create("Test");
@@ -9,7 +9,7 @@ function setupFixture(services: TestServices, tempDir: string) {
   const { issue } = services.issueService.create(project.id, { title: "T", goal: "G" });
   services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Running, updatedAt: new Date().toISOString() });
   const implAdapter = services.agentConfigRepo.create({ project_id: project.id, name: "Impl", role: "implementation", cli_provider: "fake", command: "echo", args: [], capability_tags: [], default_model: null, status: AdapterStatus.Available });
-  services.agentConfigRepo.create({ project_id: project.id, name: "Val", role: "validator", cli_provider: "fake", command: "echo", args: [], capability_tags: [], default_model: null, status: AdapterStatus.Available });
+  services.agentConfigRepo.create({ project_id: project.id, name: "Val", role: "validator", cli_provider: "fake", command: "echo", args: [], capability_tags: [AgentCapability.Validator], default_model: null, status: AdapterStatus.Available });
   return { project, issue, implAdapter, workspace };
 }
 
@@ -89,7 +89,7 @@ describe("Queue drain eligibility (T062)", () => {
   describe("validator run eligibility", () => {
     it("starts validator run when issue is Validating and round matches", async () => {
       const { issue, implAdapter, workspace } = setupFixture(services, tempDir);
-      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator)[0];
+      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator)[0];
       services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Validating, updatedAt: new Date().toISOString() });
       const valRun = createQueuedValidatorRun(services, issue.id, issue.primary_thread!.id, workspace.id, valAdapter.id, 1);
 
@@ -101,7 +101,7 @@ describe("Queue drain eligibility (T062)", () => {
 
     it("cancels validator run when issue is not Validating (Running)", async () => {
       const { issue, implAdapter, workspace } = setupFixture(services, tempDir);
-      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator)[0];
+      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator)[0];
       const valRun = createQueuedValidatorRun(services, issue.id, issue.primary_thread!.id, workspace.id, valAdapter.id, 1);
 
       await services.runDispatchService.finalizeAndDrain("nonexistent", workspace.id);
@@ -112,7 +112,7 @@ describe("Queue drain eligibility (T062)", () => {
 
     it("cancels validator run when round does not match (stale round)", async () => {
       const { issue, implAdapter, workspace } = setupFixture(services, tempDir);
-      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator)[0];
+      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator)[0];
       services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Validating, updatedAt: new Date().toISOString() });
       services.db.prepare("UPDATE issues SET validation_round_count = 2 WHERE id = ?").run(issue.id);
       const valRun = createQueuedValidatorRun(services, issue.id, issue.primary_thread!.id, workspace.id, valAdapter.id, 1);
@@ -125,7 +125,7 @@ describe("Queue drain eligibility (T062)", () => {
 
     it("cancels validator run when issue is Done", async () => {
       const { issue, implAdapter, workspace } = setupFixture(services, tempDir);
-      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator)[0];
+      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator)[0];
       const valRun = createQueuedValidatorRun(services, issue.id, issue.primary_thread!.id, workspace.id, valAdapter.id, 1);
       services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Done, updatedAt: new Date().toISOString() });
 
@@ -137,7 +137,7 @@ describe("Queue drain eligibility (T062)", () => {
 
     it("cancels validator run when issue is Blocked", async () => {
       const { issue, implAdapter, workspace } = setupFixture(services, tempDir);
-      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator)[0];
+      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator)[0];
       const valRun = createQueuedValidatorRun(services, issue.id, issue.primary_thread!.id, workspace.id, valAdapter.id, 1);
       services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Blocked, updatedAt: new Date().toISOString() });
 
@@ -151,7 +151,7 @@ describe("Queue drain eligibility (T062)", () => {
   describe("ordering", () => {
     it("continues scanning after cancelling an ineligible queued run", async () => {
       const { issue, implAdapter, workspace } = setupFixture(services, tempDir);
-      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator)[0];
+      const valAdapter = services.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator)[0];
       createQueuedImplRun(services, issue.id, issue.primary_thread!.id, workspace.id, implAdapter.id);
       services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Validating, updatedAt: new Date().toISOString() });
       const valRun = createQueuedValidatorRun(services, issue.id, issue.primary_thread!.id, workspace.id, valAdapter.id, 1);

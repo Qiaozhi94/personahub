@@ -1,10 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, disposeTestServices, type TestServices } from "../helpers.js";
-import { ErrorCode } from "@personahub/shared/errors";
-import { AdapterStatus } from "@personahub/shared/types";
-import { AppError } from "../../src/api/errors.js";
+import { AdapterStatus, AgentCapability } from "@personahub/shared/types";
 
-describe("AgentConfigRepository and AdapterConfigService F004 role validation", () => {
+// F004's original "role" input/query model is superseded by F005's
+// capability_tags (design §4.1): `agent_configs.role` is now a deprecated
+// internal field, deterministically DERIVED from capability_tags — it is no
+// longer accepted as create/update input, and
+// `listAvailableByProjectAndRole()` has been deleted in favor of
+// `listAvailableByProjectAndCapability()` (T028). This file is rewritten
+// in place (not renamed) to keep git history attached to the same path;
+// the describe blocks below are the direct successors of the original
+// "listAvailableByProjectAndRole" / "create role validation" /
+// "update role validation" ones.
+
+describe("AgentConfigRepository and AdapterConfigService F005 capability derivation", () => {
   let services: TestServices;
   let projectId: string;
 
@@ -15,28 +24,28 @@ describe("AgentConfigRepository and AdapterConfigService F004 role validation", 
   });
   afterEach(() => disposeTestServices(services));
 
-  function createAdapterDirectly(role: string, status: AdapterStatus, name?: string) {
+  function createAdapterDirectly(capabilityTags: AgentCapability[], status: AdapterStatus, name?: string) {
     return services.agentConfigRepo.create({
       project_id: projectId,
-      name: name ?? `Adapter-${role}`,
-      role,
+      name: name ?? `Adapter-${capabilityTags.join("+")}`,
+      role: capabilityTags.includes(AgentCapability.Validator) ? "validator" : "implementation",
       cli_provider: "codex",
       command: "codex",
       args: [],
-      capability_tags: [],
+      capability_tags: capabilityTags,
       default_model: "gpt-5",
       status,
     });
   }
 
-  describe("listAvailableByProjectAndRole", () => {
+  describe("listAvailableByProjectAndCapability", () => {
     it("returns available validators sorted by created_at, id ASC", () => {
-      createAdapterDirectly("implementation", AdapterStatus.Available, "Impl1");
-      const v1 = createAdapterDirectly("validator", AdapterStatus.Available, "Val1");
-      const v2 = createAdapterDirectly("validator", AdapterStatus.Available, "Val2");
-      const v3 = createAdapterDirectly("validator", AdapterStatus.Available, "Val3");
+      createAdapterDirectly([AgentCapability.Implementation], AdapterStatus.Available, "Impl1");
+      const v1 = createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, "Val1");
+      const v2 = createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, "Val2");
+      const v3 = createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, "Val3");
 
-      const validators = services.agentConfigRepo.listAvailableByProjectAndRole(projectId, "validator");
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
       const expected = [v1, v2, v3].sort((a, b) =>
         a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1,
       );
@@ -46,38 +55,38 @@ describe("AgentConfigRepository and AdapterConfigService F004 role validation", 
     });
 
     it("excludes unavailable validators", () => {
-      createAdapterDirectly("validator", AdapterStatus.Available, "ValAvail");
-      createAdapterDirectly("validator", AdapterStatus.Unavailable, "ValUnavail");
+      createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, "ValAvail");
+      createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Unavailable, "ValUnavail");
 
-      const validators = services.agentConfigRepo.listAvailableByProjectAndRole(projectId, "validator");
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
 
       expect(validators).toHaveLength(1);
       expect(validators[0].name).toBe("ValAvail");
     });
 
-    it("excludes implementation role adapters", () => {
-      createAdapterDirectly("implementation", AdapterStatus.Available, "Impl");
-      createAdapterDirectly("validator", AdapterStatus.Available, "Val");
+    it("excludes implementation-only adapters", () => {
+      createAdapterDirectly([AgentCapability.Implementation], AdapterStatus.Available, "Impl");
+      createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, "Val");
 
-      const validators = services.agentConfigRepo.listAvailableByProjectAndRole(projectId, "validator");
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
 
       expect(validators).toHaveLength(1);
-      expect(validators[0].role).toBe("validator");
+      expect(validators[0].capability_tags).toContain(AgentCapability.Validator);
     });
 
     it("returns empty when no validators exist", () => {
-      createAdapterDirectly("implementation", AdapterStatus.Available, "Impl");
+      createAdapterDirectly([AgentCapability.Implementation], AdapterStatus.Available, "Impl");
 
-      const validators = services.agentConfigRepo.listAvailableByProjectAndRole(projectId, "validator");
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
 
       expect(validators).toHaveLength(0);
     });
 
     it("returns empty when all validators are unavailable", () => {
-      createAdapterDirectly("validator", AdapterStatus.Unavailable, "Val1");
-      createAdapterDirectly("validator", AdapterStatus.Unavailable, "Val2");
+      createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Unavailable, "Val1");
+      createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Unavailable, "Val2");
 
-      const validators = services.agentConfigRepo.listAvailableByProjectAndRole(projectId, "validator");
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
 
       expect(validators).toHaveLength(0);
     });
@@ -91,192 +100,139 @@ describe("AgentConfigRepository and AdapterConfigService F004 role validation", 
         cli_provider: "codex",
         command: "codex",
         args: [],
-        capability_tags: [],
+        capability_tags: [AgentCapability.Validator],
         default_model: null,
         status: AdapterStatus.Available,
       });
-      createAdapterDirectly("validator", AdapterStatus.Available, "MyVal");
+      createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, "MyVal");
 
-      const validators = services.agentConfigRepo.listAvailableByProjectAndRole(projectId, "validator");
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
 
       expect(validators).toHaveLength(1);
       expect(validators[0].name).toBe("MyVal");
     });
 
-    it("returns available implementation adapters when role=implementation", () => {
-      createAdapterDirectly("implementation", AdapterStatus.Available, "Impl1");
-      createAdapterDirectly("validator", AdapterStatus.Available, "Val1");
+    it("returns available implementation adapters when filtered by Implementation", () => {
+      createAdapterDirectly([AgentCapability.Implementation], AdapterStatus.Available, "Impl1");
+      createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, "Val1");
 
-      const impls = services.agentConfigRepo.listAvailableByProjectAndRole(projectId, "implementation");
+      const impls = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Implementation);
 
       expect(impls).toHaveLength(1);
-      expect(impls[0].role).toBe("implementation");
+      expect(impls[0].capability_tags).toContain(AgentCapability.Implementation);
+    });
+
+    it("a multi-capability adapter is returned for both Implementation and Validator queries", () => {
+      const multi = createAdapterDirectly([AgentCapability.Implementation, AgentCapability.Validator], AdapterStatus.Available, "Multi");
+
+      const impls = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Implementation);
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
+
+      expect(impls.map((a) => a.id)).toContain(multi.id);
+      expect(validators.map((a) => a.id)).toContain(multi.id);
     });
 
     it("sort is deterministic by created_at then id", () => {
       const created: { id: string; created_at: string }[] = [];
       for (let i = 0; i < 5; i++) {
-        const adapter = createAdapterDirectly("validator", AdapterStatus.Available, `Val${i}`);
+        const adapter = createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, `Val${i}`);
         created.push({ id: adapter.id, created_at: adapter.created_at });
       }
       const expectedIds = created.sort((a, b) =>
         a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1,
       ).map((a) => a.id);
 
-      const validators = services.agentConfigRepo.listAvailableByProjectAndRole(projectId, "validator");
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
 
       expect(validators.map((a) => a.id)).toEqual(expectedIds);
     });
   });
 
-  describe("create role validation", () => {
-    it("creates adapter with role=implementation", () => {
+  describe("role is derived from capability_tags, never accepted as create input", () => {
+    it("capability_tags=[implementation] derives role=implementation", () => {
       const adapter = services.adapterConfigService.create(projectId, {
         name: "Impl",
-        role: "implementation",
         cli_provider: "codex",
         command: "codex",
+        capability_tags: [AgentCapability.Implementation],
       });
 
-      expect(adapter.role).toBe("implementation");
+      expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("implementation");
     });
 
-    it("creates adapter with role=validator", () => {
+    it("capability_tags=[validator] derives role=validator", () => {
       const adapter = services.adapterConfigService.create(projectId, {
         name: "Val",
-        role: "validator",
         cli_provider: "codex",
         command: "codex",
+        capability_tags: [AgentCapability.Validator],
       });
 
-      expect(adapter.role).toBe("validator");
+      expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("validator");
     });
 
-    it("defaults role to implementation when not provided", () => {
+    it("defaults capability_tags (and thus role) to implementation when omitted", () => {
       const adapter = services.adapterConfigService.create(projectId, {
         name: "Default",
         cli_provider: "codex",
         command: "codex",
       });
 
-      expect(adapter.role).toBe("implementation");
+      expect(adapter.capability_tags).toEqual([AgentCapability.Implementation]);
+      expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("implementation");
     });
 
-    it("rejects role=consult", () => {
-      try {
-        services.adapterConfigService.create(projectId, {
-          name: "Consult",
-          role: "consult",
-          cli_provider: "codex",
-          command: "codex",
-        });
-        expect.fail("Should have thrown");
-      } catch (e) {
-        expect(e).toBeInstanceOf(AppError);
-        expect((e as AppError).code).toBe(ErrorCode.ADAPTER_ROLE_INVALID);
-      }
+    it("capability_tags=[implementation, validator] derives role=validator (validator takes precedence for the deprecated column)", () => {
+      const adapter = services.adapterConfigService.create(projectId, {
+        name: "Multi",
+        cli_provider: "codex",
+        command: "codex",
+        capability_tags: [AgentCapability.Implementation, AgentCapability.Validator],
+      });
+
+      expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("validator");
     });
 
-    it("rejects role=reviewer", () => {
-      try {
-        services.adapterConfigService.create(projectId, {
-          name: "Reviewer",
-          role: "reviewer",
-          cli_provider: "codex",
-          command: "codex",
-        });
-        expect.fail("Should have thrown");
-      } catch (e) {
-        expect(e).toBeInstanceOf(AppError);
-        expect((e as AppError).code).toBe(ErrorCode.ADAPTER_ROLE_INVALID);
-      }
-    });
+    it("the derived role never appears on the public DTO", () => {
+      const adapter = services.adapterConfigService.create(projectId, {
+        name: "NoRoleLeak",
+        cli_provider: "codex",
+        command: "codex",
+        capability_tags: [AgentCapability.Validator],
+      });
 
-    it("rejects empty role string", () => {
-      try {
-        services.adapterConfigService.create(projectId, {
-          name: "Empty",
-          role: "",
-          cli_provider: "codex",
-          command: "codex",
-        });
-        expect.fail("Should have thrown");
-      } catch (e) {
-        expect(e).toBeInstanceOf(AppError);
-        expect((e as AppError).code).toBe(ErrorCode.ADAPTER_ROLE_INVALID);
-      }
-    });
-
-    it("rejects arbitrary role string", () => {
-      try {
-        services.adapterConfigService.create(projectId, {
-          name: "Arbitrary",
-          role: "super-validator",
-          cli_provider: "codex",
-          command: "codex",
-        });
-        expect.fail("Should have thrown");
-      } catch (e) {
-        expect(e).toBeInstanceOf(AppError);
-        expect((e as AppError).code).toBe(ErrorCode.ADAPTER_ROLE_INVALID);
-      }
+      expect("role" in adapter).toBe(false);
     });
   });
 
-  describe("update role validation", () => {
-    it("updates role from implementation to validator", () => {
-      const adapter = createAdapterDirectly("implementation", AdapterStatus.Available);
+  describe("update capability_tags re-derives role", () => {
+    it("changing capability_tags from implementation to validator updates the derived role", () => {
+      const adapter = services.adapterConfigService.create(projectId, {
+        name: "Switchable", cli_provider: "codex", command: "codex",
+        capability_tags: [AgentCapability.Implementation],
+      });
+      expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("implementation");
 
-      const updated = services.adapterConfigService.update(adapter.id, { role: "validator" });
+      services.adapterConfigService.update(adapter.id, { capability_tags: [AgentCapability.Validator] });
 
-      expect(updated.role).toBe("validator");
+      expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("validator");
     });
 
-    it("updates role from validator to implementation", () => {
-      const adapter = createAdapterDirectly("validator", AdapterStatus.Available);
+    it("update without capability_tags does not change the derived role", () => {
+      const adapter = services.adapterConfigService.create(projectId, {
+        name: "Stable", cli_provider: "codex", command: "codex",
+        capability_tags: [AgentCapability.Validator],
+      });
 
-      const updated = services.adapterConfigService.update(adapter.id, { role: "implementation" });
+      services.adapterConfigService.update(adapter.id, { name: "Renamed" });
 
-      expect(updated.role).toBe("implementation");
-    });
-
-    it("rejects updating role to consult", () => {
-      const adapter = createAdapterDirectly("implementation", AdapterStatus.Available);
-
-      try {
-        services.adapterConfigService.update(adapter.id, { role: "consult" });
-        expect.fail("Should have thrown");
-      } catch (e) {
-        expect(e).toBeInstanceOf(AppError);
-        expect((e as AppError).code).toBe(ErrorCode.ADAPTER_ROLE_INVALID);
-      }
-    });
-
-    it("rejects updating role to arbitrary string", () => {
-      const adapter = createAdapterDirectly("validator", AdapterStatus.Available);
-
-      try {
-        services.adapterConfigService.update(adapter.id, { role: "reviewer" });
-        expect.fail("Should have thrown");
-      } catch (e) {
-        expect(e).toBeInstanceOf(AppError);
-        expect((e as AppError).code).toBe(ErrorCode.ADAPTER_ROLE_INVALID);
-      }
-    });
-
-    it("update without role field does not change role", () => {
-      const adapter = createAdapterDirectly("validator", AdapterStatus.Available);
-
-      const updated = services.adapterConfigService.update(adapter.id, { name: "Renamed" });
-
-      expect(updated.role).toBe("validator");
-      expect(updated.name).toBe("Renamed");
+      expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("validator");
     });
   });
 
   describe("identity reading for snapshot", () => {
     it("getById returns adapter with fields needed for identity snapshot", () => {
-      const adapter = createAdapterDirectly("validator", AdapterStatus.Available, "MyValidator");
+      const adapter = createAdapterDirectly([AgentCapability.Validator], AdapterStatus.Available, "MyValidator");
 
       const fetched = services.agentConfigRepo.getById(adapter.id);
 
@@ -289,7 +245,7 @@ describe("AgentConfigRepository and AdapterConfigService F004 role validation", 
     });
 
     it("adapter config changes do not affect existing run identity snapshots", () => {
-      const adapter = createAdapterDirectly("implementation", AdapterStatus.Available, "Original");
+      const adapter = createAdapterDirectly([AgentCapability.Implementation], AdapterStatus.Available, "Original");
       const identity = {
         adapter_config_id: adapter.id,
         name: adapter.name,

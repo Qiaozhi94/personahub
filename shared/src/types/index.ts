@@ -244,7 +244,6 @@ export interface AdapterConfig {
   id: string;
   project_id: string;
   name: string;
-  role: string;
   cli_provider: string;
   command: string;
   args: string[];

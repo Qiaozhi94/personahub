@@ -3,6 +3,7 @@ import { createTestServices, disposeTestServices, type TestServices } from "../h
 import { ErrorCode } from "@personahub/shared/errors";
 import { AdapterStatus } from "@personahub/shared/types";
 import { AppError } from "../../src/api/errors.js";
+import { CodexCliAdapter } from "../../src/runtime/adapters/codex-cli-adapter.js";
 
 describe("AdapterConfigService", () => {
   let services: TestServices;
@@ -161,13 +162,18 @@ describe("AdapterConfigService", () => {
   });
 
   describe("validate", () => {
-    it("re-validates adapter and updates status", () => {
+    it("re-validates adapter and updates status", async () => {
+      // Local-only registration: registering CodexCliAdapter in the shared
+      // test helpers would make every other "codex"-provider fixture in the
+      // suite actually dispatchable, turning many `queued`-status assertions
+      // into `running` (real spawn attempts). Scope it to this test instead.
+      services.adapterRegistry.register(new CodexCliAdapter());
       const created = services.adapterConfigService.create(projectId, {
         name: "Test",
         cli_provider: "codex",
         command: "codex",
       });
-      const validated = services.adapterConfigService.validate(created.id);
+      const validated = await services.adapterConfigService.validate(created.id);
       expect(validated.last_checked_at).not.toBeNull();
       expect([AdapterStatus.Available, AdapterStatus.Unavailable]).toContain(validated.status);
     });

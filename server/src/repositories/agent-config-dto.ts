@@ -17,7 +17,6 @@ export function toPublicAdapter(record: AgentConfigRecord, defaultAdapterConfigI
     id: record.id,
     project_id: record.project_id,
     name: record.name,
-    role: record.role,
     cli_provider: record.cli_provider,
     command: record.command,
     args: record.args,

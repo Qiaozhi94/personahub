@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-import { RunStatus, RunRole, RunDispatchSource, AdapterStatus, type AdapterIdentitySnapshot, type Run } from "@personahub/shared/types";
+import { RunStatus, RunRole, RunDispatchSource, AdapterStatus, AgentCapability, type AdapterIdentitySnapshot, type Run } from "@personahub/shared/types";
 
 function makeIdentity(id: string, name: string, model: string | null = "gpt-5"): AdapterIdentitySnapshot {
   return { adapter_config_id: id, name, cli_provider: "codex", default_model: model };
@@ -37,7 +37,7 @@ describe("RunRepository F004 extension", () => {
     });
     const valAdapter = services.agentConfigRepo.create({
       project_id: project.id, name: "Val", role: "validator",
-      cli_provider: "codex", command: "codex", args: [], capability_tags: [],
+      cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator],
       default_model: "gpt-5", status: AdapterStatus.Available,
     });
     implAdapterId = implAdapter.id;

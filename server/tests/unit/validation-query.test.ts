@@ -9,6 +9,7 @@ import {
   RunDispatchSource,
   AdapterStatus,
   ValidationOutcome,
+  AgentCapability,
   type Issue,
   type AdapterIdentitySnapshot,
   type ValidationPolicySnapshot,
@@ -80,7 +81,7 @@ describe("F004 T040: ValidationQueryService", () => {
     });
     const valConfig = services.agentConfigRepo.create({
       project_id: projectId, name: "Val", role: "validator", cli_provider: "codex",
-      command: "codex", args: [], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available,
+      command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5", status: AdapterStatus.Available,
     });
     services.runRepo.create({
       issue_id: issueId,
@@ -241,7 +242,7 @@ describe("F004 T040: ValidationQueryService", () => {
       });
       const valAdapter = services.agentConfigRepo.create({
         project_id: projectId, name: "Val", role: "validator", cli_provider: "codex",
-        command: "codex", args: [], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available,
+        command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5", status: AdapterStatus.Available,
       });
       const implRun = services.runRepo.create({
         issue_id: issueId, thread_id: threadId, workspace_id: workspaceId,

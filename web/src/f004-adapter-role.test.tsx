@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { AdapterConfigCreateInput, CliProvider } from "@personahub/shared";
+import { AdapterConfigCreateInput, AgentCapability, CliProvider } from "@personahub/shared";
 import { AdapterSettings } from "@/components/adapter/AdapterSettings";
 import { createAdapter, renderWithQuery } from "@/test/ui-flow-helpers";
 
@@ -16,7 +16,7 @@ describe("AdapterSettings - role configuration", () => {
   it("includes role selector in create form", async () => {
     vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters: [] });
     vi.mocked(apiClient.adapters.create).mockResolvedValue({
-      adapter: createAdapter({ role: "validator" }),
+      adapter: createAdapter({ capability_tags: [AgentCapability.Validator] }),
     });
 
     renderWithQuery(<AdapterSettings projectId="prj_1" />);
@@ -33,7 +33,7 @@ describe("AdapterSettings - role configuration", () => {
   it("creates adapter with validator role", async () => {
     vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters: [] });
     vi.mocked(apiClient.adapters.create).mockResolvedValue({
-      adapter: createAdapter({ role: "validator" }),
+      adapter: createAdapter({ capability_tags: [AgentCapability.Validator] }),
     });
 
     renderWithQuery(<AdapterSettings projectId="prj_1" />);
@@ -58,8 +58,8 @@ describe("AdapterSettings - role configuration", () => {
   });
 
   it("shows role in adapter list", async () => {
-    const implAdapter = createAdapter({ id: "agt_1", name: "Codex Impl", role: "implementation" });
-    const valAdapter = createAdapter({ id: "agt_2", name: "Codex Reviewer", role: "validator" });
+    const implAdapter = createAdapter({ id: "agt_1", name: "Codex Impl", capability_tags: [AgentCapability.Implementation] });
+    const valAdapter = createAdapter({ id: "agt_2", name: "Codex Reviewer", capability_tags: [AgentCapability.Validator] });
     vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({
       adapters: [implAdapter, valAdapter],
     });
@@ -75,7 +75,7 @@ describe("AdapterSettings - role configuration", () => {
   });
 
   it("shows warning when no validator is configured", async () => {
-    const implAdapter = createAdapter({ id: "agt_1", name: "Codex Impl", role: "implementation" });
+    const implAdapter = createAdapter({ id: "agt_1", name: "Codex Impl", capability_tags: [AgentCapability.Implementation] });
     vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({
       adapters: [implAdapter],
     });
@@ -88,7 +88,7 @@ describe("AdapterSettings - role configuration", () => {
   });
 
   it("does not show validator warning when validator exists", async () => {
-    const valAdapter = createAdapter({ id: "agt_1", name: "Reviewer", role: "validator" });
+    const valAdapter = createAdapter({ id: "agt_1", name: "Reviewer", capability_tags: [AgentCapability.Validator] });
     vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({
       adapters: [valAdapter],
     });
@@ -102,10 +102,10 @@ describe("AdapterSettings - role configuration", () => {
   });
 
   it("allows editing role on existing adapter", async () => {
-    const adapter = createAdapter({ id: "agt_1", name: "Codex", role: "implementation" });
+    const adapter = createAdapter({ id: "agt_1", name: "Codex", capability_tags: [AgentCapability.Implementation] });
     vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters: [adapter] });
     vi.mocked(apiClient.adapters.update).mockResolvedValue({
-      adapter: { ...adapter, role: "validator" },
+      adapter: { ...adapter, capability_tags: [AgentCapability.Validator] },
     });
 
     renderWithQuery(<AdapterSettings projectId="prj_1" />);

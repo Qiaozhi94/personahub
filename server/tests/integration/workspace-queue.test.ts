@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
-import { RunStatus, AdapterStatus, IssueStatus, RunRole } from "@personahub/shared/types";
+import { RunStatus, AdapterStatus, IssueStatus, RunRole, AgentCapability } from "@personahub/shared/types";
 import { FakeAgentAdapter } from "../../src/runtime/adapters/fake-adapter.js";
 
 function setupIssue(services: TestServices, tempDir: string) {
@@ -30,7 +30,7 @@ describe("Same Workspace Serial Execution", () => {
 function createImplAdapter(services: TestServices, projectId: string) {
   return services.agentConfigRepo.create({
     project_id: projectId, name: "Fake", role: "implementation",
-    cli_provider: "fake", command: "fake", args: [], capability_tags: [],
+    cli_provider: "fake", command: "fake", args: [], capability_tags: [AgentCapability.Implementation],
     default_model: null, status: AdapterStatus.Available,
   });
 }
@@ -38,7 +38,7 @@ function createImplAdapter(services: TestServices, projectId: string) {
 function createValAdapter(services: TestServices, projectId: string) {
   return services.agentConfigRepo.create({
     project_id: projectId, name: "Val", role: "validator",
-    cli_provider: "fake", command: "fake", args: [], capability_tags: [],
+    cli_provider: "fake", command: "fake", args: [], capability_tags: [AgentCapability.Validator],
     default_model: null, status: AdapterStatus.Available,
   });
 }

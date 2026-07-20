@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, AdapterStatus, ActorType } from "@personahub/shared/types";
+import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, AdapterStatus, ActorType, AgentCapability } from "@personahub/shared/types";
 import { ValidationRecoveryService } from "../../src/services/validation/recovery-service.js";
 
 function setupFixture(services: TestServices, tempDir: string) {
@@ -8,8 +8,8 @@ function setupFixture(services: TestServices, tempDir: string) {
   services.workspaceService.bind(project.id, tempDir);
   const { issue } = services.issueService.create(project.id, { title: "T", goal: "G" });
   services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Running, updatedAt: new Date().toISOString() });
-  const implAdapter = services.agentConfigRepo.create({ project_id: project.id, name: "Impl", role: "implementation", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
-  services.agentConfigRepo.create({ project_id: project.id, name: "Val", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
+  const implAdapter = services.agentConfigRepo.create({ project_id: project.id, name: "Impl", role: "implementation", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Implementation], default_model: "gpt-5", status: AdapterStatus.Available });
+  services.agentConfigRepo.create({ project_id: project.id, name: "Val", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5", status: AdapterStatus.Available });
   const implRun = services.runRepo.create({ issue_id: issue.id, thread_id: issue.primary_thread!.id, workspace_id: issue.workspace_id, adapter_config_id: implAdapter.id, instructions: "do it", status: RunStatus.Completed, role: RunRole.Implementation, dispatch_source: RunDispatchSource.UserExplicit, adapter_identity: { adapter_config_id: implAdapter.id, name: "Impl", cli_provider: "codex", default_model: "gpt-5" } });
   return { project, issue, implAdapter, implRun };
 }
@@ -149,13 +149,19 @@ describe("ValidationRecoveryService (T060-T061)", () => {
         cli_provider: "codex",
         command: "codex",
         args: [],
-        capability_tags: [],
+        capability_tags: [AgentCapability.Validator],
         default_model: "gpt-5",
         status: AdapterStatus.Available,
       });
-      const availableValidators = services.agentConfigRepo.listAvailableByProjectAndRole(
+      // Force a later created_at than the "Val" adapter from setupFixture:
+      // both are created synchronously and can otherwise tie at millisecond
+      // resolution, making the ordering assertion below flaky.
+      services.db
+        .prepare("UPDATE agent_configs SET created_at = ? WHERE id = ?")
+        .run(new Date(Date.now() + 60_000).toISOString(), frozenValidator.id);
+      const availableValidators = services.agentConfigRepo.listAvailableByProjectAndCapability(
         project.id,
-        RunRole.Validator,
+        AgentCapability.Validator,
       );
       expect(availableValidators[0]?.id).not.toBe(frozenValidator.id);
 
@@ -218,7 +224,7 @@ describe("ValidationRecoveryService (T060-T061)", () => {
 
     it("blocks issue when no validator config available", async () => {
       const { issue, implRun } = setupFixture(services, tempDir);
-      const validators = services.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator);
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator);
       for (const v of validators) {
         services.db.prepare("DELETE FROM agent_configs WHERE id = ?").run(v.id);
       }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildChildEnv, buildWorkspaceContext } from "../../src/runtime/workspace-context.js";
 import type { Workspace } from "@personahub/shared/types";
-import { WorkspaceLockState } from "@personahub/shared/types";
+import { WorkspaceLockState, CliProvider, AdapterAuthType } from "@personahub/shared/types";
 
 function mockWorkspace(overrides: Partial<Workspace> = {}): Workspace {
   return {
@@ -69,6 +69,99 @@ describe("WorkspaceContext - Credential Isolation", () => {
 
     it("preserves HOME pointing to real home", () => {
       const env = buildChildEnv({ push_credentials_enabled: true, local_path: "/fake/path" });
+      expect(env.HOME).toBe(process.env.HOME);
+    });
+  });
+
+  describe("provider-specific auth directory injection (T031/T032, design §5.4)", () => {
+    it("defaults to Codex's CODEX_HOME when no auth descriptor is given (backward compatible)", () => {
+      const env = buildChildEnv({ push_credentials_enabled: false, local_path: "/fake/path" });
+      expect(env.CODEX_HOME).toBeTruthy();
+      expect(env.CLAUDE_CONFIG_DIR).toBeUndefined();
+      expect(env.XDG_DATA_HOME).toBeUndefined();
+      expect(env.XDG_CONFIG_HOME).toBeUndefined();
+    });
+
+    it("exposes only CODEX_HOME for codex/oauth, not Claude/OpenCode variables", () => {
+      const env = buildChildEnv(
+        { push_credentials_enabled: false, local_path: "/fake/path" },
+        { cli_provider: CliProvider.Codex, auth_type: AdapterAuthType.OAuth },
+      );
+      expect(env.CODEX_HOME).toBeTruthy();
+      expect(env.CLAUDE_CONFIG_DIR).toBeUndefined();
+      expect(env.XDG_DATA_HOME).toBeUndefined();
+      expect(env.XDG_CONFIG_HOME).toBeUndefined();
+    });
+
+    it("exposes only CLAUDE_CONFIG_DIR for claude-code/oauth, not Codex/OpenCode variables", () => {
+      const env = buildChildEnv(
+        { push_credentials_enabled: false, local_path: "/fake/path" },
+        { cli_provider: CliProvider.ClaudeCode, auth_type: AdapterAuthType.OAuth },
+      );
+      expect(env.CLAUDE_CONFIG_DIR).toBeTruthy();
+      expect(env.CODEX_HOME).toBeUndefined();
+      expect(env.XDG_DATA_HOME).toBeUndefined();
+      expect(env.XDG_CONFIG_HOME).toBeUndefined();
+    });
+
+    it("CLAUDE_CONFIG_DIR points at the real .claude folder, not the workspace path", () => {
+      const env = buildChildEnv(
+        { push_credentials_enabled: false, local_path: "/fake/path" },
+        { cli_provider: CliProvider.ClaudeCode, auth_type: AdapterAuthType.OAuth },
+      );
+      expect(env.CLAUDE_CONFIG_DIR).not.toContain("/fake/path");
+      expect(env.CLAUDE_CONFIG_DIR).toMatch(/\.claude$/);
+    });
+
+    it("exposes both XDG_DATA_HOME and XDG_CONFIG_HOME for opencode/oauth, not Codex/Claude variables", () => {
+      const env = buildChildEnv(
+        { push_credentials_enabled: false, local_path: "/fake/path" },
+        { cli_provider: CliProvider.OpenCode, auth_type: AdapterAuthType.OAuth },
+      );
+      expect(env.XDG_DATA_HOME).toBeTruthy();
+      expect(env.XDG_CONFIG_HOME).toBeTruthy();
+      expect(env.CODEX_HOME).toBeUndefined();
+      expect(env.CLAUDE_CONFIG_DIR).toBeUndefined();
+    });
+
+    it("XDG_DATA_HOME/XDG_CONFIG_HOME point at real home subpaths, not the workspace path", () => {
+      const env = buildChildEnv(
+        { push_credentials_enabled: false, local_path: "/fake/path" },
+        { cli_provider: CliProvider.OpenCode, auth_type: AdapterAuthType.OAuth },
+      );
+      expect(env.XDG_DATA_HOME).not.toContain("/fake/path");
+      expect(env.XDG_CONFIG_HOME).not.toContain("/fake/path");
+    });
+
+    it("OpenCode API-key mode exposes no home auth directory at all — the key itself is injected separately by AuthMaterial", () => {
+      const env = buildChildEnv(
+        { push_credentials_enabled: false, local_path: "/fake/path" },
+        { cli_provider: CliProvider.OpenCode, auth_type: AdapterAuthType.ApiKey },
+      );
+      expect(env.XDG_DATA_HOME).toBeUndefined();
+      expect(env.XDG_CONFIG_HOME).toBeUndefined();
+      expect(env.CODEX_HOME).toBeUndefined();
+      expect(env.CLAUDE_CONFIG_DIR).toBeUndefined();
+    });
+
+    it("SSH agent, git credential helper, and GH tokens stay stripped regardless of provider", () => {
+      for (const provider of [CliProvider.Codex, CliProvider.ClaudeCode, CliProvider.OpenCode]) {
+        const env = buildChildEnv(
+          { push_credentials_enabled: false, local_path: "/fake/path" },
+          { cli_provider: provider, auth_type: AdapterAuthType.OAuth },
+        );
+        expect(env.SSH_AUTH_SOCK).toBeUndefined();
+        expect(env.GH_TOKEN).toBeUndefined();
+        expect(env.GITHUB_TOKEN).toBeUndefined();
+        expect(env.HOME).toBe("/fake/path");
+      }
+    });
+
+    it("push_credentials_enabled=true bypasses provider-specific isolation entirely (unchanged F002 semantics)", () => {
+      const env = buildChildEnv(
+        { push_credentials_enabled: true, local_path: "/fake/path" },
+        { cli_provider: CliProvider.OpenCode, auth_type: AdapterAuthType.OAuth },
+      );
       expect(env.HOME).toBe(process.env.HOME);
     });
   });

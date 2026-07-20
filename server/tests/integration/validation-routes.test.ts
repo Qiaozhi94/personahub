@@ -6,7 +6,7 @@ import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/erro
 import { ErrorCode } from "@personahub/shared/errors";
 import {
   IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType,
-  AdapterStatus, ActorType, ValidationOutcome,
+  AdapterStatus, ActorType, ValidationOutcome, AgentCapability,
 } from "@personahub/shared/types";
 
 function setupValidatingFixture(services: TestServices, tempDir: string) {
@@ -32,7 +32,7 @@ function setupDoneFixture(services: TestServices, tempDir: string) {
   const { project, issue, implAdapter, implRun } = setupValidatingFixture(services, tempDir);
   const valAdapter = services.agentConfigRepo.create({
     project_id: project.id, name: "Val", role: "validator",
-    cli_provider: "codex", command: "codex", args: [], capability_tags: [],
+    cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator],
     default_model: "gpt-5", status: AdapterStatus.Available,
   });
   const valRun = services.runRepo.create({
@@ -260,7 +260,7 @@ describe("Validation routes (T063-T066)", () => {
       const { issue } = setupValidatingFixture(services, tempDir);
       const valAdapter = services.agentConfigRepo.create({
         project_id: issue.project_id, name: "Val", role: "validator",
-        cli_provider: "codex", command: "codex", args: [], capability_tags: [],
+        cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator],
         default_model: "gpt-5", status: AdapterStatus.Available,
       });
       const valRun = services.runRepo.create({
@@ -280,7 +280,7 @@ describe("Validation routes (T063-T066)", () => {
       const { issue, implRun } = setupValidatingFixture(services, tempDir);
       services.agentConfigRepo.create({
         project_id: issue.project_id, name: "Val", role: "validator",
-        cli_provider: "codex", command: "codex", args: [], capability_tags: [],
+        cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator],
         default_model: "gpt-5", status: AdapterStatus.Available,
       });
       const app = buildApp(services);

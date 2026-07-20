@@ -155,14 +155,14 @@ describe("AgentConfigRepository internal record (T017)", () => {
     });
   });
 
-  it("listByProject() and listAvailableByProjectAndRole() also return internal records with raw api_key", () => {
+  it("listByProject() and listAvailableByProjectAndCapability() also return internal records with raw api_key", () => {
     const db = createTestDb();
     insertProject(db, "prj_10");
     const repo = new AgentConfigRepository(db);
     repo.create(baseCreateInput("prj_10", { api_key: HIGHLY_IDENTIFIABLE_SECRET, status: AdapterStatus.Available }));
 
     const listed = repo.listByProject("prj_10");
-    const listedAvailable = repo.listAvailableByProjectAndRole("prj_10", "implementation");
+    const listedAvailable = repo.listAvailableByProjectAndCapability("prj_10", AgentCapability.Implementation);
 
     expect(listed[0]?.api_key).toBe(HIGHLY_IDENTIFIABLE_SECRET);
     expect(listedAvailable[0]?.api_key).toBe(HIGHLY_IDENTIFIABLE_SECRET);

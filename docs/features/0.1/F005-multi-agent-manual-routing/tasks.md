@@ -157,18 +157,29 @@ updated: 2026-07-19
 
 ## Phase 4：Adapter配置、Auth Material与Registry
 
-- [ ] **T025**（`FR-001`, `FR-002`, `AC-001`）：添加provider/auth字段矩阵测试：Codex/Claude仅OAuth、OpenCode OAuth/API key、互斥字段、switch清key、required provider/model/key、trim/limits。
-- [ ] **T026**（`FR-001`, `FR-002`, `IR-001`）：重构AdapterConfigService使用provider metadata校验并输出public DTO；移除统一`--version`可用性判断。**同时修掉create路径硬编码`capability_tags: []`**（`services/adapter-config.ts`），改为写入用户选择/provider默认的真实capability——否则v6 backfill只修历史数据，新建adapter仍会退化为无能力；补一条"新建adapter的capability_tags非空且与输入一致"的测试。**并落实 `agent_configs.role` 的 deprecated 写入规则**（design §4.1）：create/update contract 不接收 role，服务端由 `capability_tags` 确定性派生（含 validator → `'validator'`，否则 `'implementation'`）仅为满足 NOT NULL；派生值不进 public DTO/API/UI，不参与任何选择逻辑；补测试断言 capability 更新后 role 派生稳定且 validator-only adapter 不会被存成 implementation。
-- [ ] **T027**（`FR-003`）：添加registry/capability测试，覆盖三provider注册/查找、duplicate throw、config provider匹配、auth capability，以及手动routing与自动ValidatorSelector共用`capability_tags`判断。
-- [ ] **T028**（`FR-003`）：注册Codex/Claude/OpenCode adapter singleton并扩展registry接口；实现共享`hasCapability()`并把自动validator候选查询从`agent_configs.role`切换为`capability_tags contains validator`。`listAvailableByProjectAndRole()`有**两个**调用点，必须一并切换，只改其一会让recovery路径继续使用旧真相源：`services/validation/workflow-service.ts`（request主路径）与`services/validation/recovery-service.ts`（重启recovery路径）。切换后该方法应无剩余调用点，直接删除以防回归；旧`agent_configs.role`是 deprecated internal field，只用于迁移，**不再用于展示**（UI 的主要角色标签从 `capability_tags` 计算）。
-- [ ] **T029**（`FR-002`, `DR-001`, `NFR-001`）：添加AuthMaterial测试，覆盖API key allowlist/env或temp config、cleanup、异常清理、key不进argv/context/log和unknown provider拒绝。
-- [ ] **T030**（`FR-002`）：实现`runtime/auth-material.ts`及provider mapping，严格按Phase 1实测结果。
-- [ ] **T031**（`FR-001`, `FR-002`, `NFR-004`）：添加provider-specific child env测试，确保只暴露所需CLI auth目录，继续移除SSH agent/git helper/GH tokens，API-key模式不暴露home auth。
-- [ ] **T032**（`FR-008`, `NFR-003`）：重构`buildChildEnv()`接收provider auth descriptor，维持F002 credential isolation测试全部通过。
-- [ ] **T033**（`FR-001`, `FR-002`, `UX-002`）：添加真实adapter `validate()`集成测试fixture，确认auth failure更新unavailable/message、version成功不等于已登录、message已redact。
-- [ ] **T034**（`FR-001`, `FR-002`）：让AdapterConfigService调用registry adapter.validate，保存last_checked/status/clean message。
+- [x] **T025**（`FR-001`, `FR-002`, `AC-001`）：添加provider/auth字段矩阵测试：Codex/Claude仅OAuth、OpenCode OAuth/API key、互斥字段、switch清key、required provider/model/key、trim/limits。
+- [x] **T026**（`FR-001`, `FR-002`, `IR-001`）：重构AdapterConfigService使用provider metadata校验并输出public DTO；移除统一`--version`可用性判断。**同时修掉create路径硬编码`capability_tags: []`**（`services/adapter-config.ts`），改为写入用户选择/provider默认的真实capability——否则v6 backfill只修历史数据，新建adapter仍会退化为无能力；补一条"新建adapter的capability_tags非空且与输入一致"的测试。**并落实 `agent_configs.role` 的 deprecated 写入规则**（design §4.1）：create/update contract 不接收 role，服务端由 `capability_tags` 确定性派生（含 validator → `'validator'`，否则 `'implementation'`）仅为满足 NOT NULL；派生值不进 public DTO/API/UI，不参与任何选择逻辑；补测试断言 capability 更新后 role 派生稳定且 validator-only adapter 不会被存成 implementation。
+- [x] **T027**（`FR-003`）：添加registry/capability测试，覆盖三provider注册/查找、duplicate throw、config provider匹配、auth capability，以及手动routing与自动ValidatorSelector共用`capability_tags`判断。
+- [x] **T028**（`FR-003`）：注册Codex/Claude/OpenCode adapter singleton并扩展registry接口；实现共享`hasCapability()`并把自动validator候选查询从`agent_configs.role`切换为`capability_tags contains validator`。`listAvailableByProjectAndRole()`有**两个**调用点，必须一并切换，只改其一会让recovery路径继续使用旧真相源：`services/validation/workflow-service.ts`（request主路径）与`services/validation/recovery-service.ts`（重启recovery路径）。切换后该方法应无剩余调用点，直接删除以防回归；旧`agent_configs.role`是 deprecated internal field，只用于迁移，**不再用于展示**（UI 的主要角色标签从 `capability_tags` 计算）。
+- [x] **T029**（`FR-002`, `DR-001`, `NFR-001`）：添加AuthMaterial测试，覆盖API key allowlist/env或temp config、cleanup、异常清理、key不进argv/context/log和unknown provider拒绝。
+- [x] **T030**（`FR-002`）：实现`runtime/auth-material.ts`及provider mapping，严格按Phase 1实测结果。
+- [x] **T031**（`FR-001`, `FR-002`, `NFR-004`）：添加provider-specific child env测试，确保只暴露所需CLI auth目录，继续移除SSH agent/git helper/GH tokens，API-key模式不暴露home auth。
+- [x] **T032**（`FR-008`, `NFR-003`）：重构`buildChildEnv()`接收provider auth descriptor，维持F002 credential isolation测试全部通过。
+- [x] **T033**（`FR-001`, `FR-002`, `UX-002`）：添加真实adapter `validate()`集成测试fixture，确认auth failure更新unavailable/message、version成功不等于已登录、message已redact。
+- [x] **T034**（`FR-001`, `FR-002`）：让AdapterConfigService调用registry adapter.validate，保存last_checked/status/clean message。
 
-**Checkpoint 4**：三provider可配置/验证，OpenCode key只在spawn auth material短路径出现，credential isolation未退化。
+  **2026-07-21 完成**：`AdapterConfigService`（`services/adapter-config.ts`）不再自建统一`--version`可用性判断，`create()`/`update()`保留`validateCommand()`做保存时的本地快速语法检查，而显式`validate(id)`改为`async`并委托`this.adapterRegistry.getForConfig(publicConfig).validate(publicConfig)`——每个provider用自己的真实auth probe（如Phase 1实测的Claude `auth status`）判定可用性，而不是统一`--version`。构造函数新增`adapterRegistry`第3参数，`server/src/index.ts`同步把registry构造/注册移到service构造之前，路由`POST /api/adapters/:id/validate`补`await`。测试新增`adapter-config-validate-registry.test.ts`（脚本化fake adapter验证service确实用registry而非硬编码逻辑）。
+
+  过程中发现并修复三处此前遗留的真相源缺口（均属T026/T028范围内、当时未收尾）：
+  1. **`role`仍在public DTO泄漏**：`AdapterConfig`共享类型和`toPublicAdapter()`仍保留`role`字段，与design §4.1"不在任何public DTO、API response或UI中出现"直接矛盾。已从`shared/src/types/index.ts`和`agent-config-dto.ts`移除；Web端`AdapterSettings.tsx`（3处读取点：列表badge、无validator警告判定、编辑表单预填）改为按design §4.1"UI主要角色标签从capability_tags计算"的方式，新增纯函数`primaryRole(capability_tags)`本地派生，不再依赖服务端`role`。
+  2. **`validator-selector.ts`的`filterEligible()`仍用`c.role === AdapterRole.Validator`**：该模块是`workflow-service.ts`唯一验证器选择入口，但从未随T028的capability_tags切换同步，导致`AdapterConfig`删除`role`后编译报错；已改为`c.capability_tags.includes(AgentCapability.Validator)`。
+  3. **四个F004遗留集成测试fixture的implementation adapter仍是`capability_tags: []`**（`validation-blocked-envelope`/`validation-evidence-summary-data`/`validation-validator-uniqueness`/`validation-recovery.test.ts`）：这些fixture在T028把选择逻辑切到`listAvailableByProjectAndCapability()`后从未被同步更新（早前批量修复脚本只处理了`role: "validator"`场景，遗漏了`role: "implementation"`场景），导致`[0].id`读取undefined直接抛错；补齐`capability_tags: [AgentCapability.Implementation]`修复。同批还发现`validation-recovery.test.ts`"reuses frozen validator"用例的`frozenValidator` fixture本应有`capability_tags: [AgentCapability.Validator]`（此前一轮误判其"不该被通用选中"，实际测试意图是验证recovery重放冻结选择、优先于自然排序，而非验证该adapter被排除在通用池外）；修正后因该fixture与setupFixture中的"Val" adapter created_at可能同毫秒打平，新增显式`UPDATE ... SET created_at`把冻结adapter的时间戳推后60秒以消除tie-break随机性。
+  4. `validation-validator-selector.test.ts`的`makeConfig()`fixture用`role: AdapterRole.Validator`且`capability_tags: []`（用`AdapterRole`枚举引用而非字符串字面量，早前批量脚本按字符串匹配未命中）；改为`capability_tags: [AgentCapability.Validator]`，三处override（implementation-role场景）改用`capability_tags: [AgentCapability.Implementation]`。
+  5. 曾尝试在`tests/helpers.ts`全局注册`CodexCliAdapter`以修复T033新增的一条真实`validate()`集成测试，但这会让套件里所有`cli_provider: "codex"`的fixture都变得"可真实dispatch"，把大量原本依赖"codex run会保持`queued`（无真实adapter可用，不会被启动）"的既有断言变成`running`（`terminal-orchestration.test.ts`等5个文件回归）；已撤销该全局注册，改为只在`adapter-config.test.ts`那一条测试内局部`services.adapterRegistry.register(new CodexCliAdapter())`。
+
+  `npm run typecheck`、`npm test`（server 1115 + web 78 全绿，7个真实Codex集成测试按环境变量skip）、`npm run build`（shared/server/web）全部通过。
+
+**Checkpoint 4 达成**：三provider可配置/验证（Codex真实走`--version`探测、Claude/OpenCode由registry路由到各自adapter的`validate()`），OpenCode key只在spawn auth material短路径出现，credential isolation未退化；`agent_configs.role`彻底不再出现在public DTO/API/UI，`capability_tags`是能力判断的唯一真相源。
 
 ## Phase 5：Claude Code Adapter
 

@@ -1,7 +1,27 @@
 import type Database from "better-sqlite3";
 import type { AdapterStatus, AgentCapability } from "@personahub/shared/types";
-import { AdapterStatus as AS, AdapterAuthType } from "@personahub/shared/types";
+import { AdapterStatus as AS, AdapterAuthType, AgentCapability as AC } from "@personahub/shared/types";
 import { generateAdapterConfigId } from "../id.js";
+
+/**
+ * Pure capability check, shared by manual routing (Phase 7) and the automatic
+ * ValidatorSelector (T028) — one true-source function, not two independently
+ * maintained checks. Only ever reads the already-parsed `capability_tags`
+ * array; never falls back to the deprecated `role` column.
+ */
+export function hasCapability(record: { capability_tags: AgentCapability[] }, capability: AgentCapability): boolean {
+  return record.capability_tags.includes(capability);
+}
+
+/**
+ * design §4.1: `agent_configs.role` is a deprecated internal field kept only
+ * to satisfy the column's NOT NULL constraint (and for legacy display). It is
+ * derived deterministically from `capability_tags` and never the other way
+ * around — this function must be the only place that writes it.
+ */
+export function deriveRole(capabilityTags: AgentCapability[]): string {
+  return capabilityTags.includes(AC.Validator) ? "validator" : "implementation";
+}
 
 /**
  * Internal record — carries the raw api_key. This is the ONLY layer allowed
@@ -156,11 +176,18 @@ export class AgentConfigRepository {
     return rows.map(mapRow);
   }
 
-  listAvailableByProjectAndRole(projectId: string, role: string): AgentConfigRecord[] {
-    const rows = this.db.prepare(
-      "SELECT * FROM agent_configs WHERE project_id = ? AND role = ? AND status = 'available' ORDER BY created_at ASC, id ASC"
-    ).all(projectId, role) as AdapterConfigRow[];
-    return rows.map(mapRow);
+  /**
+   * F005: replaces the deleted `listAvailableByProjectAndRole()`.
+   * `capability_tags` is the single source of truth for routing/selection
+   * (design §6.1) — filtering happens in JS against already-parsed records,
+   * not via a SQL JSON1 containment query, because a malformed
+   * `capability_tags` value must degrade to "no capability" (T017) rather
+   * than throw a SQL error out of `json_each()`.
+   */
+  listAvailableByProjectAndCapability(projectId: string, capability: AgentCapability): AgentConfigRecord[] {
+    return this.listByProject(projectId)
+      .filter((record) => record.status === AS.Available && hasCapability(record, capability))
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1));
   }
 
   update(id: string, input: AdapterConfigUpdateInput): void {

@@ -1,5 +1,6 @@
 import {
   AdapterRole,
+  AgentCapability,
   type AdapterConfig,
   type WorkflowTemplate,
 } from "@personahub/shared/types";
@@ -81,7 +82,7 @@ function sortDeterministic(configs: AdapterConfig[]): AdapterConfig[] {
 
 function filterEligible(configs: AdapterConfig[]): AdapterConfig[] {
   return configs.filter(
-    (c) => c.role === AdapterRole.Validator && c.status === "available",
+    (c) => c.capability_tags.includes(AgentCapability.Validator) && c.status === "available",
   );
 }
 

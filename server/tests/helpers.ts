@@ -180,7 +180,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
       projectRepo, workflowTemplateRepo, validationPolicyRepo, db,
     ),
     threadService: new ThreadService(threadRepo, threadEventRepo),
-    adapterConfigService: new AdapterConfigService(agentConfigRepo, projectRepo),
+    adapterConfigService: new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry),
     threadEventService,
     workspaceLockService,
     runService,

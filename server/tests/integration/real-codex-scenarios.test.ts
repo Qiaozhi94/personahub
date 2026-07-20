@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
-import { IssueStatus, AdapterStatus, ValidationBlockReason } from "@personahub/shared/types";
+import { IssueStatus, AdapterStatus, ValidationBlockReason, AgentCapability } from "@personahub/shared/types";
 import { CodexCliAdapter } from "../../src/runtime/adapters/codex-cli-adapter.js";
 
 // Real Codex scenario acceptance (F004 T082 round-limit / T085 different-model).
@@ -49,8 +49,8 @@ describe.skipIf(!REAL)("Real Codex scenarios (T082 / T085)", () => {
       relaxFileTrace(services, issue.validation_policy_id, 1); // max_rounds=1 => first failure hits the round limit
 
       services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
-      services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
-      const implId = services.agentConfigRepo.listAvailableByProjectAndRole(project.id, "implementation" as never)[0].id;
+      services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5", status: AdapterStatus.Available });
+      const implId = services.agentConfigRepo.listAvailableByProjectAndCapability(project.id, AgentCapability.Implementation)[0].id;
 
       await services.runDispatchService.dispatch(issue.id, implId, "Run npm test and report.");
       const status = await pollTerminal(services, issue.id, 260_000);
@@ -88,8 +88,8 @@ describe.skipIf(!REAL)("Real Codex scenarios (T082 / T085)", () => {
 
       services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
       // Validator with a DIFFERENT default_model -> independent (not same-origin).
-      services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: "gpt-5-codex", status: AdapterStatus.Available });
-      const implId = services.agentConfigRepo.listAvailableByProjectAndRole(project.id, "implementation" as never)[0].id;
+      services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5-codex", status: AdapterStatus.Available });
+      const implId = services.agentConfigRepo.listAvailableByProjectAndCapability(project.id, AgentCapability.Implementation)[0].id;
 
       await services.runDispatchService.dispatch(issue.id, implId, "Run npm test and report.");
       const status = await pollTerminal(services, issue.id, 260_000);

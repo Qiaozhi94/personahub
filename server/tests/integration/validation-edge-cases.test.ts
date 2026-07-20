@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-import { IssueStatus, RunStatus, RunRole, RunDispatchSource, AdapterStatus, ThreadEventType, FailureReason } from "@personahub/shared/types";
+import { IssueStatus, RunStatus, RunRole, RunDispatchSource, AdapterStatus, ThreadEventType, FailureReason, AgentCapability } from "@personahub/shared/types";
 
 function setupFixture(services: TestServices, tempDir: string) {
   const project = services.projectService.create("Test");
@@ -14,7 +14,7 @@ function setupFixture(services: TestServices, tempDir: string) {
 
 function setupWithValidator(services: TestServices, tempDir: string) {
   const { project, issue, implAdapter, implRun } = setupFixture(services, tempDir);
-  const valAdapter = services.agentConfigRepo.create({ project_id: project.id, name: "Val", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: null, status: AdapterStatus.Available });
+  const valAdapter = services.agentConfigRepo.create({ project_id: project.id, name: "Val", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: null, status: AdapterStatus.Available });
   return { project, issue, implAdapter, implRun, valAdapter };
 }
 

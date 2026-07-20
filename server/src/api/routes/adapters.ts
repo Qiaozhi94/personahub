@@ -12,15 +12,16 @@ export const adapterRoutes: FastifyPluginAsync<AdapterRoutesOptions> = async (ap
     const { project_id } = request.params as { project_id: string };
     const body = (request.body ?? {}) as {
       name?: string;
-      role?: string;
       cli_provider?: string;
       command?: string;
       args?: string[];
       default_model?: string;
     };
+    // F005 Phase 10 (T073-T078) reworks this route for auth_type/model_provider/
+    // api_key/capability_tags; until then it only creates OAuth Codex/Claude
+    // adapters with the default (implementation) capability, matching F002.
     const adapter = adapterConfigService.create(project_id, {
       name: body.name ?? "",
-      role: body.role,
       cli_provider: body.cli_provider ?? "codex",
       command: body.command ?? "",
       args: body.args,
@@ -62,7 +63,7 @@ export const adapterRoutes: FastifyPluginAsync<AdapterRoutesOptions> = async (ap
 
   app.post("/api/adapters/:adapter_id/validate", async (request) => {
     const { adapter_id } = request.params as { adapter_id: string };
-    const adapter = adapterConfigService.validate(adapter_id);
+    const adapter = await adapterConfigService.validate(adapter_id);
     return { adapter };
   });
 };

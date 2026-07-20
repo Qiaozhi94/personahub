@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
 import { ValidationOutcome, type AdapterIdentitySnapshot, type ValidationPolicySnapshot } from "@personahub/shared/types";
 import { EvidenceSummaryRepository } from "../../src/repositories/evidence-summary.js";
-import { AdapterStatus } from "@personahub/shared/types";
+import { AdapterStatus, AgentCapability } from "@personahub/shared/types";
 
 function makeIdentity(id: string, name: string, model: string | null): AdapterIdentitySnapshot {
   return { adapter_config_id: id, name, cli_provider: "codex", default_model: model };
@@ -60,7 +60,7 @@ describe("EvidenceSummaryRepository", () => {
       cli_provider: "codex",
       command: "codex",
       args: [],
-      capability_tags: [],
+      capability_tags: [AgentCapability.Validator],
       default_model: "gpt-5",
       status: AdapterStatus.Available,
     });

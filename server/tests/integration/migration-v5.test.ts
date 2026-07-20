@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
 import { applyMigrations } from "../../src/db/migrations.js";
 import { createTestServices, disposeTestServices, createTempDir } from "../helpers.js";
-import { AdapterStatus, RunStatus, RunRole, RunDispatchSource } from "@personahub/shared/types";
+import { AdapterStatus, RunStatus, RunRole, RunDispatchSource, AgentCapability } from "@personahub/shared/types";
 
 type SummaryRow = Record<string, string | number>;
 
@@ -72,7 +72,7 @@ describe("T095 per-round validator DB uniqueness", () => {
       const project = services.projectService.create("T");
       services.workspaceService.bind(project.id, tempDir);
       const { issue } = services.issueService.create(project.id, { title: "T", goal: "G" });
-      const val = services.agentConfigRepo.create({ project_id: project.id, name: "V", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: "m", status: AdapterStatus.Available });
+      const val = services.agentConfigRepo.create({ project_id: project.id, name: "V", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "m", status: AdapterStatus.Available });
       const base = {
         issue_id: issue.id, thread_id: issue.primary_thread!.id, workspace_id: issue.workspace_id,
         adapter_config_id: val.id, instructions: "", status: RunStatus.Completed,

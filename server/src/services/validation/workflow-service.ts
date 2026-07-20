@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import type { Issue, Run, ThreadEvent, AdapterIdentitySnapshot, ValidationPolicySnapshot, ValidationResultEnvelope, ValidationFinding } from "@personahub/shared/types";
-import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, ActorType, ValidationBlockReason, ValidationOutcome, TraceCompletenessStatus } from "@personahub/shared/types";
+import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, ActorType, ValidationBlockReason, ValidationOutcome, TraceCompletenessStatus, AgentCapability } from "@personahub/shared/types";
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { RunRepository } from "../../repositories/run.js";
 import type { AgentConfigRepository } from "../../repositories/agent-config.js";
@@ -63,7 +63,7 @@ export class ValidationWorkflowService {
       try { policySnapshot = buildPolicySnapshot(policy.id, policy.version, policy.max_validation_rounds, policy.evidence_requirements_json); }
       catch { this.blockIssueInTx(issue, ValidationBlockReason.WorkflowConfigurationInvalid, "Failed to build policy snapshot", pendingEvents); return null; }
       const snapshotHash = hashPolicySnapshot(policySnapshot);
-      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator).map((r) => toPublicAdapter(r, null));
+      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator).map((r) => toPublicAdapter(r, null));
       const selectorResult = selectValidator({ workflowTemplate: wf, availableValidators });
       if (!selectorResult.selected) {
         this.blockIssueInTx(issue, selectorResult.reason ?? ValidationBlockReason.ValidatorUnavailable, selectorResult.message, pendingEvents);
@@ -152,7 +152,7 @@ export class ValidationWorkflowService {
         this.blockIssueInTx(issue, ValidationBlockReason.RecoveryInconsistent, "Implementation run missing adapter identity", pendingEvents);
         return null;
       }
-      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndRole(issue.project_id, RunRole.Validator).map((r) => toPublicAdapter(r, null));
+      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator).map((r) => toPublicAdapter(r, null));
       const frozenConfig = frozenValidatorConfigId
         ? availableValidators.find((v) => v.id === frozenValidatorConfigId)
         : undefined;

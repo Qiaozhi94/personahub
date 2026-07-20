@@ -74,7 +74,6 @@ async function main() {
     projectRepo, workflowTemplateRepo, validationPolicyRepo, db,
   );
   const threadService = new ThreadService(threadRepo, threadEventRepo);
-  const adapterConfigService = new AdapterConfigService(agentConfigRepo, projectRepo);
   const workspaceLockService = new WorkspaceLockService(workspaceRepo);
   const runService = new RunService(
     runRepo, threadEventService, issueRepo, workspaceRepo,
@@ -84,6 +83,8 @@ async function main() {
   const adapterRegistry = new AgentAdapterRegistry();
   adapterRegistry.register(new FakeAgentAdapter());
   adapterRegistry.register(new CodexCliAdapter());
+
+  const adapterConfigService = new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry);
 
   const agentRunner = new AgentRunner({
     runService,

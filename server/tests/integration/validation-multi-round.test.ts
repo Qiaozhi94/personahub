@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-import { IssueStatus, RunStatus, RunRole, RunDispatchSource, AdapterStatus, ThreadEventType, ValidationBlockReason } from "@personahub/shared/types";
+import { IssueStatus, RunStatus, RunRole, RunDispatchSource, AdapterStatus, ThreadEventType, ValidationBlockReason, AgentCapability } from "@personahub/shared/types";
 import { FakeAgentAdapter } from "../../src/runtime/adapters/fake-adapter.js";
 import { ValidationRecoveryService } from "../../src/services/validation/recovery-service.js";
 
@@ -97,7 +97,7 @@ describe("Validation multi-round (T082)", () => {
       cli_provider: "fake",
       command: "fake",
       args: [],
-      capability_tags: [],
+      capability_tags: [AgentCapability.Validator],
       default_model: null,
       status: AdapterStatus.Available,
     });
@@ -223,7 +223,7 @@ describe("Validation recovery (T084)", () => {
       cli_provider: "codex",
       command: "codex",
       args: [],
-      capability_tags: [],
+      capability_tags: [AgentCapability.Validator],
       default_model: null,
       status: AdapterStatus.Available,
     });
