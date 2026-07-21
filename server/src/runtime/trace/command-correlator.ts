@@ -224,11 +224,14 @@ export class CommandCorrelator {
   }
 
   private normalizeOutcome(signal: RunTraceSignal & { type: "command_completed" }): CommandOutcome {
-    if (signal.outcome === CommandOutcome.Blocked) return CommandOutcome.Blocked;
-    if (signal.outcome === CommandOutcome.Cancelled) return CommandOutcome.Cancelled;
-    if (signal.exitCode === 0) return CommandOutcome.Succeeded;
-    if (signal.exitCode !== null && signal.exitCode !== 0) return CommandOutcome.Failed;
-    return CommandOutcome.Unknown;
+    // Trust the normalizer's own outcome verbatim — every adapter normalizer
+    // (Codex, Claude) is responsible for computing the correct value itself.
+    // Re-deriving from exitCode here used to silently reproduce the same
+    // result for Codex (whose exitCode is always a real number) but broke
+    // Claude, whose exitCode is *always* null (no native field, see
+    // claude-protocol-fixtures.md T004) even on a real Succeeded/Failed
+    // outcome — it collapsed every Claude command to Unknown.
+    return signal.outcome;
   }
 
   private buildCompletedRefs(startedEventId: string | null, outputEventIds: string[]): string[] {

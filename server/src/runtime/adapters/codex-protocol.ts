@@ -2,37 +2,15 @@ import { spawnSync } from "node:child_process";
 import type { AdapterConfig } from "@personahub/shared/types";
 import type { AdapterValidationResult } from "../types.js";
 import { resolveExecutable } from "../executable-resolver.js";
+export { isGitPushCommand, isGitPushOutput, CREDENTIAL_FAILURE_PATTERN } from "./shell-command-patterns.js";
 
 /**
- * Pure Codex app-server protocol helpers: JSON-RPC framing types/guards,
- * git-push escalation detection, credential-failure matching, and command
- * validation. Kept out of the adapter so the adapter file stays focused on
- * process/stream orchestration.
+ * Pure Codex app-server protocol helpers: JSON-RPC framing types/guards and
+ * command validation. Git-push escalation detection and credential-failure
+ * matching now live in shell-command-patterns.ts (shared with Claude) and
+ * are re-exported above for existing call sites. Kept out of the adapter so
+ * the adapter file stays focused on process/stream orchestration.
  */
-
-const GIT_PUSH_PATTERNS = [
-  /\bgit\s+push\b/,
-  /\bgit\s+push\s+--force\b/,
-  /\bgit\s+push\s+-f\b/,
-];
-
-export const CREDENTIAL_FAILURE_PATTERN =
-  /permission denied|authentication failed|could not read|no credentials|403|401/i;
-
-export function isGitPushCommand(command: unknown): boolean {
-  if (typeof command === "string") {
-    return GIT_PUSH_PATTERNS.some((p) => p.test(command));
-  }
-  if (Array.isArray(command)) {
-    const joined = command.join(" ");
-    return GIT_PUSH_PATTERNS.some((p) => p.test(joined));
-  }
-  return false;
-}
-
-export function isGitPushOutput(text: string): boolean {
-  return GIT_PUSH_PATTERNS.some((p) => p.test(text));
-}
 
 export interface JsonRpcRequest {
   jsonrpc: "2.0";

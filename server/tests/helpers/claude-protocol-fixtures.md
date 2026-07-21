@@ -309,6 +309,47 @@ This was a load-bearing correction, not a detail. Already applied to
   distinction between Claude (real pre-execution capability) and OpenCode (no equivalent)
   still holds.
 
+## T035 re-verification: real raw NDJSON captured, plus a finding that upgrades T004's approach
+
+Phase 5 (T035) re-ran two safe, minimal-cost live probes against the actual installed
+Claude Code CLI (2.1.216, same install as Phase 1) to get **literal raw NDJSON**, not just
+prose paraphrase — the T001-T004 notes above described shapes but this repo never captured
+literal JSON for `assistant`/`user`/`result` lines. Probe 1: `claude -p "Run the shell
+command 'echo hello-from-tool' and tell me the output." --output-format stream-json
+--verbose` (no hook). Probe 2: same prompt with `--settings` registering a real `PreToolUse`
+deny hook (a throwaway script outside the repo, denying with reason
+`"PERSONAHUB_DENY_MARKER: blocked by test hook"`). Both confirm and extend T001-T004:
+
+- `assistant`/`user` lines carry `timestamp` as a **top-level sibling of `message`**, not
+  nested inside it (confirms T004's "assistant message's top-level timestamp" reading).
+- `assistant` tool_use content item: `{"type":"tool_use","id":"toolu_...","name":"PowerShell","input":{"command":"...","description":"..."},"caller":{"type":"direct"}}`.
+- Normal (non-denied) `user`/tool_result: `{"type":"tool_result","tool_use_id":"toolu_...","content":"<stdout string>","is_error":false}`, with a top-level `tool_use_result: {stdout, stderr, interrupted, isImage}` object sibling — matches T004 exactly.
+- **New finding, not in T001-T004**: a hook-denied tool_result has **two** extra structural
+  markers beyond what T003 documented:
+  1. Top-level `tool_use_result` is a **plain string** (`"Error: <reason>"`), not the
+     `{stdout,stderr,...}` object shape used for real executions — polymorphic by denial
+     status, the normalizer must not assume `.stdout` always exists.
+  2. A top-level `tool_result_meta: [{ id: "<tool_use_id>", non_execution_kind: "permission-rule" }]`
+     array appears **only** when a tool call was denied pre-execution — this is a
+     **structured, non-fragile** signal for real-time `Blocked` classification, strictly
+     better than the string-matching T004 recommended as a fallback (option "a"). The
+     normalizer should check `tool_result_meta` for the matching `tool_use_id` first, and
+     only fall back to denial-message pattern matching (T004's option "a") if absent — e.g.
+     for Claude's own built-in "risky command" guard (T003), which was not re-verified here
+     to still confirm its own `non_execution_kind` value (out of scope for this minimal
+     re-probe; treating any non-null `non_execution_kind` as "blocked, not a normal command
+     failure" is a safe generalization either way).
+  3. This changes T004's conclusion: real-time `Blocked` classification (option "a") is
+     **not actually fragile** for the PersonaHub-hook-denial case specifically — it's exact
+     and structural, not pattern-matched prose. T004's "defer to end-of-run
+     `permission_denials[]`" (option "b") is downgraded from "recommended" to "unnecessary
+     for the common case, kept only as a defense-in-depth cross-check" since
+     `CommandCorrelator.handleCompleted()` (server/src/runtime/trace/command-correlator.ts)
+     already drops any second `command_completed` signal for an itemId once completed —
+     there is no live second-write path to reclassify through even if we wanted one.
+- Terminal `result.permission_denials[]` real shape: `[{tool_name, tool_use_id, tool_input}]`
+  — no denial-reason text repeated here, just identifies which tool call(s) were denied.
+
 ## T004: RunTraceSignal / F004 parser compatibility
 
 Derived from the T002/T003 probe data above — no additional live CLI calls needed, this is

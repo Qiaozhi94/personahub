@@ -183,15 +183,24 @@ updated: 2026-07-19
 
 ## Phase 5：Claude Code Adapter
 
-- [ ] **T035**（`FR-001`, `FR-005`）：使用Phase 1 fixture添加Claude protocol normalizer测试，覆盖output/final/command trace/control request/unknown/malformed/dedupe/limits。
-- [ ] **T036**（`FR-001`, `FR-005`）：实现独立`claude-code-normalizer.ts`，raw stream不进入领域层。
-- [ ] **T037**（`FR-001`, `NFR-004`）：添加Claude adapter启动/argv/stdin/cwd/env/auth/cancel/exit-once测试，`shell=false`且instructions不得在argv。**依赖T009a**。
-- [ ] **T038**（`FR-001`）：实现`ClaudeCodeAdapter` one-shot lifecycle和F003/F004 contracts。
-- [ ] **T039**（`FR-008`, `NFR-003`, `AC-006`）：添加Claude `PreToolUse` hook 安全测试（**不是** control_request/response，见 T003 修正），覆盖 hook script 对 git push/force push 的 deny 决策、`--settings` 注入是否正确生效、普通请求按P0策略处理（hook 不干预）、bypass flag永不出现。
-- [ ] **T040**（`FR-008`）：实现 PersonaHub 侧的 `PreToolUse` hook script（读 stdin 的 `tool_input.command`，按 `push_credentials_enabled` 决定 deny/allow，写 `hookSpecificOutput` 到 stdout）并在 spawn 时经 `--settings` 注入；接入 AgentRunner escalation；hook 注入失败或 `--settings` 不可用时 capability 降级但 credential isolation 继续。
-- [ ] **T041**（`FR-005`, `FR-006`）：添加Claude implementation/validator Fake CLI集成测试，确认handoff context、structured trace和F004 pass/fail复用。
+- [x] **T035**（`FR-001`, `FR-005`）：使用Phase 1 fixture添加Claude protocol normalizer测试，覆盖output/final/command trace/control request/unknown/malformed/dedupe/limits。
+- [x] **T036**（`FR-001`, `FR-005`）：实现独立`claude-code-normalizer.ts`，raw stream不进入领域层。
+- [x] **T037**（`FR-001`, `NFR-004`）：添加Claude adapter启动/argv/stdin/cwd/env/auth/cancel/exit-once测试，`shell=false`且instructions不得在argv。**依赖T009a**。
+- [x] **T038**（`FR-001`）：实现`ClaudeCodeAdapter` one-shot lifecycle和F003/F004 contracts。
+- [x] **T039**（`FR-008`, `NFR-003`, `AC-006`）：添加Claude `PreToolUse` hook 安全测试（**不是** control_request/response，见 T003 修正），覆盖 hook script 对 git push/force push 的 deny 决策、`--settings` 注入是否正确生效、普通请求按P0策略处理（hook 不干预）、bypass flag永不出现。
+- [x] **T040**（`FR-008`）：实现 PersonaHub 侧的 `PreToolUse` hook script（读 stdin 的 `tool_input.command`，按 `push_credentials_enabled` 决定 deny/allow，写 `hookSpecificOutput` 到 stdout）并在 spawn 时经 `--settings` 注入；接入 AgentRunner escalation；hook 注入失败或 `--settings` 不可用时 capability 降级但 credential isolation 继续。
+- [x] **T041**（`FR-005`, `FR-006`）：添加Claude implementation/validator Fake CLI集成测试，确认handoff context、structured trace和F004 pass/fail复用。
 
-**Checkpoint 5**：Claude可作为implementation/consult/validator运行，前置approval能力与实际fixture一致。
+  **2026-07-21 完成**：Phase 5 全部落地并用真实本机 Claude Code CLI 2.1.216 重新做了两次安全、低成本的活体探测（非本文档既有 prose 复述），获得字面 NDJSON 原始样本，写入 `claude-protocol-fixtures.md` 的新增 "T035 re-verification" 节：
+  1. **新发现，改进 T004 结论**：hook 拒绝的 tool_result 带一个结构化的顶层字段 `tool_result_meta: [{id, non_execution_kind:"permission-rule"}]`——比 T004 当时建议的"匹配 denial 文本"更可靠、非脆弱。`command_completed` 的 Blocked 分类因此在 Claude 侧就是精确的结构判断，不需要 T004 曾建议的"延迟到 end-of-run `permission_denials[]` 二次改判"（`CommandCorrelator.handleCompleted()` 本来就会丢弃同一 itemId 的第二次 command_completed，没有二次改判通道）。
+  2. **真实 bug（非 Claude 特有,影响所有未来 exitCode 恒为 null 的 provider）**：`server/src/runtime/trace/command-correlator.ts` 的 `normalizeOutcome()` 只信任 `signal.outcome` 里的 Blocked/Cancelled，Succeeded/Failed 却重新按 `exitCode` derive——Codex 恰好 derive 出同样的值所以从未暴露，但 Claude 的 `exitCode` 恒为 `null`（design 已记录的能力缺口），导致所有 Claude 命令的 outcome 全部塌缩成 `unknown`。修复为直接信任 normalizer 已计算好的 `signal.outcome`，不重新 derive。
+  3. `isGitPushCommand`/`isGitPushOutput`/`CREDENTIAL_FAILURE_PATTERN` 从 `codex-protocol.ts` 抽到新文件 `shell-command-patterns.ts`（两个 adapter 共用，避免这条安全相关正则出现第二份拷贝）；`codex-protocol.ts` 改为 re-export，行为不变。
+  4. Claude `validate()`（`claude-protocol.ts`）用 `claude auth status`（默认已是 JSON），只回传 `loggedIn`/`authMethod`/`apiProvider`，绝不回传探测中确认存在的 `email`/`orgId`/`orgName`（T001 PII 警告）；`auth status` 对"未登录"情形退出码是 1，因此可用性判定必须看 JSON body 而非退出码。
+  5. `PreToolUse` hook script（`claude-pretooluse-hook.ts`）是完全自包含的字符串常量（写入 run-scoped 临时文件，`--settings` 内联 JSON 指向它，Run 结束 cleanup）——因为 Claude Code 把它当独立短生命周期子进程 spawn，无法 import 我们编译后的 TS 模块；git-push 正则因此在这里有一份必要的、有意的跨进程拷贝。Hook 只拦截 git push（呼应 Codex adapter 对非 push 请求一律 auto-accept 的同等安全姿态），通过专用 env var（`PERSONAHUB_PUSH_CREDENTIALS_ENABLED`，随 buildChildEnv 一起设置）读取当前 push 是否允许，不依赖任何进程外状态。用真实 `node <hook-script>` 子进程（非 mock）验证了 deny/allow/malformed-stdin 三种输入。
+  6. `ClaudeCodeAdapter.cancel()` 用 `SIGINT`（非 Codex 的 `turn/interrupt` RPC，因为 Claude 没有等价 RPC）；在 Windows 上用真实 `node` 子进程验证了 `child.kill("SIGINT")` 确实产生 `(code:null, signal:"SIGINT")`（与 T002 对真实 `claude.exe` 的探测结论一致）——排查过程中发现 `fake-claude.mjs` 的 "cancel" 模式一开始没有任何常驻 handle，会在收到信号前自行退出，已修复为挂一个长间隔 `setInterval` 保活。
+  7. **环境问题（与 F005 代码本身无关，记录以防复发）**：本 Phase 是首次在独立 worktree（`.claude/worktrees/F005`）里跑构建/测试，该 worktree 没有自己的 `node_modules`；Node 的模块解析沿目录树向上找到了主仓库（`main` 分支，已无 F005 类型）的 `node_modules/@personahub/shared` 符号链接，导致 `npm run build:shared` 本身成功（在 worktree 自己的 `shared/src` 上跑）但 server 端 `tsc`/`vitest` 却解析到主仓库过时的 `shared`，报出大量"成员不存在"假错误。修复：在 worktree 内单独 `npm install`，使其拥有指向自己 `shared/server/web` 的独立 workspace 符号链接。**每个新建的 git worktree 都需要独立 `npm install`，不能假设 node_modules 沿用父目录。**
+
+**Checkpoint 5 达成**：Claude 可作为 implementation/validator 运行；`ClaudeCodeAdapter` 已注册进 `server/src/index.ts` 的 registry；前置 approval 能力（`PreToolUse` hook）与 F002 P0 安全姿态一致（只拦截 git push，其余请求不干预）；F004 `parseValidationResult` 对 Claude 的 `result.result` 免修改复用（真实验证）；`npm run typecheck`、`npm test`（server 1150 + web 78 全绿）、`npm run build`（shared/server/web）全部通过。
 
 ## Phase 6：OpenCode Adapter
 
