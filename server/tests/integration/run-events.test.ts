@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
-import { RunStatus, ThreadEventType, AdapterStatus } from "@personahub/shared/types";
+import { RunStatus, ThreadEventType, AdapterStatus, AgentCapability } from "@personahub/shared/types";
 import { FakeAgentAdapter } from "../../src/runtime/adapters/fake-adapter.js";
 import { MAX_OUTPUT_BYTES } from "../../src/runtime/types.js";
 
@@ -15,7 +15,7 @@ function setupIssue(services: TestServices, tempDir: string) {
     cli_provider: "fake",
     command: "fake",
     args: [],
-    capability_tags: [],
+    capability_tags: [AgentCapability.Implementation],
     default_model: null,
     status: AdapterStatus.Available,
   });
@@ -94,7 +94,7 @@ describe("Run Event Persistence Integration", () => {
   it("writes run.output_truncated when output exceeds 1 MiB", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
 
-    const run = services.runService.create(issue.id, adapter.id, "test");
+    const run = services.manualRoutingService.dispatch({ issueId: issue.id, adapterId: adapter.id, instructions: "test" });
     services.workspaceLockService.acquire(issue.workspace_id, run.id);
     services.runService.transitionToRunning(run.id);
 

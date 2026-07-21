@@ -27,6 +27,7 @@ import { AgentAdapterRegistry } from "../src/runtime/adapter-registry.js";
 import { AgentRunner } from "../src/runtime/agent-runner.js";
 import { FakeAgentAdapter } from "../src/runtime/adapters/fake-adapter.js";
 import { RunDispatchService } from "../src/services/run-dispatch.js";
+import { ManualRoutingService } from "../src/services/manual-routing-service.js";
 import { EventBus } from "../src/runtime/event-bus.js";
 import type { EventBus as EventBusType } from "../src/runtime/event-bus.js";
 import { EvidenceService } from "../src/services/evidence.js";
@@ -76,6 +77,7 @@ export interface TestServices {
   adapterRegistry: AgentAdapterRegistry;
   agentRunner: AgentRunner;
   runDispatchService: RunDispatchService;
+  manualRoutingService: ManualRoutingService;
   evidenceService: EvidenceService;
   developmentTraceService: DevelopmentTraceService;
   validationTraceService: ValidationTraceService;
@@ -134,12 +136,18 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     workspaceLockService,
   });
 
+  const manualRoutingService = new ManualRoutingService(
+    runRepo, issueRepo, workspaceRepo, agentConfigRepo, projectRepo,
+    threadEventRepo, threadEventService, db,
+  );
+
   const runDispatchService = new RunDispatchService(
     runService, workspaceLockService, adapterRegistry,
     agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
     threadEventService, agentRunner, developmentTraceService, runTraceRepo,
     validationWorkflowService, db,
     runRepo, threadEventRepo, fileChangeRepo,
+    manualRoutingService,
   );
 
   const staleRecoveryService = new StaleRecoveryService(
@@ -189,6 +197,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     adapterRegistry,
     agentRunner,
     runDispatchService,
+    manualRoutingService,
     evidenceService,
     developmentTraceService,
     validationTraceService,

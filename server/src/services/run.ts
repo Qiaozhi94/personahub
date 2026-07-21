@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
-import type { Run, RunStatus, FailureReason, IssueStatus, ThreadEvent, AdapterIdentitySnapshot } from "@personahub/shared/types";
-import { RunStatus as RS, IssueStatus as IS, FailureReason as FR, ThreadEventType, ActorType, AdapterStatus, RunRole, RunDispatchSource } from "@personahub/shared/types";
+import type { Run, RunStatus, FailureReason, IssueStatus, ThreadEvent } from "@personahub/shared/types";
+import { RunStatus as RS, IssueStatus as IS, FailureReason as FR, ThreadEventType, ActorType } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { RunRepository } from "../repositories/run.js";
 import type { IssueRepository } from "../repositories/issue.js";
@@ -10,13 +10,6 @@ import type { ThreadEventService } from "./thread-event.js";
 import type { WorkspaceLockService } from "./workspace-lock.js";
 import { AppError } from "../api/errors.js";
 import type { ThreadEventRepository } from "../repositories/thread-event.js";
-import { collectPriorFindings } from "./validation/context-assembler.js";
-import { buildRepairContext } from "./validation/context-builder.js";
-
-export interface RunCreateServiceInput {
-  instructions: string;
-  adapterId: string;
-}
 
 export class RunService {
   constructor(
@@ -29,109 +22,6 @@ export class RunService {
     private threadEventRepo: ThreadEventRepository,
     private db: Database.Database,
   ) {}
-
-  create(issueId: string, adapterId: string, instructions: string): Run {
-    const issue = this.issueRepo.getById(issueId);
-    if (!issue) {
-      throw new AppError(ErrorCode.ISSUE_NOT_FOUND, "Issue not found.");
-    }
-
-    const trimmedInstructions = instructions?.trim();
-    if (!trimmedInstructions) {
-      throw new AppError(ErrorCode.RUN_INSTRUCTIONS_REQUIRED, "Run instructions are required.", "instructions");
-    }
-
-    const adapter = this.agentConfigRepo.getById(adapterId);
-    if (!adapter || adapter.project_id !== issue.project_id) {
-      throw new AppError(ErrorCode.ADAPTER_NOT_FOUND, "Adapter config not found for this project.");
-    }
-
-    if (adapter.status !== AdapterStatus.Available) {
-      throw new AppError(ErrorCode.ADAPTER_UNAVAILABLE, "Adapter is not available.");
-    }
-
-    if (adapter.role !== RunRole.Implementation) {
-      throw new AppError(ErrorCode.ADAPTER_UNAVAILABLE, "Implementation run requires an implementation adapter.");
-    }
-
-    const workspace = this.workspaceRepo.getById(issue.workspace_id);
-    if (!workspace) {
-      throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, "Workspace not found for issue.");
-    }
-
-    if (!issue.primary_thread_id) {
-      throw new AppError(ErrorCode.INTERNAL_ERROR, "Issue has no primary thread.");
-    }
-
-    const threadId = issue.primary_thread_id;
-    const adapterIdentity: AdapterIdentitySnapshot = {
-      adapter_config_id: adapter.id,
-      name: adapter.name,
-      cli_provider: adapter.cli_provider,
-      default_model: adapter.default_model,
-    };
-
-    // Repair context: when this Issue has already been through a failed
-    // validation round and looped back to Running, surface the latest round's
-    // findings to the next implementation agent so it knows what to fix.
-    const isRepairCandidate =
-      (issue.status === IS.Running || issue.status === IS.Ready) &&
-      issue.validation_round_count > 0;
-    let finalInstructions = trimmedInstructions;
-    if (isRepairCandidate) {
-      const allFindings = collectPriorFindings(this.threadEventRepo, threadId);
-      if (allFindings.length > 0) {
-        const latestRound = Math.max(...allFindings.map((f) => f.validation_round));
-        const latestFindings = allFindings.filter((f) => f.validation_round === latestRound);
-        finalInstructions = buildRepairContext({ baseInstructions: trimmedInstructions, latestFailedFindings: latestFindings, validationRound: latestRound });
-      }
-    }
-
-    const { run, event } = this.db.transaction(() => {
-      const freshIssue = this.issueRepo.getById(issueId);
-      if (!freshIssue) {
-        throw new AppError(ErrorCode.ISSUE_NOT_FOUND, "Issue not found.");
-      }
-      if (freshIssue.status === IS.Validating || freshIssue.status === IS.Done || freshIssue.status === IS.Blocked) {
-        throw new AppError(
-          ErrorCode.INVALID_ISSUE_TRANSITION,
-          `Cannot create run: issue is ${freshIssue.status}.`,
-        );
-      }
-
-      const run = this.runRepo.create({
-        issue_id: issueId,
-        thread_id: threadId,
-        workspace_id: workspace.id,
-        adapter_config_id: adapterId,
-        instructions: finalInstructions,
-        status: RS.Queued,
-        role: RunRole.Implementation,
-        dispatch_source: RunDispatchSource.UserExplicit,
-        adapter_identity: adapterIdentity,
-      });
-
-      if (freshIssue.status === IS.Inbox || freshIssue.status === IS.Ready) {
-        this.issueRepo.updateStatus(issueId, {
-          status: IS.Running,
-          updatedAt: new Date().toISOString(),
-        });
-      }
-
-      const event = this.threadEventService.write(
-        run.thread_id,
-        ThreadEventType.RunQueued,
-        ActorType.System,
-        null,
-        runEventPayload(run, RS.Queued, { adapter_config_id: adapterId }),
-      );
-
-      return { run, event };
-    })();
-
-    this.threadEventService.broadcast(event);
-    return run;
-  }
 
   get(runId: string): Run {
     const run = this.runRepo.getById(runId);

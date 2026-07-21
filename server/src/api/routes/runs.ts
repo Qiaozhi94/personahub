@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { RunPurpose } from "@personahub/shared/types";
 import type { RunDispatchService } from "../../services/run-dispatch.js";
 import type { RunService } from "../../services/run.js";
 
@@ -15,11 +16,16 @@ export const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (app, opts)
     const body = (request.body ?? {}) as {
       instructions?: string;
       adapter_id?: string;
+      purpose?: "auto" | "ad_hoc_consult";
     };
+    // design §7.4: the client can only ever request ad_hoc_consult
+    // explicitly; role/dispatch_source/workflow_bound are always
+    // server-derived (ManualRoutingService), never accepted here.
     const run = await runDispatchService.dispatch(
       issue_id,
-      body.adapter_id ?? "",
+      body.adapter_id,
       body.instructions ?? "",
+      body.purpose === "ad_hoc_consult" ? RunPurpose.AdHocConsult : undefined,
     );
     reply.code(201);
     return { run };

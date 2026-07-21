@@ -33,6 +33,7 @@ import { ValidationRecoveryActionService } from "./services/validation/recovery-
 import { ValidationRecoveryService } from "./services/validation/recovery-service.js";
 import { ValidationWorkflowService } from "./services/validation/workflow-service.js";
 import { RunDispatchService } from "./services/run-dispatch.js";
+import { ManualRoutingService } from "./services/manual-routing-service.js";
 import { EventBus } from "./runtime/event-bus.js";
 import { AgentAdapterRegistry } from "./runtime/adapter-registry.js";
 import { AgentRunner } from "./runtime/agent-runner.js";
@@ -119,12 +120,18 @@ async function main() {
     validationPolicyRepo, evidenceSummaryRepo, fileChangeRepo,
   );
 
+  const manualRoutingService = new ManualRoutingService(
+    runRepo, issueRepo, workspaceRepo, agentConfigRepo, projectRepo,
+    threadEventRepo, threadEventService, db,
+  );
+
   const runDispatchService = new RunDispatchService(
     runService, workspaceLockService, adapterRegistry,
     agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
     threadEventService, agentRunner, developmentTraceService, runTraceRepo,
     validationWorkflowService, db,
     runRepo, threadEventRepo, fileChangeRepo,
+    manualRoutingService,
   );
 
   const staleRecoveryService = new StaleRecoveryService(

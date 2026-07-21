@@ -91,7 +91,7 @@ describe("T090 repair context wiring", () => {
     const project = services.projectService.create("Test");
     services.workspaceService.bind(project.id, tempDir);
     const { issue } = services.issueService.create(project.id, { title: "T", goal: "G" });
-    const implAdapter = services.agentConfigRepo.create({ project_id: project.id, name: "Impl", role: "implementation", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
+    const implAdapter = services.agentConfigRepo.create({ project_id: project.id, name: "Impl", role: "implementation", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Implementation], default_model: "gpt-5", status: AdapterStatus.Available });
     services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Running, updatedAt: new Date().toISOString() });
     return { issue, implAdapter };
   }
@@ -106,7 +106,7 @@ describe("T090 repair context wiring", () => {
       validator_run_id: "v1", implementation_run_id: "impl_old",
     });
 
-    const run = services.runService.create(issue.id, implAdapter.id, "Please address the review");
+    const run = services.manualRoutingService.dispatch({ issueId: issue.id, adapterId: implAdapter.id, instructions: "Please address the review" });
     const stored = services.runRepo.getById(run.id)!;
 
     expect(stored.instructions).toContain("Please address the review");
@@ -116,7 +116,7 @@ describe("T090 repair context wiring", () => {
 
   it("does not inject repair context on the first implementation run", () => {
     const { issue, implAdapter } = runningIssueWithAdapter();
-    const run = services.runService.create(issue.id, implAdapter.id, "Do the task");
+    const run = services.manualRoutingService.dispatch({ issueId: issue.id, adapterId: implAdapter.id, instructions: "Do the task" });
     const stored = services.runRepo.getById(run.id)!;
 
     expect(stored.instructions).toBe("Do the task");

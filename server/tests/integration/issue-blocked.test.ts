@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
-import { RunStatus, IssueStatus, FailureReason, AdapterStatus } from "@personahub/shared/types";
+import { RunStatus, IssueStatus, FailureReason, AdapterStatus, AgentCapability } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import { AppError } from "../../src/api/errors.js";
 
@@ -15,7 +15,7 @@ function setupTestRun(services: TestServices, tempDir: string, status: RunStatus
     cli_provider: "codex",
     command: "codex",
     args: [],
-    capability_tags: [],
+    capability_tags: [AgentCapability.Implementation],
     default_model: null,
     status: AdapterStatus.Available,
   });
@@ -57,7 +57,7 @@ describe("Issue Blocked prevents queued Run", () => {
     expect(cancelledRun!.status).toBe(RunStatus.Cancelled);
   });
 
-  it("rejects creating Run on blocked Issue with INVALID_ISSUE_TRANSITION", () => {
+  it("rejects creating Run on blocked Issue with RUN_NOT_ALLOWED_FOR_ISSUE_STATUS", () => {
     const { issue, adapter } = setupTestRun(services, tempDir, RunStatus.Queued);
 
     services.issueRepo.updateStatus(issue.id, {
@@ -66,11 +66,11 @@ describe("Issue Blocked prevents queued Run", () => {
     });
 
     try {
-      services.runService.create(issue.id, adapter.id, "test instructions");
+      services.manualRoutingService.dispatch({ issueId: issue.id, adapterId: adapter.id, instructions: "test instructions" });
       expect.fail("Should have thrown");
     } catch (e) {
       expect(e).toBeInstanceOf(AppError);
-      expect((e as AppError).code).toBe(ErrorCode.INVALID_ISSUE_TRANSITION);
+      expect((e as AppError).code).toBe(ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS);
     }
   });
 

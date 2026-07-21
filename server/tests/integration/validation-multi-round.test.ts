@@ -86,7 +86,7 @@ describe("Validation multi-round (T082)", () => {
       cli_provider: "fake",
       command: "fake",
       args: [],
-      capability_tags: [],
+      capability_tags: [AgentCapability.Implementation],
       default_model: null,
       status: AdapterStatus.Available,
     });

@@ -246,15 +246,29 @@ updated: 2026-07-19
 
 ## Phase 8：Manual Routing Service与状态影响
 
-- [ ] **T055**（`FR-004`, `FR-007`, `DR-002`, `DR-003`）：添加Run创建事务测试，覆盖adapter resolve、purpose/role/source/context source和扩展run.queued payload；断言`workflow_step`随`role`固化（consult→`null`、workflow-bound implementation→`implementation`），与F004 §3派生表一致。
-- [ ] **T056**（`FR-004`, `FR-007`, `IR-002`）：实现ManualRoutingService并让RunDispatch使用；route不能传内部role/source。
-- [ ] **T057**（`FR-007`, `AC-005`）：添加状态影响测试：Ready/Inbox implementation->Running，Running implementation保持，Validating validator workflow，mismatch consult使用非空consult role且状态/round不变。
-- [ ] **T058**（`FR-007`）：收敛RunService状态更新只对workflow-bound implementation生效；consult terminal不调用F004 hook。
-- [ ] **T059**（`FR-007`, `FR-008`）：添加consult escalation测试，正常consult不改状态但危险操作仍Blocked并取消eligible queued workflow Runs。
-- [ ] **T060**（`FR-008`）：复用F002 escalation service处理所有provider/purpose，event携routing metadata。
-- [ ] **T061**（`NFR-002`）：添加三provider/consult/workflow同workspace FIFO测试和不同workspace并行回归；drain重验role/Issue status，取消stale同Issue implementation/validator，Validating consult仍eligible但不得污染validator context，不得引入provider专属queue或跨Issuevalidator优先级。
+- [x] **T055**（`FR-004`, `FR-007`, `DR-002`, `DR-003`）：添加Run创建事务测试，覆盖adapter resolve、purpose/role/source/context source和扩展run.queued payload；断言`workflow_step`随`role`固化（consult→`null`、workflow-bound implementation→`implementation`），与F004 §3派生表一致。
+- [x] **T056**（`FR-004`, `FR-007`, `IR-002`）：实现ManualRoutingService并让RunDispatch使用；route不能传内部role/source。
+- [x] **T057**（`FR-007`, `AC-005`）：添加状态影响测试：Ready/Inbox implementation->Running，Running implementation保持，Validating validator workflow，mismatch consult使用非空consult role且状态/round不变。
+- [x] **T058**（`FR-007`）：收敛RunService状态更新只对workflow-bound implementation生效；consult terminal不调用F004 hook。
+- [x] **T059**（`FR-007`, `FR-008`）：添加consult escalation测试，正常consult不改状态但危险操作仍Blocked并取消eligible queued workflow Runs。
+- [x] **T060**（`FR-008`）：复用F002 escalation service处理所有provider/purpose，event携routing metadata。
+- [x] **T061**（`NFR-002`）：添加三provider/consult/workflow同workspace FIFO测试和不同workspace并行回归；drain重验role/Issue status，取消stale同Issue implementation/validator，Validating consult仍eligible但不得污染validator context，不得引入provider专属queue或跨Issuevalidator优先级。
 
-**Checkpoint 8**：manual routing已贯通DB/queue/runtime，consult与workflow状态边界正确且安全优先。
+  **2026-07-22 完成**：新增`ManualRoutingService`（`server/src/services/manual-routing-service.ts`）作为Run创建的唯一入口,组合Phase 7的三块纯逻辑（`resolveAdapter`/`classifyRunRequest`/`getLatestCompletedByRole`发现context source）在一个事务里完成;`RunDispatchService.dispatch()`改为调用它（签名保持`(issueId, adapterId, instructions, purpose?)`不变，`adapterId`从必填改为`string | undefined`，因此**全部88处既有测试调用点无需改动**）。HTTP路由`POST /api/issues/:issue_id/runs`同步放开`adapter_id`为可选、新增`purpose`（仅接受`"ad_hoc_consult"`，其余一律按auto处理）。
+
+  **范围边界（有意为之）**：分类器命中`role=validator`的手动dispatch（Validating + validator-capable adapter）目前会被`ManualRoutingService`直接拒绝（`RUN_NOT_ALLOWED_FOR_ISSUE_STATUS`），不在本Phase实现——design §8 明确要求两阶段dispatch（`validation.dispatch_pending` + `claimValidatorSlot()`）和冻结的round/implementation_run_id/policy snapshot，这是**Phase 9**的范围；在Phase 9的grace/claim机制落地前，若在此处硬塞一条独立的validator创建路径,要么绕开F004现有的per-round唯一索引与冻结上下文机制,要么产生一个Phase 9必须废弃重做的临时实现。安全优先：宁可暂时拒绝,也不引入未受唯一性保护的重复validator风险。
+
+  实现`RunService.create()`已被移除（Phase 8之后仅`ManualRoutingService`在生产路径创建Run，`create()`在生产代码中变成死代码）；其原有17处测试调用点迁移到`manualRoutingService.dispatch()`，其中`run-service-guards.test.ts`整体重写以反映新行为——最重要的行为变化：**Validating不再是一刀切拒绝**，而是按adapter capability_tags分类（无validator能力→自动降级consult，不再抛`INVALID_ISSUE_TRANSITION`）。
+
+  验收时额外发现并修复两处真实缺口：
+  1. **`RunDispatchService.startNextQueuedRun()`的drain资格判断有真实bug**：原判断是`issue.status === Validating && run.role !== Validator`就取消——这会把design §7.5明确要求"consult在Validating期间仍eligible"的consult Run也一并误杀（"不是validator"被当成了"取消条件"，但consult本就不是validator，也不该被取消）。修正为按角色分别判断（implementation只在Inbox/Ready/Running eligible；validator只在Validating+round匹配eligible；consult在Inbox/Ready/Running/Validating全部eligible，Done/Blocked已在更早的分支统一处理）。这个bug在T061的"consult在Validating期间仍可运行"新增测试出现前完全没有测试覆盖到（此前没有consult角色的Run真正经过drain路径）。
+  2. **`EscalationTriggered`事件payload缺routing metadata**：补充`purpose`/`role`两个字段（读取自`runService.get(params.runId)`，无需额外查询），满足T060"event携routing metadata"要求。
+
+  新增`server/tests/integration/consult-state-impact.test.ts`覆盖T057-T061全部场景（consult不驱动状态/round、workflow-bound implementation对照组、consult escalation仍Blocked且event带routing metadata、escalation取消同Issue排队中的workflow Run、consult在Validating期间仍eligible、implementation在Validating期间仍正确ineligible）。
+
+  `npm run typecheck`、`npm test`（server 1225 + web 78 全绿）、`npm run build`（shared/server/web）全部通过。
+
+**Checkpoint 8 达成**：manual routing已贯通DB/queue/runtime（`ManualRoutingService`→`RunRepository.create()`→`run.queued`扩展payload）；consult与workflow状态边界正确（consult从不驱动Issue状态/round，但危险操作仍安全优先Blocked）；queue drain按角色正确处理Validating期间的consult/implementation eligibility差异。手动选择validator仍待Phase 9的`claimValidatorSlot()`。
 
 ## Phase 9：Validator Grace、互斥与Recovery
 

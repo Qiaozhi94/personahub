@@ -1,8 +1,9 @@
 import type Database from "better-sqlite3";
-import type { Run, FailureReason, IssueStatus, ThreadEvent } from "@personahub/shared/types";
+import type { Run, FailureReason, IssueStatus, ThreadEvent, RunPurpose } from "@personahub/shared/types";
 import { IssueStatus as IS, RunStatus as RS, RunRole, ThreadEventType, ActorType, CommandTraceCapability, ValidationBlockReason } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { RunService } from "./run.js";
+import type { ManualRoutingService } from "./manual-routing-service.js";
 import type { WorkspaceLockService } from "./workspace-lock.js";
 import type { ThreadEventService } from "./thread-event.js";
 import type { DevelopmentTraceService } from "./development-trace.js";
@@ -38,10 +39,11 @@ export class RunDispatchService {
     private runRepo: RunRepository,
     private threadEventRepo: ThreadEventRepository,
     private fileChangeRepo: FileChangeRepository,
+    private manualRoutingService: ManualRoutingService,
   ) {}
 
-  async dispatch(issueId: string, adapterId: string, instructions: string): Promise<Run> {
-    const run = this.runService.create(issueId, adapterId, instructions);
+  async dispatch(issueId: string, adapterId: string | undefined, instructions: string, purpose?: RunPurpose): Promise<Run> {
+    const run = this.manualRoutingService.dispatch({ issueId, adapterId: adapterId || undefined, instructions, purpose });
 
     const lockAcquired = this.workspaceLockService.acquire(run.workspace_id, run.id);
     if (!lockAcquired) {
@@ -171,6 +173,12 @@ export class RunDispatchService {
           blocked_by: params.blockedBy,
           pre_execution_blocked: params.blockedBy !== "post_hoc_detection",
           capability_note: capabilityNote,
+          // T060: safety-first applies to every provider/purpose alike — a
+          // consult Run that never drives Issue state still gets Blocked on
+          // a dangerous operation (design §7.3). The routing metadata lets
+          // the UI say *which kind* of Run triggered it.
+          purpose: escalationRun.purpose,
+          role: escalationRun.role,
         },
       );
       pendingBroadcasts.push(escalationEvent);
@@ -300,11 +308,15 @@ export class RunDispatchService {
         this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
         continue;
       }
-      if (issue.status === IS.Validating && run.role !== RunRole.Validator) {
+      // design §7.5: eligibility is role-specific, not just "validator vs
+      // everything else" — consult stays eligible through Validating too
+      // (it never drives workflow state, so it doesn't compete with the
+      // validator for that round; only implementation is excluded once
+      // Validating starts).
+      if (run.role === RunRole.Implementation && issue.status !== IS.Inbox && issue.status !== IS.Ready && issue.status !== IS.Running) {
         this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
         continue;
       }
-
       if (run.role === RunRole.Validator) {
         if (issue.status !== IS.Validating) {
           this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
@@ -316,6 +328,8 @@ export class RunDispatchService {
           continue;
         }
       }
+      // consult: eligible on Inbox/Ready/Running/Validating — Done/Blocked
+      // already handled above, nothing further to check here.
 
       const lockAcquired = this.workspaceLockService.acquire(workspaceId, run.id);
       if (!lockAcquired) return;
