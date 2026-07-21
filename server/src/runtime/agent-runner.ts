@@ -1,4 +1,4 @@
-import type { Run, FailureReason, AdapterConfig, Workspace } from "@personahub/shared/types";
+import type { Run, FailureReason, AdapterConfig, Workspace, AdapterAuthType } from "@personahub/shared/types";
 import { FailureReason as FR, ThreadEventType, ActorType, CommandTraceCapability, type RunTraceSignal } from "@personahub/shared/types";
 import type { AgentAdapter, RunHandle, RunOutputChunk, RunExitResult, AgentRunInput } from "./types.js";
 import { DEFAULT_EXECUTION_TIMEOUT_MS, MAX_OUTPUT_BYTES, MAX_CHUNK_BYTES } from "./types.js";
@@ -31,7 +31,14 @@ export interface StartRunParams {
   adapter: AgentAdapter;
   workspace: Workspace;
   context: string;
-  adapterConfig: { command: string; args: string[] };
+  adapterConfig: {
+    command: string;
+    args: string[];
+    model_provider: string | null;
+    default_model: string | null;
+    auth_type: AdapterAuthType;
+    api_key: string | null;
+  };
   onTerminal?: (runId: string, workspaceId: string) => void;
   onEscalation?: (params: EscalationParams) => void;
 }

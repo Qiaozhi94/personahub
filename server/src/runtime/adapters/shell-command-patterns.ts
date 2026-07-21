@@ -12,8 +12,17 @@ const GIT_PUSH_PATTERNS = [
   /\bgit\s+push\s+-f\b/,
 ];
 
+/**
+ * Deliberately broad: only ever tested against output already known to come
+ * from a git-push attempt (isGitPushCommand already matched), so a wide net
+ * here doesn't create false positives elsewhere. "not found"/"terminal
+ * prompts disabled" added per opencode-protocol-fixtures.md T008 — GitHub's
+ * own privacy-preserving 404 for private/inaccessible repos means "Repository
+ * not found" is the actual failure text for a credential-isolated push
+ * attempt, not a distinct "auth failed" message the way Claude/Codex get.
+ */
 export const CREDENTIAL_FAILURE_PATTERN =
-  /permission denied|authentication failed|could not read|no credentials|403|401/i;
+  /permission denied|authentication failed|could not read|no credentials|not found|terminal prompts disabled|403|401/i;
 
 export function isGitPushCommand(command: unknown): boolean {
   if (typeof command === "string") {

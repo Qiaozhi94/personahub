@@ -242,4 +242,27 @@ SSH agent, git credential helper, and GH token exposure remain governed by
 `HOME`/`USERPROFILE` alone (which stays isolated) — this mechanism does not widen git
 credential isolation.
 
+## T044 re-verification: instructions cannot avoid argv for OpenCode (confirmed, not an oversight)
+
+Re-checked against the real installed CLI (1.18.3) whether `opencode run` can take its
+message via stdin the way Claude does (T002), to keep the same "instructions never in
+argv" property across adapters. Confirmed it cannot:
+
+```text
+$ opencode run --format json ""
+Error: You must provide a message or a command
+```
+
+`opencode run --help` confirms `message` is a required positional array argument
+(`[message..] message to send [array] [default: []]`) with no `--stdin`/equivalent flag in
+the documented surface, and piping text via stdin with no positional message produces no
+output at all (the message is simply never read from stdin). **This means OpenCode's
+instructions are unavoidably visible in local process listings** (`ps`/Task Manager) for the
+lifetime of the spawned process — a real, adapter-specific difference from Claude/Codex, not
+an implementation shortcut. This is exactly why tasks.md T044 only requires "**key** 不得进
+argv" for OpenCode (not "instructions"), unlike T037's "instructions 不得在 argv" for Claude —
+the task list already anticipated this constraint. The API key (ApiKey auth mode) is
+unaffected by this finding and still never touches argv (env-only, via `runtime/auth-
+material.ts`).
+
 ## Next: T009a (executable resolver implementation).

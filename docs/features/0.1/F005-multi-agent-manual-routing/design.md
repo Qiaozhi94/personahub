@@ -426,6 +426,13 @@ interface ResolvedExecutable {
 
 若当前版本不能给出confirmed command/test trace，adapter仍可用于consult/implementation，但`supportsStructuredTrace=false`；F004 policy不会因此伪造pass。
 
+真实探测确认`supportsStructuredTrace=true`（T006：`tool_use`携带`metadata.exit`/`time.start`/`time.end`，比Codex/Claude更完整）——上一段的降级只在CLI版本不再提供该shape时才触发。
+
+**`-m <provider>/<model>` 必须显式传入，且与 auth_type 无关**（`opencode-protocol-fixtures.md` T005）：省略`-m`时OpenCode会静默 fallback 到内置免费模型（`opencode/*-free`），成功退出、看似能跑，但完全没有验证配置的provider凭证——这不仅是`validate()`的问题，`start()`同样必须始终显式传入`-m`，否则一个凭证失效的adapter会悄悄用免费模型跑完全程，产生虚假的"运行成功"。因此：
+
+- **`AdapterConfigService.validateAuthState()` 需要修正**：`model_provider`与`default_model`目前只在`auth_type=api_key`时required（§4.1原逻辑，仅为了确定env var映射）；OpenCode的这条约束与auth_type无关，OAuth模式的OpenCode adapter同样必须提供两者，否则无法构造安全的`-m`值。修正为：`cli_provider=opencode`时`model_provider`/`default_model`一律required；`model_provider`的取值范围按auth_type区分——`api_key`模式仍必须命中T007 allowlist（因为要映射到确定的env var name），`oauth`模式不做allowlist限制（OpenCode支持的OAuth provider不是这份allowlist，允许任意非空字符串，真实有效性交给`validate()`的实际探测调用判定）。
+- `validate()`本身即是design §5.2"用最小无workspace写入的prompt probe"分支的实例：由于`opencode auth list`不是可靠的机器可读信号（T005：isolated/real HOME下exit code相同），必须真实运行`opencode run --format json -m <provider>/<model> "<minimal probe>"`并检查`type:"error"`/非零exit，才能确认配置的provider真正可用；这会产生一次真实的、极小的模型调用（成本可忽略），design §5.2的validate-on-demand（非周期性）模型正是为了让这类必须真实探测的provider把成本控制在用户主动点击"Validate login"或一次dispatch失败收敛时，而不是后台轮询。
+
 ### 6.5 Context assembly
 
 新增`RunContextBuilder`统一替换F002在`startAdapter()`里手拼的五行文本：

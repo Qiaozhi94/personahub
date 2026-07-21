@@ -39,6 +39,7 @@ import { AgentRunner } from "./runtime/agent-runner.js";
 import { FakeAgentAdapter } from "./runtime/adapters/fake-adapter.js";
 import { CodexCliAdapter } from "./runtime/adapters/codex-cli-adapter.js";
 import { ClaudeCodeAdapter } from "./runtime/adapters/claude-code-adapter.js";
+import { OpenCodeAdapter } from "./runtime/adapters/opencode-adapter.js";
 import { registerRoutes } from "./api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "./api/errors.js";
 
@@ -85,6 +86,7 @@ async function main() {
   adapterRegistry.register(new FakeAgentAdapter());
   adapterRegistry.register(new CodexCliAdapter());
   adapterRegistry.register(new ClaudeCodeAdapter());
+  adapterRegistry.register(new OpenCodeAdapter());
 
   const adapterConfigService = new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry);
 

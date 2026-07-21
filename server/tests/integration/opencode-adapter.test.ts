@@ -5,26 +5,24 @@ import { createTestServices, disposeTestServices, createTempDir, type TestServic
 import { RunStatus, FailureReason, IssueStatus, AdapterStatus, ThreadEventType, AgentCapability, CliProvider, AdapterAuthType } from "@personahub/shared/types";
 
 const __testDir = join(fileURLToPath(import.meta.url), "..");
-const fakeScriptPath = join(__testDir, "..", "helpers", "fake-claude.mjs").replace(/\\/g, "/");
+const fakeScriptPath = join(__testDir, "..", "helpers", "fake-opencode.mjs").replace(/\\/g, "/");
 
 vi.mock("node:child_process", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:child_process")>();
   return {
     ...actual,
     spawn: vi.fn((command: string, args: string[], options: any) => {
-      if (command === "claude") {
-        return actual.spawn("node", [fakeScriptPath, ...args.filter((a: string) => a !== "claude")], options);
+      if (command === "opencode") {
+        return actual.spawn("node", [fakeScriptPath, ...args.filter((a: string) => a !== "opencode")], options);
       }
       return actual.spawn(command, args, options);
     }),
   };
 });
 
-// T009a: on this dev machine "claude" resolves to a real installed native
-// exe (server/tests/helpers/claude-protocol-fixtures.md T001), which would
-// bypass the child_process mock above entirely. Mock the resolver as a
-// passthrough so the literal "claude" command string reaches the mocked
-// spawn() unchanged, exactly like codex-cli-adapter.test.ts does for codex.
+// T009a: opencode is a .cmd shim on a real install (opencode-protocol-
+// fixtures.md T005) — mock the resolver as a passthrough so the literal
+// "opencode" string reaches the mocked spawn() unchanged.
 vi.mock("../../src/runtime/executable-resolver.js", () => ({
   resolveExecutable: vi.fn((command: string) => ({
     resolved: { executable: command, prefixArgs: [], source: "direct" as const },
@@ -32,23 +30,25 @@ vi.mock("../../src/runtime/executable-resolver.js", () => ({
   })),
 }));
 
-const { ClaudeCodeAdapter } = await import("../../src/runtime/adapters/claude-code-adapter.js");
+const { OpenCodeAdapter } = await import("../../src/runtime/adapters/opencode-adapter.js");
 
-function setupIssue(services: TestServices, tempDir: string) {
+function setupIssue(services: TestServices, tempDir: string, authType: AdapterAuthType = AdapterAuthType.OAuth) {
   const project = services.projectService.create("Test", "desc");
   services.workspaceService.bind(project.id, tempDir);
   const { issue } = services.issueService.create(project.id, { title: "Test", goal: "Goal" });
   const adapter = services.agentConfigRepo.create({
     project_id: project.id,
-    name: "Claude Code",
+    name: "OpenCode",
     role: "implementation",
-    cli_provider: CliProvider.ClaudeCode,
-    command: "claude",
+    cli_provider: CliProvider.OpenCode,
+    command: "opencode",
     args: [],
     capability_tags: [AgentCapability.Implementation],
-    default_model: null,
+    default_model: "claude-sonnet-4-5",
+    model_provider: "anthropic",
     status: AdapterStatus.Available,
-    auth_type: AdapterAuthType.OAuth,
+    auth_type: authType,
+    api_key: authType === AdapterAuthType.ApiKey ? "sk-test-fake-key-value" : null,
   });
   return { project, issue, adapter };
 }
@@ -57,20 +57,26 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
+describe("OpenCodeAdapter Integration (T042-T048)", () => {
   let services: TestServices;
   let tempDir: string;
 
   beforeEach(() => {
     tempDir = createTempDir();
     services = createTestServices();
-    services.adapterRegistry.register(new ClaudeCodeAdapter());
-    delete process.env.FAKE_CLAUDE_MODE;
+    services.adapterRegistry.register(new OpenCodeAdapter());
+    delete process.env.FAKE_OPENCODE_MODE;
   });
 
   afterEach(() => {
     disposeTestServices(services);
-    delete process.env.FAKE_CLAUDE_MODE;
+    delete process.env.FAKE_OPENCODE_MODE;
+  });
+
+  it("declares supportsApprovalHook=false and supportsStructuredTrace=true (real capability boundary)", () => {
+    const adapter = new OpenCodeAdapter();
+    expect(adapter.capabilities.supportsApprovalHook).toBe(false);
+    expect(adapter.capabilities.supportsStructuredTrace).toBe(true);
   });
 
   it("executes a low-risk instruction and completes with the final message", async () => {
@@ -84,7 +90,7 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     expect(finalRun!.exit_code).toBe(0);
   });
 
-  it("persists run.output events from assistant text", async () => {
+  it("persists run.output events from text parts", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
 
     await services.runDispatchService.dispatch(issue.id, adapter.id, "say hi");
@@ -93,7 +99,6 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     const events = services.threadEventService.listByThread(issue.primary_thread!.id);
     const outputEvents = events.filter((e) => e.type === ThreadEventType.RunOutput);
     expect(outputEvents.length).toBeGreaterThan(0);
-    expect(outputEvents[0]!.payload_json.stream).toBe("stdout");
   });
 
   it("persists run.queued, run.started, run.completed in correct order", async () => {
@@ -107,15 +112,14 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     const qIdx = types.indexOf(ThreadEventType.RunQueued);
     const sIdx = types.indexOf(ThreadEventType.RunStarted);
     const cIdx = types.indexOf(ThreadEventType.RunCompleted);
-
     expect(qIdx).toBeGreaterThanOrEqual(0);
     expect(sIdx).toBeGreaterThan(qIdx);
     expect(cIdx).toBeGreaterThan(sIdx);
   });
 
-  it("handles a graceful in-band error result (is_error:true) as Failed/AdapterExitNonzero", async () => {
+  it("handles a turn-level error line as Failed/AdapterExitNonzero", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "failure";
+    process.env.FAKE_OPENCODE_MODE = "failure";
 
     const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "test");
     await wait(500);
@@ -125,9 +129,9 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     expect(finalRun!.failure_reason).toBe(FailureReason.AdapterExitNonzero);
   });
 
-  it("handles a hard spawn-level failure (nonzero exit, no result line) as Failed/SpawnFailed", async () => {
+  it("handles a hard spawn-level failure (nonzero exit, no JSON) as Failed/SpawnFailed", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "hard_failure";
+    process.env.FAKE_OPENCODE_MODE = "hard_failure";
 
     const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "test");
     await wait(500);
@@ -137,9 +141,9 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     expect(finalRun!.failure_reason).toBe(FailureReason.SpawnFailed);
   });
 
-  it("persists command_started/command_completed trace events for a successful tool call", async () => {
+  it("persists command_started/command_completed with a real exitCode (advantage over Claude)", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "command_success";
+    process.env.FAKE_OPENCODE_MODE = "command_success";
 
     await services.runDispatchService.dispatch(issue.id, adapter.id, "run tests");
     await wait(500);
@@ -150,12 +154,12 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     expect(started).toBeDefined();
     expect(completed).toBeDefined();
     expect(completed!.payload_json.outcome).toBe("succeeded");
-    expect(completed!.payload_json.exit_code).toBeNull();
+    expect(completed!.payload_json.exit_code).toBe(0);
   });
 
-  it("classifies a failed tool call (is_error, no hook denial) as command_completed/failed", async () => {
+  it("classifies a non-git failed tool call as command_completed/failed without escalating", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "command_failure";
+    process.env.FAKE_OPENCODE_MODE = "command_failure";
 
     const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "run tests");
     await wait(500);
@@ -163,14 +167,15 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     const events = services.threadEventService.listByThread(issue.primary_thread!.id);
     const completed = events.find((e) => e.type === ThreadEventType.CommandCompleted);
     expect(completed!.payload_json.outcome).toBe("failed");
+    expect(completed!.payload_json.exit_code).toBe(1);
 
     const finalRun = services.runRepo.getById(run.id);
     expect(finalRun!.status).toBe(RunStatus.Completed);
   });
 
-  it("triggers escalation when the PreToolUse hook denies a git push (tool_result_meta permission-rule)", async () => {
+  it("triggers CredentialIsolationBlocked escalation for a failed git push (T008 real failure text: 'Repository not found')", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "escalation";
+    process.env.FAKE_OPENCODE_MODE = "credential_failure";
 
     const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "git push");
     await wait(500);
@@ -178,32 +183,30 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     const events = services.threadEventService.listByThread(issue.primary_thread!.id);
     const escalationEvent = events.find((e) => e.type === ThreadEventType.EscalationTriggered);
     expect(escalationEvent).toBeDefined();
-    expect(escalationEvent!.payload_json.blocked_by).toBe("pre_execution_approval");
-    expect(escalationEvent!.payload_json.pre_execution_blocked).toBe(true);
+    expect(escalationEvent!.payload_json.blocked_by).toBe("credential_isolation");
 
     const finalRun = services.runRepo.getById(run.id);
     expect(finalRun!.status).toBe(RunStatus.Failed);
-    expect(finalRun!.failure_reason).toBe(FailureReason.PreExecutionApprovalRejected);
+    expect(finalRun!.failure_reason).toBe(FailureReason.CredentialIsolationBlocked);
 
     const updatedIssue = services.issueRepo.getById(issue.id);
     expect(updatedIssue!.status).toBe(IssueStatus.Blocked);
   });
 
-  it("falls back to CredentialIsolationBlocked when a git push fails without a hook denial marker", async () => {
+  it("tolerates malformed JSON lines without failing the Run", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "credential_failure";
+    process.env.FAKE_OPENCODE_MODE = "malformed";
 
-    const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "git push");
+    const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "test");
     await wait(500);
 
     const finalRun = services.runRepo.getById(run.id);
-    expect(finalRun!.status).toBe(RunStatus.Failed);
-    expect(finalRun!.failure_reason).toBe(FailureReason.CredentialIsolationBlocked);
+    expect(finalRun!.status).toBe(RunStatus.Completed);
   });
 
-  it("stores a JSON validation envelope as the raw final_message unchanged (F004 parseValidationResult reuse, T041)", async () => {
+  it("stores a JSON validation envelope as the raw final_message unchanged (F004 parseValidationResult reuse)", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "json_final_message";
+    process.env.FAKE_OPENCODE_MODE = "json_final_message";
 
     const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "validate");
     await wait(500);
@@ -215,23 +218,11 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     const row = services.db.prepare("SELECT final_message FROM runs WHERE id = ?").get(run.id) as { final_message: string | null };
     const envelope = JSON.parse(row.final_message!);
     expect(envelope.outcome).toBe("passed");
-    expect(envelope.schema_version).toBe(1);
-  });
-
-  it("tolerates malformed JSON lines without failing the Run", async () => {
-    const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "malformed";
-
-    const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "test");
-    await wait(500);
-
-    const finalRun = services.runRepo.getById(run.id);
-    expect(finalRun!.status).toBe(RunStatus.Completed);
   });
 
   it("cancels a running turn via SIGINT and marks the Run cancelled with no final message", async () => {
     const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_CLAUDE_MODE = "cancel";
+    process.env.FAKE_OPENCODE_MODE = "cancel";
 
     const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "long task");
     await wait(100);
@@ -244,39 +235,47 @@ describe("ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)", () => {
     expect(cancelledRun!.has_final_message).toBe(false);
   });
 
-  it("writes instructions via stdin, not argv (real protocol contract, T002)", async () => {
+  it("always passes an explicit -m provider/model flag, and the message is a positional argv arg (T044/T005: no stdin mode)", async () => {
     const childProcessModule = await import("node:child_process");
     const spawnSpy = vi.mocked(childProcessModule.spawn);
     const { issue, adapter } = setupIssue(services, tempDir);
 
-    await services.runDispatchService.dispatch(issue.id, adapter.id, "a secret-looking instruction");
+    await services.runDispatchService.dispatch(issue.id, adapter.id, "a distinctive instruction");
     await wait(200);
 
-    const claudeCall = spawnSpy.mock.calls.filter((call) => call[0] === "claude").pop();
-    expect(claudeCall).toBeDefined();
-    const args = claudeCall![1] as string[];
-    expect(args).toContain("-p");
-    expect(args).toContain("--output-format");
-    expect(args).toContain("stream-json");
-    expect(args).toContain("--verbose");
-    expect(args.join(" ")).not.toContain("a secret-looking instruction");
-    const options = claudeCall![2] as { shell?: boolean };
+    const call = spawnSpy.mock.calls.filter((c) => c[0] === "opencode").pop();
+    expect(call).toBeDefined();
+    const args = call![1] as string[];
+    const mIdx = args.indexOf("-m");
+    expect(mIdx).toBeGreaterThanOrEqual(0);
+    expect(args[mIdx + 1]).toBe("anthropic/claude-sonnet-4-5");
+    expect(args.join(" ")).toContain("a distinctive instruction");
+    const options = call![2] as { shell?: boolean };
     expect(options.shell).toBe(false);
   });
 
-  it("registers a PreToolUse hook via --settings pointing at a real temp script file", async () => {
+  it("api_key mode: injects the confirmed <PROVIDER>_API_KEY env var and never puts the key in argv", async () => {
     const childProcessModule = await import("node:child_process");
     const spawnSpy = vi.mocked(childProcessModule.spawn);
-    const { issue, adapter } = setupIssue(services, tempDir);
+    const { issue, adapter } = setupIssue(services, tempDir, AdapterAuthType.ApiKey);
 
     await services.runDispatchService.dispatch(issue.id, adapter.id, "test");
     await wait(200);
 
-    const claudeCall = spawnSpy.mock.calls.filter((call) => call[0] === "claude").pop();
-    const args = claudeCall![1] as string[];
-    const settingsIdx = args.indexOf("--settings");
-    expect(settingsIdx).toBeGreaterThanOrEqual(0);
-    const settings = JSON.parse(args[settingsIdx + 1]!);
-    expect(settings.hooks.PreToolUse[0].matcher).toBe("PowerShell|Bash");
+    const call = spawnSpy.mock.calls.filter((c) => c[0] === "opencode").pop();
+    const args = call![1] as string[];
+    expect(args.join(" ")).not.toContain("sk-test-fake-key-value");
+    const options = call![2] as { env?: Record<string, string> };
+    expect(options.env?.ANTHROPIC_API_KEY).toBe("sk-test-fake-key-value");
+  });
+
+  it("api_key mode completes successfully end-to-end", async () => {
+    const { issue, adapter } = setupIssue(services, tempDir, AdapterAuthType.ApiKey);
+
+    const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "say hi");
+    await wait(500);
+
+    const finalRun = services.runRepo.getById(run.id);
+    expect(finalRun!.status).toBe(RunStatus.Completed);
   });
 });

@@ -69,13 +69,40 @@ describe("AdapterConfigService provider/auth matrix (T025)", () => {
   });
 
   describe("OpenCode — OAuth or API key", () => {
-    it("accepts oauth without model_provider/api_key", () => {
+    // opencode-protocol-fixtures.md T005: omitting `-m provider/model` lets
+    // OpenCode silently fall back to a free model instead of failing, so
+    // model_provider/default_model are required regardless of auth_type —
+    // not just for api_key mode (where the original reason was routing to
+    // a confirmed env var).
+    it("rejects oauth mode without model_provider", () => {
+      expectAppError(() =>
+        services.adapterConfigService.create(projectId, {
+          name: "OpenCode", cli_provider: "opencode", command: "opencode", auth_type: AdapterAuthType.OAuth,
+          default_model: "claude-sonnet-4-5",
+          capability_tags: [AgentCapability.Implementation],
+        }),
+      ErrorCode.ADAPTER_AUTH_INVALID);
+    });
+
+    it("rejects oauth mode without default_model", () => {
+      expectAppError(() =>
+        services.adapterConfigService.create(projectId, {
+          name: "OpenCode", cli_provider: "opencode", command: "opencode", auth_type: AdapterAuthType.OAuth,
+          model_provider: "anthropic",
+          capability_tags: [AgentCapability.Implementation],
+        }),
+      ErrorCode.ADAPTER_AUTH_INVALID);
+    });
+
+    it("accepts oauth with model_provider/default_model but no api_key — and does not enforce the api-key allowlist", () => {
       const adapter = services.adapterConfigService.create(projectId, {
         name: "OpenCode", cli_provider: "opencode", command: "opencode", auth_type: AdapterAuthType.OAuth,
+        model_provider: "some-oauth-only-provider-not-in-the-api-key-allowlist", default_model: "claude-sonnet-4-5",
         capability_tags: [AgentCapability.Implementation],
       });
       expect(adapter.auth_type).toBe(AdapterAuthType.OAuth);
-      expect(adapter.model_provider).toBeNull();
+      expect(adapter.model_provider).toBe("some-oauth-only-provider-not-in-the-api-key-allowlist");
+      expect(adapter.has_api_key).toBe(false);
     });
 
     it("accepts api_key with model_provider + default_model + api_key all present", () => {

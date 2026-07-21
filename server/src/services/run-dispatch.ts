@@ -258,7 +258,14 @@ export class RunDispatchService {
       adapter,
       workspace,
       context,
-      adapterConfig: { command: adapterConfig.command, args: adapterConfig.args },
+      adapterConfig: {
+        command: adapterConfig.command,
+        args: adapterConfig.args,
+        model_provider: adapterConfig.model_provider,
+        default_model: adapterConfig.default_model,
+        auth_type: adapterConfig.auth_type,
+        api_key: adapterConfig.api_key,
+      },
       onTerminal: (terminalRunId, workspaceId) => {
         this.onRunTerminal(terminalRunId, workspaceId);
       },

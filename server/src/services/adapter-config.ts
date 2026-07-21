@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import type { AdapterConfig, AdapterStatus, AgentCapability } from "@personahub/shared/types";
-import { AdapterStatus as AS, AdapterAuthType } from "@personahub/shared/types";
+import { AdapterStatus as AS, AdapterAuthType, CliProvider } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { AgentConfigRepository } from "../repositories/agent-config.js";
 import { deriveRole } from "../repositories/agent-config.js";
@@ -90,6 +90,21 @@ function validateAuthState(
   if (authType === AdapterAuthType.OAuth) {
     if (hasApiKey) {
       throw new AppError(ErrorCode.ADAPTER_AUTH_INVALID, "OAuth adapters cannot also carry an api_key.", "api_key");
+    }
+    // design §6.4 (opencode-protocol-fixtures.md T005): omitting `-m
+    // <provider>/<model>` lets OpenCode silently fall back to a free model
+    // instead of failing — this is unrelated to auth_type, so OAuth-mode
+    // OpenCode needs model_provider/default_model too, just without the
+    // api-key allowlist restriction (any non-empty provider string; real
+    // validity is confirmed by validate()'s actual probe call, not a
+    // client-side enum).
+    if (cliProvider === CliProvider.OpenCode) {
+      if (!modelProvider) {
+        throw new AppError(ErrorCode.ADAPTER_AUTH_INVALID, "model_provider is required for opencode (needed to build -m provider/model).", "model_provider");
+      }
+      if (!defaultModel) {
+        throw new AppError(ErrorCode.ADAPTER_AUTH_INVALID, "default_model is required for opencode (needed to build -m provider/model).", "default_model");
+      }
     }
     return;
   }
@@ -365,7 +380,7 @@ export class AdapterConfigService {
     const project = this.projectRepo.getById(existing.project_id);
     const publicConfig = toPublicAdapter(existing, project?.default_adapter_config_id ?? null);
     const adapter = this.adapterRegistry.getForConfig(publicConfig);
-    const result = await adapter.validate(publicConfig);
+    const result = await adapter.validate(publicConfig, existing.api_key);
 
     const status: AdapterStatus = result.available ? AS.Available : AS.Unavailable;
     const now = new Date().toISOString();

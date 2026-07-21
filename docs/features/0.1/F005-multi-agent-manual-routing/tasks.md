@@ -204,15 +204,24 @@ updated: 2026-07-19
 
 ## Phase 6：OpenCode Adapter
 
-- [ ] **T042**（`FR-002`, `FR-005`）：使用Phase 1 fixture添加OpenCode normalizer测试，覆盖OAuth/API-key共同输出、final/trace/unknown/malformed/limits。
-- [ ] **T043**（`FR-002`, `FR-005`）：实现`opencode-normalizer.ts`；不从自由日志伪造confirmed command/test。
-- [ ] **T044**（`FR-002`, `NFR-004`）：添加OpenCode argv/stdin/cwd/env/auth material cleanup/cancel/exit-once测试；`shell=false`且key不得进argv。**依赖T009a**（OpenCode 本机为 `.cmd` shim）。
-- [ ] **T045**（`FR-002`）：实现`OpenCodeAdapter` one-shot lifecycle和auth material finally cleanup。
-- [ ] **T046**（`FR-008`, `NFR-003`, `AC-006`）：添加OpenCode credential isolation测试，push失败->escalation/Blocked，且capability明确`supportsApprovalHook=false`。
-- [ ] **T047**（`FR-008`）：接入credential failure normalizer/AgentRunner escalation；不得新增虚假的pre-execution event。
-- [ ] **T048**（`FR-005`, `FR-006`）：添加OpenCode implementation/consult/validator测试；若probe不支持可靠final/trace，validator路径必须Blocked而非pass。
+- [x] **T042**（`FR-002`, `FR-005`）：使用Phase 1 fixture添加OpenCode normalizer测试，覆盖OAuth/API-key共同输出、final/trace/unknown/malformed/limits。
+- [x] **T043**（`FR-002`, `FR-005`）：实现`opencode-normalizer.ts`；不从自由日志伪造confirmed command/test。
+- [x] **T044**（`FR-002`, `NFR-004`）：添加OpenCode argv/stdin/cwd/env/auth material cleanup/cancel/exit-once测试；`shell=false`且key不得进argv。**依赖T009a**（OpenCode 本机为 `.cmd` shim）。
+- [x] **T045**（`FR-002`）：实现`OpenCodeAdapter` one-shot lifecycle和auth material finally cleanup。
+- [x] **T046**（`FR-008`, `NFR-003`, `AC-006`）：添加OpenCode credential isolation测试，push失败->escalation/Blocked，且capability明确`supportsApprovalHook=false`。
+- [x] **T047**（`FR-008`）：接入credential failure normalizer/AgentRunner escalation；不得新增虚假的pre-execution event。
+- [x] **T048**（`FR-005`, `FR-006`）：添加OpenCode implementation/consult/validator测试；若probe不支持可靠final/trace，validator路径必须Blocked而非pass。
 
-**Checkpoint 6**：OpenCode OAuth/API-key均可运行；安全能力展示与真实边界一致。
+  **2026-07-21 完成**：`opencode-normalizer.ts`（`OpenCodeTraceNormalizer`）把`step_start`/`text`/`tool_use`/`step_finish`/`error`五种NDJSON行归一化；`tool_use`单行自带`metadata.exit`+`time.start/end`，比Claude多一个真实exitCode，一行即可同时合成`command_started`+`command_completed`两个trace signal（无需跨事件关联durationMs）。final message从最后一步`step_finish.reason=="stop"`前累积的`text`重建（协议没有单一terminal事件）。`OpenCodeAdapter`：`supportsApprovalHook=false`（真实探测确认无pre-execution channel），`supportsStructuredTrace=true`（真实探测确认，非design原文"若无confirmed trace则降级"的情形）；credential isolation escalation走`command_completed`的Failed结果 + 扩大后的`CREDENTIAL_FAILURE_PATTERN`（新增`not found`/`terminal prompts disabled`，T008：GitHub对私有/不存在仓库统一返回隐私保护式404，push失败文本是"Repository not found"而非"Authentication failed"）。
+
+  过程中用真实本机 OpenCode CLI 1.18.3 做了一次针对 T044 的安全性活体验证，并发现/修复两处此前遗留的架构缺口：
+  1. **真实发现**：`opencode run --format json ""` 报 `Error: You must provide a message or a command`，且用 stdin 管道文本、不给 positional message 也读不到——确认 OpenCode 的 `run` **没有 stdin prompt 模式**，instructions 只能走 argv（本地进程列表可见），这与 Claude 相反；tasks.md T044 原文只写"**key** 不得进 argv"（不是"instructions"）已经预判了这一点。已写入 `opencode-protocol-fixtures.md` 新增小节，design.md §6.4 同步补充。
+  2. **真实架构缺口（api_key mode 此前完全无法 validate()/dispatch）**：`AgentAdapter.validate(config)` 和 `AgentRunInput.adapterConfig` 此前都只携带 secret-safe 的 public DTO/`{command,args}`，从未把 `api_key`/`model_provider`/`default_model`/`auth_type` 传给 adapter——Codex/Claude 从未触发这个缺口（纯 OAuth，从不需要密钥），OpenCode 的 api_key 模式第一次需要 adapter 拿到真实密钥去构造 `AuthMaterial`/`-m provider/model`，缺口才第一次暴露。修复：`AgentAdapter.validate()`新增可选第二参`apiKey`（`AdapterConfigService.validate()`从`existing.api_key`传入，Codex/Claude签名不变，靠可选参数结构兼容）；`AgentRunInput.adapterConfig`（及`agent-runner.ts`的`StartRunParams.adapterConfig`）从`{command,args}`扩到同时带`model_provider`/`default_model`/`auth_type`/`api_key`，`run-dispatch.ts`的`startAdapter()`补齐转发。
+  3. **`validateAuthState()`补一条规则**：`model_provider`/`default_model`此前只在`auth_type=api_key`时required——OpenCode的"必须显式`-m`"约束与auth_type无关，OAuth模式的OpenCode adapter同样需要两者才能安全dispatch；修正为`cli_provider=opencode`时二者一律required，但`model_provider`的取值范围只在`api_key`模式命中T007 allowlist（OAuth模式允许任意非空字符串，真实有效性交给`validate()`探测）。design.md §6.4同步补充说明并注明真实探测来源。
+
+  `npm run typecheck`、`npm test`（server 1180 + web 78 全绿）、`npm run build`（shared/server/web）全部通过。
+
+**Checkpoint 6 达成**：OpenCode OAuth/API-key均可运行（`OpenCodeAdapter`已注册进`server/src/index.ts`）；`supportsApprovalHook=false`如实反映真实边界（无pre-execution channel，credential isolation是唯一防线）；`validate()`/dispatch的`-m provider/model`缺失问题已通过扩展`AgentAdapter`/`AgentRunInput`接口修复，api_key模式端到端可用。
 
 ## Phase 7：Handoff Context与Routing纯逻辑
 

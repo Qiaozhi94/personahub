@@ -1,4 +1,4 @@
-import type { AdapterConfig, RunStatus, FailureReason } from "@personahub/shared/types";
+import type { AdapterConfig, RunStatus, FailureReason, AdapterAuthType } from "@personahub/shared/types";
 import type { RunTraceSignal } from "@personahub/shared/types";
 
 export interface WorkspaceContext {
@@ -15,7 +15,20 @@ export interface AgentRunInput {
   workspace: WorkspaceContext;
   instructions: string;
   context: string;
-  adapterConfig: { command: string; args: string[] };
+  /**
+   * model_provider/default_model/auth_type/api_key are only meaningful for
+   * OpenCode (design §6.4: `-m provider/model` is mandatory on every
+   * dispatch, not just validate(); api_key mode needs the raw secret to
+   * build AuthMaterial). Codex/Claude adapters ignore them (OAuth-only).
+   */
+  adapterConfig: {
+    command: string;
+    args: string[];
+    model_provider: string | null;
+    default_model: string | null;
+    auth_type: AdapterAuthType;
+    api_key: string | null;
+  };
 }
 
 export interface RunOutputChunk {
@@ -56,7 +69,13 @@ export interface AdapterValidationResult {
 export interface AgentAdapter {
   provider: string;
   capabilities: AgentAdapterCapabilities;
-  validate(config: AdapterConfig): Promise<AdapterValidationResult>;
+  /**
+   * `config` is the secret-safe public DTO (never carries api_key). `apiKey`
+   * is passed separately, straight from the repository record, only for
+   * providers whose validate() genuinely needs the raw secret to probe
+   * (OpenCode api_key mode) — OAuth-only adapters (Codex, Claude) ignore it.
+   */
+  validate(config: AdapterConfig, apiKey?: string | null): Promise<AdapterValidationResult>;
   start(input: AgentRunInput): Promise<RunHandle>;
 }
 
