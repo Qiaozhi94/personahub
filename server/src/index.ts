@@ -124,6 +124,7 @@ async function main() {
     agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
     threadEventService, agentRunner, developmentTraceService, runTraceRepo,
     validationWorkflowService, db,
+    runRepo, threadEventRepo, fileChangeRepo,
   );
 
   const staleRecoveryService = new StaleRecoveryService(

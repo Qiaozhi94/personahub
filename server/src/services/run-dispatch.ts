@@ -13,8 +13,12 @@ import type { IssueRepository } from "../repositories/issue.js";
 import type { ThreadRepository } from "../repositories/thread.js";
 import type { WorkspaceRepository } from "../repositories/workspace.js";
 import type { RunTraceRepository } from "../repositories/run-trace.js";
+import type { RunRepository } from "../repositories/run.js";
+import type { ThreadEventRepository } from "../repositories/thread-event.js";
+import type { FileChangeRepository } from "../repositories/file-change.js";
 import type { ValidationWorkflowService } from "./validation/workflow-service.js";
 import { AppError } from "../api/errors.js";
+import { buildRunContext } from "./run-context-builder.js";
 
 export class RunDispatchService {
   constructor(
@@ -31,6 +35,9 @@ export class RunDispatchService {
     private runTraceRepo: RunTraceRepository,
     private validationWorkflowService: ValidationWorkflowService,
     private db: Database.Database,
+    private runRepo: RunRepository,
+    private threadEventRepo: ThreadEventRepository,
+    private fileChangeRepo: FileChangeRepository,
   ) {}
 
   async dispatch(issueId: string, adapterId: string, instructions: string): Promise<Run> {
@@ -245,13 +252,18 @@ export class RunDispatchService {
     }
 
     const issue = this.issueRepo.getById(run.issue_id);
-    const context = [
-      `Issue: ${issue?.title ?? ""}`,
-      `Goal: ${issue?.goal ?? ""}`,
-      `Workspace: ${workspace.local_path}`,
-      `Thread ID: ${run.thread_id}`,
-      `Run ID: ${run.id}`,
-    ].join("\n");
+    if (!issue) {
+      throw new AppError(ErrorCode.ISSUE_NOT_FOUND, "Issue not found.");
+    }
+    // design §6.5: RunContextBuilder replaces F002's hand-rolled context
+    // string — implementation/consult Runs now see the latest eligible
+    // prior handoff; validator Runs stay strictly bound to their own
+    // context_source_run_id (never re-derived here).
+    const { context } = buildRunContext(
+      { runRepo: this.runRepo, threadEventRepo: this.threadEventRepo, fileChangeRepo: this.fileChangeRepo },
+      run,
+      issue,
+    );
 
     await this.agentRunner.startRun({
       run,

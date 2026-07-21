@@ -225,14 +225,24 @@ updated: 2026-07-19
 
 ## Phase 7：Handoff Context与Routing纯逻辑
 
-- [ ] **T049 [P]**（`FR-005`, `FR-006`, `AC-003`, `AC-004`）：添加RunContextBuilder测试；普通implementation/consult使用latest eligible prior handoff，validator严格绑定`implementation_run_id`对应handoff/evidence/files/tests，并覆盖Validating期间更新consult handoff不得串入、trusted evidence resolver allowlist 拒绝 `run.output` payload、findings、first Run、missing refs、Windows path和size limit。
-- [ ] **T050**（`FR-005`, `FR-006`）：实现带source policy的统一RunContextBuilder并替换F002手拼context；validator设置`context_source_run_id=implementation_run_id`，其他Run记录实际latest source。
-- [ ] **T051 [P]**（`FR-004`, `FR-007`, `AC-002`, `AC-005`）：添加expected-role/purpose classifier矩阵，覆盖Inbox/Ready/Running/Validating/Done/Blocked、multi-capability、forced consult、不能forced workflow和consult role始终非空；断言 consult 降级**无条件成立**（不检查任何 consult capability），且 `capability_tags` 为空时任何状态都只能 consult、不会误命中 workflow 角色。
-- [ ] **T052**（`FR-004`, `FR-007`）：实现pure routing classifier；Running期望implementation，Validating期望validator，未命中持久化`role=consult`。`AgentCapability` 只有 Implementation/Validator 两个值，classifier 不得引用不存在的 consult capability。
-- [ ] **T053 [P]**（`FR-003`, `FR-004`, `AC-002`）：添加AdapterResolver/ValidatorSelector测试，覆盖explicit/default、same project、available、missing/default stale、确定性source，以及只有`capability_tags`含validator的config才能被自动选择。
-- [ ] **T054**（`FR-003`, `FR-004`）：实现AdapterResolver并同步升级F004 ValidatorSelector；两者复用`hasCapability()`，禁止列表第一项随机fallback或继续以旧role作为能力真相源。
+- [x] **T049 [P]**（`FR-005`, `FR-006`, `AC-003`, `AC-004`）：添加RunContextBuilder测试；普通implementation/consult使用latest eligible prior handoff，validator严格绑定`implementation_run_id`对应handoff/evidence/files/tests，并覆盖Validating期间更新consult handoff不得串入、trusted evidence resolver allowlist 拒绝 `run.output` payload、findings、first Run、missing refs、Windows path和size limit。
+- [x] **T050**（`FR-005`, `FR-006`）：实现带source policy的统一RunContextBuilder并替换F002手拼context；validator设置`context_source_run_id=implementation_run_id`，其他Run记录实际latest source。
+- [x] **T051 [P]**（`FR-004`, `FR-007`, `AC-002`, `AC-005`）：添加expected-role/purpose classifier矩阵，覆盖Inbox/Ready/Running/Validating/Done/Blocked、multi-capability、forced consult、不能forced workflow和consult role始终非空；断言 consult 降级**无条件成立**（不检查任何 consult capability），且 `capability_tags` 为空时任何状态都只能 consult、不会误命中 workflow 角色。
+- [x] **T052**（`FR-004`, `FR-007`）：实现pure routing classifier；Running期望implementation，Validating期望validator，未命中持久化`role=consult`。`AgentCapability` 只有 Implementation/Validator 两个值，classifier 不得引用不存在的 consult capability。
+- [x] **T053 [P]**（`FR-003`, `FR-004`, `AC-002`）：添加AdapterResolver/ValidatorSelector测试，覆盖explicit/default、same project、available、missing/default stale、确定性source，以及只有`capability_tags`含validator的config才能被自动选择。
+- [x] **T054**（`FR-003`, `FR-004`）：实现AdapterResolver并同步升级F004 ValidatorSelector；两者复用`hasCapability()`，禁止列表第一项随机fallback或继续以旧role作为能力真相源。
 
-**Checkpoint 7**：路由分类与context无需启动CLI即可完全测试，跨agent不再依赖复制聊天记录。
+  **2026-07-21 完成**：四块纯逻辑全部落地并接线：
+  1. **`run-routing-classifier.ts`**（T051/T052）：`classifyRunRequest(issueStatus, requestedPurpose, capabilityTags)`纯函数，Done/Blocked直接拒绝；显式`ad_hoc_consult`无条件consult；其余按状态推导expected role，命中则workflow_bound，未命中一律降级consult（含capability_tags为空场景，无需单独分支，`.includes()`天然覆盖）。**客户端不能强制workflow_bound**：函数入参接受任意`RunPurpose`，但只特殊处理`AdHocConsult`，显式传`WorkflowBound`与省略视为完全等价（都走自动推导），已加测试断言两者结果一致。
+  2. **`adapter-resolver.ts`**（T053/T054）：`resolveAdapter(deps, projectId, explicitAdapterId?)`，显式ID校验同Project+available，省略时读`Project.default_adapter_config_id`+available，缺失/失效均返回`DEFAULT_ADAPTER_UNAVAILABLE`，不存在"挑列表第一个"的路径。`ValidatorSelector.filterEligible()`同步改为调用共享的`hasCapability()`（此前是直接`capability_tags.includes(...)`，行为不变，但消除了潜在的第二份能力判断逻辑）。
+  3. **`run-context-builder.ts`**（T049/T050）：`buildRunContext(deps, run, issue)`替换`run-dispatch.ts`里原来的5行手拼context。Source policy：validator直接读`run.context_source_run_id`（由F004 `requestValidation()`在创建时已固化为`implementation_run_id`，这里不重新推导，Validating grace期间的consult handoff因此不可能串入）；implementation/consult在该字段为空时用`runRepo.getLatestCompletedByRole(issueId, Implementation, beforeRunId=run.id)`现查"最近一次已完成的implementation Run"。复用F004既有的`collectImplementationEvidence()`/`collectPriorFindings()`（本来就按`run_id`+`ThreadEventType.HandoffCreated`等具体事件类型查询，`run.output`类事件天然不会被当成handoff读取，无需额外套一层ref allowlist）。落地时发现`FileChangeRepository.listByRun()`默认只返回100条（既有F004行为），写size-limit测试时改用长路径在100条内触发截断，而不是5000条空等。
+  4. **依赖有向**：`AdapterConfigService`的`validateAuthState()`、`ClaudeCodeAdapter`/`OpenCodeAdapter`均未改动；只有`RunDispatchService`新增了`runRepo`/`threadEventRepo`/`fileChangeRepo`三个构造参数（`server/src/index.ts`与`tests/helpers.ts`两处构造点同步补上），`startAdapter()`里的`context`赋值改为调用`buildRunContext()`。
+
+  验收时复现了F005 Phase 4"frozen validator"同款的ULID同毫秒建时序竞态：`run-context-builder.test.ts`里连续同步创建两个Run会偶发同created_at，`getLatestCompletedByRole`按`created_at`+`id`兜底排序在此时非确定；已用与Phase 4相同的手法（显式回拨`created_at`）修复，而不是依赖真实时间间隔。
+
+  `npm run typecheck`、`npm test`（server 1218 + web 78 全绿）、`npm run build`（shared/server/web）全部通过。
+
+**Checkpoint 7 达成**：路由分类（`run-routing-classifier.ts`）、AdapterResolver、RunContextBuilder均为纯逻辑/仅依赖repo的模块，全部由单元测试直接覆盖，无需启动任何真实CLI；`RunContextBuilder`已实际替换`run-dispatch.ts`的手拼context，implementation/consult Run从本Phase起就能看到上一轮的handoff摘要，不再需要用户手动复制聊天记录。分类器与AdapterResolver尚未接入Run创建事务（Phase 8：Manual Routing Service负责实际wiring）。
 
 ## Phase 8：Manual Routing Service与状态影响
 

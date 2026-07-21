@@ -139,6 +139,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
     threadEventService, agentRunner, developmentTraceService, runTraceRepo,
     validationWorkflowService, db,
+    runRepo, threadEventRepo, fileChangeRepo,
   );
 
   const staleRecoveryService = new StaleRecoveryService(

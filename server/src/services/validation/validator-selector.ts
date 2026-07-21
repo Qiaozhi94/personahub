@@ -5,6 +5,7 @@ import {
   type WorkflowTemplate,
 } from "@personahub/shared/types";
 import { ValidationBlockReason } from "@personahub/shared/types";
+import { hasCapability } from "../../repositories/agent-config.js";
 
 export class ValidatorSelectorError extends Error {
   constructor(
@@ -81,8 +82,12 @@ function sortDeterministic(configs: AdapterConfig[]): AdapterConfig[] {
 }
 
 function filterEligible(configs: AdapterConfig[]): AdapterConfig[] {
+  // T054: reuses the same hasCapability() the routing classifier and
+  // AdapterResolver rely on — a single source of truth for "does this
+  // adapter have capability X", never a second capability_tags.includes()
+  // copy that could silently drift.
   return configs.filter(
-    (c) => c.capability_tags.includes(AgentCapability.Validator) && c.status === "available",
+    (c) => hasCapability(c, AgentCapability.Validator) && c.status === "available",
   );
 }
 
