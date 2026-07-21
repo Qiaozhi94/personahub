@@ -8,6 +8,8 @@ F001（Workspace & Issue Foundation）和 F002（Agent Command Center）已完�
 
 F004（Autonomous Validation）已完成全部实现（T090-T095 final review 缺口修复）、自动化测试（server 969 + web 78 全绿，生产构建成功）与文档回写，并在本机真实 Codex CLI 0.144.5 完成核心 production-path 验收（validator envelope 双路径分流、完整 pass→Done→EvidenceSummary→Markdown、round-limit Blocked、same-origin true/false），状态为 `done`；T083 blocked 矩阵与 T084 restart 由确定性自动化套件覆盖。真实验收工具（env-gated `REAL_CODEX=1`，默认 skip）见 `server/tests/integration/real-codex-*.test.ts`。正式产品需求与后续设计/实现真相源见 `docs/personahub-prd.md`。
 
+F005（Manual Multi-Agent Routing，新增 Claude Code / OpenCode adapter 与手动路由）Phase 0-8（共 13 个 Phase，T001-T061）已完成：三 provider（Codex/Claude/OpenCode）真实 CLI probe 与 adapter 落地、schema v6、secret-safe DTO、`ManualRoutingService` 统一 Run 创建入口（purpose/role 分类、AdapterResolver、RunContextBuilder handoff 上下文、consult 状态边界与安全优先 escalation），typecheck、server（1225 测试）/web（78 测试）自动化测试和生产构建均通过，状态为 `in-progress`。剩余 Phase 9（Validator Grace 两阶段 dispatch 与手动/自动 validator 互斥）、Phase 10（HTTP API 收尾）、Phase 11-12（Adapter Settings/Composer/Thread/Inspector UI）、Phase 13（安全/端到端/文档回写）待续，详见 `docs/features/0.1/F005-multi-agent-manual-routing/tasks.md`。
+
 ## 当前结构
 
 - `docs/personahub-prd.md`：正式 PRD，产品判断以此为准。
