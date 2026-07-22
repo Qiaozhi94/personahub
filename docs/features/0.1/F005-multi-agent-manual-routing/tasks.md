@@ -332,12 +332,24 @@ updated: 2026-07-19
 
 ## Phase 11：Adapter Settings与Default UI
 
-- [ ] **T083**（`UX-002`, `AC-001`）：先添加apiClient/use-adapters测试，覆盖provider metadata、新fields、key write-only、default mutation和validate errors。
-- [ ] **T084**（`UX-002`）：扩展apiClient/hooks query keys和mutations。
-- [ ] **T085**（`FR-001`, `FR-002`, `UX-002`）：添加动态Adapter dialog测试，覆盖provider/auth切换、required fields、OAuth instructions、API key configured/replace/clear、capability选择（**只有 Implementation / Validator 两个复选框，不得出现 Consult**）和不回填key。
-- [ ] **T086**（`FR-001`, `FR-002`）：重构AdapterSettings provider-specific表单，必要时拆分`AdapterAuthFields`避免350行。
-- [ ] **T087**（`UX-002`, `FR-004`）：添加adapter list/default UI测试，覆盖provider/model/capability/auth/status/reason/default badge/set default/delete guard；status 必须同时展示 `last_checked_at`，文案表达"最近一次验证结果"而非实时状态（design §5.2）。
-- [ ] **T088**（`UX-002`, `FR-004`）：实现adapter cards/default action和honest approval capability note。
+- [x] **T083**（`UX-002`, `AC-001`）：先添加apiClient/use-adapters测试，覆盖provider metadata、新fields、key write-only、default mutation和validate errors。
+- [x] **T084**（`UX-002`）：扩展apiClient/hooks query keys和mutations。
+- [x] **T085**（`FR-001`, `FR-002`, `UX-002`）：添加动态Adapter dialog测试，覆盖provider/auth切换、required fields、OAuth instructions、API key configured/replace/clear、capability选择（**只有 Implementation / Validator 两个复选框，不得出现 Consult**）和不回填key。
+- [x] **T086**（`FR-001`, `FR-002`）：重构AdapterSettings provider-specific表单，必要时拆分`AdapterAuthFields`避免350行。
+- [x] **T087**（`UX-002`, `FR-004`）：添加adapter list/default UI测试，覆盖provider/model/capability/auth/status/reason/default badge/set default/delete guard；status 必须同时展示 `last_checked_at`，文案表达"最近一次验证结果"而非实时状态（design §5.2）。
+- [x] **T088**（`UX-002`, `FR-004`）：实现adapter cards/default action和honest approval capability note。
+
+  **2026-07-22 完成**：`apiClient.adapters`新增`getProviders()`（`GET /api/adapter-providers`）与`setDefault(projectId, adapterId | null)`（`PUT /api/projects/:project_id/default-adapter`）；`use-adapters.ts`新增`useAdapterProviders()`（`["adapter-providers"]`全局key，`staleTime: Infinity`——provider metadata是静态常量，不需要重新拉取）与`useSetDefaultAdapter(projectId)`。
+
+  `AdapterSettings.tsx`拆出新组件`AdapterAuthFields.tsx`承载design §10.1要求的级联表单：provider select（编辑时锁定，因为create/update service从不接受修改`cli_provider`）→ auth type select（仅当provider支持多种auth时才显示，Codex/Claude只有OAuth时直接隐藏该select）→ provider-specific字段（OpenCode无论OAuth/API-key模式都需要`model_provider`+`default_model`，与后端`validateAuthState()`的OpenCode-OAuth分支要求一致）。capability选择改为Implementation/Validator两个独立checkbox（可同时勾选），彻底替换掉F002/F004遗留的单选`role` select——旧的`primaryRole()`衍生逻辑和`role`字段发送全部移除。API key输入严格遵循design §4.2的三态语义：编辑时`has_api_key`为true显示"Configured ••••"+Replace/Clear按钮，从不回填原值；Replace显示`type="password"`输入框；Clear发送`api_key: null`而非空字符串。OAuth模式展示provider-specific登录命令（`codex login`/`claude login`/`opencode auth login`，均为公开CLI用法说明，非secret）配Copy按钮，文案明确"PersonaHub never reads or stores the token"，不声称完成登录。Provider select下方展示`capability_description`（来自`GET /api/adapter-providers`）作为honest capability note，例如OpenCode会如实显示"No pre-execution approval channel"。
+
+  Adapter列表行（`AdapterRow`）重写为两行布局：第一行显示name/Default badge（`is_default`，Star图标+`brand`variant）/capability badges（可能多个）/status badge/Revalidate/Delete；第二行显示provider/`default_model`/auth indicator（"OAuth"或"API key configured"/"API key not set"）/`last_checked_at`（design §5.2："checked <timestamp>"而非声称实时状态）/不可用时的`auth_status_message`/"Set as default"（仅对`status=available`且非当前default的adapter显示，调用`useSetDefaultAdapter`）。Delete guard的失败（如`ADAPTER_IN_USE`）此前静默失败，现改为在行内展示`toApiError(deleteAdapter.error).message`。
+
+  移除`web/src/f004-adapter-role.test.tsx`（`git rm`，其"Role selector"断言随旧UI一起废弃），改写`f002-ui-flows.test.tsx`中2处依赖`role`字段的既有断言为`capability_tags`。新增`f005-adapter-hooks.test.tsx`（T083/T084，13 tests，覆盖`getProviders`/`setDefault`底层调用+5个既有hook+2个新hook）与`f005-adapter-settings.test.tsx`（T085-T088，13 tests，覆盖provider/auth级联、capability checkbox无Consult、OAuth登录指令、API-key创建全字段、编辑时provider锁定与不回填key、清空key发送null、honest capability note、列表provider/model/capability/auth/status/last_checked_at展示、default badge与set-default action、不可用adapter不显示set-default、delete guard错误内联展示）。
+
+  `npm run typecheck`（server + web）、`npm test`（server 1277 + web 98 全绿）、`npm run build`（shared/server/web）全部通过。未做真实浏览器人工点击验证（本会话无浏览器/E2E工具可用）——以上均为自动化组件测试覆盖，验证的是交互逻辑正确性而非视觉呈现。
+
+**Checkpoint 11**：Adapter Settings UI完整支持三provider/auth/capability/default管理，secret write-only语义在UI层与后端一致。
 
 ## Phase 12：Composer、Thread与Inspector UI
 

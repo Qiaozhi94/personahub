@@ -27,6 +27,8 @@ export const apiClient = {
     update: vi.fn(),
     delete: vi.fn(),
     validate: vi.fn(),
+    getProviders: vi.fn().mockResolvedValue({ providers: [] }),
+    setDefault: vi.fn(),
   },
   runs: {
     create: vi.fn(),

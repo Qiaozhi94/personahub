@@ -1,7 +1,13 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { Trash2, RefreshCw, Cpu, AlertTriangle } from "lucide-react";
-import { AdapterStatus, CliProvider, AdapterAuthType, AgentCapability, type AdapterConfig, type AdapterConfigCreateInput } from "@personahub/shared";
-import { useAdapters, useCreateAdapter, useUpdateAdapter, useDeleteAdapter, useValidateAdapter } from "@/hooks/use-adapters";
+import { Trash2, RefreshCw, Cpu, AlertTriangle, Star } from "lucide-react";
+import {
+  AdapterStatus, CliProvider, AdapterAuthType, AgentCapability,
+  type AdapterConfig, type AdapterConfigCreateInput, type AdapterConfigUpdateInput,
+} from "@personahub/shared";
+import {
+  useAdapters, useCreateAdapter, useUpdateAdapter, useDeleteAdapter, useValidateAdapter,
+  useAdapterProviders, useSetDefaultAdapter,
+} from "@/hooks/use-adapters";
 import { toApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { AdapterAuthFields, type AdapterAuthFieldsValue } from "@/components/adapter/AdapterAuthFields";
 
 interface AdapterSettingsProps {
   projectId: string;
@@ -31,12 +38,18 @@ const STATUS_LABEL: Record<AdapterStatus, string> = {
   [AdapterStatus.Unknown]: "unknown",
 };
 
-// AdapterConfig no longer carries a `role` field (F005 design §4.1: the
-// deprecated agent_configs.role column never leaves the server). The UI's
-// primary-role label is computed client-side from capability_tags instead,
-// same precedence as the server's deriveRole().
-function primaryRole(capabilityTags: AgentCapability[]): "validator" | "implementation" {
-  return capabilityTags.includes(AgentCapability.Validator) ? "validator" : "implementation";
+const CAPABILITY_LABEL: Record<AgentCapability, string> = {
+  [AgentCapability.Implementation]: "implementation",
+  [AgentCapability.Validator]: "validator",
+};
+
+function formatCheckedAt(iso: string | null): string {
+  if (!iso) return "never validated";
+  try {
+    return `checked ${new Date(iso).toLocaleString()}`;
+  } catch {
+    return "checked at unknown time";
+  }
 }
 
 export function AdapterSettings({ projectId }: AdapterSettingsProps) {
@@ -98,7 +111,7 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
         </div>
       )}
 
-      {adapters.length > 0 && !adapters.some((a) => primaryRole(a.capability_tags) === "validator") ? (
+      {adapters.length > 0 && !adapters.some((a) => a.capability_tags.includes(AgentCapability.Validator)) ? (
         <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/5 px-2.5 py-1.5 text-[11px] text-warning">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           No validator configured — auto-validation requires at least one validator adapter
@@ -133,54 +146,96 @@ interface AdapterRowProps {
 function AdapterRow({ adapter, projectId, onEdit }: AdapterRowProps) {
   const deleteAdapter = useDeleteAdapter(projectId);
   const validateAdapter = useValidateAdapter(projectId);
-  const isBusy = deleteAdapter.isPending || validateAdapter.isPending;
+  const setDefaultAdapter = useSetDefaultAdapter(projectId);
+  const isBusy = deleteAdapter.isPending || validateAdapter.isPending || setDefaultAdapter.isPending;
+  const deleteErrorMessage = deleteAdapter.isError ? toApiError(deleteAdapter.error).message : null;
+
+  const authIndicator = adapter.auth_type === AdapterAuthType.OAuth
+    ? "OAuth"
+    : adapter.has_api_key ? "API key configured" : "API key not set";
 
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5",
+        "grid gap-1 rounded-md border border-border bg-background px-2.5 py-1.5",
         isBusy && "opacity-50",
       )}
     >
-      <Cpu className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <button
-        type="button"
-        className="min-w-0 flex-1 truncate text-left text-xs font-medium"
-        onClick={onEdit}
-        disabled={isBusy}
-      >
-        {adapter.name}
-      </button>
-      <Badge variant="secondary" className="shrink-0 text-[9px]">
-        {primaryRole(adapter.capability_tags)}
-      </Badge>
-      <Badge variant={STATUS_VARIANT[adapter.status]} className="shrink-0 text-[10px]">
-        {STATUS_LABEL[adapter.status]}
-      </Badge>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 shrink-0"
-        title="Revalidate"
-        disabled={isBusy}
-        onClick={() => validateAdapter.mutate(adapter.id)}
-      >
-        <RefreshCw className={cn("h-3 w-3", validateAdapter.isPending && "animate-spin")} />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
-        title="Delete"
-        disabled={isBusy}
-        onClick={() => {
-          if (window.confirm(`Delete adapter "${adapter.name}"?`)) {
-            deleteAdapter.mutate(adapter.id);
-          }
-        }}
-      >
-        <Trash2 className="h-3 w-3" />
-      </Button>
+      <div className="flex items-center gap-2">
+        <Cpu className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <button
+          type="button"
+          className="min-w-0 flex-1 truncate text-left text-xs font-medium"
+          onClick={onEdit}
+          disabled={isBusy}
+        >
+          {adapter.name}
+        </button>
+        {adapter.is_default ? (
+          <Badge variant="brand" className="shrink-0 gap-1 text-[9px]">
+            <Star className="h-2.5 w-2.5" /> Default
+          </Badge>
+        ) : null}
+        {adapter.capability_tags.map((cap) => (
+          <Badge key={cap} variant="secondary" className="shrink-0 text-[9px]">
+            {CAPABILITY_LABEL[cap]}
+          </Badge>
+        ))}
+        <Badge variant={STATUS_VARIANT[adapter.status]} className="shrink-0 text-[10px]">
+          {STATUS_LABEL[adapter.status]}
+        </Badge>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0"
+          title="Revalidate"
+          disabled={isBusy}
+          onClick={() => validateAdapter.mutate(adapter.id)}
+        >
+          <RefreshCw className={cn("h-3 w-3", validateAdapter.isPending && "animate-spin")} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
+          title="Delete"
+          disabled={isBusy}
+          onClick={() => {
+            if (window.confirm(`Delete adapter "${adapter.name}"?`)) {
+              deleteAdapter.mutate(adapter.id);
+            }
+          }}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+      <div className="flex items-center gap-2 pl-5 text-[10px] text-muted-foreground">
+        <span>{adapter.cli_provider}</span>
+        <span>·</span>
+        <span>{adapter.default_model ?? "no default model"}</span>
+        <span>·</span>
+        <span>{authIndicator}</span>
+        <span>·</span>
+        {/* design §5.2: status is a point-in-time probe result, not a live signal — always pair it with when it was last checked. */}
+        <span>{formatCheckedAt(adapter.last_checked_at)}</span>
+        {adapter.status === AdapterStatus.Unavailable && adapter.auth_status_message ? (
+          <span className="truncate text-destructive">{adapter.auth_status_message}</span>
+        ) : null}
+        {!adapter.is_default && adapter.status === AdapterStatus.Available ? (
+          <Button
+            variant="link"
+            size="sm"
+            className="ml-auto h-auto p-0 text-[10px]"
+            disabled={isBusy}
+            onClick={() => setDefaultAdapter.mutate(adapter.id)}
+          >
+            Set as default
+          </Button>
+        ) : null}
+      </div>
+      {deleteErrorMessage ? (
+        <p className="pl-5 text-[10px] text-destructive">{deleteErrorMessage}</p>
+      ) : null}
     </div>
   );
 }
@@ -192,22 +247,35 @@ interface AdapterDialogProps {
   editingAdapter: AdapterConfig | null;
 }
 
+function initialAuthFieldsValue(editingAdapter: AdapterConfig | null): AdapterAuthFieldsValue {
+  return {
+    cliProvider: (editingAdapter?.cli_provider as CliProvider) ?? CliProvider.Codex,
+    authType: editingAdapter?.auth_type ?? AdapterAuthType.OAuth,
+    modelProvider: editingAdapter?.model_provider ?? "",
+    defaultModel: editingAdapter?.default_model ?? "",
+    apiKeyInput: "",
+    apiKeyAction: "keep",
+    capabilityTags: editingAdapter?.capability_tags ?? [AgentCapability.Implementation],
+  };
+}
+
 function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: AdapterDialogProps) {
   const isEdit = editingAdapter !== null;
+
+  const { data: providersData } = useAdapterProviders();
+  const providers = providersData?.providers ?? [];
 
   const [name, setName] = useState(editingAdapter?.name ?? "");
   const [command, setCommand] = useState(editingAdapter?.command ?? "");
   const [argsInput, setArgsInput] = useState(editingAdapter?.args?.join(", ") ?? "");
-  const [defaultModel, setDefaultModel] = useState(editingAdapter?.default_model ?? "");
-  const [role, setRole] = useState(editingAdapter ? primaryRole(editingAdapter.capability_tags) : "implementation");
+  const [authFields, setAuthFields] = useState<AdapterAuthFieldsValue>(() => initialAuthFieldsValue(editingAdapter));
 
   useEffect(() => {
     if (open) {
       setName(editingAdapter?.name ?? "");
       setCommand(editingAdapter?.command ?? "");
       setArgsInput(editingAdapter?.args?.join(", ") ?? "");
-      setDefaultModel(editingAdapter?.default_model ?? "");
-      setRole(editingAdapter ? primaryRole(editingAdapter.capability_tags) : "implementation");
+      setAuthFields(initialAuthFieldsValue(editingAdapter));
     }
   }, [open, editingAdapter]);
 
@@ -221,8 +289,7 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
     setName(editingAdapter?.name ?? "");
     setCommand(editingAdapter?.command ?? "");
     setArgsInput(editingAdapter?.args?.join(", ") ?? "");
-    setDefaultModel(editingAdapter?.default_model ?? "");
-    setRole(editingAdapter ? primaryRole(editingAdapter.capability_tags) : "implementation");
+    setAuthFields(initialAuthFieldsValue(editingAdapter));
     createAdapter.reset();
     updateAdapter.reset();
   }
@@ -239,35 +306,37 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
       .map((a) => a.trim())
       .filter(Boolean);
 
+    // omitted preserves the existing key server-side; "clear" sends null;
+    // "replace" sends the new value — never send a stale/empty string.
+    const apiKeyPatch = authFields.apiKeyAction === "clear"
+      ? { api_key: null }
+      : authFields.apiKeyAction === "replace"
+        ? { api_key: authFields.apiKeyInput }
+        : {};
+
     if (isEdit && editingAdapter) {
-      updateAdapter.mutate(
-        {
-          adapterId: editingAdapter.id,
-          input: {
-            name: name || undefined,
-            role: role || undefined,
-            command: command || undefined,
-            args: args.length > 0 ? args : undefined,
-            default_model: defaultModel.trim() || undefined,
-          },
-        },
-        { onSuccess: handleOpenChange },
-      );
+      const input: AdapterConfigUpdateInput = {
+        name: name || undefined,
+        command: command || undefined,
+        args: args.length > 0 ? args : undefined,
+        default_model: authFields.defaultModel.trim() || undefined,
+        auth_type: authFields.authType,
+        model_provider: authFields.modelProvider.trim() || undefined,
+        capability_tags: authFields.capabilityTags,
+        ...apiKeyPatch,
+      };
+      updateAdapter.mutate({ adapterId: editingAdapter.id, input }, { onSuccess: handleOpenChange });
     } else {
       const input: AdapterConfigCreateInput = {
-        cli_provider: CliProvider.Codex,
-        auth_type: AdapterAuthType.OAuth,
+        cli_provider: authFields.cliProvider,
+        auth_type: authFields.authType,
         name,
-        role,
         command,
         args: args.length > 0 ? args : undefined,
-        default_model: defaultModel.trim() || undefined,
-        // F005 Phase 11 (T085-T086) replaces this single-role selector with a
-        // real Implementation/Validator capability picker; until then this
-        // dialog only creates Codex/OAuth adapters, so deriving a one-item
-        // capability list from the existing role field is behaviorally
-        // equivalent to F002, not a new feature.
-        capability_tags: role === "validator" ? [AgentCapability.Validator] : [AgentCapability.Implementation],
+        default_model: authFields.defaultModel.trim() || undefined,
+        model_provider: authFields.modelProvider.trim() || undefined,
+        api_key: authFields.authType === AdapterAuthType.ApiKey ? authFields.apiKeyInput || undefined : undefined,
+        capability_tags: authFields.capabilityTags,
       };
       createAdapter.mutate(input, { onSuccess: handleOpenChange });
     }
@@ -310,28 +379,15 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
               placeholder="exec, --model, gpt-5"
             />
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="adapter-model">Default model (optional)</Label>
-            <Input
-              id="adapter-model"
-              value={defaultModel}
-              onChange={(e) => setDefaultModel(e.target.value)}
-              placeholder="gpt-5"
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="adapter-role">Role</Label>
-            <select
-              id="adapter-role"
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label="Role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as "validator" | "implementation")}
-            >
-              <option value="implementation">implementation</option>
-              <option value="validator">validator</option>
-            </select>
-          </div>
+
+          <AdapterAuthFields
+            value={authFields}
+            onChange={setAuthFields}
+            providers={providers}
+            providerLocked={isEdit}
+            hasApiKey={editingAdapter?.has_api_key ?? false}
+          />
+
           {errorMessage ? <p className="text-xs text-destructive">{errorMessage}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handleOpenChange}>

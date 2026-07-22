@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ActorType,
+  AgentCapability,
   FailureReason,
   IssueStatus,
   RunStatus,
@@ -65,7 +66,7 @@ describe("F002 UI flows", () => {
         command: "codex",
         args: ["--quiet", "--json"],
         default_model: "gpt-5",
-        role: "implementation",
+        capability_tags: [AgentCapability.Implementation],
       }));
     });
   });
@@ -88,7 +89,6 @@ describe("F002 UI flows", () => {
         command: "codex-new",
         args: ["--quiet"],
         default_model: "gpt-5",
-        role: "implementation",
       }));
     });
   });

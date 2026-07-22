@@ -51,3 +51,22 @@ export function useValidateAdapter(projectId: string | null) {
     },
   });
 }
+
+/** Provider metadata is static/global (not Project-scoped) — a single shared cache entry. */
+export function useAdapterProviders() {
+  return useQuery({
+    queryKey: ["adapter-providers"],
+    queryFn: () => apiClient.adapters.getProviders(),
+    staleTime: Infinity,
+  });
+}
+
+export function useSetDefaultAdapter(projectId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (adapterId: string | null) => apiClient.adapters.setDefault(projectId!, adapterId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["adapters", projectId] });
+    },
+  });
+}

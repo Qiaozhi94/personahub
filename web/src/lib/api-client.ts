@@ -6,6 +6,8 @@ import {
   type AdapterConfigUpdateInput,
   type AdapterConfigUpdateResponse,
   type AdapterConfigValidateResponse,
+  type AdapterProvidersResponse,
+  type ProjectDefaultAdapterResponse,
   type ApiError,
   type EvidenceSummaryResponse,
   type IssueCreateInput,
@@ -115,6 +117,12 @@ export const apiClient = {
     validate: (adapterId: string) =>
       apiFetch<AdapterConfigValidateResponse>(`/adapters/${adapterId}/validate`, {
         method: "POST",
+      }),
+    getProviders: () => apiFetch<AdapterProvidersResponse>("/adapter-providers"),
+    setDefault: (projectId: string, adapterId: string | null) =>
+      apiFetch<ProjectDefaultAdapterResponse>(`/projects/${projectId}/default-adapter`, {
+        method: "PUT",
+        body: JSON.stringify({ adapter_id: adapterId }),
       }),
   },
   runs: {
