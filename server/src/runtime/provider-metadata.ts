@@ -1,4 +1,4 @@
-import { CliProvider, AdapterAuthType } from "@personahub/shared/types";
+import { CliProvider, AdapterAuthType, type AdapterProviderMetadata } from "@personahub/shared/types";
 
 /**
  * Centralized provider/auth-type and OpenCode model_provider->env var
@@ -53,4 +53,22 @@ export function isKnownModelProvider(modelProvider: string): boolean {
 
 export function isValidCliProvider(value: string): value is CliProvider {
   return value === CliProvider.Codex || value === CliProvider.ClaudeCode || value === CliProvider.OpenCode;
+}
+
+const ALL_PROVIDERS: CliProvider[] = [CliProvider.Codex, CliProvider.ClaudeCode, CliProvider.OpenCode];
+
+/**
+ * T080/design §9.4: drives the Adapter Settings form so the client never
+ * hardcodes a second copy of "which provider supports what". Only the
+ * OpenCode allowlist's provider keys are exposed — never the underlying env
+ * var names or any local secret/path.
+ */
+export function getProviderMetadata(): AdapterProviderMetadata[] {
+  return ALL_PROVIDERS.map((cli_provider) => ({
+    cli_provider,
+    supported_auth_types: PROVIDER_SUPPORTED_AUTH_TYPES[cli_provider],
+    default_command: PROVIDER_DEFAULT_COMMAND[cli_provider],
+    capability_description: PROVIDER_CAPABILITY_DESCRIPTION[cli_provider],
+    model_provider_allowlist: cli_provider === CliProvider.OpenCode ? Object.keys(OPENCODE_MODEL_PROVIDER_ENV) : [],
+  }));
 }

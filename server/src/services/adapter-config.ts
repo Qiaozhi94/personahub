@@ -191,9 +191,9 @@ export class AdapterConfigService {
 
     // First available adapter for a Project with no default becomes the
     // default automatically (design §4.1); later adapters never override an
-    // already-set default — only an explicit set-default call can do that.
+    // already-set default unless the caller explicitly asks via make_default.
     let defaultAdapterConfigId = project.default_adapter_config_id;
-    if (status === AS.Available && defaultAdapterConfigId === null) {
+    if (status === AS.Available && (defaultAdapterConfigId === null || input.make_default === true)) {
       const result = this.projectRepo.setDefaultAdapter(projectId, record.id);
       if (result.success) {
         defaultAdapterConfigId = record.id;
@@ -336,6 +336,42 @@ export class AdapterConfigService {
     const record = this.agentConfigRepo.getById(id)!;
     const project = this.projectRepo.getById(record.project_id);
     return toPublicAdapter(record, project?.default_adapter_config_id ?? null);
+  }
+
+  /**
+   * design §9.2: adapter must belong to the same Project and be Available;
+   * `adapterId: null` only succeeds when the Project has no adapters left —
+   * a Project with adapters is never allowed to sit in an implicit,
+   * unset-default state (that's a UX trap, not a valid configuration).
+   */
+  setDefault(projectId: string, adapterId: string | null): AdapterConfig | null {
+    const project = this.projectRepo.getById(projectId);
+    if (!project) {
+      throw new AppError(ErrorCode.PROJECT_NOT_FOUND, "Project not found.");
+    }
+
+    if (adapterId === null) {
+      const existingAdapters = this.agentConfigRepo.listByProject(projectId);
+      if (existingAdapters.length > 0) {
+        throw new AppError(
+          ErrorCode.ADAPTER_REQUIRED,
+          "Cannot clear the default adapter while the Project still has adapters. Set a different default first.",
+        );
+      }
+      this.projectRepo.clearDefaultAdapter(projectId);
+      return null;
+    }
+
+    const result = this.projectRepo.setDefaultAdapter(projectId, adapterId);
+    if (!result.success) {
+      if (result.reason === "unavailable") {
+        throw new AppError(ErrorCode.ADAPTER_UNAVAILABLE, "Adapter is not available.");
+      }
+      throw new AppError(ErrorCode.ADAPTER_NOT_FOUND, "Adapter config not found for this project.");
+    }
+
+    const record = this.agentConfigRepo.getById(adapterId)!;
+    return toPublicAdapter(record, adapterId);
   }
 
   delete(id: string): void {

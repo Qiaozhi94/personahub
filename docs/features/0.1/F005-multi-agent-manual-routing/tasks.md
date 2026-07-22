@@ -305,16 +305,30 @@ updated: 2026-07-19
 
 ## Phase 10：HTTP API与Secret泄漏回归
 
-- [ ] **T073**（`IR-001`, `AC-001`）：添加adapter create/update/list/validate route测试，覆盖三provider/auth、write-only key、switch/clear、masked状态和invalid组合。
-- [ ] **T074**（`IR-001`）：扩展adapter routes schema和service调用；任何response不得直接返回repository record。
-- [ ] **T075**（`FR-004`, `AC-002`）：添加default adapter PUT route测试，覆盖same-project/available/clear/404/409。
-- [ ] **T076**（`FR-004`）：实现default adapter route/api contract。
-- [ ] **T077**（`IR-002`, `FR-004`, `FR-007`）：添加Run create route测试，覆盖adapter omitted/default、explicit、purpose auto/consult、拒绝role/workflow/source字段和Done/Blocked。
-- [ ] **T078**（`IR-002`）：更新Run route/body schema和response。
-- [ ] **T079**（`IR-003`, `UX-003`）：扩展Run list/Issue read测试，确认purpose/role/source/context source可展示。
-- [ ] **T080**（`IR-001`, `UX-002`）：添加`GET /api/adapter-providers`测试并实现metadata route，内容来自共享/provider registry常量。
-- [ ] **T081**（`DR-001`, `NFR-001`）：运行跨所有API/events/errors/export/context的canary secret扫描集成测试，确保测试API key零泄漏。
-- [ ] **T082**（`TR-001` - `TR-003`）：扩展SSE replay测试，routing metadata完整、consult可辨识且无auth material。
+- [x] **T073**（`IR-001`, `AC-001`）：添加adapter create/update/list/validate route测试，覆盖三provider/auth、write-only key、switch/clear、masked状态和invalid组合。
+- [x] **T074**（`IR-001`）：扩展adapter routes schema和service调用；任何response不得直接返回repository record。
+- [x] **T075**（`FR-004`, `AC-002`）：添加default adapter PUT route测试，覆盖same-project/available/clear/404/409。
+- [x] **T076**（`FR-004`）：实现default adapter route/api contract。
+- [x] **T077**（`IR-002`, `FR-004`, `FR-007`）：添加Run create route测试，覆盖adapter omitted/default、explicit、purpose auto/consult、拒绝role/workflow/source字段和Done/Blocked。
+- [x] **T078**（`IR-002`）：更新Run route/body schema和response。
+- [x] **T079**（`IR-003`, `UX-003`）：扩展Run list/Issue read测试，确认purpose/role/source/context source可展示。
+- [x] **T080**（`IR-001`, `UX-002`）：添加`GET /api/adapter-providers`测试并实现metadata route，内容来自共享/provider registry常量。
+- [x] **T081**（`DR-001`, `NFR-001`）：运行跨所有API/events/errors/export/context的canary secret扫描集成测试，确保测试API key零泄漏。
+- [x] **T082**（`TR-001` - `TR-003`）：扩展SSE replay测试，routing metadata完整、consult可辨识且无auth material。
+
+  **2026-07-22 完成**：`server/src/api/routes/adapters.ts`从F002遗留的窄字段stub重写为完整暴露`AdapterConfigCreateInput`/`AdapterConfigUpdateInput`共享契约（`auth_type`/`model_provider`/`api_key`/`capability_tags`/`make_default`）；response始终经`toPublicAdapter()`构造，从不透出repository record。`AdapterConfigService.create()`补上`make_default`的实际消费（此前该字段只在接口里声明、从未被读取）：`make_default:true`可覆盖已存在的Project default，语义上与"首个可用adapter自动成为default"的隐式路径共用同一条`projectRepo.setDefaultAdapter()`调用。
+
+  新增`AdapterConfigService.setDefault(projectId, adapterId: string | null)`与`PUT /api/projects/:project_id/default-adapter`路由（design §9.2）：复用`ProjectRepository.setDefaultAdapter()`已有的`adapter_not_found`/`cross_project`/`unavailable`三态返回，映射为404 `ADAPTER_NOT_FOUND`（未找到或跨Project）/409 `ADAPTER_UNAVAILABLE`（非available）；`adapter_id:null`只在Project当前零adapter时允许清空（否则409 `ADAPTER_REQUIRED`——这枚此前只在`errors.ts`占位从未被使用的错误码，语义正是"有可用adapter的Project不能被清成隐式default"）。
+
+  新增`getProviderMetadata()`（`server/src/runtime/provider-metadata.ts`）与`GET /api/adapter-providers`路由：复用既有的`PROVIDER_SUPPORTED_AUTH_TYPES`/`PROVIDER_DEFAULT_COMMAND`/`PROVIDER_CAPABILITY_DESCRIPTION`/`OPENCODE_MODEL_PROVIDER_ENV`常量组装`AdapterProviderMetadata[]`（这些共享类型此前已在`shared/src/types/adapter.ts`定义但从未被任何路由消费）；OpenCode allowlist只暴露`model_provider`字符串本身（如`"openai"`），不暴露底层env var名称。
+
+  `POST /api/issues/:issue_id/runs`/`GET /api/issues/:issue_id/runs`/`GET /api/runs/:run_id`路由代码在Phase 8完成`ManualRoutingService`接入时已经就位（`adapter_id`可选、`purpose`支持`auto`/`ad_hoc_consult`），本阶段的实际工作是**补齐路由级别的HTTP测试**——此前这条路径只有service层（`ManualRoutingService.dispatch()`直接调用）的测试覆盖，从未有真正经`app.inject()`打到HTTP handler的测试。
+
+  **测试**：新增5个集成测试文件——`adapter-routes.test.ts`（T073/T075/T080，20 tests，覆盖三provider/auth组合创建、write-only key在create/list/patch/validate/error全路径不回显、oauth↔api_key切换与清空、default-adapter的same-project/available/clear/404/409、provider-metadata无secret）；`run-routes.test.ts`（T077-T079，10 tests，覆盖adapter省略解析default/显式/purpose auto与ad_hoc_consult/客户端伪造role-dispatch_source-workflow_step被忽略/Done-Blocked 409/list与get展示routing metadata）；`secret-canary-scan.test.ts`（T081，1 test，用可辨识canary API key跑通create→list→patch→validate→错误路径→Run派发→get/list→trace→evidence→export→provider-metadata全surface，断言canary从未出现在任何响应体）；`sse-replay-routing.test.ts`（T082，3 tests，复用T067既有的"经`ThreadEventService.listByThread()`测replay"约定，覆盖workflow-bound Run的routing metadata完整性、consult Run可辨识且不驱动状态、API-key adapter的replay事件不含api_key）。
+
+  `npm run typecheck`（server + web）、`npm test`（server 1277 + web 78 全绿）、`npm run build`（shared/server/web）全部通过。
+
+**Checkpoint 10**：secret canary扫描全绿，adapter/run/default-adapter/provider-metadata路由行为与共享契约一致。
 
 ## Phase 11：Adapter Settings与Default UI
 
