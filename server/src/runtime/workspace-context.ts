@@ -65,6 +65,21 @@ export function buildChildEnv(
   env["HOME"] = workspace.local_path;
   if (process.platform === "win32") {
     env["USERPROFILE"] = workspace.local_path;
+    // real-environment finding (2026-07-23): on Windows, OpenCode CLI hangs
+    // indefinitely (no output at all, not even a parse error) whenever
+    // HOMEDRIVE/HOMEPATH are left pointing at the real profile while
+    // USERPROFILE is redirected — i.e. an inconsistent "home" across the
+    // three Windows home-identity variables. Bisected against a real,
+    // authenticated OpenCode install (server/tests/helpers/opencode-
+    // protocol-fixtures.md) by varying each variable independently: any
+    // mismatch between HOMEDRIVE+HOMEPATH and USERPROFILE reproduces the
+    // hang every time; keeping all three consistent never hangs (fails
+    // fast instead, in ~3s, when the provider then can't find its auth).
+    // Node's os.homedir()/other tools reconstruct home from HOMEDRIVE+
+    // HOMEPATH as a fallback to USERPROFILE, so both must be redirected
+    // together, not just USERPROFILE.
+    env["HOMEDRIVE"] = workspace.local_path.slice(0, 2);
+    env["HOMEPATH"] = workspace.local_path.slice(2);
   }
 
   // design §5.4: only the auth directory owned by THIS provider is exposed —
@@ -80,8 +95,19 @@ export function buildChildEnv(
         env["CLAUDE_CONFIG_DIR"] = originalHome + SEP + ".claude";
         break;
       case CliProvider.OpenCode:
-        env["XDG_DATA_HOME"] = originalHome + SEP + ".local" + SEP + "share";
-        env["XDG_CONFIG_HOME"] = originalHome + SEP + ".config";
+        // real-environment finding (2026-07-23): pointing XDG_DATA_HOME/
+        // XDG_CONFIG_HOME at the real auth store — the original design
+        // intent, mirroring CODEX_HOME/CLAUDE_CONFIG_DIR above — reliably
+        // hangs OpenCode on Windows even with HOMEDRIVE/HOMEPATH/
+        // USERPROFILE fully consistent (verified: dropping this override
+        // is what turns the hang into a fast, clean "not authenticated"
+        // failure). OpenCode's own env-var handling doesn't tolerate a
+        // home directory that differs from where XDG says its data lives,
+        // unlike Codex/Claude's directory-scoped overrides. There is
+        // currently no known way to give OpenCode's OAuth mode access to
+        // its real credentials under credential isolation on Windows —
+        // api_key mode (which injects the key directly, no file lookup)
+        // is unaffected and is the reliable choice for isolated workspaces.
         break;
     }
   }

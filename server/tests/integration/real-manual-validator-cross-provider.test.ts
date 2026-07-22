@@ -18,6 +18,25 @@ import { ClaudeCodeAdapter } from "../../src/runtime/adapters/claude-code-adapte
  * have exhaustive deterministic race coverage in validation-claim-race.test.ts;
  * this test's unique real-world contribution is proving a REAL adapter can
  * actually win the slot and produce a correct validator envelope end to end).
+ *
+ * Root-cause fix (2026-07-23), two rounds: earlier real-CLI runs of this
+ * exact test converged to Blocked instead of Done, for two distinct
+ * reasons — context-builder.ts's JSON_SCHEMA_CONTRACT never actually
+ * stated the required `event:<id>` / `file-change-set:<id>` evidence_ref
+ * grammar (only that it's `"string"`), so real Claude cited evidence as
+ * `file:path#Lline` (natural-feeling, but rejected as invalid grammar);
+ * separately, the strict result-parser.ts rejects any final message that
+ * isn't *exclusively* the JSON object (a single leading sentence of
+ * commentary is enough to make it "unparsable"), and Claude sometimes adds
+ * exactly that kind of brief lead-in. Codex happened to comply with both
+ * unstated expectations anyway; Claude didn't. Fixed by making both
+ * requirements explicit in the prompt (named prefixes + a concrete
+ * counter-example for evidence_refs; an explicit "nothing else, not even
+ * one sentence" instruction for the final message). Verified across 3
+ * consecutive real runs after the second prompt fix (previously Blocked in
+ * ~2 of the 5 total attempts across both prompt versions) — LLM output-
+ * format compliance can never be mathematically guaranteed, so this is a
+ * substantial, verified reliability improvement, not an absolute guarantee.
  * Must converge to Done with same_origin_validation=false (different
  * provider from the Codex implementation) and validator_identity=claude-code.
  */
@@ -85,14 +104,12 @@ describe.skipIf(!REAL)("T103: real cross-provider validator (Codex implementatio
         console.log("[T103] no summary; blocker:", fresh.blocked_reason_code, "-", fresh.blocked_reason_message);
       }
 
-      expect([IssueStatus.Done, IssueStatus.Blocked]).toContain(status);
-      if (status === IssueStatus.Done) {
-        expect(summary).toBeDefined();
-        expect(summary!.validation_result).toBe("passed");
-        expect(summary!.validator_identity.cli_provider).toBe(CliProvider.ClaudeCode);
-        expect(summary!.implementation_identity.cli_provider).toBe("codex");
-        expect(summary!.same_origin_validation).toBe(false);
-      }
+      expect(status).toBe(IssueStatus.Done);
+      expect(summary).toBeDefined();
+      expect(summary!.validation_result).toBe("passed");
+      expect(summary!.validator_identity.cli_provider).toBe(CliProvider.ClaudeCode);
+      expect(summary!.implementation_identity.cli_provider).toBe("codex");
+      expect(summary!.same_origin_validation).toBe(false);
     } finally {
       delete process.env.FAKE_CODEX_MODE;
       disposeTestServices(services);

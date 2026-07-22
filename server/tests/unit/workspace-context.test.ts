@@ -56,6 +56,15 @@ describe("WorkspaceContext - Credential Isolation", () => {
       const env = buildChildEnv({ push_credentials_enabled: false, local_path: "/fake/path" });
       expect(env.GIT_ASKPASS).toBe("");
     });
+
+    describe.skipIf(process.platform !== "win32")("Windows HOMEDRIVE/HOMEPATH consistency (real-environment finding, 2026-07-23)", () => {
+      it("redirects HOMEDRIVE/HOMEPATH to match the isolated USERPROFILE, not left pointing at the real profile", () => {
+        const env = buildChildEnv({ push_credentials_enabled: false, local_path: "C:\\Users\\Test\\workspace" });
+        expect(env.USERPROFILE).toBe("C:\\Users\\Test\\workspace");
+        expect(env.HOMEDRIVE).toBe("C:");
+        expect(env.HOMEPATH).toBe("\\Users\\Test\\workspace");
+      });
+    });
   });
 
   describe("buildChildEnv with push_credentials_enabled=true", () => {
@@ -113,24 +122,21 @@ describe("WorkspaceContext - Credential Isolation", () => {
       expect(env.CLAUDE_CONFIG_DIR).toMatch(/\.claude$/);
     });
 
-    it("exposes both XDG_DATA_HOME and XDG_CONFIG_HOME for opencode/oauth, not Codex/Claude variables", () => {
+    it("exposes no XDG_DATA_HOME/XDG_CONFIG_HOME for opencode/oauth under credential isolation (real-environment finding, 2026-07-23)", () => {
+      // Unlike CODEX_HOME/CLAUDE_CONFIG_DIR, pointing XDG_DATA_HOME/
+      // XDG_CONFIG_HOME at the real auth store reliably hung real OpenCode
+      // on Windows even with HOMEDRIVE/HOMEPATH/USERPROFILE fully
+      // consistent — there is currently no known safe way to give
+      // OpenCode's OAuth mode access to its real credentials under
+      // isolation, so this override was removed rather than left half-working.
       const env = buildChildEnv(
         { push_credentials_enabled: false, local_path: "/fake/path" },
         { cli_provider: CliProvider.OpenCode, auth_type: AdapterAuthType.OAuth },
       );
-      expect(env.XDG_DATA_HOME).toBeTruthy();
-      expect(env.XDG_CONFIG_HOME).toBeTruthy();
+      expect(env.XDG_DATA_HOME).toBeUndefined();
+      expect(env.XDG_CONFIG_HOME).toBeUndefined();
       expect(env.CODEX_HOME).toBeUndefined();
       expect(env.CLAUDE_CONFIG_DIR).toBeUndefined();
-    });
-
-    it("XDG_DATA_HOME/XDG_CONFIG_HOME point at real home subpaths, not the workspace path", () => {
-      const env = buildChildEnv(
-        { push_credentials_enabled: false, local_path: "/fake/path" },
-        { cli_provider: CliProvider.OpenCode, auth_type: AdapterAuthType.OAuth },
-      );
-      expect(env.XDG_DATA_HOME).not.toContain("/fake/path");
-      expect(env.XDG_CONFIG_HOME).not.toContain("/fake/path");
     });
 
     it("OpenCode API-key mode exposes no home auth directory at all — the key itself is injected separately by AuthMaterial", () => {
