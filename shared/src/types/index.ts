@@ -44,6 +44,8 @@ export interface Issue {
   validation_round_count: number;
   blocked_reason_code: ValidationBlockReason | string | null;
   blocked_reason_message: string | null;
+  /** F005 §8.1: set in Phase A (implementation completed), cleared by the Phase B winner. Non-null means the grace window is still open. */
+  validation_dispatch_due_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -144,6 +146,8 @@ export enum ThreadEventType {
   FileChangeSummary = "file.change_summary",
   FileChangeScanFailed = "file.change_scan_failed",
   HandoffCreated = "handoff.created",
+  /** F005 §8.1: Phase A — implementation completed, no validator Run exists yet (payload carries no validator identity). Not to be confused with ValidationRequested, which stays validator-bound. */
+  ValidationDispatchPending = "validation.dispatch_pending",
   ValidationRequested = "validation.requested",
   ValidationFinding = "validation.finding",
   ValidationPassed = "validation.passed",

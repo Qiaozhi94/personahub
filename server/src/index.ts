@@ -34,6 +34,7 @@ import { ValidationRecoveryService } from "./services/validation/recovery-servic
 import { ValidationWorkflowService } from "./services/validation/workflow-service.js";
 import { RunDispatchService } from "./services/run-dispatch.js";
 import { ManualRoutingService } from "./services/manual-routing-service.js";
+import { ValidationDispatchScheduler } from "./services/validation-dispatch-scheduler.js";
 import { EventBus } from "./runtime/event-bus.js";
 import { AgentAdapterRegistry } from "./runtime/adapter-registry.js";
 import { AgentRunner } from "./runtime/agent-runner.js";
@@ -122,7 +123,7 @@ async function main() {
 
   const manualRoutingService = new ManualRoutingService(
     runRepo, issueRepo, workspaceRepo, agentConfigRepo, projectRepo,
-    threadEventRepo, threadEventService, db,
+    threadEventRepo, threadEventService, db, validationWorkflowService,
   );
 
   const runDispatchService = new RunDispatchService(
@@ -146,6 +147,10 @@ async function main() {
     threadEventRepo, agentConfigRepo, db, threadEventService,
   );
   await validationRecoveryService.reconcile();
+
+  const validationDispatchScheduler = new ValidationDispatchScheduler(
+    issueRepo, validationWorkflowService,
+  );
 
   const allWorkspaces = workspaceRepo.listAll();
   for (const ws of allWorkspaces) {
@@ -200,6 +205,7 @@ async function main() {
   });
 
   app.addHook("onClose", async () => {
+    validationDispatchScheduler.stop();
     await agentRunner.shutdown();
   });
 
@@ -214,6 +220,7 @@ async function main() {
   try {
     await app.listen({ port: PORT, host: HOST });
     app.log.info(`PersonaHub server listening on port ${PORT}`);
+    validationDispatchScheduler.start();
   } catch (err) {
     app.log.error(err);
     process.exit(1);

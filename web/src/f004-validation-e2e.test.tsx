@@ -53,6 +53,7 @@ const baseIssue: IssueWithThread = {
   validation_round_count: 0,
   blocked_reason_code: null,
   blocked_reason_message: null,
+  validation_dispatch_due_at: null,
   created_at: TS,
   updated_at: TS,
   primary_thread: {

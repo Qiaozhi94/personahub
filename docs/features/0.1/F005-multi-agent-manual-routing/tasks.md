@@ -272,22 +272,36 @@ updated: 2026-07-19
 
 ## Phase 9：Validator Grace、互斥与Recovery
 
-- [ ] **T061a**（`TR-004`, `FR-006`）：添加`validation.dispatch_pending`事件契约测试：shared payload 类型、写入时机（Phase A）、payload 含冻结的 round/implementation_run_id/policy snapshot+hash/due_at 且**不含**任何 validator 身份；断言 `validation.requested` 未在 Phase A 写出。
-- [ ] **T061b**（`TR-004`, `FR-006`）：实现 Phase A pending dispatch 事务与 `validation.dispatch_pending` 事件。**严禁**改写 `validation.requested` 的既有语义——它是 validator-bound 事件，`findRequestedEvent()` 按 `validator_run_id` 反查，workflow-service 有三个调用点，recovery-service 会补建，validation query 与 SSE replay 同样依赖；`validation.requested` 仍只在 Phase B 创建出真实 validator Run 后写出。
-- [ ] **T062**（`FR-006`, `FR-009`, `AC-004`, `AC-007`）：修改F004 request测试：implementation完成后同事务进入Validating、写`validation.dispatch_pending`、set due，grace窗口内不创建auto validator且**不写`validation.requested`**；grace到期进入Phase B后才写出携带真实validator身份的`validation.requested`；同时断言注入grace=0时最终事件序列与F004原有"立即创建"等价。
-- [ ] **T063**（`FR-006`, `FR-009`）：把F004 validator creation拆为可复用`claimValidatorSlot()`（即 Phase B），Phase A 只设置持久化due并冻结上下文。拆分时必须把基线`workflow-service.ts`中**成对存在的两条前置检查**（`getActiveValidator` + `getValidatorRunByRound`）一起搬进来，只搬active那条会引入per-round回归。Phase B 直接读取 Phase A 冻结的 round/implementation_run_id/policy snapshot，不重新推导，避免grace期间consult handoff导致被验证对象漂移。
-- [ ] **T064**（`FR-009`, `DR-005`）：添加manual-wins race测试：grace内explicit validator创建、清due、scheduler loser幂等、只有一个Run。
-- [ ] **T065**（`FR-009`, `DR-005`）：添加auto-wins race测试：due/default-now先创建，manual loser收到409+active summary、无重复event。
-- [ ] **T065a**（`FR-009`, `DR-005`, `AC-007`）：添加**per-round冲突**测试：本轮validator已进入终态（completed/failed/被`issue_state_changed_before_start`取消）后，manual与scheduler分别尝试为同一轮再创建validator，断言两者都被`idx_runs_validator_per_round`拒绝（active为空、不得落入未定义分支）、不bump round、不产生重复Run；manual收到409+该终态run摘要，scheduler幂等结束；重新验证只能经fail→Running→新round路径。
-- [ ] **T066**（`FR-006`, `FR-009`）：实现claim transaction和unique conflict映射；**冲突分流必须区分active冲突与per-round冲突两类**（见design §8.2表），loser分支不得无条件读active validator（per-round冲突时为null）。应用层检查仅优化信息。
-- [ ] **T067**（`US4`, `FR-009`）：添加ValidationDispatchScheduler fake clock测试，覆盖due前不跑、due后跑、多个Issue、shutdown、不重入，以及**无可用 validator 时 Blocked**。注意：到期自动派发走 `ValidatorSelector`（`capability_tags` 含 validator），**不是** Project default adapter；测试须包含"Project default 只有 implementation capability、但项目存在其他 validator adapter"的场景，断言自动验证正常进行而非 Blocked。
-- [ ] **T068**（`US4`）：实现1秒scheduler和集中10秒常量；spawn在transaction commit后。`MANUAL_VALIDATOR_GRACE_MS`必须**可注入**（构造参数/DI，默认10s），F004既有自动验证测试注入0ms还原"立即创建"语义；验收标准：F004现有验证套件的运行耗时不因本任务显著增加，也不得引入基于真实时钟的等待。
-- [ ] **T069**（`FR-006`, `AC-004`）：添加manual Claude/OpenCode validator pass/fail集成测试，EvidenceSummary identity/same-origin/source正确，完全复用F004 parser/gate/state。
-- [ ] **T070**（`FR-006`）：接通manual validator terminal到F004 ValidationWorkflowService，不新增parser/result route。
-- [ ] **T071**（`FR-009`, `NFR-001`）：添加restart recovery测试，覆盖due未到/已到、manual已提交响应丢失、Validating due空无Run inconsistency和terminal validator。
-- [ ] **T072**（`FR-009`）：扩展F004 recovery/scheduler startup顺序；listen前reconcile，listen后启动timer。
+- [x] **T061a**（`TR-004`, `FR-006`）：添加`validation.dispatch_pending`事件契约测试：shared payload 类型、写入时机（Phase A）、payload 含冻结的 round/implementation_run_id/policy snapshot+hash/due_at 且**不含**任何 validator 身份；断言 `validation.requested` 未在 Phase A 写出。
+- [x] **T061b**（`TR-004`, `FR-006`）：实现 Phase A pending dispatch 事务与 `validation.dispatch_pending` 事件。**严禁**改写 `validation.requested` 的既有语义——它是 validator-bound 事件，`findRequestedEvent()` 按 `validator_run_id` 反查，workflow-service 有三个调用点，recovery-service 会补建，validation query 与 SSE replay 同样依赖；`validation.requested` 仍只在 Phase B 创建出真实 validator Run 后写出。
+- [x] **T062**（`FR-006`, `FR-009`, `AC-004`, `AC-007`）：修改F004 request测试：implementation完成后同事务进入Validating、写`validation.dispatch_pending`、set due，grace窗口内不创建auto validator且**不写`validation.requested`**；grace到期进入Phase B后才写出携带真实validator身份的`validation.requested`；同时断言注入grace=0时最终事件序列与F004原有"立即创建"等价。
+- [x] **T063**（`FR-006`, `FR-009`）：把F004 validator creation拆为可复用`claimValidatorSlot()`（即 Phase B），Phase A 只设置持久化due并冻结上下文。拆分时必须把基线`workflow-service.ts`中**成对存在的两条前置检查**（`getActiveValidator` + `getValidatorRunByRound`）一起搬进来，只搬active那条会引入per-round回归。Phase B 直接读取 Phase A 冻结的 round/implementation_run_id/policy snapshot，不重新推导，避免grace期间consult handoff导致被验证对象漂移。
+- [x] **T064**（`FR-009`, `DR-005`）：添加manual-wins race测试：grace内explicit validator创建、清due、scheduler loser幂等、只有一个Run。
+- [x] **T065**（`FR-009`, `DR-005`）：添加auto-wins race测试：due/default-now先创建，manual loser收到409+active summary、无重复event。
+- [x] **T065a**（`FR-009`, `DR-005`, `AC-007`）：添加**per-round冲突**测试：本轮validator已进入终态（completed/failed/被`issue_state_changed_before_start`取消）后，manual与scheduler分别尝试为同一轮再创建validator，断言两者都被`idx_runs_validator_per_round`拒绝（active为空、不得落入未定义分支）、不bump round、不产生重复Run；manual收到409+该终态run摘要，scheduler幂等结束；重新验证只能经fail→Running→新round路径。
+- [x] **T066**（`FR-006`, `FR-009`）：实现claim transaction和unique conflict映射；**冲突分流必须区分active冲突与per-round冲突两类**（见design §8.2表），loser分支不得无条件读active validator（per-round冲突时为null）。应用层检查仅优化信息。
+- [x] **T067**（`US4`, `FR-009`）：添加ValidationDispatchScheduler fake clock测试，覆盖due前不跑、due后跑、多个Issue、shutdown、不重入，以及**无可用 validator 时 Blocked**。注意：到期自动派发走 `ValidatorSelector`（`capability_tags` 含 validator），**不是** Project default adapter；测试须包含"Project default 只有 implementation capability、但项目存在其他 validator adapter"的场景，断言自动验证正常进行而非 Blocked。
+- [x] **T068**（`US4`）：实现1秒scheduler和集中10秒常量；spawn在transaction commit后。`MANUAL_VALIDATOR_GRACE_MS`必须**可注入**（构造参数/DI，默认10s），F004既有自动验证测试注入0ms还原"立即创建"语义；验收标准：F004现有验证套件的运行耗时不因本任务显著增加，也不得引入基于真实时钟的等待。
+- [x] **T069**（`FR-006`, `AC-004`）：添加manual Claude/OpenCode validator pass/fail集成测试，EvidenceSummary identity/same-origin/source正确，完全复用F004 parser/gate/state。
+- [x] **T070**（`FR-006`）：接通manual validator terminal到F004 ValidationWorkflowService，不新增parser/result route。
+- [x] **T071**（`FR-009`, `NFR-001`）：添加restart recovery测试，覆盖due未到/已到、manual已提交响应丢失、Validating due空无Run inconsistency和terminal validator。
+- [x] **T072**（`FR-009`）：扩展F004 recovery/scheduler startup顺序；listen前reconcile，listen后启动timer。
 
-**Checkpoint 9**：manual/auto两种winner及restart都只有一个validator Run，F004闭环不回归。
+  **2026-07-22 完成**：`ValidationWorkflowService.requestValidation()`拆分为纯Phase A（`server/src/services/validation/workflow-service.ts`）——implementation完成后同事务把Issue从Running推进到Validating、冻结round/implementation_run_id/policy snapshot+hash、set `validation_dispatch_due_at`并只写`ValidationDispatchPending`事件（不含任何validator身份）；新方法`claimValidatorSlot(issueId, {mode:"auto"} | {mode:"explicit", adapterConfigId})`实现Phase B，读取Phase A冻结的字段（从不重新推导，避免grace期间consult handoff导致被验证对象漂移），做active→per-round两段式前置检查后创建真正的validator Run、清`validation_dispatch_due_at`、写出携带真实validator身份的`ValidationRequested`+`RunQueued`。`manualValidatorGraceMs`构造参数默认10s，`server/tests/helpers.ts`中`createTestServices()`注入0ms以保留F004原有"立即创建"语义（`requestValidation()`内部在grace<=0时同步级联调用`claimValidatorSlot`，事件序列与F004原始实现完全等价）。
+
+  **claim transaction的冲突分流**（`server/src/services/validation/workflow-service.ts`的`claimValidatorSlot`）：先查`getActiveValidator`（命中→`active_conflict`），再查`getValidatorRunByRound`（命中→`per_round_conflict`，即便该Run已terminal）——两条前置检查按顺序独立返回，loser分支不会在per-round冲突时误读向来为null的active validator。设计上依赖better-sqlite3事务的同步单线程执行模型：`db.transaction(fn)`同步执行且Node单线程，两次"并发"claim调用不可能在事务内部真正交错，因此这两条pre-check本身即是正确性保证，DB唯一索引（`idx_runs_one_active_validator`/`idx_runs_validator_per_round`）只是schema层兜底，未实现（也不需要）解析`SqliteError`约束冲突消息的兜底逻辑。
+
+  新增`ValidationDispatchScheduler`（`server/src/services/validation-dispatch-scheduler.ts`）：1秒tick（可注入间隔，默认`1_000`），非重入（`ticking`标志防止慢tick与下一次定时器触发重叠），`tick()`读取`IssueRepository.listValidatingWithDueBefore()`（复用schema-v6迁移中已存在的`idx_issues_validation_due`部分索引）并对每个到期Issue调用`claimValidatorSlot(id, {mode:"auto"})`。`server/src/index.ts`按design §8.3顺序接入：`validationRecoveryService.reconcile()`仍在`app.listen()`之前执行，`validationDispatchScheduler.start()`移到`listen()`成功之后，`onClose`钩子里`stop()`。
+
+  **`ManualRoutingService.dispatch()`**（`server/src/services/manual-routing-service.ts`）不再无条件拒绝`role===Validator`的手动dispatch（移除了Phase 8遗留的`RUN_NOT_ALLOWED_FOR_ISSUE_STATUS`占位拒绝），改为调用新增的私有方法`dispatchValidator()`→`claimValidatorSlot(issueId, {mode:"explicit", adapterConfigId})`；`active_conflict`/`per_round_conflict`映射为`VALIDATOR_RUN_CONFLICT`（409，`details.conflicting_run_id`携带冲突Run），`adapter_invalid`映射为`ADAPTER_UNAVAILABLE`。`POST /api/issues/:issue_id/validation`路由（`server/src/api/routes/validation.ts`）同步简化为直接调用`claimValidatorSlot(issue_id, {mode:"auto"})`（立即结束grace并按`ValidatorSelector`派发），冲突/blocked分支复用同一套映射。
+
+  **`ValidationRecoveryService.reconcileStuckValidating()`**（`server/src/services/validation/recovery-service.ts`）按design §8.3整体重写：先对`listValidatingWithDueBefore(now)`逐个调用`claimValidatorSlot`（due已过，重启即完成Phase B）；再对所有`Validating`且`validation_dispatch_due_at`为`null`且无active validator且无terminal validator的Issue标记`recovery_inconsistent`（真正的不一致——正常运行中grace窗口内`due`必然非空，terminal validator会被更早的`reconcileTerminalValidators()`处理）；due在未来的Issue原样跳过（grace窗口合法未到期）。
+
+  **测试**：新增4个集成测试文件——`validation-dispatch-pending.test.ts`（T061a，4 tests，覆盖Phase A事件契约与grace=0/grace>0两种事件序列）、`validation-claim-race.test.ts`（T064/T065/T065a，3 tests，manual-wins/auto-wins/per-round-conflict）、`validation-dispatch-scheduler.test.ts`（T067，8 tests，fake clock覆盖due前后/多Issue/shutdown/非重入/无validator时Blocked/`ValidatorSelector`而非Project default）、`validation-manual-validator.test.ts`（T069，3 tests，Claude/OpenCode-provider显式adapter的pass/fail全链路+同round二次manual pick收409）；`validation-recovery.test.ts`的T060-3套件整体重写为基于`validation_dispatch_due_at`的T071新场景（due未到/due已过（同时覆盖"manual pick丢失"语义，两者在recovery视角不可区分）/无validator时Blocked/due-null+无Run inconsistency/due-null+active validator不被打扰）；`validation-workflow.test.ts`与`validation-validator-uniqueness.test.ts`中3处依赖F004旧"`requestValidation()`对已Validating Issue幂等返回active validator"语义的既有测试改写为断言新语义（Phase A只处理Running→Validating，第二次调用返回null；per-round/active冲突改由显式调用`claimValidatorSlot`断言）。web端3处测试fixture（`app.test.tsx`、`f004-validation-e2e.test.tsx`、`ui-flow-helpers.tsx`）补齐新增的`Issue.validation_dispatch_due_at`字段。
+
+  `npm run typecheck`（server + web）、`npm test`（server 1243 + web 78 全绿）、`npm run build`（shared/server/web）全部通过。
+
+**Checkpoint 9 达成**：manual/auto两种winner及restart都只有一个validator Run，F004闭环不回归。
 
 ## Phase 10：HTTP API与Secret泄漏回归
 

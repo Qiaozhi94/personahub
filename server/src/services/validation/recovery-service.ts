@@ -5,7 +5,7 @@ import type { ThreadEventRepository } from "../../repositories/thread-event.js";
 import type { AgentConfigRepository } from "../../repositories/agent-config.js";
 import type { ValidationWorkflowService } from "./workflow-service.js";
 import type { ThreadEventService } from "../thread-event.js";
-import type { Issue, ThreadEvent, ValidationPolicySnapshot } from "@personahub/shared/types";
+import type { Issue, ThreadEvent } from "@personahub/shared/types";
 import { IssueStatus, RunRole, ThreadEventType, ActorType, ValidationBlockReason } from "@personahub/shared/types";
 
 export class ValidationRecoveryService {
@@ -46,32 +46,34 @@ export class ValidationRecoveryService {
     }
   }
 
+  /**
+   * design §8.3 restart recovery: due already passed -> claim immediately
+   * (Phase B); due still in the future -> leave it, the grace window is
+   * legitimately still open and the scheduler will pick it up; due is NULL
+   * with no active/terminal validator -> genuinely inconsistent (can only
+   * happen if the process crashed between Phase A commit and the
+   * dispatch_due_at write, which the same transaction rules out in
+   * practice, or if a pre-F005 DB is being recovered).
+   */
   private reconcileStuckValidating(): void {
-    const stuckIssues = this.issueRepo.listValidatingWithoutActiveValidator();
-    for (const issue of stuckIssues) {
+    const now = new Date().toISOString();
+    const dueIssues = this.issueRepo.listValidatingWithDueBefore(now);
+    for (const issue of dueIssues) {
       if (!issue.primary_thread_id) continue;
+      this.validationWorkflowService.claimValidatorSlot(issue.id, { mode: "auto" });
+    }
+
+    const validatingIssues = this.issueRepo.listByStatus(IssueStatus.Validating);
+    for (const issue of validatingIssues) {
+      if (!issue.primary_thread_id) continue;
+      if (issue.validation_dispatch_due_at !== null) continue;
+      if (this.runRepo.getActiveValidator(issue.id)) continue;
       if (this.findLatestTerminalValidator(issue.id)) continue;
-      const requestedEvent = this.threadEventRepo.getLatestByTypeAndPayload(
-        issue.primary_thread_id!,
-        ThreadEventType.ValidationRequested,
-        "issue_id",
-        issue.id,
+      this.blockIssueInRecovery(
+        issue,
+        ValidationBlockReason.RecoveryInconsistent,
+        "Validating issue has no dispatch due date, no active validator, and no terminal validator",
       );
-      if (requestedEvent) {
-        const implRunId = requestedEvent.payload_json.implementation_run_id as string;
-        const frozenSnapshot = requestedEvent.payload_json.policy_snapshot as ValidationPolicySnapshot;
-        const frozenHash = requestedEvent.payload_json.policy_snapshot_hash as string;
-        const frozenValidatorConfigId = requestedEvent.payload_json.validator_adapter_config_id as string | undefined;
-        if (frozenSnapshot && frozenHash) {
-          this.validationWorkflowService.rebuildStuckValidation(
-            issue.id, implRunId, frozenSnapshot, frozenHash, frozenValidatorConfigId,
-          );
-        } else {
-          this.blockIssueInRecovery(issue, ValidationBlockReason.RecoveryInconsistent, "Original validation.requested missing frozen policy snapshot");
-        }
-      } else {
-        this.blockIssueInRecovery(issue, ValidationBlockReason.RecoveryInconsistent, "No validation.requested event found during recovery for Validating issue");
-      }
     }
   }
 

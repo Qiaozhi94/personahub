@@ -36,6 +36,7 @@ import { ValidationTraceService } from "../src/services/validation-trace.js";
 import { ValidationQueryService } from "../src/services/validation/query.js";
 import { ValidationRecoveryActionService } from "../src/services/validation/recovery-action.js";
 import { ValidationWorkflowService } from "../src/services/validation/workflow-service.js";
+import { ValidationDispatchScheduler } from "../src/services/validation-dispatch-scheduler.js";
 import { TraceQueryService } from "../src/services/trace-query.js";
 import { TraceExportService } from "../src/services/trace-export.js";
 import { EvidenceSummaryRepository } from "../src/repositories/evidence-summary.js";
@@ -87,6 +88,7 @@ export interface TestServices {
   validationQueryService: ValidationQueryService;
   validationRecoveryActionService: ValidationRecoveryActionService;
   validationWorkflowService: ValidationWorkflowService;
+  validationDispatchScheduler: ValidationDispatchScheduler;
   eventBus: EventBusType;
 }
 
@@ -125,6 +127,13 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     db, issueRepo, runRepo, threadEventService, threadEventRepo,
     validationTraceService, agentConfigRepo, workflowTemplateRepo,
     validationPolicyRepo, evidenceSummaryRepo, fileChangeRepo,
+    // grace=0: preserve F004's original "immediate creation" semantics —
+    // Phase B fires synchronously right after Phase A in every existing
+    // automatic-validation test, with zero added latency/flakiness.
+    0,
+  );
+  const validationDispatchScheduler = new ValidationDispatchScheduler(
+    issueRepo, validationWorkflowService,
   );
 
   const adapterRegistry = new AgentAdapterRegistry();
@@ -138,7 +147,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
 
   const manualRoutingService = new ManualRoutingService(
     runRepo, issueRepo, workspaceRepo, agentConfigRepo, projectRepo,
-    threadEventRepo, threadEventService, db,
+    threadEventRepo, threadEventService, db, validationWorkflowService,
   );
 
   const runDispatchService = new RunDispatchService(
@@ -207,6 +216,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     validationQueryService,
     validationRecoveryActionService,
     validationWorkflowService,
+    validationDispatchScheduler,
     eventBus,
   };
 }

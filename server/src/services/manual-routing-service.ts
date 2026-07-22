@@ -14,6 +14,7 @@ import { resolveAdapter } from "./adapter-resolver.js";
 import { classifyRunRequest } from "./run-routing-classifier.js";
 import { collectPriorFindings } from "./validation/context-assembler.js";
 import { buildRepairContext } from "./validation/context-builder.js";
+import type { ValidationWorkflowService } from "./validation/workflow-service.js";
 
 export interface ManualRoutingDispatchInput {
   issueId: string;
@@ -41,14 +42,13 @@ function mapResolveError(errorCode: ErrorCode): never {
  * server-derived, never accepted as input (design §7.4).
  *
  * Scope note: a manual dispatch that classifies to role=Validator (Issue
- * Validating + a validator-capable adapter) is deliberately rejected here,
- * not created. Safely creating a validator Run requires the frozen
- * round/implementation_run_id/policy-snapshot + claimValidatorSlot()
- * uniqueness machinery design §8 introduces in Phase 9 — building a
- * throwaway parallel path now would either duplicate F004's existing
- * automatic validator (violating the per-round unique index) or silently
- * skip the policy-snapshot freezing that makes the result parseable at
- * all. Phase 9 wires the real manual-validator-wins path.
+ * Validating + a validator-capable adapter) is delegated to
+ * ValidationWorkflowService.claimValidatorSlot() in "explicit" mode (design
+ * §8.2/Phase 9) rather than created through the generic path below —
+ * safely creating a validator Run needs the frozen
+ * round/implementation_run_id/policy-snapshot that only Phase A's
+ * `validation.dispatch_pending` event carries, plus the same
+ * active/per-round uniqueness pre-checks the scheduler's auto-claim uses.
  */
 export class ManualRoutingService {
   constructor(
@@ -60,6 +60,7 @@ export class ManualRoutingService {
     private threadEventRepo: ThreadEventRepository,
     private threadEventService: ThreadEventService,
     private db: Database.Database,
+    private validationWorkflowService: ValidationWorkflowService,
   ) {}
 
   dispatch(input: ManualRoutingDispatchInput): Run {
@@ -84,10 +85,7 @@ export class ManualRoutingService {
       throw new AppError(ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS, `Cannot create a Run: issue is ${issue.status}.`);
     }
     if (classification.role === RunRole.Validator) {
-      throw new AppError(
-        ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS,
-        "Manually dispatching a validator during Validating is not yet supported; automatic validation already covers this round.",
-      );
+      return this.dispatchValidator(issue.id, adapter.id);
     }
 
     const workspace = this.workspaceRepo.getById(issue.workspace_id);
@@ -193,5 +191,33 @@ export class ManualRoutingService {
 
     this.threadEventService.broadcast(event);
     return run;
+  }
+
+  /**
+   * design §8.2: the manual side of the Phase B race — the scheduler's
+   * due-expiry auto-claim is the other side. Whichever transaction commits
+   * first wins; the loser gets a typed conflict here rather than a raw
+   * SQLite constraint error (design's "manual loser gets VALIDATOR_RUN_
+   * CONFLICT + a summary of the conflicting run").
+   */
+  private dispatchValidator(issueId: string, adapterConfigId: string): Run {
+    const claimed = this.validationWorkflowService.claimValidatorSlot(issueId, { mode: "explicit", adapterConfigId });
+    if (claimed.ok) return claimed.run;
+    switch (claimed.reason) {
+      case "active_conflict":
+      case "per_round_conflict":
+        throw new AppError(
+          ErrorCode.VALIDATOR_RUN_CONFLICT,
+          "A validator run already exists for this issue/round.",
+          undefined,
+          { conflicting_run_id: claimed.conflictingRun.id, conflicting_run_status: claimed.conflictingRun.status },
+        );
+      case "adapter_invalid":
+        throw new AppError(ErrorCode.ADAPTER_UNAVAILABLE, claimed.message);
+      case "not_validating":
+        throw new AppError(ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS, "Issue is no longer awaiting validation dispatch.");
+      case "blocked":
+        throw new AppError(ErrorCode.VALIDATOR_UNAVAILABLE, "Could not create validator run.");
+    }
   }
 }

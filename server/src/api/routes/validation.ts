@@ -6,7 +6,7 @@ import type { EvidenceSummaryRepository } from "../../repositories/evidence-summ
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { RunRepository } from "../../repositories/run.js";
 import type { RunDispatchService } from "../../services/run-dispatch.js";
-import { IssueStatus, RunRole, RunStatus } from "@personahub/shared/types";
+import { IssueStatus, RunStatus } from "@personahub/shared/types";
 import { AppError } from "../errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
 
@@ -100,15 +100,14 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
       return { run: existingValidator };
     }
 
-    const implRun = runRepo.getLatestCompletedByRole(issue_id, RunRole.Implementation);
-    if (!implRun) {
-      throw new AppError(
-        ErrorCode.INVALID_ISSUE_TRANSITION,
-        "No completed implementation run found for validation.",
-      );
-    }
-    const validatorRun = validationWorkflowService.requestValidation(issue_id, implRun.id);
-    if (!validatorRun) {
+    // F005 design §8.1: this manual trigger ends the grace window early and
+    // dispatches via ValidatorSelector — same Phase B claim the scheduler
+    // uses on due-expiry, just fired on demand instead of waiting out the timer.
+    const claimed = validationWorkflowService.claimValidatorSlot(issue_id, { mode: "auto" });
+    if (!claimed.ok) {
+      if (claimed.reason === "active_conflict" || claimed.reason === "per_round_conflict") {
+        return { run: claimed.conflictingRun };
+      }
       const refreshedIssue = issueRepo.getById(issue_id);
       if (refreshedIssue?.status === IssueStatus.Blocked) {
         throw new AppError(
@@ -122,6 +121,6 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
       );
     }
     await runDispatchService.drainWorkspace(issue.workspace_id);
-    return { run: validatorRun };
+    return { run: claimed.run };
   });
 };

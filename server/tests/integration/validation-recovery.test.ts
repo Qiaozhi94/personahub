@@ -2,6 +2,16 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
 import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, AdapterStatus, ActorType, AgentCapability } from "@personahub/shared/types";
 import { ValidationRecoveryService } from "../../src/services/validation/recovery-service.js";
+import { ValidationWorkflowService } from "../../src/services/validation/workflow-service.js";
+
+function createGraceWorkflowService(services: TestServices, graceMs: number): ValidationWorkflowService {
+  return new ValidationWorkflowService(
+    services.db, services.issueRepo, services.runRepo, services.threadEventService, services.threadEventRepo,
+    services.validationTraceService, services.agentConfigRepo, services.workflowTemplateRepo,
+    services.validationPolicyRepo, services.evidenceSummaryRepo, services.fileChangeRepo,
+    graceMs,
+  );
+}
 
 function setupFixture(services: TestServices, tempDir: string) {
   const project = services.projectService.create("Test");
@@ -139,76 +149,36 @@ describe("ValidationRecoveryService (T060-T061)", () => {
     });
   });
 
-  describe("T060-3: Validating with no active/terminal validator", () => {
-    it("reuses the validator adapter frozen by the latest request", async () => {
-      const { project, issue, implRun } = setupFixture(services, tempDir);
-      const frozenValidator = services.agentConfigRepo.create({
-        project_id: project.id,
-        name: "Frozen Val",
-        role: "validator",
-        cli_provider: "codex",
-        command: "codex",
-        args: [],
-        capability_tags: [AgentCapability.Validator],
-        default_model: "gpt-5",
-        status: AdapterStatus.Available,
-      });
-      // Force a later created_at than the "Val" adapter from setupFixture:
-      // both are created synchronously and can otherwise tie at millisecond
-      // resolution, making the ordering assertion below flaky.
-      services.db
-        .prepare("UPDATE agent_configs SET created_at = ? WHERE id = ?")
-        .run(new Date(Date.now() + 60_000).toISOString(), frozenValidator.id);
-      const availableValidators = services.agentConfigRepo.listAvailableByProjectAndCapability(
-        project.id,
-        AgentCapability.Validator,
-      );
-      expect(availableValidators[0]?.id).not.toBe(frozenValidator.id);
-
-      services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Validating);
-      services.threadEventService.write(issue.primary_thread!.id, ThreadEventType.ValidationRequested, ActorType.System, null, {
-        issue_id: issue.id, thread_id: issue.primary_thread!.id,
-        validation_round: 1, target: "implementation_result",
-        policy_id: "vpl_coding_default", policy_version: 1,
-        implementation_run_id: implRun.id,
-        validator_run_id: "__incomplete__",
-        validator_adapter_config_id: frozenValidator.id,
-        policy_snapshot: { policy_id: "vpl_coding_default", version: 1, max_validation_rounds: 3, evidence_requirements: { require_handoff: true, require_file_trace: true, require_verification: true, accepted_verification_kinds: ["test"] } },
-        policy_snapshot_hash: "sha256:abc",
-      });
+  describe("T060-3/T071: restart recovery driven by validation_dispatch_due_at", () => {
+    it("leaves a Validating issue alone when the grace window has not yet expired", async () => {
+      const { issue, implRun } = setupFixture(services, tempDir);
+      const graceWf = createGraceWorkflowService(services, 60_000);
+      const phaseA = graceWf.requestValidation(issue.id, implRun.id);
+      expect(phaseA).toBeNull(); // grace>0: Phase A commits, Phase B doesn't fire synchronously
 
       const recovery = createRecoveryService(services);
       await recovery.reconcile();
 
-      const activeValidator = services.runRepo.getActiveValidator(issue.id);
-      expect(activeValidator?.adapter_config_id).toBe(frozenValidator.id);
-      expect(activeValidator?.adapter_identity?.adapter_config_id).toBe(frozenValidator.id);
-      const replayedRequest = services.threadEventRepo.getLatestByTypeAndPayload(
-        issue.primary_thread!.id,
-        ThreadEventType.ValidationRequested,
-        "validator_run_id",
-        activeValidator!.id,
-      );
-      expect(replayedRequest?.payload_json.validator_adapter_config_id).toBe(frozenValidator.id);
+      const refetched = services.issueRepo.getById(issue.id)!;
+      expect(refetched.status).toBe(IssueStatus.Validating);
+      expect(refetched.validation_dispatch_due_at).not.toBeNull();
+      expect(services.runRepo.getActiveValidator(issue.id)).toBeNull();
     });
 
-    it("rebuilds validator when requested event exists but creation incomplete", async () => {
+    it("claims the validator slot once due has passed (also covers a manual pick lost to a crash before it landed)", async () => {
       const { issue, implRun } = setupFixture(services, tempDir);
-      services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Validating);
-      services.threadEventService.write(issue.primary_thread!.id, ThreadEventType.ValidationRequested, ActorType.System, null, {
-        issue_id: issue.id, thread_id: issue.primary_thread!.id,
-        validation_round: 1, target: "implementation_result",
-        policy_id: "vpl_coding_default", policy_version: 1,
-        implementation_run_id: implRun.id,
-        validator_run_id: "__incomplete__",
-        policy_snapshot: { policy_id: "vpl_coding_default", version: 1, max_validation_rounds: 3, evidence_requirements: { require_handoff: true, require_file_trace: true, require_verification: true, accepted_verification_kinds: ["test"] } },
-        policy_snapshot_hash: "sha256:abc",
-      });
+      const graceWf = createGraceWorkflowService(services, 60_000);
+      graceWf.requestValidation(issue.id, implRun.id);
+      // simulate the grace window having elapsed since the last restart
+      services.db.prepare("UPDATE issues SET validation_dispatch_due_at = ? WHERE id = ?")
+        .run(new Date(Date.now() - 1000).toISOString(), issue.id);
 
       const recovery = createRecoveryService(services);
       await recovery.reconcile();
 
-      expect(services.issueRepo.getById(issue.id)!.status).toBe(IssueStatus.Validating);
+      const refetched = services.issueRepo.getById(issue.id)!;
+      expect(refetched.status).toBe(IssueStatus.Validating);
+      expect(refetched.validation_dispatch_due_at).toBeNull();
       const activeValidator = services.runRepo.getActiveValidator(issue.id);
       expect(activeValidator).not.toBeNull();
       expect(activeValidator!.validation_round).toBe(1);
@@ -222,22 +192,16 @@ describe("ValidationRecoveryService (T060-T061)", () => {
       expect(requestedEvent).not.toBeNull();
     });
 
-    it("blocks issue when no validator config available", async () => {
+    it("blocks issue when no validator config available once due has passed", async () => {
       const { issue, implRun } = setupFixture(services, tempDir);
+      const graceWf = createGraceWorkflowService(services, 60_000);
+      graceWf.requestValidation(issue.id, implRun.id);
       const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator);
       for (const v of validators) {
         services.db.prepare("DELETE FROM agent_configs WHERE id = ?").run(v.id);
       }
-      services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Validating);
-      services.threadEventService.write(issue.primary_thread!.id, ThreadEventType.ValidationRequested, ActorType.System, null, {
-        issue_id: issue.id, thread_id: issue.primary_thread!.id,
-        validation_round: 1, target: "implementation_result",
-        policy_id: "vpl_coding_default", policy_version: 1,
-        implementation_run_id: implRun.id,
-        validator_run_id: "__incomplete__",
-        policy_snapshot: { policy_id: "vpl_coding_default", version: 1, max_validation_rounds: 3, evidence_requirements: { require_handoff: true, require_file_trace: true, require_verification: true, accepted_verification_kinds: ["test"] } },
-        policy_snapshot_hash: "sha256:abc",
-      });
+      services.db.prepare("UPDATE issues SET validation_dispatch_due_at = ? WHERE id = ?")
+        .run(new Date(Date.now() - 1000).toISOString(), issue.id);
 
       const recovery = createRecoveryService(services);
       await recovery.reconcile();
@@ -246,7 +210,7 @@ describe("ValidationRecoveryService (T060-T061)", () => {
       expect(services.issueRepo.getById(issue.id)!.blocked_reason_code).toBe("validator_unavailable");
     });
 
-    it("blocks issue when no requested event exists for Validating issue", async () => {
+    it("blocks issue as recovery_inconsistent when Validating with due=null, no active validator, and no terminal validator", async () => {
       const { issue } = setupFixture(services, tempDir);
       services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Validating);
 
@@ -257,15 +221,16 @@ describe("ValidationRecoveryService (T060-T061)", () => {
       expect(services.issueRepo.getById(issue.id)!.blocked_reason_code).toBe("recovery_inconsistent");
     });
 
-    it("blocks issue when no requested event and no completed impl run", async () => {
+    it("does not touch a Validating issue with due=null that already has an active validator (in-flight, not stuck)", async () => {
       const { issue, implRun } = setupFixture(services, tempDir);
-      services.db.prepare("DELETE FROM runs WHERE id = ?").run(implRun.id);
-      services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Validating);
+      const valRun = services.validationWorkflowService.requestValidation(issue.id, implRun.id)!; // grace=0: auto-claims, due already cleared
+      expect(services.issueRepo.getById(issue.id)!.validation_dispatch_due_at).toBeNull();
 
       const recovery = createRecoveryService(services);
       await recovery.reconcile();
 
-      expect(services.issueRepo.getById(issue.id)!.status).toBe(IssueStatus.Blocked);
+      expect(services.issueRepo.getById(issue.id)!.status).toBe(IssueStatus.Validating);
+      expect(services.runRepo.getById(valRun.id)!.status).toBe(RunStatus.Queued);
     });
   });
 

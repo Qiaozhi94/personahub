@@ -24,6 +24,7 @@ export interface IssueCompareAndSetPatch {
   validation_round_count?: number;
   blocked_reason_code?: string | null;
   blocked_reason_message?: string | null;
+  validation_dispatch_due_at?: string | null;
 }
 
 export interface IssueCompareAndSetResult {
@@ -49,6 +50,7 @@ interface IssueRow {
   validation_round_count: number;
   blocked_reason_code: string | null;
   blocked_reason_message: string | null;
+  validation_dispatch_due_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -72,6 +74,7 @@ function mapRow(row: IssueRow): Issue {
     validation_round_count: row.validation_round_count,
     blocked_reason_code: row.blocked_reason_code,
     blocked_reason_message: row.blocked_reason_message,
+    validation_dispatch_due_at: row.validation_dispatch_due_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -146,6 +149,10 @@ export class IssueRepository {
       sets.push("blocked_reason_message = ?");
       values.push(patch.blocked_reason_message);
     }
+    if (patch?.validation_dispatch_due_at !== undefined) {
+      sets.push("validation_dispatch_due_at = ?");
+      values.push(patch.validation_dispatch_due_at);
+    }
 
     values.push(id, expected);
 
@@ -165,6 +172,16 @@ export class IssueRepository {
     const rows = this.db.prepare(
       "SELECT * FROM issues WHERE status = ? ORDER BY created_at ASC, id ASC"
     ).all(status) as IssueRow[];
+    return rows.map(mapRow);
+  }
+
+  /** design §8.1: backs ValidationDispatchScheduler's 1s tick (idx_issues_validation_due). */
+  listValidatingWithDueBefore(nowIso: string): Issue[] {
+    const rows = this.db.prepare(
+      `SELECT * FROM issues
+       WHERE status = 'Validating' AND validation_dispatch_due_at IS NOT NULL AND validation_dispatch_due_at <= ?
+       ORDER BY validation_dispatch_due_at ASC, id ASC`,
+    ).all(nowIso) as IssueRow[];
     return rows.map(mapRow);
   }
 

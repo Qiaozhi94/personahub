@@ -35,23 +35,34 @@ describe("T093 per-round validator uniqueness", () => {
   beforeEach(() => { services = createTestServices(); tempDir = createTempDir(); });
   afterEach(() => disposeTestServices(services));
 
-  it("returns the existing current-round validator instead of creating a second (terminal, awaiting result)", () => {
+  it("rejects a second claim attempt as a per-round conflict (terminal, awaiting result)", () => {
     const { issue, implRun } = setupFixture(services, tempDir);
     const v1 = services.validationWorkflowService.requestValidation(issue.id, implRun.id)!;
     completeWith(services, v1.id, { note: "terminal but not yet processed" });
 
-    const v2 = services.validationWorkflowService.requestValidation(issue.id, implRun.id);
+    // grace=0 already claimed round 1 above; a second Phase B attempt for the
+    // same round (e.g. a losing manual pick racing the scheduler) must not
+    // create a second validator for a round that already has one, even a
+    // terminal one — design's per-round uniqueness constraint.
+    const claim = services.validationWorkflowService.claimValidatorSlot(issue.id, { mode: "auto" });
 
-    expect(v2).not.toBeNull();
-    expect(v2!.id).toBe(v1.id);
+    expect(claim.ok).toBe(false);
+    if (!claim.ok) {
+      expect(claim.reason).toBe("per_round_conflict");
+      if (claim.reason === "per_round_conflict") expect(claim.conflictingRun.id).toBe(v1.id);
+    }
     expect(validatorCount(services, issue.id)).toBe(1);
   });
 
-  it("is idempotent for an active (queued) current-round validator", () => {
+  it("rejects a second claim attempt as an active conflict (queued) current-round validator", () => {
     const { issue, implRun } = setupFixture(services, tempDir);
     const v1 = services.validationWorkflowService.requestValidation(issue.id, implRun.id)!;
-    const v2 = services.validationWorkflowService.requestValidation(issue.id, implRun.id);
-    expect(v2!.id).toBe(v1.id);
+    const claim = services.validationWorkflowService.claimValidatorSlot(issue.id, { mode: "auto" });
+    expect(claim.ok).toBe(false);
+    if (!claim.ok) {
+      expect(claim.reason).toBe("active_conflict");
+      if (claim.reason === "active_conflict") expect(claim.conflictingRun.id).toBe(v1.id);
+    }
     expect(validatorCount(services, issue.id)).toBe(1);
   });
 

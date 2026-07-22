@@ -138,12 +138,13 @@ describe("ValidationWorkflowService", () => {
   });
 
   describe("duplicate/concurrent request (T044-T045)", () => {
-    it("returns active validator when issue is already Validating", () => {
+    it("returns null on a second call once the issue is already Validating (Phase A is Running-only)", () => {
       const { issue, implRun } = setupFixture(services, tempDir);
       const first = services.validationWorkflowService.requestValidation(issue.id, implRun.id);
       expect(first).not.toBeNull();
       const second = services.validationWorkflowService.requestValidation(issue.id, implRun.id);
-      expect(second!.id).toBe(first!.id);
+      expect(second).toBeNull();
+      expect(services.runRepo.listByIssue(issue.id).filter((r) => r.role === RunRole.Validator)).toHaveLength(1);
     });
     it("does not create duplicate validator runs for same request", () => {
       const { issue, implRun } = setupFixture(services, tempDir);

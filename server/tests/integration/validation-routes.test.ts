@@ -4,6 +4,7 @@ import { createTestServices, createTempDir, disposeTestServices, type TestServic
 import { registerRoutes } from "../../src/api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
+import { buildPolicySnapshot, hashPolicySnapshot } from "../../src/services/validation/policy-gate.js";
 import {
   IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType,
   AdapterStatus, ActorType, ValidationOutcome, AgentCapability,
@@ -282,6 +283,20 @@ describe("Validation routes (T063-T066)", () => {
         project_id: issue.project_id, name: "Val", role: "validator",
         cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator],
         default_model: "gpt-5", status: AdapterStatus.Available,
+      });
+      // setupValidatingFixture jumps straight to Validating without going
+      // through Phase A (requestValidation) — write the validation.
+      // dispatch_pending event Phase A would have produced so the route's
+      // claimValidatorSlot() Phase B call has frozen fields to read.
+      const policy = services.validationPolicyRepo.getById(issue.validation_policy_id)!;
+      const policySnapshot = buildPolicySnapshot(policy.id, policy.version, policy.max_validation_rounds, policy.evidence_requirements_json);
+      const policySnapshotHash = hashPolicySnapshot(policySnapshot);
+      services.threadEventService.write(issue.primary_thread!.id, ThreadEventType.ValidationDispatchPending, ActorType.System, null, {
+        issue_id: issue.id, thread_id: issue.primary_thread!.id, workspace_id: issue.workspace_id,
+        validation_round: 1, implementation_run_id: implRun.id,
+        policy_id: policy.id, policy_version: policy.version,
+        policy_snapshot: policySnapshot, policy_snapshot_hash: policySnapshotHash,
+        dispatch_due_at: new Date().toISOString(),
       });
       const app = buildApp(services);
       const res = await app.inject({ method: "POST", url: `/api/issues/${issue.id}/validation` });

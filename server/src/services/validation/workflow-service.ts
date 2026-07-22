@@ -1,9 +1,10 @@
 import type Database from "better-sqlite3";
-import type { Issue, Run, ThreadEvent, AdapterIdentitySnapshot, ValidationPolicySnapshot, ValidationResultEnvelope, ValidationFinding } from "@personahub/shared/types";
-import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, ActorType, ValidationBlockReason, ValidationOutcome, TraceCompletenessStatus, AgentCapability } from "@personahub/shared/types";
+import type { Issue, Run, ThreadEvent, AdapterIdentitySnapshot, ValidationPolicySnapshot, ValidationResultEnvelope, ValidationFinding, AdapterConfig } from "@personahub/shared/types";
+import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, ActorType, ValidationBlockReason, ValidationOutcome, TraceCompletenessStatus, AgentCapability, AdapterStatus } from "@personahub/shared/types";
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { RunRepository } from "../../repositories/run.js";
 import type { AgentConfigRepository } from "../../repositories/agent-config.js";
+import { hasCapability } from "../../repositories/agent-config.js";
 import { toPublicAdapter } from "../../repositories/agent-config-dto.js";
 import type { WorkflowTemplateRepository } from "../../repositories/workflow-template.js";
 import type { ValidationPolicyRepository } from "../../repositories/validation-policy.js";
@@ -21,6 +22,18 @@ import { findRequestedEvent, resultEventExistsForValidatorRun, getFinalMessage, 
 import { AppError } from "../../api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
 
+export type ValidatorClaimAdapter =
+  | { mode: "auto" }
+  | { mode: "explicit"; adapterConfigId: string };
+
+export type ClaimValidatorSlotResult =
+  | { ok: true; run: Run }
+  | { ok: false; reason: "not_validating" }
+  | { ok: false; reason: "active_conflict"; conflictingRun: Run }
+  | { ok: false; reason: "per_round_conflict"; conflictingRun: Run }
+  | { ok: false; reason: "adapter_invalid"; message: string }
+  | { ok: false; reason: "blocked" };
+
 export class ValidationWorkflowService {
   constructor(
     private db: Database.Database,
@@ -34,21 +47,33 @@ export class ValidationWorkflowService {
     private validationPolicyRepo: ValidationPolicyRepository,
     private evidenceSummaryRepo: EvidenceSummaryRepository,
     private fileChangeRepo: FileChangeRepository,
+    /**
+     * design §8.1: must be injectable, not a hardcoded module constant —
+     * F004's existing automatic-validation tests inject 0 to keep the
+     * original "immediate creation" semantics (grace<=0 means Phase B fires
+     * synchronously right after Phase A, in the same requestValidation()
+     * call); production uses the real 10s default.
+     */
+    private manualValidatorGraceMs: number = 10_000,
   ) {}
 
+  /**
+   * design §8.1 Phase A: freezes round/implementation_run_id/policy snapshot
+   * and moves Issue Running -> Validating, but does **not** select a
+   * validator or create a Run — `validation.requested` stays validator-bound
+   * (design's explicit constraint) and cannot be written until a real
+   * validator Run exists. Writes `validation.dispatch_pending` instead.
+   *
+   * When `manualValidatorGraceMs <= 0` (F004's existing tests inject 0),
+   * Phase B fires synchronously right after Phase A commits, reproducing
+   * F004's original "immediate creation" event sequence exactly — this is
+   * why the return type stays `Run | null` instead of void.
+   */
   requestValidation(issueId: string, implementationRunId: string): Run | null {
     const pendingEvents: ThreadEvent[] = [];
-    const result = this.db.transaction(() => {
+    const phaseA = this.db.transaction((): { dueNow: boolean } | null => {
       const issue = this.issueRepo.getById(issueId);
-      if (!issue) return null;
-      if (issue.status === IssueStatus.Validating) {
-        const active = this.runRepo.getActiveValidator(issueId);
-        if (active) return active;
-        const existing = this.runRepo.getValidatorRunByRound(issueId, issue.validation_round_count + 1);
-        if (existing) return existing; // per-round uniqueness: never create a 2nd validator for this round
-      } else if (issue.status !== IssueStatus.Running) {
-        return null;
-      }
+      if (!issue || issue.status !== IssueStatus.Running) return null;
       const implRun = this.runRepo.getById(implementationRunId);
       if (!implRun || implRun.status !== RunStatus.Completed || implRun.role !== RunRole.Implementation) return null;
       if (!implRun.adapter_identity) {
@@ -63,109 +88,107 @@ export class ValidationWorkflowService {
       try { policySnapshot = buildPolicySnapshot(policy.id, policy.version, policy.max_validation_rounds, policy.evidence_requirements_json); }
       catch { this.blockIssueInTx(issue, ValidationBlockReason.WorkflowConfigurationInvalid, "Failed to build policy snapshot", pendingEvents); return null; }
       const snapshotHash = hashPolicySnapshot(policySnapshot);
-      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator).map((r) => toPublicAdapter(r, null));
-      const selectorResult = selectValidator({ workflowTemplate: wf, availableValidators });
-      if (!selectorResult.selected) {
-        this.blockIssueInTx(issue, selectorResult.reason ?? ValidationBlockReason.ValidatorUnavailable, selectorResult.message, pendingEvents);
-        return null;
-      }
       const round = issue.validation_round_count + 1;
-      if (issue.status === IssueStatus.Running) {
-        const casResult = this.issueRepo.compareAndSetStatus(issueId, IssueStatus.Running, IssueStatus.Validating, { blocked_reason_code: null, blocked_reason_message: null });
-        if (!casResult.success) {
-          const freshIssue = this.issueRepo.getById(issueId);
-          if (freshIssue?.status === IssueStatus.Validating) {
-            const active = this.runRepo.getActiveValidator(issueId);
-            if (active && active.validation_round === round) return active;
-            this.blockIssueInTx(freshIssue, ValidationBlockReason.RecoveryInconsistent, "Concurrent validation request with mismatched round", pendingEvents);
-            return null;
-          }
-          return null;
-        }
-      }
-      const validatorIdentity: AdapterIdentitySnapshot = {
-        adapter_config_id: selectorResult.selected.id, name: selectorResult.selected.name,
-        cli_provider: selectorResult.selected.cli_provider, default_model: selectorResult.selected.default_model,
-      };
-      const validatorRun = this.runRepo.create({
-        issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
-        adapter_config_id: selectorResult.selected.id, instructions: "", status: RunStatus.Queued,
-        role: RunRole.Validator, dispatch_source: RunDispatchSource.System, validation_round: round, adapter_identity: validatorIdentity,
+      const dueAt = new Date(Date.now() + Math.max(0, this.manualValidatorGraceMs)).toISOString();
+      const casResult = this.issueRepo.compareAndSetStatus(issueId, IssueStatus.Running, IssueStatus.Validating, {
+        blocked_reason_code: null, blocked_reason_message: null, validation_dispatch_due_at: dueAt,
       });
-      try {
-        const ctx = assembleValidatorContext(
-          { threadEventRepo: this.threadEventRepo, fileChangeRepo: this.fileChangeRepo },
-          {
-            issue: { title: issue.title, goal: issue.goal },
-            threadId: issue.primary_thread_id!,
-            implementationRunId,
-            implementationRun: { id: implementationRunId, identity: implRun.adapter_identity! },
-            validatorRun: { id: validatorRun.id, identity: validatorIdentity },
-            policySnapshot, policySnapshotHash: snapshotHash, validationRound: round,
-          },
-        );
-        this.runRepo.updateInstructions(validatorRun.id, ctx.markdown);
-      } catch {
-        const freshIssue = this.issueRepo.getById(issueId);
-        if (freshIssue) this.blockIssueInTx(freshIssue, ValidationBlockReason.WorkflowConfigurationInvalid, "Failed to build validator context", pendingEvents);
-        return null;
-      }
-      pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.ValidationRequested, ActorType.System, null, {
+      if (!casResult.success) return null; // lost a race to another Phase A — nothing new to do
+      pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.ValidationDispatchPending, ActorType.System, null, {
         issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
-        validation_round: round, target: "implementation_result", policy_id: policy.id, policy_version: policy.version,
+        validation_round: round, implementation_run_id: implementationRunId,
+        policy_id: policy.id, policy_version: policy.version,
         policy_snapshot: policySnapshot, policy_snapshot_hash: snapshotHash,
-        validator_run_id: validatorRun.id, implementation_run_id: implementationRunId, requested_by_run_id: implementationRunId,
-        validator_adapter_config_id: selectorResult.selected.id,
+        dispatch_due_at: dueAt,
       }));
-      pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.RunQueued, ActorType.System, null, {
-        run_id: validatorRun.id, issue_id: issueId, thread_id: issue.primary_thread_id!,
-        workspace_id: issue.workspace_id, status: RunStatus.Queued, role: RunRole.Validator, validation_round: round,
-      }));
-      return validatorRun;
+      return { dueNow: this.manualValidatorGraceMs <= 0 };
     })();
     for (const event of pendingEvents) this.threadEventService.broadcast(event);
-    return result;
+    if (!phaseA) return null;
+    if (!phaseA.dueNow) return null;
+    const claimed = this.claimValidatorSlot(issueId, { mode: "auto" });
+    return claimed.ok ? claimed.run : null;
   }
 
-  rebuildStuckValidation(
-    issueId: string,
-    implementationRunId: string,
-    frozenPolicySnapshot: ValidationPolicySnapshot,
-    frozenPolicySnapshotHash: string,
-    frozenValidatorConfigId?: string,
-  ): Run | null {
+  /**
+   * design §8.2 Phase B: the single winner-claim transaction shared by the
+   * scheduler (auto), the immediate grace=0 cascade above, and a manual
+   * explicit-adapter pick — reads the round/implementation_run_id/policy
+   * snapshot frozen by Phase A's `validation.dispatch_pending` event and
+   * never re-derives them (a consult Run's newer handoff during the grace
+   * window must not change what's being validated, same constraint as
+   * RunContextBuilder — design §6.5).
+   *
+   * Pre-checks (active, then per-round) are the actual correctness
+   * mechanism here, not just "better error messages": every caller runs
+   * inside this same single-threaded, synchronous `db.transaction()`, so
+   * there is no JS-level interleaving between the pre-check and the insert
+   * for two "concurrent" claims to race through. `idx_runs_one_active_
+   * validator`/`idx_runs_validator_per_round` remain as schema-level
+   * defense-in-depth if that ever stops being true.
+   */
+  claimValidatorSlot(issueId: string, adapter: ValidatorClaimAdapter): ClaimValidatorSlotResult {
     const pendingEvents: ThreadEvent[] = [];
-    const result = this.db.transaction(() => {
+    const result = this.db.transaction((): ClaimValidatorSlotResult => {
       const issue = this.issueRepo.getById(issueId);
-      if (!issue) return null;
-      if (issue.status !== IssueStatus.Validating) return null;
+      if (!issue || issue.status !== IssueStatus.Validating) {
+        return { ok: false, reason: "not_validating" };
+      }
+
       const active = this.runRepo.getActiveValidator(issueId);
-      if (active) return null;
-      const existing = this.runRepo.getValidatorRunByRound(issueId, issue.validation_round_count + 1);
-      if (existing) return null;
+      if (active) return { ok: false, reason: "active_conflict", conflictingRun: active };
+
+      const pendingEvent = this.threadEventRepo.getLatestByTypeAndPayload(
+        issue.primary_thread_id!, ThreadEventType.ValidationDispatchPending, "issue_id", issueId,
+      );
+      if (!pendingEvent) {
+        this.blockIssueInTx(issue, ValidationBlockReason.RecoveryInconsistent, "No validation.dispatch_pending event found for Validating issue", pendingEvents);
+        return { ok: false, reason: "blocked" };
+      }
+      const round = pendingEvent.payload_json.validation_round as number;
+      const implementationRunId = pendingEvent.payload_json.implementation_run_id as string;
+      const policySnapshot = pendingEvent.payload_json.policy_snapshot as ValidationPolicySnapshot;
+      const policySnapshotHash = pendingEvent.payload_json.policy_snapshot_hash as string;
+      const policyId = pendingEvent.payload_json.policy_id as string;
+      const policyVersion = pendingEvent.payload_json.policy_version as number;
+
+      const existingForRound = this.runRepo.getValidatorRunByRound(issueId, round);
+      if (existingForRound) return { ok: false, reason: "per_round_conflict", conflictingRun: existingForRound };
+
       const implRun = this.runRepo.getById(implementationRunId);
-      if (!implRun || implRun.status !== RunStatus.Completed || implRun.role !== RunRole.Implementation) {
-        this.blockIssueInTx(issue, ValidationBlockReason.RecoveryInconsistent, `Cannot rebuild validation: implementation run ${implementationRunId} is missing or invalid`, pendingEvents);
-        return null;
+      if (!implRun || implRun.status !== RunStatus.Completed || implRun.role !== RunRole.Implementation || !implRun.adapter_identity) {
+        this.blockIssueInTx(issue, ValidationBlockReason.RecoveryInconsistent, `Cannot claim validator slot: implementation run ${implementationRunId} is missing or invalid`, pendingEvents);
+        return { ok: false, reason: "blocked" };
       }
-      if (!implRun.adapter_identity) {
-        this.blockIssueInTx(issue, ValidationBlockReason.RecoveryInconsistent, "Implementation run missing adapter identity", pendingEvents);
-        return null;
+
+      let selected: AdapterConfig;
+      let dispatchSource: RunDispatchSource;
+      if (adapter.mode === "auto") {
+        const wf = this.workflowTemplateRepo.getById(issue.workflow_template_id);
+        if (!wf) { this.blockIssueInTx(issue, ValidationBlockReason.WorkflowConfigurationInvalid, "Workflow template not found", pendingEvents); return { ok: false, reason: "blocked" }; }
+        const availableValidators = this.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator).map((r) => toPublicAdapter(r, null));
+        const selectorResult = selectValidator({ workflowTemplate: wf, availableValidators });
+        if (!selectorResult.selected) {
+          this.blockIssueInTx(issue, selectorResult.reason ?? ValidationBlockReason.ValidatorUnavailable, selectorResult.message, pendingEvents);
+          return { ok: false, reason: "blocked" };
+        }
+        selected = selectorResult.selected;
+        dispatchSource = RunDispatchSource.System;
+      } else {
+        const record = this.agentConfigRepo.getById(adapter.adapterConfigId);
+        if (!record || record.project_id !== issue.project_id) {
+          return { ok: false, reason: "adapter_invalid", message: "Adapter config not found for this project." };
+        }
+        if (record.status !== AdapterStatus.Available) {
+          return { ok: false, reason: "adapter_invalid", message: "Adapter is not available." };
+        }
+        if (!hasCapability(record, AgentCapability.Validator)) {
+          return { ok: false, reason: "adapter_invalid", message: "Adapter does not have validator capability." };
+        }
+        selected = toPublicAdapter(record, null);
+        dispatchSource = RunDispatchSource.UserExplicit;
       }
-      const availableValidators = this.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator).map((r) => toPublicAdapter(r, null));
-      const frozenConfig = frozenValidatorConfigId
-        ? availableValidators.find((v) => v.id === frozenValidatorConfigId)
-        : undefined;
-      if (frozenValidatorConfigId && !frozenConfig) {
-        this.blockIssueInTx(issue, ValidationBlockReason.ValidatorUnavailable, `Frozen validator config ${frozenValidatorConfigId} is no longer available`, pendingEvents);
-        return null;
-      }
-      const selected = frozenConfig ?? availableValidators[0];
-      if (!selected && availableValidators.length === 0) {
-        this.blockIssueInTx(issue, ValidationBlockReason.ValidatorUnavailable, "No validator available during recovery", pendingEvents);
-        return null;
-      }
-      const round = issue.validation_round_count + 1;
+
       const validatorIdentity: AdapterIdentitySnapshot = {
         adapter_config_id: selected.id, name: selected.name,
         cli_provider: selected.cli_provider, default_model: selected.default_model,
@@ -173,7 +196,7 @@ export class ValidationWorkflowService {
       const validatorRun = this.runRepo.create({
         issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
         adapter_config_id: selected.id, instructions: "", status: RunStatus.Queued,
-        role: RunRole.Validator, dispatch_source: RunDispatchSource.System, validation_round: round, adapter_identity: validatorIdentity,
+        role: RunRole.Validator, dispatch_source: dispatchSource, validation_round: round, adapter_identity: validatorIdentity,
       });
       try {
         const ctx = assembleValidatorContext(
@@ -184,31 +207,30 @@ export class ValidationWorkflowService {
             implementationRunId,
             implementationRun: { id: implementationRunId, identity: implRun.adapter_identity! },
             validatorRun: { id: validatorRun.id, identity: validatorIdentity },
-            policySnapshot: frozenPolicySnapshot, policySnapshotHash: frozenPolicySnapshotHash, validationRound: round,
+            policySnapshot, policySnapshotHash, validationRound: round,
           },
         );
         this.runRepo.updateInstructions(validatorRun.id, ctx.markdown);
       } catch {
         this.blockIssueInTx(issue, ValidationBlockReason.WorkflowConfigurationInvalid, "Failed to build validator context", pendingEvents);
-        return null;
+        return { ok: false, reason: "blocked" };
       }
-      const originalRequested = this.threadEventRepo.getLatestByTypeAndPayload(
-        issue.primary_thread_id!, ThreadEventType.ValidationRequested, "issue_id", issueId,
-      );
-      const policyId = (originalRequested?.payload_json.policy_id as string) ?? frozenPolicySnapshot.policy_id;
-      const policyVersion = (originalRequested?.payload_json.policy_version as number) ?? frozenPolicySnapshot.version;
+
+      // winner: clear the grace due date in the same transaction (design §8.2 step 6).
+      this.issueRepo.compareAndSetStatus(issueId, IssueStatus.Validating, IssueStatus.Validating, { validation_dispatch_due_at: null });
+
       pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.ValidationRequested, ActorType.System, null, {
         issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
         validation_round: round, target: "implementation_result", policy_id: policyId, policy_version: policyVersion,
-        policy_snapshot: frozenPolicySnapshot, policy_snapshot_hash: frozenPolicySnapshotHash,
+        policy_snapshot: policySnapshot, policy_snapshot_hash: policySnapshotHash,
         validator_run_id: validatorRun.id, implementation_run_id: implementationRunId, requested_by_run_id: implementationRunId,
-        validator_adapter_config_id: validatorIdentity.adapter_config_id,
+        validator_adapter_config_id: selected.id,
       }));
       pendingEvents.push(this.threadEventService.write(issue.primary_thread_id!, ThreadEventType.RunQueued, ActorType.System, null, {
         run_id: validatorRun.id, issue_id: issueId, thread_id: issue.primary_thread_id!,
         workspace_id: issue.workspace_id, status: RunStatus.Queued, role: RunRole.Validator, validation_round: round,
       }));
-      return validatorRun;
+      return { ok: true, run: validatorRun };
     })();
     for (const event of pendingEvents) this.threadEventService.broadcast(event);
     return result;
