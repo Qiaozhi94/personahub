@@ -3,6 +3,8 @@ import { XCircle } from "lucide-react";
 import {
   FailureReason,
   IssueStatus,
+  RunDispatchSource,
+  RunRole,
   RunStatus,
   ThreadEventType,
   type IssueWithThread,
@@ -10,6 +12,7 @@ import {
 import { useRuns, useCancelRun } from "@/hooks/use-runs";
 import { useThreadEvents } from "@/hooks/use-thread";
 import { toApiError } from "@/lib/api-client";
+import { runPurposeLabel } from "@/lib/run-display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -200,6 +203,23 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
               {latestRun.status}
             </Badge>
           </div>
+          {/* T097/T098: routing metadata — never derived client-side, always
+              exactly what the server returned on this Run. adapter_identity
+              never carries api_key, so nothing here can leak auth material. */}
+          <InspectorRow label="Purpose" value={runPurposeLabel(latestRun)} />
+          <InspectorRow
+            label="Adapter"
+            value={latestRun.adapter_identity
+              ? `${latestRun.adapter_identity.name} (${latestRun.adapter_identity.cli_provider}${latestRun.adapter_identity.default_model ? ` · ${latestRun.adapter_identity.default_model}` : ""})`
+              : "unknown provider"}
+          />
+          <InspectorRow label="Source" value={latestRun.dispatch_source} />
+          {latestRun.context_source_run_id ? (
+            <InspectorRow label="Context from" value={`run ${latestRun.context_source_run_id.slice(0, 12)}`} />
+          ) : null}
+          {latestRun.role === RunRole.Validator && latestRun.dispatch_source === RunDispatchSource.UserExplicit ? (
+            <p className="text-xs text-brand">Manually selected validator</p>
+          ) : null}
           <InspectorRow
             label="Started"
             value={latestRun.started_at ? new Date(latestRun.started_at).toLocaleString() : "—"}

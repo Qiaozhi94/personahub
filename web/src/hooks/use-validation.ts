@@ -57,6 +57,9 @@ export function useTriggerValidation(issueId: string | null) {
       qc.invalidateQueries({ queryKey: ["validation-status", issueId] });
       qc.invalidateQueries({ queryKey: ["runs", issueId] });
       qc.invalidateQueries({ queryKey: ["thread-events"] });
+      // clears validation_dispatch_due_at once Phase B claims the slot —
+      // the grace banner reads this off the Issue, not validation-status.
+      qc.invalidateQueries({ queryKey: ["issue", issueId] });
     },
   });
 }

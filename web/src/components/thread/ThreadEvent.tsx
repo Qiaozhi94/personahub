@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { ThreadEventType, type ThreadEvent as ThreadEventData } from "@personahub/shared";
+import { ThreadEventType, type ThreadEvent as ThreadEventData, type Run } from "@personahub/shared";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CommandTraceCard } from "@/components/trace/CommandTraceCard";
@@ -8,10 +8,45 @@ import { VerificationTraceCard } from "@/components/trace/VerificationTraceCard"
 import { FileChangeTraceCard } from "@/components/trace/FileChangeTraceCard";
 import { HandoffTraceCard } from "@/components/trace/HandoffTraceCard";
 import { ValidationTraceCard } from "@/components/trace/ValidationTraceCard";
+import { describeCancellationReason, runPurposeLabel, isConsultRun } from "@/lib/run-display";
 
 interface ThreadEventProps {
   event: ThreadEventData;
   consecutiveOutputChunks?: ThreadEventData[];
+  /** T095/T096: cross-referenced to render honest, always-current routing badges — never derived from the event payload alone, since Run state can move on after the event was written. */
+  runs?: Run[];
+}
+
+/** design's "实际Run card始终以后端返回metadata为准": look up the live Run, never trust a stale event payload for display. */
+function findRun(runs: Run[] | undefined, runId: unknown): Run | null {
+  if (!runs || typeof runId !== "string") return null;
+  return runs.find((r) => r.id === runId) ?? null;
+}
+
+function RunRoutingBadges({ run }: { run: Run }) {
+  const consult = isConsultRun(run);
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+      <Badge variant={consult ? "secondary" : "brand"} className="text-[10px]">
+        {runPurposeLabel(run)}
+      </Badge>
+      {run.adapter_identity ? (
+        <span className="text-muted-foreground">
+          {run.adapter_identity.cli_provider}
+          {run.adapter_identity.default_model ? ` · ${run.adapter_identity.default_model}` : ""}
+        </span>
+      ) : (
+        // T096: unknown/missing adapter identity — safe fallback, never crash the renderer.
+        <span className="text-muted-foreground">unknown provider</span>
+      )}
+      <span className="text-muted-foreground">· {run.dispatch_source}</span>
+      {run.context_source_run_id ? (
+        <span className="text-muted-foreground">
+          · continues from run {run.context_source_run_id.slice(0, 12)}
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -149,10 +184,16 @@ const BLOCKED_BY_LABELS: Record<string, string> = {
     "Push detected after execution — this is post-hoc detection, not pre-execution blocking",
 };
 
-export function ThreadEvent({ event, consecutiveOutputChunks }: ThreadEventProps) {
+export function ThreadEvent({ event, consecutiveOutputChunks, runs }: ThreadEventProps) {
   const [outputExpanded, setOutputExpanded] = useState(false);
   const payload = event.payload_json;
   const relevantFields = getRelevantFields(event.type);
+  const cancellationText = event.type === ThreadEventType.RunCancelled
+    ? describeCancellationReason(payload.reason)
+    : null;
+  const queuedRun = event.type === ThreadEventType.RunQueued
+    ? findRun(runs, payload.run_id)
+    : null;
 
   const fields = Object.keys(FIELD_LABELS).filter((key) => {
     if (!(key in payload)) return false;
@@ -220,6 +261,14 @@ export function ThreadEvent({ event, consecutiveOutputChunks }: ThreadEventProps
       {event.type === ThreadEventType.IssueBlocked && payload.reason ? (
         <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {String(payload.reason)}
+        </p>
+      ) : null}
+
+      {queuedRun ? <RunRoutingBadges run={queuedRun} /> : null}
+
+      {cancellationText ? (
+        <p className="rounded-md bg-warning/10 px-3 py-1.5 text-xs text-warning">
+          {cancellationText}
         </p>
       ) : null}
 

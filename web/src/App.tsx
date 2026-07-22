@@ -152,6 +152,7 @@ export function App() {
                   issueId={issue.id}
                   issueStatus={issue.status}
                   projectId={selectedProjectId!}
+                  validationDispatchDueAt={issue.validation_dispatch_due_at}
                 />
               ) : (
                 <NoIssue />

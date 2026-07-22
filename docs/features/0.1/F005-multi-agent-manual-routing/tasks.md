@@ -353,19 +353,33 @@ updated: 2026-07-19
 
 ## Phase 12：Composer、Thread与Inspector UI
 
-- [ ] **T089**（`UX-001`, `UX-004`, AC-002）：添加AgentSelector组件测试，始终显示、default标记、available/disabled reason、capabilities和当前purpose preview。
-- [ ] **T090**（`UX-001`, `UX-004`）：实现独立`AgentSelector.tsx`并替换ThreadView原生条件select；未选时发送omitted adapter_id使用server default。
-- [ ] **T091**（`FR-007`, `UX-003`, `AC-005`）：添加composer routing测试，Running implementation/validator consult、Validating validator/mismatch consult、显式consult和终态disabled。
-- [ ] **T092**（`FR-007`, `UX-003`）：显示服务端推导预览；实际Run card始终以后端返回metadata为准。
-- [ ] **T093**（`FR-009`, `US4`）：添加Validating grace UI测试，倒计时仅提示、**"Start automatic validator now"** mutation、manual winner/conflict和刷新due状态。文案不得写"Use default now"或以任何方式暗示使用 Project default——自动验证走 `ValidatorSelector`，与 Project default 是两回事。
-- [ ] **T094**（`FR-009`）：实现grace banner/action，不用前端timer直接创建auto Run。
-- [ ] **T095**（`UX-003`, `TR-002`）：添加Thread Run card测试，workflow/consult badge、provider/model/source、context handoff链接和“不改变workflow”文字；覆盖`run.cancelled(reason=issue_state_changed_before_start)`展示明确的“指令因进入验证被取消、请重发”文案，不误示为已执行。
-- [ ] **T096**（`UX-003`）：扩展ThreadEvent/Run renderer；unknown provider/purpose安全fallback。
-- [ ] **T097**（`IR-003`, `UX-003`）：添加Inspector routing测试，展示latest run metadata、context source、manual validator identity和auth信息不泄漏。
-- [ ] **T098**（`IR-003`）：实现Inspector routing section并保留F003/F004 evidence/validation区域。
-- [ ] **T099**（`AC-001` - `AC-007`）：扩展App UI flow，跑通配置三adapter、设default、Codex->Claude->OpenCode consult/implementation、manual validator和race conflict。
+- [x] **T089**（`UX-001`, `UX-004`, AC-002）：添加AgentSelector组件测试，始终显示、default标记、available/disabled reason、capabilities和当前purpose preview。
+- [x] **T090**（`UX-001`, `UX-004`）：实现独立`AgentSelector.tsx`并替换ThreadView原生条件select；未选时发送omitted adapter_id使用server default。
+- [x] **T091**（`FR-007`, `UX-003`, `AC-005`）：添加composer routing测试，Running implementation/validator consult、Validating validator/mismatch consult、显式consult和终态disabled。
+- [x] **T092**（`FR-007`, `UX-003`）：显示服务端推导预览；实际Run card始终以后端返回metadata为准。
+- [x] **T093**（`FR-009`, `US4`）：添加Validating grace UI测试，倒计时仅提示、**"Start automatic validator now"** mutation、manual winner/conflict和刷新due状态。文案不得写"Use default now"或以任何方式暗示使用 Project default——自动验证走 `ValidatorSelector`，与 Project default 是两回事。
+- [x] **T094**（`FR-009`）：实现grace banner/action，不用前端timer直接创建auto Run。
+- [x] **T095**（`UX-003`, `TR-002`）：添加Thread Run card测试，workflow/consult badge、provider/model/source、context handoff链接和“不改变workflow”文字；覆盖`run.cancelled(reason=issue_state_changed_before_start)`展示明确的“指令因进入验证被取消、请重发”文案，不误示为已执行。
+- [x] **T096**（`UX-003`）：扩展ThreadEvent/Run renderer；unknown provider/purpose安全fallback。
+- [x] **T097**（`IR-003`, `UX-003`）：添加Inspector routing测试，展示latest run metadata、context source、manual validator identity和auth信息不泄漏。
+- [x] **T098**（`IR-003`）：实现Inspector routing section并保留F003/F004 evidence/validation区域。
+- [x] **T099**（`AC-001` - `AC-007`）：扩展App UI flow，跑通配置三adapter、设default、Codex->Claude->OpenCode consult/implementation、manual validator和race conflict。
 
-**Checkpoint 12**：用户能清楚选择/识别实际agent、default、consult和validator，UI不夸大安全能力。
+  **2026-07-22 完成**：新增纯逻辑模块`web/src/lib/routing-preview.ts`（`previewRunRouting()`，与server`classifyRunRequest()`逐条镜像，仅用于composer预览，真实Run metadata永远以后端返回为准）与`web/src/lib/run-display.ts`（`runPurposeLabel()`/`isConsultRun()`/`describeCancellationReason()`——后者把`issue_state_changed_before_start`等纯字符串reason映射为诚实的“请重发”文案，未识别的reason返回null回退到原始展示，即T096的unknown-fallback）。
+
+  新增独立`AgentSelector.tsx`（`web/src/components/thread/AgentSelector.tsx`）替换`ThreadView`里原先`availableAdapters.length > 1`才显示的原生select：始终可见、第一项固定为"Project default (<name>)"（对应省略`adapter_id`）、每个adapter标注is_default/unavailable+原因（禁用但保留在列表）、下方展示capability badge和`previewRunRouting`得出的当前purpose/role预览。`ThreadView`同步新增显式consult勾选框，composer disabled逻辑改为仅terminal状态（Done/Blocked）硬阻塞——移除了原先"任何进行中Run都禁止发送"的过度限制（Validating期间consult本就该保持eligible，见Phase 8 T061既有结论），排队仍由workspace FIFO处理。
+
+  新增`GraceValidatorBanner.tsx`（`web/src/components/thread/GraceValidatorBanner.tsx`）：仅当`Issue.validation_dispatch_due_at`非空时渲染，本地`setInterval`倒计时纯提示用途，按钮文案严格为**"Start automatic validator now"**（设计文档§10.2遗留的"Use default validator now"措辞已确认与§8.1矛盾，按§8.1/T093定稿弃用）；点击调用已有的`useTriggerValidation()`（命中`POST /api/issues/:id/validation`→`claimValidatorSlot(mode:"auto")`→`ValidatorSelector`，与Project default无关）。为让grace真正可被前端感知，`useIssue()`新增Validating期间2s轮询、`useTriggerValidation()`新增对`["issue", issueId]`的invalidate，两者此前都不存在——否则grace banner要么永远看不到server在后台自动claim后清空的due，要么点击后自己的due都不刷新。
+
+  `ThreadEvent.tsx`新增`runs?: Run[]`prop，对`RunQueued`事件按`payload.run_id`反查完整`Run`对象渲染purpose badge+provider/model+dispatch_source+`context_source_run_id`跳转文字（"continues from run …"）——刻意不信任事件payload本身的routing字段，因为Run状态可能在事件写入后继续变化，必须以`runs`查询的当前数据为准（design"实际Run card始终以后端返回metadata为准"）；`adapter_identity`为空时安全回退显示"unknown provider"而不崩溃。`RunCancelled`事件新增`describeCancellationReason()`渲染，`issue_state_changed_before_start`等已知reason显示诚实的重发提示，未知reason保留原有原始badge展示。
+
+  `IssueInspector.tsx`的"Latest Run"卡片新增Purpose/Adapter/Source/Context from四行只读展示（复用`runPurposeLabel()`），以及`role===Validator && dispatch_source===UserExplicit`时的"Manually selected validator"提示；`adapter_identity`本身即不含`api_key`，故此处天然不会泄漏secret。F003 `EvidenceSection`和F004 `ValidationInspectorSection`两个既有区域原样保留在下方。
+
+  **测试**：新增8个测试文件——`f005-routing-preview.test.tsx`（11 tests，纯函数：previewRunRouting全部6条分支+run-display 3个helper）、`f005-agent-selector.test.tsx`（10 tests，始终可见/default标记/unavailable+原因/capability展示/purpose预览/onSelect回调/consult勾选联动/terminal提示）、`f005-grace-banner.test.tsx`（5 tests，due为null不渲染/倒计时展示/按钮精确文案/mutation成功调用/错误展示/倒计时归零展示"any moment now"，用`vi.useFakeTimers`+`act()`驱动）、`f005-composer-routing.test.tsx`（8 tests，Running+impl/Validating+validator/Validating+mismatch降级consult/显式consult覆盖/Done禁用/Blocked禁用/进行中Run不禁用composer/consult提交payload）、`f005-thread-run-card.test.tsx`（9 tests，workflow badge/consult badge/context-handoff链接/无context不展示/unknown provider回退/找不到Run时不额外渲染/cancelled诚实文案/未知reason原始展示/Completed状态正常渲染）、`f005-inspector-routing.test.tsx`（6 tests，purpose+adapter+source展示/context-handoff引用/manually-selected-validator提示/自动validator不展示该提示/无auth material泄漏/F003-F004区域保留）、`f005-app-e2e.test.tsx`（3 tests，T099，通过真实`App`组件树：显式选择非default adapter派发implementation Run、consult Run不改变Issue状态、manual validator冲突409内联展示不崩溃）；同时修复`f002-ui-flows.test.tsx`中因AgentSelector默认改为"省略adapter_id使用server default"而失效的既有测试（拆成"显式选择adapter"与"省略走server default"两个场景）。
+
+  `npm run typecheck`（server + web）、`npm test`（server 1277 + web 151 全绿）、`npm run build`（shared/server/web）全部通过。UI未做真实浏览器人工验证（本环境无浏览器工具，仅有自动化组件/集成测试覆盖）。
+
+**Checkpoint 12 达成**：用户能清楚选择/识别实际agent、default、consult和validator，UI不夸大安全能力（grace banner明确区分自动validator与Project default，consult明确标注"不改变workflow"，cancelled指令不误示为已执行）。
 
 ## Phase 13：安全、端到端与文档回写
 

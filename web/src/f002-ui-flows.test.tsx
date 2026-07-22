@@ -93,7 +93,30 @@ describe("F002 UI flows", () => {
     });
   });
 
-  it("submits Thread instructions to the selected adapter", async () => {
+  it("submits Thread instructions with the explicitly selected adapter", async () => {
+    vi.mocked(apiClient.threads.getEvents).mockResolvedValue({ events: [] });
+    vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [] });
+    vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters: [adapter] });
+    vi.mocked(apiClient.runs.create).mockResolvedValue({ run: runningRun });
+
+    renderWithQuery(
+      <ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Inbox} projectId="prj_1" />,
+    );
+    fireEvent.change(await screen.findByLabelText("Agent"), { target: { value: "agt_1" } });
+    const input = screen.getByPlaceholderText("Enter agent instructions…");
+    fireEvent.change(input, { target: { value: "  Implement the API  " } });
+    fireEvent.submit(input.closest("form")!);
+
+    await waitFor(() => {
+      expect(apiClient.runs.create).toHaveBeenCalledWith("iss_1", {
+        instructions: "Implement the API",
+        adapter_id: "agt_1",
+        purpose: undefined,
+      });
+    });
+  });
+
+  it("omitting the adapter selection lets the server resolve the Project default", async () => {
     vi.mocked(apiClient.threads.getEvents).mockResolvedValue({ events: [] });
     vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [] });
     vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters: [adapter] });
@@ -103,13 +126,14 @@ describe("F002 UI flows", () => {
       <ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Inbox} projectId="prj_1" />,
     );
     const input = await screen.findByPlaceholderText("Enter agent instructions…");
-    fireEvent.change(input, { target: { value: "  Implement the API  " } });
+    fireEvent.change(input, { target: { value: "Implement the API" } });
     fireEvent.submit(input.closest("form")!);
 
     await waitFor(() => {
       expect(apiClient.runs.create).toHaveBeenCalledWith("iss_1", {
         instructions: "Implement the API",
-        adapter_id: "agt_1",
+        adapter_id: undefined,
+        purpose: undefined,
       });
     });
   });

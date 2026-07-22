@@ -1,19 +1,23 @@
 import { useState, useMemo, type FormEvent } from "react";
 import { Send, AlertTriangle } from "lucide-react";
-import { IssueStatus, RunStatus, ThreadEventType, type ThreadEvent as ThreadEventData } from "@personahub/shared";
+import { IssueStatus, ThreadEventType, type ThreadEvent as ThreadEventData } from "@personahub/shared";
 import { useThreadEvents } from "@/hooks/use-thread";
 import { useRuns, useCreateRun } from "@/hooks/use-runs";
 import { useAdapters } from "@/hooks/use-adapters";
 import { toApiError } from "@/lib/api-client";
 import { ThreadEvent } from "@/components/thread/ThreadEvent";
+import { AgentSelector } from "@/components/thread/AgentSelector";
+import { GraceValidatorBanner } from "@/components/thread/GraceValidatorBanner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ThreadViewProps {
   threadId: string;
   issueId: string;
-  issueStatus: string;
+  issueStatus: IssueStatus;
   projectId: string;
+  /** F005 §8.1: non-null while the manual-validator grace window is still open. */
+  validationDispatchDueAt?: string | null;
 }
 
 type DisplayEvent =
@@ -51,7 +55,7 @@ function mergeConsecutiveOutputEvents(events: ThreadEventData[]): DisplayEvent[]
   return result;
 }
 
-export function ThreadView({ threadId, issueId, issueStatus, projectId }: ThreadViewProps) {
+export function ThreadView({ threadId, issueId, issueStatus, projectId, validationDispatchDueAt }: ThreadViewProps) {
   const { data, isLoading, isError, error } = useThreadEvents(threadId);
   const runsQuery = useRuns(issueId);
   const adaptersQuery = useAdapters(projectId);
@@ -59,30 +63,21 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId }: Thread
 
   const [instructions, setInstructions] = useState("");
   const [selectedAdapterId, setSelectedAdapterId] = useState<string | null>(null);
+  const [explicitConsult, setExplicitConsult] = useState(false);
 
   const adapters = adaptersQuery.data?.adapters ?? [];
   const runs = runsQuery.data?.runs ?? [];
 
-  const hasRunningRun = runs.some(
-    (r) => r.status === RunStatus.Queued || r.status === RunStatus.Running,
-  );
-
-  const availableAdapters = adapters.filter(
-    (a) => a.status === "available" || a.status === "unknown",
-  );
-
-  const currentAdapterId = selectedAdapterId ?? availableAdapters[0]?.id ?? null;
-  const isBlocked = issueStatus === IssueStatus.Blocked;
-  const canSend =
-    currentAdapterId !== null &&
-    !isBlocked &&
-    !hasRunningRun &&
-    instructions.trim().length > 0;
+  // design §7.4/T091: terminal Issue status is the only hard block — a Run
+  // already in progress does not disable sending, it just queues FIFO
+  // (consult stays eligible during Validating even with an active validator,
+  // per F005 §7.5/Phase 8's queue-drain fix).
+  const isTerminal = issueStatus === IssueStatus.Done || issueStatus === IssueStatus.Blocked;
+  const canSend = !isTerminal && instructions.trim().length > 0;
 
   function getDisabledMessage(): string | null {
-    if (availableAdapters.length === 0) return "Configure an adapter to send instructions";
-    if (isBlocked) return "Issue is blocked — resolve the blocker first";
-    if (hasRunningRun) return "A run is already in progress";
+    if (adapters.length === 0) return "Configure an adapter to send instructions";
+    if (isTerminal) return `Issue is ${issueStatus} — no new instructions can be dispatched`;
     return null;
   }
 
@@ -97,11 +92,15 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId }: Thread
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!canSend || !currentAdapterId) return;
+    if (!canSend) return;
     createRun.mutate(
       {
         issueId,
-        input: { instructions: instructions.trim(), adapter_id: currentAdapterId },
+        input: {
+          instructions: instructions.trim(),
+          adapter_id: selectedAdapterId ?? undefined,
+          purpose: explicitConsult ? "ad_hoc_consult" : undefined,
+        },
       },
       {
         onSuccess: () => setInstructions(""),
@@ -128,6 +127,11 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId }: Thread
   return (
     <div className="flex h-full flex-col">
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-11 py-7">
+        {issueStatus === IssueStatus.Validating ? (
+          <div className="mx-auto w-full max-w-[720px]">
+            <GraceValidatorBanner issueId={issueId} validationDispatchDueAt={validationDispatchDueAt ?? null} />
+          </div>
+        ) : null}
         {processedEvents.length === 0 ? (
           <div className="flex h-full items-center justify-center px-6 text-center text-xs text-muted-foreground">
             No events yet in this thread.
@@ -140,10 +144,11 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId }: Thread
                   key={event.id}
                   event={event.events[0]!}
                   consecutiveOutputChunks={event.events}
+                  runs={runs}
                 />
               );
             }
-            return <ThreadEvent key={(event as ThreadEventData).id} event={event as ThreadEventData} />;
+            return <ThreadEvent key={(event as ThreadEventData).id} event={event as ThreadEventData} runs={runs} />;
           })
         )}
       </div>
@@ -153,25 +158,14 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId }: Thread
           <div className="text-xs text-muted-foreground">Loading adapters…</div>
         ) : (
           <form className="grid gap-2.5" onSubmit={handleSubmit}>
-            {availableAdapters.length > 1 ? (
-              <div className="flex items-center gap-2">
-                <label htmlFor="adapter-select" className="text-xs text-muted-foreground shrink-0">
-                  Adapter:
-                </label>
-                <select
-                  id="adapter-select"
-                  className="h-7 flex-1 rounded-md border border-input bg-background px-2 text-xs text-foreground"
-                  value={currentAdapterId ?? ""}
-                  onChange={(e) => setSelectedAdapterId(e.target.value)}
-                >
-                  {availableAdapters.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
+            <AgentSelector
+              adapters={adapters}
+              selectedAdapterId={selectedAdapterId}
+              onSelect={setSelectedAdapterId}
+              issueStatus={issueStatus}
+              explicitConsult={explicitConsult}
+              onExplicitConsultChange={setExplicitConsult}
+            />
 
             {disabledMessage ? (
               <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-muted-foreground">
@@ -186,7 +180,7 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId }: Thread
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder="Enter agent instructions…"
                 className="min-h-[48px] flex-1 resize-none text-xs"
-                disabled={!canSend && disabledMessage !== null}
+                disabled={isTerminal}
                 rows={2}
               />
               <Button

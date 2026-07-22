@@ -1,0 +1,98 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { screen, waitFor, fireEvent } from "@testing-library/react";
+import { AgentCapability, IssueStatus } from "@personahub/shared";
+import { ThreadView } from "@/components/thread/ThreadView";
+import { createAdapter, renderWithQuery } from "@/test/ui-flow-helpers";
+
+vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
+
+import { apiClient } from "@/lib/api-client";
+
+function mockAdapters(...adapters: ReturnType<typeof createAdapter>[]) {
+  vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters });
+}
+
+describe("T091/T092: composer routing preview", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(apiClient.threads.getEvents).mockResolvedValue({ events: [] });
+    vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [] });
+  });
+
+  it("Running + implementation-capable default adapter -> previews Implementation workflow", async () => {
+    mockAdapters(createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation] }));
+    renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Running} projectId="prj_1" />);
+    expect(await screen.findByText("Implementation workflow")).toBeInTheDocument();
+  });
+
+  it("Validating + validator-capable default adapter -> previews Validator workflow", async () => {
+    mockAdapters(createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Validator] }));
+    renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Validating} projectId="prj_1" />);
+    expect(await screen.findByText("Validator workflow")).toBeInTheDocument();
+  });
+
+  it("Validating + implementation-only adapter (mismatch) -> degrades to Consult preview", async () => {
+    mockAdapters(createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation] }));
+    renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Validating} projectId="prj_1" />);
+    expect(await screen.findByText("Consult (does not change Issue status)")).toBeInTheDocument();
+  });
+
+  it("explicit consult toggle previews Consult even when the adapter matches the expected workflow role", async () => {
+    mockAdapters(createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation] }));
+    renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Running} projectId="prj_1" />);
+    await screen.findByText("Implementation workflow");
+    fireEvent.click(screen.getByRole("checkbox", { name: /ask \(consult\)/i }));
+    await waitFor(() => {
+      expect(screen.getByText("Consult (does not change Issue status)")).toBeInTheDocument();
+    });
+  });
+
+  it("Done issue disables the composer with an explanatory message", async () => {
+    mockAdapters(createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation] }));
+    renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Done} projectId="prj_1" />);
+    expect(await screen.findByText(/Issue is Done/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Enter agent instructions…")).toBeDisabled();
+  });
+
+  it("Blocked issue disables the composer with an explanatory message", async () => {
+    mockAdapters(createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation] }));
+    renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Blocked} projectId="prj_1" />);
+    expect(await screen.findByText(/Issue is Blocked/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Enter agent instructions…")).toBeDisabled();
+  });
+
+  it("a Run already in progress does NOT disable the composer (consult stays eligible during Validating)", async () => {
+    mockAdapters(createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Validator] }));
+    vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({
+      runs: [{
+        id: "run_active", issue_id: "iss_1", thread_id: "thr_1", workspace_id: "wsp_1",
+        adapter_config_id: "agt_1", status: "running" as never, failure_reason: null,
+        instructions: "x", started_at: "2026-07-19T00:00:00.000Z", completed_at: null,
+        exit_code: null, error_message: null, role: "validator" as never, workflow_step: "validation",
+        validation_round: 1, dispatch_source: "system" as never, adapter_identity: null,
+        has_final_message: false, purpose: "workflow_bound" as never, context_source_run_id: null,
+        created_at: "2026-07-19T00:00:00.000Z", updated_at: "2026-07-19T00:00:00.000Z",
+      }],
+    });
+    renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Validating} projectId="prj_1" />);
+    await screen.findByLabelText("Agent");
+    expect(screen.getByPlaceholderText("Enter agent instructions…")).not.toBeDisabled();
+    expect(screen.queryByText(/already in progress/i)).not.toBeInTheDocument();
+  });
+
+  it("submits with purpose:ad_hoc_consult when the consult checkbox is checked", async () => {
+    mockAdapters(createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation] }));
+    vi.mocked(apiClient.runs.create).mockResolvedValue({ run: {} as never });
+    renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Running} projectId="prj_1" />);
+    await screen.findByLabelText("Agent");
+    fireEvent.click(screen.getByRole("checkbox", { name: /ask \(consult\)/i }));
+    fireEvent.change(screen.getByPlaceholderText("Enter agent instructions…"), { target: { value: "quick question" } });
+    fireEvent.submit(screen.getByPlaceholderText("Enter agent instructions…").closest("form")!);
+
+    await waitFor(() => {
+      expect(apiClient.runs.create).toHaveBeenCalledWith("iss_1", expect.objectContaining({
+        purpose: "ad_hoc_consult",
+      }));
+    });
+  });
+});
