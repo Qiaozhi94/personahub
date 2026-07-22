@@ -1,10 +1,10 @@
 ---
-feature_ids: [F004]
+feature_ids: [F004, F005]
 related_features: [F001, F002, F003]
 topics: [design, data-model, agent-team-os]
 doc_kind: design
 created: 2026-07-11
-updated: 2026-07-19
+updated: 2026-07-22
 ---
 
 # PersonaHub 系统设计草案：数据模型
@@ -21,7 +21,7 @@ PRD 第 5 节"核心概念"是这些实体的产品语义来源，本文档只�
 
 ## 数据模型草案
 
-> F004 (Autonomous Validation) 新增/修改字段以 `# F004` 标记。完整 schema 细节见 `docs/features/0.1/F004-autonomous-validation/design.md` §3-4。
+> F004 (Autonomous Validation) 新增/修改字段以 `# F004` 标记，完整 schema 细节见 `docs/features/0.1/F004-autonomous-validation/design.md` §3-4。F005 (Manual Multi-Agent Routing) 新增/修改字段以 `# F005` 标记，完整 schema 细节见 `docs/features/0.1/F005-multi-agent-manual-routing/design.md` §3-4。
 
 ```text
 Project
@@ -30,6 +30,7 @@ Project
   description
   default_workspace_id
   default_coordinator_agent_id
+  default_adapter_config_id  # F005: composer 省略 adapter_id 时的解析目标（AdapterResolver）；与自动 validator 的 ValidatorSelector 是两回事，不得合并
   created_at
   updated_at
 
@@ -72,6 +73,7 @@ Issue
   validation_round_count
   blocked_reason_code        # F004: ValidationBlockReason | string | null
   blocked_reason_message     # F004: human-readable blocker description | null
+  validation_dispatch_due_at # F005 §8.1: set in Phase A (implementation completed), cleared by the Phase B winner (manual pick or ValidationDispatchScheduler auto-claim); non-null means the grace window is still open. Indexed by idx_issues_validation_due.
   created_at
   updated_at
 
@@ -130,16 +132,23 @@ Agent (adapter_config)
   id
   project_id
   name
-  role
-  cli_provider
+  role                     # deprecated：仅内部保留，永不出现在 public DTO；capability_tags 是 role 的真相源（见 F005 design §4.1）
+  cli_provider             # F005: codex | claude-code | opencode（后两者为真实落地的第二/三 provider，非预留占位）
   command
   args
-  capability_tags
+  capability_tags          # AgentCapability[]：implementation | validator；consult 不是可配置能力（任何 adapter 都能承接咨询）
   default_model
   status
   last_checked_at
+  auth_type                # F005: oauth | api_key；provider 支持矩阵见 architecture.md §3
+  model_provider           # F005: OpenCode api_key 模式下的 model provider（如 "openai"），走白名单校验
+  api_key                  # F005: 原始 secret，internal-only（AgentConfigRecord），public DTO 永远没有这个字段
+  auth_status_message      # F005: validate() 探测失败时的经清洗 message；成功时为 null
   created_at
   updated_at
+  # F005 public DTO（AdapterConfig，非独立 DB 列）额外投影：
+  #   has_api_key  — api_key 是否已配置（write-only 布尔投影，从不回显原值）
+  #   is_default   — 与 Project.default_adapter_config_id 比对得出的 service 层计算字段
 
 WorkflowTemplate
   id
@@ -189,10 +198,12 @@ Run
   completed_at
   exit_code
   error_message
-  role                    # F004: implementation | validator | consult
+  role                    # F004: implementation | validator；F005 扩展新增 consult（见 shared/src/types/validation.ts RunRole）
   workflow_step           # F004: "implementation" | "validation" | null (derived from role)
   validation_round        # F004: round number for validator Runs; v5 partial unique idx (issue_id, validation_round) WHERE role='validator'
-  dispatch_source         # F004: user_explicit | system
+  dispatch_source         # F004: user_explicit | system；F005 扩展新增 user_default（composer 省略 adapter_id、走 Project default 解析时）
+  purpose                 # F005: workflow_bound | ad_hoc_consult；workflow_bound 驱动 Issue 状态机与 round，ad_hoc_consult 从不驱动（即便 role 恰好命中 implementation/validator 的 capability）
+  context_source_run_id   # F005: 本 Run 的 Handoff/evidence 上下文来自哪个 Run（通常是最近一次 completed implementation Run）；首个 Run 为 null
   final_message           # F004: validator final agent message (internal, not in public Run DTO)
   adapter_identity_json   # F004: snapshot of adapter config identity at Run creation
   created_at
@@ -216,13 +227,18 @@ EvidenceSummary         # F004: deterministic Done projection, one per Issue
   policy_snapshot_hash    # SHA-256 of canonical JSON; v5 CHECK: LIKE 'sha256:%'
   created_at
 
-# Schema 当前版本 v5（v1→v5 顺序 migration）。F004 关键 DB invariant：
+# Schema 当前版本 v6（v1→v6 顺序 migration）。F004 关键 DB invariant：
 #   - evidence_summaries CHECK：validation_result='passed'、same_origin_validation IN (0,1)、
 #     policy_snapshot_hash LIKE 'sha256:%'（SQLite 无法 ALTER-ADD CHECK，v5 create-copy-drop-rename 重建该表）
 #   - idx_runs_one_active_validator (issue_id) WHERE role='validator' AND status IN (queued,running)
 #     —— 同 Issue 至多一个活跃 validator
 #   - idx_runs_validator_per_round (issue_id, validation_round) WHERE role='validator'
 #     —— 同 Issue+round 至多一条 validator Run（terminal 也计），与 service 层唯一性（T093）双层保证
+# F005（schema v6，server/src/db/schema-v6.ts）关键 DB invariant：
+#   - idx_issues_validation_due (status, validation_dispatch_due_at) WHERE status='Validating' AND validation_dispatch_due_at IS NOT NULL
+#     —— ValidationDispatchScheduler 每秒 tick 扫描到期 Issue 的查询索引
+#   - agent_configs 新增 auth_type/model_provider/api_key/auth_status_message，SQLite ALTER ADD COLUMN（非 CHECK，校验在 service 层 validateAuthState()）
+#   - runs 新增 purpose/context_source_run_id；projects 新增 default_adapter_config_id（无列级 FK，由 service 校验同 Project 且 available）
 
 Artifact
   id

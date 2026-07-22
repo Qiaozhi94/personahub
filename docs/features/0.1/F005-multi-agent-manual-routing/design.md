@@ -9,7 +9,7 @@ updated: 2026-07-19
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）- 设计
 
-> Status: ready-for-development | Owner: TBD | Spec: `spec.md`
+> Status: review | Owner: TBD | Spec: `spec.md`
 
 ## 1. 技术概要
 

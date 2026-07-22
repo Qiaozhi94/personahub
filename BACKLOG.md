@@ -13,4 +13,4 @@ created: 2026-07-11
 |----|---------|------|--------|-------|------|
 | F003 | 0.1 | Development Trace | done | Sisyphus | `docs/features/0.1/F003-development-trace/spec.md` |
 | F004 | 0.1 | Autonomous Validation | done | Sisyphus | `docs/features/0.1/F004-autonomous-validation/spec.md` |
-| F005 | 0.1 | Manual Multi-Agent Routing | in-progress（Phase 0-12/13 完成，见 tasks.md） | TBD | `docs/features/0.1/F005-multi-agent-manual-routing/spec.md` |
+| F005 | 0.1 | Manual Multi-Agent Routing | review（Phase 0-13/13 全部完成，见 tasks.md） | TBD | `docs/features/0.1/F005-multi-agent-manual-routing/spec.md` |

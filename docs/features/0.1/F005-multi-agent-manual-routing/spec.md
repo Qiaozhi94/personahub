@@ -9,7 +9,7 @@ updated: 2026-07-19
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）
 
-> Status: ready-for-development | Owner: TBD | Target: v0.1.4
+> Status: review | Owner: TBD | Target: v0.1.4
 
 ## 0. 规格元信息
 

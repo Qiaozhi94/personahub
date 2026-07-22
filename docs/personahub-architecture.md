@@ -2,7 +2,7 @@
 topics: [architecture, runtime, module-design, agent-team-os, validation, workflow]
 doc_kind: design
 created: 2026-07-12
-updated: 2026-07-19
+updated: 2026-07-22
 ---
 
 # PersonaHub 软件架构设计
@@ -13,6 +13,7 @@ updated: 2026-07-19
 
 | 日期 | 来源提交 | 修订目的 | 修订内容 |
 | --- | --- | --- | --- |
+| 2026-07-22 | F005 Phase 0-13 | 同步 F005（Manual Multi-Agent Routing）落地后架构层的实际变化，第 3 节 P0-only 描述和第 5.2 节单阶段 validator 创建描述均已过期 | 第 3 节改写为 Codex/Claude Code/OpenCode 三个真实落地 adapter（非预留占位），接口补充 `validate()`/`auth_type`/`model_provider`/`api_key`/`onTrace`；第 5.2 节补充 F005 两阶段（grace window + `ManualRoutingService`/`ValidationDispatchScheduler` 互斥）validator dispatch 流程；第 5.7 节 schema 版本 v5→v6；第 1 节分层图同步三 adapter |
 | 2026-07-18 | `4d13cab` | 同步 PRD 对 v0.4 渐进式多场景扩展和 AgentOps 前置数据采集的产品调整 | 明确非 coding Workflow 按任务范式逐个做垂直切片，不能把场景差异压成模板 JSON；补充 Windows 排障、knowledge/research、writing 三类执行与证据边界；明确 v0.1–v0.3 先保存可派生的最小原始信号，v0.5 再建设完整 AgentOps 聚合与评价能力 |
 | 2026-07-17 | `4829752` | 让 F003 Development Trace 的事件回放和 evidence 引用契约与真实实现一致，并为 v0.3 Artifact 扩展保留兼容路径 | 将事件 cursor 从“全局递增 id”修正为稳定 ULID `id` 去重、Thread 内 `event_sequence` 排序；统一 v0.1 typed evidence refs（`event:` / `file-change-set:`），并约定 v0.3 通过新增 `artifact:` 前缀扩展而无需迁移已有引用 |
 | 2026-07-12 | `9c79555` | 同步前端样式与代码目录决策，降低业务逻辑和 UI 组件耦合 | 引用决策 0004，明确 `lib` / `hooks` / `types` 与 `components` 分层，组件不直接内嵌 API 调用，为后续桌面打包和可能的多端业务逻辑复用保留边界 |
@@ -54,8 +55,10 @@ Local API Server (Node.js + TypeScript)
   Artifact Service：封装 artifact 的存取和引用校验（见第 7 节）
 
 Agent Adapter Layer
-  CodexCliAdapter（P0 唯一实现）
+  CodexCliAdapter / ClaudeCodeAdapter / OpenCodeAdapter（F005：三者均为真实落地，非预留占位）
   子进程 stdout/stderr -> 结构化 run events
+  ManualRoutingService：Run 创建统一入口，AdapterResolver 解析 default/explicit adapter
+  ValidationDispatchScheduler：validator grace 到期自动派发（详见第 5.2 节）
 
 Storage
   SQLite（WAL 模式，本地文件）
@@ -117,38 +120,63 @@ v0.7 要做的 daemon 化、multi-workspace、workspace isolation、background q
 
 v0.1 决定：**每条 Thread 指令对应一个新 Run（one-shot invocation 模型）**。
 
-- P0 唯一 adapter 是 Codex CLI（决策 0002），多数 coding CLI 的默认模式是"给一次任务描述、执行到退出"，而不是保持进程常驻、后续继续 `sendInput()`。
-- 每次新 Run 的 prompt/context 由 Workflow Engine 从 Thread 历史（近期消息、上一轮 Handoff Packet、evidence refs）重新组装喂给 adapter，而不是依赖 CLI 进程自己记住上下文——这与 Handoff Packet"比复制聊天记录更可靠"的设计判断（PRD "核心概念"小节）一致。
-- 是否可行仍取决于 Codex CLI 的实际行为，需要在 v0.1.1 Agent Command Center 落地时用真实 CLI 验证；如果验证后发现不成立（例如 Codex CLI 更适合长会话），届时更新本节而非现在假设。
+- P0 唯一 adapter 是 Codex CLI（决策 0002），多数 coding CLI 的默认模式是"给一次任务描述、执行到退出"，而不是保持进程常驻、后续继续 `sendInput()`。F005（Manual Multi-Agent Routing）在此模型上新增 Claude Code、OpenCode 两个真实落地的第二/三 adapter，三者共用同一套 one-shot Run 语义，均未引入长会话/resume。
+- 每次新 Run 的 prompt/context 由 Workflow Engine 从 Thread 历史（近期消息、上一轮 Handoff Packet、evidence refs）重新组装喂给 adapter，而不是依赖 CLI 进程自己记住上下文——这与 Handoff Packet"比复制聊天记录更可靠"的设计判断（PRD "核心概念"小节）一致。F005 新增 `context_source_run_id`（见 `system-design.md` Run 实体）显式记录这次组装引用的是哪个上游 Run，而不是隐式约定"最近一个"。
 
-### 接口
+### 接口（F005 实际实现，`server/src/runtime/types.ts`）
 
 ```ts
 interface AgentAdapter {
+  provider: string   // "codex" | "claude-code" | "opencode"
   capabilities: {
-    supportsInteractiveInput: boolean
-    supportsResume: boolean
-    supportsStructuredOutput: boolean
+    provider: string
+    supportsApprovalHook: boolean     // 仅 Claude Code 为 true（PreToolUse hook，见第 9 节）
+    supportsStructuredTrace: boolean
+    supportsFinalMessage: boolean
+    executionTimeoutMs: number
   }
-  start(input: {
-    issueId: string
-    workspace: WorkspaceContext
-    instructions: string
-    contextPacket: HandoffPacket | null
-  }): RunHandle
+  // config 是 secret-safe 的 public DTO（永远不含 api_key）；apiKey 单独传递，
+  // 只有真正需要原始 secret 探测的 provider（OpenCode api_key 模式）才会用到。
+  validate(config: AdapterConfig, apiKey?: string | null): Promise<AdapterValidationResult>
+  start(input: AgentRunInput): Promise<RunHandle>
+}
+
+interface AgentRunInput {
+  runId: string; issueId: string; threadId: string
+  workspace: WorkspaceContext
+  instructions: string
+  context: string
+  // model_provider/default_model/auth_type/api_key 只对 OpenCode 有意义
+  // （§5.1 provider/auth 矩阵）；Codex/Claude 是纯 OAuth，adapter 忽略这些字段。
+  adapterConfig: { command: string; args: string[]; model_provider: string | null; default_model: string | null; auth_type: AdapterAuthType; api_key: string | null }
 }
 
 interface RunHandle {
   runId: string
-  onOutput(cb: (chunk: RunOutputEvent) => void): void
-  onExit(cb: (result: { exitCode: number }) => void): void
-  cancel(): void
+  onOutput(cb: (event: RunOutputChunk) => void): void
+  onTrace(cb: (event: RunTraceSignal) => void): void
+  onExit(cb: (result: RunExitResult) => void): void
+  cancel(): Promise<void>
 }
 ```
 
-- `capabilities` 是为后续 adapter（Claude Code、OpenCode，或未来支持真正长会话的 CLI）预留的能力声明位，不是 v0.1 就要实现的功能。`CodexCliAdapter`（P0）目前三项能力先假定为 `false`，具体值待 v0.1.1 实测确认。
-- P0 只实现 `CodexCliAdapter`（决策 0002），registry 预留 `ClaudeCodeAdapter` / `OpenCodeAdapter` 扩展点，不要求 P0 同时支持三个。
-- Adapter 只负责"如何和某个 CLI 子进程交互、如何把它的输出转成结构化事件"，不负责 workflow 顺序、validation 判断——那些是 Workflow Engine 和 Validation Policy 的职责，二者不应该耦合进 adapter 实现里。
+- 三个 adapter（`CodexCliAdapter`/`ClaudeCodeAdapter`/`OpenCodeAdapter`）均已真实落地并在 `server/src/index.ts` 里同时注册到 registry，不再是"预留占位"——F005 之前本节描述的"P0 只实现 Codex"已过期。
+- `validate()` 是各 provider 自己的真实 auth probe（Codex/Claude 走 CLI 自带的 auth status 类命令，OpenCode api_key 模式走一次真实最小 probe run），不是通用的 `--version` 检查——不同 provider 的"能不能用"判定标准不同，不能用同一套启发式代替。
+- `supportsApprovalHook` 是三个 provider 里唯一有真实差异的能力位：只有 Claude Code 提供 PreToolUse 钩子（第 9 节"前置拦截"），Codex 和 OpenCode 都没有，凭据隔离仍是三者共同的主防线。
+- Adapter 只负责"如何和某个 CLI 子进程交互、如何把它的输出转成结构化事件"，不负责 workflow 顺序、validation 判断、routing 分类（role/purpose/dispatch_source 的推导是 `ManualRoutingService`/`run-routing-classifier` 的职责，见第 5.2 节）——这些不应该耦合进 adapter 实现里。
+
+### 3.1 Auth 架构（F005）
+
+| Provider | OAuth | API key | 默认 command |
+| --- | --- | --- | --- |
+| codex | 支持 | 不支持 | `codex` |
+| claude-code | 支持 | 不支持 | `claude` |
+| opencode | 支持 | 支持 | `opencode` |
+
+- `agent_configs.api_key` 是唯一持有原始 secret 的地方（internal-only `AgentConfigRecord`），public DTO（`AdapterConfig`）永远只暴露 `has_api_key`（布尔投影）与 `auth_status_message`（经清洗的探测失败原因），从不回显原值。
+- OpenCode api_key 模式下，key 只在 spawn 时通过 env var（`model_provider` -> env var 名的白名单映射，例如 `openai` -> `OPENAI_API_KEY`）注入子进程环境，不落盘、不进 argv、不进日志（`server/src/runtime/auth-material.ts`）。
+- OAuth 模式下 PersonaHub 完全不读取/保存 token，只持久化 `auth_type=oauth`；"是否已登录"完全依赖 `validate()` 的真实 probe 结果（`last_checked_at` + `auth_status_message`），UI 明确标注这是"最近一次验证结果"而非实时状态。
+- 非法组合（如 OAuth adapter 同时提交 api_key，或 API-key adapter 缺 `model_provider`/`api_key`）在 service 层 `validateAuthState()` 统一拒绝，create/update 两条路径共用同一份校验，不允许出现"创建时校验、更新时漏校验"的分叉。
 
 ## 4. 事件与 Trace 层
 
@@ -193,23 +221,40 @@ trace finalize (F003 file changes + handoff, lock still held)
 
 Workflow hook 必须早于 queue drain：否则旧队列中的 implementation/consult Run 可能先启动，validator 创建顺序会漂移；若 validator 结果需把 Issue 置 Blocked，也来不及在 drain 前取消不再 eligible 的 queued Run。Hook 无论成功或收敛为 Blocked，最外层 `finally` 都必须继续执行 queue drain。
 
-### 5.2 Validation 工作流（F004）
+### 5.2 Validation 工作流（F004 单阶段基线 + F005 两阶段 grace/互斥）
 
-**Implementation completed -> 自动触发 validator：**
+**F004 原始设计是单阶段**：implementation 完成即同步创建 validator Run。**F005 引入两阶段 dispatch**，把"进入 Validating"和"选定 validator adapter 并创建 Run"拆成两个独立事务，中间留一个可配置的 grace window 供人工介入：
 
 ```text
 implementation Run completed
   -> F003 finalizeRun -> release lock
-  -> ValidationWorkflowService.requestValidation()
+  -> ValidationWorkflowService.requestValidation()   [Phase A]
        Issue Running -> Validating
-       validation.requested (固化 implementation_run_id、policy snapshot/hash、双方 identity)
-       create queued validator Run (role=validator, workflow_step=validation, dispatch_source=system)
-         instructions = buildValidatorContext()：目标 implementation 的 handoff/命令/验证/
-         文件证据 + 固化 policy + prior findings + 严格 JSON envelope 契约（F004 T090，
-         scoped 到该 implementation_run_id，不串入其它 Run）
-       同 Issue+round 已有 validator Run 时返回现有 Run 不新建（per-round 唯一，F004 T093）
+       固化 round / implementation_run_id / policy snapshot+hash（不含任何 validator 身份）
+       写 validation.dispatch_pending 事件，设置 Issue.validation_dispatch_due_at = now + MANUAL_VALIDATOR_GRACE_MS（默认 10s，可注入）
+       *不* 创建 validator Run，*不* 写 validation.requested（该事件仍是 validator-bound，语义未变）
+
+  grace window 内二选一（先到先得）：
+    (a) 用户在 composer 显式选一个 validator-capable adapter
+        -> ManualRoutingService.dispatchValidator() -> claimValidatorSlot(mode="explicit", adapterConfigId)
+    (b) grace 到期，ValidationDispatchScheduler（每秒 tick，扫描 idx_issues_validation_due）
+        -> claimValidatorSlot(mode="auto") -> 始终用 ValidatorSelector（capability_tags 含 validator 的 available adapter），
+           与 Project 的 default adapter 是两个概念，不得合并（AdapterResolver 只服务省略 adapter_id 的普通 Run）
+
+  claimValidatorSlot()（Phase B，winner 唯一执行）：
+       清 validation_dispatch_due_at
+       create queued validator Run (role=validator, workflow_step=validation,
+         dispatch_source=user_explicit|system 取决于谁赢)
+         instructions = buildValidatorContext()：同 F004（目标 implementation 的 handoff/命令/验证/
+         文件证据 + 固化 policy + prior findings + 严格 JSON envelope 契约，scoped 到该 implementation_run_id）
+       写 validation.requested（此时才携带真实 validator 身份，语义与 F004 完全一致）
+       loser（同一 round 的另一路尝试）按冲突类型分流：
+         active 冲突（本轮已有 queued/running validator）：手动方 409 VALIDATOR_RUN_CONFLICT，scheduler 幂等结束
+         per-round 冲突（本轮已有 validator 但已终态）：同样拒绝，不允许同轮重试，必须走 fail->Running->下一轮
   -> normal workspace queue dispatch
 ```
+
+`MANUAL_VALIDATOR_GRACE_MS` 注入为 0 时，Phase A 提交后立即级联执行 Phase B（同步），事件序列退化为与 F004 原始"立即创建"完全等价——这是自动化测试保持零延迟的手段，不是运行时的真实生产路径（生产默认 10s）。
 
 **Validator terminal -> outcome submission：**
 
@@ -253,10 +298,10 @@ validator      -> Validating，且 validation_round 等于当前 round
 API server 启动时的恢复顺序扩展为：
 
 1. **F003 stale Run recovery**：`status = running` 的 Run -> `interrupted`，释放 workspace 锁。
-2. **F004 validation recovery**（`ValidationRecoveryService.reconcile()`）：
-   - Finalized completed implementation + Issue Running 且无 result -> 幂等 `requestValidation()`。
+2. **F004 validation recovery**（`ValidationRecoveryService.reconcile()`，F005 扩展为按 due timestamp 判定）：
+   - Finalized completed implementation + Issue Running 且无 result -> 幂等 `requestValidation()`（Phase A）。
    - Terminal validator + Issue Validating 且无 result -> 幂等 `processValidatorResult()`（从固化 `validation.requested` 读取 implementation/policy scope）。
-   - Validating 但无 active/terminal validator -> 重建一次或 Blocked。
+   - **F005**：`validation_dispatch_due_at` 已过期 -> 立即 `claimValidatorSlot(mode="auto")`（重启即完成 Phase B，同时覆盖"手动 pick 提交后响应丢失"场景，两者在 recovery 视角不可区分）；未过期 -> 原样跳过，grace window 合法未到期；为 `null` 且无 active/terminal validator -> 判 `recovery_inconsistent` 并 Blocked（真正的不一致，正常运行中该字段在 Validating 期间必然非空）。
    - Done 缺 validation.passed 或 summary -> 记录 diagnostic，停止该 Issue 自动化。
 3. **listen / drain queue**：开始正常服务。
 
@@ -268,10 +313,11 @@ API server 启动时的恢复顺序扩展为：
 - 同事务将 `validation_round_count` 置 0 并写 `validation.round_reset` 事件，但 **Issue 仍保持 Blocked** —— 需另行 `unblock` 才恢复 Ready，使"授予更多轮次"成为显式两步操作。
 - 与普通 `unblock` 的区别：unblock 清 blocker -> Ready 但保留 round count；reset 清 count 但保留 Blocked。
 
-### 5.7 Schema Invariant（F004 T095，schema v5）
+### 5.7 Schema Invariant（F004 T095 schema v5 + F005 schema v6）
 
 - `evidence_summaries` CHECK：`validation_result='passed'`、`same_origin_validation IN (0,1)`、`policy_snapshot_hash LIKE 'sha256:%'`。
 - `idx_runs_validator_per_round (issue_id, validation_round) WHERE role='validator'`：DB 层强制 per-round validator 唯一，与 §5.2 service 层 double-guard。
+- **F005（schema v6）**：`idx_issues_validation_due (status, validation_dispatch_due_at) WHERE status='Validating' AND validation_dispatch_due_at IS NOT NULL`——`ValidationDispatchScheduler` 每秒 tick 的查询索引；`agent_configs` 新增 `auth_type`/`model_provider`/`api_key`/`auth_status_message`（ALTER ADD COLUMN，校验在 service 层 `validateAuthState()`，非 DB CHECK）；`runs` 新增 `purpose`/`context_source_run_id`；`projects` 新增 `default_adapter_config_id`（无列级 FK，由 `AdapterConfigService`/`ProjectRepository.setDefaultAdapter()` 校验同 Project 且 available）。
 
 ## 6. 存储层
 

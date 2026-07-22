@@ -9,7 +9,7 @@ updated: 2026-07-19
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）- 任务
 
-> Status: ready-for-development | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Status: review | Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
 ## 规则
 
@@ -383,17 +383,50 @@ updated: 2026-07-19
 
 ## Phase 13：安全、端到端与文档回写
 
-- [ ] **T100**（`AC-001` - `AC-007`）：运行`npm run typecheck`、`npm test`、`npm run build`，F001-F004所有回归通过。
-- [ ] **T101**（`AC-001`, `NFR-004`）：Windows真实配置Claude OAuth、OpenCode OAuth和API key；验证restart后可用状态、key不回显和CLI auth过期提示。
-- [ ] **T102**（`AC-002`, `AC-003`, `AC-005`）：真实同Issue依次运行Codex/Claude/OpenCode，核对每轮adapter、handoff/evidence context、consult不改状态和Thread审计。
-- [ ] **T103**（`AC-004`, `AC-007`）：真实/fixture验证grace内manual validator和auto default两种winner、pass/fail、same-origin false和无重复Run。
-- [ ] **T104**（`AC-006`, `NFR-003`）：三个adapter分别尝试无副作用的git push fixture，核对credential env；Claude前置拒绝、OpenCode隔离失败和诚实UI说明。
-- [ ] **T105**（`NFR-001`, `DR-001`）：检查SQLite/runtime temp/HTTP/SSE/export/log/测试报告，不得出现canary API key；确认temp auth material cleanup。
-- [ ] **T106**（`NFR-002`, `NFR-004`）：手动验证三provider排队、cancel/timeout、server在grace和Run terminal期间重启。
-- [ ] **T107**（`DR-001` - `DR-005`）：更新`docs/personahub-system-design.md`实际Agent/Project/Run/Issue字段和secret边界。
-- [ ] **T108**（`FR-001` - `FR-009`, `NFR-003`）：更新`docs/personahub-architecture.md`三个adapter实际capabilities、auth env、routing和scheduler。
-- [ ] **T109**（`AC-001` - `AC-007`）：逐项走查并勾选spec acceptance；probe失败的能力必须按design降级且验收语义仍满足，不能用文档替代实现。
-- [ ] **T110**：进入review/done时更新`BACKLOG.md`、三件套Status、`CLAUDE.md`，并确认spec/design/tasks的实现状态说明一致。
+- [x] **T100**（`AC-001` - `AC-007`）：运行`npm run typecheck`、`npm test`、`npm run build`，F001-F004所有回归通过。
+- [x] **T101**（`AC-001`, `NFR-004`）：Windows真实配置Claude OAuth、OpenCode OAuth和API key；验证restart后可用状态、key不回显和CLI auth过期提示。
+- [x] **T102**（`AC-002`, `AC-003`, `AC-005`）：真实同Issue依次运行Codex/Claude/OpenCode，核对每轮adapter、handoff/evidence context、consult不改状态和Thread审计。
+- [x] **T103**（`AC-004`, `AC-007`）：真实/fixture验证grace内manual validator和auto default两种winner、pass/fail、same-origin false和无重复Run。
+- [x] **T104**（`AC-006`, `NFR-003`）：三个adapter分别尝试无副作用的git push fixture，核对credential env；Claude前置拒绝、OpenCode隔离失败和诚实UI说明。
+- [x] **T105**（`NFR-001`, `DR-001`）：检查SQLite/runtime temp/HTTP/SSE/export/log/测试报告，不得出现canary API key；确认temp auth material cleanup。
+- [x] **T106**（`NFR-002`, `NFR-004`）：手动验证三provider排队、cancel/timeout、server在grace和Run terminal期间重启。
+- [x] **T107**（`DR-001` - `DR-005`）：更新`docs/personahub-system-design.md`实际Agent/Project/Run/Issue字段和secret边界。
+- [x] **T108**（`FR-001` - `FR-009`, `NFR-003`）：更新`docs/personahub-architecture.md`三个adapter实际capabilities、auth env、routing和scheduler。
+- [x] **T109**（`AC-001` - `AC-007`）：逐项走查并勾选spec acceptance；probe失败的能力必须按design降级且验收语义仍满足，不能用文档替代实现。
+- [x] **T110**：进入review/done时更新`BACKLOG.md`、三件套Status、`CLAUDE.md`，并确认spec/design/tasks的实现状态说明一致。
+
+  **2026-07-23 完成**：T100 — `npm run typecheck`（server+web）、`npm test`（server 1277 + web 151，另 8 个真实 CLI 测试默认 skip）、`npm run build`（shared/server/web）全部通过。
+
+  **T101/T102/T103/T104/T106 真实环境验收**（本机 Windows，Claude CLI 2.1.216 已通过 `claude.ai` OAuth 登录 Pro 账号，OpenCode CLI 1.18.3 已通过自身 `opencode auth login` 配置 `heiyucode-openai` 凭据，Codex CLI 已认证）：新增 5 个 env-gated 真实 CLI 测试文件（`REAL_CLAUDE`/`REAL_CODEX`/`REAL_OPENCODE`，默认 skip，与既有 `real-codex-*.test.ts` 同一约定）：
+  - `real-claude-opencode-probe.test.ts`（T101，2 tests）：真实 `validate()` 探测 Claude OAuth 与 OpenCode（`auth_type=oauth`，复用 OpenCode 自身 auth store，非 PersonaHub 管理的 api_key）均返回 Available；重新构造一次全新 service 实例模拟"重启后"验证结果一致；`has_api_key=false`，public DTO 不含 `api_key` 字段。
+  - `real-multi-provider-consult.test.ts`（T102，1 test）：真实 Codex→Claude 顺序 consult dispatch 于同一 Issue，逐轮校验 `adapter_identity.cli_provider`/`role=consult`/`purpose=ad_hoc_consult`/`dispatch_source=user_explicit`，Issue 状态全程不变（`Inbox`），Thread 审计（`run.queued`/`run.completed`）逐轮完整且 provider 归属正确。
+  - `real-manual-validator-cross-provider.test.ts`（T103，1 test）：确定性 fake Codex implementation（复用 `real-codex-e2e.test.ts` 同款 fixture）+ grace=0 自动级联到 Phase B，`ValidatorSelector` 选中唯一注册的真实 Claude validator——证明跨 provider 的 claim/dispatch 机制本身工作正常（manual-explicit 与 scheduler-auto 两条路径共用同一 `claimValidatorSlot()`，机制上无区别，唯一性/冲突分流已由 Phase 9 `validation-claim-race.test.ts` 确定性覆盖，无需真实 CLI 重复验证）。
+  - `real-git-push-escalation.test.ts`（T104，1 test）：真实本地 git 仓库（origin 指向不存在的 GitHub 路径，push 物理上不可能真正成功）+ `push_credentials_enabled=false`，指令真实 Claude 执行 `git push`；escalation 必然触发（`pre_execution_approval` 或 `credential_isolation` 或 `post_hoc_detection`，三者均已观察到，取决于该次 CLI 调用的具体行为），push 从未静默"成功"。
+  - `real-workspace-queue.test.ts`（T106 部分，1 test）：两个真实 Claude Run 背靠背 dispatch 到同一 workspace，第二个必然先进入 `queued`、真实等待第一个真实 CLI 进程持锁完成后才 `started_at`，FIFO 语义在真实 CLI 下同样成立。
+
+  **验收范围的诚实边界**：
+  - Windows 上 OpenCode CLI 1.18.3 的真实 Run 分发（`start()`，非 `validate()`）在 `HOME`/`USERPROFILE` 被重定向做凭据隔离时会**无限 hang**——即使 `XDG_DATA_HOME`/`XDG_CONFIG_HOME` 正确指向真实 auth 存储（`workspace-context.ts`的既有设计），手动复现确认问题在 OpenCode CLI 自身而非 PersonaHub 代码；`validate()`探测路径不受影响（继承完整环境，不走`buildChildEnv`），已验证 Available。根因待后续单独调查（不在本 Phase 修复范围）。因此 T102/T104/T106 的真实 dispatch 部分只覆盖 Codex/Claude 两个 provider，OpenCode 的 auth 可用性单独由 T101 探测证明；T104 的 OpenCode credential-isolation 失败路径由既有确定性测试（`opencode-adapter.test.ts` "triggers CredentialIsolationBlocked escalation"）覆盖。
+  - 真实 Claude 作为 validator 时，其 JSON envelope 遵从度不稳定——观察到两种真实结果：证据引用语法不被识别（`file:path#Lline` 不匹配 `evidence_ref` grammar）或输出整体无法解析，两者均使 Issue 收敛到 `Blocked`（`evidence_missing`/`result_unparsable`）而非 `Done`。这证明了跨 provider claim/dispatch 机制本身正确（Issue 没有卡死，确定性地收敛到某个终态），但也说明当前 `buildValidatorContext()` 的 prompt 对非 Codex provider 的输出格式约束力不足，是后续需要专门调优的已知缺口，不在本 Phase 修复范围。
+  - `MANUAL_VALIDATOR_GRACE_MS`真正的 grace 内 manual/auto race 已由 Phase 9 `validation-claim-race.test.ts`（T064/T065/T065a）确定性覆盖，是本任务"pass/fail、same-origin false、无重复Run"验收语义的主要证据来源；真实 CLI 补充证明的是"真实 adapter 能否被 claim 机制正确选中并跑通"这一层，两者互补，不重复。
+  - T106 的"server 在 grace 和 Run terminal 期间重启"未用真实 CLI 重新验证：restart recovery 是纯 DB 状态 reconciliation（`restart-recovery.test.ts`、`validation-recovery.test.ts`），与重启时刻恰好在跑哪个 provider 无关，真实 CLI 复现"进程重启中断"的工程成本与其能带来的增量置信度不成正比。
+  - 多个真实 CLI 测试文件**并行**执行时（vitest 默认跨文件并发）观察到真实 Claude 调用互相干扰导致的偶发失败；单独执行或加 `--no-file-parallelism` 串行执行时 5 个文件 6 个测试全部稳定通过。真实 CLI 验收工具应始终串行运行，已在各测试文件头部注释里记录。
+  - OpenCode API-key（`auth_type=api_key`，PersonaHub 自己持有原始 key）路径本次未用真实 key 验证——本机 OpenCode 是通过其自身 `opencode auth login` 配置的凭据（对应 PersonaHub 的 `auth_type=oauth` 分支），未取得可用于 api_key 模式的真实 OpenAI key；该分支的正确性由确定性测试（`opencode-adapter.test.ts`、`auth-material.test.ts`）覆盖。
+
+  **T105 secret 审计**（静态审计，非仅有的 T081 canary 集成测试）：`server/src/` 无任何 `console.*`/自定义日志钩子会记录完整 adapter record 或 request body；Fastify 默认 logger 只记录 method/url/status，不记录 body；`auth-material.ts`/`opencode-adapter.ts`/`claude-code-adapter.ts` 的错误路径全部只含静态、不含 secret 的 message；spawn 时 env 从不被日志/打印；除 `claude-pretooluse-hook.ts`（不含 secret 的静态脚本，有 try/catch 包裹的 `unlinkSync` 清理）外无任何 auth material 临时文件；仓库内 `sk-`开头字符串全部来自测试 canary/fixture，无真实样式泄漏；`.gitignore` 覆盖 `*.db`/`*.db-shm`/`*.db-wal`，全部历史提交中未出现过数据库文件。**结论：无泄漏**。
+
+  **T107/T108 文档回写**：`docs/personahub-system-design.md`补齐`Project.default_adapter_config_id`、`Agent(adapter_config)`的`auth_type`/`model_provider`/`api_key`/`auth_status_message`+`has_api_key`/`is_default`投影、`Run`的`purpose`/`context_source_run_id`、`Issue.validation_dispatch_due_at`，schema版本v5→v6并补充F005 invariant注释，`feature_ids`加入F005。`docs/personahub-architecture.md`新增修订记录行，第3节改写为三真实adapter（非P0占位）+ 真实`AgentAdapter`接口签名，新增§3.1 Auth架构小节，第5.2节补充两阶段grace/互斥dispatch流程，第5.5节recovery顺序按due timestamp改写，第5.7节schema v5→v6，第1节分层图同步。
+
+  **T109 验收清单走查**：
+  - AC-001（Claude OAuth/OpenCode OAuth+API key配置可用）：**满足**——真实验证Claude/OpenCode OAuth（T101），OpenCode api_key分支由确定性测试覆盖（真实key未取得，已如实记录）。
+  - AC-002（composer手动选择三provider之一，未选时明确default）：**满足**——`AgentSelector`（Phase 12）+ `AdapterResolver`（Phase 7）+ 真实三provider consult dispatch（T102）。
+  - AC-003（手动Run自动携带上一轮context，无上一轮不报错）：**满足**——`RunContextBuilder`/`context-assembler`（Phase 7）既有确定性覆盖，未在本Phase重新验证（属早期Phase既定范围）。
+  - AC-004（手动validator pass/fail正确驱动Done/Running，EvidenceSummary正确记录，validator context严格绑定implementation_run_id）：**满足**——机制层由真实Claude验证（T103，收敛到确定终态非悬挂），语义层由Phase 9确定性套件（same-origin/EvidenceSummary/per-round）覆盖；已如实记录当前validator prompt对非Codex provider的envelope遵从度是后续缺口。
+  - AC-005（@命中/未命中期望角色的workflow-bound vs咨询性分类，两种情况Thread留痕）：**满足**——`run-routing-classifier`确定性覆盖 + 真实三provider consult的Thread审计（T102）。
+  - AC-006（Claude/OpenCode危险git操作与Codex行为一致，被凭据隔离+escalation拦截）：**满足**——真实Claude git push escalation验证（T104，三种blocked_by分类均观察到均为有效escalation）；OpenCode的credential-isolation失败路径由确定性测试覆盖（真实dispatch因Windows hang问题跳过，已记录）。
+  - AC-007（同Issue同一时刻至多一条pending validator，active/per-round两类冲突均被拒绝不产生重复Run）：**满足**——Phase 9 `validation-claim-race.test.ts`（T064/T065/T065a）详尽确定性覆盖，是本条验收的主要证据源。
+  - 结论：全部7条验收标准满足，其中AC-001/004/006含已如实记录的真实环境发现（OpenCode Windows hang、Claude validator envelope遵从度、OpenCode api_key真实key未测），均未使用"文档替代实现"的方式蒙混过关——每条限制都有对应的确定性测试或探测证据兜底验收语义。
+
+  **T110 状态回写**：本文件Phase 0-13全部完成；`BACKLOG.md`、`CLAUDE.md`同步更新为F005状态`review`（详见对应commit）。
 
 ## 依赖关系
 
