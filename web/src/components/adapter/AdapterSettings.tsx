@@ -102,7 +102,7 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
   }
 
   return (
-    <section className="grid gap-1.5">
+    <section className="grid min-w-0 gap-1.5">
       <div className="flex items-center justify-between px-2.5">
         <span className="text-xs text-muted-foreground">Agent Adapters</span>
         {adapters.length > 0 ? (
@@ -115,7 +115,7 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
           No adapter configured
         </div>
       ) : (
-        <div className="grid gap-1">
+        <div className="grid min-w-0 gap-1">
           {adapters.map((adapter) => (
             <AdapterRow
               key={adapter.id}
@@ -196,64 +196,68 @@ function AdapterRow({ adapter, projectId, workspaceId, onEdit }: AdapterRowProps
   return (
     <div
       className={cn(
-        "grid gap-1 rounded-md border border-border bg-background px-2.5 py-1.5",
+        "flex min-w-0 flex-col gap-1 rounded-md border border-border bg-background px-2.5 py-1.5",
         isBusy && "opacity-50",
       )}
     >
-      <div className="flex items-center gap-2">
-        <Cpu className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <button
-          type="button"
-          className="min-w-0 flex-1 truncate text-left text-xs font-medium"
-          onClick={onEdit}
-          disabled={isBusy}
-        >
-          {adapter.name}
-        </button>
-        {adapter.is_default ? (
-          <Badge variant="brand" className="shrink-0 gap-1 text-[9px]">
-            <Star className="h-2.5 w-2.5" /> Default
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <Cpu className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <button
+            type="button"
+            className="min-w-0 max-w-full truncate text-left text-xs font-medium"
+            onClick={onEdit}
+            disabled={isBusy}
+          >
+            {adapter.name}
+          </button>
+          {adapter.is_default ? (
+            <Badge variant="brand" className="shrink-0 gap-1 text-[11px]">
+              <Star className="h-2.5 w-2.5" /> Default
+            </Badge>
+          ) : null}
+          {adapter.capability_tags.map((cap) => (
+            <Badge key={cap} variant="secondary" className="shrink-0 text-[11px]">
+              {CAPABILITY_LABEL[cap]}
+            </Badge>
+          ))}
+          <Badge variant={STATUS_VARIANT[displayStatus]} className="shrink-0 text-[11px]" title={adapter.has_workspace_override ? `This workspace: ${STATUS_LABEL[displayStatus]} (Project baseline: ${STATUS_LABEL[adapter.status]})` : undefined}>
+            {STATUS_LABEL[displayStatus]}
           </Badge>
-        ) : null}
-        {adapter.capability_tags.map((cap) => (
-          <Badge key={cap} variant="secondary" className="shrink-0 text-[9px]">
-            {CAPABILITY_LABEL[cap]}
-          </Badge>
-        ))}
-        <Badge variant={STATUS_VARIANT[displayStatus]} className="shrink-0 text-[10px]" title={adapter.has_workspace_override ? `This workspace: ${STATUS_LABEL[displayStatus]} (Project baseline: ${STATUS_LABEL[adapter.status]})` : undefined}>
-          {STATUS_LABEL[displayStatus]}
-        </Badge>
-        {adapter.has_workspace_override ? (
-          <Badge variant="secondary" className="shrink-0 text-[9px]" title="This workspace's validated status differs from the Project-global baseline">
-            workspace override
-          </Badge>
-        ) : null}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 shrink-0"
-          title="Revalidate"
-          disabled={isBusy}
-          onClick={() => validateAdapter.mutate({ adapterId: adapter.id, workspaceId })}
-        >
-          <RefreshCw className={cn("h-3 w-3", validateAdapter.isPending && "animate-spin")} />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
-          title="Delete"
-          disabled={isBusy}
-          onClick={() => {
-            if (window.confirm(`Delete adapter "${adapter.name}"?`)) {
-              deleteAdapter.mutate(adapter.id);
-            }
-          }}
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
+          {adapter.has_workspace_override ? (
+            <Badge variant="secondary" className="shrink-0 text-[11px]" title="This workspace's validated status differs from the Project-global baseline">
+              workspace override
+            </Badge>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            title="Revalidate"
+            disabled={isBusy}
+            onClick={() => validateAdapter.mutate({ adapterId: adapter.id, workspaceId })}
+          >
+            <RefreshCw className={cn("h-3 w-3", validateAdapter.isPending && "animate-spin")} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
+            title="Delete"
+            disabled={isBusy}
+            onClick={() => {
+              if (window.confirm(`Delete adapter "${adapter.name}"?`)) {
+                deleteAdapter.mutate(adapter.id);
+              }
+            }}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
-      <div className="flex items-center gap-2 pl-5 text-[10px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 pl-5 text-[11px] text-muted-foreground">
         <span>{adapter.cli_provider}</span>
         <span>·</span>
         <span>{adapter.default_model ?? "no default model"}</span>
@@ -263,7 +267,9 @@ function AdapterRow({ adapter, projectId, workspaceId, onEdit }: AdapterRowProps
         {/* design §5.2: status is a point-in-time probe result, not a live signal — always pair it with when it was last checked. */}
         <span>{formatCheckedAt(displayLastCheckedAt)}</span>
         {displayStatus === AdapterStatus.Unavailable && displayAuthMessage ? (
-          <span className="truncate text-destructive">{displayAuthMessage}</span>
+          <span className="min-w-0 basis-full break-words text-destructive [overflow-wrap:anywhere]">
+            {displayAuthMessage}
+          </span>
         ) : null}
         {/* Project default is a Project-global assignment (design §9.2) —
             deliberately gated on the global `adapter.status`, not the

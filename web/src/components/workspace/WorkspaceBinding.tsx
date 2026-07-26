@@ -25,12 +25,12 @@ export function WorkspaceBinding({ projectId, workspace }: WorkspaceBindingProps
   }
 
   return (
-    <section className="grid gap-1.5">
+    <section className="grid min-w-0 gap-1.5">
       <div className="flex items-center justify-between px-2.5">
         <span className="text-xs text-muted-foreground">Workspace</span>
       </div>
       {workspace ? (
-        <div className="break-words rounded-md border border-border bg-background px-2.5 py-2 font-mono text-xs text-muted-foreground">
+        <div className="min-w-0 break-words rounded-md border border-border bg-background px-2.5 py-2 font-mono text-xs text-muted-foreground [overflow-wrap:anywhere]">
           {workspace.local_path}
           {workspace.git_branch ? ` (${workspace.git_branch})` : ""}
         </div>

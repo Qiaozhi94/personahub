@@ -85,9 +85,10 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
       )
     : false;
 
-  const logEndRef = useRef<HTMLDivElement | null>(null);
+  const logContainerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = logContainerRef.current;
+    if (container) container.scrollTop = container.scrollHeight;
   }, [runLogs.length]);
 
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -138,7 +139,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
             <div className="grid gap-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <strong className="text-sm text-destructive">Issue Blocked</strong>
-                <Badge variant="destructive" className="text-[10px]">
+                <Badge variant="destructive" className="text-[11px]">
                   blocked
                 </Badge>
               </div>
@@ -172,7 +173,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
         <span className="text-xs text-muted-foreground">{issue.title}</span>
       </section>
 
-      <section className="grid gap-2 rounded-lg border border-border bg-card p-3.5">
+      <section className="grid min-w-0 gap-2 rounded-lg border border-border bg-card p-3.5">
         <strong className="text-sm">Issue</strong>
         <InspectorRow label="Status" value={issue.status} />
         <InspectorRow label="Priority" value={issue.priority} />
@@ -185,21 +186,21 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
         <InspectorRow label="Created" value={new Date(issue.created_at).toLocaleString()} />
       </section>
 
-      <section className="grid gap-2 rounded-lg border border-border bg-card p-3.5">
+      <section className="grid min-w-0 gap-2 rounded-lg border border-border bg-card p-3.5">
         <strong className="text-sm">Primary Thread</strong>
         <InspectorRow label="Thread" value={issue.primary_thread?.title ?? "—"} />
       </section>
 
       {runsQuery.isLoading ? (
-        <section className="grid gap-2 rounded-lg border border-border bg-card p-3.5">
+        <section className="grid min-w-0 gap-2 rounded-lg border border-border bg-card p-3.5">
           <strong className="text-sm">Latest Run</strong>
           <span className="text-xs text-muted-foreground">Loading…</span>
         </section>
       ) : latestRun ? (
-        <section className="grid gap-2 rounded-lg border border-border bg-card p-3.5">
+        <section className="grid min-w-0 gap-2 rounded-lg border border-border bg-card p-3.5">
           <div className="flex items-center justify-between">
             <strong className="text-sm">Latest Run</strong>
-            <Badge variant={RUN_STATUS_VARIANT[latestRun.status]} className="text-[10px]">
+            <Badge variant={RUN_STATUS_VARIANT[latestRun.status]} className="text-[11px]">
               {latestRun.status}
             </Badge>
           </div>
@@ -249,7 +250,10 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
           {runLogs.length > 0 ? (
             <div className="border-t border-border pt-1.5">
               <span className="text-xs text-muted-foreground">Run Logs</span>
-              <div className="mt-1 max-h-48 overflow-y-auto rounded bg-muted/50 p-2 font-mono text-[11px] leading-relaxed">
+              <div
+                ref={logContainerRef}
+                className="mt-1 max-h-48 overflow-y-auto rounded bg-muted/50 p-2 font-mono text-[11px] leading-relaxed"
+              >
                 {runLogs.map((e) => {
                   const chunk = (e.payload_json?.chunk as string) ?? "";
                   const stream = (e.payload_json?.stream as string) ?? "stdout";
@@ -265,7 +269,6 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
                 {hasTruncation ? (
                   <p className="text-[10px] text-muted-foreground italic">[output truncated at 1 MiB]</p>
                 ) : null}
-                <div ref={logEndRef} />
               </div>
             </div>
           ) : null}
@@ -286,7 +289,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
           ) : null}
         </section>
       ) : (
-        <section className="grid gap-2 rounded-lg border border-dashed border-border bg-card p-3.5">
+        <section className="grid min-w-0 gap-2 rounded-lg border border-dashed border-border bg-card p-3.5">
           <strong className="text-sm">Latest Run</strong>
           <span className="text-xs text-muted-foreground">No runs yet</span>
         </section>
@@ -343,9 +346,9 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
 
 function InspectorRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[96px_1fr] items-start gap-2 border-t border-border py-1.5 first:border-t-0 first:pt-0">
+    <div className="grid min-w-0 grid-cols-[88px_minmax(0,1fr)] items-start gap-2 border-t border-border py-1.5 first:border-t-0 first:pt-0">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-xs break-words">{value}</span>
+      <span className="min-w-0 break-words text-xs [overflow-wrap:anywhere]">{value}</span>
     </div>
   );
 }
