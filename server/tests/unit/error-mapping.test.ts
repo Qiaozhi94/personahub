@@ -176,6 +176,11 @@ describe("Error Status Mapping", () => {
       expect(getErrorStatus(ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS)).toBe(409);
     });
 
+    it("REQUEST_BODY_INVALID exists and maps to 400", () => {
+      expect(ErrorCode.REQUEST_BODY_INVALID).toBe("REQUEST_BODY_INVALID");
+      expect(getErrorStatus(ErrorCode.REQUEST_BODY_INVALID)).toBe(400);
+    });
+
     it("VALIDATOR_RUN_CONFLICT (already existed for F004) still maps to 409 — reused for F005 manual/auto race, not redefined", () => {
       expect(getErrorStatus(ErrorCode.VALIDATOR_RUN_CONFLICT)).toBe(409);
     });

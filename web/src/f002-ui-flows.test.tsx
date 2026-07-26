@@ -119,7 +119,9 @@ describe("F002 UI flows", () => {
   it("omitting the adapter selection lets the server resolve the Project default", async () => {
     vi.mocked(apiClient.threads.getEvents).mockResolvedValue({ events: [] });
     vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [] });
-    vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters: [adapter] });
+    vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({
+      adapters: [{ ...adapter, is_default: true }],
+    });
     vi.mocked(apiClient.runs.create).mockResolvedValue({ run: runningRun });
 
     renderWithQuery(

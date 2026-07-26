@@ -70,6 +70,7 @@ export interface AdapterConfigUpdateInput {
   role?: string;
   command?: string;
   args?: string[];
+  capability_tags?: AgentCapability[];
   default_model?: string | null;
   status?: AdapterStatus;
   last_checked_at?: string | null;
@@ -198,6 +199,7 @@ export class AgentConfigRepository {
     if (input.role !== undefined) { sets.push("role = ?"); values.push(input.role); }
     if (input.command !== undefined) { sets.push("command = ?"); values.push(input.command); }
     if (input.args !== undefined) { sets.push("args = ?"); values.push(JSON.stringify(input.args)); }
+    if (input.capability_tags !== undefined) { sets.push("capability_tags = ?"); values.push(JSON.stringify(input.capability_tags)); }
     if (input.default_model !== undefined) { sets.push("default_model = ?"); values.push(input.default_model); }
     if (input.status !== undefined) { sets.push("status = ?"); values.push(input.status); }
     if (input.last_checked_at !== undefined) { sets.push("last_checked_at = ?"); values.push(input.last_checked_at); }

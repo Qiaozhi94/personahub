@@ -5,6 +5,22 @@ import { AgentConfigRepository } from "../../src/repositories/agent-config.js";
 import { AdapterStatus, AgentCapability } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import { AppError } from "../../src/api/errors.js";
+import type { AgentAdapter } from "../../src/runtime/types.js";
+
+// AC-001 fix: AdapterConfigService.create() no longer resolves Available
+// synchronously — a resolvable "codex" command starts Unknown and only
+// converges via a real (here, scripted) provider probe run in the
+// background. A scripted always-available adapter registered under the
+// "codex" key lets that probe resolve deterministically without spawning
+// a real CLI; `services.adapterConfigService.shutdown()` then flushes it.
+function scriptedCodexAdapter(): AgentAdapter {
+  return {
+    provider: "codex",
+    capabilities: { provider: "codex", supportsApprovalHook: false, supportsStructuredTrace: false, supportsFinalMessage: false, executionTimeoutMs: 60_000 },
+    validate: async () => ({ available: true, errorMessage: null }),
+    start: () => { throw new Error("not used in this test"); },
+  };
+}
 
 // T021: ProjectRepository default-adapter primitives (set/clear/cross-project/
 // unavailable), plus the two cross-repo orchestration behaviors design
@@ -105,37 +121,43 @@ describe("ProjectRepository default adapter (T021)", () => {
 });
 
 describe("First available adapter auto-becomes default (T021/T022, service orchestration)", () => {
-  it("creating the first available adapter for a Project with no default sets it as default", () => {
+  it("creating the first available adapter for a Project with no default sets it as default", async () => {
     const services = createTestServices();
+    services.adapterRegistry.register(scriptedCodexAdapter());
     try {
       const project = services.projectService.create("Auto Default");
       const adapter = services.adapterConfigService.create(project.id, {
         name: "First", cli_provider: "codex", command: "codex", args: [], default_model: null,
       });
+      await services.adapterConfigService.shutdown();
 
-      expect(adapter.is_default).toBe(true);
+      const converged = services.adapterConfigService.getById(adapter.id);
+      expect(converged.is_default).toBe(true);
       expect(services.projectRepo.getById(project.id)?.default_adapter_config_id).toBe(adapter.id);
     } finally {
-      disposeTestServices(services);
+      await disposeTestServices(services);
     }
   });
 
-  it("creating a second available adapter does not change an already-set default", () => {
+  it("creating a second available adapter does not change an already-set default", async () => {
     const services = createTestServices();
+    services.adapterRegistry.register(scriptedCodexAdapter());
     try {
       const project = services.projectService.create("Second Adapter");
       const first = services.adapterConfigService.create(project.id, {
         name: "First", cli_provider: "codex", command: "codex", args: [], default_model: null,
       });
+      await services.adapterConfigService.shutdown();
       const second = services.adapterConfigService.create(project.id, {
         name: "Second", cli_provider: "codex", command: "codex", args: [], default_model: null,
       });
+      await services.adapterConfigService.shutdown();
 
-      expect(first.is_default).toBe(true);
-      expect(second.is_default).toBe(false);
+      expect(services.adapterConfigService.getById(first.id).is_default).toBe(true);
+      expect(services.adapterConfigService.getById(second.id).is_default).toBe(false);
       expect(services.projectRepo.getById(project.id)?.default_adapter_config_id).toBe(first.id);
     } finally {
-      disposeTestServices(services);
+      await disposeTestServices(services);
     }
   });
 
@@ -155,14 +177,62 @@ describe("First available adapter auto-becomes default (T021/T022, service orche
   });
 });
 
-describe("Delete guard for the current default adapter (T021/T022, service orchestration)", () => {
-  it("blocks deleting the current default when another adapter still exists", () => {
+describe("Deferred make_default probe does not clobber a newer explicit choice (closure-check-report fix)", () => {
+  it("a later explicit set-default is not overwritten once an earlier create(make_default:true)'s slow probe finally resolves", async () => {
     const services = createTestServices();
+    let resolveProbe!: (r: { available: boolean; errorMessage: string | null }) => void;
+    services.adapterRegistry.register({
+      provider: "codex",
+      capabilities: { provider: "codex", supportsApprovalHook: false, supportsStructuredTrace: false, supportsFinalMessage: false, executionTimeoutMs: 60_000 },
+      validate: () => new Promise((resolve) => { resolveProbe = resolve; }),
+      start: () => { throw new Error("not used in this test"); },
+    });
+    try {
+      const project = services.projectService.create("Race");
+      // Already-Available, created directly (bypassing the service's own
+      // async convergence — not what this test is about).
+      const other = services.agentConfigRepo.create({
+        project_id: project.id, name: "Other", role: "implementation", cli_provider: "codex",
+        command: "codex", args: [], capability_tags: [AgentCapability.Implementation],
+        default_model: null, status: AdapterStatus.Available,
+      });
+
+      // create(make_default:true) snapshots the Project's default
+      // (currently null) and kicks off a real probe that won't resolve
+      // until resolveProbe() below is called.
+      const first = services.adapterConfigService.create(project.id, {
+        name: "First", cli_provider: "codex", command: "codex", args: [], default_model: null, make_default: true,
+      });
+
+      // A user explicitly picks `other` as default while first's probe is
+      // still in flight — a newer, more specific choice than first's
+      // original (still-unresolved) create-time intent.
+      services.projectRepo.setDefaultAdapter(project.id, other.id);
+
+      // first's probe finally confirms Available.
+      resolveProbe({ available: true, errorMessage: null });
+      await services.adapterConfigService.shutdown();
+
+      // The user's later explicit choice must still stand — not silently
+      // reverted to `first` just because its make_default:true probe
+      // happened to resolve after the fact.
+      expect(services.projectRepo.getById(project.id)?.default_adapter_config_id).toBe(other.id);
+    } finally {
+      await disposeTestServices(services);
+    }
+  });
+});
+
+describe("Delete guard for the current default adapter (T021/T022, service orchestration)", () => {
+  it("blocks deleting the current default when another adapter still exists", async () => {
+    const services = createTestServices();
+    services.adapterRegistry.register(scriptedCodexAdapter());
     try {
       const project = services.projectService.create("Delete Guard");
       const first = services.adapterConfigService.create(project.id, {
         name: "First", cli_provider: "codex", command: "codex", args: [], default_model: null,
       });
+      await services.adapterConfigService.shutdown();
       services.adapterConfigService.create(project.id, {
         name: "Second", cli_provider: "codex", command: "codex", args: [], default_model: null,
       });
@@ -178,7 +248,7 @@ describe("Delete guard for the current default adapter (T021/T022, service orche
       expect((thrown as AppError).code).toBe(ErrorCode.ADAPTER_IN_USE);
       expect(services.projectRepo.getById(project.id)?.default_adapter_config_id).toBe(first.id);
     } finally {
-      disposeTestServices(services);
+      await disposeTestServices(services);
     }
   });
 

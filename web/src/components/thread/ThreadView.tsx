@@ -1,6 +1,6 @@
 import { useState, useMemo, type FormEvent } from "react";
 import { Send, AlertTriangle } from "lucide-react";
-import { IssueStatus, ThreadEventType, type ThreadEvent as ThreadEventData } from "@personahub/shared";
+import { IssueStatus, ThreadEventType, AdapterStatus, type ThreadEvent as ThreadEventData } from "@personahub/shared";
 import { useThreadEvents } from "@/hooks/use-thread";
 import { useRuns, useCreateRun } from "@/hooks/use-runs";
 import { useAdapters } from "@/hooks/use-adapters";
@@ -73,11 +73,22 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
   // (consult stays eligible during Validating even with an active validator,
   // per F005 §7.5/Phase 8's queue-drain fix).
   const isTerminal = issueStatus === IssueStatus.Done || issueStatus === IssueStatus.Blocked;
-  const canSend = !isTerminal && instructions.trim().length > 0;
+
+  const defaultAdapter = adapters.find((a) => a.is_default && a.status === AdapterStatus.Available) ?? null;
+  const resolvedAdapter = selectedAdapterId
+    ? (adapters.find((a) => a.id === selectedAdapterId && a.status === AdapterStatus.Available) ?? null)
+    : defaultAdapter;
+
+  const canSend = !isTerminal && instructions.trim().length > 0 && resolvedAdapter !== null;
 
   function getDisabledMessage(): string | null {
     if (adapters.length === 0) return "Configure an adapter to send instructions";
     if (isTerminal) return `Issue is ${issueStatus} — no new instructions can be dispatched`;
+    if (!resolvedAdapter) {
+      return selectedAdapterId
+        ? "Selected adapter is not available — choose a different one"
+        : "No available default adapter — select one explicitly";
+    }
     return null;
   }
 

@@ -19,7 +19,7 @@ function createGraceWorkflowService(services: TestServices, graceMs: number): Va
     services.db, services.issueRepo, services.runRepo, services.threadEventService, services.threadEventRepo,
     services.validationTraceService, services.agentConfigRepo, services.workflowTemplateRepo,
     services.validationPolicyRepo, services.evidenceSummaryRepo, services.fileChangeRepo,
-    graceMs,
+    services.adapterWorkspaceStatusRepo, graceMs,
   );
 }
 
@@ -89,6 +89,14 @@ describe("T069: manual validator dispatch (explicit adapter) pass/fail", () => {
     expect(run.role).toBe(RunRole.Validator);
     expect(run.dispatch_source).toBe(RunDispatchSource.UserExplicit);
     expect(run.adapter_identity!.adapter_config_id).toBe(validatorAdapter.id);
+    // Regression: claimValidatorSlot() must bind the frozen implementation
+    // Run id so RunContextBuilder never falls back to "no prior handoff".
+    expect(run.context_source_run_id).toBe(implRun.id);
+    // Regression: the composer text the user sent alongside picking a
+    // validator must reach the assembled prompt, not be silently dropped.
+    const persisted = services.runRepo.getById(run.id)!;
+    expect(persisted.instructions).toContain("## User Validation Request");
+    expect(persisted.instructions).toContain("please validate this round");
 
     completeWith(services, run.id, PASS_FM);
     services.validationWorkflowService.processValidatorResult(run.id);
@@ -134,5 +142,37 @@ describe("T069: manual validator dispatch (explicit adapter) pass/fail", () => {
 
     const validators = services.runRepo.listByIssue(issue.id).filter((r) => r.role === RunRole.Validator);
     expect(validators).toHaveLength(1);
+  });
+
+  // Workspace-override design (adapter-availability.ts): explicit-mode
+  // claimValidatorSlot() (design §8.2) must resolve availability the same
+  // workspace-aware way resolveAdapter() does — via effectiveAdapterStatus,
+  // not the raw global agent_configs.status column.
+  it("an explicit validator pick succeeds via a workspace-scoped Available override even though it is globally Unknown", () => {
+    const { issue, validatorAdapter } = setupFixture(services, tempDir, "claude");
+    services.agentConfigRepo.update(validatorAdapter.id, { status: AdapterStatus.Unknown, updated_at: new Date().toISOString() });
+    services.adapterWorkspaceStatusRepo.upsert({
+      adapter_config_id: validatorAdapter.id, workspace_id: issue.workspace_id,
+      status: AdapterStatus.Available, last_checked_at: null, auth_status_message: null,
+    });
+
+    const run = services.manualRoutingService.dispatch({
+      issueId: issue.id, instructions: "please validate this round", adapterId: validatorAdapter.id,
+    });
+
+    expect(run.role).toBe(RunRole.Validator);
+    expect(run.adapter_identity!.adapter_config_id).toBe(validatorAdapter.id);
+  });
+
+  it("an explicit validator pick is rejected via a workspace-scoped Unavailable override even though it is globally Available", () => {
+    const { issue, validatorAdapter } = setupFixture(services, tempDir, "claude");
+    services.adapterWorkspaceStatusRepo.upsert({
+      adapter_config_id: validatorAdapter.id, workspace_id: issue.workspace_id,
+      status: AdapterStatus.Unavailable, last_checked_at: null, auth_status_message: "isolated workspace",
+    });
+
+    expect(() => services.manualRoutingService.dispatch({
+      issueId: issue.id, instructions: "please validate this round", adapterId: validatorAdapter.id,
+    })).toThrow(/not available/i);
   });
 });

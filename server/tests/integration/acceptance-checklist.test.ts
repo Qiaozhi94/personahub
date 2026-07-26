@@ -42,12 +42,21 @@ describe("Acceptance Checklist (T056)", () => {
     disposeTestServices(services);
   });
 
-  it("AC-001: user can create, update, delete adapter config with validation", () => {
+  it("AC-001: user can create, update, delete adapter config with validation", async () => {
+    services.adapterRegistry.register({
+      provider: "codex",
+      capabilities: { provider: "codex", supportsApprovalHook: false, supportsStructuredTrace: false, supportsFinalMessage: false, executionTimeoutMs: 60_000 },
+      validate: async () => ({ available: true, errorMessage: null }),
+      start: () => { throw new Error("not used in this test"); },
+    });
     const project = services.projectService.create("Test", "desc");
     const adapter = services.adapterConfigService.create(project.id, {
       name: "Codex", cli_provider: "codex", command: "codex",
     });
-    expect(adapter.status).toBe(AdapterStatus.Available);
+    // AC-001 fix: a resolvable command starts Unknown and only converges to
+    // Available via the (here, scripted) background auth probe.
+    await services.adapterConfigService.shutdown();
+    expect(services.adapterConfigService.getById(adapter.id).status).toBe(AdapterStatus.Available);
 
     const updated = services.adapterConfigService.update(adapter.id, { name: "Renamed" });
     expect(updated.name).toBe("Renamed");

@@ -44,11 +44,16 @@ describe.skipIf(!REAL)("Real Codex scenarios (T082 / T085)", () => {
       writeFileSync(join(tempDir, "test", "broken.test.mjs"), `import { test } from "node:test";\nimport assert from "node:assert";\ntest("intentionally failing", () => assert.equal(1, 2));\n`);
 
       const project = services.projectService.create("E2E-T082");
-      services.workspaceService.bind(project.id, tempDir);
+      const workspace = services.workspaceService.bind(project.id, tempDir);
+      // The fake implementation step drives fake-codex.mjs via
+      // FAKE_CODEX_MODE on the test runner's own process.env, relying on it
+      // reaching the child process — buildChildEnv()'s credential-isolation
+      // allowlist would otherwise strip it.
+      services.workspaceRepo.updatePushCredentialsEnabled(workspace.id, true);
       const { issue } = services.issueService.create(project.id, { title: "Failing verification", goal: "npm test must pass" });
       relaxFileTrace(services, issue.validation_policy_id, 1); // max_rounds=1 => first failure hits the round limit
 
-      services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
+      services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [AgentCapability.Implementation], default_model: "gpt-5", status: AdapterStatus.Available });
       services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5", status: AdapterStatus.Available });
       const implId = services.agentConfigRepo.listAvailableByProjectAndCapability(project.id, AgentCapability.Implementation)[0].id;
 
@@ -82,11 +87,16 @@ describe.skipIf(!REAL)("Real Codex scenarios (T082 / T085)", () => {
       writeFileSync(join(tempDir, "test", "greet.test.mjs"), `import { test } from "node:test";\nimport assert from "node:assert";\nimport { greet } from "../src/greet.mjs";\ntest("greets", () => assert.equal(greet("A"), "Hello, A"));\n`);
 
       const project = services.projectService.create("E2E-T085");
-      services.workspaceService.bind(project.id, tempDir);
+      const workspace = services.workspaceService.bind(project.id, tempDir);
+      // The fake implementation step drives fake-codex.mjs via
+      // FAKE_CODEX_MODE on the test runner's own process.env, relying on it
+      // reaching the child process — buildChildEnv()'s credential-isolation
+      // allowlist would otherwise strip it.
+      services.workspaceRepo.updatePushCredentialsEnabled(workspace.id, true);
       const { issue } = services.issueService.create(project.id, { title: "Greeting helper", goal: "greet() works and npm test passes" });
       relaxFileTrace(services, issue.validation_policy_id, 3);
 
-      services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
+      services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [AgentCapability.Implementation], default_model: "gpt-5", status: AdapterStatus.Available });
       // Validator with a DIFFERENT default_model -> independent (not same-origin).
       services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5-codex", status: AdapterStatus.Available });
       const implId = services.agentConfigRepo.listAvailableByProjectAndCapability(project.id, AgentCapability.Implementation)[0].id;

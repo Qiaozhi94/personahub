@@ -84,6 +84,9 @@ describe("ValidationWorkflowService", () => {
       expect(result!.validation_round).toBe(1);
       expect(result!.dispatch_source).toBe(RunDispatchSource.System);
       expect(result!.status).toBe(RunStatus.Queued);
+      // Regression: the auto-claim path must also freeze context_source_run_id
+      // at creation, not just the manual/explicit path.
+      expect(result!.context_source_run_id).toBe(implRun.id);
       expect(services.issueRepo.getById(issue.id)!.status).toBe(IssueStatus.Validating);
     });
     it("snapshots adapter identity on validator run", () => {
@@ -134,6 +137,48 @@ describe("ValidationWorkflowService", () => {
       const refetched = services.issueRepo.getById(issue.id);
       expect(refetched!.status).toBe(IssueStatus.Blocked);
       expect(refetched!.blocked_reason_code).toBe("validator_unavailable");
+    });
+  });
+
+  // Review-report regression: assembleValidatorContext() throwing (e.g. the
+  // must-not-truncate sections alone exceed CONTEXT_MAX_BYTES) used to still
+  // commit an orphan queued validator Run — claimValidatorSlot() inserted the
+  // Run row, then hit the try/catch around context building, which called
+  // blockIssueInTx() and returned a "blocked" value instead of throwing.
+  // better-sqlite3 commits a db.transaction() callback that returns
+  // normally regardless of the returned value, so the half-written Run
+  // (empty instructions, no events) survived and occupied the per-round
+  // uniqueness slot, blocking any retry for that round.
+  describe("context build failure leaves no orphan validator Run (T-review-regression)", () => {
+    it("does not persist any validator Run when the context exceeds the size budget, and a retry after fixing the cause succeeds", () => {
+      const hugeGoal = "G".repeat(200_000);
+      const project = services.projectService.create("Test");
+      services.workspaceService.bind(project.id, tempDir);
+      const { issue } = services.issueService.create(project.id, { title: "T", goal: hugeGoal });
+      services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Running, updatedAt: new Date().toISOString() });
+      const implAdapter = services.agentConfigRepo.create({ project_id: project.id, name: "Impl", role: "implementation", cli_provider: "codex", command: "codex", args: [], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
+      services.agentConfigRepo.create({ project_id: project.id, name: "Val", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5", status: AdapterStatus.Available });
+      const implRun = services.runRepo.create({ issue_id: issue.id, thread_id: issue.primary_thread!.id, workspace_id: issue.workspace_id, adapter_config_id: implAdapter.id, instructions: "do it", status: RunStatus.Completed, role: RunRole.Implementation, dispatch_source: RunDispatchSource.UserExplicit, adapter_identity: { adapter_config_id: implAdapter.id, name: "Impl", cli_provider: "codex", default_model: "gpt-5" } });
+
+      const result = services.validationWorkflowService.requestValidation(issue.id, implRun.id);
+
+      expect(result).toBeNull();
+      const refetchedIssue = services.issueRepo.getById(issue.id)!;
+      expect(refetchedIssue.status).toBe(IssueStatus.Blocked);
+      const validatorRuns = services.runRepo.listByIssue(issue.id).filter((r) => r.role === RunRole.Validator);
+      expect(validatorRuns).toHaveLength(0);
+
+      // Retry after "fixing the cause" (shrink the goal back to a normal
+      // size — no repository method for this exists, so update directly):
+      // must not be rejected by a stale per-round uniqueness slot from the
+      // failed attempt.
+      services.db.prepare("UPDATE issues SET goal = ? WHERE id = ?").run("G", issue.id);
+      services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Blocked, IssueStatus.Running, {
+        blocked_reason_code: null, blocked_reason_message: null,
+      });
+      const retry = services.validationWorkflowService.requestValidation(issue.id, implRun.id);
+      expect(retry).not.toBeNull();
+      expect(retry!.role).toBe(RunRole.Validator);
     });
   });
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
-import { createTestServices, disposeTestServices, type TestServices } from "../helpers.js";
+import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
 import { registerRoutes } from "../../src/api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
@@ -81,8 +81,16 @@ describe("Adapter routes (T073-T076, T080)", () => {
       expect(body.adapter.cli_provider).toBe(CliProvider.Codex);
       expect(body.adapter.auth_type).toBe(AdapterAuthType.OAuth);
       expect(body.adapter.has_api_key).toBe(false);
-      expect(body.adapter.is_default).toBe(true);
       expect(body.adapter.api_key).toBeUndefined();
+
+      // AC-001 fix: `is_default` is only assigned once the background
+      // auto-validate probe confirms Available (see AdapterConfigService.
+      // autoValidateAfterCreate) — the synchronous POST response reflects
+      // the not-yet-converged Unknown state instead.
+      await services.adapterConfigService.shutdown();
+      const listRes = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters` });
+      const converged = JSON.parse(listRes.body).adapters.find((a: { id: string }) => a.id === body.adapter.id);
+      expect(converged.is_default).toBe(true);
     });
 
     it("creates a Claude Code adapter with explicit validator capability", async () => {
@@ -112,6 +120,87 @@ describe("Adapter routes (T073-T076, T080)", () => {
       expect(JSON.stringify(body)).not.toContain("sk-test-canary-do-not-leak");
     });
 
+    // Final-comprehensive-report regression: malformed JSON shapes for
+    // args/capability_tags used to be silently accepted via an `as` cast —
+    // a string `args` would later be spread char-by-char into argv, and a
+    // non-array/invalid capability_tags would degrade to "no capability"
+    // with no error surfaced to the caller.
+    it("rejects args sent as a non-array with REQUEST_BODY_INVALID", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", args: "--quiet --json" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
+
+    it("rejects capability_tags sent as a non-array with REQUEST_BODY_INVALID", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", capability_tags: "validator" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
+
+    it("rejects an unknown capability_tags value with REQUEST_BODY_INVALID", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", capability_tags: ["not_a_real_capability"] },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
+
+    // final-recheck-report regression: only args/capability_tags/purpose
+    // were validated — every other field (name, command, default_model,
+    // api_key, make_default, ...) still went straight through an `as` cast,
+    // so a wrong JS type reached the service's `.trim()`/comparisons and
+    // threw an uncaught TypeError -> 500 instead of a client-correctable
+    // 400. Now a full zod schema covers every field on this route.
+    it("rejects a numeric name with REQUEST_BODY_INVALID (400, not a 500 TypeError)", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: 123, cli_provider: CliProvider.Codex, command: "codex" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
+
+    it("rejects an object command with REQUEST_BODY_INVALID (400, not a 500 TypeError)", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Bad", cli_provider: CliProvider.Codex, command: {} },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
+
+    it("rejects api_key sent as an array with REQUEST_BODY_INVALID", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", api_key: [] },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
+
+    it("rejects make_default sent as a string with REQUEST_BODY_INVALID", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", make_default: "yes" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
+
     it("make_default:true overrides an already-set Project default", async () => {
       const app = buildApp(services);
       const first = await app.inject({
@@ -123,10 +212,12 @@ describe("Adapter routes (T073-T076, T080)", () => {
         payload: { name: "Second", cli_provider: CliProvider.ClaudeCode, command: "claude", make_default: true },
       });
       const secondBody = JSON.parse(second.body);
-      expect(secondBody.adapter.is_default).toBe(true);
+      await services.adapterConfigService.shutdown();
       const listRes = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters` });
       const listBody = JSON.parse(listRes.body);
       const firstAdapter = listBody.adapters.find((a: { id: string }) => a.id === JSON.parse(first.body).adapter.id);
+      const secondAdapter = listBody.adapters.find((a: { id: string }) => a.id === secondBody.adapter.id);
+      expect(secondAdapter.is_default).toBe(true);
       expect(firstAdapter.is_default).toBe(false);
     });
 
@@ -186,6 +277,85 @@ describe("Adapter routes (T073-T076, T080)", () => {
       expect(body.adapters[0].has_api_key).toBe(true);
       expect(JSON.stringify(body)).not.toContain("sk-listed-canary");
     });
+
+    // closure-recheck-report Low finding: the workspace-scoped list query
+    // (F005 workspace-aware availability UI/API closure) had no direct
+    // server-side coverage — only exercised incidentally through mocked
+    // web tests, which can't catch a backend projection bug.
+    it("omitting workspace_id returns the plain global DTO with no effective_* fields at all", async () => {
+      const app = buildApp(services);
+      await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Codex", cli_provider: CliProvider.Codex, command: "codex" },
+      });
+      const res = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters` });
+      const body = JSON.parse(res.body);
+      expect(body.adapters[0].effective_status).toBeUndefined();
+      expect(body.adapters[0].has_workspace_override).toBeUndefined();
+    });
+
+    it("workspace_id returns effective_status/has_workspace_override reflecting that workspace's override, without touching the global status field", async () => {
+      const app = buildApp(services);
+      const created = JSON.parse((await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "OpenCode", cli_provider: CliProvider.OpenCode, command: "opencode", auth_type: AdapterAuthType.ApiKey, model_provider: "openai", default_model: "gpt-5", api_key: "sk-effective-canary" },
+      })).body).adapter;
+      // AC-001 fix: create() converges Unknown -> Available asynchronously
+      // in the background — await it so the GLOBAL status this test
+      // compares against is deterministic, not a snapshot of the
+      // not-yet-converged value the POST response happened to return.
+      await services.adapterConfigService.shutdown();
+      const workspace = services.workspaceService.bind(projectId, createTempDir());
+      services.adapterWorkspaceStatusRepo.upsert({
+        adapter_config_id: created.id, workspace_id: workspace.id,
+        status: AdapterStatus.Available, last_checked_at: "2026-01-01T00:00:00.000Z", auth_status_message: null,
+      });
+
+      const res = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters?workspace_id=${workspace.id}` });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.adapters[0].status).toBe(AdapterStatus.Available);
+      expect(body.adapters[0].effective_status).toBe(AdapterStatus.Available);
+      expect(body.adapters[0].has_workspace_override).toBe(true);
+      expect(JSON.stringify(body)).not.toContain("sk-effective-canary");
+    });
+
+    it("an override in one workspace does not leak into a sibling workspace's effective status", async () => {
+      const app = buildApp(services);
+      const created = JSON.parse((await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Codex", cli_provider: CliProvider.Codex, command: "codex" },
+      })).body).adapter;
+      await services.adapterConfigService.shutdown();
+      const workspaceA = services.workspaceService.bind(projectId, createTempDir());
+      const workspaceB = services.workspaceService.bind(projectId, createTempDir());
+      services.adapterWorkspaceStatusRepo.upsert({
+        adapter_config_id: created.id, workspace_id: workspaceA.id,
+        status: AdapterStatus.Unavailable, last_checked_at: null, auth_status_message: "isolated",
+      });
+
+      const res = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters?workspace_id=${workspaceB.id}` });
+      const body = JSON.parse(res.body);
+      expect(body.adapters[0].has_workspace_override).toBe(false);
+      expect(body.adapters[0].effective_status).toBe(AdapterStatus.Available);
+    });
+
+    it("a nonexistent workspace_id returns 404 WORKSPACE_NOT_FOUND, not a silent fallback to the global view", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters?workspace_id=wsp_does_not_exist` });
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.WORKSPACE_NOT_FOUND);
+    });
+
+    it("a cross-Project workspace_id returns 404 WORKSPACE_NOT_FOUND", async () => {
+      const app = buildApp(services);
+      const otherProjectId = services.projectService.create("Other").id;
+      const otherWorkspace = services.workspaceService.bind(otherProjectId, createTempDir());
+
+      const res = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters?workspace_id=${otherWorkspace.id}` });
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.WORKSPACE_NOT_FOUND);
+    });
   });
 
   describe("PATCH /api/adapters/:adapter_id", () => {
@@ -219,6 +389,21 @@ describe("Adapter routes (T073-T076, T080)", () => {
       const body = JSON.parse(res.body);
       expect(body.adapter.has_api_key).toBe(false);
       expect(body.adapter.status).toBe(AdapterStatus.Unavailable);
+    });
+
+    it("rejects capability_tags sent as a non-array on update with REQUEST_BODY_INVALID", async () => {
+      const app = buildApp(services);
+      const created = JSON.parse((await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Codex", cli_provider: CliProvider.Codex, command: "codex" },
+      })).body).adapter;
+
+      const res = await app.inject({
+        method: "PATCH", url: `/api/adapters/${created.id}`,
+        payload: { capability_tags: "validator" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
     });
 
     it("switching to oauth clears a stale api_key even without an explicit api_key:null", async () => {
@@ -259,6 +444,18 @@ describe("Adapter routes (T073-T076, T080)", () => {
       expect(body.adapter.status).toBe(AdapterStatus.Unavailable);
       expect(body.adapter.auth_status_message).toBe("not logged in");
     });
+
+    it("rejects a numeric workspace_id with REQUEST_BODY_INVALID", async () => {
+      const app = buildApp(services);
+      const created = JSON.parse((await app.inject({
+        method: "POST", url: `/api/projects/${projectId}/adapters`,
+        payload: { name: "Codex", cli_provider: CliProvider.Codex, command: "codex" },
+      })).body).adapter;
+
+      const res = await app.inject({ method: "POST", url: `/api/adapters/${created.id}/validate`, payload: { workspace_id: 123 } });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
   });
 
   describe("PUT /api/projects/:project_id/default-adapter", () => {
@@ -272,7 +469,10 @@ describe("Adapter routes (T073-T076, T080)", () => {
         method: "POST", url: `/api/projects/${projectId}/adapters`,
         payload: { name: "Second", cli_provider: CliProvider.ClaudeCode, command: "claude" },
       })).body).adapter;
-      expect(first.is_default).toBe(true);
+      await services.adapterConfigService.shutdown();
+      const listRes = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters` });
+      const firstConverged = JSON.parse(listRes.body).adapters.find((a: { id: string }) => a.id === first.id);
+      expect(firstConverged.is_default).toBe(true);
 
       const res = await app.inject({ method: "PUT", url: `/api/projects/${projectId}/default-adapter`, payload: { adapter_id: second.id } });
       expect(res.statusCode).toBe(200);
@@ -290,6 +490,13 @@ describe("Adapter routes (T073-T076, T080)", () => {
       const res = await app.inject({ method: "PUT", url: `/api/projects/${projectId}/default-adapter`, payload: { adapter_id: unavailable.id } });
       expect(res.statusCode).toBe(409);
       expect(JSON.parse(res.body).error.code).toBe(ErrorCode.ADAPTER_UNAVAILABLE);
+    });
+
+    it("rejects a numeric adapter_id with REQUEST_BODY_INVALID", async () => {
+      const app = buildApp(services);
+      const res = await app.inject({ method: "PUT", url: `/api/projects/${projectId}/default-adapter`, payload: { adapter_id: 123 } });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
     });
 
     it("returns 404 for an adapter belonging to a different project", async () => {

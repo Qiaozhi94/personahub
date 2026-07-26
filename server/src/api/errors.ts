@@ -1,3 +1,4 @@
+import type { ZodType } from "zod";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { ApiError as ApiErrorInterface } from "@personahub/shared/errors";
 
@@ -11,6 +12,25 @@ export class AppError extends Error implements ApiErrorInterface {
     super(message);
     this.name = "AppError";
   }
+}
+
+/**
+ * design docs/decisions/0005 §route handler contract ("只做参数校验（zod）"):
+ * TypeScript `as` casts on `request.body` have zero runtime effect — a
+ * wrong-typed field (a number where a string is expected, an object,
+ * `null` where not accepted) sailed straight through into the service
+ * layer and typically surfaced as an uncaught TypeError -> 500, not a
+ * client-correctable 400. Every F005 route body must be parsed through a
+ * zod schema before it reaches a service call.
+ */
+export function parseRequestBody<T>(schema: ZodType<T>, body: unknown): T {
+  const result = schema.safeParse(body);
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    const field = issue?.path.length ? issue.path.join(".") : undefined;
+    throw new AppError(ErrorCode.REQUEST_BODY_INVALID, issue?.message ?? "Invalid request body.", field);
+  }
+  return result.data;
 }
 
 const ERROR_STATUS_MAP: Record<ErrorCode, number> = {
@@ -54,6 +74,7 @@ const ERROR_STATUS_MAP: Record<ErrorCode, number> = {
   [ErrorCode.DEFAULT_ADAPTER_UNAVAILABLE]: 409,
   [ErrorCode.RUN_PURPOSE_INVALID]: 400,
   [ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS]: 409,
+  [ErrorCode.REQUEST_BODY_INVALID]: 400,
   [ErrorCode.INTERNAL_ERROR]: 500,
 };
 

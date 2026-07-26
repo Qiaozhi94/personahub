@@ -12,7 +12,7 @@ function createGraceWorkflowService(services: TestServices, graceMs: number): Va
     services.db, services.issueRepo, services.runRepo, services.threadEventService, services.threadEventRepo,
     services.validationTraceService, services.agentConfigRepo, services.workflowTemplateRepo,
     services.validationPolicyRepo, services.evidenceSummaryRepo, services.fileChangeRepo,
-    graceMs,
+    services.adapterWorkspaceStatusRepo, graceMs,
   );
 }
 

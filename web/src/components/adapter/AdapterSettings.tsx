@@ -8,6 +8,7 @@ import {
   useAdapters, useCreateAdapter, useUpdateAdapter, useDeleteAdapter, useValidateAdapter,
   useAdapterProviders, useSetDefaultAdapter,
 } from "@/hooks/use-adapters";
+import { useWorkspace } from "@/hooks/use-workspace";
 import { toApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,11 @@ const CAPABILITY_LABEL: Record<AgentCapability, string> = {
   [AgentCapability.Validator]: "validator",
 };
 
+/** The workspace-effective status when the list was workspace-scoped, else the Project-global baseline (identical fallback the server's own effectiveAdapterStatus() uses). */
+function effectiveStatusOf(adapter: AdapterConfig): AdapterStatus {
+  return adapter.effective_status ?? adapter.status;
+}
+
 function formatCheckedAt(iso: string | null): string {
   if (!iso) return "never validated";
   try {
@@ -53,7 +59,17 @@ function formatCheckedAt(iso: string | null): string {
 }
 
 export function AdapterSettings({ projectId }: AdapterSettingsProps) {
-  const { data, isLoading } = useAdapters(projectId);
+  // F005 workspace-aware availability closure: PersonaHub's product model is
+  // one bound workspace per Project (see useWorkspace()/design F001) — there
+  // is no multi-workspace selector to build here. Once bound, that
+  // workspace's real dispatch environment is what determines whether an
+  // adapter is actually usable (schema v7 adapter_workspace_status
+  // override), so every list/validate call below is scoped to it; before a
+  // workspace is bound, these hooks degrade to the Project-global view.
+  const { data: workspaceData } = useWorkspace(projectId);
+  const workspaceId = workspaceData?.workspace?.id;
+
+  const { data, isLoading } = useAdapters(projectId, workspaceId);
   const adapters = data?.adapters ?? [];
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -105,6 +121,7 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
               key={adapter.id}
               adapter={adapter}
               projectId={projectId}
+              workspaceId={workspaceId}
               onEdit={() => openEdit(adapter)}
             />
           ))}
@@ -115,6 +132,19 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
         <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/5 px-2.5 py-1.5 text-[11px] text-warning">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           No validator configured — auto-validation requires at least one validator adapter
+        </div>
+      ) : adapters.length > 0
+        && adapters.some((a) => a.capability_tags.includes(AgentCapability.Validator))
+        && !adapters.some((a) => a.capability_tags.includes(AgentCapability.Validator) && effectiveStatusOf(a) === AdapterStatus.Available) ? (
+        // The automatic ValidatorSelector requires status=available (for
+        // THIS workspace, once one is bound — effectiveStatusOf()) AND
+        // capability=validator (see listAvailableByCapabilityForWorkspace) —
+        // a validator-capable adapter that's Unknown/Unavailable is exactly
+        // the case a user most needs a warning for: it *looks* configured
+        // but auto-validation will still Block.
+        <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/5 px-2.5 py-1.5 text-[11px] text-warning">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          Validator configured but not currently available — auto-validation will fail until it validates as available
         </div>
       ) : null}
 
@@ -140,10 +170,11 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
 interface AdapterRowProps {
   adapter: AdapterConfig;
   projectId: string;
+  workspaceId?: string;
   onEdit: () => void;
 }
 
-function AdapterRow({ adapter, projectId, onEdit }: AdapterRowProps) {
+function AdapterRow({ adapter, projectId, workspaceId, onEdit }: AdapterRowProps) {
   const deleteAdapter = useDeleteAdapter(projectId);
   const validateAdapter = useValidateAdapter(projectId);
   const setDefaultAdapter = useSetDefaultAdapter(projectId);
@@ -153,6 +184,14 @@ function AdapterRow({ adapter, projectId, onEdit }: AdapterRowProps) {
   const authIndicator = adapter.auth_type === AdapterAuthType.OAuth
     ? "OAuth"
     : adapter.has_api_key ? "API key configured" : "API key not set";
+
+  // Workspace-effective view: what actually determines routability in the
+  // Project's current (bound) workspace. Falls back to the Project-global
+  // baseline (adapter.status) when no workspace is bound yet, or when this
+  // list wasn't workspace-scoped at all.
+  const displayStatus = effectiveStatusOf(adapter);
+  const displayLastCheckedAt = adapter.effective_last_checked_at ?? adapter.last_checked_at;
+  const displayAuthMessage = adapter.effective_auth_status_message ?? adapter.auth_status_message;
 
   return (
     <div
@@ -181,16 +220,21 @@ function AdapterRow({ adapter, projectId, onEdit }: AdapterRowProps) {
             {CAPABILITY_LABEL[cap]}
           </Badge>
         ))}
-        <Badge variant={STATUS_VARIANT[adapter.status]} className="shrink-0 text-[10px]">
-          {STATUS_LABEL[adapter.status]}
+        <Badge variant={STATUS_VARIANT[displayStatus]} className="shrink-0 text-[10px]" title={adapter.has_workspace_override ? `This workspace: ${STATUS_LABEL[displayStatus]} (Project baseline: ${STATUS_LABEL[adapter.status]})` : undefined}>
+          {STATUS_LABEL[displayStatus]}
         </Badge>
+        {adapter.has_workspace_override ? (
+          <Badge variant="secondary" className="shrink-0 text-[9px]" title="This workspace's validated status differs from the Project-global baseline">
+            workspace override
+          </Badge>
+        ) : null}
         <Button
           variant="ghost"
           size="icon"
           className="h-6 w-6 shrink-0"
           title="Revalidate"
           disabled={isBusy}
-          onClick={() => validateAdapter.mutate(adapter.id)}
+          onClick={() => validateAdapter.mutate({ adapterId: adapter.id, workspaceId })}
         >
           <RefreshCw className={cn("h-3 w-3", validateAdapter.isPending && "animate-spin")} />
         </Button>
@@ -217,10 +261,17 @@ function AdapterRow({ adapter, projectId, onEdit }: AdapterRowProps) {
         <span>{authIndicator}</span>
         <span>·</span>
         {/* design §5.2: status is a point-in-time probe result, not a live signal — always pair it with when it was last checked. */}
-        <span>{formatCheckedAt(adapter.last_checked_at)}</span>
-        {adapter.status === AdapterStatus.Unavailable && adapter.auth_status_message ? (
-          <span className="truncate text-destructive">{adapter.auth_status_message}</span>
+        <span>{formatCheckedAt(displayLastCheckedAt)}</span>
+        {displayStatus === AdapterStatus.Unavailable && displayAuthMessage ? (
+          <span className="truncate text-destructive">{displayAuthMessage}</span>
         ) : null}
+        {/* Project default is a Project-global assignment (design §9.2) —
+            deliberately gated on the global `adapter.status`, not the
+            workspace-effective `displayStatus`: the backend's setDefault()
+            checks the same global column, so an adapter that's only
+            Available via a workspace override still can't become default
+            (a Project default must work regardless of which workspace ends
+            up dispatching to it). */}
         {!adapter.is_default && adapter.status === AdapterStatus.Available ? (
           <Button
             variant="link"
@@ -318,10 +369,14 @@ function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: Adapte
       const input: AdapterConfigUpdateInput = {
         name: name || undefined,
         command: command || undefined,
-        args: args.length > 0 ? args : undefined,
-        default_model: authFields.defaultModel.trim() || undefined,
+        // Editing sends the effective array/null, not omitted — omitted
+        // means "preserve the existing value" server-side, so a cleared
+        // field must be sent explicitly ([] / null) or the clear silently
+        // does nothing.
+        args,
+        default_model: authFields.defaultModel.trim() || null,
         auth_type: authFields.authType,
-        model_provider: authFields.modelProvider.trim() || undefined,
+        model_provider: authFields.modelProvider.trim() || null,
         capability_tags: authFields.capabilityTags,
         ...apiKeyPatch,
       };

@@ -122,6 +122,48 @@ describe("Run routes (T077-T079)", () => {
       expect(body.run.purpose).toBe(RunPurpose.AdHocConsult);
     });
 
+    // Final-comprehensive-report regression: purpose used to be a plain
+    // `=== "ad_hoc_consult" ? ... : undefined` coercion — any other string,
+    // including an attempt to force "workflow_bound" (which design §7.4
+    // explicitly forbids the client from doing), silently fell through to
+    // "auto" instead of the documented RUN_PURPOSE_INVALID 400.
+    it("rejects an attempt to force purpose=workflow_bound with RUN_PURPOSE_INVALID", async () => {
+      const { issue, adapter } = setupFixture(services, tempDir);
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        payload: { instructions: "do the work", adapter_id: adapter.id, purpose: "workflow_bound" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.RUN_PURPOSE_INVALID);
+    });
+
+    it("rejects an unknown purpose value with RUN_PURPOSE_INVALID", async () => {
+      const { issue, adapter } = setupFixture(services, tempDir);
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        payload: { instructions: "do the work", adapter_id: adapter.id, purpose: "not_a_real_purpose" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.RUN_PURPOSE_INVALID);
+    });
+
+    // final-recheck-report regression: instructions/adapter_id had no
+    // runtime type check — a wrong JS type (e.g. a number) would reach
+    // ManualRoutingService's `.trim()` and throw an uncaught TypeError,
+    // surfacing as a 500 instead of a client-correctable 400.
+    it("rejects instructions sent as a number with REQUEST_BODY_INVALID (400, not a 500 TypeError)", async () => {
+      const { issue, adapter } = setupFixture(services, tempDir);
+      const app = buildApp(services);
+      const res = await app.inject({
+        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        payload: { instructions: 12345, adapter_id: adapter.id },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe(ErrorCode.REQUEST_BODY_INVALID);
+    });
+
     it("purpose omitted (auto) still derives workflow_bound from Issue status + adapter capability", async () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);

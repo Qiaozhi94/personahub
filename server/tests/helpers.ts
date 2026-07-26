@@ -14,6 +14,8 @@ import { AgentConfigRepository } from "../src/repositories/agent-config.js";
 import { RunRepository } from "../src/repositories/run.js";
 import { RunTraceRepository } from "../src/repositories/run-trace.js";
 import { FileChangeRepository } from "../src/repositories/file-change.js";
+import { AdapterWorkspaceStatusRepository } from "../src/repositories/adapter-workspace-status.js";
+import { AdapterAvailabilityProbeCoordinator } from "../src/services/adapter-probe-coordinator.js";
 import { ProjectService } from "../src/services/project.js";
 import { WorkspaceService } from "../src/services/workspace.js";
 import { IssueService } from "../src/services/issue.js";
@@ -66,6 +68,8 @@ export interface TestServices {
   runRepo: RunRepository;
   runTraceRepo: RunTraceRepository;
   fileChangeRepo: FileChangeRepository;
+  adapterWorkspaceStatusRepo: AdapterWorkspaceStatusRepository;
+  adapterProbeCoordinator: AdapterAvailabilityProbeCoordinator;
   projectService: ProjectService;
   workspaceService: WorkspaceService;
   issueService: IssueService;
@@ -104,6 +108,8 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   const runRepo = new RunRepository(db);
   const runTraceRepo = new RunTraceRepository(db);
   const fileChangeRepo = new FileChangeRepository(db);
+  const adapterWorkspaceStatusRepo = new AdapterWorkspaceStatusRepository(db);
+  const adapterProbeCoordinator = new AdapterAvailabilityProbeCoordinator();
 
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
@@ -127,6 +133,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     db, issueRepo, runRepo, threadEventService, threadEventRepo,
     validationTraceService, agentConfigRepo, workflowTemplateRepo,
     validationPolicyRepo, evidenceSummaryRepo, fileChangeRepo,
+    adapterWorkspaceStatusRepo,
     // grace=0: preserve F004's original "immediate creation" semantics —
     // Phase B fires synchronously right after Phase A in every existing
     // automatic-validation test, with zero added latency/flakiness.
@@ -148,6 +155,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   const manualRoutingService = new ManualRoutingService(
     runRepo, issueRepo, workspaceRepo, agentConfigRepo, projectRepo,
     threadEventRepo, threadEventService, db, validationWorkflowService,
+    adapterWorkspaceStatusRepo,
   );
 
   const runDispatchService = new RunDispatchService(
@@ -156,7 +164,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     threadEventService, agentRunner, developmentTraceService, runTraceRepo,
     validationWorkflowService, db,
     runRepo, threadEventRepo, fileChangeRepo,
-    manualRoutingService,
+    manualRoutingService, adapterWorkspaceStatusRepo, adapterProbeCoordinator,
   );
 
   const staleRecoveryService = new StaleRecoveryService(
@@ -191,6 +199,8 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     runRepo,
     runTraceRepo,
     fileChangeRepo,
+    adapterWorkspaceStatusRepo,
+    adapterProbeCoordinator,
     projectService: new ProjectService(projectRepo, workspaceRepo),
     workspaceService: new WorkspaceService(workspaceRepo, projectRepo, db),
     issueService: new IssueService(
@@ -198,7 +208,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
       projectRepo, workflowTemplateRepo, validationPolicyRepo, db,
     ),
     threadService: new ThreadService(threadRepo, threadEventRepo),
-    adapterConfigService: new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry),
+    adapterConfigService: new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry, workspaceRepo, adapterWorkspaceStatusRepo, db, adapterProbeCoordinator),
     threadEventService,
     workspaceLockService,
     runService,
@@ -221,7 +231,22 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   };
 }
 
-export function disposeTestServices(services: TestServices): void {
-  void services.agentRunner.shutdown();
+/**
+ * final-recheck-report regression: this used to fire-and-forget
+ * `agentRunner.shutdown()` and close the DB immediately, without waiting for
+ * either shutdown to finish — an in-flight availability re-probe
+ * (RunDispatchService.shutdown(), added alongside the background-task
+ * lifecycle fix) could still be running against an already-closed
+ * better-sqlite3 handle, producing cross-test noise/flakiness. Every
+ * caller already writes `afterEach(() => disposeTestServices(services))` —
+ * an arrow function with an expression body, which forwards whatever this
+ * returns — so making this async and returning the awaited promise chain
+ * makes every one of those call sites correctly await it without editing
+ * any of them.
+ */
+export async function disposeTestServices(services: TestServices): Promise<void> {
+  await services.agentRunner.shutdown();
+  await services.runDispatchService.shutdown();
+  await services.adapterConfigService.shutdown();
   services.db.close();
 }

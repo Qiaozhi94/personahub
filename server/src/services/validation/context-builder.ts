@@ -57,6 +57,8 @@ export interface ValidatorContextInput {
   priorFindings: ContextPriorFinding[];
   traceCompleteness: TraceCompleteness;
   validationRound: number;
+  /** Manual dispatch: the composer text the user sent alongside picking a validator (design gap fix — was silently dropped). */
+  userInstructions?: string | null;
 }
 
 export interface ValidatorContextResult {
@@ -231,6 +233,16 @@ function sectionPriorFindings(
   return parts.join("\n");
 }
 
+const USER_REQUEST_MAX_CHARS = 4_000;
+
+function sectionUserRequest(userInstructions: string | null | undefined): string | null {
+  const trimmed = userInstructions?.trim();
+  if (!trimmed) return null;
+  const truncated = trimmed.length > USER_REQUEST_MAX_CHARS;
+  const body = truncated ? `${trimmed.slice(0, USER_REQUEST_MAX_CHARS)}\n\n*(truncated at ${USER_REQUEST_MAX_CHARS} characters)*` : trimmed;
+  return `## User Validation Request\n\n*The user manually picked this validator and included the following instructions alongside it — treat as additional context, not a replacement for the Validation Policy above.*\n\n${body}`;
+}
+
 function sectionTraceCompleteness(completeness: TraceCompleteness): string {
   const parts: string[] = [`## Trace Completeness`];
   parts.push(`- **Commands:** ${completeness.commands}`);
@@ -247,6 +259,7 @@ function sectionTraceCompleteness(completeness: TraceCompleteness): string {
 }
 
 export function buildValidatorContext(input: ValidatorContextInput): ValidatorContextResult {
+  const userRequest = sectionUserRequest(input.userInstructions);
   const mustNotTruncate: string[] = [
     JSON_SCHEMA_CONTRACT,
     sectionIssue(input.issue.title, input.issue.goal),
@@ -256,6 +269,7 @@ export function buildValidatorContext(input: ValidatorContextInput): ValidatorCo
     sectionHandoff(input.handoff),
     `## Validation Round\n\n**Current Round:** ${input.validationRound}`,
     sectionTraceCompleteness(input.traceCompleteness),
+    ...(userRequest ? [userRequest] : []),
   ];
 
   const truncatableSections = {

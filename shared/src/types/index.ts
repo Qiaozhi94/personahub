@@ -253,6 +253,7 @@ export interface AdapterConfig {
   args: string[];
   capability_tags: AgentCapability[];
   default_model: string | null;
+  /** Project-global baseline status (schema v7 `agent_configs.status`) — unaffected by any workspace override, even when this response is workspace-scoped (see `effective_status` below). */
   status: AdapterStatus;
   last_checked_at: string | null;
   created_at: string;
@@ -264,6 +265,21 @@ export interface AdapterConfig {
   auth_status_message: string | null;
   /** Service-computed projection against Project.default_adapter_config_id; not a DB column on agent_configs. */
   is_default: boolean;
+  /**
+   * F005 workspace-aware availability closure: present only when the
+   * request that produced this DTO was scoped to a specific workspace
+   * (`GET .../adapters?workspace_id=`). `effective_status` is `status`
+   * merged with that workspace's `adapter_workspace_status` override, if
+   * any (see `effectiveAdapterStatus()`) — this is what actually determines
+   * routability/validator-selection for that workspace, and can differ from
+   * the Project-global `status` above. `has_workspace_override` says
+   * whether an exception row exists for this exact (adapter, workspace)
+   * pair, so the UI can visually distinguish "baseline" from "overridden".
+   */
+  effective_status?: AdapterStatus;
+  effective_last_checked_at?: string | null;
+  effective_auth_status_message?: string | null;
+  has_workspace_override?: boolean;
 }
 
 export interface ProjectDefaultAdapterInput {

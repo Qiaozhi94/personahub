@@ -6,6 +6,7 @@ import type {
   AgentAdapterCapabilities,
   AgentRunInput,
   AdapterValidationResult,
+  AdapterValidateOptions,
   RunHandle,
   RunOutputChunk,
   RunExitResult,
@@ -44,8 +45,8 @@ export class OpenCodeAdapter implements AgentAdapter {
     executionTimeoutMs: DEFAULT_EXECUTION_TIMEOUT_MS,
   };
 
-  async validate(config: AdapterConfig, apiKey?: string | null): Promise<AdapterValidationResult> {
-    return validateOpenCodeCommand(config, apiKey);
+  async validate(config: AdapterConfig, apiKey?: string | null, options?: AdapterValidateOptions): Promise<AdapterValidationResult> {
+    return validateOpenCodeCommand(config, apiKey, options);
   }
 
   async start(input: AgentRunInput): Promise<RunHandle> {

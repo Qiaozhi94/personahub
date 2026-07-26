@@ -7,6 +7,7 @@ import type { IssueRepository } from "../repositories/issue.js";
 import type { WorkspaceRepository } from "../repositories/workspace.js";
 import type { AgentConfigRepository } from "../repositories/agent-config.js";
 import type { ProjectRepository } from "../repositories/project.js";
+import type { AdapterWorkspaceStatusRepository } from "../repositories/adapter-workspace-status.js";
 import type { ThreadEventRepository } from "../repositories/thread-event.js";
 import type { ThreadEventService } from "./thread-event.js";
 import { AppError } from "../api/errors.js";
@@ -61,6 +62,7 @@ export class ManualRoutingService {
     private threadEventService: ThreadEventService,
     private db: Database.Database,
     private validationWorkflowService: ValidationWorkflowService,
+    private adapterWorkspaceStatusRepo: AdapterWorkspaceStatusRepository,
   ) {}
 
   dispatch(input: ManualRoutingDispatchInput): Run {
@@ -74,7 +76,12 @@ export class ManualRoutingService {
       throw new AppError(ErrorCode.RUN_INSTRUCTIONS_REQUIRED, "Run instructions are required.", "instructions");
     }
 
-    const resolved = resolveAdapter({ agentConfigRepo: this.agentConfigRepo, projectRepo: this.projectRepo }, issue.project_id, input.adapterId);
+    const resolved = resolveAdapter(
+      { agentConfigRepo: this.agentConfigRepo, projectRepo: this.projectRepo, adapterWorkspaceStatusRepo: this.adapterWorkspaceStatusRepo },
+      issue.project_id,
+      issue.workspace_id,
+      input.adapterId,
+    );
     if (!resolved.ok) {
       mapResolveError(resolved.errorCode);
     }
@@ -85,7 +92,7 @@ export class ManualRoutingService {
       throw new AppError(ErrorCode.RUN_NOT_ALLOWED_FOR_ISSUE_STATUS, `Cannot create a Run: issue is ${issue.status}.`);
     }
     if (classification.role === RunRole.Validator) {
-      return this.dispatchValidator(issue.id, adapter.id);
+      return this.dispatchValidator(issue.id, adapter.id, trimmedInstructions);
     }
 
     const workspace = this.workspaceRepo.getById(issue.workspace_id);
@@ -200,8 +207,8 @@ export class ManualRoutingService {
    * SQLite constraint error (design's "manual loser gets VALIDATOR_RUN_
    * CONFLICT + a summary of the conflicting run").
    */
-  private dispatchValidator(issueId: string, adapterConfigId: string): Run {
-    const claimed = this.validationWorkflowService.claimValidatorSlot(issueId, { mode: "explicit", adapterConfigId });
+  private dispatchValidator(issueId: string, adapterConfigId: string, userInstructions: string): Run {
+    const claimed = this.validationWorkflowService.claimValidatorSlot(issueId, { mode: "explicit", adapterConfigId, userInstructions });
     if (claimed.ok) return claimed.run;
     switch (claimed.reason) {
       case "active_conflict":

@@ -23,7 +23,7 @@ updated: 2026-07-19
 
 ## Phase 0：环境前置确认（开工第一件事）
 
-- [x] **T000**（`NFR-004`, `AC-001`）：确认本机 Claude Code CLI 与 OpenCode CLI 的实际安装状态与版本，记录在 Phase 1 fixture 说明中。整个 Phase 1（T001-T010）依赖这两个 CLI 真实可执行，不允许用推测或二手文档替代。
+- [x] **T000**（`NFR-004`, `AC-001`）：确认本机 Claude Code CLI 与 OpenCode CLI      Phase 1 fixture 说明中。整个 Phase 1（T001-T010）依赖这两个 CLI 真实可执行，不允许用推测或二手文档替代。
 
   **2026-07-19 实测结果——三者全部可用，落到「两者都可用」分支，Phase 1 全量推进**：
 
@@ -31,7 +31,6 @@ updated: 2026-07-19
   | --- | --- | --- |
   | Claude Code | 2.1.215 | `C:\Users\...\.local\bin\claude.exe`（真 exe） |
   | OpenCode | 1.18.3 | `D:\DevSoft\nodejs\opencode.cmd`（批处理 shim → `node_modules/opencode-ai/bin/opencode.exe`） |
-  | Codex | 0.144.5 | `D:\DevSoft\nodejs\codex.cmd`（批处理 shim） |
 
   由此派生出 T009a（`.cmd` shim 解析 + 统一 `shell=false`）。
 
@@ -75,8 +74,10 @@ updated: 2026-07-19
   **2026-07-19 完成**：用显式构造的最小 env（无 SSH_AUTH_SOCK/GH_TOKEN/git credential helper，`HOME` 隔离）+ 真实 GitHub HTTPS URL（不存在的仓库，安全无副作用）验证 push 失败，`tool_use.metadata.exit:1` 是可靠的结构化信号。**能力如实记录**：失败文案是 GitHub 的 `"Repository not found"`（隐私保护机制，无论无凭据还是凭据不足都返回 404），不是明确的 `"Authentication failed"`——`CredentialIsolationBlocked` 分类器需要匹配多种文案，不能假设单一字符串。确认 F002 `buildChildEnv()` 已有的 `GIT_TERMINAL_PROMPT=0`/`GIT_ASKPASS=""` 对 OpenCode 同样有效，无需新增 env 变量。OpenCode 无等价的前置拦截机制，credential isolation 是唯一防线，与 design NFR-003 承诺一致。详见 fixtures 文档 T008。
 - [x] **T009**（`NFR-001`, `NFR-004`）：验证三个CLI在不恢复完整HOME/USERPROFILE时所需的最小auth目录变量/路径；若某OAuth路径无法隔离，按design标unavailable而非放宽git凭据环境。
 
-  **2026-07-19 完成，三者全部可隔离，无需放宽git凭据环境**：Codex 沿用已实现的 `CODEX_HOME`；Claude Code 是 `CLAUDE_CONFIG_DIR`（指向真实 `~/.claude` 文件夹，非父目录）——已验证隔离 HOME 后仍保留真实登录态，但有一条关于顶层 `.claude.json` 的良性 stderr 警告需要 adapter 容忍/静默，不当作探测失败；OpenCode 需要**同时**设置 `XDG_DATA_HOME`（定位 `auth.json`）和 `XDG_CONFIG_HOME`（定位 `opencode.jsonc`），已验证无警告、干净生效。三者的 SSH agent/git credential helper/GH token 暴露都只受 `HOME`/`USERPROFILE` 控制，与这些 provider 专属变量无关，隔离机制不会连带放宽。design §5.4 已写入对照表。详见 fixtures 文档 T009。
-- [ ] **T009a**（`NFR-003`, `NFR-004`, `AC-006`）：实现统一的 CLI 可执行文件解析，让三个 adapter 都能真正以 `shell=false` 启动。
+  **2026-07-19 完成（Codex/Claude Code 结论仍然有效）**：Codex 沿用已实现的 `CODEX_HOME`；Claude Code 是 `CLAUDE_CONFIG_DIR`（指向真实 `~/.claude` 文件夹，非父目录）——已验证隔离 HOME 后仍保留真实登录态，但有一条关于顶层 `.claude.json` 的良性 stderr 警告需要 adapter 容忍/静默，不当作探测失败。三者的 SSH agent/git credential helper/GH token 暴露都只受 `HOME`/`USERPROFILE` 控制，与这些 provider 专属变量无关，隔离机制不会连带放宽。
+
+  **⚠️ OpenCode 结论已被 2026-07-23 Phase 13 真实环境测试推翻（superseded）**：本行原先记录"OpenCode 需要同时设置 `XDG_DATA_HOME`/`XDG_CONFIG_HOME`，已验证无警告、干净生效"——该结论只在非 Windows 语境下成立；Windows 上设置这两个变量会让 OpenCode CLI 1.18.3 无限 hang。现有实现已移除该注入，Windows + OAuth 组合直接 fail closed，引导改用 API key。design §5.4 对照表已同步标注 superseded 并保留原始记录供参考，不作为当前实现的真相源。详见 fixtures 文档 T009（Phase 1 部分）与 `code-review-report-recheck.md`（Phase 13 后续发现）。
+- [x] **T009a**（`NFR-003`, `NFR-004`, `AC-006`）：实现统一的 CLI 可执行文件解析，让三个 adapter 都能真正以 `shell=false` 启动。完成状态见下方 T009a-1/T009a-2（均已 `[x]`）；本行此前遗漏勾选，2026-07-23 code-review checklist 核对时补上（无代码变更，纯 checklist 勾选修正）。
 
   **背景**：本机实测（T000）三个 CLI 的路径形态不一致——Claude 是真 exe（`claude.exe`），Codex 和 OpenCode 都是 Windows 批处理 shim（`codex.cmd` / `opencode.cmd`）。Node `spawn` 在 `shell:false` 下无法直接执行 `.cmd`，这正是 F002 基线被迫写成 `shell: process.platform === "win32"` 的原因（见 `runtime/adapters/codex-cli-adapter.ts:196`、`codex-protocol.ts:83`）。若不处理，F005 三个 adapter 会出现"两个走 shell、一个不走"的分裂，`shell=true` 让命令串经过 `cmd.exe`，与 design 反复强调的"instructions/API key 绝不进 argv"的安全论证不自洽。
 
@@ -102,9 +103,9 @@ updated: 2026-07-19
 
 ## Phase 2：Shared Contract与Schema v6
 
-- [ ] **T011**（`DR-001` - `DR-005`）：添加shared类型编译/序列化测试，覆盖CliProvider/AuthType/Capability/RunPurpose、public AdapterConfig、write-only inputs、Run routing fields和provider metadata。
-- [ ] **T012**（`DR-001` - `DR-004`）：拆分/扩展shared adapter/run types并re-export；扩展F004 `RunRole`新增非空`consult`、扩展`RunDispatchSource`新增`user_default`，持久化枚举只增不改。
-- [ ] **T013**（`IR-001` - `IR-003`）：先补ErrorCode/HTTP映射测试，再新增auth/key/provider/default/purpose/status/conflict错误。
+- [x] **T011**（`DR-001` - `DR-005`）：添加shared类型编译/序列化测试，覆盖CliProvider/AuthType/Capability/RunPurpose、public AdapterConfig、write-only inputs、Run routing fields和provider metadata。证据：`server/tests/unit/adapter-routing-types.test.ts`（20 tests）、`server/tests/unit/validation-types.test.ts`（29 tests）。本行此前遗漏勾选，2026-07-23 code-review checklist 核对时补上（无代码变更，纯 checklist 勾选修正）。
+- [x] **T012**（`DR-001` - `DR-004`）：拆分/扩展shared adapter/run types并re-export；扩展F004 `RunRole`新增非空`consult`、扩展`RunDispatchSource`新增`user_default`，持久化枚举只增不改。证据：`shared/src/types/validation.ts`（`RunRole.Consult`/`RunDispatchSource.UserDefault`）、`shared/src/types/adapter.ts`（`RunPurpose`），`server/src/services/adapter-resolver.ts` 实际产出 `RunDispatchSource.UserDefault`。本行此前遗漏勾选，2026-07-23 code-review checklist 核对时补上（无代码变更，纯 checklist 勾选修正）。
+- [x] **T013**（`IR-001` - `IR-003`）：先补ErrorCode/HTTP映射测试，再新增auth/key/provider/default/purpose/status/conflict错误。证据：`shared/src/errors/*.ts`（`ADAPTER_AUTH_INVALID`/`ADAPTER_API_KEY_REQUIRED`/`ADAPTER_MODEL_PROVIDER_UNSUPPORTED`/`ADAPTER_PROVIDER_UNSUPPORTED`/`DEFAULT_ADAPTER_UNAVAILABLE`/`VALIDATOR_RUN_CONFLICT`/`ADAPTER_UNAVAILABLE`）、`server/tests/unit/error-mapping.test.ts`（33 tests）。本行此前遗漏勾选，2026-07-23 code-review checklist 核对时补上（无代码变更，纯 checklist 勾选修正）。
 - [x] **T014**（`DR-001` - `DR-005`, `NFR-001`）：添加v6 migration集成测试，覆盖v5升级、重跑、旧Codex oauth解释、旧Run workflow_bound、非空`role='consult'`可插入且无需重建runs、capability backfill、due/default/index和既有summary不变。**default 回填必须单独覆盖**（按 design §4.1 的收紧策略）：Project 恰有 1 个 available adapter → 回填该 adapter；0 个 → 保持 NULL；≥2 个 → 保持 NULL 不瞎猜；含 unavailable adapter 不计入；迁移重跑幂等。断言回填后旧 Project 省略 `adapter_id` 的 dispatch 不再返回 `DEFAULT_ADAPTER_UNAVAILABLE`（单 adapter 场景）。
 
   **2026-07-19 完成**：`server/tests/integration/migration-v6.test.ts`，24 项全绿，覆盖新增列/索引、旧数据默认值、capability_tags 与 default_adapter_config_id 两类 backfill（含 0/1/≥2/含 unavailable 四种边界）、`role='consult'` 可插入且既有 summary/索引不受影响。副作用修复：`migration.test.ts`、`persistence.test.ts` 两处硬编码 `schema_version` 断言（`toBe(5)`）随版本号推进到 6 而失败，已同步更新为 `toBe(6)`；`persistence.test.ts` 的失败还连带触发了一个 EBUSY 文件锁清理错误（断言抛出中断了后续 `db.close()`，导致 `afterEach` 删除临时目录时文件仍被占用）——两处根因相同，一并修复。
@@ -420,15 +421,15 @@ updated: 2026-07-19
 
   **T107/T108 文档回写**：`docs/personahub-system-design.md`补齐`Project.default_adapter_config_id`、`Agent(adapter_config)`的`auth_type`/`model_provider`/`api_key`/`auth_status_message`+`has_api_key`/`is_default`投影、`Run`的`purpose`/`context_source_run_id`、`Issue.validation_dispatch_due_at`，schema版本v5→v6并补充F005 invariant注释，`feature_ids`加入F005。`docs/personahub-architecture.md`新增修订记录行，第3节改写为三真实adapter（非P0占位）+ 真实`AgentAdapter`接口签名，新增§3.1 Auth架构小节，第5.2节补充两阶段grace/互斥dispatch流程，第5.5节recovery顺序按due timestamp改写，第5.7节schema v5→v6，第1节分层图同步。
 
-  **T109 验收清单走查**：
-  - AC-001（Claude OAuth/OpenCode OAuth+API key配置可用）：**满足**——真实验证Claude/OpenCode OAuth（T101），OpenCode api_key分支由确定性测试覆盖（真实key未取得，已如实记录）。
+  **T109 验收清单走查**（⚠️ **superseded**：以下 7 条是 Phase 13 完成时（2026-07-19）的结论，AC-001 已被 2026-07-23 两轮 code-review（`code-review-report-implementation.md`/`code-review-report-recheck*.md`/`code-review-report-final-comprehensive.md`）发现的 create/update 初始可用性判定问题推翻。**当前 acceptance 真相源是 `spec.md` 第 8 节**，本区块仅保留作历史记录，不再代表当前状态）：
+  - AC-001（Claude OAuth/OpenCode OAuth+API key配置可用）：Phase 13 当时结论"满足"——真实验证Claude/OpenCode OAuth（T101），OpenCode api_key分支由确定性测试覆盖（真实key未取得，已如实记录）。2026-07-24 两轮 code-review 发现 create/update 初始可用性判定问题后一度改为"不满足"。**2026-07-24 二次追加：已修复，重新满足**——create/update 不再凭命令可解析即写 `Available`，统一先落 `Unknown` 再异步真实探测收敛；workspace-aware availability 也已从"避免跨 workspace 错误放行"的部分修复升级为完整的 `(adapter, workspace)` 例外覆盖模型（schema v7 `adapter_workspace_status`）。详见 `spec.md` AC-001 最新状态。
   - AC-002（composer手动选择三provider之一，未选时明确default）：**满足**——`AgentSelector`（Phase 12）+ `AdapterResolver`（Phase 7）+ 真实三provider consult dispatch（T102）。
   - AC-003（手动Run自动携带上一轮context，无上一轮不报错）：**满足**——`RunContextBuilder`/`context-assembler`（Phase 7）既有确定性覆盖，未在本Phase重新验证（属早期Phase既定范围）。
   - AC-004（手动validator pass/fail正确驱动Done/Running，EvidenceSummary正确记录，validator context严格绑定implementation_run_id）：**满足**——真实Claude验证pass→Done全链路（T103，修复evidence_ref grammar和final-message-must-be-JSON-only两处prompt缺口后连续3次真实运行稳定收敛），语义层由Phase 9确定性套件（same-origin/EvidenceSummary/per-round）覆盖。
   - AC-005（@命中/未命中期望角色的workflow-bound vs咨询性分类，两种情况Thread留痕）：**满足**——`run-routing-classifier`确定性覆盖 + 真实三provider consult的Thread审计（T102）。
   - AC-006（Claude/OpenCode危险git操作与Codex行为一致，被凭据隔离+escalation拦截）：**满足**——真实Claude git push escalation验证（T104，三种blocked_by分类均观察到均为有效escalation）；OpenCode的credential-isolation失败路径由确定性测试覆盖（真实dispatch此前因Windows hang问题跳过，根因已定位并修复为快速失败，见上方修复记录，但OAuth模式在隔离下仍无法真正认证成功——非本条验收范围，凭据隔离+escalation本身仍然生效）。
   - AC-007（同Issue同一时刻至多一条pending validator，active/per-round两类冲突均被拒绝不产生重复Run）：**满足**——Phase 9 `validation-claim-race.test.ts`（T064/T065/T065a）详尽确定性覆盖，是本条验收的主要证据源。
-  - 结论：全部7条验收标准满足。AC-004过程中发现的Claude validator envelope prompt缺口已定位根因并修复（非"文档替代实现"）；AC-001/006过程中发现的OpenCode Windows hang已定位根因并修复为快速失败（仍如实记录"OAuth模式在隔离下无法真正认证成功"为该CLI版本的已知限制，不掩盖）；OpenCode api_key真实key未测试的边界同样如实记录，由确定性测试兜底验收语义。
+  - Phase 13 当时结论（superseded）：全部7条验收标准满足。AC-004过程中发现的Claude validator envelope prompt缺口已定位根因并修复（非"文档替代实现"）；AC-001/006过程中发现的OpenCode Windows hang已定位根因并修复为快速失败（仍如实记录"OAuth模式在隔离下无法真正认证成功"为该CLI版本的已知限制，不掩盖）；OpenCode api_key真实key未测试的边界同样如实记录，由确定性测试兜底验收语义。2026-07-23 两轮 code-review 后一度改为"AC-002~AC-007 满足，AC-001 不满足"。**2026-07-24 二次追加：AC-001 已完成 create/update 语义修复与 workspace-aware availability 模型两项实施，重新满足——全部7条验收标准（AC-001~AC-007）满足**，详见 `spec.md` 第 8 节的逐条证据指针。
 
   **T110 状态回写**：本文件Phase 0-13全部完成；`BACKLOG.md`、`CLAUDE.md`同步更新为F005状态`review`（详见对应commit）。
 

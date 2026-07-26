@@ -32,6 +32,7 @@ export interface AssembleValidatorContextParams {
   policySnapshot: ValidationPolicySnapshot;
   policySnapshotHash: string;
   validationRound: number;
+  userInstructions?: string | null;
 }
 
 function collectHandoff(
@@ -129,5 +130,6 @@ export function assembleValidatorContext(
     priorFindings,
     traceCompleteness,
     validationRound: params.validationRound,
+    userInstructions: params.userInstructions,
   });
 }

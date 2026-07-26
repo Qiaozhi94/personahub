@@ -4,6 +4,8 @@ import { RunRole as RR, RunDispatchSource as RDS, RunPurpose } from "@personahub
 import { generateRunId } from "../id.js";
 
 export interface RunCreateInput {
+  /** Pre-generated id — lets a caller build content that must reference the Run's own id (e.g. validator context) before the row exists, so the row can be created once with final content instead of insert-then-update. Omitted generates one internally. */
+  id?: string;
   issue_id: string;
   thread_id: string;
   workspace_id: string;
@@ -88,7 +90,7 @@ export class RunRepository {
   constructor(private db: Database.Database) {}
 
   create(input: RunCreateInput): Run {
-    const id = generateRunId();
+    const id = input.id ?? generateRunId();
     const now = new Date().toISOString();
     const role = input.role ?? RR.Implementation;
     const workflowStep = deriveWorkflowStep(role);
@@ -176,11 +178,6 @@ export class RunRepository {
 
     const row = this.db.prepare("SELECT * FROM runs WHERE id = ?").get(id) as RunRow;
     return { success: true, run: mapRow(row) };
-  }
-
-  updateInstructions(id: string, instructions: string): void {
-    this.db.prepare("UPDATE runs SET instructions = ?, updated_at = ? WHERE id = ?")
-      .run(instructions, new Date().toISOString(), id);
   }
 
   getLatestCompletedByRole(issueId: string, role: RunRole, beforeRunId?: string): Run | null {

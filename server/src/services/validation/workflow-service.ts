@@ -3,6 +3,7 @@ import type { Issue, Run, ThreadEvent, AdapterIdentitySnapshot, ValidationPolicy
 import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, ActorType, ValidationBlockReason, ValidationOutcome, TraceCompletenessStatus, AgentCapability, AdapterStatus } from "@personahub/shared/types";
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { RunRepository } from "../../repositories/run.js";
+import { generateRunId } from "../../id.js";
 import type { AgentConfigRepository } from "../../repositories/agent-config.js";
 import { hasCapability } from "../../repositories/agent-config.js";
 import { toPublicAdapter } from "../../repositories/agent-config-dto.js";
@@ -11,6 +12,8 @@ import type { ValidationPolicyRepository } from "../../repositories/validation-p
 import type { ThreadEventRepository } from "../../repositories/thread-event.js";
 import type { FileChangeRepository } from "../../repositories/file-change.js";
 import type { EvidenceSummaryRepository } from "../../repositories/evidence-summary.js";
+import type { AdapterWorkspaceStatusRepository } from "../../repositories/adapter-workspace-status.js";
+import { listAvailableByCapabilityForWorkspace, effectiveAdapterStatus } from "../adapter-availability.js";
 import type { ValidationTraceService } from "../validation-trace.js";
 import type { ThreadEventService } from "../thread-event.js";
 import { selectValidator } from "./validator-selector.js";
@@ -24,7 +27,7 @@ import { ErrorCode } from "@personahub/shared/errors";
 
 export type ValidatorClaimAdapter =
   | { mode: "auto" }
-  | { mode: "explicit"; adapterConfigId: string };
+  | { mode: "explicit"; adapterConfigId: string; userInstructions?: string | null };
 
 export type ClaimValidatorSlotResult =
   | { ok: true; run: Run }
@@ -47,6 +50,7 @@ export class ValidationWorkflowService {
     private validationPolicyRepo: ValidationPolicyRepository,
     private evidenceSummaryRepo: EvidenceSummaryRepository,
     private fileChangeRepo: FileChangeRepository,
+    private adapterWorkspaceStatusRepo: AdapterWorkspaceStatusRepository,
     /**
      * design §8.1: must be injectable, not a hardcoded module constant —
      * F004's existing automatic-validation tests inject 0 to keep the
@@ -163,10 +167,18 @@ export class ValidationWorkflowService {
 
       let selected: AdapterConfig;
       let dispatchSource: RunDispatchSource;
+      const userInstructions = adapter.mode === "explicit" ? adapter.userInstructions : null;
       if (adapter.mode === "auto") {
         const wf = this.workflowTemplateRepo.getById(issue.workflow_template_id);
         if (!wf) { this.blockIssueInTx(issue, ValidationBlockReason.WorkflowConfigurationInvalid, "Workflow template not found", pendingEvents); return { ok: false, reason: "blocked" }; }
-        const availableValidators = this.agentConfigRepo.listAvailableByProjectAndCapability(issue.project_id, AgentCapability.Validator).map((r) => toPublicAdapter(r, null));
+        // Workspace-aware: candidates are every Project adapter (not
+        // pre-filtered by global status) so one with a workspace-specific
+        // Available override still qualifies even if globally Unknown/
+        // Unavailable; listAvailableByCapabilityForWorkspace() then applies
+        // this Issue's own workspace overrides before the status filter.
+        const allCandidates = this.agentConfigRepo.listByProject(issue.project_id);
+        const overrides = this.adapterWorkspaceStatusRepo.listForWorkspace(issue.workspace_id);
+        const availableValidators = listAvailableByCapabilityForWorkspace(allCandidates, overrides, AgentCapability.Validator).map((r) => toPublicAdapter(r, null));
         const selectorResult = selectValidator({ workflowTemplate: wf, availableValidators });
         if (!selectorResult.selected) {
           this.blockIssueInTx(issue, selectorResult.reason ?? ValidationBlockReason.ValidatorUnavailable, selectorResult.message, pendingEvents);
@@ -179,7 +191,8 @@ export class ValidationWorkflowService {
         if (!record || record.project_id !== issue.project_id) {
           return { ok: false, reason: "adapter_invalid", message: "Adapter config not found for this project." };
         }
-        if (record.status !== AdapterStatus.Available) {
+        const override = this.adapterWorkspaceStatusRepo.get(record.id, issue.workspace_id);
+        if (effectiveAdapterStatus(record, override) !== AdapterStatus.Available) {
           return { ok: false, reason: "adapter_invalid", message: "Adapter is not available." };
         }
         if (!hasCapability(record, AgentCapability.Validator)) {
@@ -193,11 +206,15 @@ export class ValidationWorkflowService {
         adapter_config_id: selected.id, name: selected.name,
         cli_provider: selected.cli_provider, default_model: selected.default_model,
       };
-      const validatorRun = this.runRepo.create({
-        issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
-        adapter_config_id: selected.id, instructions: "", status: RunStatus.Queued,
-        role: RunRole.Validator, dispatch_source: dispatchSource, validation_round: round, adapter_identity: validatorIdentity,
-      });
+      // Pre-generate the id so the context (which must cite the validator
+      // Run's own id) can be fully built BEFORE any row is persisted — a
+      // context-build failure must leave no trace (no orphan queued Run
+      // occupying the per-round slot with empty instructions and no
+      // events), not a half-written Run that a later catch can't undo
+      // (better-sqlite3 commits a db.transaction() callback that returns
+      // normally, even if it returns a "failure" value).
+      const validatorRunId = generateRunId();
+      let contextMarkdown: string;
       try {
         const ctx = assembleValidatorContext(
           { threadEventRepo: this.threadEventRepo, fileChangeRepo: this.fileChangeRepo },
@@ -206,15 +223,23 @@ export class ValidationWorkflowService {
             threadId: issue.primary_thread_id!,
             implementationRunId,
             implementationRun: { id: implementationRunId, identity: implRun.adapter_identity! },
-            validatorRun: { id: validatorRun.id, identity: validatorIdentity },
+            validatorRun: { id: validatorRunId, identity: validatorIdentity },
             policySnapshot, policySnapshotHash, validationRound: round,
+            userInstructions,
           },
         );
-        this.runRepo.updateInstructions(validatorRun.id, ctx.markdown);
+        contextMarkdown = ctx.markdown;
       } catch {
         this.blockIssueInTx(issue, ValidationBlockReason.WorkflowConfigurationInvalid, "Failed to build validator context", pendingEvents);
         return { ok: false, reason: "blocked" };
       }
+      const validatorRun = this.runRepo.create({
+        id: validatorRunId,
+        issue_id: issueId, thread_id: issue.primary_thread_id!, workspace_id: issue.workspace_id,
+        adapter_config_id: selected.id, instructions: contextMarkdown, status: RunStatus.Queued,
+        role: RunRole.Validator, dispatch_source: dispatchSource, validation_round: round, adapter_identity: validatorIdentity,
+        context_source_run_id: implementationRunId,
+      });
 
       // winner: clear the grace due date in the same transaction (design §8.2 step 6).
       this.issueRepo.compareAndSetStatus(issueId, IssueStatus.Validating, IssueStatus.Validating, { validation_dispatch_due_at: null });

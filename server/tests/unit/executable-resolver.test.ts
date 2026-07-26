@@ -273,4 +273,39 @@ describe("resolveExecutable (T009a)", () => {
       expect(result.errorMessage).toBeTruthy();
     });
   });
+
+  // Final-comprehensive-report regression: PATHEXT is a Windows-only
+  // convention. Before the fix, getPathExtensions() fell back to
+  // `.exe/.cmd/.bat/.com` on every platform, so a bare extensionless PATH
+  // entry — the default install shape for codex/claude/opencode on
+  // Linux/macOS — could never be found at all, unconditionally reporting
+  // "Command not found". Gated to POSIX like filesystem-scanner.test.ts's
+  // symlink tests, since Windows accessSync(X_OK) semantics don't model
+  // POSIX executable bits.
+  describe.skipIf(process.platform === "win32")("POSIX extensionless commands (final-comprehensive-report regression)", () => {
+    it("finds a bare, extensionless executable on PATH — the default codex/claude/opencode install shape", () => {
+      const binDir = join(root, "bin");
+      mkdirSync(binDir, { recursive: true });
+      const target = join(binDir, "fake-cli");
+      writeFileSync(target, "#!/bin/sh\necho fake\n");
+      chmodSync(target, 0o755);
+      putOnPath(binDir);
+
+      const result = resolveExecutable("fake-cli");
+
+      expect(result.resolved).toEqual({ executable: target, prefixArgs: [], source: "direct" });
+    });
+
+    it("does not match a same-named file that isn't executable", () => {
+      const binDir = join(root, "bin");
+      mkdirSync(binDir, { recursive: true });
+      writeFileSync(join(binDir, "not-executable"), "just data\n");
+      chmodSync(join(binDir, "not-executable"), 0o644);
+      putOnPath(binDir);
+
+      const result = resolveExecutable("not-executable");
+
+      expect(result.resolved).toBeNull();
+    });
+  });
 });

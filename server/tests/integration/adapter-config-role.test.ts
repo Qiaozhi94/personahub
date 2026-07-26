@@ -1,6 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestServices, disposeTestServices, type TestServices } from "../helpers.js";
 import { AdapterStatus, AgentCapability } from "@personahub/shared/types";
+import type { AgentAdapter } from "../../src/runtime/types.js";
+
+// AC-001 fix: a resolvable "codex" command now starts Unknown and only
+// converges to Available via a real (here, scripted) background probe — see
+// AdapterConfigService.autoValidateAfterCreate/Update.
+function scriptedCodexAdapter(): AgentAdapter {
+  return {
+    provider: "codex",
+    capabilities: { provider: "codex", supportsApprovalHook: false, supportsStructuredTrace: false, supportsFinalMessage: false, executionTimeoutMs: 60_000 },
+    validate: async () => ({ available: true, errorMessage: null }),
+    start: () => { throw new Error("not used in this test"); },
+  };
+}
 
 // F004's original "role" input/query model is superseded by F005's
 // capability_tags (design §4.1): `agent_configs.role` is now a deprecated
@@ -19,6 +32,7 @@ describe("AgentConfigRepository and AdapterConfigService F005 capability derivat
 
   beforeEach(() => {
     services = createTestServices();
+    services.adapterRegistry.register(scriptedCodexAdapter());
     const project = services.projectService.create("Test");
     projectId = project.id;
   });
@@ -182,6 +196,29 @@ describe("AgentConfigRepository and AdapterConfigService F005 capability derivat
       expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("implementation");
     });
 
+    // Final-comprehensive-report regression: create() used to treat an
+    // explicit empty array the same as "omitted" and silently upgrade it to
+    // [implementation] — losing the user's deliberate "consult-only, no
+    // workflow capability" choice (design §7.2 rule 6). update() already
+    // preserved [] correctly via an `!== undefined` check; create() must
+    // match that semantics, not just its own historical default.
+    it("preserves an explicitly empty capability_tags array on create (consult-only adapter), unlike an omitted field", () => {
+      const adapter = services.adapterConfigService.create(projectId, {
+        name: "ConsultOnly",
+        cli_provider: "codex",
+        command: "codex",
+        capability_tags: [],
+      });
+
+      expect(adapter.capability_tags).toEqual([]);
+      expect(services.agentConfigRepo.getById(adapter.id)?.capability_tags).toEqual([]);
+      expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("implementation");
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
+      expect(validators.map((v) => v.id)).not.toContain(adapter.id);
+      const implementers = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Implementation);
+      expect(implementers.map((v) => v.id)).not.toContain(adapter.id);
+    });
+
     it("capability_tags=[implementation, validator] derives role=validator (validator takes precedence for the deprecated column)", () => {
       const adapter = services.adapterConfigService.create(projectId, {
         name: "Multi",
@@ -227,6 +264,48 @@ describe("AgentConfigRepository and AdapterConfigService F005 capability derivat
       services.adapterConfigService.update(adapter.id, { name: "Renamed" });
 
       expect(services.agentConfigRepo.getById(adapter.id)?.role).toBe("validator");
+    });
+
+    // Regression for the review-report finding: PATCH used to only re-derive
+    // `role` (deprecated) and never persisted `capability_tags` itself, so
+    // the DTO/routing kept using the stale value even though the derived
+    // role looked updated.
+    it("changing capability_tags from implementation to validator persists capability_tags and updates routing", async () => {
+      const adapter = services.adapterConfigService.create(projectId, {
+        name: "RoutingSwitchable", cli_provider: "codex", command: "codex",
+        capability_tags: [AgentCapability.Implementation],
+      });
+      expect(services.agentConfigRepo.getById(adapter.id)?.capability_tags).toEqual([AgentCapability.Implementation]);
+      expect(
+        services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator),
+      ).toHaveLength(0);
+
+      services.adapterConfigService.update(adapter.id, { capability_tags: [AgentCapability.Validator] });
+      // AC-001 fix: the edit invalidates status back to Unknown; a real
+      // (here, scripted) probe must converge it back to Available before
+      // listAvailableByProjectAndCapability() (which filters on Available)
+      // will surface it again.
+      await services.adapterConfigService.shutdown();
+
+      const updated = services.agentConfigRepo.getById(adapter.id);
+      expect(updated?.capability_tags).toEqual([AgentCapability.Validator]);
+      const fetched = services.adapterConfigService.getById(adapter.id);
+      expect(fetched.capability_tags).toEqual([AgentCapability.Validator]);
+      const validators = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Validator);
+      expect(validators.map((v) => v.id)).toContain(adapter.id);
+      const implementers = services.agentConfigRepo.listAvailableByProjectAndCapability(projectId, AgentCapability.Implementation);
+      expect(implementers.map((v) => v.id)).not.toContain(adapter.id);
+    });
+
+    it("update without capability_tags does not change the persisted capability_tags", () => {
+      const adapter = services.adapterConfigService.create(projectId, {
+        name: "TagsStable", cli_provider: "codex", command: "codex",
+        capability_tags: [AgentCapability.Validator],
+      });
+
+      services.adapterConfigService.update(adapter.id, { name: "Renamed" });
+
+      expect(services.agentConfigRepo.getById(adapter.id)?.capability_tags).toEqual([AgentCapability.Validator]);
     });
   });
 

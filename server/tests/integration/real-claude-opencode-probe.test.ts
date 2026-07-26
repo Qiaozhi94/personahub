@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createTestServices, disposeTestServices, type TestServices } from "../helpers.js";
+import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
 import { AdapterStatus, AgentCapability, CliProvider, AdapterAuthType } from "@personahub/shared/types";
 import { ClaudeCodeAdapter } from "../../src/runtime/adapters/claude-code-adapter.js";
 import { OpenCodeAdapter } from "../../src/runtime/adapters/opencode-adapter.js";
@@ -56,11 +56,50 @@ describe.skipIf(!REAL_CLAUDE)("T101: real Claude Code OAuth availability", () =>
 });
 
 describe.skipIf(!REAL_OPENCODE)("T101: real OpenCode availability (own credential store, no PersonaHub-managed api_key)", () => {
-  it("validate() reports Available using OpenCode's own auth.json (auth_type=oauth, no api_key stored by PersonaHub)", async () => {
+  // Windows + OpenCode OAuth + full credential isolation (no workspaceId
+  // passed to validate()) is a documented, accepted limitation (CLAUDE.md
+  // F005 status, commit a6a73e4 "OpenCode Windows hang" fix): the OAuth CLI
+  // genuinely cannot authenticate once HOME/USERPROFILE are redirected on
+  // this CLI version — that fix turned an infinite hang into a fast,
+  // correct Unavailable, it did not restore OAuth-under-isolation. The
+  // real, supported path for a workspace that has real credentials is the
+  // workspace-aware one below: bind a workspace with
+  // push_credentials_enabled=true and validate against it explicitly.
+  it("validate(id, workspaceId) reports Available using OpenCode's own auth.json when the target workspace allows real credentials", async () => {
     const services: TestServices = createTestServices();
     services.adapterRegistry.register(new OpenCodeAdapter());
     try {
       const project = services.projectService.create("T101-OpenCode");
+      const workspace = services.workspaceService.bind(project.id, createTempDir());
+      services.workspaceRepo.updatePushCredentialsEnabled(workspace.id, true);
+      const adapter = services.agentConfigRepo.create({
+        project_id: project.id, name: "OpenCode", role: "implementation",
+        cli_provider: CliProvider.OpenCode, command: "opencode", args: [],
+        capability_tags: [AgentCapability.Implementation],
+        default_model: "gpt-5.4", model_provider: "heiyucode-openai",
+        status: AdapterStatus.Unknown, auth_type: AdapterAuthType.OAuth,
+      });
+
+      const validated = await services.adapterConfigService.validate(adapter.id, workspace.id);
+      expect(validated.status).toBe(AdapterStatus.Available);
+      expect(validated.has_api_key).toBe(false);
+      expect((validated as { api_key?: unknown }).api_key).toBeUndefined();
+
+      // The Project-global baseline is untouched by a workspace-scoped
+      // validate() call — it stays at whatever create() left it (Unknown).
+      expect(services.agentConfigRepo.getById(adapter.id)!.status).toBe(AdapterStatus.Unknown);
+      const override = services.adapterWorkspaceStatusRepo.get(adapter.id, workspace.id);
+      expect(override?.status).toBe(AdapterStatus.Available);
+    } finally {
+      disposeTestServices(services);
+    }
+  }, 60_000);
+
+  it("validate(id) without a workspaceId stays Unavailable under the conservative default (documented Windows OAuth-under-isolation limitation)", async () => {
+    const services: TestServices = createTestServices();
+    services.adapterRegistry.register(new OpenCodeAdapter());
+    try {
+      const project = services.projectService.create("T101-OpenCode-isolated");
       const adapter = services.agentConfigRepo.create({
         project_id: project.id, name: "OpenCode", role: "implementation",
         cli_provider: CliProvider.OpenCode, command: "opencode", args: [],
@@ -70,9 +109,7 @@ describe.skipIf(!REAL_OPENCODE)("T101: real OpenCode availability (own credentia
       });
 
       const validated = await services.adapterConfigService.validate(adapter.id);
-      expect(validated.status).toBe(AdapterStatus.Available);
-      expect(validated.has_api_key).toBe(false);
-      expect((validated as { api_key?: unknown }).api_key).toBeUndefined();
+      expect(validated.status).toBe(AdapterStatus.Unavailable);
     } finally {
       disposeTestServices(services);
     }

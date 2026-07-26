@@ -60,18 +60,18 @@ describe("T014 schema v6 migration", () => {
 
   afterEach(() => db.close());
 
-  describe("fresh install reaches v6", () => {
-    it("schema_version max is 6", () => {
+  describe("fresh install reaches latest (v7)", () => {
+    it("schema_version max is 7", () => {
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(6);
+      expect(row.v).toBe(7);
     });
 
-    it("is idempotent - running twice does not error and stays at 6", () => {
+    it("is idempotent - running twice does not error and stays at 7", () => {
       applyMigrations(db);
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(6);
+      expect(row.v).toBe(7);
     });
   });
 

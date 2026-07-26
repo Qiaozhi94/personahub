@@ -36,7 +36,13 @@ const { CodexCliAdapter } = await import("../../src/runtime/adapters/codex-cli-a
 
 function setupIssue(services: TestServices, tempDir: string) {
   const project = services.projectService.create("Test", "desc");
-  services.workspaceService.bind(project.id, tempDir);
+  const workspace = services.workspaceService.bind(project.id, tempDir);
+  // This test drives a fake CLI script (fake-codex.mjs) via FAKE_CODEX_MODE
+  // on the test runner's own process.env, relying on it reaching the child
+  // process — buildChildEnv()'s credential-isolation allowlist (a real
+  // production security boundary, unrelated to what this test is actually
+  // checking: protocol/trace parsing) would otherwise strip it.
+  services.workspaceRepo.updatePushCredentialsEnabled(workspace.id, true);
   const { issue } = services.issueService.create(project.id, { title: "Test", goal: "Goal" });
   const adapter = services.agentConfigRepo.create({
     project_id: project.id,

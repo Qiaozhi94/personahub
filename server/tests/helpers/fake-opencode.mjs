@@ -6,7 +6,22 @@
 // argv argument (confirmed T044 — no stdin-prompt mode), so this script
 // reads its scenario from an env var, not stdin.
 
-const mode = process.env.FAKE_OPENCODE_MODE ?? "success";
+// Mode selection prefers argv[2] (survives credential-isolation env
+// filtering — real command-line args, unlike env vars, are never touched
+// by buildChildEnv()) over FAKE_OPENCODE_MODE (only reaches this process
+// when the calling test's workspace has push_credentials_enabled=true).
+// Matched against a known-modes allowlist, not just "doesn't start with
+// -": unlike Claude's argv (adapter args, then flags starting with "-"),
+// OpenCode's argv is [adapter args, "run", "--format", "json", ...] — the
+// literal positional token "run" always lands at argv[2] when no mode
+// override is configured, so a bare non-flag check would misread it as a
+// (bogus) mode name.
+const KNOWN_MODES = new Set([
+  "success", "failure", "hard_failure", "command_success", "command_failure",
+  "credential_failure", "malformed", "json_final_message", "cancel",
+]);
+const argMode = KNOWN_MODES.has(process.argv[2]) ? process.argv[2] : undefined;
+const mode = argMode ?? process.env.FAKE_OPENCODE_MODE ?? "success";
 
 function send(obj) {
   process.stdout.write(JSON.stringify(obj) + "\n");

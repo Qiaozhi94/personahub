@@ -65,6 +65,7 @@ export enum ErrorCode {
   DEFAULT_ADAPTER_UNAVAILABLE = "DEFAULT_ADAPTER_UNAVAILABLE",
   RUN_PURPOSE_INVALID = "RUN_PURPOSE_INVALID",
   RUN_NOT_ALLOWED_FOR_ISSUE_STATUS = "RUN_NOT_ALLOWED_FOR_ISSUE_STATUS",
+  REQUEST_BODY_INVALID = "REQUEST_BODY_INVALID",
   INTERNAL_ERROR = "INTERNAL_ERROR",
 }
 
@@ -169,9 +170,11 @@ export interface AdapterConfigUpdateInput {
   role?: string;
   command?: string;
   args?: string[];
-  default_model?: string;
+  /** omitted preserves; null clears; non-empty string replaces. */
+  default_model?: string | null;
   auth_type?: AdapterAuthType;
-  model_provider?: string;
+  /** omitted preserves; null clears; non-empty string replaces. */
+  model_provider?: string | null;
   /** omitted preserves; null clears; non-empty string replaces. */
   api_key?: string | null;
   capability_tags?: AgentCapability[];

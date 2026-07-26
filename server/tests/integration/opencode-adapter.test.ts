@@ -34,7 +34,14 @@ const { OpenCodeAdapter } = await import("../../src/runtime/adapters/opencode-ad
 
 function setupIssue(services: TestServices, tempDir: string, authType: AdapterAuthType = AdapterAuthType.OAuth) {
   const project = services.projectService.create("Test", "desc");
-  services.workspaceService.bind(project.id, tempDir);
+  const workspace = services.workspaceService.bind(project.id, tempDir);
+  // This test drives a fake CLI script (fake-opencode.mjs) via
+  // FAKE_OPENCODE_MODE on the test runner's own process.env, relying on it
+  // reaching the child process — buildChildEnv()'s credential-isolation
+  // allowlist (a real production security boundary, unrelated to what this
+  // test is actually checking: protocol/trace parsing) would otherwise
+  // strip it.
+  services.workspaceRepo.updatePushCredentialsEnabled(workspace.id, true);
   const { issue } = services.issueService.create(project.id, { title: "Test", goal: "Goal" });
   const adapter = services.agentConfigRepo.create({
     project_id: project.id,
@@ -174,8 +181,20 @@ describe("OpenCodeAdapter Integration (T042-T048)", () => {
   });
 
   it("triggers CredentialIsolationBlocked escalation for a failed git push (T008 real failure text: 'Repository not found')", async () => {
-    const { issue, adapter } = setupIssue(services, tempDir);
-    process.env.FAKE_OPENCODE_MODE = "credential_failure";
+    // This test's whole point is the real credential-isolation
+    // classification, so — unlike setupIssue()'s other callers — it must
+    // NOT set push_credentials_enabled=true. The fake script's mode instead
+    // travels via a real argv entry (adapter `args`), which credential
+    // isolation never touches (only env vars are filtered).
+    const project = services.projectService.create("Test", "desc");
+    services.workspaceService.bind(project.id, tempDir);
+    const { issue } = services.issueService.create(project.id, { title: "Test", goal: "Goal" });
+    const adapter = services.agentConfigRepo.create({
+      project_id: project.id, name: "OpenCode", role: "implementation", cli_provider: CliProvider.OpenCode,
+      command: "opencode", args: ["credential_failure"], capability_tags: [AgentCapability.Implementation],
+      default_model: "claude-sonnet-4-5", model_provider: "anthropic",
+      status: AdapterStatus.Available, auth_type: AdapterAuthType.OAuth,
+    });
 
     const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "git push");
     await wait(500);

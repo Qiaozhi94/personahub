@@ -1,23 +1,43 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { RunPurpose } from "@personahub/shared/types";
+import { ErrorCode } from "@personahub/shared/errors";
 import type { RunDispatchService } from "../../services/run-dispatch.js";
 import type { RunService } from "../../services/run.js";
+import { AppError, parseRequestBody } from "../errors.js";
 
 export interface RunRoutesOptions {
   runDispatchService: RunDispatchService;
   runService: RunService;
 }
 
+/**
+ * `purpose` gets its own field-specific ErrorCode (design §7.4/design.md's
+ * RUN_PURPOSE_INVALID row) rather than the generic REQUEST_BODY_INVALID a
+ * plain zod enum would produce: the client can only ever request "auto"
+ * (default) or "ad_hoc_consult" explicitly — any other value (including an
+ * attempt to force "workflow_bound") is rejected, not silently coerced to
+ * auto.
+ */
+function parsePurpose(raw: unknown): RunPurpose | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === "auto") return undefined;
+  if (raw === "ad_hoc_consult") return RunPurpose.AdHocConsult;
+  throw new AppError(ErrorCode.RUN_PURPOSE_INVALID, `Invalid purpose: ${JSON.stringify(raw)}. Must be "auto" or "ad_hoc_consult".`, "purpose");
+}
+
+const createRunSchema = z.object({
+  instructions: z.string().optional(),
+  adapter_id: z.string().optional(),
+  purpose: z.unknown().optional(),
+});
+
 export const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (app, opts) => {
   const { runDispatchService, runService } = opts;
 
   app.post("/api/issues/:issue_id/runs", async (request, reply) => {
     const { issue_id } = request.params as { issue_id: string };
-    const body = (request.body ?? {}) as {
-      instructions?: string;
-      adapter_id?: string;
-      purpose?: "auto" | "ad_hoc_consult";
-    };
+    const body = parseRequestBody(createRunSchema, request.body ?? {});
     // design §7.4: the client can only ever request ad_hoc_consult
     // explicitly; role/dispatch_source/workflow_bound are always
     // server-derived (ManualRoutingService), never accepted here.
@@ -25,7 +45,7 @@ export const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (app, opts)
       issue_id,
       body.adapter_id,
       body.instructions ?? "",
-      body.purpose === "ad_hoc_consult" ? RunPurpose.AdHocConsult : undefined,
+      parsePurpose(body.purpose),
     );
     reply.code(201);
     return { run };

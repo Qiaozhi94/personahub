@@ -64,3 +64,26 @@ export function redactCommand(command: string): { text: string; truncated: boole
 export function redactSummary(summary: string): { text: string; truncated: boolean } {
   return redactAndTruncate(summary, TRACE_LIMITS.summaryMaxBytes);
 }
+
+/**
+ * design's "保存清洗后的原因": adapter/provider validate() error text is
+ * external CLI output, not our own controlled string — it must go through
+ * the same secret-pattern redaction as trace text before it's persisted to
+ * `agent_configs.auth_status_message` and returned on the public DTO.
+ *
+ * `knownSecrets` are exact values the caller already holds (e.g. the
+ * adapter's own `api_key`) — these are redacted by literal `replaceAll`
+ * BEFORE the generic pattern regexes run. F005 supports OpenCode keys
+ * across ~10 providers (Google `AIza...`, xAI `xai-...`, etc.) whose formats
+ * the fixed TOKEN_PATTERNS list can't all enumerate; a regex is inherently
+ * reactive to formats it was written to recognize, but an exact-value match
+ * catches the one secret this call site actually knows is sensitive
+ * regardless of what shape it takes.
+ */
+export function sanitizeAuthStatusMessage(message: string | null, knownSecrets: readonly (string | null | undefined)[] = []): string | null {
+  if (!message) return null;
+  const withKnownSecretsRedacted = knownSecrets
+    .filter((s): s is string => Boolean(s))
+    .reduce((text, secret) => text.split(secret).join("[REDACTED]"), message);
+  return redactSummary(withKnownSecretsRedacted).text;
+}

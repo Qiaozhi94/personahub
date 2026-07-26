@@ -304,21 +304,21 @@ F002当前把HOME/USERPROFILE改到workspace，并只对白名单`CODEX_HOME`恢
 
 - Codex只暴露`CODEX_HOME`；
 - Claude Code只暴露probe确认的Claude配置目录变量/路径；
-- OpenCode OAuth只暴露probe确认的OpenCode auth目录；
-- 不恢复完整HOME、不继承SSH agent、GH/GitHub token或git credential helper；
+- OpenCode OAuth **在 Windows 上不暴露任何 auth 目录**（Phase 1 "暴露 XDG_DATA_HOME/XDG_CONFIG_HOME" 的原始前置规则已被 Phase 13 真实环境测试推翻——见下方矩阵与 superseded 说明；当前是 workspace-aware fail closed，仅在目标 workspace `push_credentials_enabled=true` 时才可用）；
+- 不恢复完整HOME、不继承SSH agent、GH/GitHub token或git credential helper（隔离模式下也不继承其他 model provider 的 API key，见 §11）；
 - API-key模式无需暴露用户home auth目录。
 
 如果某CLI无法在不恢复完整HOME的情况下使用OAuth，OAuth路径标为unavailable并提示使用已验证替代（OpenCode可用API key）；不能为了可用性撤掉credential isolation。
 
-**已用本机三个 CLI 实测确认，三者均不需要恢复完整 HOME**：
+**已用本机三个 CLI 实测确认，Codex/Claude Code 不需要恢复完整 HOME；OpenCode 在 Windows 上的结论已被 Phase 13 真实环境测试推翻，见下方 superseded 说明**：
 
 | Provider | 隔离机制 | 备注 |
 | --- | --- | --- |
 | Codex | `CODEX_HOME`（F002 已实现） | 沿用既有白名单 |
 | Claude Code | `CLAUDE_CONFIG_DIR` 指向真实 `~/.claude` 目录 | 已验证：`HOME`/`USERPROFILE` 完全隔离、仅设置此变量指向真实 `.claude` 文件夹，`claude auth status` 仍正确返回真实登录态。**已知良性副作用**：stderr 会打印一条关于顶层 `.claude.json`（不在 `CLAUDE_CONFIG_DIR` 指向的文件夹内，而在其父目录）"not found" 的警告并提示 backup 恢复命令——这是 2.1.215 内部路径解析的一个不一致（部分状态存在 `<home>/.claude.json`，部分在 `<home>/.claude/` 内），登录探测本身不受影响。adapter 必须容忍/静默这条 stderr 警告，不得当作探测失败。 |
-| OpenCode | `XDG_DATA_HOME` + `XDG_CONFIG_HOME` 均指向真实位置 | 已验证：`HOME`/`USERPROFILE` 完全隔离，仅设置这两个 XDG 变量指向真实 `~/.local/share`、`~/.config`，`opencode auth list` 正确显示真实凭据，无警告。两个变量都要设置——前者对应 `auth.json`，后者对应 `opencode.jsonc`。 |
+| OpenCode（**superseded，见下**） | ~~`XDG_DATA_HOME` + `XDG_CONFIG_HOME` 均指向真实位置~~ | Phase 1（2026-07-19）在非 Windows 语境下验证过这两个变量可行；**Phase 13 真实环境测试（2026-07-23）发现在 Windows 上设置它们会让 OpenCode CLI 1.18.3 无限 hang**，已从实现中移除（`workspace-context.ts` 的 OpenCode 分支现在不注入任何 auth 目录变量）。当前 Windows 实现：credential isolation 下（`push_credentials_enabled=false`）OpenCode OAuth 直接 fail closed（`opencode-protocol.ts` 的 Windows+OAuth guard），提示改用 `auth_type=api_key`（`buildOpenCodeApiKeyAuthMaterial`，不依赖 HOME 目录）。**workspace-aware availability（2026-07-23 产品决策，2026-07-24 完整落地）**：当目标 workspace 的 `push_credentials_enabled=true` 时，`buildChildEnv()` 透传完整 `process.env`（不做 HOME 隔离），OpenCode OAuth 实际可用；`AdapterConfigService.validate(id, workspaceId?)` 和失败 Run 触发的 re-probe（`RunDispatchService.reprobeAdapterOnFailure`）都会据此传入正确的 `pushCredentialsEnabled`。探测/失败结果不再写入 Project 级全局 `agent_configs.status`，而是写入 schema v7 `adapter_workspace_status` 表——一张只存"与全局基线不同"的 `(adapter_config_id, workspace_id)` 例外覆盖表；`effectiveAdapterStatus()`（`adapter-availability.ts`）是唯一的合并读取入口，`AdapterResolver`/`ValidationWorkflowService.claimValidatorSlot()` 均已切换为通过它判断。效果：该 workspace 自己探测成功后即可在该 workspace 内路由（无需再退让成 `Unknown`），某 workspace 的失败也不会连带禁用同 Project 的其他 workspace。**UI 闭环（2026-07-25 补齐）**：`AdapterConfigService.list(projectId, workspaceId?)` 与 `GET /api/projects/:project_id/adapters?workspace_id=` 已支持按 workspace 返回 `effective_status` 等投影字段；`AdapterSettings` 组件通过既有 `useWorkspace(projectId)` 取得 Project 当前绑定的（单一）workspace 并贯穿 list/Validate 调用，状态徽标展示 workspace-effective 值。这不是"用户在 Adapter Settings 内自由选择任意 workspace"的多 workspace 选择器——PersonaHub 当前是单 Project 单 workspace 产品模型（design F001），UI 只需要、也只提供了针对"当前这一个已绑定 workspace"的展示与操作。`setDefault`/Project default 语义仍只认全局 `status`，与 workspace override 无关，为有意保留。 |
 
-三者的共同点：SSH agent、git credential helper、GH token 均由 `HOME`/`USERPROFILE`（保持隔离）控制，与上述 provider 专属变量无关，因此这套注入不会连带放宽 git 凭据隔离。详见 `server/tests/helpers/{claude,opencode}-protocol-fixtures.md` T009。
+Codex/Claude Code 的共同点：SSH agent、git credential helper、GH token 均由 `HOME`/`USERPROFILE`（保持隔离）控制，与上述 provider 专属变量无关，因此这套注入不会连带放宽 git 凭据隔离。详见 `server/tests/helpers/{claude,opencode}-protocol-fixtures.md` T009（Phase 1 记录，OpenCode 部分已被 Phase 13 推翻，见上）。
 
 ## 6. Adapter Runtime设计
 
@@ -710,7 +710,7 @@ Run cards增加purpose badge和provider/model；consult使用中性样式和明�
 | consult触发危险操作 | Issue Blocked，取消其余queued workflow Run |
 | server grace期间重启 | 按due_at恢复剩余等待/立即dispatch |
 
-`buildChildEnv`安全回归必须对三个provider分别验证：无SSH agent、无git helper、无GH token，只有最小CLI auth material；API key不得出现在process argv。
+`buildChildEnv`安全回归必须对三个provider分别验证：无SSH agent、无git helper、无GH token，只有最小CLI auth material；API key不得出现在process argv。**2026-07-23 final-comprehensive-report 发现并修复**：隔离模式此前只过滤 Git/SSH/token 类变量，未过滤 `OPENCODE_MODEL_PROVIDER_ENV` 里的 10 个模型 provider API key（`OPENAI_API_KEY`/`ANTHROPIC_API_KEY`/...）——任何 provider 的隔离 Run 都能读到操作员环境里设置的其他 provider key。先补了大小写不敏感的 denylist（含常见云厂商凭据），随后 **2026-07-24 final-recheck-2-report 指出 denylist 永远无法穷举所有可能的密钥变量名（如企业自定义 `*_TOKEN`），已重构为 allowlist**：`workspace-context.ts` 的隔离分支现在只放行 `SAFE_PARENT_ENV_NAMES` 里明确列出的非密钥基础设施变量（PATH/Windows 系统必需变量/temp/locale/终端格式/代理配置/Node 运行时配置），其余一律不复制，不管名字是否出现在任何名单里。已用本机真实已登录 CLI 实测验证未破坏功能：隔离环境下 Codex、Claude Code 真实 dispatch 均成功完成（`real-multi-provider-consult.test.ts`，`REAL_CODEX=1 REAL_CLAUDE=1`），OpenCode 保持既有的快速失败行为（~4s，非 hang，`real-opencode-dispatch-check.test.ts`，`REAL_OPENCODE=1`）。`credential-isolation.test.ts` 同时补了任意未命名 secret（如 `SENTRY_AUTH_TOKEN`/`DATABASE_URL`）不泄漏的回归，以及 PATH/HTTPS_PROXY 等基础设施变量仍正常透传的回归。**2026-07-24 final-recheck-3-report 发现并修复**：allowlist 只按变量名分类，未检查值本身——标准代理 URL 可以携带 userinfo 凭据（`http://user:password@host:8080`），此时 `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY` 会原样透传账号密码。已加 `isSafeProxyValue()`：用 `new URL()` 解析后检查 `username`/`password`，含凭据或无法解析一律 fail closed（不猜测“大概率安全”）；`NO_PROXY`（主机名列表，非凭据承载 URL）不受影响，继续原样透传。`credential-isolation.test.ts` 补了三种 proxy 变量的凭据 URL 拒绝回归、无凭据 URL 正常透传回归、畸形值 fail closed 回归、`NO_PROXY` 不受影响回归。
 
 ## 13. 测试策略
 

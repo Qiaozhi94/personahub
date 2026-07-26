@@ -49,7 +49,12 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
       .catch(() => ({ error: { code: ErrorCode.INTERNAL_ERROR, message: "Unknown error" } }));
     throw errorBody.error as ApiError;
   }
-  return res.json() as Promise<T>;
+  // 204 No Content (e.g. DELETE) has no body — res.json() throws a
+  // SyntaxError on empty input, which previously surfaced as a false
+  // mutation failure even though the server-side delete had succeeded.
+  if (res.status === 204) return undefined as T;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export function toApiError(error: unknown): ApiError {
@@ -105,8 +110,10 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    listByProject: (projectId: string) =>
-      apiFetch<AdapterConfigListResponse>(`/projects/${projectId}/adapters`),
+    listByProject: (projectId: string, workspaceId?: string) =>
+      apiFetch<AdapterConfigListResponse>(
+        `/projects/${projectId}/adapters${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ""}`,
+      ),
     update: (adapterId: string, input: AdapterConfigUpdateInput) =>
       apiFetch<AdapterConfigUpdateResponse>(`/adapters/${adapterId}`, {
         method: "PATCH",
@@ -114,9 +121,10 @@ export const apiClient = {
       }),
     delete: (adapterId: string) =>
       apiFetch<void>(`/adapters/${adapterId}`, { method: "DELETE" }),
-    validate: (adapterId: string) =>
+    validate: (adapterId: string, workspaceId?: string) =>
       apiFetch<AdapterConfigValidateResponse>(`/adapters/${adapterId}/validate`, {
         method: "POST",
+        body: JSON.stringify(workspaceId ? { workspace_id: workspaceId } : {}),
       }),
     getProviders: () => apiFetch<AdapterProvidersResponse>("/adapter-providers"),
     setDefault: (projectId: string, adapterId: string | null) =>

@@ -7,7 +7,20 @@
 // script just reads the whole prompt from stdin (to prove the adapter wrote
 // it there, not argv) and then emits its scripted sequence.
 
-const mode = process.env.FAKE_CLAUDE_MODE ?? "success";
+// Mode selection prefers argv[2] (survives credential-isolation env
+// filtering — real command-line args, unlike env vars, are never touched
+// by buildChildEnv()) over FAKE_CLAUDE_MODE (only reaches this process when
+// the calling test's workspace has push_credentials_enabled=true). Matched
+// against a known-modes allowlist (not just "doesn't start with -") for the
+// same reason as fake-opencode.mjs: a bare heuristic is one adapter-argv
+// reshuffle away from silently misreading a real flag/positional token as
+// a mode name.
+const KNOWN_MODES = new Set([
+  "success", "failure", "hard_failure", "command_success", "command_failure",
+  "escalation", "credential_failure", "json_final_message", "malformed", "cancel",
+]);
+const argMode = KNOWN_MODES.has(process.argv[2]) ? process.argv[2] : undefined;
+const mode = argMode ?? process.env.FAKE_CLAUDE_MODE ?? "success";
 
 let stdinText = "";
 process.stdin.setEncoding("utf-8");

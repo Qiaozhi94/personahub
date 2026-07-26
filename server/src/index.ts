@@ -14,6 +14,8 @@ import { RunRepository } from "./repositories/run.js";
 import { RunTraceRepository } from "./repositories/run-trace.js";
 import { FileChangeRepository } from "./repositories/file-change.js";
 import { EvidenceSummaryRepository } from "./repositories/evidence-summary.js";
+import { AdapterWorkspaceStatusRepository } from "./repositories/adapter-workspace-status.js";
+import { AdapterAvailabilityProbeCoordinator } from "./services/adapter-probe-coordinator.js";
 import { EvidenceService } from "./services/evidence.js";
 import { DevelopmentTraceService } from "./services/development-trace.js";
 import { ValidationTraceService } from "./services/validation-trace.js";
@@ -67,6 +69,8 @@ async function main() {
   const runRepo = new RunRepository(db);
   const runTraceRepo = new RunTraceRepository(db);
   const fileChangeRepo = new FileChangeRepository(db);
+  const adapterWorkspaceStatusRepo = new AdapterWorkspaceStatusRepository(db);
+  const adapterProbeCoordinator = new AdapterAvailabilityProbeCoordinator();
 
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
@@ -90,7 +94,7 @@ async function main() {
   adapterRegistry.register(new ClaudeCodeAdapter());
   adapterRegistry.register(new OpenCodeAdapter());
 
-  const adapterConfigService = new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry);
+  const adapterConfigService = new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry, workspaceRepo, adapterWorkspaceStatusRepo, db, adapterProbeCoordinator);
 
   const agentRunner = new AgentRunner({
     runService,
@@ -119,11 +123,13 @@ async function main() {
     db, issueRepo, runRepo, threadEventService, threadEventRepo,
     validationTraceService, agentConfigRepo, workflowTemplateRepo,
     validationPolicyRepo, evidenceSummaryRepo, fileChangeRepo,
+    adapterWorkspaceStatusRepo,
   );
 
   const manualRoutingService = new ManualRoutingService(
     runRepo, issueRepo, workspaceRepo, agentConfigRepo, projectRepo,
     threadEventRepo, threadEventService, db, validationWorkflowService,
+    adapterWorkspaceStatusRepo,
   );
 
   const runDispatchService = new RunDispatchService(
@@ -132,7 +138,7 @@ async function main() {
     threadEventService, agentRunner, developmentTraceService, runTraceRepo,
     validationWorkflowService, db,
     runRepo, threadEventRepo, fileChangeRepo,
-    manualRoutingService,
+    manualRoutingService, adapterWorkspaceStatusRepo, adapterProbeCoordinator,
   );
 
   const staleRecoveryService = new StaleRecoveryService(
@@ -207,6 +213,10 @@ async function main() {
   app.addHook("onClose", async () => {
     validationDispatchScheduler.stop();
     await agentRunner.shutdown();
+    await Promise.all([
+      runDispatchService.shutdown(),
+      adapterConfigService.shutdown(),
+    ]);
   });
 
   const gracefulShutdown = async (signal: string) => {

@@ -37,7 +37,13 @@ describe.skipIf(!REAL)("Real Codex end-to-end validation (T081)", () => {
       writeFileSync(join(tempDir, "test", "greet.test.mjs"), `import { test } from "node:test";\nimport assert from "node:assert";\nimport { greet } from "../src/greet.mjs";\ntest("greets", () => assert.equal(greet("A"), "Hello, A"));\n`);
 
       const project = services.projectService.create("E2E");
-      services.workspaceService.bind(project.id, tempDir);
+      const workspace = services.workspaceService.bind(project.id, tempDir);
+      // The fake implementation step drives fake-codex.mjs via
+      // FAKE_CODEX_MODE on the test runner's own process.env, relying on it
+      // reaching the child process — buildChildEnv()'s credential-isolation
+      // allowlist would otherwise strip it. The real validator step below
+      // doesn't depend on this variable either way.
+      services.workspaceRepo.updatePushCredentialsEnabled(workspace.id, true);
       const { issue } = services.issueService.create(project.id, { title: "Verify greeting helper", goal: "greet() returns the expected string and npm test passes" });
 
       // Relax file-trace requirement: the deterministic fake implementation
@@ -45,7 +51,7 @@ describe.skipIf(!REAL)("Real Codex end-to-end validation (T081)", () => {
       services.db.prepare("UPDATE validation_policies SET evidence_requirements_json = ? WHERE id = ?")
         .run(JSON.stringify({ schema_version: 1, require_handoff: true, require_file_trace: false, require_verification: true, accepted_verification_kinds: ["test", "lint", "typecheck", "build"] }), issue.validation_policy_id);
 
-      services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [], default_model: "gpt-5", status: AdapterStatus.Available });
+      services.agentConfigRepo.create({ project_id: project.id, name: "Impl (fake)", role: "implementation", cli_provider: "codex", command: "node", args: [fakeScriptPath], capability_tags: [AgentCapability.Implementation], default_model: "gpt-5", status: AdapterStatus.Available });
       services.agentConfigRepo.create({ project_id: project.id, name: "Validator (real)", role: "validator", cli_provider: "codex", command: "codex", args: [], capability_tags: [AgentCapability.Validator], default_model: "gpt-5", status: AdapterStatus.Available });
       const implAdapterId = services.agentConfigRepo.listAvailableByProjectAndCapability(project.id, AgentCapability.Implementation)[0].id;
 

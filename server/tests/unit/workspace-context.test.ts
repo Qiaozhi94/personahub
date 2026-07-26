@@ -64,6 +64,37 @@ describe("WorkspaceContext - Credential Isolation", () => {
         expect(env.HOMEDRIVE).toBe("C:");
         expect(env.HOMEPATH).toBe("\\Users\\Test\\workspace");
       });
+
+      // Final-comprehensive-report regression: local_path.slice(0,2) assumed
+      // a drive-letter path. A UNC workspace path (\\server\share\repo)
+      // would slice to HOMEDRIVE="\\\\", HOMEPATH="server\share\repo" — not
+      // a valid Windows home identity, and liable to reintroduce the exact
+      // HOMEDRIVE/HOMEPATH-vs-USERPROFILE mismatch already known to hang
+      // OpenCode on this platform.
+      it("uses HOMESHARE (not a bogus HOMEDRIVE) for a UNC workspace path", () => {
+        const env = buildChildEnv({ push_credentials_enabled: false, local_path: "\\\\fileserver\\share\\repo\\sub" });
+        expect(env.USERPROFILE).toBe("\\\\fileserver\\share\\repo\\sub");
+        expect(env.HOMEDRIVE).toBeUndefined();
+        expect(env.HOMESHARE).toBe("\\\\fileserver\\share");
+        expect(env.HOMEPATH).toBe("\\repo\\sub");
+      });
+
+      it("does not leak a real HOMESHARE into a drive-letter workspace", () => {
+        const original = process.env.HOMESHARE;
+        process.env.HOMESHARE = "\\\\realserver\\realshare";
+        const env = buildChildEnv({ push_credentials_enabled: false, local_path: "C:\\Users\\Test\\workspace" });
+        process.env.HOMESHARE = original;
+
+        expect(env.HOMESHARE).toBeUndefined();
+        expect(env.HOMEDRIVE).toBe("C:");
+      });
+
+      it("fails closed (empty HOMESHARE/HOMEPATH) for a malformed UNC path instead of guessing", () => {
+        const env = buildChildEnv({ push_credentials_enabled: false, local_path: "\\\\onlyserver" });
+        expect(env.HOMEDRIVE).toBeUndefined();
+        expect(env.HOMESHARE).toBe("");
+        expect(env.HOMEPATH).toBe("");
+      });
     });
   });
 

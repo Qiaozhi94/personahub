@@ -95,4 +95,82 @@ describe("T091/T092: composer routing preview", () => {
       }));
     });
   });
+
+  // Review-report regression: canSend used to ignore adapter availability
+  // entirely — the composer stayed submit-able with no usable default or an
+  // unavailable explicit selection, and users only found out from a failed
+  // API call.
+  describe("canSend reflects adapter availability, not just adapter presence", () => {
+    it("disables send and explains when no adapter is marked default (server would reject as DEFAULT_ADAPTER_UNAVAILABLE)", async () => {
+      mockAdapters(createAdapter({ id: "agt_1", is_default: false, capability_tags: [AgentCapability.Implementation] }));
+      renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Running} projectId="prj_1" />);
+      await screen.findByLabelText("Agent");
+      expect(await screen.findByText(/No available default adapter/i)).toBeInTheDocument();
+
+      fireEvent.change(screen.getByPlaceholderText("Enter agent instructions…"), { target: { value: "do something" } });
+      fireEvent.submit(screen.getByPlaceholderText("Enter agent instructions…").closest("form")!);
+
+      await new Promise((r) => setTimeout(r, 10));
+      expect(apiClient.runs.create).not.toHaveBeenCalled();
+    });
+
+    it("disables send when the default adapter is Unavailable", async () => {
+      mockAdapters(createAdapter({
+        id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation],
+        status: "unavailable" as never,
+      }));
+      renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Running} projectId="prj_1" />);
+      await screen.findByLabelText("Agent");
+      expect(await screen.findByText(/No available default adapter/i)).toBeInTheDocument();
+
+      fireEvent.change(screen.getByPlaceholderText("Enter agent instructions…"), { target: { value: "do something" } });
+      fireEvent.submit(screen.getByPlaceholderText("Enter agent instructions…").closest("form")!);
+
+      await new Promise((r) => setTimeout(r, 10));
+      expect(apiClient.runs.create).not.toHaveBeenCalled();
+    });
+
+    it("disables send when the explicitly selected adapter is Unavailable, even though a different adapter is default", async () => {
+      mockAdapters(
+        createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation] }),
+        createAdapter({
+          id: "agt_2", is_default: false, capability_tags: [AgentCapability.Implementation],
+          status: "unavailable" as never,
+        }),
+      );
+      renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Running} projectId="prj_1" />);
+      await screen.findByLabelText("Agent");
+      fireEvent.change(screen.getByLabelText("Agent"), { target: { value: "agt_2" } });
+      expect(await screen.findByText(/Selected adapter is not available/i)).toBeInTheDocument();
+
+      fireEvent.change(screen.getByPlaceholderText("Enter agent instructions…"), { target: { value: "do something" } });
+      fireEvent.submit(screen.getByPlaceholderText("Enter agent instructions…").closest("form")!);
+
+      await new Promise((r) => setTimeout(r, 10));
+      expect(apiClient.runs.create).not.toHaveBeenCalled();
+    });
+
+    it("re-enables send once the composer falls back to the available default after clearing an unavailable explicit pick", async () => {
+      mockAdapters(
+        createAdapter({ id: "agt_1", is_default: true, capability_tags: [AgentCapability.Implementation] }),
+        createAdapter({
+          id: "agt_2", is_default: false, capability_tags: [AgentCapability.Implementation],
+          status: "unavailable" as never,
+        }),
+      );
+      vi.mocked(apiClient.runs.create).mockResolvedValue({ run: {} as never });
+      renderWithQuery(<ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Running} projectId="prj_1" />);
+      await screen.findByLabelText("Agent");
+      fireEvent.change(screen.getByLabelText("Agent"), { target: { value: "agt_2" } });
+      await screen.findByText(/Selected adapter is not available/i);
+      fireEvent.change(screen.getByLabelText("Agent"), { target: { value: "" } });
+
+      fireEvent.change(screen.getByPlaceholderText("Enter agent instructions…"), { target: { value: "do something" } });
+      fireEvent.submit(screen.getByPlaceholderText("Enter agent instructions…").closest("form")!);
+
+      await waitFor(() => {
+        expect(apiClient.runs.create).toHaveBeenCalledWith("iss_1", expect.objectContaining({ adapter_id: undefined }));
+      });
+    });
+  });
 });

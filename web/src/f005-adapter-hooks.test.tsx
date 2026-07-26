@@ -106,7 +106,7 @@ describe("useAdapters/useCreateAdapter/useUpdateAdapter/useDeleteAdapter/useVali
     const adapter = createAdapter({ status: AdapterStatus.Unavailable, auth_status_message: "not logged in" });
     vi.mocked(apiClient.adapters.validate).mockResolvedValue({ adapter });
     const { result } = renderHook(() => useValidateAdapter("prj_1"), { wrapper: createWrapper() });
-    result.current.mutate("agt_1");
+    result.current.mutate({ adapterId: "agt_1" });
     await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
     expect(result.current.data?.adapter.auth_status_message).toBe("not logged in");
   });

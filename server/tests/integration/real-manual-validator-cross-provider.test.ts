@@ -65,7 +65,13 @@ describe.skipIf(!REAL)("T103: real cross-provider validator (Codex implementatio
       writeFileSync(join(tempDir, "test", "greet.test.mjs"), `import { test } from "node:test";\nimport assert from "node:assert";\nimport { greet } from "../src/greet.mjs";\ntest("greets", () => assert.equal(greet("A"), "Hello, A"));\n`);
 
       const project = services.projectService.create("T103-CrossProvider");
-      services.workspaceService.bind(project.id, tempDir);
+      const workspace = services.workspaceService.bind(project.id, tempDir);
+      // The fake implementation step drives fake-codex.mjs via
+      // FAKE_CODEX_MODE on the test runner's own process.env, relying on it
+      // reaching the child process — buildChildEnv()'s credential-isolation
+      // allowlist would otherwise strip it. The real validator step doesn't
+      // depend on this variable either way.
+      services.workspaceRepo.updatePushCredentialsEnabled(workspace.id, true);
       const { issue } = services.issueService.create(project.id, { title: "Verify greeting helper (cross-provider validator)", goal: "greet() returns the expected string and npm test passes" });
 
       services.db.prepare("UPDATE validation_policies SET evidence_requirements_json = ? WHERE id = ?")

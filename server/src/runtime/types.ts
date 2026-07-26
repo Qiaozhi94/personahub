@@ -66,6 +66,21 @@ export interface AdapterValidationResult {
   errorMessage: string | null;
 }
 
+export interface AdapterValidateOptions {
+  /**
+   * design §5.4: when the target workspace has `push_credentials_enabled`
+   * true, dispatch skips credential isolation entirely — `buildChildEnv()`
+   * passes through the full `process.env`, so an OAuth-configured provider
+   * that would otherwise be unreachable under isolation (e.g. OpenCode OAuth
+   * on Windows) can actually run. validate() must probe under the same
+   * assumption as the real dispatch it's predicting, not always the
+   * isolated case. Omitted/false = conservative (isolated) default, safe
+   * when the caller has no specific workspace in mind (e.g. the Project-level
+   * Adapter Settings "Validate" button).
+   */
+  pushCredentialsEnabled?: boolean;
+}
+
 export interface AgentAdapter {
   provider: string;
   capabilities: AgentAdapterCapabilities;
@@ -75,7 +90,7 @@ export interface AgentAdapter {
    * providers whose validate() genuinely needs the raw secret to probe
    * (OpenCode api_key mode) — OAuth-only adapters (Codex, Claude) ignore it.
    */
-  validate(config: AdapterConfig, apiKey?: string | null): Promise<AdapterValidationResult>;
+  validate(config: AdapterConfig, apiKey?: string | null, options?: AdapterValidateOptions): Promise<AdapterValidationResult>;
   start(input: AgentRunInput): Promise<RunHandle>;
 }
 

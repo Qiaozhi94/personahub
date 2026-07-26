@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import type { AdapterConfig } from "@personahub/shared/types";
 import { AdapterAuthType } from "@personahub/shared/types";
-import type { AdapterValidationResult } from "../types.js";
+import type { AdapterValidationResult, AdapterValidateOptions } from "../types.js";
 import { resolveExecutable } from "../executable-resolver.js";
 import { buildOpenCodeApiKeyAuthMaterial } from "../auth-material.js";
 
@@ -21,13 +21,35 @@ export function buildModelFlag(config: Pick<AdapterConfig, "model_provider" | "d
   return ["-m", `${config.model_provider}/${config.default_model}`];
 }
 
-export async function validateOpenCodeCommand(config: AdapterConfig, apiKey?: string | null): Promise<AdapterValidationResult> {
+export async function validateOpenCodeCommand(
+  config: AdapterConfig,
+  apiKey?: string | null,
+  options?: AdapterValidateOptions,
+): Promise<AdapterValidationResult> {
   const command = config.command?.trim();
   if (!command) {
     return { available: false, errorMessage: "Command is empty." };
   }
   if (!config.model_provider || !config.default_model) {
     return { available: false, errorMessage: "model_provider and default_model are required for opencode (used to build -m provider/model)." };
+  }
+
+  // real-environment finding (2026-07-23, design §5.4): this probe runs with
+  // the operator's full, uncontained process.env/HOME, so it can see real
+  // OAuth credentials that the actual dispatch never exposes to OpenCode on
+  // Windows *when credential isolation is active* — reporting "available"
+  // here would be a lie about what that Run can do. Fail closed, UNLESS the
+  // target workspace has push_credentials_enabled=true, in which case real
+  // dispatch (buildChildEnv()) also skips isolation and passes through the
+  // full process.env — the same environment this probe already runs with —
+  // so the probe result is actually representative and should stand.
+  const isIsolatedDispatch = options?.pushCredentialsEnabled !== true;
+  if (process.platform === "win32" && config.auth_type === AdapterAuthType.OAuth && isIsolatedDispatch) {
+    return {
+      available: false,
+      errorMessage:
+        "OpenCode OAuth cannot run under PersonaHub's credential isolation on Windows with this CLI version; use auth_type=api_key for an isolated workspace, or enable push_credentials_enabled for this workspace.",
+    };
   }
 
   const { resolved, errorMessage: resolveError } = resolveExecutable(command);
