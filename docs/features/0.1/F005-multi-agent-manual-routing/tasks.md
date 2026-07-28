@@ -4,12 +4,12 @@ related_features: [F002, F003, F004]
 topics: [multi-adapter, manual-routing, claude-code, opencode, auth, security, v0.1.4]
 doc_kind: tasks
 created: 2026-07-16
-updated: 2026-07-19
+updated: 2026-07-28
 ---
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）- 任务
 
-> Status: review | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
 ## 规则
 
