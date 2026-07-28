@@ -1,10 +1,10 @@
 ---
 feature_ids: []
 related_features: []
-topics: [prd, product, agent-team-os, issue-managed-workflow, room-collaboration, topology-aware-automation, evidence-grounded, artifact-centered]
+topics: [prd, product, agent-team-os, issue-managed-workflow, room-collaboration, graph-orchestrated-work, evidence-grounded, artifact-centered]
 doc_kind: prd
 created: 2026-07-11
-updated: 2026-07-19
+updated: 2026-07-29
 ---
 
 # PersonaHub PRD: Personal AI Agent Team OS
@@ -15,6 +15,8 @@ updated: 2026-07-19
 
 | 日期 | 来源提交 | 修订目的 | 修订内容 |
 | --- | --- | --- | --- |
+| 2026-07-29 | `docs/decisions/0006-executable-work-graph.md` | 第三至五轮文档/代码交叉复核依次发现：v0.2 完成判据缺少 ADR 0006 Slice 1 要求的"可恢复"语义；"并行执行子任务"与现有 workspace 排他锁矛盾未说明边界；"只读子任务可不持锁并行"缺少运行时强制手段（代码核实 `WorkspaceContext` 无访问模式字段，三个 adapter 均无强制只读能力）；随后又发现第四轮给出的"缓解方案"本身不成立——普通 `git worktree`/目录拷贝只是换了个 cwd，不构成操作系统层面的访问隔离，`git worktree` 还与主仓库共享 `.git` 管理元数据——均已修正；同时补齐 frontmatter `updated` 与修订记录不一致 | 第 15 节 v0.2 完成判据补充"可恢复"最小语义（定义以 ADR 0006 为准）；并行边界改为以 ADR 0006 定义的强制隔离条件（操作系统层面不可访问活 workspace，非仅换 cwd）或跨 adapter 一致的强制只读能力为前提，明确普通 worktree/拷贝不满足该条件，默认基线是全部串行，"并行"退化为图上的逻辑 fan-out；写入子任务始终串行不变；frontmatter `updated` 同步为 2026-07-29 |
+| 2026-07-28 | `docs/decisions/0006-executable-work-graph.md` | 把二级定位表达从 topology-aware 升级为 graph-orchestrated，与 v0.2+ Executable Work Graph 目标架构方向对齐；经两轮文档一致性复核发现首版改动把 v0.1 元数据误述为已具备可执行图能力、`orchestrator_subagent` 拓扑定义缺少可验证的最小场景、且未说明 v0.2 完成判据与该决策 Slice 1 触发条件的关系，本行合并记录修正后的最终改动 | 更新第 2 节"一句话"中英文定位表述，并明确 v0.1 当前只有描述性元数据、不构成可执行图，同时给出 Executable Work Graph 与 Collaboration Topology 的层级关系；第 5 节 `orchestrator_subagent` 拓扑定义补充"至少两个可独立调度子任务 + 显式边回传 + 收敛"的最小场景，排除单一子 agent 顺序接力也算数的歧义；第 13 节差异化描述、第 15 节版本路线引言同步措辞并指向 0006 号决策，不再声称 v0.1 已由 Collaboration Topology 承担 graph-orchestrated collaboration；第 15 节 v0.2 完成判据改为要求至少一次真实 fan-out → fan-in，并把 Slice 1 的验收标准改为"以显式 Node/Edge 语义可执行、可追踪"而非预先约定必须新建运行时表；frontmatter topics 标签同步更新 |
 | 2026-07-19 | （F004 final review） | 统一 Autonomous Validation 的轮次、安全恢复和 Evidence Summary 验收口径 | 明确 Issue 累计 failed count / Run round 的职责、第三次 failed 即 Blocked、普通 unblock 保留轮次、round-limit 只能通过独立带 note 的 reset action 清零，以及 Done Evidence Summary 支持复制/下载已持久化 Markdown |
 | 2026-07-18 | `4d13cab` | 避免 v0.4 在 Workflow 抽象尚未经过跨场景验证时，同时铺开多个浅层非 coding workflow；让后续自动编排有可评价的数据基础 | 将 v0.4 调整为“扩展契约 + 按任务范式逐个验证的垂直切片”，优先做 Windows Troubleshooting，再按实测进入 knowledge/research 与 writing；明确多种 Issue Type 可以保留为方向，但不承诺同一版本全部成熟交付；将最小 AgentOps 原始信号前置到 v0.1–v0.3，v0.5 仍负责完整评价、分析 UI 与 trust scoring |
 | 2026-07-12 | `9c79555` | 在 Coordinator 自动编排前增加一条可独立交付的多 Agent 协作路径 | 新增 v0.1.4 手动多 Agent 路由：补齐 Codex / Claude Code / OpenCode adapter 与鉴权范围，在 Thread 中手动选择下一位 Agent，并通过 Handoff Packet 和 evidence refs 避免复制上下文；相应调整 v0.1 完成判据和 v0.2 Coordinator 边界 |
@@ -47,11 +49,15 @@ updated: 2026-07-19
 
 一句话：
 
-> A personal Agent Team OS for issue-managed, topology-aware, evidence-grounded automation.
+> A personal Agent Team OS for issue-managed, graph-orchestrated, evidence-grounded work.
 
 中文：
 
-> 以 Issue 管理目标，以 Thread / Room 承载协作，以 Workflow Template / Collaboration Topology 决定 agent 团队、协作方式和验证方式。
+> 以 Issue 管理目标，以可执行 Work Graph 组织 Agent 协作，以 Evidence 验证结果，并从真实运行中持续改进。
+
+v0.1 已跑通一条由领域服务驱动的 Implementation → Validation 工作流，并具备 Workflow Template / Collaboration Topology 等描述预期 agent 团队和协作方式的元数据，但这些元数据目前不驱动执行顺序，尚不构成通用可执行图——`collaboration_topology` 只做存储映射，实际流转顺序硬编码在 service 里，详见 `docs/decisions/0006-executable-work-graph.md` 的代码审计记录。把它升级为通用、可版本化的 Executable Work Graph，是 v0.2 落地 `orchestrator_subagent` 拓扑（第一个非简单串行的真实协作场景）时启动的目标架构方向，具体范围和触发条件见该决策，不是 v0.1 已具备的能力。
+
+Executable Work Graph 是长期的运行时核心模型；Collaboration Topology 是 Graph Definition 里的高层协作形态/模板分类，是该模型的一个组成部分，不是与之并列或竞争的另一套概念。
 
 ### 2.1 多 Agent 协作形态判断
 
@@ -411,7 +417,7 @@ Workflow Template 可以选择使用 Project default coordinator，也可以为�
 内置候选 topology：
 
 - sequential：顺序式，适合固定 SOP 和低风险任务。
-- orchestrator_subagent：Coordinator Agent 拆解任务，子 agent 执行，适合大多数需要交付和审计的复杂任务。
+- orchestrator_subagent：Coordinator Agent 把任务拆解成至少两个可独立调度的子任务分派给子 agent 执行，子任务结果通过显式边回传并由 Coordinator 或 synthesis 收敛（区别于单一子 agent 顺序接力），适合大多数需要交付和审计的复杂任务；v0.2 完成判据里的验证范围见第 15 节。
 - coordinator：Research 并行 -> Synthesis 串行 -> Implementation 并行 -> Verification 并行，适合大型 coding / refactor / research。
 - parallel_validation：多个 validator 从测试、diff、风险、证据等角度并行检查，适合高风险交付的验证阶段。
 - council：多 agent 受控讨论，由 synthesizer 收敛，适合产品方案、架构取舍、写作方向。
@@ -1091,7 +1097,7 @@ Escalation 是硬阻塞，不是软提示，但对不同风险类型，"硬阻�
 | Memory 污染 | agent 随意写长期知识 | Memory 必须有 source issue/thread/event、confidence 和 provenance |
 | UI 过重 | Board / Hub / Logs / 多协作室同时抢中心 | 中间只承载当前协作现场（primary Thread 或 active Room），右侧 Inspector 分 tab |
 | 执行不可信 | Agent 自称完成但无证据 | Done 必须有 validation pass + evidence trace |
-| 同质化 | 看起来像普通聊天壳或普通 issue runner | 主打 Issue-managed Thread + topology-aware collaboration + evidence / skill compounding |
+| 同质化 | 看起来像普通聊天壳或普通 issue runner | 主打 Issue-managed Thread + evidence-grounded execution；从 v0.2 `orchestrator_subagent` 起，以 Collaboration Topology 为起点逐步实现 graph-orchestrated collaboration（v0.1 仅有 Collaboration Topology 描述性元数据，尚不驱动执行，见 `docs/decisions/0006-executable-work-graph.md`）+ evidence / skill compounding |
 | git push escalation 曾经过度依赖 CLI 能力（风险已下调） | 早期设计假设"硬阻塞"必须靠 CLI 的执行前 approval/权限钩子实现，一旦 CLI 不提供该钩子就只能事后检测，达不到第 11 节"硬阻塞"的要求 | 已改为凭据/执行环境隔离为主要防线（见第 11 节"凭据与执行环境隔离"）：agent 执行环境默认不下发 push 凭据，push 会因缺少凭据自然失败，不依赖 CLI 内部协议；CLI 的 approval 钩子（若存在）只作为可观测性增强，不再是安全底线本身 |
 
 ## 14. Open Questions
@@ -1107,7 +1113,7 @@ Escalation 是硬阻塞，不是软提示，但对不同风险类型，"硬阻�
 
 路线图按能力跃迁组织，而不是仅按功能清单组织。`PersonaHub` 的长期演进方向是：从固定 coding workflow，逐步升级为能自动选择协作方式、自动组队、自动验证、自动沉淀经验的个人 AI Agent Team OS。
 
-范围承诺分两层，呼应第 13 节"过度平台化"风险：v0.1–v0.3 是近期承诺范围，目标是先跑通个人闭环、验证 Issue-managed Thread 和 topology-aware collaboration 这两个核心判断是否成立，而不是先把全部框架搭好。v0.4 及以后是方向性设想，用来说明长期演进逻辑自洽，但具体范围、顺序甚至是否要做，会随 v0.1–v0.3 的实际使用反馈调整，不构成当前排期承诺。
+范围承诺分两层，呼应第 13 节"过度平台化"风险：v0.1–v0.3 是近期承诺范围，目标是先跑通个人闭环、验证 Issue-managed Thread 和 collaboration-topology 驱动的协作这两个核心判断是否成立，而不是先把全部框架搭好；这也是 Executable Work Graph 目标模型（`docs/decisions/0006-executable-work-graph.md`）的早期验证阶段——v0.2 `orchestrator_subagent` 拓扑落地即触发该决策的 Slice 1。v0.4 及以后是方向性设想，用来说明长期演进逻辑自洽，但具体范围、顺序甚至是否要做，会随 v0.1–v0.3 的实际使用反馈调整，不构成当前排期承诺。
 
 ### v0.1 Sequential Workflow
 
@@ -1196,7 +1202,7 @@ v0.1 完成判据：
 
 - 用户输入自然语言目标后，系统能自动创建或补全 Issue。
 - 系统能说明为什么选择某个 workflow / topology / agent roster。
-- 至少 coding workflow 支持 orchestrator_subagent 拓扑。
+- 至少 coding workflow 支持 orchestrator_subagent 拓扑，且至少覆盖一次真实的 fan-out → fan-in：Coordinator 拆出至少两个可独立调度的子任务，子任务结果通过显式边回传，由 Coordinator 或 synthesis node 收敛，并记录每个子任务的执行者、输入来源、结果和收敛决策——单一子 agent 顺序接力不满足此判据。**并行范围受现有 workspace 排他锁约束，不隐含放宽写并发；只读子任务的"不持锁并行"必须有结构性隔离，不能只靠角色/prompt 自称只读**：写入代码库的子任务（含最终落盘的 synthesis/implementation 节点）始终受 `workspace-lock.ts` 保护、串行执行；只读分析/审查子任务只有在满足 `docs/decisions/0006-executable-work-graph.md` 定义的强制隔离条件（活 workspace 在操作系统层面不可访问，不是仅仅换一个 `cwd`——普通 `git worktree`/目录拷贝本身不满足该条件，因为子进程仍能通过相对/绝对路径或调用工具触达原 workspace，`git worktree` 还与主仓库共享 `.git` 管理元数据）时，才允许不持锁并行；当前运行时任何 adapter 都不具备满足该条件的能力（`WorkspaceContext` 无访问模式字段，Codex 以 `workspace-write` 沙箱启动，Claude Code/OpenCode 直接以 workspace 路径为 cwd 启动）。因此**默认基线是全部串行**：v0.2 若未落地并验证该隔离边界，只读子任务也必须进入排他锁串行队列，此时"并行"只体现为图上的逻辑 fan-out（可独立调度、可追踪），不代表物理并行执行；结构性隔离是需要额外设计验证才能解锁的加分项，不是默认路径。独立 worktree 级别的并行**写入**不属于本判据范围，除非 v0.2 `design.md` 另行决策。这是第一个非简单串行的多节点协作场景，即 `docs/decisions/0006-executable-work-graph.md`（Executable Work Graph）Slice 1 的触发点：v0.2 至少要能以显式 Node/Edge 语义**执行、可追踪、可恢复**该拓扑（"可恢复"的最小语义——重启后可重建各 Node 状态、已完成不重复执行、进行中 Attempt 标记 interrupted、可从对应 Node 发起新 Attempt、fan-in 不因重启提前收敛——以该决策为准，不在此重复定义）；是否需要为此新增 `GraphRun`/`NodeRun` 等独立持久化表，还是现有 Run/Event 模型经扩展即可满足，由 `design.md` 按恢复、审计、并发和演进需求判断，不是本判据预先假定的结论。范围严格收窄到 `orchestrator_subagent` 本身需要的能力，不因此展开 Graph Compiler、自然语言 Graph Draft、Canvas UI 等仍然等待各自触发条件的部分。
 
 ### v0.3 Artifact-Centered Collaboration
 

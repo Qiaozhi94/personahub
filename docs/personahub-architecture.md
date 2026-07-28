@@ -2,7 +2,7 @@
 topics: [architecture, runtime, module-design, agent-team-os, validation, workflow]
 doc_kind: design
 created: 2026-07-12
-updated: 2026-07-22
+updated: 2026-07-29
 ---
 
 # PersonaHub 软件架构设计
@@ -13,6 +13,8 @@ updated: 2026-07-22
 
 | 日期 | 来源提交 | 修订目的 | 修订内容 |
 | --- | --- | --- | --- |
+| 2026-07-29 | `docs/decisions/0006-executable-work-graph.md` | 第三至五轮复核依次发现：第 5 节 Slice 1 完成判据遗漏 ADR 0006 要求的"可恢复"语义；`orchestrator_subagent` 的并行范围未说明与第 2 节"Agent Runner"行 v0.1 workspace 排他锁基线的关系；对照 `server/src/runtime/types.ts` 与三个 adapter 实现代码核实后确认"只读 Node 不持锁并行"当前无运行时强制手段；随后又发现"用 `git worktree`/目录拷贝做隔离"这个缓解方案本身不成立——`cwd` 不是文件系统权限边界，`git worktree` 还与主仓库共享 `.git` 管理元数据，均已修正 | 第 5 节"实际实现"补充"可恢复"语义指向 ADR 0006；第 2 节"Workspace 执行边界"行改为如实描述 `WorkspaceContext` 当前字段、注明无访问模式字段；"从 v0.1 到 v0.7 的平滑路径"末尾及第 5 节并行范围描述均改为指向 ADR 0006 定义的强制隔离条件（操作系统层面不可访问活 workspace），明确普通 worktree/拷贝不满足该条件，未落地验证前只读 Node 也须留在串行队列 |
+| 2026-07-28 | `docs/decisions/0006-executable-work-graph.md` | 两轮代码/文档检视发现第 5 节描述的 `TopologyExecutor`/`SequentialTopologyExecutor` 从未实现、且第一轮修正仍把 `steps_json` 顺序切换误述为已实现逻辑、第 11 节仍引用已过期的 `TopologyExecutor` 作为未来扩展点，均已修正为与实际代码及 ADR 0006 一致 | 第 5 节原设计草图标注为"未实现，仅存档"；新增"实际实现"小节，如实描述 `collaboration_topology`/`steps_json` 是不驱动执行的描述性字段（澄清 `steps_json` 顺序切换从未实现，不是"实现了但没走 TopologyExecutor"）、真正顺序硬编码在 `ValidationWorkflowService`；`orchestrator_subagent` 等非 sequential topology 的目标架构改为指向 ADR 0006，并注明 Slice 1 是能力验收而非预先约定新建运行时表；第 11 节移除对 `TopologyExecutor` 作为有效扩展点的引用 |
 | 2026-07-22 | F005 Phase 0-13 | 同步 F005（Manual Multi-Agent Routing）落地后架构层的实际变化，第 3 节 P0-only 描述和第 5.2 节单阶段 validator 创建描述均已过期 | 第 3 节改写为 Codex/Claude Code/OpenCode 三个真实落地 adapter（非预留占位），接口补充 `validate()`/`auth_type`/`model_provider`/`api_key`/`onTrace`；第 5.2 节补充 F005 两阶段（grace window + `ManualRoutingService`/`ValidationDispatchScheduler` 互斥）validator dispatch 流程；第 5.7 节 schema 版本 v5→v6；第 1 节分层图同步三 adapter |
 | 2026-07-18 | `4d13cab` | 同步 PRD 对 v0.4 渐进式多场景扩展和 AgentOps 前置数据采集的产品调整 | 明确非 coding Workflow 按任务范式逐个做垂直切片，不能把场景差异压成模板 JSON；补充 Windows 排障、knowledge/research、writing 三类执行与证据边界；明确 v0.1–v0.3 先保存可派生的最小原始信号，v0.5 再建设完整 AgentOps 聚合与评价能力 |
 | 2026-07-17 | `4829752` | 让 F003 Development Trace 的事件回放和 evidence 引用契约与真实实现一致，并为 v0.3 Artifact 扩展保留兼容路径 | 将事件 cursor 从“全局递增 id”修正为稳定 ULID `id` 去重、Thread 内 `event_sequence` 排序；统一 v0.1 typed evidence refs（`event:` / `file-change-set:`），并约定 v0.3 通过新增 `artifact:` 前缀扩展而无需迁移已有引用 |
@@ -106,11 +108,13 @@ v0.7 要做的 daemon 化、multi-workspace、workspace isolation、background q
 | 进程启动方式 | 用户手动 `npm run dev` / 双击可执行文件 | API server 代码本身不关心"谁启动了我"；v0.7 换成 systemd / Windows Service / 自带 supervisor 接管启动，server 代码不用改 |
 | Workspace 锁 | 单 workspace，锁状态存 DB，带 lease + heartbeat | v0.7 multi-workspace 时，锁判断逻辑不变，只是并发检查的维度从"全局一把锁"变成"按 workspace_id 判断"；`runner_instance_id` 字段从 v0.1 起就存在，为多实例场景预留 |
 | Agent Runner | 注册表 + 队列，但队列长度实际上恒为 1（同一 workspace 同一时刻只有一个 run） | v0.7 background queue 只是把"队列长度恒为 1"的限制放开为"跨 workspace 并行，同一 workspace 内仍串行"，排队逻辑本身不用重写 |
-| Workspace 执行边界 | Runner 通过一个 `WorkspaceContext`（cwd + env + 允许写入的路径）传给 adapter，adapter 不直接拼路径字符串 | v0.7 workspace isolation（容器/进程级隔离）只需替换 `WorkspaceContext` 的执行方式（例如改成在容器里跑命令），上层 Workflow / Runner 逻辑不用动 |
+| Workspace 执行边界 | Runner 通过一个 `WorkspaceContext`（`workspaceId`/`localPath` 作为 cwd/`gitBranch`/`pushCredentialsEnabled`）传给 adapter，adapter 不直接拼路径字符串；**当前没有访问模式或允许写入路径字段**，无法约束/证明某次执行是只读的（`server/src/runtime/types.ts`） | v0.7 workspace isolation（容器/进程级隔离）需要先补上访问模式字段，再替换 `WorkspaceContext` 的执行方式（例如改成在容器里跑命令）；这个缺口在 v0.2 orchestrator_subagent 只读并行 Node 场景下已提前暴露，见下方说明和 ADR 0006 |
 | 存储访问 | SQLite，业务代码只通过 Repository 层读写，不直接写 SQL | v0.7 "Postgres/pgvector 可选迁移"只需新增一套 Repository 实现，业务逻辑不用改 |
 | 前后端事件传输 | SSE（单向、够用、比 WebSocket 简单，带 cursor/replay，见第 4 节） | 事件本体（event envelope：`{id, type, thread_id, issue_id, payload, created_at}`）与传输方式解耦；v0.7 若需要多端/远程访问，可切到 WebSocket 或 daemon 内部 pub/sub，不需要改事件模型本身 |
 
 这一节是本文档设计投入最重的部分：目标不是在 v0.1 就实现 daemon / multi-workspace / isolation，而是让 v0.1 的代码结构不会在 v0.7 时被推倒重来。
+
+上表"Agent Runner"一行"同一 workspace 同一时刻只有一个 run"描述的是 v0.1 的写锁基线。v0.2 `orchestrator_subagent`（见第 5 节、`docs/decisions/0006-executable-work-graph.md`）对这条基线的影响需要分两半说：写 Run 仍然一次只有一个，这条不变量不变；但"只读 Node 可以不持锁并行执行"确实是对"队列长度恒为 1"这个字面模型的一个例外（不是对"同一时刻只有一个写者"这条安全不变量的例外）。这个例外目前**不能**直接落地——当前运行时没有任何机制强制一个 Node 真的只读（见上表"Workspace 执行边界"一行），一个自称"只读分析"的 Node 实际执行时和写 Node 拥有完全相同的写权限。因此 v0.2 要开放这个例外，必须先落地并验证 ADR 0006 定义的强制隔离条件（活 workspace 在操作系统层面对子进程不可访问，不是仅仅换一个 `cwd`——普通 `git worktree`/目录拷贝本身不满足，因为子进程仍可通过相对/绝对路径或调用工具触达原 workspace，`git worktree` 还与主仓库共享 `.git` 管理元数据），或证明三个 adapter 有一致的强制只读能力；两者都不具备时，只读 Node 也必须留在排他锁串行队列里，不能仅凭 Node 角色/prompt 自称只读、或仅仅换了个工作目录就跳过锁。具体方案见 ADR 0006。
 
 ## 3. Agent Adapter 抽象
 
@@ -194,6 +198,11 @@ interface RunHandle {
 
 ## 5. Workflow / Validation 执行引擎
 
+> 本节曾把下面这段 `TopologyExecutor` 接口写成"v0.1 只实现 `SequentialTopologyExecutor`"，但实际实现从未落地这个接口/类。更准确地说：原草图声称的"按 `steps_json` 顺序切换"这件事本身就没有被实现过（`steps_json` 从未驱动过执行顺序，见下方"实际实现"）；真正实现的是 validator 角色判定和 failure round 计数这两块逻辑，且是直接写在 `ValidationWorkflowService`（`server/src/services/validation/workflow-service.ts`）和 `RunDispatchService`（`server/src/services/run-dispatch.ts`）等 service 里的，没有经过任何 `TopologyExecutor` 抽象层。以下保留原设计草图仅作历史参照，标注为**未实现**；当前实际执行路径见下方"实际实现"。原设计草图预留的 `orchestrator_subagent` 等非 sequential topology 扩展点，其目标架构已由 `docs/decisions/0006-executable-work-graph.md`（Executable Work Graph）取代，不再沿用 `TopologyExecutor` 这个具体接口形状；本文档中所有引用 `TopologyExecutor` 作为未来扩展点的地方（包括第 11 节）均已过期，以 ADR 0006 为准。
+
+<details>
+<summary>原设计草图（未实现，仅存档）</summary>
+
 v0.1 只需要支持 sequential topology，设计上不引入过重的通用编排引擎：
 
 ```ts
@@ -204,9 +213,16 @@ interface TopologyExecutor {
 class SequentialTopologyExecutor implements TopologyExecutor { ... }
 ```
 
-- v0.1 只实现 `SequentialTopologyExecutor`：按 `WorkflowTemplate.steps_json` 顺序把 Issue 交给下一个 agent 角色，validator 角色只是 steps 中的一步，不是独立引擎（与 PRD "Agent Validation Loop"小节一致——validation 是 Thread 内事件，不是一级模块）。
-- `orchestrator_subagent` / `coordinator` / `council` / `moa` / `swarm` 等 topology（v0.2 及以后）只保留 `TopologyExecutor` 接口和 `WorkflowTemplate.collaboration_topology` 字段占位，不在本阶段实现，避免为还未验证的协作形态设计具体机制。
-- 失败收敛：`validation_round_count` 由 Workflow Engine 在每次 validation fail 回流时自增，超过 `max_validation_rounds` 由 Engine 直接把 Issue 置 Blocked 并写 escalation 事件（PRD "Agent Validation Loop"/"自动化与安全边界"小节），这条规则在 v0.1 就要实现，不属于"轻量占位"范畴，因为它是安全边界而非功能扩展。
+`orchestrator_subagent` / `coordinator` / `council` / `moa` / `swarm` 等 topology（v0.2 及以后）曾计划只保留 `TopologyExecutor` 接口和 `WorkflowTemplate.collaboration_topology` 字段占位。
+
+</details>
+
+### 实际实现
+
+- `WorkflowTemplate.collaboration_topology` 目前只在 `server/src/repositories/workflow-template.ts` 做行映射，没有任何分支逻辑读取它；`steps_json` 唯一的实际用途是 `server/src/services/validation/validator-selector.ts` 里判断"当前 workflow 是否存在 validator 角色"的布尔门禁。二者都是描述性字段，不驱动执行顺序。
+- 真正的 Issue → implementation agent → validator agent 顺序流转，硬编码在 `ValidationWorkflowService` 及相关 service 里；validator 角色只是这条硬编码流程里的一步，不是独立引擎，与 PRD "Agent Validation Loop" 小节一致——validation 是 Thread 内事件，不是一级模块。
+- 失败收敛：`validation_round_count` 在每次 validation fail 回流时自增，超过 `max_validation_rounds` 直接把 Issue 置 Blocked 并写 escalation 事件（PRD "Agent Validation Loop"/"自动化与安全边界"小节），这条规则在 v0.1 就已实现，属于安全边界而非功能扩展。
+- `orchestrator_subagent` 等 v0.2 及以后的非 sequential topology，目标架构见 `docs/decisions/0006-executable-work-graph.md`：v0.2 承诺的 `orchestrator_subagent` 拓扑（至少一次真实 fan-out → fan-in）是该决策 Slice 1 的具体触发场景，实现时机和范围以该决策为准，不在 v0.1 阶段展开。Slice 1 是"显式 Node/Edge 语义可执行、可追踪、可恢复"这一能力验收（"可恢复"的最小语义见该决策），不预先约定是否需要新建独立运行时表——是否新建由 v0.2 `design.md` 判断。该拓扑的并行范围同样受下方"Workspace 锁"一行约束：只读分析/审查 Node 只有在满足 ADR 0006 定义的强制隔离条件（操作系统层面不可访问活 workspace，普通 `git worktree`/目录拷贝不满足）时才可并行，未满足时和写 Node 一样进入 workspace 排他锁串行队列；写 Node 在任何情况下都串行持有 workspace 排他锁，不因为这条完成判据而隐含放宽锁粒度。
 
 ### 5.1 Terminal Finalization 顺序（F004）
 
@@ -368,4 +384,4 @@ Artifact-centered collaboration 是 PRD v0.3 的既定范围，属于 v0.1–v0.
 - v0.8 MCP 工具/数据连接层、A2A 外部 agent 通信协议。
 - v0.9 adaptive topology selection 的具体算法、cost/quality mode 的判断逻辑。
 
-这些留到对应版本临近、v0.1–v0.3 的实际使用反馈落地之后再设计，现在只需保证 `AgentAdapter` / `TopologyExecutor` 接口不会把这些方向堵死。
+这些留到对应版本临近、v0.1–v0.3 的实际使用反馈落地之后再设计，现在只需保证 `AgentAdapter` 接口以及 `docs/decisions/0006-executable-work-graph.md`（ADR 0006）已接受的 graph orchestration 边界不会把这些方向堵死——`TopologyExecutor` 从未实现，不再是需要保留的扩展点（见第 5 节）。
