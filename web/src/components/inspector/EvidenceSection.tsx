@@ -81,13 +81,16 @@ export function EvidenceSection({ issue }: EvidenceSectionProps) {
         </p>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-1 gap-1.5 xl:grid-cols-2">
         {dims.map(([label, status]) => {
           const cfg = COMPLETESS_LABELS[status] ?? COMPLETESS_LABELS.unavailable!;
           return (
-            <div key={label} className="flex items-center justify-between rounded-md border border-border bg-muted/20 px-2 py-1">
-              <span className="text-[11px] text-muted-foreground">{label}</span>
-              <Badge variant={cfg.variant} className="text-[9px]">{cfg.label}</Badge>
+            <div
+              key={label}
+              className="flex min-w-0 items-center justify-between gap-1 rounded-md border border-border bg-muted/20 px-2 py-1"
+            >
+              <span className="min-w-0 truncate text-[11px] text-muted-foreground">{label}</span>
+              <Badge variant={cfg.variant} className="shrink-0 text-[9px]">{cfg.label}</Badge>
             </div>
           );
         })}

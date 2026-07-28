@@ -20,7 +20,7 @@
     "pretest": "npm run build:shared",
     "test": "npm -w @personahub/server run test && npm -w @personahub/web run test",
     "pretypecheck": "npm run build:shared",
-    "typecheck": "npm -w @personahub/server run typecheck && npm -w @personahub/web run typecheck",
+    "typecheck": "npm -w @personahub/server run typecheck && npm -w @personahub/web run typecheck && npm -w @personahub/e2e run typecheck",
     "pretest:e2e": "npm run build:shared",
     "test:e2e": "npm -w @personahub/e2e run test",
     "test:e2e:install": "npm -w @personahub/e2e exec playwright install chromium"

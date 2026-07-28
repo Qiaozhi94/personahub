@@ -1,8 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-
-const API_BASE = "http://127.0.0.1:4321/api";
+import { API_BASE } from "./env.js";
 
 async function api<T>(method: string, urlPath: string, body?: unknown): Promise<T> {
   const res = await fetch(API_BASE + urlPath, {
@@ -42,10 +41,18 @@ function ensureWorkspaceDir(): string {
  * Seeds one Project with a bound workspace, three adapters (one with a long
  * name to exercise badge wrapping), and one Issue — entirely through the
  * public HTTP API, so this fixture breaks the same way a real client would
- * if the routes regress. Adapters are left at their post-create status
- * (Unknown) deliberately: the layout assertions don't need a real CLI probe
- * to pass, and this suite must run on hosts without codex/claude/opencode
- * installed.
+ * if the routes regress.
+ *
+ * Use deliberately unresolvable commands (`personahub-e2e-fixture-*`,
+ * guaranteed not to resolve on PATH on any machine) so layout fixtures
+ * never invoke real locally installed provider CLIs or pass fixture
+ * credentials to them. This also matters beyond isolation hygiene:
+ * AdapterConfigService.create() only kicks off its async real-provider
+ * validate() probe when the command *does* resolve (status Unknown) — on a
+ * dev machine with real codex/claude/opencode CLIs on PATH, a resolvable
+ * command here would fire a real probe against them (complete with the
+ * fake OpenCode API key below), observed taking 20-30s+ per adapter before
+ * this fixture used unresolvable commands.
  */
 export async function seedProjectWithAdapters(namePrefix: string): Promise<SeededIssue> {
   const suffix = Date.now().toString(36);
@@ -61,18 +68,23 @@ export async function seedProjectWithAdapters(namePrefix: string): Promise<Seede
   );
 
   const adapterDefs = [
-    { name: "Codex Implementer", cli_provider: "codex", command: "codex", capability_tags: ["implementation"] },
+    {
+      name: "Codex Implementer",
+      cli_provider: "codex",
+      command: "personahub-e2e-fixture-codex",
+      capability_tags: ["implementation"],
+    },
     {
       name: "Claude Validator With A Fairly Long Descriptive Adapter Name",
       cli_provider: "claude-code",
-      command: "claude",
+      command: "personahub-e2e-fixture-claude",
       default_model: "claude-opus-5-thinking",
       capability_tags: ["implementation", "validator"],
     },
     {
       name: "OpenCode Backup",
       cli_provider: "opencode",
-      command: "opencode",
+      command: "personahub-e2e-fixture-opencode",
       auth_type: "api_key",
       model_provider: "openai",
       default_model: "gpt-4o-mini",

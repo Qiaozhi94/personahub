@@ -12,3 +12,21 @@ export async function selectProject(page: Page, projectName: string): Promise<vo
   await trigger.click();
   await page.getByRole("menuitem", { name: projectName }).click();
 }
+
+/**
+ * useThreadEvents() opens an EventSource to `/api/threads/:id/events/stream`
+ * as soon as an Issue is selected (see web/src/hooks/use-thread.ts) and only
+ * skips it when `typeof EventSource === "undefined"`. Layout tests use
+ * mocked REST responses and do not cover live SSE, so EventSource is
+ * disabled to keep this suite scoped to layout geometry. Must be installed
+ * via addInitScript before `page.goto()`, since the hook runs on first
+ * render.
+ */
+export async function disableEventSource(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "EventSource", {
+      configurable: true,
+      value: undefined,
+    });
+  });
+}
