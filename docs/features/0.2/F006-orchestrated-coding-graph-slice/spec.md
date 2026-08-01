@@ -9,7 +9,7 @@ updated: 2026-08-01
 
 # F006：Orchestrated Coding Graph Slice
 
-> Status: idea | Owner: TBD | Target: v0.2
+> Status: ready-for-development | Owner: TBD | Target: v0.2
 
 ## 0. 规格元信息
 
@@ -113,16 +113,15 @@ v0.1 只能执行 Implementation → Validation 循环和用户手动顺序接�
 - [ ] **AC-004**（`NFR-002`）：未实现结构性隔离时无两个 agent 进程并发访问同一 workspace。
 - [ ] **AC-005**（`FR-005`）：F001-F005 全量回归通过，F004 validation 语义未被复制或改写。
 
-## 7. 待确认问题
+## 7. 待确认问题（全部已关闭，2026-08-01）
 
-以下问题阻塞进入开发，必须在 `design.md` 关闭：
-
-- **Q1**：现有 Run/Event 能否扩展满足 GraphRun/NodeRun/Attempt 的恢复与审计，还是需要独立持久化表？
-- **Q2**：首个真实 coding 场景的两个前驱职责与 synthesis 输出 contract 是什么？
-- **Q3**：Edge payload 是引用现有 evidence/handoff，还是需要新的稳定 payload envelope？
-- **Q4**：节点失败、用户 retry 和 GraphRun 最终状态如何映射回现有 Issue 状态机？
+- **Q1**（已关闭 → `design.md` 第 4 节）：现有 Run/Event 能否扩展满足 GraphRun/NodeRun/Attempt 的恢复与审计？**不能**——`context_source_run_id` 是单列外键，物理上表达不了多前驱；`evidence_summary` 每 Issue 至多一行且冲突时静默丢弃。结论：新增 schema v8 的 `graph_runs` + `node_runs`，并把 Run 的职责收窄为 Attempt（加 `node_run_id` 列），不新建 attempt/traversal 表。
+- **Q2**（已关闭 → `design.md` 第 5 节）：首个场景为 PersonaHub 自身代码的双视角检视（并发/状态一致性 × 契约/边界校验 → 合并去重报告），节点输出为 `findings[]` envelope，synthesis 额外带 `source_nodes[]`。
+- **Q3**（已关闭 → `design.md` 第 6 节）：Edge 只承载引用，不承载内容；复用既有 `evidence_refs` / `EvidenceResolution` 三态通道，新增 4 个 `graph.*` ThreadEvent 记录实际 traversal，不新建 payload envelope。
+- **Q4**（已关闭 → `design.md` 第 7 节）：图完成 → Issue `Ready`（不是 `Done`，避免与 F004 的 `Done` 语义冲突）；图类阻塞使用独立的 `GraphBlockReason` 与独立恢复入口，不复用 validation unblock；锁与队列完全复用既有机制。
 
 ## 8. 实现备注
 
-- 本文档当前为 `idea`，不是开发授权；先完成 design 证据、关闭问题并细化 tasks。
+- 本文档已由 `idea` 推进为 `ready-for-development`，Q1-Q4 全部关闭，可按 `tasks.md` Phase 1 起展开实现。
 - 任何与 ADR 0006 四条不变量冲突的方案必须通过 superseding ADR，而不能在本 feature 内静默偏离。
+- 设计阶段的两处代码核实结论已并入 spec 前提：① workspace 级 FIFO 串行队列**已存在**（`listQueuedByWorkspace` + `startNextQueuedRun`），FR/NFR 中的"串行队列"不是待建能力；② `AgentCapability` 当前仅有 `implementation` / `validator` 两个值，本 slice 不扩展该枚举，理由见 `design.md` 第 5 节。
