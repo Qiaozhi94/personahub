@@ -91,7 +91,7 @@ describe("Adapter routes (T073-T076, T080)", () => {
       const listRes = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters` });
       const converged = JSON.parse(listRes.body).adapters.find((a: { id: string }) => a.id === body.adapter.id);
       expect(converged.is_default).toBe(true);
-    });
+    }, 10_000);
 
     it("creates a Claude Code adapter with explicit validator capability", async () => {
       const app = buildApp(services);

@@ -1,16 +1,26 @@
-import type {
-  ValidationPolicySnapshot,
-  AdapterIdentitySnapshot,
-  ValidationResultEnvelope,
-  TraceCompleteness,
-} from "@personahub/shared/types";
+import type { ValidationPolicySnapshot, ValidationResultEnvelope, TraceCompleteness } from "@personahub/shared/types";
 import type { HandoffPayload } from "../handoff-builder.js";
 import { isSameOriginValidation } from "./same-origin.js";
+import type {
+  EvidenceSummaryBuildInput,
+  EvidenceSummaryBuildResult,
+  SummaryCommand,
+  SummaryFileChange,
+  SummaryRunIdentity,
+  SummaryVerificationEvent,
+} from "./evidence-summary-contract.js";
+
+export type {
+  EvidenceSummaryBuildInput,
+  EvidenceSummaryBuildResult,
+  SummaryCommand,
+  SummaryFileChange,
+  SummaryRunIdentity,
+  SummaryVerificationEvent,
+} from "./evidence-summary-contract.js";
 
 export const SUMMARY_MAX_BYTES = 256 * 1024;
 export const SUMMARY_REFS_MAX = 500;
-const FILE_LIST_TRUNCATE_THRESHOLD = 200;
-
 export class EvidenceSummaryBuilderError extends Error {
   constructor(
     public readonly code: string,
@@ -19,52 +29,6 @@ export class EvidenceSummaryBuilderError extends Error {
     super(message);
     this.name = "EvidenceSummaryBuilderError";
   }
-}
-
-export interface SummaryRunIdentity {
-  id: string;
-  identity: AdapterIdentitySnapshot;
-}
-
-export interface SummaryVerificationEvent {
-  id: string;
-  kind: string;
-  result: string;
-  command: string | null;
-}
-
-export interface SummaryCommand {
-  id: string;
-  command: string;
-  outcome: string;
-  output_summary: string | null;
-}
-
-export interface SummaryFileChange {
-  path: string;
-  change_type: string;
-}
-
-export interface EvidenceSummaryBuildInput {
-  issue: { id: string; title: string; goal: string | null; thread_id: string };
-  implementationRun: SummaryRunIdentity;
-  validatorRun: SummaryRunIdentity;
-  policySnapshot: ValidationPolicySnapshot;
-  policySnapshotHash: string;
-  result: ValidationResultEnvelope;
-  handoff: HandoffPayload | null;
-  verifications: SummaryVerificationEvent[];
-  fileChanges: SummaryFileChange[];
-  commands: SummaryCommand[];
-  passEventId: string;
-  traceCompleteness: TraceCompleteness;
-}
-
-export interface EvidenceSummaryBuildResult {
-  markdown: string;
-  evidenceRefs: string[];
-  sameOriginValidation: boolean;
-  truncated: boolean;
 }
 
 function utf8Bytes(s: string): number {
@@ -183,7 +147,9 @@ function buildKeyCommands(commands: SummaryCommand[]): string {
   }
   const parts: string[] = [`## Key Commands`];
   for (const cmd of commands) {
-    parts.push(`- **Command:** \`${escapeMd(cmd.command)}\` | **Outcome:** ${cmd.outcome}${cmd.output_summary ? ` | **Summary:** ${escapeMd(cmd.output_summary)}` : ""}`);
+    parts.push(
+      `- **Command:** \`${escapeMd(cmd.command)}\` | **Outcome:** ${cmd.outcome}${cmd.output_summary ? ` | **Summary:** ${escapeMd(cmd.output_summary)}` : ""}`,
+    );
   }
   return parts.join("\n");
 }
@@ -194,16 +160,14 @@ function buildVerificationEvidence(verifications: SummaryVerificationEvent[]): s
   }
   const parts: string[] = [`## Verification Evidence`];
   for (const v of verifications) {
-    parts.push(`- **Kind:** ${v.kind} | **Result:** ${v.result}${v.command ? ` | **Command:** \`${escapeMd(v.command)}\`` : ""}`);
+    parts.push(
+      `- **Kind:** ${v.kind} | **Result:** ${v.result}${v.command ? ` | **Command:** \`${escapeMd(v.command)}\`` : ""}`,
+    );
   }
   return parts.join("\n");
 }
 
-function buildChangedFiles(
-  fileChanges: SummaryFileChange[],
-  implementationRunId: string,
-  truncated: boolean,
-): string {
+function buildChangedFiles(fileChanges: SummaryFileChange[], implementationRunId: string, truncated: boolean): string {
   const safe = fileChanges.filter((fc) => !isAbsoluteLike(fc.path) && !fc.path.includes(".."));
   const ref = `file-change-set:${implementationRunId}`;
   if (safe.length === 0) {
@@ -249,7 +213,9 @@ function buildFindings(result: ValidationResultEnvelope): string {
   const parts: string[] = [`## Findings`];
   for (const f of result.findings) {
     const loc = f.file_path ? ` (${toForwardSlash(f.file_path)}${f.line !== null ? `:${f.line}` : ""})` : "";
-    parts.push(`- **[${f.severity}]**${loc}: ${escapeMd(f.message)}${f.suggestion ? ` -> ${escapeMd(f.suggestion)}` : ""}`);
+    parts.push(
+      `- **[${f.severity}]**${loc}: ${escapeMd(f.message)}${f.suggestion ? ` -> ${escapeMd(f.suggestion)}` : ""}`,
+    );
   }
   return parts.join("\n");
 }
@@ -287,10 +253,7 @@ interface Section {
 }
 
 export function buildEvidenceSummary(input: EvidenceSummaryBuildInput): EvidenceSummaryBuildResult {
-  const sameOrigin = isSameOriginValidation(
-    input.implementationRun.identity,
-    input.validatorRun.identity,
-  );
+  const sameOrigin = isSameOriginValidation(input.implementationRun.identity, input.validatorRun.identity);
   const evidenceRefs = aggregateEvidenceRefs(input);
 
   const filesFull = buildChangedFiles(input.fileChanges, input.implementationRun.id, false);
@@ -303,7 +266,11 @@ export function buildEvidenceSummary(input: EvidenceSummaryBuildInput): Evidence
     { key: "impl_summary", content: buildImplementationSummary(input.handoff), essential: false },
     { key: "key_decisions", content: buildKeyDecisions(input.result.key_decisions), essential: true },
     { key: "validation", content: buildValidation(input.result, sameOrigin), essential: true },
-    { key: "identities", content: buildRunIdentities(input.implementationRun, input.validatorRun, sameOrigin), essential: true },
+    {
+      key: "identities",
+      content: buildRunIdentities(input.implementationRun, input.validatorRun, sameOrigin),
+      essential: true,
+    },
     { key: "policy", content: buildPolicySection(input.policySnapshot, input.policySnapshotHash), essential: true },
     { key: "commands", content: buildKeyCommands(input.commands), essential: false },
     { key: "verifications", content: buildVerificationEvidence(input.verifications), essential: false },
@@ -314,8 +281,7 @@ export function buildEvidenceSummary(input: EvidenceSummaryBuildInput): Evidence
     { key: "trace", content: buildTraceCompleteness(input.traceCompleteness), essential: true },
   ];
 
-  const joinSections = (sections: Section[]): string =>
-    sections.map((s) => s.content).join("\n\n");
+  const joinSections = (sections: Section[]): string => sections.map((s) => s.content).join("\n\n");
 
   const tryBuild = (transform: (sections: Section[]) => Section[]): string => {
     const result = transform(allSections);
@@ -326,7 +292,7 @@ export function buildEvidenceSummary(input: EvidenceSummaryBuildInput): Evidence
   let truncated = false;
 
   if (utf8Bytes(markdown) > SUMMARY_MAX_BYTES) {
-    markdown = tryBuild((s) => s.map((sec) => sec.key === "files" ? { ...sec, content: filesTrunc } : sec));
+    markdown = tryBuild((s) => s.map((sec) => (sec.key === "files" ? { ...sec, content: filesTrunc } : sec)));
     truncated = true;
   }
 

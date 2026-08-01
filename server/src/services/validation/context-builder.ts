@@ -1,9 +1,6 @@
-import type {
-  ValidationPolicySnapshot,
-  AdapterIdentitySnapshot,
-  TraceCompleteness,
-} from "@personahub/shared/types";
+import type { ValidationPolicySnapshot, AdapterIdentitySnapshot, TraceCompleteness } from "@personahub/shared/types";
 import type { HandoffPayload } from "../handoff-builder.js";
+import { VALIDATOR_JSON_SCHEMA_CONTRACT } from "./validator-envelope-contract.js";
 
 export const CONTEXT_MAX_BYTES = 128 * 1024;
 
@@ -75,43 +72,6 @@ function toForwardSlash(p: string): string {
   return p.split("\\").join("/");
 }
 
-const JSON_SCHEMA_CONTRACT = `## System Contract
-
-You are a validator. Your final message MUST be a single JSON object with this schema — and
-**nothing else**: no preamble, no closing remarks, no explanation before or after it. The
-parser is strict: if your final message contains so much as one sentence of commentary
-outside the JSON (even something as short as "Here is my validation result:"), the entire
-validation is rejected as unparsable and the Issue is blocked through no fault of the
-implementation being validated. Either output the raw JSON object with nothing else around
-it, or wrap it in a single \`\`\`json ... \`\`\` fenced code block with nothing before the opening
-fence or after the closing fence — do not mix the two, and do not add a second fence anywhere.
-\`\`\`json
-{
-  "schema_version": 1,
-  "outcome": "passed" | "failed" | "blocked",
-  "summary": "string (max 8 KiB)",
-  "findings": [{ "severity": "info|warning|error|blocking", "message": "string", "suggestion": "string|null", "evidence_refs": ["string"], "file_path": "string|null", "line": "number|null" }],
-  "evidence_refs": ["string"],
-  "missing_evidence": ["string"],
-  "key_decisions": ["string"],
-  "lessons_candidate": ["string"]
-}
-\`\`\`
-- passed: findings=[] and missing_evidence=[]
-- failed: at least one finding
-- blocked: explain reason in missing_evidence or findings
-- file_path must be workspace-relative
-
-**evidence_refs / findings[].evidence_refs format — read carefully:**
-Every string in these arrays MUST be one of the exact ref values already shown
-below in "Verification Evidence" (\`**Ref:** event:<id>\` or
-\`**Ref:** file-change-set:<id>\`) or "Changed Files" (\`**File Change Set Ref:**
-file-change-set:<id>\`) — copy that literal \`event:...\` or \`file-change-set:...\`
-string verbatim. Do NOT invent your own citation format (e.g. \`file:path#L12\`,
-a bare file path, or a line-number reference) — those will be rejected as
-invalid and the whole validation blocked. If you have nothing from those
-sections to cite, use an empty array \`[]\`, never a made-up reference.`;
-
 function sectionIssue(title: string, goal: string | null): string {
   let s = `## Issue\n\n**Title:** ${title}\n`;
   if (goal) {
@@ -162,7 +122,9 @@ function sectionHandoff(handoff: HandoffPayload | null): string {
   if (handoff.missing_evidence.length > 0) {
     parts.push(`**Missing Evidence:**\n${handoff.missing_evidence.map((e) => `- ${e}`).join("\n")}`);
   }
-  parts.push(`**Evidence Ref Count:** ${handoff.evidence_ref_count}${handoff.evidence_refs_truncated ? " (truncated)" : ""}`);
+  parts.push(
+    `**Evidence Ref Count:** ${handoff.evidence_ref_count}${handoff.evidence_refs_truncated ? " (truncated)" : ""}`,
+  );
   return parts.join("\n\n");
 }
 
@@ -187,7 +149,9 @@ function sectionVerifications(verifications: ContextVerificationEvent[], mode: "
   }
   const parts: string[] = [`## Verification Evidence`];
   for (const v of verifications) {
-    parts.push(`- **Kind:** ${v.kind} | **Result:** ${v.result} | **Ref:** ${v.evidence_ref}${v.command ? ` | **Command:** ${v.command}` : ""}`);
+    parts.push(
+      `- **Kind:** ${v.kind} | **Result:** ${v.result} | **Ref:** ${v.evidence_ref}${v.command ? ` | **Command:** ${v.command}` : ""}`,
+    );
   }
   return parts.join("\n");
 }
@@ -212,23 +176,23 @@ function sectionFileChanges(
   return parts.join("\n");
 }
 
-function sectionPriorFindings(
-  findings: ContextPriorFinding[],
-  mode: "all" | "latest_only",
-): string {
+function sectionPriorFindings(findings: ContextPriorFinding[], mode: "all" | "latest_only"): string {
   if (findings.length === 0) {
     return `## Prior Validation Findings\n\n*No prior findings.*`;
   }
-  const filtered = mode === "latest_only"
-    ? findings.filter((f) => f.validation_round === Math.max(...findings.map((x) => x.validation_round)))
-    : findings;
+  const filtered =
+    mode === "latest_only"
+      ? findings.filter((f) => f.validation_round === Math.max(...findings.map((x) => x.validation_round)))
+      : findings;
   const parts: string[] = [`## Prior Validation Findings`];
   if (mode === "latest_only" && findings.length > filtered.length) {
     parts.push(`*(Showing latest round only; ${findings.length - filtered.length} older findings omitted for size.)*`);
   }
   for (const f of filtered) {
     const loc = f.file_path ? ` (${toForwardSlash(f.file_path)}${f.line !== null ? `:${f.line}` : ""})` : "";
-    parts.push(`- [Round ${f.validation_round}] **${f.severity}**${loc}: ${f.message}${f.suggestion ? ` -> ${f.suggestion}` : ""}`);
+    parts.push(
+      `- [Round ${f.validation_round}] **${f.severity}**${loc}: ${f.message}${f.suggestion ? ` -> ${f.suggestion}` : ""}`,
+    );
   }
   return parts.join("\n");
 }
@@ -239,7 +203,9 @@ function sectionUserRequest(userInstructions: string | null | undefined): string
   const trimmed = userInstructions?.trim();
   if (!trimmed) return null;
   const truncated = trimmed.length > USER_REQUEST_MAX_CHARS;
-  const body = truncated ? `${trimmed.slice(0, USER_REQUEST_MAX_CHARS)}\n\n*(truncated at ${USER_REQUEST_MAX_CHARS} characters)*` : trimmed;
+  const body = truncated
+    ? `${trimmed.slice(0, USER_REQUEST_MAX_CHARS)}\n\n*(truncated at ${USER_REQUEST_MAX_CHARS} characters)*`
+    : trimmed;
   return `## User Validation Request\n\n*The user manually picked this validator and included the following instructions alongside it — treat as additional context, not a replacement for the Validation Policy above.*\n\n${body}`;
 }
 
@@ -261,7 +227,7 @@ function sectionTraceCompleteness(completeness: TraceCompleteness): string {
 export function buildValidatorContext(input: ValidatorContextInput): ValidatorContextResult {
   const userRequest = sectionUserRequest(input.userInstructions);
   const mustNotTruncate: string[] = [
-    JSON_SCHEMA_CONTRACT,
+    VALIDATOR_JSON_SCHEMA_CONTRACT,
     sectionIssue(input.issue.title, input.issue.goal),
     sectionPolicy(input.policySnapshot, input.policySnapshotHash),
     sectionRunIdentity("Implementation Run", input.implementationRun),
@@ -282,46 +248,54 @@ export function buildValidatorContext(input: ValidatorContextInput): ValidatorCo
     findingsNone: `## Prior Validation Findings\n\n*Omitted for context size.*`,
   };
 
-  const buildFull = () => [
-    ...mustNotTruncate,
-    truncatableSections.verificationsFull,
-    truncatableSections.filesFull,
-    truncatableSections.findingsAll,
-  ].join("\n\n");
+  const buildFull = () =>
+    [
+      ...mustNotTruncate,
+      truncatableSections.verificationsFull,
+      truncatableSections.filesFull,
+      truncatableSections.findingsAll,
+    ].join("\n\n");
 
-  const buildWithFilesCounted = () => [
-    ...mustNotTruncate,
-    truncatableSections.verificationsFull,
-    truncatableSections.filesCount,
-    truncatableSections.findingsAll,
-  ].join("\n\n");
+  const buildWithFilesCounted = () =>
+    [
+      ...mustNotTruncate,
+      truncatableSections.verificationsFull,
+      truncatableSections.filesCount,
+      truncatableSections.findingsAll,
+    ].join("\n\n");
 
-  const buildWithFilesAndVerifTrunc = () => [
-    ...mustNotTruncate,
-    truncatableSections.verificationsCount,
-    truncatableSections.filesCount,
-    truncatableSections.findingsAll,
-  ].join("\n\n");
+  const buildWithFilesAndVerifTrunc = () =>
+    [
+      ...mustNotTruncate,
+      truncatableSections.verificationsCount,
+      truncatableSections.filesCount,
+      truncatableSections.findingsAll,
+    ].join("\n\n");
 
-  const buildWithFindingsLatest = () => [
-    ...mustNotTruncate,
-    truncatableSections.verificationsCount,
-    truncatableSections.filesCount,
-    truncatableSections.findingsLatest,
-  ].join("\n\n");
+  const buildWithFindingsLatest = () =>
+    [
+      ...mustNotTruncate,
+      truncatableSections.verificationsCount,
+      truncatableSections.filesCount,
+      truncatableSections.findingsLatest,
+    ].join("\n\n");
 
-  const buildWithFindingsNone = () => [
-    ...mustNotTruncate,
-    truncatableSections.verificationsCount,
-    truncatableSections.filesCount,
-    truncatableSections.findingsNone,
-  ].join("\n\n");
+  const buildWithFindingsNone = () =>
+    [
+      ...mustNotTruncate,
+      truncatableSections.verificationsCount,
+      truncatableSections.filesCount,
+      truncatableSections.findingsNone,
+    ].join("\n\n");
 
   const candidates: Array<{ markdown: string; truncatedSections: string[] }> = [
     { markdown: buildFull(), truncatedSections: [] },
     { markdown: buildWithFilesCounted(), truncatedSections: ["file_list"] },
     { markdown: buildWithFilesAndVerifTrunc(), truncatedSections: ["file_list", "verification_summaries"] },
-    { markdown: buildWithFindingsLatest(), truncatedSections: ["file_list", "verification_summaries", "older_findings"] },
+    {
+      markdown: buildWithFindingsLatest(),
+      truncatedSections: ["file_list", "verification_summaries", "older_findings"],
+    },
     { markdown: buildWithFindingsNone(), truncatedSections: ["file_list", "verification_summaries", "all_findings"] },
   ];
 
