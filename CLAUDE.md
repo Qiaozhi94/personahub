@@ -18,7 +18,9 @@ v0.2 按"一个 feature 一个主要 intent"拆为 F006（图执行切片）/ F0
 
 下一 active Feature 是 F006（Orchestrated Coding Graph Slice，`ready-for-development`）：用 PersonaHub 自身代码的双视角检视（并发/状态一致性 × 契约/边界校验 → 合并去重报告）这一真实三节点场景验证 ADR 0006 的 fan-out → fan-in、显式 Node/Edge 与恢复语义。2026-08-01 已完成 design 证据收集并关闭 Q1-Q4：新增 schema v8 的 `graph_runs` + `node_runs`，把 Run 的职责收窄为 Attempt（加 `node_run_id`），不新建 attempt/traversal 表；Edge 只承载引用，复用既有 `evidence_refs` / `EvidenceResolution`；图完成后 Issue 置 `Ready` 而非 `Done`，图类阻塞用独立的 `GraphBlockReason` 与独立恢复入口（`ValidationRecoveryActionService.unblock()` 硬校验只接受 validation 类 blocker，复用会破坏该守卫）；物理串行由既有的 workspace FIFO 队列保证，不新建调度器也不碰 `workspace-lock.ts`。另有一处必须新增 `RunRole.GraphNode`：`runs.role` 是 `NOT NULL DEFAULT 'implementation'` 且无 CHECK，图节点 Run 若沿用默认 role，完成时会命中 `workflowHook` 的 implementation 分支直接触发 `requestValidation`（把 F004 验证循环跑到只读检视图上），排队中的兄弟节点还会被 `startNextQueuedRun` 的资格门静默 `cancelQueued`。实现 tasks 见 tasks.md Phase 1-6。
 
-F007 有一个前置决策未做：Coordinator 的推荐/解释走 CLI adapter 还是直连 API——前者代价与延迟不成比例，后者会引入第一个非 CLI 执行路径并牵动 F005 的凭据隔离模型。该决策应先出独立 ADR 再进入 F007 spec。
+F007（Coordinator Agent & Routing Recommendation，`ready-for-development`）与 F008（Workflow Template Admin & Runtime Health，`ready-for-development`）的 spec/design/tasks 已于 2026-08-01 完成。F007 的执行通道由 `docs/decisions/0007-coordinator-execution-channel.md` 关闭：v0.2 用进程内确定性规则引擎，不引入 LLM 通道、不新建第二条执行路径、只推荐不派工。三条关键依据是 `runs` 的 `issue_id`/`thread_id`/`workspace_id` 全为 NOT NULL 外键（pre-Issue 调用在结构上不能是 Run）、`buildChildEnv()` 保护的是子进程 env 因而与直连 API 无关、以及 v0.2 推荐候选集大小本来就是 1（`IssueType` 只有 `coding`，`workflow_templates` 只有一行种子）。F008 的破坏面集中在 `steps_json`——它是 validation 是否启用的唯一开关（`hasValidationStep()`），因此模板编辑一律版本化、行不可变，且关闭验证需显式确认；另注意 `getDefault()` 是 `status='active' ORDER BY version DESC LIMIT 1`，插入更高版本的 active 行会立刻接管所有新 Issue。
+
+v0.2 文档检视（2026-08-01）修正了 PRD 第 15 节与三份 spec 的四处范围分叉，并把 `Structured Handoff Packet`（实际已由 v0.1.4 交付）标注清楚，详见 PRD 修订记录。`workflow_templates.agent_team_template_id` 是指向不存在的表的悬空列，Agent Team Template 持久化因此不在 v0.2 范围内。
 
 ## 当前结构
 

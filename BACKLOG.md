@@ -13,8 +13,8 @@ created: 2026-07-11
 | ID | Version | Name | Status | Owner | Link |
 |----|---------|------|--------|-------|------|
 | F006 | 0.2 | Orchestrated Coding Graph Slice | ready-for-development | TBD | `docs/features/0.2/F006-orchestrated-coding-graph-slice/spec.md` |
-| F007 | 0.2 | Coordinator Agent & Routing Recommendation | idea | TBD | 待建 |
-| F008 | 0.2 | Workflow Template Admin & Runtime Health | idea | TBD | 待建 |
+| F007 | 0.2 | Coordinator Agent & Routing Recommendation | ready-for-development | TBD | `docs/features/0.2/F007-coordinator-routing-recommendation/spec.md` |
+| F008 | 0.2 | Workflow Template Admin & Runtime Health | ready-for-development | TBD | `docs/features/0.2/F008-workflow-template-admin-runtime-health/spec.md` |
 
 ## v0.2 拆分说明
 
@@ -24,4 +24,8 @@ PRD 第 15 节 v0.2（Orchestrator Workflow）的完成判据覆盖多个独立 
 - **F007**：Coordinator Agent 本体——自然语言目标 → Issue 自动创建/补全、Issue Type 识别、Workflow/Topology/Agent Team 推荐，以及"为什么这么选"的解释。
 - **F008**：Workflow Template 管理 UI 初版 + Runtime health check。
 
-**F007 有一个前置决策未做**：Coordinator 的"推荐 + 解释"走哪个执行通道。现有三个 adapter 全是长时交互式 CLI agent，为选一个模板去 spawn 一次 CLI 会话代价与延迟都不成比例；但直连 API 会引入第一个非 CLI 执行路径，牵动 F005 围绕 CLI 自身 auth 设计的凭据隔离模型。该决策应先出独立 ADR，再进入 F007 的 spec。
+F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md` 关闭：v0.2 的 Coordinator 是确定性规则引擎，不引入 LLM 执行通道，只推荐不派工。关键依据是 `runs` 的三个 NOT NULL 外键使 pre-Issue 调用不能是 Run，以及 v0.2 的推荐候选集大小本来就是 1。
+
+**实施顺序**：F006 → F007 → F008。F007 不依赖 F006 实现完成即可开发（只读取图 definition 常量）；F008 是收尾项。
+
+PRD v0.2 范围里的 "Structured Handoff Packet" 已由 v0.1.4 交付（`handoff-builder.ts`），不重复实现。

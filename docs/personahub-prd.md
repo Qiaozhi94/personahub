@@ -15,6 +15,7 @@ updated: 2026-07-29
 
 | 日期 | 来源提交 | 修订目的 | 修订内容 |
 | --- | --- | --- | --- |
+| 2026-08-01 | `docs/decisions/0007-coordinator-execution-channel.md` | v0.2 拆成 F006/F007/F008 三个 Feature 后，逐条比对第 15 节范围清单与三份 spec 的实际覆盖，发现四处分叉：范围清单把 Coordinator 描述为可配置 agent、要求写入 `default_coordinator_agent_id`、要求 Agent Team Template 推荐、以及"自动推荐和分派"；而 ADR 0007 已裁定 v0.2 用确定性规则引擎且只推荐不派工，`agent_team_template_id` 又是指向不存在的表的悬空列。另发现 Structured Handoff Packet 实际已在 v0.1.4 交付，仍列在 v0.2 范围内 | 第 15 节 v0.2 范围清单逐条改为如实描述：Coordinator 明确为进程内确定性规则引擎并指向 ADR 0007；`default_coordinator_agent_id` 标注推迟及理由；Agent Team Template 收窄为每次现算的 roster 推荐并说明悬空列成本；自动分派改为推荐 + 用户确认并给出保留人工闸门的理由；Structured Handoff Packet 标注已由 v0.1.4 交付。完成判据第一条补充"自然语言成分很弱"的诚实限定，禁止把 v0.2 描述为语义理解能力 |
 | 2026-07-29 | `docs/decisions/0006-executable-work-graph.md` | 第三至五轮文档/代码交叉复核依次发现：v0.2 完成判据缺少 ADR 0006 Slice 1 要求的"可恢复"语义；"并行执行子任务"与现有 workspace 排他锁矛盾未说明边界；"只读子任务可不持锁并行"缺少运行时强制手段（代码核实 `WorkspaceContext` 无访问模式字段，三个 adapter 均无强制只读能力）；随后又发现第四轮给出的"缓解方案"本身不成立——普通 `git worktree`/目录拷贝只是换了个 cwd，不构成操作系统层面的访问隔离，`git worktree` 还与主仓库共享 `.git` 管理元数据——均已修正；同时补齐 frontmatter `updated` 与修订记录不一致 | 第 15 节 v0.2 完成判据补充"可恢复"最小语义（定义以 ADR 0006 为准）；并行边界改为以 ADR 0006 定义的强制隔离条件（操作系统层面不可访问活 workspace，非仅换 cwd）或跨 adapter 一致的强制只读能力为前提，明确普通 worktree/拷贝不满足该条件，默认基线是全部串行，"并行"退化为图上的逻辑 fan-out；写入子任务始终串行不变；frontmatter `updated` 同步为 2026-07-29 |
 | 2026-07-28 | `docs/decisions/0006-executable-work-graph.md` | 把二级定位表达从 topology-aware 升级为 graph-orchestrated，与 v0.2+ Executable Work Graph 目标架构方向对齐；经两轮文档一致性复核发现首版改动把 v0.1 元数据误述为已具备可执行图能力、`orchestrator_subagent` 拓扑定义缺少可验证的最小场景、且未说明 v0.2 完成判据与该决策 Slice 1 触发条件的关系，本行合并记录修正后的最终改动 | 更新第 2 节"一句话"中英文定位表述，并明确 v0.1 当前只有描述性元数据、不构成可执行图，同时给出 Executable Work Graph 与 Collaboration Topology 的层级关系；第 5 节 `orchestrator_subagent` 拓扑定义补充"至少两个可独立调度子任务 + 显式边回传 + 收敛"的最小场景，排除单一子 agent 顺序接力也算数的歧义；第 13 节差异化描述、第 15 节版本路线引言同步措辞并指向 0006 号决策，不再声称 v0.1 已由 Collaboration Topology 承担 graph-orchestrated collaboration；第 15 节 v0.2 完成判据改为要求至少一次真实 fan-out → fan-in，并把 Slice 1 的验收标准改为"以显式 Node/Edge 语义可执行、可追踪"而非预先约定必须新建运行时表；frontmatter topics 标签同步更新 |
 | 2026-07-19 | （F004 final review） | 统一 Autonomous Validation 的轮次、安全恢复和 Evidence Summary 验收口径 | 明确 Issue 累计 failed count / Run round 的职责、第三次 failed 即 Blocked、普通 unblock 保留轮次、round-limit 只能通过独立带 note 的 reset action 清零，以及 Done Evidence Summary 支持复制/下载已持久化 Markdown |
@@ -1188,19 +1189,19 @@ v0.1 完成判据：
 
 范围：
 
-- 内置默认 Coordinator Agent。
-- Project default_coordinator_agent_id。
-- Issue Type 自动识别。
+- 内置默认 Coordinator——**v0.2 是进程内的确定性规则引擎，不是一个可配置的 agent**，因为推荐候选集当前大小为 1（`IssueType` 只有 `coding`，`workflow_templates` 只有一行种子数据），不需要模型推理；执行通道选型与重新评估的触发条件见 `docs/decisions/0007-coordinator-execution-channel.md`。
+- Project `default_coordinator_agent_id`：**推迟**。该列语义是"指向某个 agent config"，而 v0.2 的 Coordinator 没有对应的 agent config 行；为满足列而造一条不能执行、状态永远 Unknown 的假 adapter 记录弊大于利。列保持 NULL，等 ADR 0007 的触发条件出现时再写入，无需迁移。
+- Issue Type 自动识别（v0.2 候选集为 1，规则形状先立住，v0.3 增加类型时只是候选集变大）。
 - Workflow Template / Collaboration Topology 推荐。
-- Agent Team Template 推荐。
-- Structured Handoff Packet。
+- Agent Team Template 推荐：**v0.2 只做每次现算的 agent roster 推荐，不做可复用的持久化 Team Template**。`workflow_templates.agent_team_template_id` 目前是一个指向**不存在的表**的悬空列（`schema-v1.ts:32`），落地持久化模板需要先建表与配套管理，成本与当前收益不匹配。
+- Structured Handoff Packet：**已由 v0.1.4 交付**（`server/src/services/handoff-builder.ts` 的 `HandoffPayload`），v0.2 不重复实现。
 - Workflow Template 管理 UI 初版。
-- Coordinator 根据 Issue Type / agent capability，在 v0.1.4 已接入的 Codex / Claude Code / OpenCode 之间自动推荐和分派，不再需要用户手动 @ 指定（adapter 接入本身已在 v0.1.4 完成）。
+- Coordinator 根据 Issue Type / agent capability，在 v0.1.4 已接入的 Codex / Claude Code / OpenCode 之间**推荐**执行者并说明理由，**由用户确认后才创建 Issue 与 Run**，不再需要用户自己记住有哪些 agent、哪个当前可用（adapter 接入本身已在 v0.1.4 完成）。v0.2 不做无人确认的自动派工：推荐错误会直接变成仓库里的真实执行，保留一次人工闸门；且这与既有 `resolveAdapter()`"永不猜测、无法解析即硬错误"的纪律一致。
 - Runtime health check。
 
 完成判据：
 
-- 用户输入自然语言目标后，系统能自动创建或补全 Issue。
+- 用户输入自然语言目标后，系统能自动创建或补全 Issue。**v0.2 的"自然语言"成分很弱**——标题/goal 从输入文本直接取用，推荐由关键词与可用性规则驱动，不是语义理解；产品文案不得把它描述为理解能力（见 `docs/decisions/0007-coordinator-execution-channel.md`）。
 - 系统能说明为什么选择某个 workflow / topology / agent roster。
 - 至少 coding workflow 支持 orchestrator_subagent 拓扑，且至少覆盖一次真实的 fan-out → fan-in：Coordinator 拆出至少两个可独立调度的子任务，子任务结果通过显式边回传，由 Coordinator 或 synthesis node 收敛，并记录每个子任务的执行者、输入来源、结果和收敛决策——单一子 agent 顺序接力不满足此判据。**并行范围受现有 workspace 排他锁约束，不隐含放宽写并发；只读子任务的"不持锁并行"必须有结构性隔离，不能只靠角色/prompt 自称只读**：写入代码库的子任务（含最终落盘的 synthesis/implementation 节点）始终受 `workspace-lock.ts` 保护、串行执行；只读分析/审查子任务只有在满足 `docs/decisions/0006-executable-work-graph.md` 定义的强制隔离条件（活 workspace 在操作系统层面不可访问，不是仅仅换一个 `cwd`——普通 `git worktree`/目录拷贝本身不满足该条件，因为子进程仍能通过相对/绝对路径或调用工具触达原 workspace，`git worktree` 还与主仓库共享 `.git` 管理元数据）时，才允许不持锁并行；当前运行时任何 adapter 都不具备满足该条件的能力（`WorkspaceContext` 无访问模式字段，Codex 以 `workspace-write` 沙箱启动，Claude Code/OpenCode 直接以 workspace 路径为 cwd 启动）。因此**默认基线是全部串行**：v0.2 若未落地并验证该隔离边界，只读子任务也必须进入排他锁串行队列，此时"并行"只体现为图上的逻辑 fan-out（可独立调度、可追踪），不代表物理并行执行；结构性隔离是需要额外设计验证才能解锁的加分项，不是默认路径。独立 worktree 级别的并行**写入**不属于本判据范围，除非 v0.2 `design.md` 另行决策。这是第一个非简单串行的多节点协作场景，即 `docs/decisions/0006-executable-work-graph.md`（Executable Work Graph）Slice 1 的触发点：v0.2 至少要能以显式 Node/Edge 语义**执行、可追踪、可恢复**该拓扑（"可恢复"的最小语义——重启后可重建各 Node 状态、已完成不重复执行、进行中 Attempt 标记 interrupted、可从对应 Node 发起新 Attempt、fan-in 不因重启提前收敛——以该决策为准，不在此重复定义）；是否需要为此新增 `GraphRun`/`NodeRun` 等独立持久化表，还是现有 Run/Event 模型经扩展即可满足，由 `design.md` 按恢复、审计、并发和演进需求判断，不是本判据预先假定的结论。范围严格收窄到 `orchestrator_subagent` 本身需要的能力，不因此展开 Graph Compiler、自然语言 Graph Draft、Canvas UI 等仍然等待各自触发条件的部分。
 
