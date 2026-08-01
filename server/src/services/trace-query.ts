@@ -4,7 +4,6 @@ import {
   type IssueTraceResponse,
   type RunEvidenceResponse,
   type RunTraceSummary,
-  type EvidenceResolution,
   type TraceCompleteness,
   type RunFileChange,
 } from "@personahub/shared/types";
@@ -16,7 +15,6 @@ import type { ThreadRepository } from "../repositories/thread.js";
 import type { RunTraceRepository } from "../repositories/run-trace.js";
 import type { EvidenceService } from "./evidence.js";
 import { buildTraceCompleteness, aggregateIssueCompleteness } from "./trace-completeness.js";
-import { TRACE_LIMITS } from "../runtime/trace/constants.js";
 import { AppError } from "../api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
 
@@ -159,8 +157,6 @@ export class TraceQueryService {
     preloadedEvents?: ThreadEvent[],
   ): TraceCompleteness {
     const traceState = this.runTraceRepo.get(run.id);
-    const fileCount = this.fileChangeRepo.countByRun(run.id);
-
     const runEvents = preloadedEvents
       ? preloadedEvents.filter((e) => e.payload_json.run_id === run.id)
       : this.threadEventRepo

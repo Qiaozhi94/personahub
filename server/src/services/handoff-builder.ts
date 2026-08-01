@@ -76,10 +76,6 @@ export function buildHandoff(input: HandoffBuildInput): HandoffPayload {
 
   const evidenceRefs = collectEvidenceRefs(commandCompleted, testCompleted, fileSummary);
   const truncated = evidenceRefs.length > TRACE_LIMITS.handoffEvidenceRefsMax;
-  const trimmedRefs = truncated
-    ? evidenceRefs.slice(0, TRACE_LIMITS.handoffEvidenceRefsMax)
-    : evidenceRefs;
-
   return {
     issue_id: run.issue_id,
     thread_id: run.thread_id,

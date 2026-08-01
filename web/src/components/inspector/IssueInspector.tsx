@@ -15,12 +15,7 @@ import { toApiError } from "@/lib/api-client";
 import { runPurposeLabel } from "@/lib/run-display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EvidenceSection } from "./EvidenceSection.js";
 import { ValidationInspectorSection } from "./ValidationInspectorSection.js";
 import { UnblockDialog } from "./UnblockDialog.js";
@@ -31,10 +26,7 @@ interface IssueInspectorProps {
   workspacePath: string | null;
 }
 
-const RUN_STATUS_VARIANT: Record<
-  RunStatus,
-  "secondary" | "brand" | "success" | "destructive" | "warning"
-> = {
+const RUN_STATUS_VARIANT: Record<RunStatus, "secondary" | "brand" | "success" | "destructive" | "warning"> = {
   [RunStatus.Queued]: "secondary",
   [RunStatus.Running]: "brand",
   [RunStatus.Completed]: "success",

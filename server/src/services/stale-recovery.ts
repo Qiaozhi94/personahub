@@ -1,5 +1,5 @@
 import type { RunStatus } from "@personahub/shared/types";
-import { RunStatus as RS, FailureReason as FR, ThreadEventType, ActorType, BaselineStatus } from "@personahub/shared/types";
+import { RunStatus as RS, FailureReason as FR, ThreadEventType, ActorType } from "@personahub/shared/types";
 import type { RunRepository } from "../repositories/run.js";
 import type { WorkspaceRepository } from "../repositories/workspace.js";
 import type { ThreadEventService } from "./thread-event.js";

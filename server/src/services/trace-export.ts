@@ -1,9 +1,7 @@
-import type { Run, ThreadEvent, RunFileChange, IssueWithThread } from "@personahub/shared/types";
+import type { Run, ThreadEvent, RunFileChange } from "@personahub/shared/types";
 import {
   ThreadEventType,
   type TraceCompleteness,
-  type RunFileChange as RFC,
-  FileChangeType,
 } from "@personahub/shared/types";
 import type { IssueRepository } from "../repositories/issue.js";
 import type { RunRepository } from "../repositories/run.js";

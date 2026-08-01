@@ -60,7 +60,7 @@ export class DevelopmentTraceService {
       }
       const baselineJson = snapshotToJson(result.snapshot);
       this.runTraceRepo.saveBaseline(run.id, result.snapshot.scannerType, baselineJson, now);
-    } catch (err) {
+    } catch {
       this.runTraceRepo.saveBaselineFailure(run.id, SCAN_REASON_CODES.unknown, now);
     }
   }
@@ -201,7 +201,7 @@ export class DevelopmentTraceService {
     while (attempt < FINALIZATION_RETRY_MAX) {
       try {
         return this.tryCommit(run, state, fileChanges, fileScanStatus, completeness, handoffPayload, dbOnly, fileEventPayload);
-      } catch (err) {
+      } catch {
         attempt++;
         if (attempt >= FINALIZATION_RETRY_MAX) {
           break;

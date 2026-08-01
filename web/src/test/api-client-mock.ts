@@ -9,7 +9,7 @@ export const apiClient = {
   },
   workspaces: {
     bind: vi.fn(),
-    getByProject: vi.fn(),
+    getByProject: vi.fn().mockResolvedValue({ workspace: null }),
     getById: vi.fn(),
   },
   issues: {
@@ -37,14 +37,14 @@ export const apiClient = {
     cancel: vi.fn(),
   },
   validation: {
-    getValidation: vi.fn(),
+    getValidation: vi.fn().mockImplementation(() => new Promise(() => {})),
     getEvidenceSummary: vi.fn(),
     unblock: vi.fn(),
     resetRounds: vi.fn(),
     triggerValidation: vi.fn(),
   },
   traces: {
-    getIssueTrace: vi.fn(),
+    getIssueTrace: vi.fn().mockImplementation(() => new Promise(() => {})),
     getRunEvidence: vi.fn(),
     exportMarkdown: vi.fn(),
   },

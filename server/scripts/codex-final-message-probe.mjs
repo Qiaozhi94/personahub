@@ -23,7 +23,7 @@
 // sharing; the console summary redacts your home dir.
 
 import { spawn } from "node:child_process";
-import { mkdtempSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, appendFileSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -111,7 +111,6 @@ function runScenario(scn) {
     let lineBuffer = "";
     let nextId = 1;
     let threadId = null;
-    let turnId = null;
     let done = false;
     const pending = new Map();
 
@@ -225,7 +224,6 @@ function runScenario(scn) {
     request("initialize", { clientInfo: { name: "personahub-probe", version: "0.1.0" } })
       .then((r) => { summary.initializeResult = r; return request("thread/start", { cwd: workDir, sandbox: "workspace-write", approvalPolicy: "untrusted" }); })
       .then((r) => { threadId = r?.thread?.id ?? null; return request("turn/start", { threadId, input: [{ type: "text", text: scn.prompt }] }); })
-      .then((r) => { turnId = r?.turn?.id ?? null; })
       .catch((err) => finish(new Error(`handshake failed: ${err}`)));
   });
 }

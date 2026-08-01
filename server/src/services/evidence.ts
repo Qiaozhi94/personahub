@@ -1,9 +1,4 @@
-import type {
-  EvidenceResolution,
-  ThreadEvent,
-  RunFileChange,
-  Run,
-} from "@personahub/shared/types";
+import type { EvidenceResolution, ThreadEvent } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import { AppError } from "../api/errors.js";
 import type { ThreadEventRepository } from "../repositories/thread-event.js";

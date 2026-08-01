@@ -1,4 +1,3 @@
-import { FileChangeType } from "@personahub/shared/types";
 import type { FileChangeDraft, ScanLimits, WorkspaceSnapshot } from "./snapshot-types.js";
 import { DEFAULT_SCAN_LIMITS } from "./snapshot-types.js";
 import { captureGitSnapshot, diffGitSnapshots } from "./git-workspace-scanner.js";

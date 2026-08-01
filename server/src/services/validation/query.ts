@@ -10,7 +10,6 @@ import type {
 import {
   IssueStatus,
   ThreadEventType,
-  RunStatus,
   ValidationOutcome,
 } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";

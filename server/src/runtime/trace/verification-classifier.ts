@@ -110,7 +110,7 @@ function stripRunKeyword(tokens: Token[]): Token[] {
 
 export function classifyVerificationCommand(
   command: string,
-  platform: string = process.platform,
+  _platform: string = process.platform,
 ): VerificationKind | null {
   if (typeof command !== "string" || command.trim().length === 0) {
     return null;

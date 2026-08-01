@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Settings } from "lucide-react";
 import { useProjects } from "@/hooks/use-projects";
 import { useWorkspace } from "@/hooks/use-workspace";
@@ -25,7 +25,7 @@ export function App() {
   const [createIssueOpen, setCreateIssueOpen] = useState(false);
 
   const projectsQuery = useProjects();
-  const projects = projectsQuery.data?.projects ?? [];
+  const projects = useMemo(() => projectsQuery.data?.projects ?? [], [projectsQuery.data?.projects]);
 
   useEffect(() => {
     if (selectedProjectId === null && projects.length > 0) {
@@ -59,11 +59,7 @@ export function App() {
     return (
       <>
         <NoProject onCreateProject={() => setCreateProjectOpen(true)} />
-        <CreateProjectDialog
-          open={createProjectOpen}
-          onOpenChange={setCreateProjectOpen}
-          onCreated={selectProject}
-        />
+        <CreateProjectDialog open={createProjectOpen} onOpenChange={setCreateProjectOpen} onCreated={selectProject} />
       </>
     );
   }
@@ -95,28 +91,16 @@ export function App() {
                 <span className="text-xs text-muted-foreground">Issues</span>
                 <span className="text-xs text-muted-foreground">{issues.length}</span>
               </div>
-              <IssueList
-                issues={issues}
-                selectedIssueId={selectedIssueId}
-                onSelect={setSelectedIssueId}
-              />
+              <IssueList issues={issues} selectedIssueId={selectedIssueId} onSelect={setSelectedIssueId} />
             </section>
 
-            {selectedProjectId ? (
-              <WorkspaceBinding projectId={selectedProjectId} workspace={workspace} />
-            ) : null}
+            {selectedProjectId ? <WorkspaceBinding projectId={selectedProjectId} workspace={workspace} /> : null}
 
-            {selectedProjectId ? (
-              <AdapterSettings projectId={selectedProjectId} />
-            ) : null}
+            {selectedProjectId ? <AdapterSettings projectId={selectedProjectId} /> : null}
 
             <section className="mt-auto grid gap-1.5">
               <div className="px-2.5 text-xs text-muted-foreground">Configuration</div>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 text-secondary-foreground"
-                disabled
-              >
+              <Button variant="ghost" className="w-full justify-start gap-2 text-secondary-foreground" disabled>
                 <Settings className="h-3.5 w-3.5" />
                 Settings
               </Button>
@@ -172,11 +156,7 @@ export function App() {
         }
       />
 
-      <CreateProjectDialog
-        open={createProjectOpen}
-        onOpenChange={setCreateProjectOpen}
-        onCreated={selectProject}
-      />
+      <CreateProjectDialog open={createProjectOpen} onOpenChange={setCreateProjectOpen} onCreated={selectProject} />
 
       {selectedProjectId ? (
         <CreateIssueDialog

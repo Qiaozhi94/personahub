@@ -17,7 +17,7 @@ function gitCommit(dir: string, msg: string): void {
   execSync(`git commit -m "${msg}"`, { cwd: dir, encoding: "utf-8", timeout: 5000 });
 }
 
-describe("Git Workspace Scanner (T026)", () => {
+describe("Git Workspace Scanner (T026)", { timeout: 30_000 }, () => {
   let dir: string;
 
   beforeEach(() => {
@@ -122,4 +122,4 @@ describe("Git Workspace Scanner (T026)", () => {
     expect(snapshot.headOid).toBeNull();
     expect(snapshot.scanComplete).toBe(true);
   });
-}, { timeout: 30000 });
+});

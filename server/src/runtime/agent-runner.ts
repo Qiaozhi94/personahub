@@ -1,4 +1,4 @@
-import type { Run, FailureReason, AdapterConfig, Workspace, AdapterAuthType } from "@personahub/shared/types";
+import type { Run, FailureReason, Workspace, AdapterAuthType } from "@personahub/shared/types";
 import { FailureReason as FR, ThreadEventType, ActorType, CommandTraceCapability, type RunTraceSignal } from "@personahub/shared/types";
 import type { AgentAdapter, RunHandle, RunOutputChunk, RunExitResult, AgentRunInput } from "./types.js";
 import { DEFAULT_EXECUTION_TIMEOUT_MS, MAX_OUTPUT_BYTES, MAX_CHUNK_BYTES } from "./types.js";

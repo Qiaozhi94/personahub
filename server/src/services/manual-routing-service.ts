@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { Run, ThreadEvent, RunPurpose, AdapterIdentitySnapshot } from "@personahub/shared/types";
+import type { Run, RunPurpose, AdapterIdentitySnapshot } from "@personahub/shared/types";
 import { IssueStatus as IS, RunStatus as RS, RunRole, ThreadEventType, ActorType } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { RunRepository } from "../repositories/run.js";

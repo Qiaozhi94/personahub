@@ -4,11 +4,9 @@ import type {
   TraceCompleteness,
   TraceCompletenessStatus,
   RunTraceState,
-  FileChangeType,
 } from "@personahub/shared/types";
 import {
   ThreadEventType,
-  RunStatus,
   CommandTraceCapability,
   BaselineStatus,
   TraceCompletenessStatus as TCS,

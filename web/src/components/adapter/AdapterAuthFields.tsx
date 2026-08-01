@@ -59,9 +59,7 @@ export function AdapterAuthFields({ value, onChange, providers, providerLocked, 
   }
 
   function toggleCapability(cap: AgentCapability, checked: boolean) {
-    const next = checked
-      ? [...value.capabilityTags, cap]
-      : value.capabilityTags.filter((c) => c !== cap);
+    const next = checked ? [...value.capabilityTags, cap] : value.capabilityTags.filter((c) => c !== cap);
     set({ capabilityTags: next });
   }
 
@@ -87,7 +85,9 @@ export function AdapterAuthFields({ value, onChange, providers, providerLocked, 
           }}
         >
           {(providers.length > 0 ? providers.map((p) => p.cli_provider) : Object.values(CliProvider)).map((p) => (
-            <option key={p} value={p}>{PROVIDER_LABEL[p]}</option>
+            <option key={p} value={p}>
+              {PROVIDER_LABEL[p]}
+            </option>
           ))}
         </select>
         {/* honest capability note (design §5.1/§10.1): e.g. OpenCode has no
@@ -102,10 +102,14 @@ export function AdapterAuthFields({ value, onChange, providers, providerLocked, 
             id="adapter-auth-type"
             className={SELECT_CLASSNAME}
             value={value.authType}
-            onChange={(e) => set({ authType: e.target.value as AdapterAuthType, apiKeyInput: "", apiKeyAction: "keep" })}
+            onChange={(e) =>
+              set({ authType: e.target.value as AdapterAuthType, apiKeyInput: "", apiKeyAction: "keep" })
+            }
           >
             {supportedAuthTypes.map((t) => (
-              <option key={t} value={t}>{t === AdapterAuthType.OAuth ? "OAuth (CLI-owned login)" : "API key"}</option>
+              <option key={t} value={t}>
+                {t === AdapterAuthType.OAuth ? "OAuth (CLI-owned login)" : "API key"}
+              </option>
             ))}
           </select>
         </div>
@@ -117,12 +121,16 @@ export function AdapterAuthFields({ value, onChange, providers, providerLocked, 
             Run this in your own terminal to log in — PersonaHub never reads or stores the token:
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 rounded bg-background px-2 py-1 font-mono">{OAUTH_LOGIN_COMMAND[value.cliProvider]}</code>
+            <code className="flex-1 rounded bg-background px-2 py-1 font-mono">
+              {OAUTH_LOGIN_COMMAND[value.cliProvider]}
+            </code>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => { void navigator.clipboard?.writeText(OAUTH_LOGIN_COMMAND[value.cliProvider]); }}
+              onClick={() => {
+                void navigator.clipboard?.writeText(OAUTH_LOGIN_COMMAND[value.cliProvider]);
+              }}
             >
               Copy
             </Button>
@@ -143,7 +151,9 @@ export function AdapterAuthFields({ value, onChange, providers, providerLocked, 
             >
               <option value="">Select a model provider…</option>
               {modelProviderAllowlist.map((mp) => (
-                <option key={mp} value={mp}>{mp}</option>
+                <option key={mp} value={mp}>
+                  {mp}
+                </option>
               ))}
             </select>
           ) : (
@@ -194,7 +204,12 @@ export function AdapterAuthFields({ value, onChange, providers, providerLocked, 
                 </Button>
               ) : (
                 <>
-                  <Button type="button" variant="outline" size="sm" onClick={() => set({ apiKeyAction: "replace", apiKeyInput: "" })}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => set({ apiKeyAction: "replace", apiKeyInput: "" })}
+                  >
                     Replace
                   </Button>
                   <Button type="button" variant="outline" size="sm" onClick={() => set({ apiKeyAction: "clear" })}>
