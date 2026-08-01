@@ -22,6 +22,8 @@ F007（Coordinator Agent & Routing Recommendation，`ready-for-development`）�
 
 v0.2 文档检视（2026-08-01）修正了 PRD 第 15 节与三份 spec 的四处范围分叉，并把 `Structured Handoff Packet`（实际已由 v0.1.4 交付）标注清楚，详见 PRD 修订记录。`workflow_templates.agent_team_template_id` 是指向不存在的表的悬空列，Agent Team Template 持久化因此不在 v0.2 范围内。
 
+2026-08-02 又经一份独立的 v0.2 需求文档检视（20 条 finding），逐条对照源码核实后**全部成立**并已并入三件套。五处会导致跑不通或静默损坏，均是设计初稿的事实错误：① **F006 fan-in 取不到前驱结果**——初稿误把 `EvidenceResolution` 当成能取 payload 且有 `truncated` 三态，实际 `evidence.ts` 只返回引用元数据、只产出 `resolved`/`missing`（`truncated` 仅存在于类型声明，从未被写出过），且 `resolveTrustedPayload()` 的 `TRUSTED_INTERNAL_ALLOWLIST` 不含 `graph.*`；改为新增 `graph.node_result` 事件作结果唯一真相源、加入 allowlist、取用时 scope 不得带 `runId`（否则恒 null），截断由本 slice 按 `run-context-builder.ts` 的预算降级手法自行实现。② **F006 escalation 会销毁排队中的兄弟节点**——`RunEscalationHandler.cancelQueuedRunsForIssue()` 无差别取消该 Issue 全部 queued Run 且不经队列资格门，初稿"复用不改逻辑"与 GraphNode 例外自相矛盾；改为该方法增加 `role !== GraphNode` 过滤（本 slice 对 escalation 的唯一改动）。③ **F007 按 adapter 数量降级 topology**——Node ≠ Agent 且物理串行，一个 adapter 可跑完三节点，按数量降级会让单 adapter（个人用户默认形态）环境永不启用图；改为逐节点能力覆盖判定。④ **F007 图分支丢弃用户确认的执行者**——`start(issueId)` 不带执行计划、图内部重新 resolve，使 US3 对 `orchestrator_subagent` 不成立；改为 `start(issueId, plan)` 传 `nodeAssignments` 并在同事务复核（跨 feature 契约）。⑤ **F008 通用 `setStatus()` 可造出两个 active 模板**，重开 Q2 声称已关闭的隐式接管陷阱；改为 `activate()`/`deactivate()` 两个保不变量的命令。范围侧唯一变化：F007、F008 由"无 schema 变更"改为各加一张小表（`intake_confirmations` 幂等认领、`admin_audit_events` 全局审计）——确认幂等与验证关闭可追溯在现有 schema 下不可实现（`workflow_templates` 无 `project_id`、`thread_events.thread_id` NOT NULL）；FR-004 的"谁"如实收窄为"何时对哪个版本做了什么"，本应用无鉴权。schema 版本按落地顺序：F006 = v8、F007 = v9、F008 = v10。三个 feature 状态维持 `ready-for-development`，F007 新增 Phase 0 准入 T009（补齐 API 契约后再开工）。
+
 ## 当前结构
 
 - `docs/personahub-prd.md`：正式 PRD，产品判断以此为准。

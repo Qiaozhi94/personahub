@@ -26,6 +26,20 @@ PRD 第 15 节 v0.2（Orchestrator Workflow）的完成判据覆盖多个独立 
 
 F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md` 关闭：v0.2 的 Coordinator 是确定性规则引擎，不引入 LLM 执行通道，只推荐不派工。关键依据是 `runs` 的三个 NOT NULL 外键使 pre-Issue 调用不能是 Run，以及 v0.2 的推荐候选集大小本来就是 1。
 
-**实施顺序**：F006 → F007 → F008。F007 不依赖 F006 实现完成即可开发（只读取图 definition 常量）；F008 是收尾项。
+**实施顺序**：F006 → F007 → F008。F007 的多数任务不依赖 F006 实现完成，但 `orchestrator_subagent` 确认分支依赖 F006 的 `GraphRuntimeService.start(issueId, plan)` 签名；F008 是收尾项。
+
+**schema 版本按落地顺序**：F006 = v8（`graph_runs` / `node_runs`），F007 = v9（`intake_confirmations`），F008 = v10（`admin_audit_events`）。顺序若变则顺延——**绝不追加进任何已应用的版本**（F005 的 `availability_revision` 教训）。
+
+### 2026-08-02 外部检视后的修订
+
+一份独立的 v0.2 需求文档检视（20 条 finding）经逐条对照源码核实后**全部成立**，已并入三个 feature 的 spec/design/tasks。五处会直接导致跑不通或静默损坏的问题：
+
+- **F006 fan-in 取不到前驱结果**：初稿误把 `EvidenceResolution` 当成能取 payload 且有 `truncated` 三态；实际它只返回引用元数据、只产出 `resolved`/`missing`，且 `resolveTrustedPayload()` 的 allowlist 不含 `graph.*`。改为新增 `graph.node_result` 事件作唯一结果真相源并自行实现截断。
+- **F006 escalation 会销毁排队中的兄弟节点**：`RunEscalationHandler` 直接 `cancelQueued` 该 Issue 全部 queued Run，不经队列资格门，初稿加的 GraphNode 例外拦不住。
+- **F007 按 adapter 数量降级 topology**：会让单 adapter（个人用户默认形态）环境永不启用图。改为逐节点能力覆盖判定。
+- **F007 图分支丢弃用户确认的执行者**：`start(issueId)` 不带执行计划，图内部重新解析，US3 对 `orchestrator_subagent` 不成立。
+- **F008 通用 `setStatus()` 可造出两个 active 模板**，重新打开 Q2 声称已关闭的隐式接管陷阱；另有审计事件无合法 thread 可写（`workflow_templates` 无 `project_id`，`thread_events.thread_id` NOT NULL）。
+
+三个 feature 状态维持 `ready-for-development`；F007 新增一条 Phase 0 准入（T009 补齐 API 契约后再开工）。
 
 PRD v0.2 范围里的 "Structured Handoff Packet" 已由 v0.1.4 交付（`handoff-builder.ts`），不重复实现。

@@ -20,9 +20,9 @@ updated: 2026-08-01
 
 ## 2. 影响面
 
-- **存储**：无 schema 变更（`workflow_templates` 表已具备 `version` / `status` 列）。
-- **后端**：`WorkflowTemplateRepository` 补 `listByIssueType` / `insertVersion` / `setStatus`；新增 `WorkflowTemplateAdminService`、`RuntimeHealthService`。
-- **API**：模板 CRUD 子集 + `GET /api/health/runtime`。
+- **存储**：`workflow_templates` 本身无变更（`version` / `status` 列已具备），但**新增 `admin_audit_events` 表**（`schema-v10.ts`）——初稿"无 schema 变更"的说法因 FR-004 的审计载体需要而修正，理由见第 7 节。
+- **后端**：`WorkflowTemplateRepository` 补 `listByIssueType` / `listVersions` / `insertVersion` / `activate` / `deactivate`（**不提供通用 `setStatus`**，见第 4 节）；新增 `WorkflowTemplateAdminService`、`RuntimeHealthService`。
+- **API**：模板 CRUD 子集 + `GET /api/projects/:projectId/health/runtime`。
 - **前端**：模板管理面板 + health 面板。
 - **不影响**：`validator-selector.ts`、`IssueService.create()`、F004 validation 语义。
 
@@ -33,7 +33,7 @@ updated: 2026-08-01
 - 原地修改一行，会**立刻改变所有引用该 id 的进行中 Issue 的行为**——包括 validation 是否启用。这是不可接受的。
 - 版本化则天然安全：进行中 Issue 继续指向旧 id，新 Issue 用新 id。
 
-因此 `insertVersion()` 插入新行（新 id、`version = max(version) + 1`），**从不 UPDATE 既有行的内容字段**。唯一允许的既有行写入是 `setStatus()` 改 `status`（active ↔ inactive），因为它不改变已引用该版本的 Issue 的执行语义（`getById()` 仍能取到）。
+因此 `insertVersion()` 插入新行（新 id、`version = max(version) + 1`），**从不 UPDATE 既有行的内容字段**。既有行唯一允许被改的是 `status`，但**不能用一个通用的 `setStatus()`**——理由见第 4 节。
 
 ## 4. Q2（已关闭）：新版本不得悄悄接管
 
@@ -50,9 +50,24 @@ ORDER BY version DESC LIMIT 1
 因此 `insertVersion()` 的入参必须显式携带 `activate: boolean`：
 
 - `activate: false`（默认）→ 新版本以 `status='inactive'` 落库，不影响任何人。
-- `activate: true` → 在**同一事务内**把同 `issue_type` 的其他 active 版本置为 inactive，再插入新的 active 版本，避免出现两个 active 版本导致 `getDefault()` 的结果依赖版本号大小这一隐式规则。
+- `activate: true` → 在**同一事务内**把同 `issue_type` 的其他 active 版本置为 inactive，再插入新的 active 版本。
 
 UI 上"保存"与"启用"必须是两个动作，且启用时明确提示"此后新建的 Issue 将使用该版本"。
+
+### 不能有通用的 `setStatus()`（初稿漏洞，已修正）
+
+初稿一边要求 `insertVersion({activate:true})` 事务性停用同类 active 版本，一边又允许 `setStatus()` 自由切 `active ↔ inactive`。**用后者重新激活一个旧版本就能造出两个 active 行**，`getDefault()` 的结果重新退回"谁版本号大谁赢"这条隐式规则——正是 Q2 声称已关闭的陷阱。而且旧版本的版本号更小，激活它反而不会生效，用户看到的是"我启用了它但没用"。
+
+去掉通用状态写入，换成两个语义明确的命令，二者都是**唯一保持不变量的路径**，新版本与既有版本共用同一条：
+
+| 命令 | 事务内行为 | 拒绝条件 |
+|---|---|---|
+| `activate(id)` | 停用同 `issue_type` 的**全部** active 行 → 激活 `id` | `steps_json` 非法/NULL（见第 6 节）；模板不存在 |
+| `deactivate(id)` | 仅置该行 inactive | 它是该 `issue_type` 最后一个 active 模板 |
+
+- `insertVersion({activate:true})` 内部即调用 `activate()`，不另写一份停用逻辑。
+- `activate()` 允许作用于任意版本（含旧版本），但必须提示"这会使新建 Issue 改用版本 N"——因为激活旧版本时 `getDefault()` 仍按 `ORDER BY version DESC` 取，若还有更高版本的 active 行结果会与用户预期不符；`activate()` 停用全部同类 active 行正是为了消除这个歧义。
+- 并发与重复激活都要有测试：两次 `activate()` 不同版本、`activate()` 与 `insertVersion({activate:true})` 交错，断言任一时刻同 `issue_type` 至多一个 active 行。
 
 ## 5. Q3（已关闭）：health 采集哪五类状态
 
@@ -66,15 +81,73 @@ UI 上"保存"与"启用"必须是两个动作，且启用时明确提示"此后
 | Run 队列 | `runRepo.listQueuedByWorkspace()` + `listRunning()` | 队列多深、有没有 Run 在跑 |
 | 后台任务 | `AdapterConfigService.pendingAvailabilityProbes` 与 `AdapterFailureReprobe.pending` 两个 Set 的 size | 有没有 probe 卡住 |
 
-这两个 Set 目前都是 `private`（`adapter-config.ts:29`、`adapter-failure-reprobe.ts:13`），需要各补一个只读的 size 访问器。**不得改为公开可变引用**——它们参与 shutdown 的等待逻辑，暴露可写引用会让 health 变成一个能干扰关停流程的入口。
+### 后台任务计数怎么拿到（初稿够不着，已修正）
 
-**派生判断（而非原始数据）才是有用的部分**，因此响应中同时给出：
+两个 Set 都是 `private`（`adapter-config.ts:29`、`adapter-failure-reprobe.ts:13`），需要只读的 size 访问器。但仅给 `AdapterFailureReprobe` 加访问器**够不着**——它是 `RunDispatchService` 内部 `new` 出来的私有字段（`run-dispatch.ts:36,61`），没有任何外部持有者，`RuntimeHealthService` 拿不到那个实例。
 
-- `stale_lock_suspected`：锁持有时长超过 `DEFAULT_EXECUTION_TIMEOUT_MS`（30 分钟，`runtime/types.ts:124`）且持有者 Run 已是终态。这正是 `StaleRecoveryService.cleanupStaleLocks()` 在启动时清理的情况，health 让它在运行期间也可见。
-- `queue_starved`：某 workspace 有 queued Run 但无 running Run 且锁空闲——说明 drain 没被触发。
-- `no_available_adapter`：该 Project 在该 workspace 下没有任何 Available adapter。
+因此按 **service 级只读快照**暴露，而不是把 health 耦合到 Set 实例上：
+
+- `AdapterConfigService.healthSnapshot(): { pendingProbeCount: number }`
+- `RunDispatchService.healthSnapshot(): { pendingReprobeCount: number }`（内部转发给它私有的 `failureReprobe`）
+- `RuntimeHealthService` 注入这两个 service，只读快照。
+
+**不得暴露 Set 本身的可变引用**——它们参与 shutdown 的等待逻辑，交出可写引用等于开了一个能干扰关停流程的入口。
+
+### 派生判断必须与实际恢复规则同源
+
+**派生判断（而非原始数据）才是有用的部分**，但初稿的两条判据都与运行时的真实行为对不上：
+
+**`stale_lock`**：初稿要求"持有超 30 分钟 **且** 持有者终态"，并说这正是启动清理处理的情况。核实后不是——`cleanupStaleLocks()` 对持有者缺失或已终态的锁是**立即释放，完全不看时长**（`stale-recovery.ts:94-112`）。按初稿实现，一个终态持有者占锁 2 分钟已经在堵队列，health 却报"无异常"。改为分级：
+
+| 情形 | 判断 | 建议动作 |
+|---|---|---|
+| 持有者 Run 不存在 | `stale_lock_confirmed` | 重启即自动释放；或手动释放 |
+| 持有者 Run 已终态 | `stale_lock_confirmed` | 同上 |
+| 持有者 Run 仍 running 且超时长 + 宽限 | `stale_lock_suspected` | 检查该 Run 的 adapter 进程 |
+
+一并返回持有者 run id、`locked_at` 与已持有时长。
+
+**`queue_starved`**：初稿判据"有 queued、无 running、锁空闲"会把**故意不可执行**的队列误报成故障。至少两类正常情况会命中：F006 在 Issue `Blocked` 时**有意保留**排队中的图节点；validation 的派发受 due time 与状态门控制。改为复用一个与队列 drain **共享的、无副作用的资格判定器**，分状态报告：
+
+- `eligible_but_not_running`（真正的 drain 没被触发）
+- `waiting_for_recovery`（等节点级恢复，F006 场景）
+- `waiting_for_validation_due`
+- `invalid_queued_run`（既不合格也无合法等待理由，真异常）
+
+**只有至少一个 queued Run 当前合格且锁空闲时才标 `queue_starved`。**
+
+`no_available_adapter`：该 Project 在该 workspace 下没有任何 Available adapter。
 
 health 只诊断不修复（非目标），但每条派生判断附一句建议动作。
+
+## 5b. Health API 契约
+
+初稿的服务签名是 `collect(projectId)`、文字描述是 Project + workspace 作用域，路由却是无参的 `GET /api/health/runtime`——三者对不上，且拿不到租户归属。定为：
+
+```
+GET /api/projects/:projectId/health/runtime?workspace_id=<可选>
+```
+
+- `projectId` 走既有的归属校验；`workspace_id` 非法或跨 Project → `WORKSPACE_NOT_FOUND`（沿用 F005 已统一的语义）。
+- 省略 `workspace_id` 时返回该 Project 全部 workspace 的聚合。
+
+```ts
+interface RuntimeHealthSnapshot {
+  schema_version: number;
+  adapters: Array<{ id: string; name: string; effective_status: AdapterStatus; last_checked_at: string | null }>;
+  locks: Array<{ workspace_id: string; locked_by_run_id: string | null; locked_at: string | null; held_ms: number | null }>;
+  queues: Array<{ workspace_id: string; queued_count: number; running_run_id: string | null }>;
+  background: { pending_probe_count: number; pending_reprobe_count: number };
+  diagnostics: Array<{
+    code: "stale_lock_confirmed" | "stale_lock_suspected" | "queue_starved"
+        | "eligible_but_not_running" | "waiting_for_recovery" | "waiting_for_validation_due"
+        | "invalid_queued_run" | "no_available_adapter";
+    workspace_id: string | null; detail: string; suggested_action: string;
+  }>;
+}
+```
+
+前端各态：`loading` / `healthy`（`diagnostics` 为空）/ `has_diagnostics` / `error`。
 
 ## 6. 模板详情的派生投影
 
@@ -82,15 +155,75 @@ health 只诊断不修复（非目标），但每条派生判断附一句建议�
 
 `steps_json` 非法时 `parseWorkflowSteps()` 抛 `ValidatorSelectorError("invalid_steps_json")`；admin 详情接口捕获它并返回 `validation_enabled: null` + 明确的解析错误信息，而不是让整个详情请求失败——用户正需要看到详情才能修好这个 JSON。
 
+### 非法 `steps_json` 的写入侧闸门（初稿缺失，已补）
+
+初稿只定义了读侧的容错（`validation_enabled: null`），没有任何一处阻止**非法模板被启用**。而运行时解析器是抛异常的，一旦这种模板成为默认，新建的 Issue 会直接进入一个跑不起来的 workflow——读侧诊断拦不住这件事。
+
+分开定义草稿与启用两档：
+
+| 动作 | 对 `steps_json` 的要求 |
+|---|---|
+| 保存为 inactive 草稿 | 允许非法/NULL，但 UI 必须显著标记"该版本无法启用"，并给出解析错误 |
+| `activate()` | **硬拒绝** NULL、非法 JSON、未知 step 版本或未知 role；错误码 `TEMPLATE_STEPS_INVALID` + 具体解析错误 |
+
+- 允许存非法草稿，是因为用户往往要先存下来才能慢慢修；禁止启用，是因为启用即生效于所有新 Issue。
+- **"关闭验证"的确认（第 7 节）依赖解析结果**，因此源版本或目标版本任一非法时，无法可靠计算 `validation_enabled` 的变化——此时一律拒绝启用，而不是"当作没关闭验证"放行。
+- 测试矩阵：源非法、目标非法、目标为 NULL、未知 role、合法但无 validator 步骤（应触发第 7 节的确认闸门而非拒绝）。
+
 ## 7. 破坏性改动的确认闸门
 
 | 改动 | 闸门 |
 |---|---|
-| 新版本移除 validator 步骤 | 请求必须带 `acknowledge_validation_disabled: true`，否则 400 并说明后果；确认值记入 ThreadEvent/审计（FR-004） |
+| 启用移除了 validator 步骤的版本 | 请求必须带 `acknowledge_validation_disabled: true`，否则 400 并说明后果；确认值记入审计（FR-004，载体见下） |
 | 停用最后一个 active 模板 | 直接拒绝（FR-005）。否则 `IssueService.create()` 会走到 `INTERNAL_ERROR "Default coding workflow template not found. Database may be corrupted."`——一个把用户操作误报成数据库损坏的错误 |
-| 启用新版本 | 提示"此后新建 Issue 将使用该版本"，同事务停用旧 active 版本 |
+| 启用任意版本 | 提示影响范围，同事务停用同类全部 active 版本（第 4 节） |
+| 启用 `steps_json` 非法的版本 | 直接拒绝（第 6 节） |
 
-## 8. 开放项（不阻塞开发）
+### 审计事件写在哪（初稿不可实现，已修正）
+
+初稿写"确认值记入 ThreadEvent/审计"。这条按现有 schema **无法实现**：
+
+- 模板管理是**全局**的——`workflow_templates` 表没有 `project_id`（`schema-v1.ts:27-41`），也没有 workspace 归属。
+- 改模板发生在任何受影响的 Issue **存在之前**，那些 Issue 还没被创建。
+- `thread_events.thread_id` 是 `NOT NULL REFERENCES threads(id)`（`schema-v1.ts:89`），没有合法的 thread 可写。把它塞进某个无关 Issue 的 thread 更糟：审计溯源被挂到了一个与该改动无关的实体上。
+
+新增一张全局审计表（`schema-v10.ts`，版本号按实际落地顺序取，**不得追加进已应用版本**）：
+
+```sql
+CREATE TABLE admin_audit_events (
+  id TEXT PRIMARY KEY,
+  action TEXT NOT NULL,              -- template.activated | template.deactivated | template.version_created
+  target_type TEXT NOT NULL,         -- workflow_template
+  target_id TEXT NOT NULL,
+  target_version INTEGER,
+  actor_type TEXT NOT NULL,          -- v0.2 恒为 'local_user'
+  actor_id TEXT,                     -- 无鉴权，恒为 NULL
+  details_json TEXT NOT NULL,        -- 含 acknowledge_validation_disabled、validation_enabled 前后值
+  created_at TEXT NOT NULL
+);
+```
+
+**"谁"这一半必须诚实降级**：本应用没有鉴权，不存在可记录的用户身份，`actor_id` 恒为 NULL。因此本表实际回答的是"**什么时候、把哪个模板的哪个版本、做了什么、当时确认了什么**"，不回答"是哪个人"。FR-004 的措辞按此收窄——把单机应用的本地用户写成一个假的 actor id 只是自欺。真需要"谁"要等到引入鉴权，届时本表加列即可。
+
+同时修正第 2 节"无 schema 变更"的说法。
+
+## 8. 模板管理 API 契约
+
+初稿只写了"CRUD 子集"，不足以确定前端的冲突与错误各态。
+
+| 路由 | 用途 | 主要错误 |
+|---|---|---|
+| `GET /api/workflow-templates?issue_type=coding` | 版本列表（含 `status`、`version`、`validation_enabled`） | — |
+| `GET /api/workflow-templates/:id` | 详情（`validation_enabled` 可为 `null` + 解析错误） | 404 `TEMPLATE_NOT_FOUND` |
+| `POST /api/workflow-templates` | 新增版本，body 带 `activate`、`acknowledge_validation_disabled` | 400 `TEMPLATE_STEPS_INVALID`（启用时）、400 `VALIDATION_DISABLE_NOT_ACKNOWLEDGED` |
+| `POST /api/workflow-templates/:id/activate` | 启用任意版本 | 400 `TEMPLATE_STEPS_INVALID`、400 `VALIDATION_DISABLE_NOT_ACKNOWLEDGED`、404 |
+| `POST /api/workflow-templates/:id/deactivate` | 停用 | 409 `LAST_ACTIVE_TEMPLATE` |
+
+- 无 `PATCH` / `PUT`：内容字段不可原地修改（第 3 节）。
+- 全部写操作成功后写 `admin_audit_events`（第 7 节）。
+- 前端各态：`loading` / `list` / `detail` / `invalid_steps`（详情可读但不可启用）/ `confirm_validation_disabled`（二次确认）/ `conflict`（409 后刷新列表）。
+
+## 9. 开放项（不阻塞开发）
 
 - Validation Policy 的编辑不在本 feature；当前只读展示模板与 policy 的关联。
 - health 的指标历史与告警等待真实需要。

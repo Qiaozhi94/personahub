@@ -112,12 +112,14 @@ v0.1 只能执行 Implementation → Validation 循环和用户手动顺序接�
 - [ ] **AC-003**（`TR-001`）：实际 edge traversal 和 attempt 可查询、可展示、可回放。
 - [ ] **AC-004**（`NFR-002`）：未实现结构性隔离时无两个 agent 进程并发访问同一 workspace。
 - [ ] **AC-005**（`FR-005`）：F001-F005 全量回归通过，F004 validation 语义未被复制或改写。
+- [ ] **AC-006**（`FR-001`、`FR-004`）：synthesis 实际收到两份前驱 findings——由一条端到端测试经与 synthesis 相同的 API 读出并逐条比对，而不是仅断言节点 completed、边 traversed。
+- [ ] **AC-007**（边界场景）：取消的三条路径（单节点 / 整图 / 系统队列）各有确定的 NodeRun 与 GraphRun 结果；escalation 发生时排队中的兄弟节点不被销毁。
 
 ## 7. 待确认问题（全部已关闭，2026-08-01）
 
 - **Q1**（已关闭 → `design.md` 第 4 节）：现有 Run/Event 能否扩展满足 GraphRun/NodeRun/Attempt 的恢复与审计？**不能**——`context_source_run_id` 是单列外键，物理上表达不了多前驱；`evidence_summary` 每 Issue 至多一行且冲突时静默丢弃。结论：新增 schema v8 的 `graph_runs` + `node_runs`，并把 Run 的职责收窄为 Attempt（加 `node_run_id` 列），不新建 attempt/traversal 表。
 - **Q2**（已关闭 → `design.md` 第 5 节）：首个场景为 PersonaHub 自身代码的双视角检视（并发/状态一致性 × 契约/边界校验 → 合并去重报告），节点输出为 `findings[]` envelope，synthesis 额外带 `source_nodes[]`。
-- **Q3**（已关闭 → `design.md` 第 6 节）：Edge 只承载引用，不承载内容；复用既有 `evidence_refs` / `EvidenceResolution` 三态通道，新增 4 个 `graph.*` ThreadEvent 记录实际 traversal，不新建 payload envelope。
+- **Q3**（已关闭 → `design.md` 第 6 节，2026-08-02 修正）：Edge 只承载引用，不承载内容。**引用指向新增的 `graph.node_result` 事件**，该事件是节点结果的唯一真相源，且必须加入 `EvidenceService` 的可信 payload allowlist；取用一律经 `resolveTrustedPayload()` 且 scope 不带 `runId`。截断由本 slice 自行实现（既有 `EvidenceResolution` 从不产出 `truncated`）。共 5 个 `graph.*` ThreadEvent，Edge 定义按 `GraphEdgeV1` 显式声明 outcome/join/载荷槽位。
 - **Q4**（已关闭 → `design.md` 第 7 节）：图完成 → Issue `Ready`（不是 `Done`，避免与 F004 的 `Done` 语义冲突）；图类阻塞使用独立的 `GraphBlockReason` 与独立恢复入口，不复用 validation unblock；锁与队列完全复用既有机制。
 
 ## 8. 实现备注

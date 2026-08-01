@@ -11,22 +11,34 @@ updated: 2026-08-01
 
 > Status: ready-for-development | Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
+## Phase 0：实施准入
+
+- [ ] T009：补齐 `design.md` 第 9 节的完整 API 契约（recommend/confirm DTO、状态码与错误码矩阵、幂等语义、前端各态），粒度对齐 F006 `design.md` 第 8 节。**这是 Phase 1 开工的前置条件**，等 F006 的 `GraphRuntimeService.start(issueId, plan)` 形状落定后再写，可少返工一轮。
+
 ## Phase 1：规则集与推荐服务（FR-001、FR-002、NFR-001）
 
-- [ ] T010：`shared/src/types/` 新增 `Recommendation<T>`、`RoutingRecommendation`、`RecommendationPremise`、`IntakeBlockReason` DTO。
-- [ ] T011：`services/routing/rules.ts`——四条规则各自独立可测，统一返回 `{value, rule, candidates, excluded[]}`。
+- [ ] T010：`shared/src/types/` 新增 `Recommendation<T>`、`RoutingRecommendation`、`RecommendationPremise`、`IssueDraft`、`IntakeBlockReason` DTO。
+- [ ] T011：`services/routing/rules.ts`——四条路由规则 + 三条 Issue 字段规则各自独立可测，统一返回 `{value, rule, candidates, excluded[]}`。
+- [ ] T011b：`IssueDraft` 规则实现——`derive_title_from_first_line`（首个非空行、折叠空白、120 字符截断）、`preserve_goal_verbatim`（仅去首尾空白）、`default_priority`；目标文本 8000 字符上限只作用于关键词匹配，`goal` 存全文（`design.md` 第 3 节）。
+- [ ] T011c：`IssueDraft` 边界样例测试——单行短文本、多行文本、纯空白、超长文本、首行为空后续有内容，逐个 Given/When/Then。
 - [ ] T012：`RoutingRecommendationService.recommend(projectId, goalText)`——纯计算，禁止写库、禁止取锁、禁止建 Run。
 - [ ] T013：roster 规则接 `effectiveAdapterStatus()`；断言 Project 级 Available 但 workspace 级 Unavailable 的 adapter 出现在 `excluded` 且 reason 指明 workspace 级来源（US2）。
+- [ ] T013b：topology 规则按**逐节点能力覆盖**判定，允许同一 adapter 覆盖多个节点。回归测试：**只有一个 Available adapter 时，`orchestrator_subagent` 仍可被推荐**（`design.md` 第 7 节；初稿按 adapter 数量降级会让单 adapter 环境永不启用图）。
 - [ ] T014：确定性测试——相同状态重复调用 N 次结果完全一致（FR-002）。
 - [ ] T015：无副作用测试——调用 recommend 后断言 issues / threads / runs / 锁状态零变化（AC-005）。
 
 ## Phase 2：前提快照与确认路径（FR-003、FR-004、FR-005）
 
-- [ ] T020：`RecommendationPremise` 采集与哈希；**只快照推荐中实际引用到的 adapter**（`design.md` 第 5 节）。
-- [ ] T021：`IntakeService.confirm()`——复核快照、创建 Issue、写事件、按确认的 topology 分流发起执行。
-- [ ] T021b：topology 分流——`sequential` → `RunDispatchService.dispatch()`；`orchestrator_subagent` → `GraphRuntimeService.start()`。F006 未落地时该分支返回明确阻塞，**禁止静默回退为 `sequential`**（`design.md` 第 6、7 节）。
+- [ ] T019：新建 `server/src/db/schema-v9.ts` 的 `intake_confirmations` 表 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**（`design.md` 第 1 节）。
+- [ ] T020：`RecommendationPremise` 采集、规范化序列化与哈希；**只快照推荐中实际引用到的 adapter**；签发时把 premise 与推荐值写入 `intake_confirmations`（`design.md` 第 5 节）。
+- [ ] T021：`IntakeService.confirm()`——**单事务**内认领 `recommendation_id` → 复核快照 → 创建 Issue → 写事件 → 建首个执行单元；派工放在提交之后。
+- [ ] T021b：topology 分流——`sequential` → 建 queued Run；`orchestrator_subagent` → `GraphRuntimeService.start(issueId, plan)` 并传入 `nodeAssignments`。F006 未落地时该分支返回明确阻塞，**禁止静默回退为 `sequential`**（`design.md` 第 6、7 节）。
+- [ ] T021c：幂等测试——同一 `recommendation_id` 重复 confirm（含并发双击）只产生一个 Issue，第二次返回首次结果。
+- [ ] T021d：失败原子性测试——在事件写入、adapter 复核、图启动三处各注入一次失败，断言事务回滚、**不留孤儿 Issue/Thread**，且客户端可安全重试。
 - [ ] T022：`RECOMMENDATION_STALE` 错误码与变化项返回；测试覆盖 adapter 状态翻转、workspace 解绑、模板版本变更三种失效。
-- [ ] T023：断言确认路径经 `resolveAdapter()` 且传入显式 adapter id；回归断言推荐服务从不写 `default_adapter_config_id`（FR-005）。
+- [ ] T022b：**用户改选值的独立校验**——用户把推荐的 adapter 换成另一个后，若新选的 adapter 当前不可用，必须返回 `RECOMMENDATION_STALE` 并指明是哪一项；断言该校验不依赖原始快照是否包含它（`design.md` 第 5 节）。
+- [ ] T023：断言确认路径经 `resolveAdapter()` 且传入显式 adapter id（两条 topology 分支各测一次）；回归断言推荐服务从不写 `default_adapter_config_id`（FR-005）。
+- [ ] T023b：图分支断言——`nodeAssignments` 在 `start()` 事务内逐项复核；任一不可用则整体拒绝，**不部分启动、不自行替换执行者**（US3 对 `orchestrator_subagent` 同样成立）。
 - [ ] T024：新增 `coordinator.recommendation_applied` ThreadEvent，payload 含 `rules[]`、`recommended`、`chosen`、`diff[]`（TR-001）。
 - [ ] T025：无关 adapter 的后台 probe 收敛**不得**使推荐失效——针对性回归测试。
 
@@ -49,16 +61,17 @@ updated: 2026-08-01
 ## Phase 5：验收
 
 - [ ] T050：US1-US4 四条独立测试全部通过。
-- [ ] T051：topology 降级路径测试——可用 adapter 不足时降级为 `sequential` 且原因出现在 `excluded`（`design.md` 第 7 节）。
+- [ ] T051：topology 降级路径测试——**某个节点的 required capability 无任何 adapter 覆盖**时才降级为 `sequential`，`excluded` 注明是哪个节点缺哪项能力；同时断言"仅有一个可用 adapter"**不触发**降级（`design.md` 第 7 节）。
 - [ ] T052：F001-F006 全量回归。
 - [ ] T053：门禁——`npm run lint && npm run format:check && npm run typecheck && npm test && npm run build`；新增文件纳入 Prettier format targets。
 - [ ] T054：回写 `spec.md` 验收清单与 `BACKLOG.md` 状态。
 
 ## 依赖关系
 
+- T009（API 契约补齐）是 Phase 1 的准入条件。
 - Phase 1 → Phase 2 → Phase 3 → Phase 4 顺序执行。
-- T051 依赖 F006 的 definition 已存在（只读取 `definition_id`/`version`，不依赖其运行时完成）。
-- 本 feature 不依赖 F006 的实现完成即可开发，但 T051 的完整验收需要 F006 的 definition 常量落地。
+- T051 依赖 F006 的 definition 已存在（只读取 `definition_id`/`version` 与逐节点 `required_capabilities`，不依赖其运行时完成）。
+- **T021b / T023b 依赖 F006 的 `GraphRuntimeService.start(issueId, plan)` 签名落地**（跨 feature 契约，见 `design.md` 第 7 节）。其余任务不依赖 F006 实现完成即可开发。
 
 ## 备注
 

@@ -19,11 +19,12 @@ updated: 2026-08-01
 
 ## 2. 影响面
 
-- **存储**：新增 `schema-v8.ts`（`graph_runs`、`node_runs` 两表 + `runs.node_run_id` 列）。
+- **存储**：新增 `schema-v8.ts`（`graph_runs`、`node_runs` 两表 + `runs.node_run_id` 列 + 两个 partial unique index）。
 - **后端 service**：新增 `GraphRuntimeService`（调度 / join / 恢复）；`RunDispatchService.workflowHook()` 增加一条按 `node_run_id` 分流的分支。
 - **恢复**：新增 `GraphRecoveryService`，在 `index.ts` 启动序列中排在 `StaleRecoveryService.runAll()` 之后、`drainWorkspace` 之前。
-- **事件**：新增 4 个 `graph.*` ThreadEvent 类型。
+- **事件**：新增 5 个 `graph.*` ThreadEvent 类型；`graph.node_result` 须加入 `EvidenceService` 的 `TRUSTED_INTERNAL_ALLOWLIST`。
 - **前端**：Thread 内的节点卡片与 Inspector 的 graph projection 段落；不做 Canvas。
+- **改动既有代码（仅两处）**：`RunEscalationHandler.cancelQueuedRunsForIssue()` 增加 GraphNode 过滤（第 7 节）；`transitionToRunning` 增加 GraphNode 分支同步 NodeRun 状态。
 - **不影响**：`ValidationWorkflowService` 及其全部 domain rules、`workspace-lock.ts`、`AdapterResolver`、F005 credential 隔离。
 
 ## 3. 已固定设计边界
@@ -64,7 +65,8 @@ updated: 2026-08-01
 ### 为什么 Edge 定义不入库、EdgeTraversal 不建表
 
 - **Edge 定义**：本 slice 只有一个内置固定图，Edge 形状正是 ADR 0006 列为"待验证假设"的部分。先以 TypeScript 常量声明（带 `definition_id` + `version`，`graph_runs` 只存这两个值），等第二种图形状出现再决定是否需要可编辑的持久化定义。这与 ADR 0006 第 2 节"不做 Graph Compiler / Canvas"一致。
-- **EdgeTraversal**：`thread_events` 已有 `evidence_refs TEXT NOT NULL DEFAULT '[]'` 列（`schema-v1.ts:98`）和成熟的 `EvidenceResolution` 三态解析（`shared/src/types/trace.ts:110-122`）。traversal 是**发生过的事**，与 ThreadEvent 的语义完全吻合，且天生可回放、可在 Thread 中展示（满足 TR-001 / AC-003）。新建第五张表只会让同一件事有两个真相源。
+- **EdgeTraversal**：`thread_events` 已有 `evidence_refs TEXT NOT NULL DEFAULT '[]'` 列（`schema-v1.ts:98`）与 `EvidenceService` 的引用解析。traversal 是**发生过的事**，与 ThreadEvent 的语义完全吻合，且天生可回放、可在 Thread 中展示（满足 TR-001 / AC-003）。新建第五张表只会让同一件事有两个真相源。
+  注意：既有解析只解决"引用指向谁"，**不解决"内容是什么"**，也从未产出过 `truncated`。节点结果的载体与截断另行定义，见第 6 节——这是本设计初稿最主要的一处事实错误。
 
 ### 迁移纪律
 
@@ -92,16 +94,32 @@ CREATE TABLE node_runs (
   node_key TEXT NOT NULL,          -- definition 内的稳定标识
   status TEXT NOT NULL,            -- pending | ready | running | completed | failed | interrupted | cancelled
   join_satisfied_at TEXT,
-  result_event_id TEXT,            -- 结果事件，供下游按 ref 取用
+  result_event_id TEXT REFERENCES thread_events(id),   -- 指向 graph.node_result，见第 6 节
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   UNIQUE (graph_run_id, node_key)
 );
 
-ALTER TABLE runs ADD COLUMN node_run_id TEXT;
+ALTER TABLE runs ADD COLUMN node_run_id TEXT REFERENCES node_runs(id);
+
+-- 一个 Issue 同时至多一个进行中的 GraphRun（start() 的幂等键，见第 7 节）
+CREATE UNIQUE INDEX idx_graph_runs_one_active_per_issue
+  ON graph_runs(issue_id) WHERE status = 'running';
+
+-- 一个 NodeRun 同时至多一个 active Attempt（spec 第 3 节边界场景的结构性兜底）
+CREATE UNIQUE INDEX idx_runs_one_active_graph_attempt
+  ON runs(node_run_id) WHERE node_run_id IS NOT NULL AND status IN ('queued', 'running');
 ```
 
-`UNIQUE (graph_run_id, node_key)` 是结构性保证"一个节点在一次 GraphRun 里只有一行逻辑工作"，重复调度会撞唯一约束而不是静默产生第二项工作。
+### 三条约束各自防住什么
+
+- `UNIQUE (graph_run_id, node_key)`：一个节点在一次 GraphRun 里只有一行逻辑工作，重复调度撞唯一约束而不是静默产生第二项工作。
+- `idx_runs_one_active_graph_attempt`：单 active Attempt 不再只靠服务层 CAS。第 7 节的 retry CAS 仍是主路径（它给出干净的用户级错误），这个索引是**兜底**——覆盖 CAS 之外的其它建 Run 路径（恢复补建、join 触发的下游创建）。
+- `idx_graph_runs_one_active_per_issue`：`start()` 的幂等键，双击/重试不会产生第二个图。
+
+**唯一索引冲突必须映射成用户级错误**：裸 `SQLITE_CONSTRAINT` 抛到 HTTP 边界会变成 500。连点 retry 的正确响应是"该节点已有进行中的尝试"，不是"服务器内部错误"。
+
+FK 是有实效的——`db/index.ts:7` 已开 `foreign_keys = ON`。`ALTER TABLE ... ADD COLUMN ... REFERENCES` 在 SQLite 下合法的前提是默认值为 NULL，此处满足。`result_event_id` 指向 `thread_events`，而 thread_events 从不删除，FK 不会成为写入障碍。
 
 ## 5. Q2（已关闭）：首个真实场景与节点契约
 
@@ -150,18 +168,60 @@ synthesis 输出在此基础上，每条 finding 额外带 `source_nodes: ["revi
 
 ## 6. Q3（已关闭）：Edge payload 与 traversal contract
 
-**Edge 不承载内容，只承载引用。** 下游节点通过前驱 `node_runs.result_event_id` 取结果，走既有的 `evidence_refs` / `EvidenceResolution` 通道，复用它 `resolved | missing | truncated` 的三态语义——前驱输出超限被截断时，下游拿到的是明确的 `truncated`，而不是一段静默缩水的文本。
+**Edge 只承载引用——但引用必须指向一个真的能取回内容的载体。**
 
-新增 4 个 ThreadEvent 类型：
+### 初稿的两处事实错误（已修正）
+
+初稿写"走既有 `evidence_refs` / `EvidenceResolution` 通道，复用它 `resolved | missing | truncated` 的三态语义"。核实后两处都不成立：
+
+1. `EvidenceService.resolveEventRef()` 只返回 `target: { id, type, thread_id, run_id }`（`evidence.ts:125-136`），**不含 payload**。它回答"这条引用指向谁"，不回答"内容是什么"。
+2. `EvidenceResolution.status` 的类型声明里虽然写了 `"truncated"`，但 `evidence.ts` 全文只产出 `"resolved"` 与 `"missing"`——**该状态从未被任何代码写出过**。把它当既有能力用，是把类型声明误读成了实现。
+
+再加上 `graph.node_completed` 只记 `status`/`attempt_count`，按初稿实现的结果是：两个节点显示 completed、两条边显示 traversed、synthesis 拿到空输入。
+
+### 结果的唯一真相源
+
+- 新增 ThreadEvent 类型 `graph.node_result`，payload 存**已解析**的节点结果 envelope（第 5 节的结构）。
+- `node_runs.result_event_id` 指向该事件，**不指向 `graph.node_completed`**。
+- 必须把 `graph.node_result` 加入 `EvidenceService` 的 `TRUSTED_INTERNAL_ALLOWLIST`（`evidence.ts:20-31`）；不加则 `resolveTrustedPayload()` 对它直接返回 `null`，下游一无所获。
+- 下游取内容一律经 `resolveTrustedPayload(ref, scope)`，且 **scope 只传 `issueId` + `threadId`，绝不传 `runId`**：该方法在 `scope.runId` 存在时要求事件 payload 的 `run_id` 与之相等（`evidence.ts:256-259`），而 fan-in 的本质就是跨 Run 取前驱结果，传了必然返回 `null`。
+
+### 截断由本 slice 自己实现
+
+既然 `truncated` 不是既有能力，synthesis 的输入预算按 `run-context-builder.ts` 的既有手法自己实现（`mustNotTruncate` 段 + 逐级降级 + `RUN_CONTEXT_MAX_BYTES` 上限）：
+
+- 每个前驱 envelope 有独立字节上限，超限时**按 finding 条目整条丢弃**（不切碎单条 JSON），并在 payload 记 `truncated: true` + `dropped_count`。
+- 截断声明必须出现在 synthesis 的输入正文里，**禁止静默缩水**——这正是初稿误以为免费获得的性质。
+- 前驱结果取不到（事件缺失 / 不在 allowlist / scope 不符）视为该节点结果不可用：NodeRun 保持 `completed`，但 join 判定失败 → GraphRun `blocked` + `result_unparsable`。**不允许拿半份输入跑 synthesis**。
+
+### ThreadEvent 类型（5 个）
 
 | 类型 | 何时写 | payload 要点 |
 |---|---|---|
 | `graph.node_queued` | NodeRun 创建并入队 | `graph_run_id`、`node_key`、`required_capabilities` |
-| `graph.node_completed` | NodeRun 终态 | `node_key`、`status`、`attempt_count` |
+| `graph.node_result` | 节点 envelope 解析成功 | 完整的已解析 envelope + `truncated`、`dropped_count` |
+| `graph.node_completed` | NodeRun 终态 | `node_key`、`status`、`attempt_count`、`result_event_id` |
 | `graph.edge_traversed` | 每次实际边转移 | `from_node_key`、`to_node_key`、`outcome`、`decided_by`、`input_refs[]` |
 | `graph.join_satisfied` | fan-in 条件满足 | `to_node_key`、`satisfied_by[]`、`join_policy` |
 
-`decided_by` 记录路由决策的来源（本 slice 只有 `deterministic_join` 一种取值，字段先留出以承接 ADR 0006 的"路由决策来源"要求）。`graph.edge_traversed` 的 `evidence_refs` 指向前驱结果事件——这就是 TR-001 要求的"输入/输出 refs"，无需新 envelope。
+`graph.edge_traversed` 的 `evidence_refs` 指向前驱的 `graph.node_result` 事件——这就是 TR-001 要求的"输入/输出 refs"。
+
+### Edge 定义 v1 的形状
+
+ADR 0006 要求 Edge 承载 outcome/条件、join、载荷传递、路由决策来源四件事。初稿把前三件都推给了 traversal 事件，等于没有定义——实现者按 T020 打勾也可能产出互不兼容的图。v1 显式定义：
+
+```ts
+interface GraphEdgeV1 {
+  from: NodeKey;
+  to: NodeKey;
+  acceptedOutcomes: NodeRunStatus[];   // v1 固定 ["completed"]
+  required: boolean;                   // v1 固定 true
+  joinGroup: string;                   // v1 固定 "all_required"
+  inputSlot: string;                   // 载荷进入下游的键名，如 "review_concurrency"
+}
+```
+
+`decided_by` 是**观测值**，只记在 traversal 事件里（本 slice 唯一取值 `deterministic_join`，字段先留出以承接 ADR 0006 的"路由决策来源"要求），不进定义。定义回答"什么情况下允许通过"，traversal 记录"实际通过了没有、依据是什么"——两个契约必须分开，否则恢复时无从判断一条边该不该重走。
 
 ## 7. Q4（已关闭）：状态映射、锁、retry 与 escalation
 
@@ -179,7 +239,7 @@ synthesis 输出在此基础上，每条 finding 额外带 `source_nodes: ["revi
 
 `ValidationRecoveryActionService.unblock()` 硬校验 `VALIDATION_BLOCK_REASONS.has(issue.blocked_reason_code)`，并对非 validation 类 blocker 抛 `INVALID_ISSUE_TRANSITION`（`recovery-action.ts:45-53`）。因此：
 
-- 新增独立的 `GraphBlockReason` 枚举（`node_run_failed` / `join_unsatisfiable` / `no_capable_adapter` / `result_unparsable` / `recovery_inconsistent`），**不复用 `ValidationBlockReason`**。
+- 新增独立的 `GraphBlockReason` 枚举（`node_run_failed` / `node_run_cancelled` / `join_unsatisfiable` / `no_capable_adapter` / `result_unparsable` / `definition_version_unavailable` / `recovery_inconsistent`），**不复用 `ValidationBlockReason`**。
 - 图 blocker 需要自己的恢复入口（节点级 retry），**不能走 validation 的 unblock 按钮**。这不是可选项——复用会让 validation 的 unblock 守卫失效。
 
 ### workspace 锁与并发
@@ -192,7 +252,57 @@ synthesis 输出在此基础上，每条 finding 额外带 `source_nodes: ["revi
 
 - **retry**：对 `failed` / `interrupted` 的 NodeRun 发起 retry → 新建 Run（`node_run_id` 不变）→ 入队。NodeRun 回到 `running`，Attempt 计数 +1。GraphRun 从 `blocked` 回到 `running`。
 - **"同一 NodeRun 只有一个 active Attempt"必须结构性保证**（spec 第 3 节边界场景）。仅靠 UI 禁用按钮不够：workspace 队列允许同一 workspace 上有多个 `queued` Run，连点两次 retry 会产生两个 Attempt，先后执行、后者覆盖前者结果。强制手段是 retry 入口在**同一事务内**做 NodeRun 状态 CAS（`failed|interrupted` → `running`）再建 Run，CAS 失败即拒绝——第二次点击拿不到 CAS，不会创建第二个 Run。这与 F004 `claimValidatorSlot()` 用 CAS 抢占验证槽位是同一手法。
-- **escalation**：复用 `run-escalation-handler`，不改其逻辑。escalation 导致 Run 失败 → NodeRun `failed` → join 不满足 → GraphRun `blocked`。
+- **escalation**：**必须改 `run-escalation-handler`，"复用且不改其逻辑"是错的。** 详见下一小节。
+
+### escalation 必须变成 graph-aware（初稿错误，已修正）
+
+初稿写"复用 `run-escalation-handler`，不改其逻辑"，同时又在队列资格门里给 GraphNode 开了个例外。这两句互相矛盾：`RunEscalationHandler.handle()` 在事务提交后直接调 `cancelQueuedRunsForIssue()`（`run-escalation-handler.ts:68,72-76`），对该 Issue 下**所有** `Queued` Run 无差别 `cancelQueued`——它根本不经过 `startNextQueuedRun`，第 7 节给 GraphNode 加的资格例外拦不住它。
+
+后果：N1 触发 escalation → Issue `Blocked` → **排队中的 N2 当场被销毁**，且这次 cancel 不映射回任何 NodeRun，图变成不可恢复。
+
+选定策略：**保留排队中的图节点 Attempt**。
+
+- `cancelQueuedRunsForIssue()` 增加 `run.role !== RunRole.GraphNode` 过滤。理由：非图 Run 被取消是因为 Issue 状态机已经改变、它们再跑没有意义；而图节点有自己的生命周期（GraphRun）和自己的恢复入口，Issue `Blocked` 不等于该节点的工作作废。
+- escalation 影响的那个节点：Run `failed` → NodeRun `failed` → join 不满足 → GraphRun `blocked` + `node_run_failed`。
+- 兄弟节点保持 `queued`，等节点级 retry 或 GraphRun 恢复后由既有 drain 继续。
+- **这是 `run-escalation-handler` 唯一允许的改动**，escalation 的检测、事件、Issue 置 `Blocked` 全部不动。
+
+### 取消的完整状态转移（初稿缺失，已补）
+
+spec 第 3 节把"取消"列为边界场景、schema 也有 `NodeRunStatus.cancelled`，但初稿只映射了成功与失败，导致一个被取消的 required 前驱会让 join 永远不满足且没有任何合法恢复动作。
+
+| 触发 | Run | NodeRun | GraphRun |
+|---|---|---|---|
+| 用户取消单个节点 | `cancelled` | `cancelled` | `blocked` + `node_run_cancelled` |
+| 用户取消整个图 | 全部非终态 Run `cancelled` | 全部非终态 NodeRun `cancelled` | `cancelled`（终态，不可 retry） |
+| 系统队列取消（非图路径误取消） | `cancelled` | `interrupted` | `running` 保持，按 interrupted 恢复 |
+
+- `GraphBlockReason` 增加 `node_run_cancelled`。
+- retry 的受理集合从 `{failed, interrupted}` 扩展为 `{failed, interrupted, cancelled}`——单节点取消是用户的主动动作，重来是合理诉求。
+- GraphRun `cancelled` 是终态：不可 retry，用户要重跑就发起新的 GraphRun。
+
+### Run / NodeRun 状态映射表（初稿缺失，已补）
+
+初稿 schema 定义了 `ready` 但没有任何地方写入它，retry 又直接写 `running`，导致 health、UI、恢复三处对"排队中的节点算 ready 还是 running"可以有三种理解。显式定义：
+
+```text
+pending  --join 满足-->  ready  --Attempt 入队-->  ready
+ready    --Attempt 实际启动-->  running
+running  --Attempt 终态-->  completed | failed | interrupted | cancelled
+```
+
+- `pending`：join 未满足，尚未创建 Attempt。
+- `ready`：已创建 `queued` Attempt，但还没抢到 workspace 锁。
+- `running`：Attempt 已 `running`。需要在 `transitionToRunning` 处增加一个 GraphNode 分支同步 NodeRun。
+- retry：CAS 成功后 NodeRun 先回到 `ready`（而非初稿的 `running`），Attempt 启动时才转 `running`。
+
+### 图定义的版本保留纪律
+
+`graph_runs` 只存 `definition_id` + `definition_version`，定义本体在 TypeScript 常量里。因此：
+
+- **图定义按 `(id, version)` append-only**：v1 一旦有 GraphRun 引用过就不得原地修改或删除，改动一律发新版本。这与 F008 对 `workflow_templates` 的版本化纪律同源。
+- 运行时按**精确版本**从注册表查定义，不得"取最新"。
+- 查不到该版本 → GraphRun `blocked` + `definition_version_unavailable`（新增的 `GraphBlockReason` 取值），**不得静默降级到最新版本**——那会让恢复出来的图和当初跑的图结构不同。
 
 ### 图推进的接入点，以及必须新增 `RunRole.GraphNode` 的原因
 
@@ -211,6 +321,19 @@ synthesis 输出在此基础上，每条 finding 额外带 `source_nodes: ["revi
 - `workflowHook`：`run.role === RunRole.GraphNode` 分支**排在最前**并直接 return，现有 Implementation / Validator 两条分支一字不改。
 - `startNextQueuedRun`：为 GraphNode 增加显式资格规则——所属 GraphRun 为 `running` 且 Issue 未 `Done`（`Done`/`Blocked` 的既有前置判断保留，但 `Blocked` 对图节点不再取消而是留在队列，由节点级恢复决定），不参与 `validation_round` 匹配。
 
+### 写入原子性与推进的幂等性
+
+初稿没有对 `start()` 与图推进提出事务要求，而恢复算法只修"active Attempt 被 interrupt"和"下游未创建"两种情况，修不了半途崩溃留下的残局。两处必须收紧：
+
+**`start()` 全部落在一个事务里**——GraphRun、两个前驱 NodeRun、两个 `queued` Run、`graph.node_queued` 事件、Issue 转 `Running` 一并提交。实际派工发生在提交之后，由既有的 `drainWorkspace` / `startNextQueuedRun` 驱动，因此不需要 `initializing` 中间态。幂等由 `idx_graph_runs_one_active_per_issue` 保证：重复调用撞唯一索引，返回既有 GraphRun 而不是建第二个。
+
+**图推进拆成两个各自幂等的事务**，因为 `finalizeAndDrain()` 对 `workflowHook()` 的异常是全吞的（`run-dispatch.ts:163-166` 的空 catch，注释写明"hook errors must not prevent queue drain"）——这条不能改，它保护的是队列不被单个 Run 的问题卡死。代价是：图推进一旦抛异常，NodeRun 会停在非终态且**无人知晓**，直到下次重启。应对是让推进本身可被无损重放：
+
+1. **事务一**：NodeRun 置终态 + 写 `graph.node_result` / `graph.node_completed` + 回填 `result_event_id`。幂等键是 NodeRun 状态 CAS——已终态则直接返回。
+2. **事务二**：评估 join + 创建下游 NodeRun/Run + 写 traversal 事件。幂等键是 `UNIQUE (graph_run_id, node_key)`。
+
+只要事务一提交了，事务二任何时候重放都得到同样结果。因此新增第 6 步恢复规则即可覆盖"事务一成功、事务二失败"这个初稿修不了的残局。
+
 ### 重启恢复流程
 
 新增 `GraphRecoveryService.reconcile()`，在 `index.ts` 中排在 `StaleRecoveryService.runAll()` 之后、`drainWorkspace` 之前（现为 `index.ts:149` 与 `index.ts:161-164`）：
@@ -220,8 +343,67 @@ synthesis 输出在此基础上，每条 finding 额外带 `source_nodes: ["revi
 3. 重新评估每个 `pending` 节点的 join：只按 `node_runs` 前驱行判定；不满足就保持 `pending`（满足恢复要求 ⑤）。
 4. join 已满足但下游 NodeRun 尚未创建的，补建并入队。
 5. 既不满足 join、也没有任何可继续节点、且存在非终态节点的 GraphRun → `blocked` + `recovery_inconsistent`。
+6. **NodeRun 已终态但其出边从未评估过**（事务一提交、事务二未提交）→ 重放事务二。这是 `workflowHook` 异常被吞掉后的唯一修复点。
+7. GraphRun 引用的 `definition_version` 在注册表中不存在 → `blocked` + `definition_version_unavailable`，不降级到最新版本。
 
-## 8. 开放项（不阻塞开发）
+`start()` 与两个推进事务都要有**故障注入测试**：在每个写边界后模拟崩溃，断言重启后能收敛到一致状态。
+
+## 8. API 契约
+
+`docs/features/README.md` 要求 design 覆盖 API/contract。初稿只点了路由名，不足以让前端确定 loading / stale / blocked / retry 各态。
+
+### `GET /api/issues/:issueId/graph`
+
+```ts
+// 200
+interface GraphRunProjection {
+  graph_run: {
+    id: string; status: GraphRunStatus; blocked_reason_code: GraphBlockReason | null;
+    definition_id: string; definition_version: number;
+    created_at: string; updated_at: string;
+  };
+  nodes: Array<{
+    node_key: string; title: string; responsibility: string;
+    status: NodeRunStatus; join_satisfied_at: string | null;
+    result_event_id: string | null;
+    attempts: Array<{                        // 按 created_at 升序
+      run_id: string; status: RunStatus;
+      adapter_config_id: string; adapter_identity: string | null;
+      failure_reason: string | null; started_at: string | null; completed_at: string | null;
+    }>;
+  }>;
+  edges: Array<{
+    from: string; to: string; traversed_at: string | null;
+    outcome: string | null; decided_by: string | null; input_refs: string[];
+  }>;
+}
+```
+
+- Issue 无 GraphRun → `200` + `null`（**不是 404**）：前端要能区分"这个 Issue 不是图执行"和"Issue 不存在"。
+- Issue 不存在 → `404` `ISSUE_NOT_FOUND`。
+
+### `POST /api/graph-runs/:graphRunId/nodes/:nodeKey/retry`
+
+```ts
+// 202
+interface NodeRetryAccepted { node_run_id: string; run_id: string; status: NodeRunStatus }
+```
+
+| 情形 | 状态码 | 错误码 |
+|---|---|---|
+| NodeRun 不在 `{failed, interrupted, cancelled}` | 409 | `NODE_RUN_NOT_RETRYABLE` |
+| 已有 active Attempt（CAS 失败或撞唯一索引） | 409 | `NODE_RUN_ATTEMPT_IN_PROGRESS` |
+| GraphRun 为 `cancelled` / `completed` | 409 | `GRAPH_RUN_TERMINAL` |
+| 无可用 adapter | 409 | `NO_CAPABLE_ADAPTER` |
+| GraphRun / node_key 不存在 | 404 | `GRAPH_RUN_NOT_FOUND` / `NODE_RUN_NOT_FOUND` |
+
+409 一律附 `blocked_reason_code` 与建议动作。**唯一索引冲突不得逃逸成 500**（第 4 节）。
+
+### 前端状态
+
+`loading` / `not_a_graph_issue`（projection 为 null）/ `running`（轮询或 SSE 复用既有 Thread 事件流）/ `blocked`（展示 `blocked_reason_code` + 节点级 retry 入口）/ `retry_conflict`（409 后刷新 projection，不重试）/ `terminal`。
+
+## 9. 开放项（不阻塞开发）
 
 - Edge 的 `joinPolicy` 本 slice 只实现 `all_required`；`any_of` / 条件路由等待第二种图形状。
 - 结构性只读隔离未实现，物理并行不在范围内（ADR 0006 第 3 节已定为默认基线）。
