@@ -46,7 +46,7 @@ updated: 2026-07-29
 
 ## PRD 版本拆解为 Feature 的节奏
 
-- v0.1–v0.3 是 PRD（第 15 节）划定的近期承诺范围。v0.1 已经拆成 v0.1.0～v0.1.3 四个子版本，各对应一个 Feature spec（F001、F002...）；v0.2、v0.3 大概率也需要同样拆解——整版本 bundle 了好几个明显不同的能力（例如 v0.2 的 Coordinator Agent、Topology 推荐、Handoff Packet、Workflow Template 管理 UI），直接整版本写一个 spec 会违反"一个 feature 一个主要 intent"的原则。
+- v0.1–v0.3 是 PRD（第 15 节）划定的近期承诺范围。v0.1 已拆成 v0.1.0～v0.1.4 五个子版本，对应 F001～F005；v0.2、v0.3 同样按独立 intent 拆解——整版本 bundle 了多个不同能力（例如 v0.2 的 Coordinator Agent、Graph Slice、Topology 推荐、Workflow Template 管理 UI），直接整版本写一个 spec 会违反"一个 feature 一个主要 intent"的原则。
 - 拆解按需进行：只在即将开始某个版本的开发前才把它拆成具体 Feature，不要提前把后面几个版本都拆好。前一个版本的实现和实际使用反馈，大概率会影响下一个版本该怎么拆、拆成什么样。
 - v0.4 及以后，PRD 第 15 节自己标注为"方向性设想"，不是当前排期承诺。在 v0.1–v0.3 跑完、这部分方向被重新评估或拍板之前，不需要拆成 Feature spec。
 - v0.4 开始扩展非 coding Workflow 时，按“一种新任务范式一个垂直切片”拆 Feature：先选择一个场景完成输入、执行、artifact、evidence、validation、权限/escalation 和 Done policy 的真实端到端验证，再根据暴露出的抽象问题决定下一类。不得把 Windows 排障、Paper/Research、Writing/Book 同时拆成一批只更换角色名和 prompt 的模板 Feature。
@@ -68,5 +68,6 @@ PersonaHub 的产品构想是 clowder-ai（本机 `D:\Projects\clowder-ai`）和
 
 ## Code Quality
 
-- Lint/format 工具：TBD（技术栈确定后补充命令）
+- 静态检查：`npm run lint`（ESLint，覆盖当前 server/shared/web/e2e 工作区；测试夹具保留宽松的未使用变量规则）。
+- 格式检查：`npm run format:check`；自动格式化：`npm run format`。当前采用增量格式基线，只覆盖本轮重构热点与根配置，后续修改旧文件时应把它加入格式目标，避免一次性格式化全仓造成大面积无语义 diff。
 - File limits: 200 行建议拆分 / 350 行硬上限

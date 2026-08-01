@@ -75,18 +75,18 @@ Storage
 - 后端是一个用户手动启动（`npm run dev` / 打包后的可执行文件）的 Node.js 进程，监听本地固定端口（避开 PRD "非功能验收"小节列出的 3003/3004，Redis 避开 6399）。
 - 该进程内部持有：
   - 一个 SQLite 连接（WAL 模式）。
-  - Workspace 写锁：内存态判断 + DB 持久化字段（见下方"崩溃恢复"）。
+  - Workspace 写锁：通过 SQLite 中的 `lock_state` / `locked_by_run_id` / `locked_at` 原子更新获取和释放；当前没有第二套内存锁状态（见下方"崩溃恢复"）。
   - Agent Runner：子进程注册表 + 执行队列（见下）。
 - 单机单用户，不需要 auth/session（与 PRD "自动化与安全边界"小节一致）。
 
 ### Workspace 锁的崩溃恢复（stale lock 处理）
 
-原设计只说"锁状态存 DB，重启后可恢复"，但没有回答"恢复成什么"——如果 Runner 进程在某个 run 执行中崩溃，DB 里会永久留下一条 `locked` 记录，后续 run 无限排队。补充设计：
+当前实现采用单进程启动恢复，而不是 lease/heartbeat：
 
-- `Workspace` 增加 `locked_at`、`lease_expires_at`、`runner_instance_id` 三个字段（`runner_instance_id` 同时是 v0.7 多实例场景下区分"锁属于哪个 daemon 实例"的预留字段）。
-- Runner 对正在执行的 run 定期 heartbeat，刷新 `lease_expires_at`。
-- API server 启动时，扫描所有 `status = running` 的 Run——新进程启动这一事实本身就说明旧进程已不存在，这些 Run 一律标记为 `interrupted`，释放对应 workspace 锁，写入 `run.interrupted` / `workspace.lock_recovered` 事件。
-- 正常运行期间，若某个 run 的 lease 超过 `lease_expires_at` 仍未续期（例如子进程僵死但父进程未崩溃），同样触发上述回收流程。
+- `Workspace` 实际持久化 `lock_state`、`locked_by_run_id`、`locked_at`；schema 和 public type 中没有 `lease_expires_at` / `runner_instance_id`。
+- API server 启动时，`StaleRecoveryService` 扫描所有 `status = running` 的 Run。新进程启动这一事实说明旧进程已不存在，因此这些 Run 一律标记为 `interrupted`，随后释放其持有的 workspace 锁并写入 `run.interrupted`；terminal-but-unfinalized Run 和无有效 owner 的遗留锁也在同一启动恢复阶段收敛。
+- 正常运行期间的子进程僵死由 adapter/Runner execution timeout 收敛，不存在独立的 workspace lock lease 续期与过期回收。
+- lease / heartbeat / `runner_instance_id` 只作为 v0.7 多实例 daemon 的候选设计；引入前必须另做 schema、owner fencing、时钟与恢复语义设计，不能视为当前保证。
 
 ### Run 生命周期
 
@@ -106,7 +106,7 @@ v0.7 要做的 daemon 化、multi-workspace、workspace isolation、background q
 | 关注点 | v0.1 实际行为 | 为 v0.7 预留的设计 |
 | --- | --- | --- |
 | 进程启动方式 | 用户手动 `npm run dev` / 双击可执行文件 | API server 代码本身不关心"谁启动了我"；v0.7 换成 systemd / Windows Service / 自带 supervisor 接管启动，server 代码不用改 |
-| Workspace 锁 | 单 workspace，锁状态存 DB，带 lease + heartbeat | v0.7 multi-workspace 时，锁判断逻辑不变，只是并发检查的维度从"全局一把锁"变成"按 workspace_id 判断"；`runner_instance_id` 字段从 v0.1 起就存在，为多实例场景预留 |
+| Workspace 锁 | 锁状态存 DB，按 `workspace_id` 原子获取；启动时恢复遗留 running Run/锁，无 lease/heartbeat | v0.7 多实例需要新增 owner fencing（候选：`runner_instance_id` + lease/heartbeat），不能直接假设当前单进程锁可无修改扩展 |
 | Agent Runner | 注册表 + 队列，但队列长度实际上恒为 1（同一 workspace 同一时刻只有一个 run） | v0.7 background queue 只是把"队列长度恒为 1"的限制放开为"跨 workspace 并行，同一 workspace 内仍串行"，排队逻辑本身不用重写 |
 | Workspace 执行边界 | Runner 通过一个 `WorkspaceContext`（`workspaceId`/`localPath` 作为 cwd/`gitBranch`/`pushCredentialsEnabled`）传给 adapter，adapter 不直接拼路径字符串；**当前没有访问模式或允许写入路径字段**，无法约束/证明某次执行是只读的（`server/src/runtime/types.ts`） | v0.7 workspace isolation（容器/进程级隔离）需要先补上访问模式字段，再替换 `WorkspaceContext` 的执行方式（例如改成在容器里跑命令）；这个缺口在 v0.2 orchestrator_subagent 只读并行 Node 场景下已提前暴露，见下方说明和 ADR 0006 |
 | 存储访问 | SQLite，业务代码只通过 Repository 层读写，不直接写 SQL | v0.7 "Postgres/pgvector 可选迁移"只需新增一套 Repository 实现，业务逻辑不用改 |
@@ -329,16 +329,17 @@ API server 启动时的恢复顺序扩展为：
 - 同事务将 `validation_round_count` 置 0 并写 `validation.round_reset` 事件，但 **Issue 仍保持 Blocked** —— 需另行 `unblock` 才恢复 Ready，使"授予更多轮次"成为显式两步操作。
 - 与普通 `unblock` 的区别：unblock 清 blocker -> Ready 但保留 round count；reset 清 count 但保留 Blocked。
 
-### 5.7 Schema Invariant（F004 T095 schema v5 + F005 schema v6）
+### 5.7 Schema Invariant（F004 T095 schema v5 + F005 schema v6/v7）
 
 - `evidence_summaries` CHECK：`validation_result='passed'`、`same_origin_validation IN (0,1)`、`policy_snapshot_hash LIKE 'sha256:%'`。
 - `idx_runs_validator_per_round (issue_id, validation_round) WHERE role='validator'`：DB 层强制 per-round validator 唯一，与 §5.2 service 层 double-guard。
 - **F005（schema v6）**：`idx_issues_validation_due (status, validation_dispatch_due_at) WHERE status='Validating' AND validation_dispatch_due_at IS NOT NULL`——`ValidationDispatchScheduler` 每秒 tick 的查询索引；`agent_configs` 新增 `auth_type`/`model_provider`/`api_key`/`auth_status_message`（ALTER ADD COLUMN，校验在 service 层 `validateAuthState()`，非 DB CHECK）；`runs` 新增 `purpose`/`context_source_run_id`；`projects` 新增 `default_adapter_config_id`（无列级 FK，由 `AdapterConfigService`/`ProjectRepository.setDefaultAdapter()` 校验同 Project 且 available）。
+- **F005 closure（schema v7）**：新增 `adapter_workspace_status(adapter_config_id, workspace_id, status, last_checked_at, auth_status_message, updated_at)` 例外覆盖表。`agent_configs.status` 保持 Project 级保守基线；无覆盖行时回退到基线，所有 workspace-scoped 路由统一经 `effectiveAdapterStatus()` 合并，某 workspace 的探测失败不得污染 sibling workspace。
 
 ## 6. 存储层
 
 - v0.1–v0.6：本地 SQLite 文件，WAL 模式。业务代码只通过 Repository 接口访问（每个 `system-design.md` 里的实体对应一个 repository），不直接拼 SQL 字符串在业务逻辑里。
-- schema 演进用迁移脚本管理（具体工具留到 v0.1.0 实现阶段选型，例如 Drizzle / Knex migrations），不在本文档里预先绑定。
+- schema 演进使用项目既定的 versioned inline SQL：`server/src/db/schema-v{N}.ts` 保持不可变，`migrations.ts` 按版本顺序执行；已应用版本不得原地追加字段。
 - v0.7 "Postgres/pgvector 可选迁移"：因为访问已经收敛在 Repository 层，迁移时只需新增一套实现并切换配置，不需要改 Workflow Engine / Runner 等上层逻辑。
 
 ## 7. Artifact 落点

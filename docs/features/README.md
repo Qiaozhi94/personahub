@@ -2,7 +2,7 @@
 topics: [features, spec-driven-development, docs]
 doc_kind: guide
 created: 2026-07-12
-updated: 2026-07-12
+updated: 2026-08-01
 ---
 
 # Feature Specs Guide
@@ -157,4 +157,4 @@ docs/features/F001-workspace-issue-foundation/
 docs/features/0.1/F001-workspace-issue-foundation/
 ```
 
-F001-F004 均对应 PRD 第 15 节 v0.1.0-v0.1.3，已归到 `docs/features/0.1/` 下；`docs/features/0.1/ux-prototype.html` 是体现 v0.1 全版本（含 v0.1.4）交付效果的原型，和 F001 单独的 feature-level 原型是两个东西。
+F001-F005 分别对应 PRD 第 15 节 v0.1.0-v0.1.4，均已归到 `docs/features/0.1/` 下；`docs/features/0.1/ux-prototype.html` 是体现 v0.1 全版本交付效果的原型，和单个 feature-level 原型是两个东西。v0.2 从 F006 起继续递增编号，放在 `docs/features/0.2/` 下。

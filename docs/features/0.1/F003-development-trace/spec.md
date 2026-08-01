@@ -9,7 +9,7 @@ updated: 2026-07-17
 
 # F003：Development Trace
 
-> Status: ready-for-development | Owner: TBD | Target: v0.1.2
+> Status: done | Owner: Sisyphus | Target: v0.1.2
 
 ## 0. 规格元信息
 
@@ -361,18 +361,18 @@ workspace lock acquired
 
 ## 8. 验收清单
 
-- [ ] **AC-001**（`FR-001`, `TR-001` - `TR-003`）：Codex/Fake adapter 的结构化命令信号按序持久化并显示，缺失能力不伪造 evidence。
-- [ ] **AC-002**（`FR-002`, `TR-004`, `NFR-005`）：常见验证命令被保守分类，pass/fail/unknown 与 exit 状态一致。
-- [ ] **AC-003**（`FR-003`, `DR-002`, `NFR-002`）：baseline 在 adapter 前获取；终态扫描/handoff 在释放锁和启动下一 Run 前完成。
-- [ ] **AC-004**（`FR-003`, `DR-003`, `NFR-003`, `NFR-009`）：新增/修改/删除正确；dirty 内容被原样 commit 不误报；大列表 event 截断但已确认数据可分页，未覆盖路径不产生虚假 added/deleted。
-- [ ] **AC-005**（`FR-004`, `NFR-004`）：refs 可解析、缺失可见、跨 Issue/Thread 引用被拒绝。
-- [ ] **AC-006**（`FR-005`, `TR-006`, `NFR-001`）：started Run 自动且幂等地产生一个 handoff；失败/取消/恢复路径包含风险和缺失证据。
-- [ ] **AC-007**（`FR-006`, `IR-006`）：validation events 可由内部 contract 写入和展示，但 F003 不改变 Issue 状态，也无公开写接口。
-- [ ] **AC-008**（`FR-007`, `IR-001` - `IR-005`, `TR-009`）：Issue trace、Run evidence 和 Markdown export 在多 Run、缺失、截断场景下结果稳定；逐 Run/Issue 聚合 completeness 明确，响应和导出不含 raw `run.output` payload。
-- [ ] **AC-009**（`FR-008`, `UX-001` - `UX-008`）：Thread/Inspector 可读展示 trace、完整性和 export，且 SSE 新事件能刷新；F002 日志、取消、composer 护栏/反馈和 escalation blocker 展示回归通过。
-- [ ] **AC-010**（`NFR-001`, `NFR-002`, `NFR-009`）：重复 finalization、服务重启、scan failure、DB finalization failure 后 workspace 推进均不产生重复/错误归因证据或永久锁。
-- [ ] **AC-011**（`NFR-004`, `NFR-007`）：敏感 command 片段被 redaction；Windows path/PowerShell/cmd 命令样例通过。
-- [ ] **AC-012**（`TR-008`）：刷新/断线重连后 trace 仍按 Thread `event_sequence` 去重排序。
+- [x] **AC-001**（`FR-001`, `TR-001` - `TR-003`）：Codex/Fake adapter 的结构化命令信号按序持久化并显示，缺失能力不伪造 evidence。
+- [x] **AC-002**（`FR-002`, `TR-004`, `NFR-005`）：常见验证命令被保守分类，pass/fail/unknown 与 exit 状态一致。
+- [x] **AC-003**（`FR-003`, `DR-002`, `NFR-002`）：baseline 在 adapter 前获取；终态扫描/handoff 在释放锁和启动下一 Run 前完成。
+- [x] **AC-004**（`FR-003`, `DR-003`, `NFR-003`, `NFR-009`）：新增/修改/删除正确；dirty 内容被原样 commit 不误报；大列表 event 截断但已确认数据可分页，未覆盖路径不产生虚假 added/deleted。
+- [x] **AC-005**（`FR-004`, `NFR-004`）：refs 可解析、缺失可见、跨 Issue/Thread 引用被拒绝。
+- [x] **AC-006**（`FR-005`, `TR-006`, `NFR-001`）：started Run 自动且幂等地产生一个 handoff；失败/取消/恢复路径包含风险和缺失证据。
+- [x] **AC-007**（`FR-006`, `IR-006`）：validation events 可由内部 contract 写入和展示，但 F003 不改变 Issue 状态，也无公开写接口。
+- [x] **AC-008**（`FR-007`, `IR-001` - `IR-005`, `TR-009`）：Issue trace、Run evidence 和 Markdown export 在多 Run、缺失、截断场景下结果稳定；逐 Run/Issue 聚合 completeness 明确，响应和导出不含 raw `run.output` payload。
+- [x] **AC-009**（`FR-008`, `UX-001` - `UX-008`）：Thread/Inspector 可读展示 trace、完整性和 export，且 SSE 新事件能刷新；F002 日志、取消、composer 护栏/反馈和 escalation blocker 展示回归通过。
+- [x] **AC-010**（`NFR-001`, `NFR-002`, `NFR-009`）：重复 finalization、服务重启、scan failure、DB finalization failure 后 workspace 推进均不产生重复/错误归因证据或永久锁。
+- [x] **AC-011**（`NFR-004`, `NFR-007`）：敏感 command 片段被 redaction；Windows path/PowerShell/cmd 命令样例通过。
+- [x] **AC-012**（`TR-008`）：刷新/断线重连后 trace 仍按 Thread `event_sequence` 去重排序。
 
 ## 9. 测试计划
 

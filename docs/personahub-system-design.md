@@ -4,7 +4,7 @@ related_features: [F001, F002, F003]
 topics: [design, data-model, agent-team-os]
 doc_kind: design
 created: 2026-07-11
-updated: 2026-07-22
+updated: 2026-08-01
 ---
 
 # PersonaHub 系统设计草案：数据模型
@@ -149,6 +149,18 @@ Agent (adapter_config)
   # F005 public DTO（AdapterConfig，非独立 DB 列）额外投影：
   #   has_api_key  — api_key 是否已配置（write-only 布尔投影，从不回显原值）
   #   is_default   — 与 Project.default_adapter_config_id 比对得出的 service 层计算字段
+  #   effective_status / effective_last_checked_at / effective_auth_status_message / has_workspace_override
+  #     — 仅 workspace-scoped API 返回，由 agent_configs 基线与下方例外覆盖合并得到
+
+AdapterWorkspaceStatus        # F005 closure / schema v7；只存与 Project 级基线不同的例外
+  adapter_config_id
+  workspace_id
+  status
+  last_checked_at
+  auth_status_message
+  updated_at
+  # PK(adapter_config_id, workspace_id)；无记录 = 使用 agent_configs.status 基线
+  # 所有 workspace-scoped 路由判断统一经过 effectiveAdapterStatus()
 
 WorkflowTemplate
   id
@@ -227,7 +239,7 @@ EvidenceSummary         # F004: deterministic Done projection, one per Issue
   policy_snapshot_hash    # SHA-256 of canonical JSON; v5 CHECK: LIKE 'sha256:%'
   created_at
 
-# Schema 当前版本 v6（v1→v6 顺序 migration）。F004 关键 DB invariant：
+# Schema 当前版本 v7（v1→v7 顺序 migration）。F004 关键 DB invariant：
 #   - evidence_summaries CHECK：validation_result='passed'、same_origin_validation IN (0,1)、
 #     policy_snapshot_hash LIKE 'sha256:%'（SQLite 无法 ALTER-ADD CHECK，v5 create-copy-drop-rename 重建该表）
 #   - idx_runs_one_active_validator (issue_id) WHERE role='validator' AND status IN (queued,running)
@@ -239,6 +251,10 @@ EvidenceSummary         # F004: deterministic Done projection, one per Issue
 #     —— ValidationDispatchScheduler 每秒 tick 扫描到期 Issue 的查询索引
 #   - agent_configs 新增 auth_type/model_provider/api_key/auth_status_message，SQLite ALTER ADD COLUMN（非 CHECK，校验在 service 层 validateAuthState()）
 #   - runs 新增 purpose/context_source_run_id；projects 新增 default_adapter_config_id（无列级 FK，由 service 校验同 Project 且 available）
+# F005 closure（schema v7，server/src/db/schema-v7.ts）关键 DB invariant：
+#   - adapter_workspace_status PRIMARY KEY(adapter_config_id, workspace_id)
+#   - 表只保存与 agent_configs.status 基线不同的例外；无行即回退基线
+#   - effectiveAdapterStatus() 是 workspace-scoped availability 的统一合并入口
 
 Artifact
   id

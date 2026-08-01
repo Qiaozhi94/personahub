@@ -1,7 +1,10 @@
 ---
 topics: [architecture-review, design-review, runtime, agent-team-os]
 doc_kind: review
+status: superseded
 created: 2026-07-12
+superseded: 2026-08-01
+superseded_by: code-review-report.md
 related_docs:
   - docs/personahub-architecture.md
   - docs/personahub-prd.md
@@ -9,6 +12,8 @@ related_docs:
 ---
 
 # PersonaHub 软件架构设计评审
+
+> **已归档 / Superseded（2026-08-01）**：本文评审的是编码前的 v0.1 架构草案，问题已在后续实现和当前评审中处理，不再作为现状或开发入口。当前结论见仓库根目录 `code-review-report.md`，实现真相源见 `CLAUDE.md` 与 `docs/features/`。
 
 > Review target: `docs/personahub-architecture.md`
 > Review date: 2026-07-12

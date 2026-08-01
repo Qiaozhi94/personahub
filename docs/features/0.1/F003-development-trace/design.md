@@ -9,7 +9,7 @@ updated: 2026-07-17
 
 # F003：Development Trace - 设计
 
-> Status: ready-for-development | Owner: TBD | Spec: `spec.md`
+> Status: done | Owner: Sisyphus | Spec: `spec.md`
 
 ## 1. 技术概要
 
