@@ -35,7 +35,10 @@ updated: 2026-08-01
 - [ ] T021：`GraphRuntimeService.start(issueId)`：创建 GraphRun、创建两个前驱 NodeRun、各建一个 `queued` Run 并入队；synthesis 节点建为 `pending`。
 - [ ] T022：节点执行者解析——按 `required_capabilities` 走既有 `AdapterResolver`；无可用 adapter → GraphRun `blocked` + `no_capable_adapter`（禁止写死具体 adapter，FR-002）。
 - [ ] T023：新增 4 个 `graph.*` ThreadEvent 类型与写入封装。
-- [ ] T024：`RunDispatchService.workflowHook()` 增加 `run.node_run_id != null` 分流分支；**不修改现有两条 role 分支**。
+- [ ] T024：新增 `RunRole.GraphNode`，图节点 Run 显式写该 role（列无 CHECK、新行写值，无需迁移）。**不得沿用默认 `implementation`**，否则会误触发 `requestValidation` 并被队列资格门取消（`design.md` 第 7 节）。
+- [ ] T025：`RunDispatchService.workflowHook()` 增加 GraphNode 分支并**排在最前**、直接 return；现有 Implementation / Validator 两条分支一字不改。
+- [ ] T026：`startNextQueuedRun` 增加 GraphNode 资格规则——按所属 GraphRun 状态判定，不参与 `validation_round` 匹配；Issue `Blocked` 时图节点留在队列而非取消。
+- [ ] T027：回归断言——图节点 Run 完成后 `requestValidation` **未被调用**，Issue 不进入 `Validating`（AC-005 的直接防线）。
 
 ## Phase 3：fan-in 与结果契约（FR-004、TR-001）
 

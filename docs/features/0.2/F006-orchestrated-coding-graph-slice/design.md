@@ -194,9 +194,22 @@ synthesis 输出在此基础上，每条 finding 额外带 `source_nodes: ["revi
 - **"同一 NodeRun 只有一个 active Attempt"必须结构性保证**（spec 第 3 节边界场景）。仅靠 UI 禁用按钮不够：workspace 队列允许同一 workspace 上有多个 `queued` Run，连点两次 retry 会产生两个 Attempt，先后执行、后者覆盖前者结果。强制手段是 retry 入口在**同一事务内**做 NodeRun 状态 CAS（`failed|interrupted` → `running`）再建 Run，CAS 失败即拒绝——第二次点击拿不到 CAS，不会创建第二个 Run。这与 F004 `claimValidatorSlot()` 用 CAS 抢占验证槽位是同一手法。
 - **escalation**：复用 `run-escalation-handler`，不改其逻辑。escalation 导致 Run 失败 → NodeRun `failed` → join 不满足 → GraphRun `blocked`。
 
-### 图推进的接入点
+### 图推进的接入点，以及必须新增 `RunRole.GraphNode` 的原因
 
-`RunDispatchService.workflowHook()`（`run-dispatch.ts:175-192`）已经是"Run 终态 → 决定下一步"的唯一 seam。图推进在此按 `run.node_run_id != null` 分流到 `GraphRuntimeService`，与现有 `RunRole.Implementation` / `RunRole.Validator` 两条分支**并列**，不修改它们。图节点的 Run 使用 `RunPurpose.WorkflowBound` 但 `role` 为空，因此不会误入 validation 分支（该分支开头即 `if (!run || !run.role) return`）。
+`RunDispatchService.workflowHook()`（`run-dispatch.ts:175-192`）已经是"Run 终态 → 决定下一步"的唯一 seam，图推进在此分流到 `GraphRuntimeService`。但**不能让图节点的 Run 沿用默认 role**，原因是 `runs.role` 的列定义是 `TEXT NOT NULL DEFAULT 'implementation'`（`schema-v2.ts:6`、`schema-v4.ts:2`），没有 CHECK 约束也不可为空——图节点 Run 若不显式指定 role，就会带着 `implementation` 落库，从而踩中两处既有逻辑：
+
+1. **`workflowHook` 会误触发验证**：`if (run.role === RunRole.Implementation && run.status === RS.Completed)` → `requestValidation(...)`（`run-dispatch.ts:179-181`）。结果是一个只读检视节点跑完就启动 F004 的完整 Implementation → Validation 循环。这直接违反 AC-005。
+2. **队列资格门会静默取消排队中的图 Run**：`startNextQueuedRun` 对 `role === Implementation` 的 queued Run 要求 Issue 状态必须在 `{Inbox, Ready, Running}` 内，否则 `cancelQueued(run.id, "issue_state_changed_before_start")`（`run-dispatch.ts:290-297`）。图执行期间 Issue 一旦转入 `Blocked`（例如另一个节点失败），尚未启动的兄弟节点会被悄悄取消，而不是保持可恢复的 `pending`。
+
+因此本 slice 新增 `RunRole.GraphNode = "graph_node"`：
+
+- 该列无 CHECK 约束、新行显式写值，**不需要 schema 迁移**；既有行不受影响。
+- 也不复用 `RunRole.Consult`：consult 的既有语义是"ad-hoc、不驱动 Issue 状态机"（`shared/src/types/validation.ts:5-7` 的注释），而图节点是 workflow-bound 的，且 `run-context-builder.ts:133` 对 consult 有专门的上下文装配规则。借用会让两种语义互相污染。
+
+对应的两处改动：
+
+- `workflowHook`：`run.role === RunRole.GraphNode` 分支**排在最前**并直接 return，现有 Implementation / Validator 两条分支一字不改。
+- `startNextQueuedRun`：为 GraphNode 增加显式资格规则——所属 GraphRun 为 `running` 且 Issue 未 `Done`（`Done`/`Blocked` 的既有前置判断保留，但 `Blocked` 对图节点不再取消而是留在队列，由节点级恢复决定），不参与 `validation_round` 匹配。
 
 ### 重启恢复流程
 
