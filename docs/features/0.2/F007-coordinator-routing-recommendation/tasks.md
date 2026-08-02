@@ -35,8 +35,8 @@ updated: 2026-08-02
 - [ ] T020a2：篡改测试五种——改 `issued_at`（绕过期）、改 `issue_draft`（绕只读）、改 `project_id`（跨 Project）、改 `premise`（污染审计）、伪造/缺失 `signature`。零写入模型下 token 的唯一副本在客户端手里，**没有签名服务端就无法执行自己的契约**（`design.md` 第 1 节）。
 - [ ] T020b：premise 必须包含 `capability_tags` 与 `updated_at`——`capability_tags` 的修改不进 `availabilityRelevantFieldsTouched`（`adapter-config-updater.ts:113-119`），只比可用性会漏掉能力被摘除的情况。回归测试：改能力不改可用性后 confirm，断言 `RECOMMENDATION_STALE`。
 - [ ] T020c：两个不同目标在同一系统状态下各拿到不同 `nonce`、可各自独立确认——防止用哈希作身份导致第二个目标拿到第一个的结果。
-- [ ] T021：`IntakeService.confirm()`——**事务外**先验签/结构校验/过期/projectId 一致；**单外层事务**：复核前提与用户改选 → 创建 Issue → 写事件 → 建首个执行单元 → **最后一步** INSERT `intake_confirmations` 完整行；**commit 之后**统一 drain。认领之所以在最后：表内全部列 NOT NULL，`issue_id`/`target_id` 要等实体建完才有值，开头 INSERT 插不进去。
-- [ ] T021b：topology 分流——`sequential` → `enqueueSequential(tx, ...)`；`orchestrator_subagent` → `createGraph(tx, issueId, plan)`。两者**只写库不拉进程**（F006 `design.md` 第 8.2 节）。F006 未落地时该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，**禁止静默回退为 `sequential`**。
+- [ ] T021：`IntakeService.confirm()`——**事务外**先验签/结构校验/过期/projectId 一致；**单外层事务**：复核前提与用户改选 → 创建 Issue → 写事件 → 建首个执行单元 → **最后一步** INSERT `intake_confirmations` 完整行；**commit 之后**先把 coordinator 事件与 `DbOnlyResult.pendingEvents` 聚合后**逐一 broadcast**，再对去重后的 `affectedWorkspaceIds` drain。只写 drain 会让 Graph/Run/Coordinator 事件入库却不实时推送，SSE/UI 要刷新才可见。认领之所以在最后：表内全部列 NOT NULL，`issue_id`/`target_id` 要等实体建完才有值，开头 INSERT 插不进去。
+- [ ] T021b：topology 分流——`sequential` → `enqueueSequential(tx, ...)`；`orchestrator_subagent` → **先在事务外调 `prepareGraph()`**（遍历文件系统，不能占写锁），再 `createGraph(tx, issueId, plan, preflight)`。顺序固定为：验签 → 幂等命中检查 → 过期判断 → `prepareGraph()` → 开写事务。空文件集或越界 symlink 在 preflight 阶段就失败，此时**尚未写入任何 Issue**。两者**只写库不拉进程**（F006 `design.md` 第 8.2 节）。F006 未落地时该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，**禁止静默回退为 `sequential`**。
 - [ ] T021c：幂等测试——同一 token 重复 confirm（含并发双击）只产生一个 Issue。测试要断言具体事务序列：后到者在最后一步撞 `nonce` 主键 → 整个事务回滚 → 另起读操作取胜者已提交的行 → 返回 200 与既有 `issue_id`/`target_id`。`intake_confirmations` **无 `status` 列**，也**不存在 `CONFIRMATION_IN_PROGRESS`**（单事务下不可观察）。
 - [ ] T021e：token 过期测试——超过 30 分钟的 token 返回 `RECOMMENDATION_STALE`。
 - [ ] T021f：失败后重试测试——事务回滚后表中无残留行，同一未过期 token 可再次成功确认。

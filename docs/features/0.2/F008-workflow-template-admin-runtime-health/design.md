@@ -119,7 +119,8 @@ CREATE UNIQUE INDEX idx_workflow_templates_one_active
 
 阈值不能留给实现者自行决定，否则测试写不出确定的时间边界。取值与判据：
 
-- `DEFAULT_EXECUTION_TIMEOUT_MS` **复用既有常量**（`runtime/types.ts:124`，30 分钟），不另立一套——诊断阈值与实际超时同源才有意义。
+- **实际超时是 per-adapter 的**：`AgentRunner` 用的是 `adapter.capabilities.executionTimeoutMs ?? DEFAULT_EXECUTION_TIMEOUT_MS`（`agent-runner.ts:107`），不是固定的默认值。直接拿 `DEFAULT` 当阈值并声称"与实际超时同源"是不成立的——未来一个长任务 adapter 会被提前误报，短超时 adapter 又会延迟告警。
+- v0.2 的处置：**限制全部 v0.2 adapter 的 `executionTimeoutMs` 必须等于 `DEFAULT_EXECUTION_TIMEOUT_MS`**（当前三个内置 adapter 恰好如此），把这条写进 adapter contract 并加一条断言测试；health 因而可以安全使用该默认值。等真出现自定义超时的 adapter 时，改为在 Run 启动时持久化 `effective_execution_timeout_ms` 快照、health 读快照——那样还能顺带避免"运行中改配置导致同一个 Run 的诊断阈值漂移"。**不假装现在就同源。**
 - 新增 `LOCK_DIAGNOSTIC_GRACE_MS = 60_000`：留出超时触发到清理落库之间的窗口，避免正常收尾被报成可疑。
 - 比较用**严格大于**；时钟一律取服务端 `Date.now()`，与 `locked_at` 同源。
 - `locked_at` 为空或晚于当前时间（时钟回拨、数据异常）→ 归入 `stale_lock_confirmed` 并在 `detail` 注明时间戳异常，不做静默忽略。

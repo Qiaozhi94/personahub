@@ -26,9 +26,9 @@ PRD 第 15 节 v0.2（Orchestrator Workflow）的完成判据覆盖多个独立 
 
 F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md` 关闭：v0.2 的 Coordinator 是确定性规则引擎，不引入 LLM 执行通道，只推荐不派工。关键依据是 `runs` 的三个 NOT NULL 外键使 pre-Issue 调用不能是 Run，以及 v0.2 的推荐候选集大小本来就是 1。
 
-**实施顺序**：F006 → F007 → F008。F007 的多数任务不依赖 F006 实现完成，但确认路径依赖 F006 的三项现行契约——事务内只写库的 `createGraph(tx, issueId, plan)`、`enqueueSequential(tx, ...)`，以及共享原语 `resolveEligibleAdapter()`（由 F006 `design.md` 第 8 节拥有）。**F007 不调用便利入口 `start(issueId, plan)`**——那是给非 intake 调用方的自开事务包装，从 F007 调它会重新引入嵌套事务与提前 drain。F008 是收尾项。
+**实施顺序**：F006 → F007 → F008。F007 的多数任务不依赖 F006 实现完成，但确认路径依赖 F006 的三项现行契约——事务外的 `prepareGraph()`、事务内只写库的 `createGraph(tx, issueId, plan, preflight)`、`enqueueSequential(tx, ...)`，以及共享原语 `resolveEligibleAdapter()`（由 F006 `design.md` 第 8 节拥有）。**F007 不调用便利入口 `start(issueId, plan)`**——那是给非 intake 调用方的自开事务包装，从 F007 调它会重新引入嵌套事务与提前 drain。F008 是收尾项。
 
-**schema 版本按落地顺序**：F006 = v8（`graph_runs` / `node_runs` / `runs.node_run_id` / 两个 partial unique index），F007 = v9（`intake_confirmations` **和** `app_secrets` 两张表），F008 = v10（`admin_audit_events` 一张表 + `workflow_templates` 的两个唯一索引）。顺序若变则顺延——**绝不追加进任何已应用的版本**（F005 的 `availability_revision` 教训）。
+**schema 版本按落地顺序**：F006 = v8（`graph_runs`（含 `blocked_node_keys` 与 `target_files_*` 四列）/ `node_runs` / `runs.node_run_id` / 两个 partial unique index），F007 = v9（`intake_confirmations` **和** `app_secrets` 两张表），F008 = v10（`admin_audit_events` 一张表 + `workflow_templates` 的两个唯一索引）。顺序若变则顺延——**绝不追加进任何已应用的版本**（F005 的 `availability_revision` 教训）。
 
 ### 2026-08-02 外部检视后的修订
 
@@ -45,6 +45,12 @@ F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md
 ### 2026-08-02 第二轮检视（30 条）
 
 同样逐条核实后全部成立。**其中三条最严重的是上一轮修订自己引入的**：F007 让推荐阶段写库（与它自身「推荐无副作用」的 FR/AC/T012 冲突）、`recommendation_id` 用不含目标文本的 premise 哈希作身份（两个不同目标撞同一主键）、以及 F007/F006 对事务归属各说各话（嵌套时外层回滚撤不掉已拉起的进程）。另有一条是只改了调用方 F007 而没同步 F006，跨 feature 契约实际未成立。
+
+### 2026-08-02 第六轮检视（14 条：7 High + 7 Medium）
+
+**7 条 High 全部源自第五轮引入的 `cancelling` 状态与冻结文件集**——新增设计面本身成了新的不一致来源：`cancelling` 没进迁移任务/恢复扫描/API 守卫（重启后图会永久卡在吸收态；并发 retry 能逆转取消意图）；"kill 无返回时既有执行超时兜底"是错的，`cancelRun()` 在 await **之前**就 `clearTimeout` 了（`agent-runner.ts:308-313`），必须改成有界等待并解除"不改既有 cancel 路径"的约束；`graph.terminal` 把可恢复的 `blocked` 写成终态；preflight 没进 `createGraph` 签名；冻结文件集只存在指令文本里，synthesis 首次入队前被 blocked 就再也重建不出来；queued-claim 失败把 NodeRun 退回 `pending`，与"join 未满足"含义重叠。
+
+处置：`graph_runs` 加 `blocked_node_keys` 与 `target_files_*` 四列；preflight 拆出 `prepareGraph()` 并作显式入参；`graph.blocked` 与 `graph.terminal` 拆开（共 8 个事件）；queued-claim 失败退回 `ready` 而非新增状态；`cancelling` 贯穿索引/恢复/守卫/前端；`GraphBlockReason` 补 `result_too_large` 共 8 项；`FailureReason` 补 `adapter_no_longer_eligible`；F008 不再声称 health 阈值与实际超时同源（实际是 per-adapter，`agent-runner.ts:107`），改为约束 v0.2 adapter 必须用默认值并加断言测试。
 
 ### 2026-08-02 第五轮检视（16 条：6 High + 10 Medium）
 
