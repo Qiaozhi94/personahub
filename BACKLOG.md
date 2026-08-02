@@ -26,7 +26,7 @@ PRD 第 15 节 v0.2（Orchestrator Workflow）的完成判据覆盖多个独立 
 
 F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md` 关闭：v0.2 的 Coordinator 是确定性规则引擎，不引入 LLM 执行通道，只推荐不派工。关键依据是 `runs` 的三个 NOT NULL 外键使 pre-Issue 调用不能是 Run，以及 v0.2 的推荐候选集大小本来就是 1。
 
-**实施顺序**：F006 → F007 → F008。F007 的多数任务不依赖 F006 实现完成，但 `orchestrator_subagent` 确认分支依赖 F006 的 `GraphRuntimeService.start(issueId, plan)` 签名；F008 是收尾项。
+**实施顺序**：F006 → F007 → F008。F007 的多数任务不依赖 F006 实现完成，但确认路径依赖 F006 的三项现行契约——事务内只写库的 `createGraph(tx, issueId, plan)`、`enqueueSequential(tx, ...)`，以及共享原语 `resolveEligibleAdapter()`（由 F006 `design.md` 第 8 节拥有）。**F007 不调用便利入口 `start(issueId, plan)`**——那是给非 intake 调用方的自开事务包装，从 F007 调它会重新引入嵌套事务与提前 drain。F008 是收尾项。
 
 **schema 版本按落地顺序**：F006 = v8（`graph_runs` / `node_runs`），F007 = v9（`intake_confirmations`），F008 = v10（`admin_audit_events`）。顺序若变则顺延——**绝不追加进任何已应用的版本**（F005 的 `availability_revision` 教训）。
 
@@ -45,6 +45,14 @@ F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md
 ### 2026-08-02 第二轮检视（30 条）
 
 同样逐条核实后全部成立。**其中三条最严重的是上一轮修订自己引入的**：F007 让推荐阶段写库（与它自身「推荐无副作用」的 FR/AC/T012 冲突）、`recommendation_id` 用不含目标文本的 premise 哈希作身份（两个不同目标撞同一主键）、以及 F007/F006 对事务归属各说各话（嵌套时外层回滚撤不掉已拉起的进程）。另有一条是只改了调用方 F007 而没同步 F006，跨 feature 契约实际未成立。
+
+### 2026-08-02 第四轮检视（13 条：6 High + 7 Medium）
+
+数量继续下降，但**暴露了一个前三轮都没抓到的真实缺口**：`runs.instructions` 是 `NOT NULL`（`schema-v2.ts:29`），而 F006 从未定义图节点的指令从哪来——既有 `run-context-builder` 只装配通用上下文，不知道某节点该从并发视角还是契约视角检视、看哪些文件、输出什么结构。已补节点指令契约（`instructionTemplate` 随 definition 版本冻结、`GraphNodeInstructionBuilder` 作唯一生成入口、目标文件集建图时解析并冻结、retry 原样复用原指令）。
+
+另外三条实质问题：确认表全列 NOT NULL 却要求开头就 INSERT 认领行（认领改到事务最后一步）；已确认的执行者只在建图时校验、延迟创建 Attempt 时无复核点而 `startAdapter()` 只做 `getById()`（补第 8.5 节的三个复核时点）；新增 FK 未接入 adapter 删除守卫，"pending synthesis 已指派但尚无 Run"会绕过 `hasRuns()` 后被数据库拒绝成 500。F008 则发现 `:sourceId` 继承来源与当前 active 被混称为 source——从无 validator 的旧 inactive 版本克隆并激活会绕过关闭验证的确认闸门。
+
+其余为旧术语残留与 DTO/表格不同步，一并清理。
 
 ### 2026-08-02 第三轮检视（16 条）
 

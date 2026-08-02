@@ -22,7 +22,7 @@ updated: 2026-08-02
 - **存储**：新增 `schema-v8.ts`（`graph_runs`、`node_runs` 两表 + `runs.node_run_id` 列 + 两个 partial unique index）。
 - **后端 service**：新增 `GraphRuntimeService`（调度 / join / 恢复）；`RunDispatchService.workflowHook()` 增加一条按 `node_run_id` 分流的分支。
 - **恢复**：新增 `GraphRecoveryService`，在 `index.ts` 启动序列中排在 `StaleRecoveryService.runAll()` 之后、`drainWorkspace` 之前。
-- **事件**：新增 5 个 `graph.*` ThreadEvent 类型；`graph.node_result` 须加入 `EvidenceService` 的 `TRUSTED_INTERNAL_ALLOWLIST`。
+- **事件**：新增 **6 个** `graph.*` ThreadEvent 类型（第 6 节表格，含事务三写的 `graph.completed`）；`graph.node_result` 须加入 `EvidenceService` 的 `TRUSTED_INTERNAL_ALLOWLIST`。
 - **前端**：Thread 内的节点卡片与 Inspector 的 graph projection 段落；不做 Canvas。
 - **共享原语**：新增 `resolveEligibleAdapter()`（组合既有 `resolveAdapter()` + `hasCapability()`，第 8.3 节），F006 与 F007 共用；不改这两个既有函数的签名。
 - **改动既有代码（三处）**：`RunEscalationHandler.cancelQueuedRunsForIssue()` 增加 GraphNode 过滤；`transitionToRunning` 增加 GraphNode 分支同步 NodeRun；`RunDispatchService.cancel()` 的 queued 分支补图推进调用（该分支不走 `finalizeAndDrain`，见第 7 节）。
@@ -135,6 +135,16 @@ CREATE UNIQUE INDEX idx_runs_one_active_graph_attempt
 
 **唯一索引冲突必须映射成用户级错误**：裸 `SQLITE_CONSTRAINT` 抛到 HTTP 边界会变成 500。连点 retry 的正确响应是"该节点已有进行中的尝试"，不是"服务器内部错误"。
 
+### 新 FK 必须接入既有的 adapter 删除守卫
+
+`AdapterConfigService.delete()` 目前只用 `hasRuns(id)` 判断在用，而 `hasRuns()` 查的是 `runs.adapter_config_id`（`agent-config.ts:220-224`）。新增 `node_runs.assigned_adapter_config_id` 后出现一个它看不见的引用：**`pending` 的 synthesis 节点已被指派执行者但还没有任何 Run**。若该 adapter 只被这一处引用，删除会通过前置检查、然后被数据库外键拒绝——裸 `SQLITE_CONSTRAINT` 逃逸成 500，而用户真正需要的是 `ADAPTER_IN_USE`。
+
+因此把 NodeRun 引用并入同一道守卫：
+
+- 判据是**任何** NodeRun 引用了该 adapter，不区分终态——`foreign_keys = ON` 下 FK 本就会拦住指向它的所有行，守卫必须与数据库的实际行为一致，否则守卫放行、数据库拒绝，还是 500。
+- 这与既有语义是一致的而非更严：`hasRuns()` 同样在**任何历史 Run** 引用时就阻止删除。图跑过之后 `runs.adapter_config_id` 本来也会挡住删除，新守卫真正补上的只有"pending synthesis 已指派但还没有 Run"这一个窗口。
+- 需要一条"只有 pending synthesis 引用、尚无 Run"的删除回归测试，断言返回 `ADAPTER_IN_USE` 而非 500。
+
 FK 是有实效的——`db/index.ts:7` 已开 `foreign_keys = ON`。`ALTER TABLE ... ADD COLUMN ... REFERENCES` 在 SQLite 下合法的前提是默认值为 NULL，此处满足。`result_event_id` 指向 `thread_events`，而 thread_events 从不删除，FK 不会成为写入障碍。
 
 ## 5. Q2（已关闭）：首个真实场景与节点契约
@@ -175,6 +185,44 @@ N2 review_contract    ─┘
 synthesis 输出在此基础上，每条 finding 额外带 `source_nodes: ["review_concurrency", ...]`，并保留 `duplicates_merged` 计数。
 
 **这里只复用 F004 的"要求 CLI 输出结构化 envelope + 容错解析"这一手法**（该手法已被三个 CLI 真实验证），**不复用 validator 的任何语义**：不判 pass/fail、不进 policy gate、不计 validation_round。解析失败的处理见第 7 节。
+
+### 节点指令契约（第四轮检视补，此前完全缺失）
+
+`runs.instructions` 是 `NOT NULL`（`schema-v2.ts:29`），而既有的 `run-context-builder.ts` 只装配 Issue、角色、handoff、文件变更这些**通用**上下文——它不可能知道某个节点该从并发视角还是契约视角检视、该看哪些文件、必须输出什么结构。前几版把节点"责任"写在表格里当成了设计完成，实际上到了建 Run 那一步没有任何确定性来源可以填 `instructions`，T030 的解析器也就没有可靠的上游契约。
+
+**指令属于 definition，与 definition 同版本、同 append-only 纪律。** 每个节点在 definition 里声明：
+
+```ts
+interface GraphNodeV1 {
+  key: string;
+  requiredCapabilities: AgentCapability[];
+  /** 该节点的视角与判据，纯静态文本，随 definition 版本冻结 */
+  instructionTemplate: string;
+  /** 声明该节点需要哪些输入槽位，由 builder 按此拼装 */
+  inputSlots: string[];
+  /** 期望的输出 envelope（第 5 节结构），随指令一并下发 */
+  outputContract: "findings_v1" | "synthesis_v1";
+}
+```
+
+新增 `GraphNodeInstructionBuilder`，是图节点 `instructions` 的**唯一**生成入口：
+
+```text
+instructions = 节点视角与判据（instructionTemplate）
+             + 目标文件集
+             + 入边输入（synthesis 才有：两份可信 payload + 截断声明）
+             + 输出 envelope 契约（outputContract 对应的 JSON schema 说明）
+```
+
+几处必须钉死，否则实现者要自行补产品决策：
+
+- **目标文件集的真相源**：v1 由 definition 常量声明一组 glob，在建图时对 workspace 解析成具体文件列表并**随指令冻结**（写进 `instructions`），不在执行时再扫。理由是两个前驱必须看同一份文件集才可比，执行时各扫一次会因中途文件变动而产生不可比的两份结果。
+- **空集合**：解析结果为空 → 建图阶段直接拒绝 `GRAPH_TARGET_SET_EMPTY`（属第 7 节"写库前拒绝"的一类），不建一个注定跑空的图。
+- **上限**：文件列表超过 500 条或 64 KB 时，按 glob 声明顺序截断并在指令正文写明截断事实与丢弃数量；**禁止静默截断**，与结果侧的裁剪纪律一致。
+- **retry 复用原指令**：从 `runs.instructions` 原样复制上一个 Attempt 的指令，**不重新生成**。重新生成会让重试面对与首次不同的文件集，"同一个 NodeRun 的多次 Attempt"就失去了可比性。
+- synthesis 的入边输入按第 6 节的预算与截断规则拼装，`inputSlots` 的键名与 `GraphEdgeV1.inputSlot` 一一对应。
+
+`instructionTemplate` 是静态文本、不做变量插值以外的任何逻辑，这样"同一 definition 版本产出同样的指令"可被测试直接断言。
 
 ### required_capabilities 的诚实取舍
 
@@ -316,7 +364,7 @@ interface GraphEdgeV1 {
 |---|---|---|---|---|
 | `node_run_failed` | NodeRun | 节点 retry | NodeRun ∈ `{failed, interrupted, cancelled}` | NodeRun→`ready`、GraphRun→`running`、Issue→`Running`、清 blocker、建 Attempt；提交后 drain |
 | `node_run_cancelled` | NodeRun | 同上 | 同上 | 同上 |
-| `result_unparsable` | NodeRun | 节点 retry | **NodeRun 由 `completed` 改判为 `failed`** 后方可 retry | 同上 |
+| `result_unparsable` | NodeRun | 节点 retry | NodeRun 落库时**已经是 `failed`**（第 6 节统一规则），无需改判 | 同上 |
 | `no_capable_adapter` | GraphRun | 改配置后"重新解析执行者" | 存在满足该节点能力的 Available adapter | 重解析并写 `assigned_adapter_config_id`、GraphRun→`running`、Issue→`Running`、清 blocker |
 | `definition_version_unavailable` | GraphRun | 部署回补该版本后自动重评 | 注册表中该 `(id, version)` 重新可查 | 恢复扫描自动处理，无需用户动作 |
 | `join_unsatisfiable` | GraphRun | 只能整图取消 | — | 终态化，不提供 retry |
@@ -324,8 +372,8 @@ interface GraphEdgeV1 {
 
 两处必须点明：
 
-- **`result_unparsable` 下 NodeRun 要改判**。前一轮把它留在 `completed`，而 retry 只受理非完成态——用户面对一个"已完成但图卡住"的节点，没有任何合法动作。既然结果取不到，这次尝试就不算成功，落 `failed` 才诚实。
-- **`no_capable_adapter` 可能发生在建图时**，那一刻还没有任何失败的 NodeRun，节点级 retry 无从谈起，因此它的恢复实体是 GraphRun，动作是重解析执行者。
+- **`result_unparsable` 的 NodeRun 从落库那一刻就是 `failed`**（第 6 节统一规则），本表不做任何改判。曾经的"先 `completed` 再改判"写法已废弃——它会让 retry 的受理集合 `{failed, interrupted, cancelled}` 够不着该节点，图卡死且无合法动作。
+- **`no_capable_adapter` 只产生于已建起来的图**：join 满足要建 synthesis Attempt 时、节点 retry 时、重启恢复补建 Attempt 时，持久化的执行者复核不通过（第 8.5 节）。**建图阶段绝不产生这个 blocker**——那时的资格失败一律在写库前整体拒绝（第 7 节），否则 F007 的"确认失败原子回滚"不成立。
 
 ### 取消的完整状态转移（初稿缺失，已补）
 
@@ -496,7 +544,24 @@ synthesis 节点在建图时创建但**不立即执行**，其执行者若只存
 assigned_adapter_config_id TEXT REFERENCES agent_configs(id)
 ```
 
-建图时按 `nodeAssignments` 逐节点写入；join 满足后创建 synthesis Attempt 时**读这一列**，不重新解析。恢复流程照常从库中读回。需要一条"fan-in 之前重启，确认过的 synthesis 执行者仍然生效"的测试。
+建图时按 `nodeAssignments` 逐节点写入；join 满足后创建 synthesis Attempt 时**读这一列**，不重新解析出另一个执行者。恢复流程照常从库中读回。需要一条"fan-in 之前重启，确认过的 synthesis 执行者仍然生效"的测试。
+
+### 8.5 延迟执行前必须复核资格（第四轮检视补）
+
+"不重新解析"指的是**不换人**，不是**不校验**。synthesis 从建图到实际执行之间可能隔很久，这段时间里被指派的 adapter 完全可能被置为 unavailable、被摘掉 capability、或被加上一条 workspace 级覆盖。而既有的 `startAdapter()` 只做 `agentConfigRepo.getById()`（`run-dispatch.ts:224-227`），**既不看 workspace 有效状态也不看能力**——照当前文档实现，系统会拿一个已经不合格的 adapter 继续启动，失败后只得到一个普通的 `spawn_failed`，永远走不到文档承诺的 `no_capable_adapter` 恢复路径。
+
+因此在每个**延迟创建 Attempt** 的时点，对持久化的显式 id 调一次 `resolveEligibleAdapter()`：
+
+| 时点 | 处置 |
+|---|---|
+| join 满足、创建 synthesis Attempt | 不合格 → 同事务内 GraphRun `blocked` + `no_capable_adapter`、Issue `Blocked`，**不创建 Attempt** |
+| 节点 retry | 同上，retry 请求返回 409 `NO_CAPABLE_ADAPTER` |
+| 重启恢复补建 Attempt | 同上，恢复流程置 blocked 而非静默跳过 |
+
+- **绝不静默换人**：不合格就阻塞，由用户经 `resolve-executors` 显式决定。
+- 校验与 Attempt 创建在**同一事务**内，避免"校验通过 → 配置变更 → 创建"的窗口；配置变更侧本就要走各自的写事务，SQLite 的写串行化足以定序。
+- `resolve-executors` 成功后同样在其事务内复核一遍再解除阻塞。
+- 三类变化（status、workspace override、capability）各需一条测试。
 
 ## 9. API 契约
 
@@ -566,9 +631,17 @@ interface NodeRetryAccepted { node_run_id: string; run_id: string; status: NodeR
 interface GraphCancelAccepted { graph_run_id: string; status: "cancelled"; cancelled_node_keys: string[] }
 ```
 
-- 语义：全部非终态 NodeRun → `cancelled`，其非终态 Attempt 走既有 Run 取消路径（running 的经 `agentRunner.cancelRun`，queued 的经上述 graph-aware 终态回调），GraphRun → `cancelled`，Issue → `Ready`（图不再推进，交还给用户决定下一步）。
+- 语义：全部非终态 NodeRun → `cancelled`，GraphRun → `cancelled`，Issue → `Ready`（图不再推进，交还给用户决定下一步）。
 - **幂等**：已 `cancelled` 返回 200 + 当前状态，不报错。
 - **与终态竞争**：取消与某个 Attempt 恰好完成竞争时，以 GraphRun 状态 CAS 为准；已 `completed` 的图返回 409 `GRAPH_RUN_TERMINAL`，不回退已完成的工作。
+
+**数据库写与外部进程停止的顺序必须固定。** 既有取消路径是先 `await agentRunner.cancelRun()` 再收敛终态（`run-dispatch.ts:202-217`），但停进程是外部副作用，**不能**与 SQLite 事务原子提交：塞进事务会长时间持写锁且失败无从回滚。协议定为三段：
+
+1. **事务内**：CAS 写取消意图与终态（NodeRun / GraphRun / Issue），提交。此后系统状态已经是"这个图取消了"，不依赖任何外部操作是否成功。
+2. **事务外**：对仍在跑的 Attempt 逐个 best-effort 停进程。**失败只记录不回滚**——进程可能早已自行退出，那不是错误。
+3. **terminal callback 幂等收敛**：进程停止（或自行结束）后到达的终态回调必须是 no-op——NodeRun 已 `cancelled`，CAS 拿不到即返回。
+
+这条顺序同时决定了"部分取消失败"没有特殊语义：数据库已经是终态，残留进程由 stale recovery 与 workspace 锁释放兜底。测试需覆盖多个运行中 Attempt、外部取消失败、以及"完成与取消同时到达"三种。
 
 ### `POST /api/graph-runs/:graphRunId/resolve-executors`
 
@@ -586,13 +659,20 @@ interface ResolveExecutorsResult {
 - **解析范围**：只重解析尚未终态的 NodeRun；已 `completed` 的节点保持其历史 `assigned_adapter_config_id` 不动。
 - **选取规则**：经 `resolveEligibleAdapter()` 按该节点的 `required_capabilities` 解析，**不保证仍是原来那个 adapter**；`reassigned[]` 如实列出每处改动供审计。
 - **成功即在同一事务内**：写回 `assigned_adapter_config_id`、GraphRun → `running`、Issue → `Running`、清 blocker；提交后 drain。
-- **幂等**：GraphRun 已是 `running` 时返回 200 + 空 `reassigned`，不报错。
+**判断优先级（避免 running 图同时命中两条规则）**，按此顺序求值，命中即返回：
+
+1. GraphRun 为 `completed` / `cancelled` → 409 `GRAPH_RUN_TERMINAL`。
+2. GraphRun 为 `blocked` 且 blocker 是 `no_capable_adapter` → 正常执行重解析。
+3. GraphRun 为 `blocked` 但 blocker 是别的 → 409 `RECOVERY_ACTION_NOT_APPLICABLE`。
+4. GraphRun 为 `running` → 409 `RECOVERY_ACTION_NOT_APPLICABLE`（图没有阻塞，无需恢复）。
+
+上一版同时写了"running 时返回 200 幂等"和"blocker 不匹配返回 409"，而 running 的图恰恰没有 blocker，同一请求两条都命中。这里取**规则 4**：与其为"曾经被本动作恢复过"另存一份持久化事实，不如让重复提交得到一个明确的 409——用户刷新一下就能看到图已经在跑。
 
 | 情形 | 状态码 | 错误码 |
 |---|---|---|
 | 仍有节点无合格 adapter | 409 | `NO_CAPABLE_ADAPTER`（指明哪个节点缺哪项能力） |
 | GraphRun 为 `completed` / `cancelled` | 409 | `GRAPH_RUN_TERMINAL` |
-| blocker 不是 `no_capable_adapter` | 409 | `RECOVERY_ACTION_NOT_APPLICABLE`（对应 blocker 的正确入口在响应里给出） |
+| GraphRun 非 `blocked`，或 blocker 不是 `no_capable_adapter` | 409 | `RECOVERY_ACTION_NOT_APPLICABLE`（对应 blocker 的正确入口在响应里给出） |
 | 与并发的节点 retry 竞争 | 409 | `NODE_RUN_ATTEMPT_IN_PROGRESS` |
 | GraphRun 不存在 | 404 | `GRAPH_RUN_NOT_FOUND` |
 

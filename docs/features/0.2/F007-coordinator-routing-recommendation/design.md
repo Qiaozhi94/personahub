@@ -13,7 +13,7 @@ updated: 2026-08-02
 
 ## 1. 技术概要
 
-新增一个**纯函数式**的 `RoutingRecommendationService`：读 Project / workspace / adapter 注册表，按显式规则集算出推荐，返回带解释的结构，不写任何库。确认走独立的 `IntakeService.confirm()`，复用既有 `IssueService.create()` 与 `RunDispatchService.dispatch()`，不新建执行路径。
+新增一个**纯函数式**的 `RoutingRecommendationService`：读 Project / workspace / adapter 注册表，按显式规则集算出推荐，返回带解释的结构，不写任何库。确认走独立的 `IntakeService.confirm()`，复用既有的 `IssueService.create()` 与既有的队列/派工基础设施，不新建执行路径——但**不直接调用通用的 `RunDispatchService.dispatch()`**：两条 topology 分别走 `enqueueSequential(tx, ...)` 与 `createGraph(tx, ...)`（第 6、7 节）。无条件 dispatch 会把图节点变成普通 implementation Run 并误触发 F004 验证循环。
 
 **推荐阶段零写入。** 上一轮为了做幂等，让推荐签发时就往 `intake_confirmations` 写一行——这与 FR-003 / NFR-001 / AC-002 / T012 全部冲突（它们要求推荐无副作用、纯内存计算），而且带来两个新问题：
 
@@ -47,11 +47,30 @@ interface ConfirmationToken {
 
 对客户端提供的内容取哈希毫无帮助——服务端没有可信的期望值去比对。因此：
 
-- **服务端持有一个 HMAC 密钥**，进程启动时从本地配置读取或首次生成后持久化；签发时算 `signature`，确认时先验签再做任何事。
+- **服务端持有一个 HMAC 密钥**，签发时算 `signature`，确认时先验签再做任何事。密钥的运维契约见下方"密钥生命周期"，**不留二选一**。
 - 验签失败 → 400 `CONFIRMATION_TOKEN_INVALID`，不做部分处理。
 - 验签通过后仍要独立校验：路由上的 `:projectId` 与 payload 的 `project_id` 一致、workspace 归属该 Project、`issued_at` 未超 30 分钟。
-- **不引入密钥轮换**。重启后若选择重新生成密钥，等于让未确认的推荐失效——考虑到 30 分钟有效期，用户重新请求一次即可，可接受。
 - 测试必须覆盖篡改 `issued_at`、篡改 `issue_draft`、篡改 `project_id`、篡改 `premise`、伪造/缺失 `signature` 五种。
+
+#### 密钥生命周期（唯一方案）
+
+现有应用配置只有数据库路径，没有可复用的 secret store。**不为此新增文件与权限管理**，密钥存进 SQLite：
+
+```sql
+-- 随 schema-v9 一并创建
+CREATE TABLE app_secrets (
+  name TEXT PRIMARY KEY,       -- 'intake_token_hmac'
+  value TEXT NOT NULL,         -- 32 字节随机数的 base64
+  created_at TEXT NOT NULL
+);
+```
+
+- **首次启动**：表中无该行 → 生成 32 字节 CSPRNG 随机数并 `INSERT`，与其它启动步骤同在一个事务。
+- **后续启动**：读回同一行，**跨重启保持不变**——因此 30 分钟内已签发的 token 在重启后依然有效，用户不会因为一次重启而丢掉待确认的推荐。
+- **值损坏/为空**：视为致命配置错误，启动失败并给出明确信息，**不静默重新生成**——静默重生成会让所有在途 token 变成"签名无效"，用户看到的是一个无法解释的报错。
+- **不做轮换**。轮换需要多密钥并存与灰度，对一个 30 分钟有效期的本地 token 不成比例；真需要时手工删除该行并重启即可，代价是在途 token 失效。
+- 密钥与数据库同生命周期：数据库文件本身已经承载全部本地凭据相关状态（F005 的 adapter api_key 也在库里），不额外引入一个需要单独备份的文件。
+- 测试：跨重启验签通过、损坏值导致启动失败、首次启动自动生成且只生成一次。
 
 token 由客户端原样回传，服务端验签后凭 `nonce` 唯一性认领：
 
@@ -74,9 +93,10 @@ CREATE TABLE intake_confirmations (
 
 因此本表只记录**已成功确认**这一个事实，全部列 NOT NULL：
 
-- **认领**：事务内 `INSERT ... nonce`。撞主键说明该 token 已被成功确认过 → 读回该行，返回既有 `issue_id` / `target_id`（200，幂等，不是错误）。
+- **认领**：事务**最后一步** `INSERT ... nonce`（全部结果字段此时才齐备）。撞主键说明该 token 已被成功确认过 → 本事务回滚，另起读操作取胜者已提交的行，返回既有 `issue_id` / `target_id`（200，幂等，不是错误）。
 - **并发双击**：SQLite 的写事务本身串行化，后到者要么撞主键、要么在前者回滚后正常执行，两种结果都正确。
 - **失败**：整体回滚，无残留行，客户端可用同一 token 安全重试（只要未过期）。
+- **没有 `CONFIRMATION_IN_PROGRESS`**：该状态在单事务模型下不可观察，已从错误码矩阵中移除。
 - **签发有效期 30 分钟**（`issued_at` 起算），过期 → `RECOMMENDATION_STALE`。因为推荐阶段不落行，**没有垃圾行可积累**——只有真正确认过的才进表，无需清理任务。
 - `chosen_json` 只存用户最终选择，不存被排除的候选与完整目标文本，避免把大段内容长期留存。
 - 两个不同目标各自拿到不同 `nonce`，互不干扰；同一 token 重复提交才是幂等对象。
@@ -86,7 +106,7 @@ CREATE TABLE intake_confirmations (
 ## 2. 影响面
 
 - **后端 service**：新增 `RoutingRecommendationService`（纯计算）、`IntakeService`（确认落地）。
-- **存储**：新增 `intake_confirmations` 一张表（`schema-v9.ts`），**仅在确认时写入一行**；推荐阶段严格零写入，FR-003 / NFR-001 / AC-002 因此仍然成立。初稿"无 schema 变更"的说法因确认幂等的需要修正。
+- **存储**：新增 `intake_confirmations` 与 `app_secrets` 两张表（`schema-v9.ts`）。前者**仅在确认成功时写入一行**（推荐阶段严格零写入，FR-003 / NFR-001 / AC-002 因此仍然成立），后者存 token 签名密钥、与数据库同生命周期。初稿"无 schema 变更"的说法因确认幂等与签名密钥的需要修正。
 - **API**：`POST /api/projects/:id/intake/recommend`、`POST /api/projects/:id/intake/confirm`。
 - **前端**：新增 Intake 入口与推荐结果面板；现有 `CreateIssueDialog` 保留为手工路径。
 - **不影响**：`IssueService.create()` 签名、`resolveAdapter()`、F004 validation、F006 图运行时。
@@ -189,19 +209,21 @@ interface RecommendationPremise {
 
 ```text
 confirm(token, 用户最终选择)
+  ├─ 事务外：验签、结构校验、issued_at 未超 30 分钟、projectId 与 payload 一致
   └─ IntakeService 持有的单一外层事务：
-      ├─ INSERT intake_confirmations(nonce, status='confirming') —— 认领
-      ├─ 校验 token 未过期；复核前提快照 + 用户每一处改选 → 不一致则 RECOMMENDATION_STALE
+      ├─ 复核前提快照 + 用户每一处改选 → 不一致则 RECOMMENDATION_STALE
       ├─ IssueService.create(projectId, {title, goal, priority})   // 既有方法，不改签名
       ├─ 写 ThreadEvent: coordinator.recommendation_applied
       │    payload: { rules[], recommended, chosen, diff[] }        // TR-001
       ├─ 按确认的 topology 建首个执行单元（只写库，不拉进程）：
       │    sequential            → GraphRuntimeService.enqueueSequential(tx, ...)
       │    orchestrator_subagent → GraphRuntimeService.createGraph(tx, issueId, plan)
-      └─ UPDATE status='confirmed' + 回填 target_kind/target_id
+      └─ INSERT intake_confirmations(...) —— **完整最终行，作为事务最后一步**
   ── commit ──
   提交之后，由 IntakeService 统一对受影响 workspace 调一次 drain。
 ```
+
+**认领在最后一步而非第一步。** 表里全部列 NOT NULL 且只记录已成功确认的事实，`issue_id` / `target_kind` / `target_id` 要等实体建完才有值——放在开头 INSERT 根本插不进去。并发双击的收敛靠 `nonce` 唯一键：后到者在 INSERT 处撞键 → 整个事务回滚 → 随后**另起一次读**取胜者已提交的行，返回 200 与既有 `issue_id`/`target_id`。这条顺序是可实现性要求，不是风格选择。
 
 **事务归属**：上一轮 F007 要求"单外层事务"，F006 又写"`start()` 自持事务、返回后 drain"，嵌套时内层只能提交 savepoint——外层若回滚，已经拉起的子进程无法撤销。现按 F006 `design.md` 第 8.2 节的拆分：`createGraph(tx, ...)` / `enqueueSequential(tx, ...)` **只写库**，派工统一由最外层提交后触发。drain 失败不损坏状态，queued Run 仍在库里等下次 drain 或重启恢复。
 
@@ -296,7 +318,7 @@ interface RecommendResponse {
 
 // 409 —— 无可执行方案
 interface RecommendBlocked {
-  error: { code: "NO_AVAILABLE_ADAPTER" | "PROJECT_WORKSPACE_REQUIRED";
+  error: { code: "NO_AVAILABLE_ADAPTER" | "NO_AVAILABLE_CAPABLE_ADAPTER" | "PROJECT_WORKSPACE_REQUIRED";
            message: string; suggested_action: string };
 }
 ```
@@ -334,7 +356,6 @@ interface ConfirmResponse {
 | 情形 | 状态码 | 错误码 |
 |---|---|---|
 | 前提已变 / token 过期（>30 分钟） | 409 | `RECOMMENDATION_STALE`（附 `changed[]`） |
-| 同 token 正在处理中 | 409 | `CONFIRMATION_IN_PROGRESS` |
 | 同 token 已确认 | 200 | 返回既有 `issue_id` / `target_id`（幂等，非错误） |
 | 选中 adapter 缺该节点能力 | 409 | `ADAPTER_CAPABILITY_MISSING` |
 | `orchestrator_subagent` 但 F006 未落地 | 409 | `TOPOLOGY_NOT_EXECUTABLE`（**禁止静默回退 `sequential`**） |

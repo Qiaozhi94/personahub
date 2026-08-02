@@ -36,11 +36,13 @@ updated: 2026-08-02
 ## Phase 3：破坏性改动闸门（FR-004）
 
 - [ ] T030：启用移除了 validator 步骤的版本时要求 `acknowledge_validation_disabled: true`，否则 400 + 后果说明。
-- [ ] T030b：启用闸门按 `design.md` 第 6 节的**四行矩阵**实现，不得简化为"源或目标非法一律拒绝"（那会与 T023e 直接冲突，并重新造出"当前模板已损坏就永远修不好"的死锁）：
+- [ ] T030b：启用闸门按 `design.md` 第 6 节的**四行矩阵**实现，不得简化为"非法一律拒绝"（那会与 T023e 直接冲突，并重新造出"当前模板已损坏就永远修不好"的死锁）。**表中的"源"一律指事务内读取的当前 active 版本，不是 `:sourceId` 继承来源**：
   - 目标非法 / 为 NULL → **拒绝**（无条件）
-  - 源合法、目标关闭了验证 → 要求 `acknowledge_validation_disabled`
-  - 源非法、目标合法 → 要求 `acknowledge_validation_disabled`，审计前值记 `unknown`，**允许启用**
-  - 源与目标均非法 → 拒绝（被第一行覆盖）
+  - 当前 active 合法、目标关闭了验证 → 要求 `acknowledge_validation_disabled`
+  - 当前 active 非法、目标合法 → 要求 `acknowledge_validation_disabled`，审计前值记 `unknown`，**允许启用**
+  - 两者均非法 → 拒绝（被第一行覆盖）
+- [ ] T030c：`inheritanceSource` 与 `currentlyActive` 分离测试——当前 active v3 有 validator，从无 validator 的 inactive v1 克隆出 v4 并激活，断言**仍然要求 `acknowledge_validation_disabled`**。按 `sourceId` 比较会认为"没变化"从而绕过本 feature 最重要的确认闸门（`design.md` 第 6 节）。
+- [ ] T030d：激活事务内**重新读取**当前 active 行，不复用请求发起时的快照；两个并发激活各自基于最新前值判断。
 - [ ] T031：写操作记入 `admin_audit_events`（action / target / version / `acknowledge_validation_disabled` / 前后 `validation_enabled` / 时间），**与模板变更同一事务**。**`actor_id` 恒为 NULL**——本应用无鉴权，审计回答"何时对哪个版本做了什么、确认了什么"，不回答"是谁"（`design.md` 第 7 节）。
 - [ ] T031b：审计原子性测试——对审计插入注入失败，断言模板变更一并回滚；不存在"验证被关掉但没有审计记录"的状态（FR-004 把审计列为正确性要求）。
 - [ ] T032：端到端断言——关闭验证的模板启用后，新建 Issue 的实现 Run 完成时确实不再触发验证（与 F004 行为一致，不是只改了个标志位）。

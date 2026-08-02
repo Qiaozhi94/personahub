@@ -210,8 +210,21 @@ interface RuntimeHealthSnapshot {
 
 - 允许存非法草稿，是因为用户往往要先存下来才能慢慢修；禁止启用，是因为启用即生效于所有新 Issue。
 - **目标版本必须合法**，无条件要求。
-- **源版本非法时不能一并拒绝**：若当前 active 模板本身非法（历史数据或手工改坏——恰恰是"可读的非法详情"要帮用户修的场景），一刀切会让用户存得下正确的替代版本却永远启用不了，管理功能没有逃生口。改为：源非法时**保守要求 `acknowledge_validation_disabled: true`**（因为无法证明验证没被关掉），审计里把前值记为 `unknown`，允许启用这个修复版本。
-- 测试矩阵：源非法→目标合法（可启用，需确认）、目标非法（拒绝）、目标为 NULL（拒绝）、未知 role（拒绝）、合法但无 validator 步骤（走第 7 节确认闸门而非拒绝）。
+- **"源"一律指当前 active 版本，不是继承来源**（见下）。当前 active 本身非法时（历史数据或手工改坏——恰恰是"可读的非法详情"要帮用户修的场景），不能一刀切拒绝，否则用户存得下正确的替代版本却永远启用不了，管理功能没有逃生口。改为：**保守要求 `acknowledge_validation_disabled: true`**（因为无法证明验证没被关掉），审计里把前值记为 `unknown`，允许启用这个修复版本。
+- 测试矩阵：当前 active 非法 → 目标合法（可启用，需确认）、目标非法（拒绝）、目标为 NULL（拒绝）、未知 role（拒绝）、合法但无 validator 步骤（走第 7 节确认闸门而非拒绝）。
+
+### `inheritanceSource` 与 `currentlyActive` 是两个东西
+
+第 8 节允许从**任意** `:sourceId` 克隆新版本，包括一个旧的 inactive 版本。若破坏性判断也拿这个 `sourceId` 当"改动前的状态"，会开出一个绕过确认闸门的口子：
+
+> 当前 active 是 v3（有 validator）。用户从无 validator 的 inactive v1 克隆出 v4 并激活。按 `v1 → v4` 比较，验证状态"没变化"，于是不要求 `acknowledge_validation_disabled`——而系统默认实际从"有验证"切成了"无验证"。
+
+因此类型与实现都必须把两者分开：
+
+- **`inheritanceSource`（`:sourceId`）**：只决定复制哪些字段、`issue_type` 取自哪一行。除此之外不参与任何判断。
+- **`currentlyActive`**：在**激活事务内**读取的当前 active 行。所有破坏性判断、`acknowledge_validation_disabled` 要求、审计的"前值"一律以它为准。
+
+激活事务内必须重新读取当前 active（而不是复用请求发起时的快照），否则两个并发激活会各自基于过期的前值做判断。测试必须包含"从 inactive 旧版本克隆，且它与当前 active 的验证状态不同"这一条。
 
 ### 严格校验器与宽松解析器是两件事
 

@@ -34,6 +34,11 @@ updated: 2026-08-02
 
 - [ ] T020：`server/src/runtime/graph/definitions.ts`：内置 `wgd_coding_dual_review` v1，三节点两条边，Edge 按 `GraphEdgeV1` 完整声明 `acceptedOutcomes` / `required` / `joinGroup` / `inputSlot`（`design.md` 第 6 节）。
 - [ ] T020b：定义注册表按**精确 `(id, version)`** 查询，`(id, version)` append-only；查不到 → `definition_version_unavailable`，**禁止回退到最新版本**。
+- [ ] T020c：definition 里为每个节点声明 `instructionTemplate` / `inputSlots` / `outputContract` 与目标文件集 glob，与 definition 同版本冻结（`design.md` 第 5 节）。
+- [ ] T020d：`GraphNodeInstructionBuilder`——图节点 `instructions` 的**唯一**生成入口（`runs.instructions` 是 `NOT NULL`，既有 `run-context-builder` 只装配通用上下文，不知道节点视角）。拼装顺序：节点视角判据 + 目标文件集 + 入边输入（synthesis）+ 输出 envelope 契约。
+- [ ] T020e：目标文件集——建图时对 workspace 解析 glob 并**随指令冻结**（两个前驱必须看同一份文件集才可比，执行时各扫一次会不可比）；空集合 → 建图前拒绝 `GRAPH_TARGET_SET_EMPTY`；超 500 条或 64 KB 按声明顺序截断并在指令正文写明丢弃数量，**禁止静默截断**。
+- [ ] T020f：retry **原样复用** `runs.instructions` 上一个 Attempt 的指令，不重新生成——重新生成会让重试面对不同的文件集，同一 NodeRun 的多次 Attempt 失去可比性。
+- [ ] T020g：确定性测试——同一 definition 版本 + 同一 workspace 状态，两次生成的 `instructions` 逐字节相同。
 - [ ] T021：`createGraph(tx, issueId, plan)`——**纯 DB 写、使用调用方事务、绝不拉起进程也绝不 drain**（第 8.2 节）：GraphRun + **三个** NodeRun 全部预建（synthesis 为 `pending`）+ 两个前驱的 `queued` Run + `graph.node_queued` 事件 + Issue 转 `Running`，逐节点写 `assigned_adapter_config_id`。
 - [ ] T021a：`GraphRuntimeService.start(issueId, plan)` 便利入口——自开事务调 `createGraph`，提交后触发 drain；供非 intake 的直接调用方使用。同时提供 `enqueueSequential(tx, ...)` 供 F007 顺序分支使用。
 - [ ] T021b：幂等测试——重复调用撞 `idx_graph_runs_one_nonterminal_per_issue`，返回既有 GraphRun；**图处于 `blocked` 时再次建图同样被拒**（而非又起一个图）。
@@ -41,6 +46,9 @@ updated: 2026-08-02
 - [ ] T021d：嵌套事务故障测试——F007 在外层事务内调 `createGraph` 后回滚，断言**没有任何进程被拉起**、库中无残留 GraphRun。
 - [ ] T022：新增共享原语 `resolveEligibleAdapter()`——组合既有 `resolveAdapter()` + `hasCapability()`，新增 `ADAPTER_CAPABILITY_MISSING` 错误码；**不改这两个既有函数的签名**（第 8.3 节）。建图与 F007 确认复核都只走它。
 - [ ] T022b：能力校验回归——显式指定一个 Available **但缺该节点所需 capability** 的 adapter，断言被拒。前一轮"经 `resolveAdapter()` 复核"会放行，因为该函数根本没有 capability 参数（`adapter-resolver.ts:32-64`）。
+- [ ] T022e：**延迟执行前的资格复核**（`design.md` 第 8.5 节）——join 建 synthesis Attempt、节点 retry、恢复补建 Attempt 三个时点，各对持久化的 `assigned_adapter_config_id` 调一次 `resolveEligibleAdapter()`；不合格则**同事务内** GraphRun `blocked` + `no_capable_adapter`，**不创建 Attempt、绝不静默换人**。既有 `startAdapter()` 只做 `getById()`（`run-dispatch.ts:224-227`），既不看 workspace 有效状态也不看能力，靠它兜不住。
+- [ ] T022f：三类变化各一条测试——排队/等待期间 adapter 被置 unavailable、被摘掉 capability、被加上 workspace 级覆盖；断言进入 `no_capable_adapter` 恢复路径而非普通 `spawn_failed`。
+- [ ] T022g：adapter 删除守卫——把 NodeRun 的 `assigned_adapter_config_id` 引用并入 `AdapterConfigService.delete()` 的 `ADAPTER_IN_USE` 判定（现有 `hasRuns()` 只查 `runs.adapter_config_id`，看不见"pending synthesis 已指派但尚无 Run"）。回归测试断言该场景返回 `ADAPTER_IN_USE` 而非裸 `SQLITE_CONSTRAINT` 造成的 500。
 - [ ] T022c：**建图阶段的失败一律在写库之前拒绝**——definition 查不到 / `nodeAssignments` 缺项 / 任一资格解析不通过，直接返回错误让外层事务回滚，**绝不产生 `blocked` 的 GraphRun**（否则 F007 承诺的"确认失败原子回滚"不成立，用户会得到一个 Issue 加一个进不去也退不出的空图）。`no_capable_adapter` / `definition_version_unavailable` 只适用于**已建起来的图**（retry 时执行者失效、部署回退致版本消失）。
 - [ ] T022d：回归断言——建图失败时库中无任何 GraphRun / NodeRun / Run 残留，且外层 Issue 一并回滚。
 - [ ] T023：新增 **6 个** `graph.*` ThreadEvent 类型与写入封装（含事务三写的 `graph.completed`）；**`graph.node_result` 必须加入 `EvidenceService.TRUSTED_INTERNAL_ALLOWLIST`**（`evidence.ts:20-31`），否则下游 `resolveTrustedPayload()` 恒返回 null。
@@ -85,6 +93,7 @@ updated: 2026-08-02
 - [ ] T048：单 active Attempt——retry 在同一事务内先做 NodeRun 状态 CAS 再建 Run（主路径，给干净错误）；`idx_runs_one_active_graph_attempt` 兜底其余建 Run 路径。并发/连点测试断言只产生一个 Attempt。
 - [ ] T049：**取消的接入点**——`RunDispatchService.cancel()` 的 queued 分支直接 `cancelQueued()` 就 return，**不经 `finalizeAndDrain`/`workflowHook`**（`run-dispatch.ts:202-207`）；补一次图推进调用，与 `workflowHook` 的 GraphNode 分支同一入口。running 分支不变。没有这一步，上表的 NodeRun 转移无从发生，Run 会 `cancelled` 而 NodeRun 永远停在 `ready`。
 - [ ] T049b：取消状态转移测试——按 `design.md` 第 7 节表格分别测单节点取消、整图取消、系统队列取消三条路径及各自的 GraphRun 结果，其中**必须包含一个 queued 图节点被取消**的用例。
+- [ ] T049c：整图取消的三段协议（`design.md` 第 9 节）——① 事务内 CAS 写终态并提交；② 事务外 best-effort 停进程，**失败只记录不回滚**；③ 随后到达的 terminal callback 幂等 no-op。测试覆盖多个运行中 Attempt、外部取消失败、完成与取消同时到达三种。停进程是外部副作用，塞进事务会长时间持写锁且失败无从回滚。
 
 ## Phase 5：查询、API 与 UI（US3、AC-003）
 

@@ -26,15 +26,16 @@ updated: 2026-08-02
 
 ## Phase 2：前提快照与确认路径（FR-003、FR-004、FR-005）
 
-- [ ] T019：新建 `server/src/db/schema-v9.ts` 的 `intake_confirmations` 表（`nonce` 主键 + `status` + `target_kind`/`target_id`）+ `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**。
+- [ ] T019：新建 `server/src/db/schema-v9.ts`——`intake_confirmations`（`nonce` 主键，**无 `status` 列**，结果字段全 NOT NULL，`target_kind` 带 CHECK）+ `app_secrets` 表 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**。
+- [ ] T019b：HMAC 密钥生命周期（`design.md` 第 1 节）——首次启动生成 32 字节 CSPRNG 并写 `app_secrets`，后续启动读回、**跨重启不变**；值损坏/为空则启动失败并给出明确信息，**不静默重新生成**（静默重生成会让在途 token 变成无法解释的"签名无效"）。不做轮换。测试：跨重启验签通过、损坏值启动失败、首次启动只生成一次。
 - [ ] T020：`ConfirmationToken` 签发——`nonce` 每次全新、`premise` 采集、规范化序列化（键升序 + 稳定编码，签发与验签共用同一函数）、`recommendation_id` 作内容摘要（**不作身份、不作校验依据**）。**签发不写任何库**，与 T012 的零副作用要求一致（`design.md` 第 1、5 节）。
 - [ ] T020a：**HMAC 签名与验签**——服务端密钥从本地配置读取或首次生成后持久化；confirm 先验签再做任何事，失败 → 400 `CONFIRMATION_TOKEN_INVALID`；验签通过后仍独立校验路由 `:projectId` 与 payload 一致、workspace 归属、`issued_at` 未超 30 分钟。
 - [ ] T020a2：篡改测试五种——改 `issued_at`（绕过期）、改 `issue_draft`（绕只读）、改 `project_id`（跨 Project）、改 `premise`（污染审计）、伪造/缺失 `signature`。零写入模型下 token 的唯一副本在客户端手里，**没有签名服务端就无法执行自己的契约**（`design.md` 第 1 节）。
 - [ ] T020b：premise 必须包含 `capability_tags` 与 `updated_at`——`capability_tags` 的修改不进 `availabilityRelevantFieldsTouched`（`adapter-config-updater.ts:113-119`），只比可用性会漏掉能力被摘除的情况。回归测试：改能力不改可用性后 confirm，断言 `RECOMMENDATION_STALE`。
 - [ ] T020c：两个不同目标在同一系统状态下各拿到不同 `nonce`、可各自独立确认——防止用哈希作身份导致第二个目标拿到第一个的结果。
-- [ ] T021：`IntakeService.confirm()`——**单外层事务**：INSERT 认领（`nonce` 主键）→ 校验 token 未过期 → 复核前提与用户改选 → 创建 Issue → 写事件 → 建首个执行单元 → 置 `confirmed`；**commit 之后**统一 drain。
+- [ ] T021：`IntakeService.confirm()`——**事务外**先验签/结构校验/过期/projectId 一致；**单外层事务**：复核前提与用户改选 → 创建 Issue → 写事件 → 建首个执行单元 → **最后一步** INSERT `intake_confirmations` 完整行；**commit 之后**统一 drain。认领之所以在最后：表内全部列 NOT NULL，`issue_id`/`target_id` 要等实体建完才有值，开头 INSERT 插不进去。
 - [ ] T021b：topology 分流——`sequential` → `enqueueSequential(tx, ...)`；`orchestrator_subagent` → `createGraph(tx, issueId, plan)`。两者**只写库不拉进程**（F006 `design.md` 第 8.2 节）。F006 未落地时该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，**禁止静默回退为 `sequential`**。
-- [ ] T021c：幂等测试——同一 token 重复 confirm（含并发双击）只产生一个 Issue，第二次撞 `nonce` 主键后读回并返回既有 `issue_id`/`target_id`（**200，不是错误**）。`intake_confirmations` **无 `status` 列**：整个确认是一个同步事务，`confirming` 别的请求观察不到、`failed` 没有写入点，只记录"已成功确认"这一个事实（`design.md` 第 1 节）。
+- [ ] T021c：幂等测试——同一 token 重复 confirm（含并发双击）只产生一个 Issue。测试要断言具体事务序列：后到者在最后一步撞 `nonce` 主键 → 整个事务回滚 → 另起读操作取胜者已提交的行 → 返回 200 与既有 `issue_id`/`target_id`。`intake_confirmations` **无 `status` 列**，也**不存在 `CONFIRMATION_IN_PROGRESS`**（单事务下不可观察）。
 - [ ] T021e：token 过期测试——超过 30 分钟的 token 返回 `RECOMMENDATION_STALE`。
 - [ ] T021f：失败后重试测试——事务回滚后表中无残留行，同一未过期 token 可再次成功确认。
 - [ ] T021d：失败原子性测试——在事件写入、adapter 复核、图启动三处各注入一次失败，断言事务回滚、**不留孤儿 Issue/Thread**，且客户端可安全重试。
