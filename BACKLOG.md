@@ -42,4 +42,10 @@ F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md
 
 三个 feature 状态维持 `ready-for-development`；F007 新增一条 Phase 0 准入（T009 补齐 API 契约后再开工）。
 
+### 2026-08-02 第二轮检视（30 条）
+
+同样逐条核实后全部成立。**其中三条最严重的是上一轮修订自己引入的**：F007 让推荐阶段写库（与它自身「推荐无副作用」的 FR/AC/T012 冲突）、`recommendation_id` 用不含目标文本的 premise 哈希作身份（两个不同目标撞同一主键）、以及 F007/F006 对事务归属各说各话（嵌套时外层回滚撤不掉已拉起的进程）。另有一条是只改了调用方 F007 而没同步 F006，跨 feature 契约实际未成立。
+
+处置：跨 feature 契约收归 F006 `design.md` 第 8 节单一拥有（`GraphExecutionPlan`、只写库的 `createGraph(tx,...)`、共享的 `resolveEligibleAdapter()`、执行者落库）；推荐阶段改为零写入 + `nonce` token；补齐图的终态化事务、blocker→恢复动作矩阵、取消的接入点（`RunDispatchService.cancel()` 的 queued 分支不走 `finalizeAndDrain`）；F008 明确只有 `steps_json` 有运行时消费者，其余字段只读。F007 的 API 契约已定稿，上一轮的 Phase 0 准入撤销。
+
 PRD v0.2 范围里的 "Structured Handoff Packet" 已由 v0.1.4 交付（`handoff-builder.ts`），不重复实现。

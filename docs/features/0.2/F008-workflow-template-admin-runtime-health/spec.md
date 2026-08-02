@@ -4,7 +4,7 @@ related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability, v0.2]
 doc_kind: spec
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 ---
 
 # F008：Workflow Template Admin & Runtime Health
@@ -91,7 +91,8 @@ updated: 2026-08-01
 ## 4. 初始需求边界
 
 - **FR-001**：模板详情应返回步骤列表与 `validation_enabled` 派生字段，后者必须由 `hasValidationStep()` 同源推导，不得另写一套判断。
-- **FR-002**：模板编辑一律创建新版本；已存在的版本行不可变。
+- **FR-002**：模板编辑一律创建新版本；已存在版本行的**内容字段**不可变，`status` 只能经 FR-007 定义的 `activate` / `deactivate` 两个保不变量的命令改变。（原文"版本行不可变"过宽，与 FR-007 要求的启用/停用直接冲突，按字面实现会拒绝掉必需的命令。）
+- **FR-009**：v0.2 只有 `steps_json`（与仅供展示的 `name`）可编辑；`collaboration_topology`、`validation_policy_id`、`handoff_policy_json`、`evidence_requirements_json` 四个字段当前**没有任何运行时消费者**，一律只读、由新版本原样继承，UI 明确标注"不影响运行时行为"，请求体里出现即拒绝。
 - **FR-003**：进行中 Issue 的 `workflow_template_id` 不因编辑而改变。
 - **FR-004**：移除 validator 步骤必须要求显式确认，并把该确认记入全局审计（记录时间、目标模板与版本、确认值、验证开关前后值）。**不记录"是谁"**——本应用无鉴权，不存在可记录的用户身份，见 `design.md` 第 7 节。
 - **FR-005**：不得停用最后一个 active 模板。
@@ -113,7 +114,8 @@ updated: 2026-08-01
 - [ ] **AC-003**（`FR-004`、`FR-005`）：关闭验证需显式确认并记入审计；最后一个 active 模板不可停用。
 - [ ] **AC-004**（`FR-006`、`TR-001`）：health 只读且覆盖五类状态。
 - [ ] **AC-005**：F001-F007 全量回归通过。
-- [ ] **AC-006**（`FR-007`、`FR-008`）：任何激活路径下同 `issue_type` 至多一个 active 版本；非法 `steps_json` 的版本无法被启用。
+- [ ] **AC-006**（`FR-007`、`FR-008`）：任何激活路径下同 `issue_type` 至多一个 active 版本（由数据库唯一索引保证，不只靠 service）；非法 `steps_json` 的版本无法被启用，但**当前 active 版本非法时仍可启用一个合法的修复版本**。
+- [ ] **AC-008**（`FR-009`）：可编辑字段仅 `steps_json` 与 `name`；其余内容字段只读且 UI 标注不影响运行时。不存在"保存并启用成功但运行时行为未变"的字段。
 - [ ] **AC-007**（`FR-006`）：health 的派生判断与运行时实际恢复规则同源——终态持有者的锁**不看时长**即报 confirmed；F006 有意保留的排队图节点与未到 due time 的 validation 不被误报为 `queue_starved`。
 
 ## 7. 待确认问题（全部已关闭，2026-08-01）

@@ -4,7 +4,7 @@ related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, explainability]
 doc_kind: design
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 ---
 
 # F007：Coordinator Agent & Routing Recommendation - 设计
@@ -15,30 +15,55 @@ updated: 2026-08-01
 
 新增一个**纯函数式**的 `RoutingRecommendationService`：读 Project / workspace / adapter 注册表，按显式规则集算出推荐，返回带解释的结构，不写任何库。确认走独立的 `IntakeService.confirm()`，复用既有 `IssueService.create()` 与 `RunDispatchService.dispatch()`，不新建执行路径。
 
-推荐本身仍是纯内存计算。但**确认需要一张小表**：`recommendation_id` 必须可被服务端独立重建与认领，否则既做不到幂等，也没法在确认时验证用户改选的值（第 5、6 节）。初稿"无新表"的说法据此修正。
+**推荐阶段零写入。** 上一轮为了做幂等，让推荐签发时就往 `intake_confirmations` 写一行——这与 FR-003 / NFR-001 / AC-002 / T012 全部冲突（它们要求推荐无副作用、纯内存计算），而且带来两个新问题：
+
+- `recommendation_id` 定义为 premise 的哈希，而 **premise 不含目标文本**。同一 Project/workspace/adapter 状态下问两个不同的目标，算出的主键完全相同——第二次插不进去，用户会拿到第一次的推荐。
+- 行在签发时就存在了，confirm 根本撞不了主键，"撞主键即认领"是空的。
+
+改为**服务端签发自包含 token，确认时才落行**：
+
+```ts
+// 推荐响应里返回，不落库
+interface ConfirmationToken {
+  nonce: string;             // 每次签发全新，与内容无关
+  issued_at: string;
+  project_id: string; workspace_id: string;
+  premise: RecommendationPremise;    // 第 5 节
+  recommended: RoutingRecommendation;
+}
+// recommendation_id = 规范化序列化(token) 的摘要，仅用于等值比对与日志，不作身份
+```
+
+token 由客户端原样回传，服务端凭 `nonce` 唯一性认领：
 
 ```sql
 CREATE TABLE intake_confirmations (
-  recommendation_id TEXT PRIMARY KEY,   -- 前提集合的规范化哈希
+  nonce TEXT PRIMARY KEY,               -- 签发时生成，确认时才插入
+  status TEXT NOT NULL,                 -- confirming | confirmed | failed
   project_id TEXT NOT NULL REFERENCES projects(id),
   workspace_id TEXT NOT NULL REFERENCES workspaces(id),
-  premise_json TEXT NOT NULL,           -- 签发时的前提集合，确认时读回比对
-  recommended_json TEXT NOT NULL,       -- 签发时的推荐值
-  issue_id TEXT,                        -- 认领后回填；非空即已确认
-  graph_run_id TEXT,
+  recommendation_id TEXT NOT NULL,      -- 内容摘要，用于诊断/等值比对，非身份
+  chosen_json TEXT NOT NULL,            -- 用户最终选择（不重复存全部推荐候选）
+  issue_id TEXT REFERENCES issues(id),
+  target_kind TEXT,                     -- graph | run，与确认的 topology 一致
+  target_id TEXT,                       -- graph_run_id 或 run_id
+  issued_at TEXT NOT NULL,
   created_at TEXT NOT NULL,
   confirmed_at TEXT
 );
 ```
 
-`recommendation_id` 作主键即认领的唯一键：重复确认撞主键 → 返回既有 `issue_id`。
+- **认领**：`INSERT ... nonce` 成功即领到；撞主键说明已被处理，读回该行——`confirmed` 返回既有 `issue_id`/`target_id`，`confirming` 返回 409 `CONFIRMATION_IN_PROGRESS`，`failed` 允许重试。这比"事后 UPDATE 抢占"少一个状态。
+- **签发有效期 30 分钟**（`issued_at` 起算），过期 → `RECOMMENDATION_STALE`。因为推荐阶段不落行，**没有垃圾行可积累**——只有真正确认过的才进表，无需清理任务。
+- `chosen_json` 只存用户最终选择，不存被排除的候选与完整目标文本，避免把大段内容长期留存。
+- 两个不同目标各自拿到不同 `nonce`，互不干扰；同一 token 重复提交才是幂等对象。
 
 **schema 版本号按落地顺序取**：实施顺序为 F006 → F007，故 F007 用 `schema-v9.ts`。若顺序改变则按实际落地先后顺延——**绝不追加进任何已应用的版本**（F005 的 `availability_revision` 教训）。
 
 ## 2. 影响面
 
 - **后端 service**：新增 `RoutingRecommendationService`（纯计算）、`IntakeService`（确认落地）。
-- **存储**：新增 `intake_confirmations` 一张表（`schema-v9.ts`）。初稿声称"无 schema 变更"，因幂等与前提复建的需要修正。
+- **存储**：新增 `intake_confirmations` 一张表（`schema-v9.ts`），**仅在确认时写入一行**；推荐阶段严格零写入，FR-003 / NFR-001 / AC-002 因此仍然成立。初稿"无 schema 变更"的说法因确认幂等的需要修正。
 - **API**：`POST /api/projects/:id/intake/recommend`、`POST /api/projects/:id/intake/confirm`。
 - **前端**：新增 Intake 入口与推荐结果面板；现有 `CreateIssueDialog` 保留为手工路径。
 - **不影响**：`IssueService.create()` 签名、`resolveAdapter()`、F004 validation、F006 图运行时。
@@ -102,11 +127,16 @@ spec 承诺产出"Issue 字段 + workflow + topology + roster"四部分，但初
 interface RecommendationPremise {
   project_id: string;
   workspace_id: string;
-  adapter_effective_status: Record<string, AdapterStatus>;  // 仅推荐中被引用的 adapter
+  // 仅推荐中被引用的 adapter；能力与可用性都要进快照
+  adapters: Record<string, { effective_status: AdapterStatus; capability_tags: AgentCapability[]; updated_at: string }>;
   workflow_template_id: string;
   workflow_template_version: number;
+  graph_definition_id: string | null;
+  graph_definition_version: number | null;
 }
 ```
+
+**必须快照 `capability_tags`，不能只快照可用性。** `capability_tags` 的修改**不进** `availabilityRelevantFieldsTouched` 判定（`adapter-config-updater.ts:113-119` 的列表只有 command/args/auth_type/api_key/model_provider/default_model），因此一个 adapter 可以在可用性完全不变的情况下丢掉 `implementation` 能力——只比可用性的话哈希依旧匹配，推荐照跑，而能力覆盖规则和逐节点执行者恰恰都建立在能力之上。同时带上 `updated_at` 作稳定 revision，避免将来新增能力相关字段时再漏一次。
 
 `recommendation_id` = 该快照的哈希。确认时重新采集同一组前提并比对哈希：
 
@@ -133,18 +163,22 @@ interface RecommendationPremise {
 ## 6. 确认路径
 
 ```text
-confirm(recommendation_id, 用户最终选择)
-  └─ 单事务：
-      ├─ 认领 recommendation_id（唯一键；已被认领则返回既有结果，不重复创建）
-      ├─ 复核前提快照（含用户改选项）→ 不一致则 RECOMMENDATION_STALE
+confirm(token, 用户最终选择)
+  └─ IntakeService 持有的单一外层事务：
+      ├─ INSERT intake_confirmations(nonce, status='confirming') —— 认领
+      ├─ 校验 token 未过期；复核前提快照 + 用户每一处改选 → 不一致则 RECOMMENDATION_STALE
       ├─ IssueService.create(projectId, {title, goal, priority})   // 既有方法，不改签名
       ├─ 写 ThreadEvent: coordinator.recommendation_applied
       │    payload: { rules[], recommended, chosen, diff[] }        // TR-001
-      └─ 按确认的 topology 建首个执行单元（仍在同一事务内）：
-           sequential            → 建 queued Run
-           orchestrator_subagent → GraphRuntimeService.start(issueId, plan)   // F006，其内部也是单事务
-  提交后才实际派工，由既有 drain 驱动。
+      ├─ 按确认的 topology 建首个执行单元（只写库，不拉进程）：
+      │    sequential            → GraphRuntimeService.enqueueSequential(tx, ...)
+      │    orchestrator_subagent → GraphRuntimeService.createGraph(tx, issueId, plan)
+      └─ UPDATE status='confirmed' + 回填 target_kind/target_id
+  ── commit ──
+  提交之后，由 IntakeService 统一对受影响 workspace 调一次 drain。
 ```
+
+**事务归属**：上一轮 F007 要求"单外层事务"，F006 又写"`start()` 自持事务、返回后 drain"，嵌套时内层只能提交 savepoint——外层若回滚，已经拉起的子进程无法撤销。现按 F006 `design.md` 第 8.2 节的拆分：`createGraph(tx, ...)` / `enqueueSequential(tx, ...)` **只写库**，派工统一由最外层提交后触发。drain 失败不损坏状态，queued Run 仍在库里等下次 drain 或重启恢复。
 
 **分流是必须的**：F006 的图节点 Run 使用 `RunRole.GraphNode` 并由 `GraphRuntimeService` 创建；若确认路径无条件走 `RunDispatchService.dispatch()`，推荐出来的 `orchestrator_subagent` 会退化成一个普通的 implementation Run——推荐与实际执行不一致，且该 Run 完成时会触发 F004 的验证循环（见 F006 `design.md` 第 7 节）。
 
@@ -152,13 +186,11 @@ confirm(recommendation_id, 用户最终选择)
 
 初稿把 `IssueService.create()` 先提交、再写事件、再派工，有两个用户可见的坏结果：双击或 HTTP 重试会建出两个 Issue；中途任一步失败会留下一个永远不会执行的孤儿 Issue + Thread。
 
-采用**最轻的够用方案**：给 `recommendation_id` 一个持久化认领记录（唯一键），确认在单事务内先认领再建实体，实际派工放到提交之后。
-
-- 重复提交同一 `recommendation_id` → 返回首次的结果（Issue id / GraphRun id），不重复建。
-- 事务内任一步失败 → 整体回滚，不留孤儿 Issue；客户端可安全重试。
+- 重复提交同一 token → 撞 `nonce` 主键，按 `status` 返回既有结果 / 409 / 允许重试，不重复建。
+- 事务内任一步失败 → 整体回滚（认领行一并回滚），不留孤儿 Issue；客户端可安全重试。
 - **不引入通用 command / saga 表**。单机单用户应用不需要那套机制，这与 ADR 0007"候选集为 1 就别上 LLM"是同一种克制。
 
-**adapter 一律走 `resolveAdapter()`**，传入用户确认后的显式 id：`sequential` 经 `dispatch` → `ManualRoutingService`，`orchestrator_subagent` 经 `GraphRuntimeService.start()` 对 `nodeAssignments` 逐项复核（第 7 节）。推荐服务本身只产出候选，绝不写入 `default_adapter_config_id`，也不构造"取第一个可用"的回退——`adapter-resolver.ts` 的文件头注释明确"永不回退到列表里第一个可用 adapter，无法解析的默认值是硬错误"，推荐不得成为绕过它的后门（FR-005）。
+**adapter 一律走共享的 `resolveEligibleAdapter()`**（F006 `design.md` 第 8.3 节：组合 `resolveAdapter()` + `hasCapability()`），传入用户确认后的显式 id：`sequential` 经 `enqueueSequential`，`orchestrator_subagent` 经 `createGraph` 对 `nodeAssignments` 逐项复核。**不能只用 `resolveAdapter()`**——它没有 capability 参数（`adapter-resolver.ts:32-64`），只证明 adapter 可用、不证明它能干这个节点。推荐服务本身只产出候选，绝不写入 `default_adapter_config_id`，也不构造"取第一个可用"的回退——`adapter-resolver.ts` 的文件头注释明确"永不回退到列表里第一个可用 adapter，无法解析的默认值是硬错误"，推荐不得成为绕过它的后门（FR-005）。
 
 `diff[]` 记录推荐值与用户最终选择的差异；用户全盘接受时为空数组。这是 TR-001 要求的可追溯性，也是后续判断规则准不准的唯一数据来源。
 
@@ -183,23 +215,16 @@ confirm(recommendation_id, 用户最终选择)
 
 ### 执行计划必须传给图（初稿错误，已修正）
 
-初稿的确认路径对图分支只调 `GraphRuntimeService.start(issueId)`，而 F006 T022 会在图内部按 `AdapterResolver` **重新解析**每个节点的执行者。后果是 spec US3 的独立测试要求"首个 Run 使用用户确认的 adapter id"对 `orchestrator_subagent` 直接不成立：推荐面板展示的 roster 与实际执行无关，`diff[]` 审计因此记的是假账，且确认与启动之间 adapter 可用性一变就会换人。
+初稿的确认路径对图分支只调 `GraphRuntimeService.start(issueId)`，而图内部会重新解析每个节点的执行者。后果是 spec US3 的独立测试要求"首个 Run 使用用户确认的 adapter id"对 `orchestrator_subagent` 直接不成立：推荐面板展示的 roster 与实际执行无关，`diff[]` 审计因此记的是假账。上一轮只改了本文档、没同步 F006，等于契约仍未成立。
 
-改为传入**已确认的执行计划**：
+**契约现由 F006 `design.md` 第 8 节定义并拥有**，本节只引用：
 
-```ts
-GraphRuntimeService.start(issueId, {
-  definitionId, definitionVersion,
-  nodeAssignments: Record<NodeKey, AdapterConfigId>,   // 用户确认的逐节点执行者
-  premiseHash,
-})
-```
-
-- 每个 assignment 在 `start()` 的**同一事务内**经 `resolveAdapter()` 复核；任一不再可用 → 整体拒绝并返回 `RECOMMENDATION_STALE`，不部分启动、不自行替换。
-- 该 API 形状是 F006 与 F007 之间的跨 feature 契约，F006 `tasks.md` T021/T022 需按此实现。
+- `GraphExecutionPlan`（8.1）：`nodeAssignments` 必须覆盖 definition 全部节点，**含启动时还不执行的 synthesis**；缺项 → `GRAPH_PLAN_INCOMPLETE`。
+- 执行者落库（8.4）：`node_runs.assigned_adapter_config_id`。fan-in 之前重启也不会丢失用户确认的 synthesis 执行者——只放在内存计划里必然丢。
+- 复核（8.3）：逐项经 `resolveEligibleAdapter()`，任一不通过则**整体拒绝**，不部分启动、不自行替换。
 - F007 仍**不读写** `graph_runs` / `node_runs`，边界不变：F006 负责图能不能跑、怎么恢复；F007 只负责"这次要不要用图、由谁跑"。
 
-**实施顺序上的约束**：F007 可以先于 F006 完成开发，但 `orchestrator_subagent` 这条确认分支要等带执行计划入参的 `GraphRuntimeService.start()` 存在才能接通。在 F006 落地前，该分支返回明确的"该 topology 尚不可执行"阻塞，而**不是**悄悄回退到 `sequential`——静默回退会让 US1 验收场景 2 表面通过而实际没跑图。
+**实施顺序上的约束**：F007 可先于 F006 完成开发，但 `orchestrator_subagent` 分支要等 `createGraph(tx, ...)` 存在才能接通。在此之前该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，而**不是**悄悄回退到 `sequential`——静默回退会让 US1 验收场景 2 表面通过而实际没跑图。
 
 ## 8. 边界与失败处理
 
@@ -214,13 +239,78 @@ GraphRuntimeService.start(issueId, {
 | 同一 `recommendation_id` 重复确认 | 返回首次结果，不重复创建 Issue（第 6 节） |
 | 确认时前提已变 | `RECOMMENDATION_STALE` + 变化项 |
 
-## 9. API 契约的补齐时点
+## 9. API 契约
 
-`docs/features/README.md` 要求 design 覆盖 API/contract。本文档目前给出了路由名、错误码（`RECOMMENDATION_STALE`、`no_available_adapter`、`project_workspace_required`）与第 8 节的边界表，但**尚无完整的 recommend/confirm 请求响应 DTO**。
+上一轮把本节挂成"Phase 1 准入"，等于用一条待办把 `ready-for-development` 重新定义成"还不许开工"，与 `BACKLOG.md` 的状态定义和 `docs/features/README.md` 的硬约束冲突。既然 F006 第 8 节已经把跨 feature 契约定死，这里一并补完。
 
-按约定处理：**在 F007 进入实施（Phase 1 开工）前补齐本节**，与 F006 第 8 节同等粒度——请求/响应 DTO、HTTP 状态码与错误码矩阵、幂等语义、前端 loading / stale / blocked / retry 各态。现在不补是因为 F006 的 `GraphRuntimeService.start(issueId, plan)` 形状会直接决定 confirm 的响应内容，先落 F006 可以少返工一轮。
+### `POST /api/projects/:projectId/intake/recommend`
 
-这是一次**有意的排序**，不是遗漏；F007 的状态维持 `ready-for-development`，但上述补齐是 Phase 1 的准入条件（见 `tasks.md` T009）。
+```ts
+// 请求
+interface RecommendRequest { goal: string; workspace_id?: string }
+
+// 200
+interface RecommendResponse {
+  token: ConfirmationToken;                  // 原样回传，勿解析
+  recommendation_id: string;                 // 内容摘要，仅供显示/日志
+  issue_draft: { title: Recommendation<string>; goal: Recommendation<string>; priority: Recommendation<string> };
+  workflow_template: Recommendation<{ id: string; version: number }>;
+  collaboration_topology: Recommendation<{ value: "sequential" | "orchestrator_subagent";
+                                          definition_id?: string; definition_version?: number }>;
+  agent_roster: Recommendation<Record<string, string>>;   // node_key（或 "sequential"） → adapter_config_id
+  editable: ("collaboration_topology" | "agent_roster")[];  // v0.2 仅此二者可改，见下
+}
+
+// 409 —— 无可执行方案
+interface RecommendBlocked {
+  error: { code: "NO_AVAILABLE_ADAPTER" | "PROJECT_WORKSPACE_REQUIRED";
+           message: string; suggested_action: string };
+}
+```
+
+| 情形 | 状态码 | 错误码 |
+|---|---|---|
+| `goal` 空 / 纯空白 | 400 | `ISSUE_GOAL_REQUIRED` |
+| Project 未绑定 workspace | 409 | `PROJECT_WORKSPACE_REQUIRED` |
+| 无任何 Available adapter | 409 | `NO_AVAILABLE_ADAPTER` |
+| `workspace_id` 非法/跨 Project | 404 | `WORKSPACE_NOT_FOUND` |
+
+### `POST /api/projects/:projectId/intake/confirm`
+
+```ts
+interface ConfirmRequest {
+  token: ConfirmationToken;
+  chosen: { collaboration_topology: string; agent_roster: Record<string, string> };
+}
+// 201
+interface ConfirmResponse {
+  issue_id: string;
+  target_kind: "graph" | "run";
+  target_id: string;
+  diff: { field: string; recommended: unknown; chosen: unknown }[];
+}
+```
+
+| 情形 | 状态码 | 错误码 |
+|---|---|---|
+| 前提已变 / token 过期（>30 分钟） | 409 | `RECOMMENDATION_STALE`（附 `changed[]`） |
+| 同 token 正在处理中 | 409 | `CONFIRMATION_IN_PROGRESS` |
+| 同 token 已确认 | 200 | 返回既有 `issue_id` / `target_id`（幂等，非错误） |
+| 选中 adapter 缺该节点能力 | 409 | `ADAPTER_CAPABILITY_MISSING` |
+| `orchestrator_subagent` 但 F006 未落地 | 409 | `TOPOLOGY_NOT_EXECUTABLE`（**禁止静默回退 `sequential`**） |
+| roster 未覆盖 definition 全部节点 | 400 | `GRAPH_PLAN_INCOMPLETE` |
+
+### 可调整维度限定为两项
+
+spec 说"逐项调整"，但 `IssueService.create()` 的签名不变、模板由 `getDefault()` 选定，**workflow template 在 v0.2 结构上就传不进去**；Issue 字段则由确定性规则派生，允许改会让 `diff[]` 失去"规则准不准"的评估意义。因此 v0.2 明确：
+
+- **可改**：`collaboration_topology`、`agent_roster`（逐节点执行者）。
+- **只读**：`issue_draft` 三个字段、`workflow_template`。UI 照常展示规则与候选集，但控件禁用并注明"v0.2 不可调整"。
+- `editable[]` 由服务端返回，前端不得自行假定。
+
+### 前端状态
+
+`idle` / `loading` / `recommended` / `blocked`（展示 `suggested_action`）/ `confirming` / `stale`（引导重新推荐）/ `confirmed`。
 
 ## 10. 开放项（不阻塞开发）
 

@@ -4,7 +4,7 @@ related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability]
 doc_kind: tasks
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 ---
 
 # F008：Workflow Template Admin & Runtime Health - 任务
@@ -13,7 +13,7 @@ updated: 2026-08-01
 
 ## Phase 1：模板读取与派生投影（FR-001）
 
-- [ ] T009：新建 `server/src/db/schema-v10.ts` 的 `admin_audit_events` 表 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**（`design.md` 第 7 节）。
+- [ ] T009：新建 `server/src/db/schema-v10.ts`——`admin_audit_events` 表 + `idx_workflow_templates_issue_type_version` / `idx_workflow_templates_one_active` 两个唯一索引 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**（`design.md` 第 4、7 节）。
 - [ ] T010：`WorkflowTemplateRepository` 补 `listByIssueType(issueType)` 与 `listVersions(issueType)`。
 - [ ] T011：`WorkflowTemplateAdminService.detail(id)`——步骤列表 + `validation_enabled`，**复用 `parseWorkflowSteps()` / `hasValidationStep()`**，禁止另写解析（AC-001）。
 - [ ] T012：`steps_json` 非法时返回 `validation_enabled: null` + 解析错误信息，详情请求本身不失败（`design.md` 第 6 节）。
@@ -21,24 +21,31 @@ updated: 2026-08-01
 
 ## Phase 2：版本化写入（FR-002、FR-003、FR-005）
 
-- [ ] T020：`insertVersion({..., activate})`——新 id、`version = max+1`；**从不 UPDATE 既有行的内容字段**。
+- [ ] T020：`insertVersion({..., activate})`——新 id、`version = max+1`（**与 INSERT 同一事务**）；**从不 UPDATE 既有行的内容字段**。请求体只接受 `name` / `steps_json`，其余内容字段出现即 400 `TEMPLATE_FIELD_NOT_EDITABLE`，新版本原样继承（`design.md` 第 5c 节）。
+- [ ] T020b：并发建草稿测试——两个请求同时算 `max+1`，断言唯一索引拦下重复版本号且映射为用户级错误/重试，不逃逸成 500。
+- [ ] T020c：不可编辑字段回归——断言 `collaboration_topology`、`validation_policy_id`、`handoff_policy_json`、`evidence_requirements_json` 在 v0.2 无运行时消费者，UI 标注"不影响运行时行为"（AC-008）。
 - [ ] T021：`activate: true` 时在同一事务内停用同 issue_type 的其他 active 版本，避免出现两个 active（`design.md` 第 4 节）。
 - [ ] T022：不可变性测试——编辑被进行中 Issue 引用的模板后，断言原行内容逐字段未变、该 Issue 的 `workflow_template_id` 未变（AC-002）。
 - [ ] T023：`activate(id)` / `deactivate(id)` 两个命令**取代通用 `setStatus()`**；`deactivate` 拒绝停用最后一个 active 模板，断言错误是明确的用户级拒绝而非 `IssueService.create()` 的 `INTERNAL_ERROR`（AC-003）。
 - [ ] T023b：单 active 不变量测试——`activate()` 旧版本、两次 `activate()` 不同版本、`activate()` 与 `insertVersion({activate:true})` 交错，断言任一时刻同 `issue_type` 至多一个 active 行（`design.md` 第 4 节；初稿的通用 `setStatus` 会造出两个 active）。
-- [ ] T023c：`activate()` 硬拒绝 `steps_json` 为 NULL / 非法 / 未知 step 版本 / 未知 role，错误码 `TEMPLATE_STEPS_INVALID`；inactive 草稿仍允许保存非法内容（`design.md` 第 6 节）。
+- [ ] T023c：新增**严格**校验器 `validateStepsSchema()`——拒绝不支持的 `schema_version`、未知 role、畸形/空 steps、重复 step id、非预期字段。**不得用 `parseWorkflowSteps()` 充当写入闸门**：它忽略 `schema_version`、接受任意 role、且静默过滤畸形条目（`validator-selector.ts:25-58`），会把部分损坏内容洗成合法内容。运行时解释路径继续用宽松的 `parseWorkflowSteps()`，一字不改（`design.md` 第 6 节）。
+- [ ] T023d：`activate()` 硬拒绝目标 `steps_json` 为 NULL / 非法；inactive 草稿仍允许保存非法内容。每一类拒绝各一条测试。
+- [ ] T023e：**源版本非法的逃生口**——当前 active 模板非法时，允许启用一个合法的修复版本，但要求 `acknowledge_validation_disabled: true` 且审计里前值记为 `unknown`。断言用户不会被永久锁在一个已损坏的默认模板上（`design.md` 第 6 节）。
 - [ ] T024：`getDefault()` 行为回归——新增 inactive 版本不改变默认模板；`activate` 后才改变。
 
 ## Phase 3：破坏性改动闸门（FR-004）
 
 - [ ] T030：启用移除了 validator 步骤的版本时要求 `acknowledge_validation_disabled: true`，否则 400 + 后果说明。
 - [ ] T030b：源或目标 `steps_json` 非法导致无法可靠计算验证开关变化时，**一律拒绝启用**，不得当作"未关闭验证"放行（`design.md` 第 6 节）。
-- [ ] T031：写操作记入 `admin_audit_events`（action / target / version / `acknowledge_validation_disabled` / 前后 `validation_enabled` / 时间）。**`actor_id` 恒为 NULL**——本应用无鉴权，审计回答"何时对哪个版本做了什么、确认了什么"，不回答"是谁"（`design.md` 第 7 节）。
+- [ ] T031：写操作记入 `admin_audit_events`（action / target / version / `acknowledge_validation_disabled` / 前后 `validation_enabled` / 时间），**与模板变更同一事务**。**`actor_id` 恒为 NULL**——本应用无鉴权，审计回答"何时对哪个版本做了什么、确认了什么"，不回答"是谁"（`design.md` 第 7 节）。
+- [ ] T031b：审计原子性测试——对审计插入注入失败，断言模板变更一并回滚；不存在"验证被关掉但没有审计记录"的状态（FR-004 把审计列为正确性要求）。
 - [ ] T032：端到端断言——关闭验证的模板启用后，新建 Issue 的实现 Run 完成时确实不再触发验证（与 F004 行为一致，不是只改了个标志位）。
 
 ## Phase 4：Runtime Health（FR-006、TR-001）
 
-- [ ] T040：`RuntimeHealthService.collect(projectId, workspaceId?)`——五类状态的只读聚合（`design.md` 第 5 节表格）。
+- [ ] T040：`RuntimeHealthService.collect(projectId, workspaceId?)`——五类状态的只读聚合，响应形状按 `design.md` 第 5b 节：**adapter 挂在 workspace 分组下**（有效状态本就是 workspace 级的，扁平化会让聚合视图对可路由性说谎），schema 同时给出 `actual_version` / `expected_version` / `status`。
+- [ ] T040d：`schema_version_mismatch` 诊断——`behind`（迁移没跑）与 `ahead`（库被更新版本的程序打开过）都要报出。
+- [ ] T040e：workspace 覆盖回归——同一 adapter 在 workspace A 可用、B 不可用时，断言聚合响应里两者各自呈现，不被合并成一个状态（F005 核心不变量）。
 - [ ] T040b：`AdapterConfigService.healthSnapshot()` 与 `RunDispatchService.healthSnapshot()` 两个只读快照访问器；**不得暴露 Set 的可变引用**（它们参与 shutdown 等待）。`AdapterFailureReprobe` 是 `RunDispatchService` 的私有字段，只给它自己加访问器够不着（`design.md` 第 5 节）。
 - [ ] T041：`stale_lock` 分级——持有者缺失/终态 → `stale_lock_confirmed`（**不看时长**，与 `cleanupStaleLocks()` 的实际行为一致）；running 且超时长+宽限 → `stale_lock_suspected`。附持有者 run id、`locked_at`、已持有时长。
 - [ ] T041b：`queue_starved` 复用与 drain **共享的无副作用资格判定器**，分报 `eligible_but_not_running` / `waiting_for_recovery` / `waiting_for_validation_due` / `invalid_queued_run`；只有存在当前合格的 queued Run 且锁空闲才标 `queue_starved`。

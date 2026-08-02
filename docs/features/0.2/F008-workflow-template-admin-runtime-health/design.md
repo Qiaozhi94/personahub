@@ -4,7 +4,7 @@ related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability]
 doc_kind: design
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 ---
 
 # F008：Workflow Template Admin & Runtime Health - 设计
@@ -66,6 +66,18 @@ UI 上"保存"与"启用"必须是两个动作，且启用时明确提示"此后
 | `deactivate(id)` | 仅置该行 inactive | 它是该 `issue_type` 最后一个 active 模板 |
 
 - `insertVersion({activate:true})` 内部即调用 `activate()`，不另写一份停用逻辑。
+- **两个不变量下沉到数据库**，不只靠 service 守规矩：
+
+```sql
+CREATE UNIQUE INDEX idx_workflow_templates_issue_type_version
+  ON workflow_templates(issue_type, version);
+CREATE UNIQUE INDEX idx_workflow_templates_one_active
+  ON workflow_templates(issue_type) WHERE status = 'active';
+```
+
+  第一条堵住并发建草稿时两次 `max(version)+1` 算出同一个版本号；第二条让"至多一个 active"对**所有**写入方成立，而不只是对记得调 `activate()` 的那些。`max+1` 与 INSERT 必须在同一事务内，冲突映射为用户级错误或重试，不得逃逸成 500。
+
+  这两个索引与 `admin_audit_events` 同批落在 `schema-v10.ts`。既有种子数据只有一行 `wft_coding_default` v1 active，不会与新索引冲突。
 - `activate()` 允许作用于任意版本（含旧版本），但必须提示"这会使新建 Issue 改用版本 N"——因为激活旧版本时 `getDefault()` 仍按 `ORDER BY version DESC` 取，若还有更高版本的 active 行结果会与用户预期不符；`activate()` 停用全部同类 active 行正是为了消除这个歧义。
 - 并发与重复激活都要有测试：两次 `activate()` 不同版本、`activate()` 与 `insertVersion({activate:true})` 交错，断言任一时刻同 `issue_type` 至多一个 active 行。
 
@@ -133,21 +145,51 @@ GET /api/projects/:projectId/health/runtime?workspace_id=<可选>
 
 ```ts
 interface RuntimeHealthSnapshot {
-  schema_version: number;
-  adapters: Array<{ id: string; name: string; effective_status: AdapterStatus; last_checked_at: string | null }>;
-  locks: Array<{ workspace_id: string; locked_by_run_id: string | null; locked_at: string | null; held_ms: number | null }>;
-  queues: Array<{ workspace_id: string; queued_count: number; running_run_id: string | null }>;
+  // 全局项
+  schema: { actual_version: number; expected_version: number; status: "current" | "behind" | "ahead" };
   background: { pending_probe_count: number; pending_reprobe_count: number };
+  // 按 workspace 分组——adapter 有效状态本身就是 workspace 级的
+  workspaces: Array<{
+    workspace_id: string;
+    adapters: Array<{ id: string; name: string; effective_status: AdapterStatus; last_checked_at: string | null }>;
+    lock: { locked_by_run_id: string | null; locked_at: string | null; held_ms: number | null };
+    queue: { queued_count: number; running_run_id: string | null };
+  }>;
   diagnostics: Array<{
     code: "stale_lock_confirmed" | "stale_lock_suspected" | "queue_starved"
         | "eligible_but_not_running" | "waiting_for_recovery" | "waiting_for_validation_due"
-        | "invalid_queued_run" | "no_available_adapter";
+        | "invalid_queued_run" | "no_available_adapter" | "schema_version_mismatch";
     workspace_id: string | null; detail: string; suggested_action: string;
   }>;
 }
 ```
 
+两处形状是刻意的：
+
+- **adapter 必须挂在 workspace 下**。`effectiveAdapterStatus()` 是 workspace 级的（schema v7 覆盖表），同一个 adapter 完全可能在 workspace A 可用、在 B 不可用。用一个扁平的 `{id, effective_status}` 表示不了两者，聚合视图会对可路由性说谎——而 workspace 级覆盖正是 F005 花了五轮检视才收敛的核心不变量，不能在 health 里被拍平。
+- **schema 要给出期望值**。只回一个 `actual_version` 只是清点库存，回答不了"迁移有没有到位"；前端也不该去复制一份后端常量。`behind` 与 `ahead` 都要产出 `schema_version_mismatch` 诊断——前者是迁移没跑，后者通常是数据库被更新版本的程序打开过，都需要用户知道。
+
 前端各态：`loading` / `healthy`（`diagnostics` 为空）/ `has_diagnostics` / `error`。
+
+## 5c. 可编辑字段白名单：只有 `steps_json` 真正生效
+
+`workflow_templates` 有 `collaboration_topology`、`validation_policy_id`、`steps_json`、`handoff_policy_json`、`evidence_requirements_json` 五个内容字段，但**运行时只消费 `steps_json`**（`validator-selector.ts:94-103` 的 `hasValidationStep()`）。其余四个全仓库没有任何运行时读取方：
+
+- `issues.validation_policy_id` 来自 `IssueService.create()` 对 `validation_policies` 表的独立查询（`issue.ts:108`），不是从模板取的。
+- `policy-gate.ts` 读的 `evidence_requirements_json` 是 `validation_policies` 表的同名列，与模板无关。
+- `collaboration_topology` 由 F007 独立推荐，不读模板。
+- `handoff_policy_json` 无任何读取方。
+
+做一个能保存并启用这些字段的界面，等于让用户以为改了行为而实际什么都没变——这是静默的正确性失败，不是"UI 文案没写完"。v0.2 的处置：
+
+| 字段 | v0.2 | UI |
+|---|---|---|
+| `steps_json` | **可编辑**，运行时生效 | 正常编辑 + 第 7 节的确认闸门 |
+| `name` | 可编辑，仅展示用 | 正常编辑 |
+| 其余四个内容字段 | **只读**，新版本原样继承 | 展示值 + 明确标注"v0.2 不影响运行时行为" |
+
+- 新增版本的请求体只接受 `name` 与 `steps_json`；其余字段出现在请求里 → 400 `TEMPLATE_FIELD_NOT_EDITABLE`，而不是静默忽略。
+- 把这些字段接进运行时是 v0.3 的活，不在本 feature 范围。
 
 ## 6. 模板详情的派生投影
 
@@ -167,8 +209,20 @@ interface RuntimeHealthSnapshot {
 | `activate()` | **硬拒绝** NULL、非法 JSON、未知 step 版本或未知 role；错误码 `TEMPLATE_STEPS_INVALID` + 具体解析错误 |
 
 - 允许存非法草稿，是因为用户往往要先存下来才能慢慢修；禁止启用，是因为启用即生效于所有新 Issue。
-- **"关闭验证"的确认（第 7 节）依赖解析结果**，因此源版本或目标版本任一非法时，无法可靠计算 `validation_enabled` 的变化——此时一律拒绝启用，而不是"当作没关闭验证"放行。
-- 测试矩阵：源非法、目标非法、目标为 NULL、未知 role、合法但无 validator 步骤（应触发第 7 节的确认闸门而非拒绝）。
+- **目标版本必须合法**，无条件要求。
+- **源版本非法时不能一并拒绝**：若当前 active 模板本身非法（历史数据或手工改坏——恰恰是"可读的非法详情"要帮用户修的场景），一刀切会让用户存得下正确的替代版本却永远启用不了，管理功能没有逃生口。改为：源非法时**保守要求 `acknowledge_validation_disabled: true`**（因为无法证明验证没被关掉），审计里把前值记为 `unknown`，允许启用这个修复版本。
+- 测试矩阵：源非法→目标合法（可启用，需确认）、目标非法（拒绝）、目标为 NULL（拒绝）、未知 role（拒绝）、合法但无 validator 步骤（走第 7 节确认闸门而非拒绝）。
+
+### 严格校验器与宽松解析器是两件事
+
+启用闸门要求"拒绝未知 schema 版本与未知 role"，但 `parseWorkflowSteps()` **做不到**：它完全忽略 `schema_version`、接受任意 role 字符串、并且**静默过滤掉畸形条目**（`validator-selector.ts:25-58`）。拿它当写入闸门，会把部分损坏的内容洗成看起来合法的内容。
+
+因此分成两个：
+
+- `parseWorkflowSteps()` / `hasValidationStep()`：**运行时解释路径**，保持宽松，保持 FR-001 要求的同源，一字不改。
+- 新增 `validateStepsSchema(stepsJson)`：**仅用于启用前的写入闸门**，严格拒绝——不支持的 `schema_version`、未知 role、畸形/空 steps、重复 step id、非预期字段。启用时先过严格校验器，再由校验后的值派生展示用的解析结果。
+
+两者职责不同：宽松读器保证老数据还能跑，严格写闸保证新数据不带病入库。
 
 ## 7. 破坏性改动的确认闸门
 
@@ -205,6 +259,8 @@ CREATE TABLE admin_audit_events (
 
 **"谁"这一半必须诚实降级**：本应用没有鉴权，不存在可记录的用户身份，`actor_id` 恒为 NULL。因此本表实际回答的是"**什么时候、把哪个模板的哪个版本、做了什么、当时确认了什么**"，不回答"是哪个人"。FR-004 的措辞按此收窄——把单机应用的本地用户写成一个假的 actor id 只是自欺。真需要"谁"要等到引入鉴权，届时本表加列即可。
 
+**审计写入与模板变更必须同一事务。** FR-004 把这条记录列为正确性要求而非尽力而为的可观测性：审计后写而失败，会留下一个"验证已被关掉但无人知道是什么时候关的"状态；审计先写而模板变更回滚，则会记下一次没发生过的改动。因此版本创建 / 启用 / 停用与其审计行同提交同回滚，并对审计插入做故障注入测试，断言两侧一起回滚。
+
 同时修正第 2 节"无 schema 变更"的说法。
 
 ## 8. 模板管理 API 契约
@@ -215,7 +271,7 @@ CREATE TABLE admin_audit_events (
 |---|---|---|
 | `GET /api/workflow-templates?issue_type=coding` | 版本列表（含 `status`、`version`、`validation_enabled`） | — |
 | `GET /api/workflow-templates/:id` | 详情（`validation_enabled` 可为 `null` + 解析错误） | 404 `TEMPLATE_NOT_FOUND` |
-| `POST /api/workflow-templates` | 新增版本，body 带 `activate`、`acknowledge_validation_disabled` | 400 `TEMPLATE_STEPS_INVALID`（启用时）、400 `VALIDATION_DISABLE_NOT_ACKNOWLEDGED` |
+| `POST /api/workflow-templates` | 新增版本，body 仅接受 `name` / `steps_json` + `activate`、`acknowledge_validation_disabled` | 400 `TEMPLATE_STEPS_INVALID`（启用时）、400 `VALIDATION_DISABLE_NOT_ACKNOWLEDGED`、400 `TEMPLATE_FIELD_NOT_EDITABLE`、409 `TEMPLATE_VERSION_CONFLICT` |
 | `POST /api/workflow-templates/:id/activate` | 启用任意版本 | 400 `TEMPLATE_STEPS_INVALID`、400 `VALIDATION_DISABLE_NOT_ACKNOWLEDGED`、404 |
 | `POST /api/workflow-templates/:id/deactivate` | 停用 | 409 `LAST_ACTIVE_TEMPLATE` |
 

@@ -4,7 +4,7 @@ related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, issue-intake, explainability, v0.2]
 doc_kind: spec
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 ---
 
 # F007：Coordinator Agent & Routing Recommendation
@@ -31,7 +31,7 @@ updated: 2026-08-01
 
 - 用户输入一段目标描述，系统产出一份**完整的执行方案建议**：Issue 字段 + workflow template + collaboration topology + agent roster。
 - 每一条建议都附带**判断依据**：命中的规则、候选集、被排除项及排除原因。
-- 用户可以整体接受、逐项调整或放弃；确认后系统创建 Issue 并发起第一个 Run。
+- 用户可以整体接受、调整可调整项或放弃；确认后系统创建 Issue 并发起第一个执行单元。**v0.2 可调整的只有 collaboration topology 与 agent roster**——workflow template 受限于 `IssueService.create()` 的既有签名传不进去，Issue 字段由确定性规则派生且允许改会让 `diff[]` 失去评估规则准确度的意义；其余维度照常展示规则与候选集但为只读，由服务端返回的 `editable[]` 声明（`design.md` 第 9 节）。
 - 建议不可用时（例如无可用 adapter）给出明确的、可操作的阻塞说明，而不是静默降级。
 
 ### 非目标
@@ -92,7 +92,9 @@ updated: 2026-08-01
 
 - 目标文本为空、超长、或只有空白字符。
 - Project 未绑定 workspace（现有 `create()` 已对此抛 `PROJECT_WORKSPACE_REQUIRED`）。
-- 无 Available adapter，或只有一个 adapter 但推荐的 topology 需要两个执行者。
+- 无 Available adapter；或图中某个节点的 required capability 没有任何 Available adapter 满足。**一个 adapter 可以满足多个节点**——除非 definition 显式声明执行者多样性约束（v1 不声明），否则节点数不构成对 adapter 数量的要求。
+- 用户改选的 adapter 在确认时已不可用或已失去所需能力。
+- 同一确认 token 被重复提交（双击、HTTP 重试）。
 - 用户在确认前修改了 adapter 配置，导致确认时推荐已失效。
 
 ## 4. 初始需求边界

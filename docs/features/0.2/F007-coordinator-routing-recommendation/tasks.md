@@ -4,16 +4,12 @@ related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, explainability]
 doc_kind: tasks
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 ---
 
 # F007：Coordinator Agent & Routing Recommendation - 任务
 
 > Status: ready-for-development | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-
-## Phase 0：实施准入
-
-- [ ] T009：补齐 `design.md` 第 9 节的完整 API 契约（recommend/confirm DTO、状态码与错误码矩阵、幂等语义、前端各态），粒度对齐 F006 `design.md` 第 8 节。**这是 Phase 1 开工的前置条件**，等 F006 的 `GraphRuntimeService.start(issueId, plan)` 形状落定后再写，可少返工一轮。
 
 ## Phase 1：规则集与推荐服务（FR-001、FR-002、NFR-001）
 
@@ -29,16 +25,20 @@ updated: 2026-08-01
 
 ## Phase 2：前提快照与确认路径（FR-003、FR-004、FR-005）
 
-- [ ] T019：新建 `server/src/db/schema-v9.ts` 的 `intake_confirmations` 表 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**（`design.md` 第 1 节）。
-- [ ] T020：`RecommendationPremise` 采集、规范化序列化与哈希；**只快照推荐中实际引用到的 adapter**；签发时把 premise 与推荐值写入 `intake_confirmations`（`design.md` 第 5 节）。
-- [ ] T021：`IntakeService.confirm()`——**单事务**内认领 `recommendation_id` → 复核快照 → 创建 Issue → 写事件 → 建首个执行单元；派工放在提交之后。
-- [ ] T021b：topology 分流——`sequential` → 建 queued Run；`orchestrator_subagent` → `GraphRuntimeService.start(issueId, plan)` 并传入 `nodeAssignments`。F006 未落地时该分支返回明确阻塞，**禁止静默回退为 `sequential`**（`design.md` 第 6、7 节）。
-- [ ] T021c：幂等测试——同一 `recommendation_id` 重复 confirm（含并发双击）只产生一个 Issue，第二次返回首次结果。
+- [ ] T019：新建 `server/src/db/schema-v9.ts` 的 `intake_confirmations` 表（`nonce` 主键 + `status` + `target_kind`/`target_id`）+ `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**。
+- [ ] T020：`ConfirmationToken` 签发——`nonce` 每次全新、`premise` 采集与规范化序列化、`recommendation_id` 作内容摘要（**不作身份**）。**签发不写任何库**，与 T012 的零副作用要求一致（`design.md` 第 1、5 节）。
+- [ ] T020b：premise 必须包含 `capability_tags` 与 `updated_at`——`capability_tags` 的修改不进 `availabilityRelevantFieldsTouched`（`adapter-config-updater.ts:113-119`），只比可用性会漏掉能力被摘除的情况。回归测试：改能力不改可用性后 confirm，断言 `RECOMMENDATION_STALE`。
+- [ ] T020c：两个不同目标在同一系统状态下各拿到不同 `nonce`、可各自独立确认——防止用哈希作身份导致第二个目标拿到第一个的结果。
+- [ ] T021：`IntakeService.confirm()`——**单外层事务**：INSERT 认领（`nonce` 主键）→ 校验 token 未过期 → 复核前提与用户改选 → 创建 Issue → 写事件 → 建首个执行单元 → 置 `confirmed`；**commit 之后**统一 drain。
+- [ ] T021b：topology 分流——`sequential` → `enqueueSequential(tx, ...)`；`orchestrator_subagent` → `createGraph(tx, issueId, plan)`。两者**只写库不拉进程**（F006 `design.md` 第 8.2 节）。F006 未落地时该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，**禁止静默回退为 `sequential`**。
+- [ ] T021c：幂等测试——同一 token 重复 confirm（含并发双击）只产生一个 Issue；`confirming` 中返回 409、`confirmed` 返回既有结果。
+- [ ] T021e：token 过期测试——超过 30 分钟的 token 返回 `RECOMMENDATION_STALE`。
 - [ ] T021d：失败原子性测试——在事件写入、adapter 复核、图启动三处各注入一次失败，断言事务回滚、**不留孤儿 Issue/Thread**，且客户端可安全重试。
 - [ ] T022：`RECOMMENDATION_STALE` 错误码与变化项返回；测试覆盖 adapter 状态翻转、workspace 解绑、模板版本变更三种失效。
 - [ ] T022b：**用户改选值的独立校验**——用户把推荐的 adapter 换成另一个后，若新选的 adapter 当前不可用，必须返回 `RECOMMENDATION_STALE` 并指明是哪一项；断言该校验不依赖原始快照是否包含它（`design.md` 第 5 节）。
-- [ ] T023：断言确认路径经 `resolveAdapter()` 且传入显式 adapter id（两条 topology 分支各测一次）；回归断言推荐服务从不写 `default_adapter_config_id`（FR-005）。
-- [ ] T023b：图分支断言——`nodeAssignments` 在 `start()` 事务内逐项复核；任一不可用则整体拒绝，**不部分启动、不自行替换执行者**（US3 对 `orchestrator_subagent` 同样成立）。
+- [ ] T023：断言确认路径经**共享的 `resolveEligibleAdapter()`**（F006 第 8.3 节）且传入显式 adapter id（两条 topology 分支各测一次）；回归断言推荐服务从不写 `default_adapter_config_id`（FR-005）。
+- [ ] T023b：图分支断言——`nodeAssignments` 覆盖 definition 全部节点（含 synthesis），在 `createGraph` 事务内逐项复核；任一不通过则整体拒绝，**不部分启动、不自行替换执行者**（US3 对 `orchestrator_subagent` 同样成立）。
+- [ ] T023c：外层回滚测试——`createGraph`/`enqueueSequential` 返回后外层事务回滚，断言无进程被拉起、库中无残留 Issue/GraphRun/Run。
 - [ ] T024：新增 `coordinator.recommendation_applied` ThreadEvent，payload 含 `rules[]`、`recommended`、`chosen`、`diff[]`（TR-001）。
 - [ ] T025：无关 adapter 的后台 probe 收敛**不得**使推荐失效——针对性回归测试。
 
@@ -53,7 +53,7 @@ updated: 2026-08-01
 
 - [ ] T040：Intake 入口与目标输入框；保留既有 `CreateIssueDialog` 手工路径不动。
 - [ ] T041：推荐结果面板——四个维度分别展示 `value` / `rule` / `candidates` / `excluded`。
-- [ ] T042：逐项调整控件（topology、adapter 可改）。
+- [ ] T042：调整控件——**仅 `collaboration_topology` 与 `agent_roster` 可改**，按服务端返回的 `editable[]` 渲染；`issue_draft` 与 `workflow_template` 展示规则与候选集但控件禁用并注明"v0.2 不可调整"（`design.md` 第 9 节）。
 - [ ] T043：确认 / 取消；取消后断言无任何持久化写入（US3）。
 - [ ] T044：阻塞态展示原因与建议动作；`RECOMMENDATION_STALE` 引导重新推荐。
 - [ ] T045：文案检查——不得出现"系统理解到"这类语义理解暗示，统一为"命中规则 X"（`design.md` 第 3 节、ADR 0007）。
@@ -68,10 +68,9 @@ updated: 2026-08-01
 
 ## 依赖关系
 
-- T009（API 契约补齐）是 Phase 1 的准入条件。
-- Phase 1 → Phase 2 → Phase 3 → Phase 4 顺序执行。
+- Phase 1 → Phase 2 → Phase 3 → Phase 4 顺序执行。API 契约已在 `design.md` 第 9 节定稿，无额外准入条件。
 - T051 依赖 F006 的 definition 已存在（只读取 `definition_id`/`version` 与逐节点 `required_capabilities`，不依赖其运行时完成）。
-- **T021b / T023b 依赖 F006 的 `GraphRuntimeService.start(issueId, plan)` 签名落地**（跨 feature 契约，见 `design.md` 第 7 节）。其余任务不依赖 F006 实现完成即可开发。
+- **T021b / T023b / T023c 依赖 F006 的 `createGraph(tx, ...)` / `enqueueSequential(tx, ...)` 与 `resolveEligibleAdapter()` 落地**（跨 feature 契约由 F006 `design.md` 第 8 节拥有）。其余任务不依赖 F006 实现完成即可开发。
 
 ## 备注
 

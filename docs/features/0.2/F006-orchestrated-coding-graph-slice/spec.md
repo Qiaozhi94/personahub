@@ -4,7 +4,7 @@ related_features: [F003, F004, F005]
 topics: [executable-work-graph, orchestrator-subagent, fan-out, fan-in, recovery, v0.2]
 doc_kind: spec
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 ---
 
 # F006：Orchestrated Coding Graph Slice
@@ -114,6 +114,8 @@ v0.1 只能执行 Implementation → Validation 循环和用户手动顺序接�
 - [ ] **AC-005**（`FR-005`）：F001-F005 全量回归通过，F004 validation 语义未被复制或改写。
 - [ ] **AC-006**（`FR-001`、`FR-004`）：synthesis 实际收到两份前驱 findings——由一条端到端测试经与 synthesis 相同的 API 读出并逐条比对，而不是仅断言节点 completed、边 traversed。
 - [ ] **AC-007**（边界场景）：取消的三条路径（单节点 / 整图 / 系统队列）各有确定的 NodeRun 与 GraphRun 结果；escalation 发生时排队中的兄弟节点不被销毁。
+- [ ] **AC-008**（`FR-002`、`FR-003`）：确认过的逐节点执行者落库并在 fan-in 之前重启后仍然生效；解析路径同时校验能力，一个 Available 但缺该能力的 adapter 会被拒绝。
+- [ ] **AC-009**（`FR-004`）：图有明确的终态化——成功后 GraphRun `completed` 且 Issue `Ready`；每个 `GraphBlockReason` 都有一条可执行的恢复动作，无死锁态。
 
 ## 7. 待确认问题（全部已关闭，2026-08-01）
 
