@@ -97,6 +97,7 @@ CREATE TABLE intake_confirmations (
 - **并发双击**：SQLite 的写事务本身串行化，后到者要么撞主键、要么在前者回滚后正常执行，两种结果都正确。
 - **失败**：整体回滚，无残留行，客户端可用同一 token 安全重试（只要未过期）。
 - **没有 `CONFIRMATION_IN_PROGRESS`**：该状态在单事务模型下不可观察，已从错误码矩阵中移除。
+- **幂等查询排在过期判断之前**：已成功确认的 token 在 31 分钟后重放，应当返回 200 与既有结果，而不是 `RECOMMENDATION_STALE`。过期判断的意义是"别拿陈旧前提去创建新东西"，对一个早已完成的确认没有意义。因此顺序固定为"验签 → 按 `nonce` 查已确认事实 → 未命中才判过期"，两条规则不再同时命中。
 - **签发有效期 30 分钟**（`issued_at` 起算），过期 → `RECOMMENDATION_STALE`。因为推荐阶段不落行，**没有垃圾行可积累**——只有真正确认过的才进表，无需清理任务。
 - `chosen_json` 只存用户最终选择，不存被排除的候选与完整目标文本，避免把大段内容长期留存。
 - 两个不同目标各自拿到不同 `nonce`，互不干扰；同一 token 重复提交才是幂等对象。
@@ -209,7 +210,9 @@ interface RecommendationPremise {
 
 ```text
 confirm(token, 用户最终选择)
-  ├─ 事务外：验签、结构校验、issued_at 未超 30 分钟、projectId 与 payload 一致
+  ├─ 事务外：① 验签 + 结构校验 + projectId 与 payload 一致
+  │           ② **按 nonce 查已确认事实** —— 命中则直接返回 200 既有结果（不再判过期）
+  │           ③ 未命中才判 issued_at 是否超 30 分钟
   └─ IntakeService 持有的单一外层事务：
       ├─ 复核前提快照 + 用户每一处改选 → 不一致则 RECOMMENDATION_STALE
       ├─ IssueService.create(projectId, {title, goal, priority})   // 既有方法，不改签名
@@ -233,7 +236,7 @@ confirm(token, 用户最终选择)
 
 初稿把 `IssueService.create()` 先提交、再写事件、再派工，有两个用户可见的坏结果：双击或 HTTP 重试会建出两个 Issue；中途任一步失败会留下一个永远不会执行的孤儿 Issue + Thread。
 
-- 重复提交同一 token → 撞 `nonce` 主键，按 `status` 返回既有结果 / 409 / 允许重试，不重复建。
+- 重复提交同一 token → 事务外按 `nonce` 读到已确认的最终行即返回 200 既有结果；若并发到达则在事务最后一步撞主键、回滚后再读一次。**不按 `status` 判断**（表里没有该列）。
 - 事务内任一步失败 → 整体回滚（认领行一并回滚），不留孤儿 Issue；客户端可安全重试。
 - **不引入通用 command / saga 表**。单机单用户应用不需要那套机制，这与 ADR 0007"候选集为 1 就别上 LLM"是同一种克制。
 
@@ -302,7 +305,7 @@ confirm(token, 用户最终选择)
 
 ```ts
 // 请求
-interface RecommendRequest { goal: string; workspace_id?: string }
+interface RecommendRequest { goal: string }   // 无 workspace_id，见下
 
 // 200
 interface RecommendResponse {
@@ -329,7 +332,22 @@ interface RecommendBlocked {
 | Project 未绑定 workspace | 409 | `PROJECT_WORKSPACE_REQUIRED` |
 | 无任何 Available adapter | 409 | `NO_AVAILABLE_ADAPTER` |
 | 有 Available adapter 但无一具备 `Implementation` | 409 | `NO_AVAILABLE_CAPABLE_ADAPTER`（**不降级为 `sequential`**，见第 7 节） |
-| `workspace_id` 非法/跨 Project | 404 | `WORKSPACE_NOT_FOUND` |
+
+### v0.2 只对 Project 默认 workspace 推荐（第五轮检视修正）
+
+上一版让 `RecommendRequest` 接受可选 `workspace_id`，premise、adapter 有效状态、执行计划、目标文件集全部绑定这个目标 workspace。但确认路径复用的 `IssueService.create(projectId, input)` **签名里根本没有 workspace**，实现是 `const workspaceId = project.default_workspace_id`（`issue.ts:72`）。于是：
+
+```text
+推荐 / 验签 / 能力校验：workspace B
+IssueService.create()：workspace A（Project 默认）
+createGraph(issueId)：从 Issue 读到 workspace A
+```
+
+用 workspace B 的 adapter 状态与凭据判断去执行 workspace A 的代码——既违背推荐契约，也可能动错目录、用错凭据范围。
+
+**v0.2 取方案 A：只支持默认 workspace。** 服务端把 `project.default_workspace_id` 写进 token，客户端**不能**指定其它 workspace。理由是既有前端本来就是单 workspace 模型（`useWorkspace(projectId)`），支持多 workspace 需要给 `IssueService.create()` 加显式 workspace 参数并改签名，属于超出 F007 意图的改动。
+
+Project 未绑定默认 workspace → 推荐阶段即返回 `PROJECT_WORKSPACE_REQUIRED`（与既有 `create()` 的行为同源）。等真要支持多 workspace 时，再引入 `createInTransaction(tx, projectId, workspaceId, input)` 并加一条"Issue / GraphRun / Run / adapter 有效状态 / 目标文件集全部绑定同一 workspace"的端到端测试。
 
 ### `POST /api/projects/:projectId/intake/confirm`
 

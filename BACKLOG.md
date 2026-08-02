@@ -28,7 +28,7 @@ F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md
 
 **实施顺序**：F006 → F007 → F008。F007 的多数任务不依赖 F006 实现完成，但确认路径依赖 F006 的三项现行契约——事务内只写库的 `createGraph(tx, issueId, plan)`、`enqueueSequential(tx, ...)`，以及共享原语 `resolveEligibleAdapter()`（由 F006 `design.md` 第 8 节拥有）。**F007 不调用便利入口 `start(issueId, plan)`**——那是给非 intake 调用方的自开事务包装，从 F007 调它会重新引入嵌套事务与提前 drain。F008 是收尾项。
 
-**schema 版本按落地顺序**：F006 = v8（`graph_runs` / `node_runs`），F007 = v9（`intake_confirmations`），F008 = v10（`admin_audit_events`）。顺序若变则顺延——**绝不追加进任何已应用的版本**（F005 的 `availability_revision` 教训）。
+**schema 版本按落地顺序**：F006 = v8（`graph_runs` / `node_runs` / `runs.node_run_id` / 两个 partial unique index），F007 = v9（`intake_confirmations` **和** `app_secrets` 两张表），F008 = v10（`admin_audit_events` 一张表 + `workflow_templates` 的两个唯一索引）。顺序若变则顺延——**绝不追加进任何已应用的版本**（F005 的 `availability_revision` 教训）。
 
 ### 2026-08-02 外部检视后的修订
 
@@ -45,6 +45,12 @@ F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md
 ### 2026-08-02 第二轮检视（30 条）
 
 同样逐条核实后全部成立。**其中三条最严重的是上一轮修订自己引入的**：F007 让推荐阶段写库（与它自身「推荐无副作用」的 FR/AC/T012 冲突）、`recommendation_id` 用不含目标文本的 premise 哈希作身份（两个不同目标撞同一主键）、以及 F007/F006 对事务归属各说各话（嵌套时外层回滚撤不掉已拉起的进程）。另有一条是只改了调用方 F007 而没同步 F006，跨 feature 契约实际未成立。
+
+### 2026-08-02 第五轮检视（16 条：6 High + 10 Medium）
+
+**本轮三条 High 是前两轮修复自身的后果**，值得记录：① 第四轮为堵"延迟执行不复核资格"加的"不合格就不创建 Attempt"，使得 `resolve-executors` 只改状态时库里没有 queued Run，图会以 `running` **永久空转**——恢复必须补建 Attempt（首个 synthesis 还得现调 `GraphNodeInstructionBuilder`）；② 同一处修复只覆盖"创建 Attempt"三个时点，漏了**建图时就已入队、可能等很久**的前驱 Attempt，补第四个 claim 时点；③ 第四轮定的整图取消 DB-first 协议与既有实现冲突——`AgentRunner.cancelRun()` 末尾的 `transitionToCancelled` 是 `running → cancelled` CAS，DB 先写成 cancelled 会让它失败返回 null，`RunDispatchService.cancel()` 就不调 `finalizeAndDrain()`，**workspace 锁永远不释放**；已改为"未启动的才 DB-first，运行中的走既有路径"，并新增非终态的 `GraphRunStatus.cancelling`。
+
+另外三条 High：F007 允许对非默认 workspace 推荐，而 `IssueService.create()` 写死 `project.default_workspace_id`（`issue.ts:72`），推荐依据与实际执行会落在两个 workspace 上（v0.2 收窄为只支持默认 workspace）；跨 feature 契约只禁了"事务内 drain"没禁"事务内 broadcast"，而 `writeAndBroadcast()` 写完立即 publish，F007 重复确认回滚时会向 SSE 播出**实际不存在的 Issue/Run**（契约收紧为"事务内无任何不可回滚副作用"）；核心原子性章节的"事务二创建下游 NodeRun"仍与全部预建模型冲突。
 
 ### 2026-08-02 第四轮检视（13 条：6 High + 7 Medium）
 

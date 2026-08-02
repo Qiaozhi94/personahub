@@ -115,7 +115,15 @@ CREATE UNIQUE INDEX idx_workflow_templates_one_active
 |---|---|---|
 | 持有者 Run 不存在 | `stale_lock_confirmed` | 重启即自动释放；或手动释放 |
 | 持有者 Run 已终态 | `stale_lock_confirmed` | 同上 |
-| 持有者 Run 仍 running 且超时长 + 宽限 | `stale_lock_suspected` | 检查该 Run 的 adapter 进程 |
+| 持有者 Run 仍 running 且持有时长 > `DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS` | `stale_lock_suspected` | 检查该 Run 的 adapter 进程 |
+
+阈值不能留给实现者自行决定，否则测试写不出确定的时间边界。取值与判据：
+
+- `DEFAULT_EXECUTION_TIMEOUT_MS` **复用既有常量**（`runtime/types.ts:124`，30 分钟），不另立一套——诊断阈值与实际超时同源才有意义。
+- 新增 `LOCK_DIAGNOSTIC_GRACE_MS = 60_000`：留出超时触发到清理落库之间的窗口，避免正常收尾被报成可疑。
+- 比较用**严格大于**；时钟一律取服务端 `Date.now()`，与 `locked_at` 同源。
+- `locked_at` 为空或晚于当前时间（时钟回拨、数据异常）→ 归入 `stale_lock_confirmed` 并在 `detail` 注明时间戳异常，不做静默忽略。
+- 测试覆盖：阈值前 1 毫秒、恰等于阈值、超过阈值、`locked_at` 非法四类。
 
 一并返回持有者 run id、`locked_at` 与已持有时长。
 

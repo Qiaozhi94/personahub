@@ -53,7 +53,7 @@ updated: 2026-08-02
 - [ ] T040d：`schema_version_mismatch` 诊断——`behind`（迁移没跑）与 `ahead`（库被更新版本的程序打开过）都要报出。
 - [ ] T040e：workspace 覆盖回归——同一 adapter 在 workspace A 可用、B 不可用时，断言聚合响应里两者各自呈现，不被合并成一个状态（F005 核心不变量）。
 - [ ] T040b：`AdapterConfigService.healthSnapshot()` 与 `RunDispatchService.healthSnapshot()` 两个只读快照访问器；**不得暴露 Set 的可变引用**（它们参与 shutdown 等待）。`AdapterFailureReprobe` 是 `RunDispatchService` 的私有字段，只给它自己加访问器够不着（`design.md` 第 5 节）。
-- [ ] T041：`stale_lock` 分级——持有者缺失/终态 → `stale_lock_confirmed`（**不看时长**，与 `cleanupStaleLocks()` 的实际行为一致）；running 且超时长+宽限 → `stale_lock_suspected`。附持有者 run id、`locked_at`、已持有时长。
+- [ ] T041：`stale_lock` 分级——持有者缺失/终态 → `stale_lock_confirmed`（**不看时长**，与 `cleanupStaleLocks()` 的实际行为一致）；running 且持有时长 **严格大于** `DEFAULT_EXECUTION_TIMEOUT_MS`（复用 `runtime/types.ts:124`）`+ LOCK_DIAGNOSTIC_GRACE_MS`（新增，60 秒）→ `stale_lock_suspected`；`locked_at` 为空或晚于当前时间 → 归入 confirmed 并注明时间戳异常。附持有者 run id、`locked_at`、已持有时长。测试覆盖阈值前 1 毫秒、恰等于、超过、`locked_at` 非法四类。
 - [ ] T041b：`queue_starved` 复用与 drain **共享的无副作用资格判定器**，分报 `eligible_but_not_running` / `waiting_for_recovery` / `waiting_for_validation_due` / `invalid_queued_run`；只有存在当前合格的 queued Run 且锁空闲才标 `queue_starved`。
 - [ ] T041c：误报回归测试——F006 的 Issue `Blocked` 保留图节点排队、validation 未到 due time 两种正常状态，断言**不被**标为 `queue_starved`。
 - [ ] T041d：`no_available_adapter` 判断 + 各条判断的建议动作文案。
@@ -66,7 +66,7 @@ updated: 2026-08-02
 - [ ] T051：模板详情——步骤、`validation_enabled` 显著展示，讲清 `steps_json` 是验证开关而非普通字段。
 - [ ] T052：保存与启用拆成两个动作；启用时提示影响范围（`design.md` 第 4 节）。
 - [ ] T053：关闭验证的二次确认对话框。
-- [ ] T054：Health 面板——五类状态 + 三条派生判断 + 建议动作。
+- [ ] T054：Health 面板——五类状态 + **对 `RuntimeHealthSnapshot.diagnostics.code` 判别联合穷尽渲染**（当前 9 个取值），每个 code 各有建议动作文案与至少一条 UI 测试。用 `assertNever` 兜底，保证将来新增 code 时**编译期**报漏项。旧表述"三条派生判断"已不成立——DTO 里 stale lock 两类、queue 四类、外加 adapter 与 schema，按三类验收会让其余 code 落进空白 UI。
 
 ## Phase 6：验收
 

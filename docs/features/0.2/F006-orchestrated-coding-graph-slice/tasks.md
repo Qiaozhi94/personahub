@@ -25,7 +25,7 @@ updated: 2026-08-02
 - [ ] T010：新建 `server/src/db/schema-v8.ts`：`graph_runs`、`node_runs` 两表 + `ALTER TABLE runs ADD COLUMN node_run_id TEXT REFERENCES node_runs(id)` + `idx_graph_runs_one_nonterminal_per_issue`（条件为 `status IN ('running','blocked')`，**不是只有 running**）/ `idx_runs_one_active_graph_attempt` 两个 partial unique index。`node_runs` 含 `result_event_id REFERENCES thread_events(id)` 与 `assigned_adapter_config_id REFERENCES agent_configs(id)`（第 8.4 节）。**不得追加进 v7**。
 - [ ] T011：`migrations.ts` 追加 `currentVersion < 8` 分支。
 - [ ] T012：迁移测试——旧版本数据库（v7）升级到 v8 后原有数据完好、新表可用；全新库直连 v8。断言 `foreign_keys = ON` 下 ALTER 后既有 Run 行仍可写（`node_run_id` 默认 NULL）。
-- [ ] T013：`shared/src/types/` 新增 `GraphRunStatus`、`NodeRunStatus`、`GraphBlockReason`（7 个取值，含 `node_run_cancelled`、`definition_version_unavailable`）、`GraphNodeKey` 与 DTO。
+- [ ] T013：`shared/src/types/` 新增 `GraphRunStatus`（含**非终态**的 `cancelling`）、`NodeRunStatus`、`GraphBlockReason`（8 个取值，含 `node_run_cancelled`、`definition_version_unavailable`、`result_too_large`）、`GraphNodeKey` 与 DTO。
 - [ ] T014：`repositories/graph-run.ts`、`repositories/node-run.ts`：CRUD + `listByGraphRun` + 状态 CAS（沿用 `issueRepo.compareAndSetStatus` 的既有写法）。
 - [ ] T015：`runs` 仓储与 DTO 补 `node_run_id` 映射，确保既有 Run 路径全部兼容 `null`。
 - [ ] T016：唯一索引冲突 → 用户级错误映射（`NODE_RUN_ATTEMPT_IN_PROGRESS` 等，`design.md` 第 9 节错误码矩阵）；测试断言连点 retry 得到 409 而非 500。
@@ -36,7 +36,8 @@ updated: 2026-08-02
 - [ ] T020b：定义注册表按**精确 `(id, version)`** 查询，`(id, version)` append-only；查不到 → `definition_version_unavailable`，**禁止回退到最新版本**。
 - [ ] T020c：definition 里为每个节点声明 `instructionTemplate` / `inputSlots` / `outputContract` 与目标文件集 glob，与 definition 同版本冻结（`design.md` 第 5 节）。
 - [ ] T020d：`GraphNodeInstructionBuilder`——图节点 `instructions` 的**唯一**生成入口（`runs.instructions` 是 `NOT NULL`，既有 `run-context-builder` 只装配通用上下文，不知道节点视角）。拼装顺序：节点视角判据 + 目标文件集 + 入边输入（synthesis）+ 输出 envelope 契约。
-- [ ] T020e：目标文件集——建图时对 workspace 解析 glob 并**随指令冻结**（两个前驱必须看同一份文件集才可比，执行时各扫一次会不可比）；空集合 → 建图前拒绝 `GRAPH_TARGET_SET_EMPTY`；超 500 条或 64 KB 按声明顺序截断并在指令正文写明丢弃数量，**禁止静默截断**。
+- [ ] T020e：目标文件集——**在写事务之外**做 preflight 解析并冻结 `TargetFileSet`（`createGraph(tx,...)` 是纯 DB 写；把大仓库的目录遍历放进事务会长时间占住 SQLite 全局写锁，而那时 F007 的外层事务已经建了 Issue），事务内只复核 workspace id/路径未变后消费冻结结果。空集合 → 建图前拒绝 `GRAPH_TARGET_SET_EMPTY`；超 500 条或 64 KB 按声明顺序截断并在指令正文写明丢弃数量，**禁止静默截断**。
+- [ ] T020e2：确定性规则——workspace 相对路径、分隔符统一 `/`、每个 glob 内按 UTF-8 字节字典序、跨 glob 全局去重保留首次位置、拒绝越出 workspace 的 symlink、特殊字符用 JSON 编码。测试覆盖 Windows/POSIX 分隔符、重复命中的 glob、symlink、含换行/引号的文件名——没有这些规则 T020g 的逐字节确定性在不同平台上必然失败。
 - [ ] T020f：retry **原样复用** `runs.instructions` 上一个 Attempt 的指令，不重新生成——重新生成会让重试面对不同的文件集，同一 NodeRun 的多次 Attempt 失去可比性。
 - [ ] T020g：确定性测试——同一 definition 版本 + 同一 workspace 状态，两次生成的 `instructions` 逐字节相同。
 - [ ] T021：`createGraph(tx, issueId, plan)`——**纯 DB 写、使用调用方事务、绝不拉起进程也绝不 drain**（第 8.2 节）：GraphRun + **三个** NodeRun 全部预建（synthesis 为 `pending`）+ 两个前驱的 `queued` Run + `graph.node_queued` 事件 + Issue 转 `Running`，逐节点写 `assigned_adapter_config_id`。
@@ -47,11 +48,14 @@ updated: 2026-08-02
 - [ ] T022：新增共享原语 `resolveEligibleAdapter()`——组合既有 `resolveAdapter()` + `hasCapability()`，新增 `ADAPTER_CAPABILITY_MISSING` 错误码；**不改这两个既有函数的签名**（第 8.3 节）。建图与 F007 确认复核都只走它。
 - [ ] T022b：能力校验回归——显式指定一个 Available **但缺该节点所需 capability** 的 adapter，断言被拒。前一轮"经 `resolveAdapter()` 复核"会放行，因为该函数根本没有 capability 参数（`adapter-resolver.ts:32-64`）。
 - [ ] T022e：**延迟执行前的资格复核**（`design.md` 第 8.5 节）——join 建 synthesis Attempt、节点 retry、恢复补建 Attempt 三个时点，各对持久化的 `assigned_adapter_config_id` 调一次 `resolveEligibleAdapter()`；不合格则**同事务内** GraphRun `blocked` + `no_capable_adapter`，**不创建 Attempt、绝不静默换人**。既有 `startAdapter()` 只做 `getById()`（`run-dispatch.ts:224-227`），既不看 workspace 有效状态也不看能力，靠它兜不住。
-- [ ] T022f：三类变化各一条测试——排队/等待期间 adapter 被置 unavailable、被摘掉 capability、被加上 workspace 级覆盖；断言进入 `no_capable_adapter` 恢复路径而非普通 `spawn_failed`。
+- [ ] T022e2：**第四个复核时点——queued → running 的 claim 路径**。取锁后在事务内重读 GraphRun/NodeRun 并对 Run 上的显式 adapter id 复核；不合格则不拉进程、Run 置 `cancelled` + `adapter_no_longer_eligible`、NodeRun 回 `pending`（进程从未启动，不记为失败）、GraphRun `blocked` + `no_capable_adapter`、**释放 workspace 锁并继续 drain**。两个前驱的 Attempt 在建图时就已入队，第二个可能等很久，只在"创建 Attempt"时复核覆盖不到它。
+- [ ] T022f：三类变化各一条测试——排队/等待期间 adapter 被置 unavailable、被摘掉 capability、被加上 workspace 级覆盖；断言进入 `no_capable_adapter` 恢复路径而非普通 `spawn_failed`。**场景固定为"N1 running、N2 queued，期间 N2 的 adapter 失效"**，并断言锁被正确释放。
 - [ ] T022g：adapter 删除守卫——把 NodeRun 的 `assigned_adapter_config_id` 引用并入 `AdapterConfigService.delete()` 的 `ADAPTER_IN_USE` 判定（现有 `hasRuns()` 只查 `runs.adapter_config_id`，看不见"pending synthesis 已指派但尚无 Run"）。回归测试断言该场景返回 `ADAPTER_IN_USE` 而非裸 `SQLITE_CONSTRAINT` 造成的 500。
 - [ ] T022c：**建图阶段的失败一律在写库之前拒绝**——definition 查不到 / `nodeAssignments` 缺项 / 任一资格解析不通过，直接返回错误让外层事务回滚，**绝不产生 `blocked` 的 GraphRun**（否则 F007 承诺的"确认失败原子回滚"不成立，用户会得到一个 Issue 加一个进不去也退不出的空图）。`no_capable_adapter` / `definition_version_unavailable` 只适用于**已建起来的图**（retry 时执行者失效、部署回退致版本消失）。
 - [ ] T022d：回归断言——建图失败时库中无任何 GraphRun / NodeRun / Run 残留，且外层 Issue 一并回滚。
-- [ ] T023：新增 **6 个** `graph.*` ThreadEvent 类型与写入封装（含事务三写的 `graph.completed`）；**`graph.node_result` 必须加入 `EvidenceService.TRUSTED_INTERNAL_ALLOWLIST`**（`evidence.ts:20-31`），否则下游 `resolveTrustedPayload()` 恒返回 null。
+- [ ] T023：新增 **7 个** `graph.*` ThreadEvent 类型与写入封装（`design.md` 第 6 节表格，含 `graph.executor_reassigned` 与判别联合 payload 的 `graph.terminal`）；**`graph.node_result` 必须加入 `EvidenceService.TRUSTED_INTERNAL_ALLOWLIST`**（`evidence.ts:20-31`），否则下游 `resolveTrustedPayload()` 恒返回 null。
+- [ ] T023b：**事务内一律只调 `threadEventService.write()`，禁止 `writeAndBroadcast()`**（后者写完立即 publish，`thread-event.ts:33-44`）；事件经 `DbOnlyResult.pendingEvents` 上交，由最外层提交后统一 broadcast。既有 `RunEscalationHandler` 已是此写法，沿用。
+- [ ] T023c：phantom 事件回归——F007 重复确认导致外层回滚时，断言 **event bus 未收到任何事件**（重复确认会先建出临时 Issue/Run/事件才撞 `nonce` 键回滚，广播出去就收不回来）。
 - [ ] T024：新增 `RunRole.GraphNode`，图节点 Run 显式写该 role（列无 CHECK、新行写值，无需迁移）。**不得沿用默认 `implementation`**，否则会误触发 `requestValidation` 并被队列资格门取消（`design.md` 第 7 节）。
 - [ ] T025：`RunDispatchService.workflowHook()` 增加 GraphNode 分支并**排在最前**、直接 return；现有 Implementation / Validator 两条分支一字不改。
 - [ ] T026：`startNextQueuedRun` 增加 GraphNode 资格规则——按所属 GraphRun 状态判定，不参与 `validation_round` 匹配；Issue `Blocked` 时图节点留在队列而非取消。
@@ -62,8 +66,10 @@ updated: 2026-08-02
 
 - [ ] T030：节点结果 envelope 解析器（复用 F004 的容错解析手法，不复用 validator 语义）；**先施加第 6 节的数量/字节上限再持久化**，`graph.node_result` 存的就是裁剪后的内容；回填 `node_runs.result_event_id`。**结果不可用（解析失败 / 事件缺失 / 不在 allowlist / scope 不符）一律 NodeRun `failed` + `result_unparsable`，`result_event_id` 留 NULL——即便 Attempt 的进程状态是 `completed`**。原始 `final_message` 保留在既有 run trace 中备查。
 - [ ] T030b：一致性断言——不存在"NodeRun `completed` 但 `result_unparsable`"的组合；构造该场景后断言节点可被 retry 受理（受理集合为 `{failed, interrupted, cancelled}`，若留在 `completed` 则图卡死无合法动作）。
+- [ ] T030c：envelope **全部可变长字段**有界——findings 200 条/单字段 2000 字符、`not_reviewed` 100 条/单项 1000 字符；依次丢 findings 再丢 `not_reviewed` 后仍超 256 KB → NodeRun `failed` + `result_too_large`，**绝不持久化无界事件**。只限制 findings 时，一个巨大的 `not_reviewed` 能让裁剪算法永远达不到声明的上限。
 - [ ] T031：`evaluateJoin(graphRunId, nodeKey)`：**在事务内**按前驱 `node_runs` 行判定，写 `join_satisfied_at`（唯一写入方），禁止读进程内状态（FR-004）。
-- [ ] T032：join 满足时**只做两件事**——synthesis NodeRun CAS `pending → ready`，然后按其 `assigned_adapter_config_id` 创建 Attempt 并入队；写 `graph.join_satisfied` 与两条 `graph.edge_traversed`。**不创建 NodeRun 行**（三个节点已在建图时预建，第 4 节）；唯一约束回归为异常防线，不得作为正常路径的控制流。
+- [ ] T032：join 满足时——synthesis NodeRun CAS `pending → ready` → 第 8.5 节资格复核 → 按 `assigned_adapter_config_id` 创建**唯一**一个 Attempt 并入队 → 写 `graph.node_queued`、`graph.join_satisfied` 与两条 `graph.edge_traversed`。**不创建 NodeRun 行**（三个节点已在建图时预建）。幂等键是 NodeRun CAS 与 `idx_runs_one_active_graph_attempt`，**不得**拿 `UNIQUE (graph_run_id, node_key)` 当正常路径的控制流。
+- [ ] T032b：`graph.node_queued` 在**每次** Attempt 入队时都写（建图两前驱、synthesis 首次、retry、恢复补建），payload 带 `run_id` 与 `attempt_index`；断言 Thread 回放里 synthesis 与前驱有对称的入队记录。
 - [ ] T033：synthesis 上下文装配——经 `resolveTrustedPayload(ref, scope)` 取两条入边的 `graph.node_result` payload；**scope 只传 `issueId` + `threadId`，不得传 `runId`**（传了必然 null，见 `evidence.ts:256-259`）。
 - [ ] T033b：截断自实现——按 `run-context-builder.ts` 的 `mustNotTruncate` + 预算降级手法，超限时整条丢弃 finding 并记 `truncated` / `dropped_count`，截断声明必须出现在 synthesis 输入正文中。
 - [ ] T033c：前驱结果取不到时 → 该 NodeRun `failed` + GraphRun `blocked` + `result_unparsable`；断言**不会**拿半份输入跑 synthesis。
@@ -72,7 +78,7 @@ updated: 2026-08-02
 
 ## Phase 4：失败、恢复与 retry（NFR-001、FR-003）
 
-- [ ] T039：**图终态化事务（事务三）**——synthesis 终态 → GraphRun `running → completed`（CAS）、Issue → `Ready`、清 blocker、写 `graph.completed`；失败路径 → GraphRun `blocked` + reason、Issue → `Blocked`。幂等，重复触发第二次直接返回（`design.md` 第 7 节）。前一轮没有任何一步负责收尾，成功的图会永远停在 `running`。
+- [ ] T039：**图终态化事务（事务三）**——三条收尾路径各写 `graph.terminal` 的对应判别分支：成功 → GraphRun `running → completed`（CAS）、Issue `Ready`、清 blocker、带 `report_event_id`；失败 → `blocked` + reason、Issue `Blocked`；取消 → 最后一个非终态 NodeRun 终态时 `cancelling → cancelled`、Issue `Ready`。幂等，重复触发第二次直接返回。没有这一步，成功的图会永远停在 `running`。
 - [ ] T039b：终态化测试——成功、失败、重复触发、写之间崩溃四种。
 - [ ] T040：`GraphRecoveryService.reconcile()`，按 `design.md` 第 7 节实现。扫描集合是**全部非终态 GraphRun（`running` + `blocked`）**；自动重评仅限 `definition_version_unavailable` 这类确定性 blocker，`node_run_failed` 等一律等待用户动作。
 - [ ] T040a：**第 0 步守卫排在最前**——按精确 `(definition_id, version)` 查注册表，查不到就置 `blocked` + `definition_version_unavailable` 并**跳过该图其余全部步骤**。步骤 3/4/6 都要读 definition，守卫放末尾会先抛异常。版本回补后在同一事务内解除阻塞并恢复待续节点，提交后 drain；测试覆盖"消失 → 回补"完整往返。
@@ -93,14 +99,17 @@ updated: 2026-08-02
 - [ ] T048：单 active Attempt——retry 在同一事务内先做 NodeRun 状态 CAS 再建 Run（主路径，给干净错误）；`idx_runs_one_active_graph_attempt` 兜底其余建 Run 路径。并发/连点测试断言只产生一个 Attempt。
 - [ ] T049：**取消的接入点**——`RunDispatchService.cancel()` 的 queued 分支直接 `cancelQueued()` 就 return，**不经 `finalizeAndDrain`/`workflowHook`**（`run-dispatch.ts:202-207`）；补一次图推进调用，与 `workflowHook` 的 GraphNode 分支同一入口。running 分支不变。没有这一步，上表的 NodeRun 转移无从发生，Run 会 `cancelled` 而 NodeRun 永远停在 `ready`。
 - [ ] T049b：取消状态转移测试——按 `design.md` 第 7 节表格分别测单节点取消、整图取消、系统队列取消三条路径及各自的 GraphRun 结果，其中**必须包含一个 queued 图节点被取消**的用例。
-- [ ] T049c：整图取消的三段协议（`design.md` 第 9 节）——① 事务内 CAS 写终态并提交；② 事务外 best-effort 停进程，**失败只记录不回滚**；③ 随后到达的 terminal callback 幂等 no-op。测试覆盖多个运行中 Attempt、外部取消失败、完成与取消同时到达三种。停进程是外部副作用，塞进事务会长时间持写锁且失败无从回滚。
+- [ ] T049c：整图取消协议（`design.md` 第 7 节）——**不得对 running Attempt 做 DB-first**。① 事务内只取消**无活进程**的部分（`pending`/`ready` NodeRun 与其 `queued` Run），GraphRun → `cancelling`（有运行中 Attempt）或直接 `cancelled`；② 事务外对每个运行中 Attempt 调**未修改的既有** `RunDispatchService.cancel(runId)`，其 `transitionToCancelled` 的 CAS 因此能正常成功、`finalizeAndDrain()` 正常释放锁；③ 最后一个非终态 NodeRun 终态时由事务三把 GraphRun `cancelling → cancelled`。
+- [ ] T049d：新增 `GraphRunStatus.cancelling`（**非终态**），非终态唯一索引条件同步为 `('running','blocked','cancelling')`。
+- [ ] T049e：锁生命周期测试——若先把 running Run 写成 `cancelled`，`agent-runner.ts:318-323` 的 CAS 会失败返回 null，`run-dispatch.ts:205-211` 就不会调 `finalizeAndDrain()`，**workspace 锁永远不释放**。测试必须断言取消后锁被释放、队列继续 drain。另覆盖 kill 抛错、kill 无返回、进程已自行退出、完成与取消同时到达四种，每种都断言最终锁状态。
 
 ## Phase 5：查询、API 与 UI（US3、AC-003）
 
 - [ ] T050：GraphRun projection 查询——节点、执行者、attempt 列表、edge traversal、输入 refs。
 - [ ] T051：HTTP 路由 `GET /api/issues/:id/graph`、`GET /api/graph-runs/:id`、`POST /api/graph-runs/:id/nodes/:key/retry`，DTO 与错误码矩阵按 `design.md` 第 9 节实现；沿用项目既定的 zod 边界校验（F005 已统一该做法）。
 - [ ] T051b：非图 Issue 的 projection 返回 `200` + `null`，Issue 不存在返回 `404`；断言两者可区分。
-- [ ] T051c：`POST /api/graph-runs/:id/cancel`（整图取消，幂等；与终态竞争时以 GraphRun 状态 CAS 为准）与 `POST /api/graph-runs/:id/resolve-executors`，后者按 `design.md` 第 9 节的完整响应与错误码矩阵实现（只重解析非终态节点、`reassigned[]` 如实列出改动、成功即同事务解除阻塞、幂等、blocker 不匹配返回 `RECOVERY_ACTION_NOT_APPLICABLE`）。cancel 是 AC-007 整图取消场景的调用入口——没有它验收测试无从发起。
+- [ ] T051c：`POST /api/graph-runs/:id/cancel`（整图取消，幂等；与终态竞争时以 GraphRun 状态 CAS 为准）与 `POST /api/graph-runs/:id/resolve-executors`。后者按 `design.md` 第 9 节实现：请求体 `node_assignments` **由用户显式给出**（`resolveEligibleAdapter()` 是校验器不是搜索器，不给显式 id 时只解析 Project 默认 adapter，"自动挑一个合格的"没有实现依据）；成功事务内必须**补建 queued Attempt**（复用历史 `runs.instructions`，synthesis 首次则调 `GraphNodeInstructionBuilder`）+ 写 `graph.node_queued` + 写 `graph.executor_reassigned` 审计事件。
+- [ ] T051e：恢复空转回归——断言 `resolve-executors` 之后**确实存在并启动了一个 Attempt**，而不只是 GraphRun 变成 `running`。停住的根因正是那些时点"不创建 Attempt"，只改状态会让图以 `running` 永久空转。三种 blocker 来源（join / retry / recovery）各一条。
 - [ ] T051d：projection 基数——响应形状为 `{ current, history[] }`；一个 Issue 多个 GraphRun 时 `current` 取非终态的那个，无非终态则按 `created_at DESC, id DESC` 取首个；断言实现里**没有无序的 `LIMIT 1`**。历史详情走 `GET /api/graph-runs/:id`。
 - [ ] T052：Thread 内节点卡片——展示节点责任、执行者、状态、attempt 次数。
 - [ ] T053：Inspector graph 段落——展示依赖关系与收敛理由（`satisfied_by` / `decided_by`）。

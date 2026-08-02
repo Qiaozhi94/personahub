@@ -18,6 +18,7 @@ updated: 2026-08-02
 - [ ] T011b：`IssueDraft` 规则实现——`derive_title_from_first_line`（首个非空行、折叠空白、120 字符截断）、`preserve_goal_verbatim`（仅去首尾空白）、`default_priority`；目标文本 8000 字符上限只作用于关键词匹配，`goal` 存全文（`design.md` 第 3 节）。
 - [ ] T011c：`IssueDraft` 边界样例测试——单行短文本、多行文本、纯空白、超长文本、首行为空后续有内容，逐个 Given/When/Then。
 - [ ] T012：`RoutingRecommendationService.recommend(projectId, goalText)`——纯计算，禁止写库、禁止取锁、禁止建 Run。
+- [ ] T012b：**目标 workspace 固定为 `project.default_workspace_id`**，`RecommendRequest` 不接受 `workspace_id`；服务端把它写进 token。理由：确认路径复用的 `IssueService.create()` 签名里没有 workspace，实现写死读默认值（`issue.ts:72`），允许指定别的 workspace 会让推荐依据与实际执行落在两个 workspace 上（`design.md` 第 9 节）。回归断言 token 中的 workspace 与最终 Issue/GraphRun/Run 全部一致。
 - [ ] T013：roster 规则接 `effectiveAdapterStatus()`；断言 Project 级 Available 但 workspace 级 Unavailable 的 adapter 出现在 `excluded` 且 reason 指明 workspace 级来源（US2）。
 - [ ] T013b：topology 规则按**逐节点能力覆盖**判定，允许同一 adapter 覆盖多个节点。回归测试：**只有一个 Available adapter 时，`orchestrator_subagent` 仍可被推荐**（`design.md` 第 7 节；初稿按 adapter 数量降级会让单 adapter 环境永不启用图）。
 - [ ] T013c：无 adapter 具备 `Implementation` 时**直接返回阻塞** `NO_AVAILABLE_CAPABLE_ADAPTER`，**不降级为 `sequential`**——v0.2 三个节点与 sequential 要的是同一项能力，降级后的方案同样不可执行，只会让 recommend 返回一个 confirm 必然拒绝的方案（`design.md` 第 7 节）。
@@ -29,7 +30,8 @@ updated: 2026-08-02
 - [ ] T019：新建 `server/src/db/schema-v9.ts`——`intake_confirmations`（`nonce` 主键，**无 `status` 列**，结果字段全 NOT NULL，`target_kind` 带 CHECK）+ `app_secrets` 表 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**。
 - [ ] T019b：HMAC 密钥生命周期（`design.md` 第 1 节）——首次启动生成 32 字节 CSPRNG 并写 `app_secrets`，后续启动读回、**跨重启不变**；值损坏/为空则启动失败并给出明确信息，**不静默重新生成**（静默重生成会让在途 token 变成无法解释的"签名无效"）。不做轮换。测试：跨重启验签通过、损坏值启动失败、首次启动只生成一次。
 - [ ] T020：`ConfirmationToken` 签发——`nonce` 每次全新、`premise` 采集、规范化序列化（键升序 + 稳定编码，签发与验签共用同一函数）、`recommendation_id` 作内容摘要（**不作身份、不作校验依据**）。**签发不写任何库**，与 T012 的零副作用要求一致（`design.md` 第 1、5 节）。
-- [ ] T020a：**HMAC 签名与验签**——服务端密钥从本地配置读取或首次生成后持久化；confirm 先验签再做任何事，失败 → 400 `CONFIRMATION_TOKEN_INVALID`；验签通过后仍独立校验路由 `:projectId` 与 payload 一致、workspace 归属、`issued_at` 未超 30 分钟。
+- [ ] T020a：**HMAC 签名与验签**——密钥来源唯一为 `app_secrets` 表（见 T019b，不再有"本地配置或首次生成"的二选一）。confirm 的事务外顺序固定：验签失败 → 400 `CONFIRMATION_TOKEN_INVALID`；再校验路由 `:projectId` 与 payload 一致；**再按 `nonce` 查已确认事实，命中即返回 200**；未命中才判 `issued_at` 是否超 30 分钟。
+- [ ] T020a3：过期重放测试——已成功确认的 token 在 31 分钟后重放，断言返回 **200 与既有结果**而非 `RECOMMENDATION_STALE`；未确认过的过期 token 才返回 stale。
 - [ ] T020a2：篡改测试五种——改 `issued_at`（绕过期）、改 `issue_draft`（绕只读）、改 `project_id`（跨 Project）、改 `premise`（污染审计）、伪造/缺失 `signature`。零写入模型下 token 的唯一副本在客户端手里，**没有签名服务端就无法执行自己的契约**（`design.md` 第 1 节）。
 - [ ] T020b：premise 必须包含 `capability_tags` 与 `updated_at`——`capability_tags` 的修改不进 `availabilityRelevantFieldsTouched`（`adapter-config-updater.ts:113-119`），只比可用性会漏掉能力被摘除的情况。回归测试：改能力不改可用性后 confirm，断言 `RECOMMENDATION_STALE`。
 - [ ] T020c：两个不同目标在同一系统状态下各拿到不同 `nonce`、可各自独立确认——防止用哈希作身份导致第二个目标拿到第一个的结果。
