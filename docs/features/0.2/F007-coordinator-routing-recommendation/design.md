@@ -25,35 +25,58 @@ updated: 2026-08-02
 ```ts
 // 推荐响应里返回，不落库
 interface ConfirmationToken {
-  nonce: string;             // 每次签发全新，与内容无关
-  issued_at: string;
-  project_id: string; workspace_id: string;
-  premise: RecommendationPremise;    // 第 5 节
-  recommended: RoutingRecommendation;
+  payload: {
+    nonce: string;             // 每次签发全新，与内容无关，是确认的唯一身份
+    issued_at: string;
+    project_id: string; workspace_id: string;
+    premise: RecommendationPremise;    // 第 5 节
+    recommended: RoutingRecommendation;
+  };
+  signature: string;           // HMAC-SHA256(规范化序列化(payload), 服务端密钥)
 }
-// recommendation_id = 规范化序列化(token) 的摘要，仅用于等值比对与日志，不作身份
+// recommendation_id = 规范化序列化(payload) 的摘要，仅用于等值比对与日志，不作身份、不作校验
 ```
 
-token 由客户端原样回传，服务端凭 `nonce` 唯一性认领：
+### token 必须签名（第三轮检视修正）
+
+零写入意味着 token 的**唯一副本在客户端手里**。上一轮我写"单机本地应用不需要 HMAC——这里防的是过期，不是伪造"，这句话的错在于把问题看成安全问题：真正的问题是**服务端失去了自己契约的执行能力**。没有签名，confirm 就无法分辨"这是我签发的推荐"和"这是客户端随手编的 JSON"，于是：
+
+- `issued_at` 可被改写，30 分钟过期形同虚设；
+- 声明为只读的 `issue_draft`（title/goal/priority）可被替换，服务端返回的 `editable[]` 变成一句没有约束力的建议；
+- `premise` / `recommended` 可被改写，`diff[]` 审计记的是客户端说了算的账。
+
+对客户端提供的内容取哈希毫无帮助——服务端没有可信的期望值去比对。因此：
+
+- **服务端持有一个 HMAC 密钥**，进程启动时从本地配置读取或首次生成后持久化；签发时算 `signature`，确认时先验签再做任何事。
+- 验签失败 → 400 `CONFIRMATION_TOKEN_INVALID`，不做部分处理。
+- 验签通过后仍要独立校验：路由上的 `:projectId` 与 payload 的 `project_id` 一致、workspace 归属该 Project、`issued_at` 未超 30 分钟。
+- **不引入密钥轮换**。重启后若选择重新生成密钥，等于让未确认的推荐失效——考虑到 30 分钟有效期，用户重新请求一次即可，可接受。
+- 测试必须覆盖篡改 `issued_at`、篡改 `issue_draft`、篡改 `project_id`、篡改 `premise`、伪造/缺失 `signature` 五种。
+
+token 由客户端原样回传，服务端验签后凭 `nonce` 唯一性认领：
 
 ```sql
 CREATE TABLE intake_confirmations (
-  nonce TEXT PRIMARY KEY,               -- 签发时生成，确认时才插入
-  status TEXT NOT NULL,                 -- confirming | confirmed | failed
+  nonce TEXT PRIMARY KEY,               -- 签发时生成，确认成功时才插入
   project_id TEXT NOT NULL REFERENCES projects(id),
   workspace_id TEXT NOT NULL REFERENCES workspaces(id),
-  recommendation_id TEXT NOT NULL,      -- 内容摘要，用于诊断/等值比对，非身份
+  recommendation_id TEXT NOT NULL,      -- 内容摘要，用于诊断/等值比对，非身份、非校验依据
   chosen_json TEXT NOT NULL,            -- 用户最终选择（不重复存全部推荐候选）
-  issue_id TEXT REFERENCES issues(id),
-  target_kind TEXT,                     -- graph | run，与确认的 topology 一致
-  target_id TEXT,                       -- graph_run_id 或 run_id
+  issue_id TEXT NOT NULL REFERENCES issues(id),
+  target_kind TEXT NOT NULL CHECK (target_kind IN ('graph', 'run')),
+  target_id TEXT NOT NULL,
   issued_at TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  confirmed_at TEXT
+  confirmed_at TEXT NOT NULL
 );
 ```
 
-- **认领**：`INSERT ... nonce` 成功即领到；撞主键说明已被处理，读回该行——`confirmed` 返回既有 `issue_id`/`target_id`，`confirming` 返回 409 `CONFIRMATION_IN_PROGRESS`，`failed` 允许重试。这比"事后 UPDATE 抢占"少一个状态。
+**没有 `status` 列。** 上一轮设计了 `confirming | confirmed | failed` 三态，但三者都不成立：整个确认是**一个同步的 SQLite 事务**，`confirming` 从插入到改写全在未提交状态，别的请求根本观察不到，`CONFIRMATION_IN_PROGRESS` 因此不可达；失败则整体回滚，行根本不存在，`failed` 没有任何写入点。持久化状态应当对应别的请求或恢复流程**真能观察到并推进**的状态，否则就是自欺。
+
+因此本表只记录**已成功确认**这一个事实，全部列 NOT NULL：
+
+- **认领**：事务内 `INSERT ... nonce`。撞主键说明该 token 已被成功确认过 → 读回该行，返回既有 `issue_id` / `target_id`（200，幂等，不是错误）。
+- **并发双击**：SQLite 的写事务本身串行化，后到者要么撞主键、要么在前者回滚后正常执行，两种结果都正确。
+- **失败**：整体回滚，无残留行，客户端可用同一 token 安全重试（只要未过期）。
 - **签发有效期 30 分钟**（`issued_at` 起算），过期 → `RECOMMENDATION_STALE`。因为推荐阶段不落行，**没有垃圾行可积累**——只有真正确认过的才进表，无需清理任务。
 - `chosen_json` 只存用户最终选择，不存被排除的候选与完整目标文本，避免把大段内容长期留存。
 - 两个不同目标各自拿到不同 `nonce`，互不干扰；同一 token 重复提交才是幂等对象。
@@ -138,10 +161,12 @@ interface RecommendationPremise {
 
 **必须快照 `capability_tags`，不能只快照可用性。** `capability_tags` 的修改**不进** `availabilityRelevantFieldsTouched` 判定（`adapter-config-updater.ts:113-119` 的列表只有 command/args/auth_type/api_key/model_provider/default_model），因此一个 adapter 可以在可用性完全不变的情况下丢掉 `implementation` 能力——只比可用性的话哈希依旧匹配，推荐照跑，而能力覆盖规则和逐节点执行者恰恰都建立在能力之上。同时带上 `updated_at` 作稳定 revision，避免将来新增能力相关字段时再漏一次。
 
-`recommendation_id` = 该快照的哈希。确认时重新采集同一组前提并比对哈希：
+确认时重新采集同一组前提，与 token 中**验签通过的** `premise` 逐项比对：
 
 - 一致 → 按用户确认的值创建 Issue 与首个执行单元。
 - 不一致 → 返回 `RECOMMENDATION_STALE` 并附上变化项，要求重新推荐。**不静默按新状态执行**（FR-004）。
+
+比对的可信来源是**签名保护的 payload**，不是任何哈希值。`recommendation_id` 全文只有一个定义——规范化序列化 `payload` 后的摘要，**只用于日志与等值比对，既不是身份也不是校验依据**；身份一律是 `nonce`。
 
 只快照"推荐中实际引用到的 adapter"，不快照全表——否则一个无关 adapter 的后台 probe 收敛就会让推荐失效。这与 F005 收敛 workspace 环境快照时只比较 `push_credentials_enabled` 是同一教训：快照范围过宽会被无关写误伤。
 
@@ -154,11 +179,11 @@ interface RecommendationPremise {
 1. 原始快照的每一项仍然一致（防止推荐依据变了）。
 2. 用户提交的**每一个替换值**按当前状态重新校验（adapter 的 `effectiveAdapterStatus()`、topology 的能力覆盖、模板版本仍 active）。任一不通过即 `RECOMMENDATION_STALE`，附具体是哪一项。
 
-### 确认载荷的规范化
+### 规范化序列化
 
-`recommendation_id` 是服务端签发的，服务端必须能凭它独立重建被保护的前提集合，不能依赖客户端回传。因此推荐签发时把前提集合与推荐值一并落在认领记录里（第 6 节的持久化认领顺带承担这件事），确认时读回比对。
+签名与摘要都基于同一套**规范化序列化**：对象键升序、无多余空白、数值与时间用固定格式、数组保持产出顺序。签名与验签必须走同一个函数，否则会出现"同一份内容算出两个签名"的假失败。
 
-哈希只需**规范化序列化**（键排序 + 稳定编码）后取摘要；单机本地应用**不需要 HMAC**——这里防的是过期，不是伪造。但规范化与服务端校验两件事一件都不能省。
+零写入模型下服务端不保存任何签发记录——**前提集合的可信性完全来自 HMAC 签名**（见第 1 节），不来自数据库读回。
 
 ## 6. 确认路径
 
@@ -209,9 +234,17 @@ confirm(token, 用户最终选择)
 
 正确判据：**逐节点检查能力覆盖**——definition 里每个节点的 `required_capabilities` 都存在至少一个 workspace 级 Available 的 adapter 即可，允许同一个 adapter 覆盖多个节点。
 
-- 只有当某个节点的能力**无任何** adapter 覆盖时才降级，且 `excluded` 里注明是哪个节点的哪项能力缺执行者。
-- 降级必须显式出现在解释里，不能悄悄换 topology（FR-006）。
+- 降级若发生，必须显式出现在解释里，不能悄悄换 topology（FR-006）。**但 v0.2 实际不存在可触发的降级**，见下一小节。
 - 若将来某个 definition 真的需要"视角多样性"（同一能力必须由不同 provider 执行），那是 definition 上的**一等约束**，由 F006 显式声明并自带验收测试，**不能从节点数量反推**。v1 不声明该约束。
+
+### v0.2 不存在基于能力的降级（第三轮检视修正）
+
+上一轮写"某节点的能力无任何 adapter 覆盖时降级为 `sequential`"。这条规则在 v0.2 是**空转的**：`wgd_coding_dual_review` 三个节点统一声明 `Implementation`（F006 `design.md` 第 5 节），而 `sequential` 的执行同样经 `resolveEligibleAdapter()` 且同样需要 `Implementation` 能力。也就是说，**触发降级的条件恰好也让降级后的方案不可执行**——recommend 返回一个看似有效的 `sequential` 方案，confirm 立刻以 `ADAPTER_CAPABILITY_MISSING` 拒绝。
+
+回退只有在**放松了那个没被满足的前提**时才成立。因此：
+
+- 没有任何 Available adapter 具备 `Implementation` → **直接返回阻塞** `NO_AVAILABLE_CAPABLE_ADAPTER`，附明确的建议动作，不假装还有 `sequential` 可走。
+- 降级规则本身保留在实现里，但**在 v0.2 的能力词汇表下永不触发**；等出现"图需要而顺序执行不需要"的额外能力要求时才会有真实的降级路径。文档与测试都如实这么写，不制造一条测不出来的分支。
 
 ### 执行计划必须传给图（初稿错误，已修正）
 
@@ -234,7 +267,7 @@ confirm(token, 用户最终选择)
 | 目标文本超长 | 截断用于规则匹配，完整文本存入 `goal`；不报错 |
 | Project 未绑定 workspace | 推荐阶段即返回阻塞，不等到确认才失败（既有 `PROJECT_WORKSPACE_REQUIRED`） |
 | 无 Available adapter | 阻塞原因 `no_available_adapter` + 建议动作"在 Adapter Settings 中验证适配器" |
-| 某节点的 required capability 无任何 adapter 覆盖 | 降级为 `sequential`，`excluded` 注明是哪个节点缺哪项能力。**仅有一个可用 adapter 不构成降级理由**（第 7 节） |
+| 某节点的 required capability 无任何 adapter 覆盖 | v0.2 下必然等价于"无 `Implementation` 能力" → 阻塞 `NO_AVAILABLE_CAPABLE_ADAPTER`，**不降级**（降级后的 `sequential` 需要同一项能力，同样跑不了）。**仅有一个可用 adapter 不构成降级理由**（第 7 节） |
 | 用户改选的 adapter 在确认时已不可用 | `RECOMMENDATION_STALE` + 指明该项（第 5 节） |
 | 同一 `recommendation_id` 重复确认 | 返回首次结果，不重复创建 Issue（第 6 节） |
 | 确认时前提已变 | `RECOMMENDATION_STALE` + 变化项 |
@@ -273,15 +306,22 @@ interface RecommendBlocked {
 | `goal` 空 / 纯空白 | 400 | `ISSUE_GOAL_REQUIRED` |
 | Project 未绑定 workspace | 409 | `PROJECT_WORKSPACE_REQUIRED` |
 | 无任何 Available adapter | 409 | `NO_AVAILABLE_ADAPTER` |
+| 有 Available adapter 但无一具备 `Implementation` | 409 | `NO_AVAILABLE_CAPABLE_ADAPTER`（**不降级为 `sequential`**，见第 7 节） |
 | `workspace_id` 非法/跨 Project | 404 | `WORKSPACE_NOT_FOUND` |
 
 ### `POST /api/projects/:projectId/intake/confirm`
 
 ```ts
 interface ConfirmRequest {
-  token: ConfirmationToken;
-  chosen: { collaboration_topology: string; agent_roster: Record<string, string> };
+  token: ConfirmationToken;      // 含 signature，服务端先验签
+  chosen: ChosenPlan;
 }
+
+// 判别联合——topology 与 roster 形状绑死，内部不一致的组合过不了 HTTP 边界
+type ChosenPlan =
+  | { topology: "sequential"; adapter_config_id: string }
+  | { topology: "orchestrator_subagent"; definition_id: string; definition_version: number;
+      node_assignments: Record<string, string> };   // 键必须**恰好**等于 definition 的节点集
 // 201
 interface ConfirmResponse {
   issue_id: string;
@@ -298,7 +338,12 @@ interface ConfirmResponse {
 | 同 token 已确认 | 200 | 返回既有 `issue_id` / `target_id`（幂等，非错误） |
 | 选中 adapter 缺该节点能力 | 409 | `ADAPTER_CAPABILITY_MISSING` |
 | `orchestrator_subagent` 但 F006 未落地 | 409 | `TOPOLOGY_NOT_EXECUTABLE`（**禁止静默回退 `sequential`**） |
-| roster 未覆盖 definition 全部节点 | 400 | `GRAPH_PLAN_INCOMPLETE` |
+| `node_assignments` 未覆盖 definition 全部节点 | 400 | `GRAPH_PLAN_INCOMPLETE` |
+| `node_assignments` 含 definition 之外的键 | 400 | `GRAPH_PLAN_UNKNOWN_NODE` |
+| token 验签失败 / 缺 `signature` | 400 | `CONFIRMATION_TOKEN_INVALID` |
+| 路由 `:projectId` 与 payload 的 `project_id` 不符 | 400 | `CONFIRMATION_TOKEN_INVALID` |
+
+`chosen` 用判别联合而非平铺字段，是为了让"切成 sequential 却仍带着节点键"和"切成图却只有一个 `sequential` 键"这类内部不一致的组合**在边界就被 zod 拒掉**，而不是留到服务层再各写一遍互斥校验。`sequential` 分支的 `adapter_config_id` 同样经 `resolveEligibleAdapter()` 校验 `Implementation` 能力。`diff[]` 由归一化后的 `ChosenPlan` 与 token 中的 `recommended` 比对得出。
 
 ### 可调整维度限定为两项
 

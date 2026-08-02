@@ -21,7 +21,7 @@ updated: 2026-08-02
 
 ## Phase 2：版本化写入（FR-002、FR-003、FR-005）
 
-- [ ] T020：`insertVersion({..., activate})`——新 id、`version = max+1`（**与 INSERT 同一事务**）；**从不 UPDATE 既有行的内容字段**。请求体只接受 `name` / `steps_json`，其余内容字段出现即 400 `TEMPLATE_FIELD_NOT_EDITABLE`，新版本原样继承（`design.md` 第 5c 节）。
+- [ ] T020：`insertVersion(sourceId, {..., activate})`——新 id、`version = max+1`（**与 INSERT 同一事务**）；**从不 UPDATE 既有行的内容字段**。请求体只接受 `name` / `steps_json`，其余内容字段出现即 400 `TEMPLATE_FIELD_NOT_EDITABLE`。**`issue_type` 与四个不可编辑字段一律取自 `sourceId` 那一行**，路由为 `POST /api/workflow-templates/:sourceId/versions`——全局路由没有来源标识，多版本并存时服务端无从判断在改哪一行（`design.md` 第 8 节）。
 - [ ] T020b：并发建草稿测试——两个请求同时算 `max+1`，断言唯一索引拦下重复版本号且映射为用户级错误/重试，不逃逸成 500。
 - [ ] T020c：不可编辑字段回归——断言 `collaboration_topology`、`validation_policy_id`、`handoff_policy_json`、`evidence_requirements_json` 在 v0.2 无运行时消费者，UI 标注"不影响运行时行为"（AC-008）。
 - [ ] T021：`activate: true` 时在同一事务内停用同 issue_type 的其他 active 版本，避免出现两个 active（`design.md` 第 4 节）。
@@ -36,7 +36,11 @@ updated: 2026-08-02
 ## Phase 3：破坏性改动闸门（FR-004）
 
 - [ ] T030：启用移除了 validator 步骤的版本时要求 `acknowledge_validation_disabled: true`，否则 400 + 后果说明。
-- [ ] T030b：源或目标 `steps_json` 非法导致无法可靠计算验证开关变化时，**一律拒绝启用**，不得当作"未关闭验证"放行（`design.md` 第 6 节）。
+- [ ] T030b：启用闸门按 `design.md` 第 6 节的**四行矩阵**实现，不得简化为"源或目标非法一律拒绝"（那会与 T023e 直接冲突，并重新造出"当前模板已损坏就永远修不好"的死锁）：
+  - 目标非法 / 为 NULL → **拒绝**（无条件）
+  - 源合法、目标关闭了验证 → 要求 `acknowledge_validation_disabled`
+  - 源非法、目标合法 → 要求 `acknowledge_validation_disabled`，审计前值记 `unknown`，**允许启用**
+  - 源与目标均非法 → 拒绝（被第一行覆盖）
 - [ ] T031：写操作记入 `admin_audit_events`（action / target / version / `acknowledge_validation_disabled` / 前后 `validation_enabled` / 时间），**与模板变更同一事务**。**`actor_id` 恒为 NULL**——本应用无鉴权，审计回答"何时对哪个版本做了什么、确认了什么"，不回答"是谁"（`design.md` 第 7 节）。
 - [ ] T031b：审计原子性测试——对审计插入注入失败，断言模板变更一并回滚；不存在"验证被关掉但没有审计记录"的状态（FR-004 把审计列为正确性要求）。
 - [ ] T032：端到端断言——关闭验证的模板启用后，新建 Issue 的实现 Run 完成时确实不再触发验证（与 F004 行为一致，不是只改了个标志位）。

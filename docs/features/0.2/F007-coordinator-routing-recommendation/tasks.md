@@ -20,19 +20,23 @@ updated: 2026-08-02
 - [ ] T012：`RoutingRecommendationService.recommend(projectId, goalText)`——纯计算，禁止写库、禁止取锁、禁止建 Run。
 - [ ] T013：roster 规则接 `effectiveAdapterStatus()`；断言 Project 级 Available 但 workspace 级 Unavailable 的 adapter 出现在 `excluded` 且 reason 指明 workspace 级来源（US2）。
 - [ ] T013b：topology 规则按**逐节点能力覆盖**判定，允许同一 adapter 覆盖多个节点。回归测试：**只有一个 Available adapter 时，`orchestrator_subagent` 仍可被推荐**（`design.md` 第 7 节；初稿按 adapter 数量降级会让单 adapter 环境永不启用图）。
-- [ ] T014：确定性测试——相同状态重复调用 N 次结果完全一致（FR-002）。
+- [ ] T013c：无 adapter 具备 `Implementation` 时**直接返回阻塞** `NO_AVAILABLE_CAPABLE_ADAPTER`，**不降级为 `sequential`**——v0.2 三个节点与 sequential 要的是同一项能力，降级后的方案同样不可执行，只会让 recommend 返回一个 confirm 必然拒绝的方案（`design.md` 第 7 节）。
+- [ ] T014：确定性测试——相同状态重复调用 N 次，**`RoutingRecommendation` + `RecommendationPremise` 完全一致**（FR-002）。确定性的比较对象**必须排除** `nonce`、`issued_at`、`signature` 以及包含它们的 `recommendation_id`：这些每次签发本就应当不同，拿整个 `RecommendResponse` 做全等比较必然失败。
 - [ ] T015：无副作用测试——调用 recommend 后断言 issues / threads / runs / 锁状态零变化（AC-005）。
 
 ## Phase 2：前提快照与确认路径（FR-003、FR-004、FR-005）
 
 - [ ] T019：新建 `server/src/db/schema-v9.ts` 的 `intake_confirmations` 表（`nonce` 主键 + `status` + `target_kind`/`target_id`）+ `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**。
-- [ ] T020：`ConfirmationToken` 签发——`nonce` 每次全新、`premise` 采集与规范化序列化、`recommendation_id` 作内容摘要（**不作身份**）。**签发不写任何库**，与 T012 的零副作用要求一致（`design.md` 第 1、5 节）。
+- [ ] T020：`ConfirmationToken` 签发——`nonce` 每次全新、`premise` 采集、规范化序列化（键升序 + 稳定编码，签发与验签共用同一函数）、`recommendation_id` 作内容摘要（**不作身份、不作校验依据**）。**签发不写任何库**，与 T012 的零副作用要求一致（`design.md` 第 1、5 节）。
+- [ ] T020a：**HMAC 签名与验签**——服务端密钥从本地配置读取或首次生成后持久化；confirm 先验签再做任何事，失败 → 400 `CONFIRMATION_TOKEN_INVALID`；验签通过后仍独立校验路由 `:projectId` 与 payload 一致、workspace 归属、`issued_at` 未超 30 分钟。
+- [ ] T020a2：篡改测试五种——改 `issued_at`（绕过期）、改 `issue_draft`（绕只读）、改 `project_id`（跨 Project）、改 `premise`（污染审计）、伪造/缺失 `signature`。零写入模型下 token 的唯一副本在客户端手里，**没有签名服务端就无法执行自己的契约**（`design.md` 第 1 节）。
 - [ ] T020b：premise 必须包含 `capability_tags` 与 `updated_at`——`capability_tags` 的修改不进 `availabilityRelevantFieldsTouched`（`adapter-config-updater.ts:113-119`），只比可用性会漏掉能力被摘除的情况。回归测试：改能力不改可用性后 confirm，断言 `RECOMMENDATION_STALE`。
 - [ ] T020c：两个不同目标在同一系统状态下各拿到不同 `nonce`、可各自独立确认——防止用哈希作身份导致第二个目标拿到第一个的结果。
 - [ ] T021：`IntakeService.confirm()`——**单外层事务**：INSERT 认领（`nonce` 主键）→ 校验 token 未过期 → 复核前提与用户改选 → 创建 Issue → 写事件 → 建首个执行单元 → 置 `confirmed`；**commit 之后**统一 drain。
 - [ ] T021b：topology 分流——`sequential` → `enqueueSequential(tx, ...)`；`orchestrator_subagent` → `createGraph(tx, issueId, plan)`。两者**只写库不拉进程**（F006 `design.md` 第 8.2 节）。F006 未落地时该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，**禁止静默回退为 `sequential`**。
-- [ ] T021c：幂等测试——同一 token 重复 confirm（含并发双击）只产生一个 Issue；`confirming` 中返回 409、`confirmed` 返回既有结果。
+- [ ] T021c：幂等测试——同一 token 重复 confirm（含并发双击）只产生一个 Issue，第二次撞 `nonce` 主键后读回并返回既有 `issue_id`/`target_id`（**200，不是错误**）。`intake_confirmations` **无 `status` 列**：整个确认是一个同步事务，`confirming` 别的请求观察不到、`failed` 没有写入点，只记录"已成功确认"这一个事实（`design.md` 第 1 节）。
 - [ ] T021e：token 过期测试——超过 30 分钟的 token 返回 `RECOMMENDATION_STALE`。
+- [ ] T021f：失败后重试测试——事务回滚后表中无残留行，同一未过期 token 可再次成功确认。
 - [ ] T021d：失败原子性测试——在事件写入、adapter 复核、图启动三处各注入一次失败，断言事务回滚、**不留孤儿 Issue/Thread**，且客户端可安全重试。
 - [ ] T022：`RECOMMENDATION_STALE` 错误码与变化项返回；测试覆盖 adapter 状态翻转、workspace 解绑、模板版本变更三种失效。
 - [ ] T022b：**用户改选值的独立校验**——用户把推荐的 adapter 换成另一个后，若新选的 adapter 当前不可用，必须返回 `RECOMMENDATION_STALE` 并指明是哪一项；断言该校验不依赖原始快照是否包含它（`design.md` 第 5 节）。
@@ -61,7 +65,7 @@ updated: 2026-08-02
 ## Phase 5：验收
 
 - [ ] T050：US1-US4 四条独立测试全部通过。
-- [ ] T051：topology 降级路径测试——**某个节点的 required capability 无任何 adapter 覆盖**时才降级为 `sequential`，`excluded` 注明是哪个节点缺哪项能力；同时断言"仅有一个可用 adapter"**不触发**降级（`design.md` 第 7 节）。
+- [ ] T051：topology 判定测试——断言"仅有一个可用 adapter"**不触发**降级；断言无 `Implementation` 能力时返回 `NO_AVAILABLE_CAPABLE_ADAPTER` 阻塞而非 `sequential` 方案。**v0.2 不存在可触发的能力降级路径**，不要为它写一条测不出来的分支（`design.md` 第 7 节）。
 - [ ] T052：F001-F006 全量回归。
 - [ ] T053：门禁——`npm run lint && npm run format:check && npm run typecheck && npm test && npm run build`；新增文件纳入 Prettier format targets。
 - [ ] T054：回写 `spec.md` 验收清单与 `BACKLOG.md` 状态。

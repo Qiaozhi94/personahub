@@ -46,6 +46,10 @@ F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md
 
 同样逐条核实后全部成立。**其中三条最严重的是上一轮修订自己引入的**：F007 让推荐阶段写库（与它自身「推荐无副作用」的 FR/AC/T012 冲突）、`recommendation_id` 用不含目标文本的 premise 哈希作身份（两个不同目标撞同一主键）、以及 F007/F006 对事务归属各说各话（嵌套时外层回滚撤不掉已拉起的进程）。另有一条是只改了调用方 F007 而没同步 F006，跨 feature 契约实际未成立。
 
+### 2026-08-02 第三轮检视（16 条）
+
+数量降到 5 High + 11 Medium，且**性质变了**：这轮几乎全是同一份文档内部段落之间的措辞冲突（旧结论没随新决定一起改），不再是缺失的契约。五条 High：确认 token 无签名（零写入使其唯一副本在客户端手里，服务端无法执行自己的过期与只读字段契约，已改为 HMAC）、建图既要求"失败即整体拒绝"又要求"落 blocked 图"（已定为写库前拒绝，blocker 只适用于已建起来的图）、能力不足降级为 `sequential` 而 sequential 需要同一项能力（v0.2 不存在可触发的降级，直接阻塞）、`result_unparsable` 同时被写成 `completed` 与 `failed`（统一为 `failed`）、F008 的 T023e 与 T030b 互斥（按四行矩阵重写）。
+
 处置：跨 feature 契约收归 F006 `design.md` 第 8 节单一拥有（`GraphExecutionPlan`、只写库的 `createGraph(tx,...)`、共享的 `resolveEligibleAdapter()`、执行者落库）；推荐阶段改为零写入 + `nonce` token；补齐图的终态化事务、blocker→恢复动作矩阵、取消的接入点（`RunDispatchService.cancel()` 的 queued 分支不走 `finalizeAndDrain`）；F008 明确只有 `steps_json` 有运行时消费者，其余字段只读。F007 的 API 契约已定稿，上一轮的 Phase 0 准入撤销。
 
 PRD v0.2 范围里的 "Structured Handoff Packet" 已由 v0.1.4 交付（`handoff-builder.ts`），不重复实现。

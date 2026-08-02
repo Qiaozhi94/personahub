@@ -271,11 +271,13 @@ CREATE TABLE admin_audit_events (
 |---|---|---|
 | `GET /api/workflow-templates?issue_type=coding` | 版本列表（含 `status`、`version`、`validation_enabled`） | — |
 | `GET /api/workflow-templates/:id` | 详情（`validation_enabled` 可为 `null` + 解析错误） | 404 `TEMPLATE_NOT_FOUND` |
-| `POST /api/workflow-templates` | 新增版本，body 仅接受 `name` / `steps_json` + `activate`、`acknowledge_validation_disabled` | 400 `TEMPLATE_STEPS_INVALID`（启用时）、400 `VALIDATION_DISABLE_NOT_ACKNOWLEDGED`、400 `TEMPLATE_FIELD_NOT_EDITABLE`、409 `TEMPLATE_VERSION_CONFLICT` |
+| `POST /api/workflow-templates/:sourceId/versions` | 基于**指定版本**新增版本，body 仅接受 `name` / `steps_json` + `activate`、`acknowledge_validation_disabled` | 404 `TEMPLATE_NOT_FOUND`、400 `TEMPLATE_STEPS_INVALID`（启用时）、400 `VALIDATION_DISABLE_NOT_ACKNOWLEDGED`、400 `TEMPLATE_FIELD_NOT_EDITABLE`、409 `TEMPLATE_VERSION_CONFLICT` |
 | `POST /api/workflow-templates/:id/activate` | 启用任意版本 | 400 `TEMPLATE_STEPS_INVALID`、400 `VALIDATION_DISABLE_NOT_ACKNOWLEDGED`、404 |
 | `POST /api/workflow-templates/:id/deactivate` | 停用 | 409 `LAST_ACTIVE_TEMPLATE` |
 
 - 无 `PATCH` / `PUT`：内容字段不可原地修改（第 3 节）。
+- **新增版本必须走嵌套路由，`:sourceId` 就是继承来源。** 第 5c 节说四个不可编辑字段"由新版本原样继承"，但一个全局的 `POST /api/workflow-templates` 既没有 `source_template_id` 也没有 `issue_type`——一旦版本历史里有多行，服务端根本不知道在改哪一行；退而用"当前默认版本"作来源，会让用户编辑旧版本时静默继承到无关的值。`issue_type` 与四个继承字段一律取自 `:sourceId` 那一行。
+- `:sourceId` 不存在 → 404；其所属 `issue_type` 家族在并发中已变（例如版本号被别的请求抢占）→ 409 `TEMPLATE_VERSION_CONFLICT`。
 - 全部写操作成功后写 `admin_audit_events`（第 7 节）。
 - 前端各态：`loading` / `list` / `detail` / `invalid_steps`（详情可读但不可启用）/ `confirm_validation_disabled`（二次确认）/ `conflict`（409 后刷新列表）。
 
