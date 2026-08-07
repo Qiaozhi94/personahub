@@ -9,7 +9,7 @@ updated: 2026-08-02
 
 # F006：Orchestrated Coding Graph Slice - 设计
 
-> Status: ready-for-development | Owner: TBD | Spec: `spec.md`
+> Status: done（`spec.md` 全部 AC 验收通过；见 `spec.md` Status 行） | Owner: TBD | Spec: `spec.md`
 
 ## 1. 技术概要
 
@@ -225,7 +225,7 @@ instructions = 节点视角与判据（instructionTemplate）
 
 - **目标文件集的真相源是 `graph_runs` 上的结构化列，不是指令文本**。上一版说"随 `instructions` 冻结"，但 synthesis 直到 join 之后才有第一个 Attempt——若那时因资格失败被 blocked，`resolve-executors` 要给它生成**第一份**指令，而原始文件集既不在任何结构化字段里，重扫又会破坏冻结语义，从前驱的自由文本反解析更没有契约。因此落 `target_files_json` / `target_files_hash` / `target_files_truncated` / `target_files_dropped_count` 四列，建图、join、retry、`resolve-executors`、重启恢复**一律读同一份快照**。
 - 两个前驱必须看同一份文件集才可比，执行时各扫一次会因中途文件变动而产生不可比的两份结果——这是冻结的全部理由。
-- **解析在写事务之外做**。`createGraph(tx, ...)` 是纯 DB 写，而 glob 要遍历文件系统——把它放进事务里，会让一个大仓库的目录遍历一直占着 SQLite 的全局写锁，而此时 F007 的外层事务已经创建了 Issue。因此拆出显式的 preflight 入口，见第 8.1 节的 `prepareGraph()`；事务内只复核 workspace id / path / definition version / `target_files_hash` 未变，然后消费冻结结果。
+- **解析在写事务之外做**。`createGraph(deps, ...)` 是纯 DB 写，而 glob 要遍历文件系统——把它放进事务里，会让一个大仓库的目录遍历一直占着 SQLite 的全局写锁，而此时 F007 的外层事务已经创建了 Issue。因此拆出显式的 preflight 入口，见第 8.1 节的 `prepareGraph()`；事务内只复核 workspace id / path / definition version / `target_files_hash` 未变，然后消费冻结结果。
 - **确定性规则必须写死**，否则 T020g 的"逐字节相同"在不同平台/glob 库下根本无法稳定通过：
   - 路径一律 workspace 相对、分隔符统一为 `/`；
   - 每个 glob 内部按**字典序**排序（按 UTF-8 字节比较，不用 locale 敏感的比较）；
@@ -541,6 +541,8 @@ running  --Attempt 终态-->  completed | failed | interrupted | cancelled
 
 ### 8.1 `GraphExecutionPlan`
 
+> **2026-08-08 核对更新**：以下是 `server/src/services/graph-runtime.ts`、`server/src/runtime/graph/preflight.ts` 实际实现的签名，与本节最初的伪代码不一致，**以此为准**——实现阶段做了务实调整但当时没有回写本节。F007 开发前按这版对齐，不要照抄旧伪代码。
+
 ```ts
 interface GraphExecutionPlan {
   definitionId: string;
@@ -563,14 +565,26 @@ interface GraphPreflight {
   droppedCount: number;
 }
 
-prepareGraph(workspaceId, plan): Promise<GraphPreflight>   // 事务外，遍历文件系统
+// 实际实现：同步函数（内部是 readdirSync/statSync/realpathSync，没有 I/O
+// 等待点可 await），不是 Promise；且要求调用方先自己解出 definition 对象
+// 再传入——函数内部只读 definition.targetGlobs，而 getDefinition() 是纯查
+// 表，没有理由在这里重复解析一次。
+function prepareGraph(
+  workspacePath: string,
+  workspaceId: string,
+  definition: GraphDefinitionV1,   // 调用方先 getDefinition(plan.definitionId, plan.definitionVersion)
+  definitionId: string,
+  definitionVersion: number,
+): GraphPreflight
 ```
 
 **preflight 必须进签名。** 上一版只在正文说"预检在事务外做"，公开签名却仍是 `createGraph(tx, issueId, plan)`——没有任何参数承载预检结果，实现者只能在事务内重新 glob、或依赖隐式可变状态。加 `preflight` 入参后调用顺序才唯一：
 
 ```text
-F007 confirm：验签 → 幂等命中检查 → 过期判断 → prepareGraph()（事务外）
-             → 开外层写事务 → createGraph(tx, issueId, plan, preflight) → commit
+F007 confirm：验签 → 幂等命中检查 → 过期判断
+             → getDefinition(plan.definitionId, plan.definitionVersion)（查不到 → GRAPH_DEFINITION_UNAVAILABLE）
+             → prepareGraph(workspacePath, workspaceId, definition, plan.definitionId, plan.definitionVersion)（事务外）
+             → 开外层写事务 → createGraph(deps, issueId, threadId, workspaceId, projectId, plan, preflight) → commit
 ```
 
 事务内复核 `workspaceId` / `workspacePath` / `definitionVersion` / `targetFilesHash` 与当前一致，不一致则整体拒绝。**空文件集或越界 symlink 在 `prepareGraph()` 阶段就失败，此时尚未写入任何 Issue 或 Graph 行。**
@@ -582,31 +596,72 @@ F007 confirm：验签 → 幂等命中检查 → 过期判断 → prepareGraph()
 
 前一轮 F007 要求"单外层事务内调 `start()`"，F006 又写"`start()` 自持事务、返回后触发 drain"。两者嵌套时内层只能提交 savepoint，外层若回滚，已经被拉起的子进程无法撤销。
 
-拆成两个入口，**只有最外层的 commit 才有意义**：
+拆成两个入口，**只有最外层的 commit 才有意义**——以下是实际思路，2026-08-08 核对：`server/src/services/graph-runtime.ts` 的实现在细节上与本节最初的伪代码不同（`DbOnlyResult<T>` 包装、`tx` 参数、`enqueueSequential` 的独立返回类型都不存在），拆分动机与调用顺序依然成立，**签名以下方为准**：
 
 ```ts
-interface DbOnlyResult<T> {
-  value: T;
-  pendingEvents: ThreadEvent[];      // 已写库、尚未 broadcast
-  affectedWorkspaceIds: string[];    // 待 drain
+interface GraphCreateResult {
+  graphRunId: string;
+  queuedRunIds: string[];
+  pendingEvents: ThreadEvent[];   // 已写库、尚未 broadcast
 }
 
-// 纯 DB 写，使用调用方的事务；绝不拉起进程、绝不 drain、绝不 broadcast、绝不碰文件系统
-createGraph(tx, issueId, plan, preflight): DbOnlyResult<{ graphRunId: string; queuedRunIds: string[] }>
-enqueueSequential(tx, ...): DbOnlyResult<{ runId: string }>
+interface GraphRuntimeDeps {
+  graphRunRepo: GraphRunRepository;
+  nodeRunRepo: NodeRunRepository;
+  runRepo: RunRepository;
+  issueRepo: IssueRepository;
+  threadEventService: ThreadEventService;
+  adapterDeps: AdapterResolverDeps;
+  instructionBuilder: GraphNodeInstructionBuilder;
+  drainWorkspace: (workspaceId: string) => Promise<void>;
+}
 
-// 便利入口：自开事务调 createGraph，提交后 broadcast + drain。供非 intake 的直接调用方使用
-start(issueId, plan): Promise<{ graphRunId: string }>
+// 纯 DB 写；不接收 "tx" 参数——better-sqlite3 没有可传递的事务句柄，原子性
+// 来自调用方把整段调用包进 `db.transaction(() => { ... })()`：只要这次调用
+// 发生在那个回调内部，deps 里各仓储对象（内部共享同一个 db 实例）的写入
+// 就是原子的。绝不拉起进程、绝不 drain、绝不 broadcast、绝不碰文件系统。
+//
+// 独立导出的自由函数，不是 GraphRuntimeService 的方法。
+function createGraph(
+  deps: GraphRuntimeDeps,
+  issueId: string, threadId: string, workspaceId: string, projectId: string,
+  plan: GraphExecutionPlan, preflight: GraphPreflight,
+): GraphCreateResult
+
+class GraphRuntimeService {
+  constructor(deps: GraphRuntimeDeps, db: Database.Database);
+
+  // 便利入口：自开事务调 createGraph，提交后 broadcast + drain。
+  // 供非 intake 的直接调用方使用（如 Web 手动发起图）。
+  async start(
+    issueId: string, threadId: string, workspaceId: string,
+    workspacePath: string, projectId: string, plan: GraphExecutionPlan,
+  ): Promise<{ graphRunId: string }>;
+
+  // 是方法（与 createGraph 不同），同样不接收 tx、同样只写库不 drain；
+  // 内部直接调用上面的自由函数 createGraph。
+  enqueueSequential(
+    issueId: string, threadId: string, workspaceId: string, projectId: string,
+    plan: GraphExecutionPlan, preflight: GraphPreflight,
+  ): GraphCreateResult;
+}
 ```
 
-提交后由最外层统一收尾：
+**注意这里的不对称**：`enqueueSequential` 是 `GraphRuntimeService` 的实例方法，`createGraph` 不是——class 上没有同名方法。F007 若要在自己的事务内直接调用建图逻辑，只能 `import { createGraph } from ".../graph-runtime.js"` 并自行组装一份 `GraphRuntimeDeps`（或复用同一实例持有的 deps），**不能**写成 `graphRuntimeService.createGraph(...)`，这个方法不存在。是否要为对称性给 `GraphRuntimeService` 补一个 `createGraph` 方法留给 F007 实现时判断，本次文档核对不代为决定。
+
+提交后由最外层统一收尾，`workspaceId` 用调用方自己已知的那个值（`GraphCreateResult` 没有 `affectedWorkspaceIds` 字段，不需要从返回值里取）：
 
 ```ts
-for (const e of pendingEvents) threadEventService.broadcast(e);
-for (const id of affectedWorkspaceIds) drainWorkspace(id);
+this.db.transaction(() => {
+  // ...F007 自己的写（Issue/recommendation_applied 事件/intake_confirmations）...
+  const result = createGraph(deps, issueId, threadId, workspaceId, projectId, plan, preflight);
+  // ...
+})();
+for (const e of result.pendingEvents) threadEventService.broadcast(e);
+await drainWorkspace(workspaceId);
 ```
 
-- F007 的 `IntakeService.confirm()` 调 **`createGraph(tx, ...)`**，在自己的事务里；提交后由它统一 broadcast 与 drain。
+- F007 的 `IntakeService.confirm()` 在自己的事务里调用 **`createGraph(deps, ...)`**（自由函数，见上）；提交后由它统一 broadcast 与 drain。
 - **契约是"事务内不得有任何不可回滚的副作用"**，不只是"不 drain"。事务内一律只调 `threadEventService.write()`，**禁止 `writeAndBroadcast()`**——后者写完立即 `eventBus.publish()`（`thread-event.ts:33-44`），而 F007 的幂等设计会让重复确认先建出临时 Issue/Run/事件、最后撞 `nonce` 唯一键整体回滚：广播出去的消息**收不回来**，SSE/UI 会收到一批实际并不存在的 Issue 与 Run。既有 `RunEscalationHandler` 已经是这个写法（收集 `pendingBroadcasts`，事务外逐个 broadcast），本 slice 沿用同一纪律。
 - 该约束适用于**全部**图事务：建图、事务一/二/三、retry、恢复、取消、`resolve-executors`。
 - **明令禁止**：任何嵌套 service 在自己返回时拉起 provider 进程。drain 失败不损坏状态——queued Run 仍在库里，下次 drain 或重启恢复即可继续。

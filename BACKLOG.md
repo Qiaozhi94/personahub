@@ -12,9 +12,10 @@ created: 2026-07-11
 
 | ID | Version | Name | Status | Owner | Link |
 |----|---------|------|--------|-------|------|
-| F006 | 0.2 | Orchestrated Coding Graph Slice | ready-for-development | TBD | `docs/features/0.2/F006-orchestrated-coding-graph-slice/spec.md` |
 | F007 | 0.2 | Coordinator Agent & Routing Recommendation | ready-for-development | TBD | `docs/features/0.2/F007-coordinator-routing-recommendation/spec.md` |
 | F008 | 0.2 | Workflow Template Admin & Runtime Health | ready-for-development | TBD | `docs/features/0.2/F008-workflow-template-admin-runtime-health/spec.md` |
+
+> F006（Orchestrated Coding Graph Slice）已于 2026-08-08 完成全部 AC 验收（`spec.md` Status: done），按上方规则移出活跃表；详情见 `docs/features/0.2/F006-orchestrated-coding-graph-slice/spec.md`。
 
 ## v0.2 拆分说明
 
@@ -26,7 +27,7 @@ PRD 第 15 节 v0.2（Orchestrator Workflow）的完成判据覆盖多个独立 
 
 F007 的前置决策已由 `docs/decisions/0007-coordinator-execution-channel.md` 关闭：v0.2 的 Coordinator 是确定性规则引擎，不引入 LLM 执行通道，只推荐不派工。关键依据是 `runs` 的三个 NOT NULL 外键使 pre-Issue 调用不能是 Run，以及 v0.2 的推荐候选集大小本来就是 1。
 
-**实施顺序**：F006 → F007 → F008。F007 的多数任务不依赖 F006 实现完成，但确认路径依赖 F006 的三项现行契约——事务外的 `prepareGraph()`、事务内只写库的 `createGraph(tx, issueId, plan, preflight)`、`enqueueSequential(tx, ...)`，以及共享原语 `resolveEligibleAdapter()`（由 F006 `design.md` 第 8 节拥有）。**F007 不调用便利入口 `start(issueId, plan)`**——那是给非 intake 调用方的自开事务包装，从 F007 调它会重新引入嵌套事务与提前 drain。F008 是收尾项。
+**实施顺序**：F006 → F007 → F008。F006 已完成（见上方说明）。F007 的多数任务不依赖 F006 实现完成，但确认路径依赖 F006 的三项现行契约——事务外的 `prepareGraph(workspacePath, workspaceId, definition, definitionId, definitionVersion)`（同步函数）、事务内只写库的自由函数 `createGraph(deps, issueId, threadId, workspaceId, projectId, plan, preflight)`、`GraphRuntimeService` 实例方法 `enqueueSequential(issueId, threadId, workspaceId, projectId, plan, preflight)`，以及共享原语 `resolveEligibleAdapter()`（均由 F006 `design.md` 第 8 节拥有，2026-08-08 已核对与 `server/src/services/graph-runtime.ts` 实现一致；注意 `createGraph` 不接收 `tx` 参数、也不是 `GraphRuntimeService` 的方法，与 `enqueueSequential` 不对称）。**F007 不调用便利入口 `start(issueId, threadId, workspaceId, workspacePath, projectId, plan)`**——那是给非 intake 调用方的自开事务包装，从 F007 调它会重新引入嵌套事务与提前 drain。F008 是收尾项。
 
 **schema 版本按落地顺序**：F006 = v8（`graph_runs`（含 `blocked_node_keys` 与 `target_files_*` 四列）/ `node_runs` / `runs.node_run_id` / 两个 partial unique index），F007 = v9（`intake_confirmations` **和** `app_secrets` 两张表），F008 = v10（`admin_audit_events` 一张表 + `workflow_templates` 的两个唯一索引）。顺序若变则顺延——**绝不追加进任何已应用的版本**（F005 的 `availability_revision` 教训）。
 

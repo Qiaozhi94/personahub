@@ -13,7 +13,7 @@ updated: 2026-08-02
 
 ## 1. 技术概要
 
-新增一个**纯函数式**的 `RoutingRecommendationService`：读 Project / workspace / adapter 注册表，按显式规则集算出推荐，返回带解释的结构，不写任何库。确认走独立的 `IntakeService.confirm()`，复用既有的 `IssueService.create()` 与既有的队列/派工基础设施，不新建执行路径——但**不直接调用通用的 `RunDispatchService.dispatch()`**：两条 topology 分别走 `enqueueSequential(tx, ...)` 与 `createGraph(tx, ...)`（第 6、7 节）。无条件 dispatch 会把图节点变成普通 implementation Run 并误触发 F004 验证循环。
+新增一个**纯函数式**的 `RoutingRecommendationService`：读 Project / workspace / adapter 注册表，按显式规则集算出推荐，返回带解释的结构，不写任何库。确认走独立的 `IntakeService.confirm()`，复用既有的 `IssueService.create()` 与既有的队列/派工基础设施，不新建执行路径——但**不直接调用通用的 `RunDispatchService.dispatch()`**：两条 topology 分别走 `GraphRuntimeService.enqueueSequential(...)` 与自由函数 `createGraph(deps, ...)`（准确签名与调用惯例见 F006 `design.md` 第 8 节，本节不重复声明；`tx` 不是这两个函数的参数——better-sqlite3 没有可传递的事务句柄，原子性来自 `confirm()` 自己把整段调用包进 `db.transaction(() => {...})()`）。无条件 dispatch 会把图节点变成普通 implementation Run 并误触发 F004 验证循环。
 
 **推荐阶段零写入。** 上一轮为了做幂等，让推荐签发时就往 `intake_confirmations` 写一行——这与 FR-003 / NFR-001 / AC-002 / T012 全部冲突（它们要求推荐无副作用、纯内存计算），而且带来两个新问题：
 
@@ -218,9 +218,12 @@ confirm(token, 用户最终选择)
       ├─ IssueService.create(projectId, {title, goal, priority})   // 既有方法，不改签名
       ├─ 写 ThreadEvent: coordinator.recommendation_applied
       │    payload: { rules[], recommended, chosen, diff[] }        // TR-001
-      ├─ 按确认的 topology 建首个执行单元（只写库，不拉进程）：
-      │    sequential            → GraphRuntimeService.enqueueSequential(tx, ...)
-      │    orchestrator_subagent → GraphRuntimeService.createGraph(tx, issueId, plan)
+      ├─ 按确认的 topology 建首个执行单元（只写库，不拉进程；均在本事务回调内调用，
+      │    不接收 "tx" 参数——原子性来自整段调用被包在这个 db.transaction(() => {...})() 里）：
+      │    sequential            → GraphRuntimeService.enqueueSequential(...)   // 实例方法
+      │    orchestrator_subagent → createGraph(deps, issueId, threadId, workspaceId, projectId, plan, preflight)
+      │                             // 独立自由函数，不是 GraphRuntimeService 的方法；
+      │                             // 签名与调用惯例见 F006 design.md 第 8.2 节
       └─ INSERT intake_confirmations(...) —— **完整最终行，作为事务最后一步**
   ── commit ──
   提交之后，由 IntakeService 统一对受影响 workspace 调一次 drain。
@@ -228,7 +231,7 @@ confirm(token, 用户最终选择)
 
 **认领在最后一步而非第一步。** 表里全部列 NOT NULL 且只记录已成功确认的事实，`issue_id` / `target_kind` / `target_id` 要等实体建完才有值——放在开头 INSERT 根本插不进去。并发双击的收敛靠 `nonce` 唯一键：后到者在 INSERT 处撞键 → 整个事务回滚 → 随后**另起一次读**取胜者已提交的行，返回 200 与既有 `issue_id`/`target_id`。这条顺序是可实现性要求，不是风格选择。
 
-**事务归属**：上一轮 F007 要求"单外层事务"，F006 又写"`start()` 自持事务、返回后 drain"，嵌套时内层只能提交 savepoint——外层若回滚，已经拉起的子进程无法撤销。现按 F006 `design.md` 第 8.2 节的拆分：`createGraph(tx, ...)` / `enqueueSequential(tx, ...)` **只写库**，派工统一由最外层提交后触发。drain 失败不损坏状态，queued Run 仍在库里等下次 drain 或重启恢复。
+**事务归属**：上一轮 F007 要求"单外层事务"，F006 又写"`start()` 自持事务、返回后 drain"，嵌套时内层只能提交 savepoint——外层若回滚，已经拉起的子进程无法撤销。现按 F006 `design.md` 第 8.2 节的拆分：`createGraph(deps, ...)`（自由函数）/ `enqueueSequential(...)`（`GraphRuntimeService` 实例方法）**只写库**，均不接收 `tx` 参数，派工统一由最外层提交后触发。drain 失败不损坏状态，queued Run 仍在库里等下次 drain 或重启恢复。
 
 **分流是必须的**：F006 的图节点 Run 使用 `RunRole.GraphNode` 并由 `GraphRuntimeService` 创建；若确认路径无条件走 `RunDispatchService.dispatch()`，推荐出来的 `orchestrator_subagent` 会退化成一个普通的 implementation Run——推荐与实际执行不一致，且该 Run 完成时会触发 F004 的验证循环（见 F006 `design.md` 第 7 节）。
 
@@ -282,7 +285,7 @@ confirm(token, 用户最终选择)
 - 复核（8.3）：逐项经 `resolveEligibleAdapter()`，任一不通过则**整体拒绝**，不部分启动、不自行替换。
 - F007 仍**不读写** `graph_runs` / `node_runs`，边界不变：F006 负责图能不能跑、怎么恢复；F007 只负责"这次要不要用图、由谁跑"。
 
-**实施顺序上的约束**：F007 可先于 F006 完成开发，但 `orchestrator_subagent` 分支要等 `createGraph(tx, ...)` 存在才能接通。在此之前该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，而**不是**悄悄回退到 `sequential`——静默回退会让 US1 验收场景 2 表面通过而实际没跑图。
+**实施顺序上的约束**：F007 可先于 F006 完成开发，但 `orchestrator_subagent` 分支要等 `createGraph(deps, ...)` 存在才能接通。在此之前该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，而**不是**悄悄回退到 `sequential`——静默回退会让 US1 验收场景 2 表面通过而实际没跑图。
 
 ## 8. 边界与失败处理
 

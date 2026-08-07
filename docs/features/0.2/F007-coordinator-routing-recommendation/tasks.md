@@ -77,7 +77,7 @@ updated: 2026-08-02
 
 - Phase 1 → Phase 2 → Phase 3 → Phase 4 顺序执行。API 契约已在 `design.md` 第 9 节定稿，无额外准入条件。
 - T051 依赖 F006 的 definition 已存在（只读取 `definition_id`/`version` 与逐节点 `required_capabilities`，不依赖其运行时完成）。
-- **T021b / T023b / T023c 依赖 F006 的 `createGraph(tx, ...)` / `enqueueSequential(tx, ...)` 与 `resolveEligibleAdapter()` 落地**（跨 feature 契约由 F006 `design.md` 第 8 节拥有）。其余任务不依赖 F006 实现完成即可开发。
+- **T021b / T023b / T023c 依赖 F006 的 `createGraph(deps, ...)`（自由函数）/ `enqueueSequential(...)`（`GraphRuntimeService` 实例方法）与 `resolveEligibleAdapter()` 落地**（均不接收 `tx` 参数；跨 feature 契约由 F006 `design.md` 第 8 节拥有，2026-08-08 已核对与实现一致）。F006 已于 2026-08-08 完成（`spec.md` Status: done），此依赖已满足。其余任务不依赖 F006 实现完成即可开发。
 
 ## 备注
 
