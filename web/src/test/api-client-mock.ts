@@ -16,6 +16,14 @@ export const apiClient = {
     create: vi.fn(),
     listByProject: vi.fn(),
     get: vi.fn(),
+    getGraph: vi.fn().mockResolvedValue({ current: null, history: [] }),
+    startGraph: vi.fn(),
+  },
+  graphRuns: {
+    get: vi.fn(),
+    cancel: vi.fn(),
+    retryNode: vi.fn(),
+    resolveExecutors: vi.fn(),
   },
   threads: {
     get: vi.fn(),

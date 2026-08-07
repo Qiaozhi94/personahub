@@ -15,6 +15,8 @@ import { RunTraceRepository } from "./repositories/run-trace.js";
 import { FileChangeRepository } from "./repositories/file-change.js";
 import { EvidenceSummaryRepository } from "./repositories/evidence-summary.js";
 import { AdapterWorkspaceStatusRepository } from "./repositories/adapter-workspace-status.js";
+import { NodeRunRepository } from "./repositories/node-run.js";
+import { GraphRunRepository } from "./repositories/graph-run.js";
 import { AdapterAvailabilityProbeCoordinator } from "./services/adapter-probe-coordinator.js";
 import { EvidenceService } from "./services/evidence.js";
 import { DevelopmentTraceService } from "./services/development-trace.js";
@@ -46,6 +48,10 @@ import { ClaudeCodeAdapter } from "./runtime/adapters/claude-code-adapter.js";
 import { OpenCodeAdapter } from "./runtime/adapters/opencode-adapter.js";
 import { registerRoutes } from "./api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "./api/errors.js";
+import { GraphConstraintError } from "./db/sqlite-errors.js";
+import { GraphRuntimeService } from "./services/graph-runtime.js";
+import { GraphRecoveryService } from "./services/graph-recovery.js";
+import { GraphNodeInstructionBuilder } from "./runtime/graph/instruction-builder.js";
 
 const PORT = Number(process.env.PORT ?? 4321);
 const HOST = process.env.HOST ?? "127.0.0.1";
@@ -70,6 +76,8 @@ async function main() {
   const runTraceRepo = new RunTraceRepository(db);
   const fileChangeRepo = new FileChangeRepository(db);
   const adapterWorkspaceStatusRepo = new AdapterWorkspaceStatusRepository(db);
+  const nodeRunRepo = new NodeRunRepository(db);
+  const graphRunRepo = new GraphRunRepository(db);
   const adapterProbeCoordinator = new AdapterAvailabilityProbeCoordinator();
 
   const eventBus = new EventBus();
@@ -94,7 +102,7 @@ async function main() {
   adapterRegistry.register(new ClaudeCodeAdapter());
   adapterRegistry.register(new OpenCodeAdapter());
 
-  const adapterConfigService = new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry, workspaceRepo, adapterWorkspaceStatusRepo, db, adapterProbeCoordinator);
+  const adapterConfigService = new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry, workspaceRepo, adapterWorkspaceStatusRepo, db, adapterProbeCoordinator, nodeRunRepo);
 
   const agentRunner = new AgentRunner({
     runService,
@@ -138,7 +146,18 @@ async function main() {
     threadEventService, agentRunner, developmentTraceService, runTraceRepo,
     validationWorkflowService, db,
     runRepo, threadEventRepo, fileChangeRepo,
-    manualRoutingService, adapterWorkspaceStatusRepo, adapterProbeCoordinator,
+    manualRoutingService, adapterWorkspaceStatusRepo, nodeRunRepo, graphRunRepo, projectRepo, adapterProbeCoordinator,
+  );
+
+  const graphRuntimeService = new GraphRuntimeService(
+    {
+      graphRunRepo, nodeRunRepo, runRepo, issueRepo,
+      threadEventService,
+      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
+      instructionBuilder: new GraphNodeInstructionBuilder(),
+      drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
+    },
+    db,
   );
 
   const staleRecoveryService = new StaleRecoveryService(
@@ -147,6 +166,15 @@ async function main() {
   );
 
   await staleRecoveryService.runAll();
+
+  const graphRecoveryService = new GraphRecoveryService({
+    graphRunRepo, nodeRunRepo, runRepo, issueRepo, threadEventService,
+    threadEventRepo, agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo, db,
+  });
+  const recoveryResult = await graphRecoveryService.reconcile();
+  for (const event of recoveryResult.pendingEvents) {
+    threadEventService.broadcast(event);
+  }
 
   const validationRecoveryService = new ValidationRecoveryService(
     issueRepo, runRepo, validationWorkflowService,
@@ -172,6 +200,27 @@ async function main() {
       const status = getErrorStatus(error.code);
       reply.code(status);
       return buildErrorResponse(error);
+    }
+    if (error instanceof GraphConstraintError) {
+      app.log.error(error);
+      if (error.kind === "active_attempt") {
+        reply.code(409);
+        return {
+          error: {
+            code: ErrorCode.NODE_RUN_ATTEMPT_IN_PROGRESS,
+            message: error.message,
+            details: { kind: error.kind },
+          },
+        };
+      }
+      reply.code(500);
+      return {
+        error: {
+          code: ErrorCode.INTERNAL_ERROR,
+          message: error.message,
+          details: { kind: error.kind },
+        },
+      };
     }
     app.log.error(error);
     reply.code(500);
@@ -208,6 +257,16 @@ async function main() {
     evidenceSummaryRepo,
     issueRepo,
     runRepo,
+    graphRunRepo,
+    nodeRunRepo,
+    workspaceRepo,
+    threadRepo,
+    threadEventRepo,
+    graphRuntimeService,
+    agentConfigRepo,
+    projectRepo,
+    adapterWorkspaceStatusRepo,
+    db,
   });
 
   app.addHook("onClose", async () => {

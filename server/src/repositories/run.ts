@@ -2,6 +2,7 @@ import type Database from "better-sqlite3";
 import type { Run, RunStatus, FailureReason, RunRole, RunDispatchSource, RunPurpose as RunPurposeType, AdapterIdentitySnapshot } from "@personahub/shared/types";
 import { RunRole as RR, RunDispatchSource as RDS, RunPurpose } from "@personahub/shared/types";
 import { generateRunId } from "../id.js";
+import { isActiveGraphAttemptConflict, GraphConstraintError } from "../db/sqlite-errors.js";
 
 export interface RunCreateInput {
   /** Pre-generated id — lets a caller build content that must reference the Run's own id (e.g. validator context) before the row exists, so the row can be created once with final content instead of insert-then-update. Omitted generates one internally. */
@@ -18,6 +19,8 @@ export interface RunCreateInput {
   adapter_identity?: AdapterIdentitySnapshot | null;
   purpose?: RunPurposeType;
   context_source_run_id?: string | null;
+  /** F006: parent NodeRun for graph-node Runs. null for non-graph Runs. */
+  node_run_id?: string | null;
 }
 
 export interface RunTransitionResult {
@@ -46,15 +49,22 @@ interface RunRow {
   adapter_identity_json: string | null;
   purpose: string;
   context_source_run_id: string | null;
+  node_run_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 /** Design §7.4: role -> workflow_step derivation. Consult never gets a workflow_step. */
 function deriveWorkflowStep(role: RunRole): "implementation" | "validation" | null {
-  if (role === RR.Validator) return "validation";
-  if (role === RR.Consult) return null;
-  return "implementation";
+  switch (role) {
+    case RR.Implementation:
+      return "implementation";
+    case RR.Validator:
+      return "validation";
+    case RR.Consult:
+    case RR.GraphNode:
+      return null;
+  }
 }
 
 function mapRow(row: RunRow): Run {
@@ -81,6 +91,7 @@ function mapRow(row: RunRow): Run {
     has_final_message: row.final_message !== null,
     purpose: row.purpose as RunPurposeType,
     context_source_run_id: row.context_source_run_id,
+    node_run_id: row.node_run_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -99,11 +110,28 @@ export class RunRepository {
     const identityJson = input.adapter_identity ? JSON.stringify(input.adapter_identity) : null;
     const purpose = input.purpose ?? RunPurpose.WorkflowBound;
     const contextSourceRunId = input.context_source_run_id ?? null;
+    const nodeRunId = input.node_run_id ?? null;
 
-    this.db.prepare(
-      `INSERT INTO runs (id, issue_id, thread_id, workspace_id, adapter_config_id, status, failure_reason, instructions, role, workflow_step, validation_round, dispatch_source, adapter_identity_json, started_at, completed_at, exit_code, error_message, purpose, context_source_run_id, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?, ?, ?)`
-    ).run(id, input.issue_id, input.thread_id, input.workspace_id, input.adapter_config_id, input.status, input.instructions, role, workflowStep, validationRound, dispatchSource, identityJson, purpose, contextSourceRunId, now, now);
+    if ((role === RR.GraphNode) !== (nodeRunId !== null)) {
+      throw new Error(
+        "Invariant violation: GraphNode runs require node_run_id, and only GraphNode runs may set it.",
+      );
+    }
+
+    try {
+      this.db.prepare(
+        `INSERT INTO runs (id, issue_id, thread_id, workspace_id, adapter_config_id, status, failure_reason, instructions, role, workflow_step, validation_round, dispatch_source, adapter_identity_json, started_at, completed_at, exit_code, error_message, purpose, context_source_run_id, node_run_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?, ?, ?, ?)`
+      ).run(id, input.issue_id, input.thread_id, input.workspace_id, input.adapter_config_id, input.status, input.instructions, role, workflowStep, validationRound, dispatchSource, identityJson, purpose, contextSourceRunId, nodeRunId, now, now);
+    } catch (error) {
+      if (isActiveGraphAttemptConflict(error)) {
+        throw new GraphConstraintError(
+          "This graph node already has an active attempt.",
+          "active_attempt",
+        );
+      }
+      throw error;
+    }
 
     const row = this.db.prepare("SELECT * FROM runs WHERE id = ?").get(id) as RunRow;
     return mapRow(row);
@@ -231,5 +259,10 @@ export class RunRepository {
        ORDER BY created_at DESC, id DESC LIMIT 1`,
     ).get(issueId, roleStr) as RunRow | undefined;
     return row ? mapRow(row) : null;
+  }
+
+  getFinalMessage(runId: string): string | null {
+    const row = this.db.prepare("SELECT final_message FROM runs WHERE id = ?").get(runId) as { final_message: string | null } | undefined;
+    return row?.final_message ?? null;
   }
 }

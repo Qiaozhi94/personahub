@@ -34,6 +34,11 @@ import {
   type WorkspaceBindResponse,
   type WorkspaceByIdResponse,
   type WorkspaceGetResponse,
+  type IssueGraphResponse,
+  type GraphRunCancelResponse,
+  type GraphNodeRetryResponse,
+  type GraphResolveExecutorsResponse,
+  type GraphStartResponse,
 } from "@personahub/shared";
 
 const API_BASE = "/api";
@@ -96,6 +101,26 @@ export const apiClient = {
     listByProject: (projectId: string) =>
       apiFetch<IssueListResponse>(`/projects/${projectId}/issues`),
     get: (id: string) => apiFetch<IssueGetResponse>(`/issues/${id}`),
+    getGraph: (id: string) => apiFetch<IssueGraphResponse>(`/issues/${id}/graph`),
+    startGraph: (issueId: string, input: { definitionId: string; definitionVersion: number; nodeAssignments: Record<string, string>; premiseHash?: string | null }) =>
+      apiFetch<GraphStartResponse>(`/issues/${issueId}/graph-runs`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+  },
+  graphRuns: {
+    get: (id: string) => apiFetch<IssueGraphResponse["current"]>(`/graph-runs/${id}`),
+    cancel: (id: string) =>
+      apiFetch<GraphRunCancelResponse>(`/graph-runs/${id}/cancel`, { method: "POST" }),
+    retryNode: (graphRunId: string, nodeKey: string) =>
+      apiFetch<GraphNodeRetryResponse>(`/graph-runs/${graphRunId}/nodes/${encodeURIComponent(nodeKey)}/retry`, {
+        method: "POST",
+      }),
+    resolveExecutors: (graphRunId: string, nodeAssignments: Record<string, string>) =>
+      apiFetch<GraphResolveExecutorsResponse>(`/graph-runs/${graphRunId}/resolve-executors`, {
+        method: "POST",
+        body: JSON.stringify({ node_assignments: nodeAssignments }),
+      }),
   },
   threads: {
     get: (id: string) => apiFetch<ThreadGetResponse>(`/threads/${id}`),

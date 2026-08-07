@@ -67,6 +67,7 @@ const ESCALATION_BLOCKED_BY: Record<FailureReason, string> = {
   [FR.ExecutionTimeout]: "",
   [FR.ServerRestarted]: "",
   [FR.OutputParseFailed]: "",
+  [FR.AdapterNoLongerEligible]: "",
 };
 
 export class AgentRunner {
@@ -306,23 +307,26 @@ export class AgentRunner {
       return null;
     }
 
-    activeRun.exited = true;
-    clearTimeout(activeRun.timeoutTimer);
+    const CANCEL_TIMEOUT_MS = 10_000;
 
-    try {
-      await activeRun.handle.cancel();
-    } catch {
-      void 0;
+    const outcome = await Promise.race([
+      activeRun.handle.cancel().then(() => "cancelled" as const).catch(() => "cancelled" as const),
+      new Promise<"timed_out">((resolve) => setTimeout(() => resolve("timed_out"), CANCEL_TIMEOUT_MS)),
+    ]);
+
+    if (outcome === "cancelled") {
+      activeRun.exited = true;
+      clearTimeout(activeRun.timeoutTimer);
+      this.activeRuns.delete(runId);
+
+      const result = this.deps.runService.transitionToCancelled(runId, "user_cancelled");
+      if (result) return result;
+
+      return this.deps.runService.get(runId);
     }
 
-    this.activeRuns.delete(runId);
-
-    const result = this.deps.runService.transitionToCancelled(
-      runId,
-      "user_cancelled",
-    );
-
-    return result;
+    // timed_out: keep Run running, lock held, timeout still active
+    return this.deps.runService.get(runId);
   }
 
   hasActiveRun(runId: string): boolean {

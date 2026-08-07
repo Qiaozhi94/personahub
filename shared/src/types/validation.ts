@@ -8,6 +8,9 @@ export enum RunRole {
   Implementation = "implementation",
   Validator = "validator",
   Consult = "consult",
+  /** F006: Graph node Run — drives the graph state machine, not the Issue
+   *  state machine. Must NOT fall through to implementation/validator branches. */
+  GraphNode = "graph_node",
 }
 
 // Extended by F005: adds UserDefault for Runs dispatched via the Project's

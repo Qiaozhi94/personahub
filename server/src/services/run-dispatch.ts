@@ -25,7 +25,17 @@ import type { RunRepository } from "../repositories/run.js";
 import type { ThreadEventRepository } from "../repositories/thread-event.js";
 import type { FileChangeRepository } from "../repositories/file-change.js";
 import type { AdapterWorkspaceStatusRepository } from "../repositories/adapter-workspace-status.js";
+import { NodeRunStatus } from "@personahub/shared/types";
+import type { NodeRunRepository } from "../repositories/node-run.js";
+import type { GraphRunRepository } from "../repositories/graph-run.js";
+import type { ProjectRepository } from "../repositories/project.js";
 import type { ValidationWorkflowService } from "./validation/workflow-service.js";
+import {
+  processGraphNodeCompletion,
+  blockGraphOnCancelledPrecursor,
+  tryFinalizeGraphRun,
+  type NodeCompletionDeps,
+} from "./graph/node-completion.js";
 import { AppError } from "../api/errors.js";
 import { buildRunContext } from "./run-context-builder.js";
 import { AdapterAvailabilityProbeCoordinator } from "./adapter-probe-coordinator.js";
@@ -55,7 +65,10 @@ export class RunDispatchService {
     private fileChangeRepo: FileChangeRepository,
     private manualRoutingService: ManualRoutingService,
     private adapterWorkspaceStatusRepo: AdapterWorkspaceStatusRepository,
-    /** closure-recheck-3-report fix: SAME instance injected into AdapterConfigService — see adapter-probe-coordinator.ts. */
+    private nodeRunRepo: NodeRunRepository,
+    private graphRunRepo: GraphRunRepository,
+    private projectRepo: ProjectRepository,
+    /** closure-recheck-3-report fix */
     probeCoordinator: AdapterAvailabilityProbeCoordinator,
   ) {
     this.failureReprobe = new AdapterFailureReprobe(
@@ -176,6 +189,11 @@ export class RunDispatchService {
     const run = this.runService.get(runId);
     if (!run || !run.role) return;
 
+    if (run.role === RunRole.GraphNode) {
+      processGraphNodeCompletion(this.nodeCompletionDeps(), run);
+      return;
+    }
+
     if (run.role === RunRole.Implementation && run.status === RS.Completed) {
       this.validationWorkflowService.requestValidation(run.issue_id, runId);
       return;
@@ -203,7 +221,27 @@ export class RunDispatchService {
     const run = this.runService.get(runId);
 
     if (run.status === RS.Queued) {
-      return this.runService.cancelQueued(runId, "user_cancelled");
+      const cancelled = this.runService.cancelQueued(runId, "user_cancelled");
+      if (cancelled && cancelled.role === RunRole.GraphNode && cancelled.node_run_id) {
+        this.nodeRunRepo.compareAndSetStatus(cancelled.node_run_id, NodeRunStatus.Ready, NodeRunStatus.Cancelled);
+        const nr = this.nodeRunRepo.getById(cancelled.node_run_id);
+        if (nr) {
+          // A cancelled precursor can make a still-non-terminal downstream
+          // node's join permanently unsatisfiable — tryFinalizeGraph()'s
+          // allTerminal gate only fires once *every* node reaches a
+          // terminal state, which never happens on its own in that case
+          // (the graph would silently sit in `running` forever). Detect
+          // that condition and block immediately instead of waiting.
+          const blockedImmediately = blockGraphOnCancelledPrecursor(
+            this.nodeCompletionDeps(),
+            nr.graph_run_id,
+            nr.node_key,
+          );
+          if (!blockedImmediately) tryFinalizeGraphRun(this.nodeCompletionDeps(), nr.graph_run_id);
+        }
+        await this.startNextQueuedRun(cancelled.workspace_id);
+      }
+      return cancelled;
     }
 
     if (run.status === RS.Running) {
@@ -275,6 +313,7 @@ export class RunDispatchService {
       const issue = this.issueRepo.getById(run.issue_id);
       if (!issue) continue;
       if (issue.status === IS.Blocked) {
+        if (run.role === RunRole.GraphNode) continue;
         this.runService.cancelQueued(run.id, "issue_blocked_before_start");
         continue;
       }
@@ -313,14 +352,36 @@ export class RunDispatchService {
       const lockAcquired = this.workspaceLockService.acquire(workspaceId, run.id);
       if (!lockAcquired) return;
 
-      let startedRun: Run | null;
-      try {
-        startedRun = this.prepareAndStart(run);
-      } catch {
-        // Do not leak the lock or reject out of the finalize/drain path;
-        // release and try the next queued Run.
-        this.workspaceLockService.releaseByRunId(run.id);
-        continue;
+      let startedRun: Run | null = null;
+
+      if (run.role === RunRole.GraphNode && run.node_run_id) {
+        let claimedRun: Run | null = null;
+        try {
+          this.db.transaction(() => {
+            const nodeMoved = this.nodeRunRepo.compareAndSetStatus(
+              run.node_run_id!,
+              NodeRunStatus.Ready,
+              NodeRunStatus.Running,
+            );
+            if (!nodeMoved.success) throw new Error("node_not_ready");
+            const runResult = this.runRepo.transitionStatus(run.id, RS.Queued, RS.Running, {
+              started_at: new Date().toISOString(),
+            });
+            if (!runResult.success) throw new Error("run_not_queued");
+            claimedRun = runResult.run;
+          })();
+        } catch {
+          this.workspaceLockService.releaseByRunId(run.id);
+          continue;
+        }
+        startedRun = claimedRun;
+      } else {
+        try {
+          startedRun = this.prepareAndStart(run);
+        } catch {
+          this.workspaceLockService.releaseByRunId(run.id);
+          continue;
+        }
       }
       if (startedRun) {
         try {
@@ -333,5 +394,24 @@ export class RunDispatchService {
       }
       this.workspaceLockService.releaseByRunId(run.id);
     }
+  }
+
+  /** Bundles this service's own repositories/services into the shape
+   *  node-completion.ts's free functions expect — those functions are
+   *  shared with GraphRecoveryService, so the dispatch-time and
+   *  restart-recovery paths can never drift apart again. */
+  private nodeCompletionDeps(): NodeCompletionDeps {
+    return {
+      nodeRunRepo: this.nodeRunRepo,
+      graphRunRepo: this.graphRunRepo,
+      runRepo: this.runRepo,
+      issueRepo: this.issueRepo,
+      threadEventService: this.threadEventService,
+      threadEventRepo: this.threadEventRepo,
+      agentConfigRepo: this.agentConfigRepo,
+      projectRepo: this.projectRepo,
+      adapterWorkspaceStatusRepo: this.adapterWorkspaceStatusRepo,
+      db: this.db,
+    };
   }
 }

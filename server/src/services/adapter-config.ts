@@ -8,6 +8,7 @@ import { toPublicAdapter } from "../repositories/agent-config-dto.js";
 import type { ProjectRepository } from "../repositories/project.js";
 import type { WorkspaceRepository } from "../repositories/workspace.js";
 import type { AdapterWorkspaceStatusRepository } from "../repositories/adapter-workspace-status.js";
+import type { NodeRunRepository } from "../repositories/node-run.js";
 import { AdapterAvailabilityProbeCoordinator } from "./adapter-probe-coordinator.js";
 import type { AgentAdapterRegistry } from "../runtime/adapter-registry.js";
 import { AppError } from "../api/errors.js";
@@ -37,6 +38,7 @@ export class AdapterConfigService {
     private db: Database.Database,
     /** Shared with RunDispatchService so cross-service probe ordering is coherent. */
     private probeCoordinator: AdapterAvailabilityProbeCoordinator,
+    private nodeRunRepo: NodeRunRepository,
   ) {}
 
   private trackAvailabilityProbe(probe: Promise<void>): void {
@@ -280,8 +282,8 @@ export class AdapterConfigService {
       throw new AppError(ErrorCode.ADAPTER_NOT_FOUND, "Adapter config not found.");
     }
 
-    if (this.agentConfigRepo.hasRuns(id)) {
-      throw new AppError(ErrorCode.ADAPTER_IN_USE, "Cannot delete adapter config that has runs.");
+    if (this.agentConfigRepo.hasRuns(id) || this.nodeRunRepo.hasAnyReference(id)) {
+      throw new AppError(ErrorCode.ADAPTER_IN_USE, "Cannot delete adapter config referenced by runs or graph nodes.");
     }
 
     const project = this.projectRepo.getById(existing.project_id);

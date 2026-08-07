@@ -7,6 +7,12 @@ import { adapterRoutes } from "./routes/adapters.js";
 import { runRoutes } from "./routes/runs.js";
 import { traceRoutes } from "./routes/traces.js";
 import { validationRoutes } from "./routes/validation.js";
+import graphRoutes from "./routes/graph.js";
+import type { GraphRuntimeService } from "../services/graph-runtime.js";
+import type { GraphRunRepository } from "../repositories/graph-run.js";
+import type { NodeRunRepository } from "../repositories/node-run.js";
+import type { WorkspaceRepository } from "../repositories/workspace.js";
+import type { ThreadRepository } from "../repositories/thread.js";
 import type { ProjectService } from "../services/project.js";
 import type { WorkspaceService } from "../services/workspace.js";
 import type { IssueService } from "../services/issue.js";
@@ -24,6 +30,11 @@ import type { ValidationWorkflowService } from "../services/validation/workflow-
 import type { EvidenceSummaryRepository } from "../repositories/evidence-summary.js";
 import type { IssueRepository } from "../repositories/issue.js";
 import type { RunRepository } from "../repositories/run.js";
+import type { ThreadEventRepository } from "../repositories/thread-event.js";
+import type { AgentConfigRepository } from "../repositories/agent-config.js";
+import type { ProjectRepository } from "../repositories/project.js";
+import type { AdapterWorkspaceStatusRepository } from "../repositories/adapter-workspace-status.js";
+import type Database from "better-sqlite3";
 
 export interface Services {
   projectService: ProjectService;
@@ -43,6 +54,16 @@ export interface Services {
   evidenceSummaryRepo: EvidenceSummaryRepository;
   issueRepo: IssueRepository;
   runRepo: RunRepository;
+  graphRunRepo: GraphRunRepository;
+  nodeRunRepo: NodeRunRepository;
+  workspaceRepo: WorkspaceRepository;
+  threadRepo: ThreadRepository;
+  threadEventRepo: ThreadEventRepository;
+  graphRuntimeService: GraphRuntimeService;
+  agentConfigRepo: AgentConfigRepository;
+  projectRepo: ProjectRepository;
+  adapterWorkspaceStatusRepo: AdapterWorkspaceStatusRepository;
+  db: Database.Database;
 }
 
 export function registerRoutes(app: FastifyInstance, services: Services): void {
@@ -71,5 +92,21 @@ export function registerRoutes(app: FastifyInstance, services: Services): void {
     issueRepo: services.issueRepo,
     runRepo: services.runRepo,
     runDispatchService: services.runDispatchService,
+  });
+  app.register(graphRoutes, {
+    graphRunRepo: services.graphRunRepo,
+    nodeRunRepo: services.nodeRunRepo,
+    runRepo: services.runRepo,
+    issueRepo: services.issueRepo,
+    workspaceRepo: services.workspaceRepo,
+    threadRepo: services.threadRepo,
+    threadEventRepo: services.threadEventRepo,
+    threadEventService: services.threadEventService,
+    runDispatchService: services.runDispatchService,
+    graphRuntimeService: services.graphRuntimeService,
+    agentConfigRepo: services.agentConfigRepo,
+    projectRepo: services.projectRepo,
+    adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
+    db: services.db,
   });
 }

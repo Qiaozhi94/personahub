@@ -139,6 +139,7 @@ export function createRun(overrides: Partial<Run> = {}): Run {
     has_final_message: false,
     purpose: RunPurpose.WorkflowBound,
     context_source_run_id: null,
+    node_run_id: null,
     created_at: TIMESTAMP,
     updated_at: "2026-07-16T00:01:00.000Z",
     ...overrides,

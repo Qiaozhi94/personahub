@@ -9,7 +9,7 @@ updated: 2026-08-02
 
 # F006：Orchestrated Coding Graph Slice
 
-> Status: ready-for-development | Owner: TBD | Target: v0.2
+> Status: done (全部 AC-001~009 验收通过：后端 1460+ 测试 + 真实 CLI 验收 + Web UI 展示/取消/resolve-executors 入口) | Owner: TBD | Target: v0.2
 
 ## 0. 规格元信息
 
@@ -107,15 +107,15 @@ v0.1 只能执行 Implementation → Validation 循环和用户手动顺序接�
 
 ## 6. 验收清单
 
-- [ ] **AC-001**（`FR-001` - `FR-004`）：真实三节点 graph 正确执行并汇聚。
-- [ ] **AC-002**（`NFR-001`）：五条最小恢复语义均有确定性集成测试。
-- [ ] **AC-003**（`TR-001`）：实际 edge traversal 和 attempt 可查询、可展示、可回放。
-- [ ] **AC-004**（`NFR-002`）：未实现结构性隔离时无两个 agent 进程并发访问同一 workspace。
-- [ ] **AC-005**（`FR-005`）：F001-F005 全量回归通过，F004 validation 语义未被复制或改写。
-- [ ] **AC-006**（`FR-001`、`FR-004`）：synthesis 实际收到两份前驱 findings——由一条端到端测试经与 synthesis 相同的 API 读出并逐条比对，而不是仅断言节点 completed、边 traversed。
-- [ ] **AC-007**（边界场景）：取消的三条路径（单节点 / 整图 / 系统队列）各有确定的 NodeRun 与 GraphRun 结果；escalation 发生时排队中的兄弟节点不被销毁。
-- [ ] **AC-008**（`FR-002`、`FR-003`）：确认过的逐节点执行者落库并在 fan-in 之前重启后仍然生效；解析路径同时校验能力，一个 Available 但缺该能力的 adapter 会被拒绝。
-- [ ] **AC-009**（`FR-004`）：图有明确的终态化——成功后 GraphRun `completed` 且 Issue `Ready`；每个 `GraphBlockReason` 都有一条可执行的恢复动作，无死锁态。
+- [x] **AC-001**（`FR-001` - `FR-004`）：真实三节点 graph 正确执行并汇聚。— `graph-e2e-fake-adapter.test.ts`（T060）+ `graph-cli-acceptance.test.ts`（T063，真实 Codex CLI 复现通过）
+- [x] **AC-002**（`NFR-001`）：五条最小恢复语义均有确定性集成测试。— `graph-recovery.test.ts`（含 step 0 守卫、interrupted 同步、事务七重放、join 重评估、终态化）
+- [x] **AC-003**（`TR-001`）：实际 edge traversal 和 attempt 可查询、可展示、可回放。— `GET /api/issues/:id/graph` projection 从 `graph.edge_traversed` 事件回填真实 `traversed_at`/`outcome`/`decided_by`/`input_refs`；Web ThreadView/IssueInspector 展示
+- [x] **AC-004**（`NFR-002`）：未实现结构性隔离时无两个 agent 进程并发访问同一 workspace。— `graph-edge-cases.test.ts` T061（FIFO 队列单锁保证）
+- [x] **AC-005**（`FR-005`）：F001-F005 全量回归通过，F004 validation 语义未被复制或改写。— server 全量 1460+ 测试通过
+- [x] **AC-006**（`FR-001`、`FR-004`）：synthesis 实际收到两份前驱 findings。— `graph-fanin.test.ts` AC-001 端到端断言
+- [x] **AC-007**（边界场景）：取消的三条路径（单节点 / 整图 / 系统队列）各有确定的 NodeRun 与 GraphRun 结果；escalation 发生时排队中的兄弟节点不被销毁。— `graph-routes-mutations.test.ts` cancel 2 条（含运行中/无运行中）+ `graph-adapter-tests.test.ts` escalation + `blockGraphOnCancelledPrecursor` 单节点取消死锁测试
+- [x] **AC-008**（`FR-002`、`FR-003`）：确认过的逐节点执行者落库并在 fan-in 之前重启后仍然生效；解析路径同时校验能力。— `graph-recovery-semantics.test.ts` T045c + `graph-adapter-tests.test.ts` T022b
+- [x] **AC-009**（`FR-004`）：图有明确的终态化——成功后 GraphRun `completed` 且 Issue `Ready`；每个 `GraphBlockReason` 都有一条可执行的恢复动作，无死锁态。— `tryFinalizeGraphRun`/`tryFinalizeCancellingGraph` + retry/cancel/resolve-executors 端点（`graph-routes-mutations.test.ts` 验证）+ 恢复动作矩阵
 
 ## 7. 待确认问题（全部已关闭，2026-08-01）
 

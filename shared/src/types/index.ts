@@ -156,6 +156,15 @@ export enum ThreadEventType {
   IssueDone = "issue.done",
   IssueUnblocked = "issue.unblocked",
   ValidationRoundReset = "validation.round_reset",
+  // F006: graph execution events
+  GraphNodeQueued = "graph.node_queued",
+  GraphNodeResult = "graph.node_result",
+  GraphNodeCompleted = "graph.node_completed",
+  GraphEdgeTraversed = "graph.edge_traversed",
+  GraphJoinSatisfied = "graph.join_satisfied",
+  GraphExecutorReassigned = "graph.executor_reassigned",
+  GraphBlocked = "graph.blocked",
+  GraphTerminal = "graph.terminal",
 }
 
 export enum ActorType {
@@ -209,6 +218,9 @@ export enum FailureReason {
   PostHocEscalation = "post_hoc_escalation",
   ServerRestarted = "server_restarted",
   OutputParseFailed = "output_parse_failed",
+  /** F006: adapter was eligible at graph-creation time but became
+   *  ineligible before the queued Attempt was claimed for execution. */
+  AdapterNoLongerEligible = "adapter_no_longer_eligible",
 }
 
 export enum AdapterStatus {
@@ -240,6 +252,8 @@ export interface Run {
   purpose: RunPurpose;
   /** F005: Run whose Handoff Packet/evidence this Run's context was assembled from; null for the first Run. */
   context_source_run_id: string | null;
+  /** F006: parent NodeRun for graph-node Runs. null for non-graph Runs. */
+  node_run_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -307,3 +321,4 @@ export interface RunSummary {
 export * from "./trace.js";
 export * from "./validation.js";
 export * from "./adapter.js";
+export * from "./graph.js";

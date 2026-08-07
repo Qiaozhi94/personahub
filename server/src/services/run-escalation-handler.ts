@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import type { ThreadEvent } from "@personahub/shared/types";
-import { ActorType, IssueStatus as IS, RunStatus as RS, ThreadEventType } from "@personahub/shared/types";
+import { ActorType, IssueStatus as IS, RunStatus as RS, RunRole, ThreadEventType } from "@personahub/shared/types";
 import type { EscalationParams } from "../runtime/agent-runner.js";
 import type { IssueRepository } from "../repositories/issue.js";
 import type { RunService } from "./run.js";
@@ -71,7 +71,9 @@ export class RunEscalationHandler {
 
   private cancelQueuedRunsForIssue(issueId: string): void {
     for (const run of this.runService.listByIssue(issueId)) {
-      if (run.status === RS.Queued) this.runService.cancelQueued(run.id, "issue_blocked_before_start");
+      if (run.status === RS.Queued && run.role !== RunRole.GraphNode) {
+        this.runService.cancelQueued(run.id, "issue_blocked_before_start");
+      }
     }
   }
 }

@@ -28,6 +28,7 @@ const TRUSTED_INTERNAL_ALLOWLIST = new Set<string>([
   "run.failed",
   "run.cancelled",
   "run.interrupted",
+  "graph.node_result",
 ]);
 
 export function parseEvidenceRef(ref: string): ParsedRef {

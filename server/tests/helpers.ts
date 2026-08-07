@@ -15,6 +15,8 @@ import { RunRepository } from "../src/repositories/run.js";
 import { RunTraceRepository } from "../src/repositories/run-trace.js";
 import { FileChangeRepository } from "../src/repositories/file-change.js";
 import { AdapterWorkspaceStatusRepository } from "../src/repositories/adapter-workspace-status.js";
+import { NodeRunRepository } from "../src/repositories/node-run.js";
+import { GraphRunRepository } from "../src/repositories/graph-run.js";
 import { AdapterAvailabilityProbeCoordinator } from "../src/services/adapter-probe-coordinator.js";
 import { ProjectService } from "../src/services/project.js";
 import { WorkspaceService } from "../src/services/workspace.js";
@@ -70,6 +72,8 @@ export interface TestServices {
   fileChangeRepo: FileChangeRepository;
   adapterWorkspaceStatusRepo: AdapterWorkspaceStatusRepository;
   adapterProbeCoordinator: AdapterAvailabilityProbeCoordinator;
+  nodeRunRepo: NodeRunRepository;
+  graphRunRepo: GraphRunRepository;
   projectService: ProjectService;
   workspaceService: WorkspaceService;
   issueService: IssueService;
@@ -109,6 +113,8 @@ export function createTestServices(): TestServices {  const db = createTestDb();
   const runTraceRepo = new RunTraceRepository(db);
   const fileChangeRepo = new FileChangeRepository(db);
   const adapterWorkspaceStatusRepo = new AdapterWorkspaceStatusRepository(db);
+  const nodeRunRepo = new NodeRunRepository(db);
+  const graphRunRepo = new GraphRunRepository(db);
   const adapterProbeCoordinator = new AdapterAvailabilityProbeCoordinator();
 
   const eventBus = new EventBus();
@@ -164,7 +170,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     threadEventService, agentRunner, developmentTraceService, runTraceRepo,
     validationWorkflowService, db,
     runRepo, threadEventRepo, fileChangeRepo,
-    manualRoutingService, adapterWorkspaceStatusRepo, adapterProbeCoordinator,
+    manualRoutingService, adapterWorkspaceStatusRepo, nodeRunRepo, graphRunRepo, projectRepo, adapterProbeCoordinator,
   );
 
   const staleRecoveryService = new StaleRecoveryService(
@@ -201,6 +207,8 @@ export function createTestServices(): TestServices {  const db = createTestDb();
     fileChangeRepo,
     adapterWorkspaceStatusRepo,
     adapterProbeCoordinator,
+    nodeRunRepo,
+    graphRunRepo,
     projectService: new ProjectService(projectRepo, workspaceRepo),
     workspaceService: new WorkspaceService(workspaceRepo, projectRepo, db),
     issueService: new IssueService(
@@ -208,7 +216,7 @@ export function createTestServices(): TestServices {  const db = createTestDb();
       projectRepo, workflowTemplateRepo, validationPolicyRepo, db,
     ),
     threadService: new ThreadService(threadRepo, threadEventRepo),
-    adapterConfigService: new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry, workspaceRepo, adapterWorkspaceStatusRepo, db, adapterProbeCoordinator),
+    adapterConfigService: new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry, workspaceRepo, adapterWorkspaceStatusRepo, db, adapterProbeCoordinator, nodeRunRepo),
     threadEventService,
     workspaceLockService,
     runService,
