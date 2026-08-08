@@ -4,7 +4,7 @@ related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, explainability]
 doc_kind: design
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-08
 ---
 
 # F007：Coordinator Agent & Routing Recommendation - 设计
@@ -13,7 +13,7 @@ updated: 2026-08-02
 
 ## 1. 技术概要
 
-新增一个**纯函数式**的 `RoutingRecommendationService`：读 Project / workspace / adapter 注册表，按显式规则集算出推荐，返回带解释的结构，不写任何库。确认走独立的 `IntakeService.confirm()`，复用既有的 `IssueService.create()` 与既有的队列/派工基础设施，不新建执行路径——但**不直接调用通用的 `RunDispatchService.dispatch()`**：两条 topology 分别走 `GraphRuntimeService.enqueueSequential(...)` 与自由函数 `createGraph(deps, ...)`（准确签名与调用惯例见 F006 `design.md` 第 8 节，本节不重复声明；`tx` 不是这两个函数的参数——better-sqlite3 没有可传递的事务句柄，原子性来自 `confirm()` 自己把整段调用包进 `db.transaction(() => {...})()`）。无条件 dispatch 会把图节点变成普通 implementation Run 并误触发 F004 验证循环。
+新增一个**纯函数式**的 `RoutingRecommendationService`：读 Project / workspace / adapter 注册表，按显式规则集算出推荐，返回带解释的结构，不写任何库。确认走独立的 `IntakeService.confirm()`，复用既有的 `IssueService.create()`，不新建执行路径——但**不直接调用通用的 `RunDispatchService.dispatch()` 或 `ManualRoutingService.dispatch()`**：两条 topology 分别走本 feature 新增的自由函数 `createSequentialRun(deps, ...)`（第 6 节）与 F006 的自由函数 `createGraph(deps, ...)`（准确签名与调用惯例见 F006 `design.md` 第 8 节，本节不重复声明）。两者都不接收 `tx` 参数、不自持事务——better-sqlite3 没有可传递的事务句柄，原子性来自 `confirm()` 自己把整段调用包进 `db.transaction(() => {...})()`。无条件 dispatch 会把图节点变成普通 implementation Run 并误触发 F004 验证循环；直接复用 F006 的 `enqueueSequential(...)` 同样错误——它只是 `createGraph(...)` 的别名，会把普通单 Run 请求悄悄建成三节点图（2026-08-08 检视修正，见第 6 节）。
 
 **推荐阶段零写入。** 上一轮为了做幂等，让推荐签发时就往 `intake_confirmations` 写一行——这与 FR-003 / NFR-001 / AC-002 / T012 全部冲突（它们要求推荐无副作用、纯内存计算），而且带来两个新问题：
 
@@ -138,6 +138,8 @@ interface Recommendation<T> {
 
 `agent_roster` 的可用性一律经 `effectiveAdapterStatus()`（schema v7 的 workspace 级覆盖）判定，与 `resolveAdapter()` 同源；Project 级 Available 但当前 workspace 被覆盖为 Unavailable 的 adapter 必须出现在 `excluded` 并注明是 workspace 级原因——这正是 US2 的独立测试要断言的行为。
 
+**`agent_roster` 不使用上面的通用 `Recommendation<T>` 形状（2026-08-08 检视修正）**。表格把它并列写在这里是为了说明规则名与候选来源，但它的候选与排除原因必须**按节点**区分——`T = Record<string, string>` 时通用形状的 `candidates: T[]` 会变成"整套 roster 组合数组"，而不是"每个节点各自的候选"，也无法表达"同一 adapter 对节点 A 是候选、对节点 B 因缺能力被排除"这种逐节点差异。实际返回类型是第 9 节定义的 `AgentRosterRecommendation`（`value` + `rule` + 按 `node_key` 拆分的 `by_node[node_key].{candidates, excluded}`）。
+
 ### Issue 字段的确定性规则（初稿缺失，已补）
 
 spec 承诺产出"Issue 字段 + workflow + topology + roster"四部分，但初稿的规则表只定义了 `issue_type`，title/goal/priority 全无规则。不同实现都能声称满足 AC-001 却产出不同的 Issue。补一个 `IssueDraft` 契约：
@@ -215,23 +217,63 @@ confirm(token, 用户最终选择)
   │           ③ 未命中才判 issued_at 是否超 30 分钟
   └─ IntakeService 持有的单一外层事务：
       ├─ 复核前提快照 + 用户每一处改选 → 不一致则 RECOMMENDATION_STALE
-      ├─ IssueService.create(projectId, {title, goal, priority})   // 既有方法，不改签名
+      ├─ IssueService.create(projectId, {title, goal, priority})   // 既有方法，不改签名；
+      │    它内部自己也调用 db.transaction()，但 better-sqlite3 对"已在事务中再次调用
+      │    db.transaction()"会自动退化为 SAVEPOINT，因此嵌套在 IntakeService 的外层事务
+      │    里语义仍然正确：外层回滚会连带回滚这个 SAVEPOINT。
       ├─ 写 ThreadEvent: coordinator.recommendation_applied
       │    payload: { rules[], recommended, chosen, diff[] }        // TR-001
       ├─ 按确认的 topology 建首个执行单元（只写库，不拉进程；均在本事务回调内调用，
-      │    不接收 "tx" 参数——原子性来自整段调用被包在这个 db.transaction(() => {...})() 里）：
-      │    sequential            → GraphRuntimeService.enqueueSequential(...)   // 实例方法
+      │    不接收 "tx" 参数、不自持事务——原子性来自整段调用被包在这个
+      │    db.transaction(() => {...})() 里）：
+      │    sequential            → createSequentialRun(deps, issueId, threadId, workspaceId,
+      │                             adapterConfigId, instructions)   // 本 feature 新增自由函数，见下
       │    orchestrator_subagent → createGraph(deps, issueId, threadId, workspaceId, projectId, plan, preflight)
-      │                             // 独立自由函数，不是 GraphRuntimeService 的方法；
-      │                             // 签名与调用惯例见 F006 design.md 第 8.2 节
+      │                             // F006 的自由函数，签名与调用惯例见 F006 design.md 第 8.2 节
       └─ INSERT intake_confirmations(...) —— **完整最终行，作为事务最后一步**
   ── commit ──
-  提交之后，由 IntakeService 统一对受影响 workspace 调一次 drain。
+  提交之后，由 IntakeService 把两条分支各自返回的 pendingEvents 合并 broadcast，
+  再对涉及的 workspace（两条分支目前都只有唯一一个，即确认时使用的默认 workspace）
+  调一次 drain。
 ```
+
+### `sequential` 不得复用 F006 的 `enqueueSequential()`（2026-08-08 检视修正）
+
+上一轮把 `sequential` 分支写成 `GraphRuntimeService.enqueueSequential(...)`，这是错的：`server/src/services/graph-runtime.ts:222-231` 显示 `enqueueSequential()` 只是 `createGraph()` 的实例方法别名，签名要求完整的 `GraphExecutionPlan`（`nodeAssignments` 覆盖 definition 全部节点）与 `GraphPreflight`。而 F007 的 `ChosenPlan` 的 `sequential` 分支只有 `{ adapter_config_id }`（第 9 节），根本凑不出这些参数；若实现者临时伪造一份图计划，会把用户选择的"单 Run 顺序执行"静默建成 F006 的三节点 `orchestrator_subagent` 图——两者是完全不同的执行形状，且图节点 Run 用的是 `RunRole.GraphNode`，不会触发普通 implementation Run 该有的 F004 验证循环。
+
+**新增自由函数 `createSequentialRun`**，与 F006 的 `createGraph(deps, ...)` 同构（不自持事务、只写库、不拉进程）：
+
+```ts
+interface SequentialRunDeps {
+  runRepo: RunRepository;
+  issueRepo: IssueRepository;
+  threadEventService: ThreadEventService;
+  adapterDeps: AdapterResolverDeps;
+}
+
+function createSequentialRun(
+  deps: SequentialRunDeps,
+  issueId: string,
+  threadId: string,
+  workspaceId: string,
+  projectId: string,
+  adapterConfigId: string,
+): { runId: string; pendingEvents: ThreadEvent[] }
+```
+
+行为：
+
+1. 经共享的 `resolveEligibleAdapter()`（F006 `design.md` 第 8.3 节）复核 `adapterConfigId` 具备 `Implementation` 能力；不通过 → `ADAPTER_CAPABILITY_MISSING`，整体拒绝（与图分支同一纪律，见第 246 行）。
+2. `runRepo.create({ issue_id, thread_id, workspace_id, adapter_config_id, instructions, status: Queued, role: Implementation, purpose: WorkflowBound })`——`instructions` 取自确认的 Issue `goal`（复用既有 implementation Run 的 instructions 派生方式，不新增字段）；不设 `dispatch_source`（沿用仓库默认值 `UserExplicit`，与 F006 图节点 Run 的既有约定一致）。
+3. `issueRepo.compareAndSetStatus(issueId, Inbox, Running)`——这是 `IssueService.create()` 在同一事务里刚建出来的 Issue，理应仍是 `Inbox`；CAS 失败视为内部错误（防御性检查，正常路径不会触发）。
+4. 写 `ThreadEventType.RunQueued` 事件（字段形状与 `ManualRoutingService.dispatch()` 一致：`run_id`/`issue_id`/`thread_id`/`workspace_id`/`status`/`purpose`/`role`/`adapter_config_id`/`drives_issue_state: true`），加入 `pendingEvents`，**不在函数内 broadcast**。
+5. 返回 `{ runId, pendingEvents }`。
+
+`createSequentialRun` 不复用 `ManualRoutingService.dispatch()`——后者自持 `db.transaction()` 并在内部直接 `broadcast()`，与 `confirm()` 的单外层事务、commit 后统一 broadcast/drain 的要求冲突（这正是 `ManualRoutingService` 现有设计对 F007 不适用的原因）。
 
 **认领在最后一步而非第一步。** 表里全部列 NOT NULL 且只记录已成功确认的事实，`issue_id` / `target_kind` / `target_id` 要等实体建完才有值——放在开头 INSERT 根本插不进去。并发双击的收敛靠 `nonce` 唯一键：后到者在 INSERT 处撞键 → 整个事务回滚 → 随后**另起一次读**取胜者已提交的行，返回 200 与既有 `issue_id`/`target_id`。这条顺序是可实现性要求，不是风格选择。
 
-**事务归属**：上一轮 F007 要求"单外层事务"，F006 又写"`start()` 自持事务、返回后 drain"，嵌套时内层只能提交 savepoint——外层若回滚，已经拉起的子进程无法撤销。现按 F006 `design.md` 第 8.2 节的拆分：`createGraph(deps, ...)`（自由函数）/ `enqueueSequential(...)`（`GraphRuntimeService` 实例方法）**只写库**，均不接收 `tx` 参数，派工统一由最外层提交后触发。drain 失败不损坏状态，queued Run 仍在库里等下次 drain 或重启恢复。
+**事务归属**：上一轮 F007 要求"单外层事务"，F006 又写"`start()` 自持事务、返回后 drain"，嵌套时内层只能提交 savepoint——外层若回滚，已经拉起的子进程无法撤销。现按 F006 `design.md` 第 8.2 节的拆分：`createGraph(deps, ...)`（F006 自由函数）与本 feature 的 `createSequentialRun(deps, ...)`（自由函数）**只写库**，均不接收 `tx` 参数，派工统一由最外层提交后触发。drain 失败不损坏状态，queued Run 仍在库里等下次 drain 或重启恢复。
 
 **分流是必须的**：F006 的图节点 Run 使用 `RunRole.GraphNode` 并由 `GraphRuntimeService` 创建；若确认路径无条件走 `RunDispatchService.dispatch()`，推荐出来的 `orchestrator_subagent` 会退化成一个普通的 implementation Run——推荐与实际执行不一致，且该 Run 完成时会触发 F004 的验证循环（见 F006 `design.md` 第 7 节）。
 
@@ -243,7 +285,7 @@ confirm(token, 用户最终选择)
 - 事务内任一步失败 → 整体回滚（认领行一并回滚），不留孤儿 Issue；客户端可安全重试。
 - **不引入通用 command / saga 表**。单机单用户应用不需要那套机制，这与 ADR 0007"候选集为 1 就别上 LLM"是同一种克制。
 
-**adapter 一律走共享的 `resolveEligibleAdapter()`**（F006 `design.md` 第 8.3 节：组合 `resolveAdapter()` + `hasCapability()`），传入用户确认后的显式 id：`sequential` 经 `enqueueSequential`，`orchestrator_subagent` 经 `createGraph` 对 `nodeAssignments` 逐项复核。**不能只用 `resolveAdapter()`**——它没有 capability 参数（`adapter-resolver.ts:32-64`），只证明 adapter 可用、不证明它能干这个节点。推荐服务本身只产出候选，绝不写入 `default_adapter_config_id`，也不构造"取第一个可用"的回退——`adapter-resolver.ts` 的文件头注释明确"永不回退到列表里第一个可用 adapter，无法解析的默认值是硬错误"，推荐不得成为绕过它的后门（FR-005）。
+**adapter 一律走共享的 `resolveEligibleAdapter()`**（F006 `design.md` 第 8.3 节：组合 `resolveAdapter()` + `hasCapability()`），传入用户确认后的显式 id：`sequential` 经 `createSequentialRun`，`orchestrator_subagent` 经 `createGraph` 对 `nodeAssignments` 逐项复核。**不能只用 `resolveAdapter()`**——它没有 capability 参数（`adapter-resolver.ts:32-64`），只证明 adapter 可用、不证明它能干这个节点。推荐服务本身只产出候选，绝不写入 `default_adapter_config_id`，也不构造"取第一个可用"的回退——`adapter-resolver.ts` 的文件头注释明确"永不回退到列表里第一个可用 adapter，无法解析的默认值是硬错误"，推荐不得成为绕过它的后门（FR-005）。
 
 `diff[]` 记录推荐值与用户最终选择的差异；用户全盘接受时为空数组。这是 TR-001 要求的可追溯性，也是后续判断规则准不准的唯一数据来源。
 
@@ -297,7 +339,7 @@ confirm(token, 用户最终选择)
 | 无 Available adapter | 阻塞原因 `no_available_adapter` + 建议动作"在 Adapter Settings 中验证适配器" |
 | 某节点的 required capability 无任何 adapter 覆盖 | v0.2 下必然等价于"无 `Implementation` 能力" → 阻塞 `NO_AVAILABLE_CAPABLE_ADAPTER`，**不降级**（降级后的 `sequential` 需要同一项能力，同样跑不了）。**仅有一个可用 adapter 不构成降级理由**（第 7 节） |
 | 用户改选的 adapter 在确认时已不可用 | `RECOMMENDATION_STALE` + 指明该项（第 5 节） |
-| 同一 `recommendation_id` 重复确认 | 返回首次结果，不重复创建 Issue（第 6 节） |
+| 同一 token（`nonce`）重复确认 | 返回首次结果，不重复创建 Issue（第 6 节）。`recommendation_id` 只是内容摘要，不作身份判定依据 |
 | 确认时前提已变 | `RECOMMENDATION_STALE` + 变化项 |
 
 ## 9. API 契约
@@ -314,12 +356,33 @@ interface RecommendRequest { goal: string }   // 无 workspace_id，见下
 interface RecommendResponse {
   token: ConfirmationToken;                  // 原样回传，勿解析
   recommendation_id: string;                 // 内容摘要，仅供显示/日志
+  issue_type: Recommendation<IssueType>;      // v0.2 候选集恒为 {coding}，规则形状不因候选集大小为 1 而省略（第 3 节）
   issue_draft: { title: Recommendation<string>; goal: Recommendation<string>; priority: Recommendation<string> };
   workflow_template: Recommendation<{ id: string; version: number }>;
   collaboration_topology: Recommendation<{ value: "sequential" | "orchestrator_subagent";
                                           definition_id?: string; definition_version?: number }>;
-  agent_roster: Recommendation<Record<string, string>>;   // node_key（或 "sequential"） → adapter_config_id
+  agent_roster: AgentRosterRecommendation;    // 专用 DTO，见下（不是 Recommendation<Record<string,string>>）
   editable: ("collaboration_topology" | "agent_roster")[];  // v0.2 仅此二者可改，见下
+}
+
+// 第 1 节 token payload 的 `recommended: RoutingRecommendation` 必须携带上面同一组五个
+// 维度（issue_type / issue_draft / workflow_template / collaboration_topology /
+// agent_roster）——token 是签名保护的唯一副本，缺了 issue_type 就等于这一维度完全没有
+// 防篡改保护，也就无法在 confirm 时把它写进 coordinator.recommendation_applied 事件。
+
+// roster 的候选与排除原因必须按节点区分——通用 Recommendation<T> 在 T =
+// Record<string,string> 时，candidates: T[] 的语义会变成"整套 roster 组合"而不是
+// "每个节点各自的候选"，且无法表达"同一 adapter 在节点 A 是候选、在节点 B 被排除"
+// （2026-08-08 检视发现，见第 3 节）。
+interface AgentRosterRecommendation {
+  value: Record<string, string>;             // node_key（sequential 分支固定键 "sequential"） → adapter_config_id
+  rule: string;                               // capability_match_and_effective_availability
+  by_node: Record<string, {
+    candidates: string[];                     // 该节点当前 workspace 下具备所需能力且 Available 的 adapter id
+    excluded: { id: string; reason: string }[];
+  }>;
+  // value 与 by_node 的键集合必须严格一致：sequential 分支为 { "sequential" }，
+  // 图分支为 definition 的全部 node_key（含 synthesis）。
 }
 
 // 409 —— 无可执行方案

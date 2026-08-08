@@ -4,7 +4,7 @@ related_features: []
 topics: [prd, product, agent-team-os, issue-managed-workflow, room-collaboration, graph-orchestrated-work, evidence-grounded, artifact-centered]
 doc_kind: prd
 created: 2026-07-11
-updated: 2026-07-29
+updated: 2026-08-08
 ---
 
 # PersonaHub PRD: Personal AI Agent Team OS
@@ -15,6 +15,7 @@ updated: 2026-07-29
 
 | 日期 | 来源提交 | 修订目的 | 修订内容 |
 | --- | --- | --- | --- |
+| 2026-08-08 | `docs/reviews/requirements-review-2026-08-08-F007-pre-development.md` | F006 完成、进入 F007 开发前的最后契约核对，发现第 15 节 P1 摘要与 v0.2 目标段仍把 Coordinator 写成"可配置 agent role"、"系统自动推荐/分派"，与同节后文及 ADR 0007 已裁定的"进程内确定性规则引擎、只推荐不派工"相矛盾 | P1 摘要与 v0.2 目标段改为如实描述：Coordinator 是进程内确定性规则引擎而非可配置 agent role，推荐维度改为 Issue Type / Workflow Template / Collaboration Topology / Agent Roster，"自动推荐/分派"改为"推荐、用户确认后才执行"；"Agent Team Template 推荐"改称"Agent Roster 推荐"以避免暗示持久化模板 |
 | 2026-08-02 | （v0.2 需求文档外部检视，20 条 finding） | 一份独立检视对 F006/F007/F008 三件套提出 20 条问题，逐条对照源码核实后全部成立，其中五条会导致 v0.2 功能跑不通或静默损坏（F006 fan-in 取不到前驱结果、escalation 销毁排队中的兄弟节点；F007 按 adapter 数量降级 topology 使单 adapter 环境永不启用图、图分支丢弃用户确认的执行者；F008 通用 `setStatus()` 可造出两个 active 模板、审计事件无合法 thread 可写）。修订限于实现级设计，未推翻任何产品判断 | 三个 feature 的 spec/design/tasks 逐条并入；范围侧唯一变化是 F007、F008 由"无 schema 变更"改为各新增一张小表（`intake_confirmations` 幂等认领、`admin_audit_events` 全局审计），因两处需求（确认幂等、验证关闭可追溯）在现有 schema 下不可实现。FR-004 的"谁关掉了验证"如实收窄为"何时对哪个版本做了什么"——本应用无鉴权，不存在可记录的用户身份 |
 | 2026-08-01 | `docs/decisions/0007-coordinator-execution-channel.md` | v0.2 拆成 F006/F007/F008 三个 Feature 后，逐条比对第 15 节范围清单与三份 spec 的实际覆盖，发现四处分叉：范围清单把 Coordinator 描述为可配置 agent、要求写入 `default_coordinator_agent_id`、要求 Agent Team Template 推荐、以及"自动推荐和分派"；而 ADR 0007 已裁定 v0.2 用确定性规则引擎且只推荐不派工，`agent_team_template_id` 又是指向不存在的表的悬空列。另发现 Structured Handoff Packet 实际已在 v0.1.4 交付，仍列在 v0.2 范围内 | 第 15 节 v0.2 范围清单逐条改为如实描述：Coordinator 明确为进程内确定性规则引擎并指向 ADR 0007；`default_coordinator_agent_id` 标注推迟及理由；Agent Team Template 收窄为每次现算的 roster 推荐并说明悬空列成本；自动分派改为推荐 + 用户确认并给出保留人工闸门的理由；Structured Handoff Packet 标注已由 v0.1.4 交付。完成判据第一条补充"自然语言成分很弱"的诚实限定，禁止把 v0.2 描述为语义理解能力 |
 | 2026-07-29 | `docs/decisions/0006-executable-work-graph.md` | 第三至五轮文档/代码交叉复核依次发现：v0.2 完成判据缺少 ADR 0006 Slice 1 要求的"可恢复"语义；"并行执行子任务"与现有 workspace 排他锁矛盾未说明边界；"只读子任务可不持锁并行"缺少运行时强制手段（代码核实 `WorkspaceContext` 无访问模式字段，三个 adapter 均无强制只读能力）；随后又发现第四轮给出的"缓解方案"本身不成立——普通 `git worktree`/目录拷贝只是换了个 cwd，不构成操作系统层面的访问隔离，`git worktree` 还与主仓库共享 `.git` 管理元数据——均已修正；同时补齐 frontmatter `updated` 与修订记录不一致 | 第 15 节 v0.2 完成判据补充"可恢复"最小语义（定义以 ADR 0006 为准）；并行边界改为以 ADR 0006 定义的强制隔离条件（操作系统层面不可访问活 workspace，非仅换 cwd）或跨 adapter 一致的强制只读能力为前提，明确普通 worktree/拷贝不满足该条件，默认基线是全部串行，"并行"退化为图上的逻辑 fan-out；写入子任务始终串行不变；frontmatter `updated` 同步为 2026-07-29 |
@@ -897,8 +898,8 @@ P0 / P1 / P2 与第 15 节版本路线一一对应，不是独立的第二套排
 
 ### P1（v0.2 Orchestrator Workflow + v0.3 Artifact-Centered Collaboration）
 
-- Coordinator Agent 初版：作为可配置 agent role，提供 Issue Type / Workflow Template / Collaboration Topology 推荐。
-- Agent Team Template 推荐。
+- Coordinator 初版：v0.2 是进程内确定性规则引擎（不是可配置 agent role，见第 15 节、`docs/decisions/0007-coordinator-execution-channel.md`），提供 Issue Type / Workflow Template / Collaboration Topology / Agent Roster 推荐，用户确认后才创建 Issue 与首个执行单元。
+- Agent Roster 推荐（每次请求现算，不持久化为可复用的 Agent Team Template；后者等待真实复用需求出现）。
 - Structured Handoff Packet。
 - @agent routing：多 agent 并存后，用户手动指定由哪个 agent 接手。
 - Agent capability tags。
@@ -1186,7 +1187,7 @@ v0.1 完成判据：
 
 ### v0.2 Orchestrator Workflow
 
-目标：引入 Coordinator Agent 作为可配置 agent role，让用户用自然语言目标启动工作，由系统推荐 Issue Type、Workflow Template、Agent Team 和协作拓扑，把 v0.1.4 里"用户手动 @ 指定下一个 agent"升级为"系统自动推荐/分派"。
+目标：引入 Coordinator——v0.2 是进程内确定性规则引擎，不是可配置 agent role（见下方范围第一条、`docs/decisions/0007-coordinator-execution-channel.md`）——让用户用自然语言目标启动工作，由系统推荐 Issue Type、Workflow Template、Agent Roster 和协作拓扑并给出理由，用户确认后才创建 Issue 与首个执行单元；把 v0.1.4 里"用户手动 @ 指定下一个 agent"升级为"系统推荐、用户确认"，而非无人确认的自动分派。
 
 范围：
 
@@ -1194,7 +1195,7 @@ v0.1 完成判据：
 - Project `default_coordinator_agent_id`：**推迟**。该列语义是"指向某个 agent config"，而 v0.2 的 Coordinator 没有对应的 agent config 行；为满足列而造一条不能执行、状态永远 Unknown 的假 adapter 记录弊大于利。列保持 NULL，等 ADR 0007 的触发条件出现时再写入，无需迁移。
 - Issue Type 自动识别（v0.2 候选集为 1，规则形状先立住，v0.3 增加类型时只是候选集变大）。
 - Workflow Template / Collaboration Topology 推荐。
-- Agent Team Template 推荐：**v0.2 只做每次现算的 agent roster 推荐，不做可复用的持久化 Team Template**。`workflow_templates.agent_team_template_id` 目前是一个指向**不存在的表**的悬空列（`schema-v1.ts:32`），落地持久化模板需要先建表与配套管理，成本与当前收益不匹配。
+- Agent Roster 推荐：**v0.2 只做每次现算的 agent roster 推荐，不做可复用的持久化 Team Template**。`workflow_templates.agent_team_template_id` 目前是一个指向**不存在的表**的悬空列（`schema-v1.ts:32`），落地持久化模板需要先建表与配套管理，成本与当前收益不匹配。
 - Structured Handoff Packet：**已由 v0.1.4 交付**（`server/src/services/handoff-builder.ts` 的 `HandoffPayload`），v0.2 不重复实现。
 - Workflow Template 管理 UI 初版。
 - Coordinator 根据 Issue Type / agent capability，在 v0.1.4 已接入的 Codex / Claude Code / OpenCode 之间**推荐**执行者并说明理由，**由用户确认后才创建 Issue 与 Run**，不再需要用户自己记住有哪些 agent、哪个当前可用（adapter 接入本身已在 v0.1.4 完成）。v0.2 不做无人确认的自动派工：推荐错误会直接变成仓库里的真实执行，保留一次人工闸门；且这与既有 `resolveAdapter()`"永不猜测、无法解析即硬错误"的纪律一致。

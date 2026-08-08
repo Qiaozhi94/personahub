@@ -4,7 +4,7 @@ related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, explainability]
 doc_kind: tasks
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-08
 ---
 
 # F007：Coordinator Agent & Routing Recommendation - 任务
@@ -29,18 +29,22 @@ updated: 2026-08-02
 
 - [ ] T019：新建 `server/src/db/schema-v9.ts`——`intake_confirmations`（`nonce` 主键，**无 `status` 列**，结果字段全 NOT NULL，`target_kind` 带 CHECK）+ `app_secrets` 表 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**。
 - [ ] T019b：HMAC 密钥生命周期（`design.md` 第 1 节）——首次启动生成 32 字节 CSPRNG 并写 `app_secrets`，后续启动读回、**跨重启不变**；值损坏/为空则启动失败并给出明确信息，**不静默重新生成**（静默重生成会让在途 token 变成无法解释的"签名无效"）。不做轮换。测试：跨重启验签通过、损坏值启动失败、首次启动只生成一次。
-- [ ] T020：`ConfirmationToken` 签发——`nonce` 每次全新、`premise` 采集、规范化序列化（键升序 + 稳定编码，签发与验签共用同一函数）、`recommendation_id` 作内容摘要（**不作身份、不作校验依据**）。**签发不写任何库**，与 T012 的零副作用要求一致（`design.md` 第 1、5 节）。
+- [ ] T020：`ConfirmationToken` 签发——`nonce` 每次全新、`premise` 采集、规范化序列化（键升序 + 稳定编码，签发与验签共用同一函数）、`recommendation_id` 作内容摘要（**不作身份、不作校验依据**）。`payload.recommended` 必须携带全部五个维度（`issue_type`/`issue_draft`/`workflow_template`/`collaboration_topology`/`agent_roster`），与 `RecommendResponse` 一致（R002，`design.md` 第 9 节）。**签发不写任何库**，与 T012 的零副作用要求一致（`design.md` 第 1、5 节）。
+- [ ] T020e：一致性测试——同一次推荐里 `RecommendResponse.issue_type`、`token.payload.recommended.issue_type`、confirm 后 `coordinator.recommendation_applied` 事件里的 issue type 三处取值一致；Intake UI 展示的 issue type 与响应一致（US1，R002）。
 - [ ] T020a：**HMAC 签名与验签**——密钥来源唯一为 `app_secrets` 表（见 T019b，不再有"本地配置或首次生成"的二选一）。confirm 的事务外顺序固定：验签失败 → 400 `CONFIRMATION_TOKEN_INVALID`；再校验路由 `:projectId` 与 payload 一致；**再按 `nonce` 查已确认事实，命中即返回 200**；未命中才判 `issued_at` 是否超 30 分钟。
 - [ ] T020a3：过期重放测试——已成功确认的 token 在 31 分钟后重放，断言返回 **200 与既有结果**而非 `RECOMMENDATION_STALE`；未确认过的过期 token 才返回 stale。
-- [ ] T020a2：篡改测试五种——改 `issued_at`（绕过期）、改 `issue_draft`（绕只读）、改 `project_id`（跨 Project）、改 `premise`（污染审计）、伪造/缺失 `signature`。零写入模型下 token 的唯一副本在客户端手里，**没有签名服务端就无法执行自己的契约**（`design.md` 第 1 节）。
+- [ ] T020a2：篡改测试六种——改 `issued_at`（绕过期）、改 `issue_draft`（绕只读）、改 `issue_type`（绕只读，R002 新增维度同样受签名保护）、改 `project_id`（跨 Project）、改 `premise`（污染审计）、伪造/缺失 `signature`。零写入模型下 token 的唯一副本在客户端手里，**没有签名服务端就无法执行自己的契约**（`design.md` 第 1 节）。
 - [ ] T020b：premise 必须包含 `capability_tags` 与 `updated_at`——`capability_tags` 的修改不进 `availabilityRelevantFieldsTouched`（`adapter-config-updater.ts:113-119`），只比可用性会漏掉能力被摘除的情况。回归测试：改能力不改可用性后 confirm，断言 `RECOMMENDATION_STALE`。
 - [ ] T020c：两个不同目标在同一系统状态下各拿到不同 `nonce`、可各自独立确认——防止用哈希作身份导致第二个目标拿到第一个的结果。
-- [ ] T021：`IntakeService.confirm()`——**事务外**先验签/结构校验/过期/projectId 一致；**单外层事务**：复核前提与用户改选 → 创建 Issue → 写事件 → 建首个执行单元 → **最后一步** INSERT `intake_confirmations` 完整行；**commit 之后**先把 coordinator 事件与 `DbOnlyResult.pendingEvents` 聚合后**逐一 broadcast**，再对去重后的 `affectedWorkspaceIds` drain。只写 drain 会让 Graph/Run/Coordinator 事件入库却不实时推送，SSE/UI 要刷新才可见。认领之所以在最后：表内全部列 NOT NULL，`issue_id`/`target_id` 要等实体建完才有值，开头 INSERT 插不进去。
-- [ ] T021b：topology 分流——`sequential` → `enqueueSequential(tx, ...)`；`orchestrator_subagent` → **先在事务外调 `prepareGraph()`**（遍历文件系统，不能占写锁），再 `createGraph(tx, issueId, plan, preflight)`。顺序固定为：验签 → 幂等命中检查 → 过期判断 → `prepareGraph()` → 开写事务。空文件集或越界 symlink 在 preflight 阶段就失败，此时**尚未写入任何 Issue**。两者**只写库不拉进程**（F006 `design.md` 第 8.2 节）。F006 未落地时该分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，**禁止静默回退为 `sequential`**。
+- [ ] T020d：`createSequentialRun(deps, issueId, threadId, workspaceId, projectId, adapterConfigId)` 自由函数（`design.md` 第 6 节）——不接收 `tx`、不自持事务、不 broadcast、不拉进程：经 `resolveEligibleAdapter()` 复核 `Implementation` 能力 → `runRepo.create({..., role: Implementation, purpose: WorkflowBound, status: Queued})` → `issueRepo.compareAndSetStatus(issueId, Inbox, Running)` → 写 `RunQueued` ThreadEvent 加入返回的 `pendingEvents`，**不在函数内 broadcast**。返回 `{ runId, pendingEvents }`。**替代**上一轮误写的"`sequential` 复用 F006 `enqueueSequential()`"——后者只是 `createGraph()` 的别名，会把单 Run 请求悄悄建成三节点图（`design.md` 第 6 节，2026-08-08 检视修正）。
+- [ ] T021：`IntakeService.confirm()`——**事务外**先验签/结构校验/过期/projectId 一致；**单外层事务**：复核前提与用户改选 → `IssueService.create()` 创建 Issue（内部自身的 `db.transaction()` 在已有事务中自动退化为 SAVEPOINT）→ 写 `coordinator.recommendation_applied` 事件 → 按 topology 建首个执行单元 → **最后一步** INSERT `intake_confirmations` 完整行；**commit 之后**把 `createSequentialRun(...)` 或 `createGraph(...)` 返回的 `pendingEvents` 与 coordinator 事件合并后**逐一 broadcast**，再对确认时使用的默认 workspace 调一次 drain（v0.2 两条分支的目标 workspace 恒为同一个，见 `design.md` 第 9 节"只对 Project 默认 workspace 推荐"，无需去重多个 workspace id）。只写 drain 会让 Graph/Run/Coordinator 事件入库却不实时推送，SSE/UI 要刷新才可见。认领之所以在最后：表内全部列 NOT NULL，`issue_id`/`target_id` 要等实体建完才有值，开头 INSERT 插不进去。
+- [ ] T021b：topology 分流——`sequential` → `createSequentialRun(deps, issueId, threadId, workspaceId, projectId, adapterConfigId)`（T020d，自由函数，无 `tx` 参数）；`orchestrator_subagent` → **先在事务外调 `prepareGraph()`**（遍历文件系统，不能占写锁），再 `createGraph(deps, issueId, threadId, workspaceId, projectId, plan, preflight)`（F006 自由函数，同样无 `tx` 参数——真实签名见 F006 `design.md` 第 8.2 节，`server/src/services/graph-runtime.ts:59-67`）。顺序固定为：验签 → 幂等命中检查 → 过期判断 → `prepareGraph()`（仅图分支需要）→ 开写事务。空文件集或越界 symlink 在 preflight 阶段就失败，此时**尚未写入任何 Issue**。两者**只写库不拉进程**（F006 `design.md` 第 8.2 节）。F006 未落地时图分支返回 409 `TOPOLOGY_NOT_EXECUTABLE`，**禁止静默回退为 `sequential`**。
 - [ ] T021c：幂等测试——同一 token 重复 confirm（含并发双击）只产生一个 Issue。测试要断言具体事务序列：后到者在最后一步撞 `nonce` 主键 → 整个事务回滚 → 另起读操作取胜者已提交的行 → 返回 200 与既有 `issue_id`/`target_id`。`intake_confirmations` **无 `status` 列**，也**不存在 `CONFIRMATION_IN_PROGRESS`**（单事务下不可观察）。
 - [ ] T021e：token 过期测试——超过 30 分钟的 token 返回 `RECOMMENDATION_STALE`。
 - [ ] T021f：失败后重试测试——事务回滚后表中无残留行，同一未过期 token 可再次成功确认。
 - [ ] T021d：失败原子性测试——在事件写入、adapter 复核、图启动三处各注入一次失败，断言事务回滚、**不留孤儿 Issue/Thread**，且客户端可安全重试。
+- [ ] T021g：`sequential` 分支故障注入测试——在 `createSequentialRun(...)` 返回**之后**、外层事务 commit **之前**注入失败（例如 `intake_confirmations` INSERT 失败），断言回滚后库中不留 Issue/Thread/Run/ThreadEvent 任何一行；同一未过期 token 可安全重试并最终成功（R001 完成判据，`design.md` 第 6 节）。
+- [ ] T021h：commit 前无副作用测试——`sequential` 与 `orchestrator_subagent` 两条分支在外层事务提交前，断言 `threadEventService.broadcast()` 未被调用、`drainWorkspace()` 未被调用、无 provider 子进程启动；仅在 commit 成功后才发生（呼应 T012 的推荐阶段零副作用要求，这里覆盖的是确认阶段"未提交前零副作用"）。
 - [ ] T022：`RECOMMENDATION_STALE` 错误码与变化项返回；测试覆盖 adapter 状态翻转、workspace 解绑、模板版本变更三种失效。
 - [ ] T022b：**用户改选值的独立校验**——用户把推荐的 adapter 换成另一个后，若新选的 adapter 当前不可用，必须返回 `RECOMMENDATION_STALE` 并指明是哪一项；断言该校验不依赖原始快照是否包含它（`design.md` 第 5 节）。
 - [ ] T023：断言确认路径经**共享的 `resolveEligibleAdapter()`**（F006 第 8.3 节）且传入显式 adapter id（两条 topology 分支各测一次）；回归断言推荐服务从不写 `default_adapter_config_id`（FR-005）。
@@ -59,7 +63,7 @@ updated: 2026-08-02
 ## Phase 4：Intake UI（US1、US3）
 
 - [ ] T040：Intake 入口与目标输入框；保留既有 `CreateIssueDialog` 手工路径不动。
-- [ ] T041：推荐结果面板——四个维度分别展示 `value` / `rule` / `candidates` / `excluded`。
+- [ ] T041：推荐结果面板——五个维度（issue type、issue draft、workflow template、topology、roster）分别展示 `value` / `rule` / `candidates` / `excluded`；`issue_type` 控件禁用并注明"当前只有 coding 候选"（R002，`design.md` 第 9 节）；`agent_roster` 按 `by_node[node_key]` 逐节点展示候选与排除原因，不是单一候选列表（`design.md` 第 9 节 `AgentRosterRecommendation`）。
 - [ ] T042：调整控件——**仅 `collaboration_topology` 与 `agent_roster` 可改**，按服务端返回的 `editable[]` 渲染；`issue_draft` 与 `workflow_template` 展示规则与候选集但控件禁用并注明"v0.2 不可调整"（`design.md` 第 9 节）。
 - [ ] T043：确认 / 取消；取消后断言无任何持久化写入（US3）。
 - [ ] T044：阻塞态展示原因与建议动作；`RECOMMENDATION_STALE` 引导重新推荐。
@@ -77,7 +81,7 @@ updated: 2026-08-02
 
 - Phase 1 → Phase 2 → Phase 3 → Phase 4 顺序执行。API 契约已在 `design.md` 第 9 节定稿，无额外准入条件。
 - T051 依赖 F006 的 definition 已存在（只读取 `definition_id`/`version` 与逐节点 `required_capabilities`，不依赖其运行时完成）。
-- **T021b / T023b / T023c 依赖 F006 的 `createGraph(deps, ...)`（自由函数）/ `enqueueSequential(...)`（`GraphRuntimeService` 实例方法）与 `resolveEligibleAdapter()` 落地**（均不接收 `tx` 参数；跨 feature 契约由 F006 `design.md` 第 8 节拥有，2026-08-08 已核对与实现一致）。F006 已于 2026-08-08 完成（`spec.md` Status: done），此依赖已满足。其余任务不依赖 F006 实现完成即可开发。
+- **T021b / T023b / T023c 依赖 F006 的 `createGraph(deps, ...)` 自由函数与 `resolveEligibleAdapter()` 落地**（不接收 `tx` 参数；跨 feature 契约由 F006 `design.md` 第 8 节拥有，2026-08-08 已核对与实现一致）。F006 已于 2026-08-08 完成（`spec.md` Status: done），此依赖已满足。`sequential` 分支不再依赖 F006——`createSequentialRun`（T020d）是本 feature 自己的自由函数，与 F006 的 `enqueueSequential()` 无关（该方法只是 `createGraph()` 的别名，2026-08-08 检视后已不再用于 `sequential` 分支，见 `design.md` 第 6 节）。其余任务不依赖 F006 实现完成即可开发。
 
 ## 备注
 

@@ -14,7 +14,7 @@ created: 2026-08-01
 自然的第一反应是"Coordinator 也是个 agent，所以走现有 adapter 路径"。对照实际代码核实后，这条路走不通，且"到底要不要 LLM"这个前提本身没有被检验过。现状确认如下：
 
 - **Coordinator 的第一份工作发生在 Issue 存在之前**，而 `runs` 表的 `issue_id` / `thread_id` / `workspace_id` 三个外键**全是 `NOT NULL`**（`server/src/db/schema-v2.ts:23-25`）。一次"把自然语言目标分类并推荐模板"的调用没有 Issue、没有 Thread，也不需要 workspace——它在结构上无法成为一个 Run，除非先造占位 Issue/Thread 行，而那会污染 Issue 列表并让 workspace 锁队列出现没有真实工作的条目。
-- **Coordinator 不需要 workspace**。它的输入是 Issue 文本 + adapter 注册表，不读文件、不改代码。但现有 dispatch 路径无条件为每个 Run 获取 workspace 排他锁（`run-dispatch.ts:91`、`:313`），并挂上完整的 trace 管道与 30 分钟执行超时（`runtime/types.ts:124`）。让一次纯文本的路由判断去抢工作区排他锁，会让它和真实的代码工作互相排队。
+- **Coordinator 不需要 workspace 文件访问与排他锁**（2026-08-08 检视修正原表述"不需要 workspace"，该说法过宽）。它的输入是 Issue 文本 + adapter 注册表，不读文件、不改代码；但它**需要一个 workspace id**——`agent_roster` 推荐必须按 `effectiveAdapterStatus()` 的 workspace 级覆盖判定 adapter 可用性（F007 `design.md` 第 3 节），没有目标 workspace 就无法算出这个维度。现有 dispatch 路径无条件为每个 Run 获取 workspace 排他锁（`run-dispatch.ts:91`、`:313`），并挂上完整的 trace 管道与 30 分钟执行超时（`runtime/types.ts:124`）。让一次纯文本的路由判断去抢工作区排他锁，会让它和真实的代码工作互相排队——这才是"不需要 workspace"想表达的意思：不持锁、不进队列，不是不知道 workspace 是哪个。
 - **凭据隔离的形状与"直连 API"无关**。F005 的 `buildChildEnv()`（`runtime/workspace-context.ts:104-214`）是一份显式允许清单，其存在理由写在文件头部注释里：一个有 shell 能力的 agent 子进程能读取并外泄自己 env 里的任何东西。直连 API **没有子进程**，不存在需要保护的子环境。所以"直连 API 会破坏 F005 凭据隔离"这个担心不成立——真正新增的是另一回事：PersonaHub 自身要持有一个 API key，这是当前只对 OpenCode api_key 模式存在的一类秘密。
 - **v0.2 的推荐候选集大小是 1**。`IssueType` 枚举当前只有 `Coding` 一个值（`shared/src/types/index.ts:114-116`）；`workflow_templates` 只有一行种子数据 `wft_coding_default`，`validation_policies` 同样只有一行（`schema-v1.ts:105-109`）。也就是说"识别 Issue Type""推荐 Workflow Template"这两项在 v0.2 是从单元素集合里选一个——不需要任何模型推理。真正存在判断空间的只有 collaboration topology（sequential vs orchestrator_subagent）和 agent roster。
 
@@ -40,7 +40,7 @@ created: 2026-08-01
 
 ### 3. Coordinator 只推荐，不自动派工
 
-Coordinator 产出推荐与理由并展示，由用户确认后才创建 Issue 与 Run。这与既有的 `resolveAdapter()` 纪律一致——它明确"永不回退到列表里第一个可用 adapter，无法解析的默认值是硬错误而不是猜测"（`services/adapter-resolver.ts` 文件头注释）。推荐必须走同一条纪律：Coordinator 给候选和理由，真实 dispatch 仍然用用户确认后的显式 adapter id 经 `resolveAdapter()` 解析，**不得成为绕过该纪律的猜测型后门**。
+Coordinator 产出推荐与理由并展示，由用户确认后才创建 Issue 与 Run。这与既有的 `resolveAdapter()` 纪律一致——它明确"永不回退到列表里第一个可用 adapter，无法解析的默认值是硬错误而不是猜测"（`services/adapter-resolver.ts` 文件头注释）。推荐必须走同一条纪律：Coordinator 给候选和理由，真实 dispatch 仍然用用户确认后的显式 adapter id 经 **`resolveEligibleAdapter()`** 解析（2026-08-08 检视修正：确认路径不能只用 `resolveAdapter()`——它没有 capability 参数，只证明 adapter 可用、不证明它具备节点/topology 所需的能力；`resolveEligibleAdapter()` 组合了 `resolveAdapter()` 的可用性判定与 capability 校验，同时继承其"永不猜测"纪律），**不得成为绕过该纪律的猜测型后门**。
 
 ## 触发条件：什么时候重新考虑 LLM 执行通道
 

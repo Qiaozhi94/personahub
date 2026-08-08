@@ -4,7 +4,7 @@ related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, issue-intake, explainability, v0.2]
 doc_kind: spec
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-08
 ---
 
 # F007：Coordinator Agent & Routing Recommendation
@@ -29,7 +29,7 @@ updated: 2026-08-02
 
 ### 目标
 
-- 用户输入一段目标描述，系统产出一份**完整的执行方案建议**：Issue 字段 + workflow template + collaboration topology + agent roster。
+- 用户输入一段目标描述，系统产出一份**完整的执行方案建议**：Issue Type + Issue 字段 + workflow template + collaboration topology + agent roster。
 - 每一条建议都附带**判断依据**：命中的规则、候选集、被排除项及排除原因。
 - 用户可以整体接受、调整可调整项或放弃；确认后系统创建 Issue 并发起第一个执行单元。**v0.2 可调整的只有 collaboration topology 与 agent roster**——workflow template 受限于 `IssueService.create()` 的既有签名传不进去，Issue 字段由确定性规则派生且允许改会让 `diff[]` 失去评估规则准确度的意义；其余维度照常展示规则与候选集但为只读，由服务端返回的 `editable[]` 声明（`design.md` 第 9 节）。
 - 建议不可用时（例如无可用 adapter）给出明确的、可操作的阻塞说明，而不是静默降级。
@@ -47,7 +47,7 @@ updated: 2026-08-02
 
 作为用户，我希望描述目标后直接拿到一份带理由的方案，以便不必自己记住有哪些模板和哪个 agent 现在能用。
 
-**独立测试**：给定一个 Project、一个绑定 workspace 和两个可用 adapter，提交一段目标文本，断言返回的推荐包含 issue 字段、template、topology、roster 四部分，且每部分都带 `rule` 与 `candidates`。
+**独立测试**：给定一个 Project、一个绑定 workspace 和两个可用 adapter，提交一段目标文本，断言返回的推荐包含 issue type、issue 字段、template、topology、roster 五部分，且每部分都带 `rule` 与 `candidates`（roster 按节点携带 `by_node[node_key].candidates`，见 `design.md` 第 9 节）。
 
 **验收场景**：
 
@@ -64,7 +64,10 @@ updated: 2026-08-02
 
 作为用户，我希望在方案变成真实执行之前有一次确认机会。
 
-**独立测试**：请求推荐后不确认，断言没有创建任何 Issue、Thread、Run；确认后断言按推荐值创建 Issue 且首个 Run 使用用户确认的 adapter id。
+**独立测试**：请求推荐后不确认，断言没有创建任何 Issue、Thread、Run；确认后按 topology 分两条断言：
+
+- `sequential`：断言按推荐值创建 Issue，且唯一的首个 Run 使用用户确认的 adapter id。
+- `orchestrator_subagent`：断言按推荐值创建 Issue 与 GraphRun，两个初始节点（precursor）Run 的 `assigned_adapter_config_id` 与用户确认的 `node_assignments` 一致；`synthesize_findings` 节点尚未启动 Run，但其 `node_runs.assigned_adapter_config_id` 已按确认计划持久化（不丢失于内存，`design.md` 第 7 节"执行计划必须传给图"）。
 
 ### US4：阻塞时说清楚（Priority: P2）
 
@@ -99,11 +102,11 @@ updated: 2026-08-02
 
 ## 4. 初始需求边界
 
-- **FR-001**：推荐服务应输出 issue 字段、workflow template、collaboration topology、agent roster 四部分，每部分带 `rule`、`candidates`、`excluded[]{id, reason}`。
+- **FR-001**：推荐服务应输出 issue type、issue 字段、workflow template、collaboration topology、agent roster 五部分，每部分带 `rule`、`candidates`、`excluded[]{id, reason}`；`agent_roster` 的候选与排除原因按节点区分（`design.md` 第 9 节 `AgentRosterRecommendation`），不套用其余四部分共用的通用 `Recommendation<T>` 形状。
 - **FR-002**：推荐逻辑必须完全确定性——相同输入与相同系统状态必须产出相同推荐（可测试）。
 - **FR-003**：推荐不得创建任何持久化实体；只有确认接口才写库。
 - **FR-004**：确认时必须重新校验推荐前提，前提已变则拒绝并要求重新推荐，不得按过期推荐执行。
-- **FR-005**：adapter 选择必须经 `resolveAdapter()`，不得绕过其"永不猜测"纪律（ADR 0007 第 3 节）。
+- **FR-005**：adapter 选择必须经 `resolveEligibleAdapter()`（组合 `resolveAdapter()` 的可用性判定 + capability 校验），不得绕过其"永不猜测"纪律（ADR 0007 第 3 节，2026-08-08 检视修正：`resolveAdapter()` 本身没有 capability 参数，只用它无法保证选中的 adapter 具备节点/topology 所需能力）。
 - **FR-006**：无可执行方案时返回结构化阻塞原因，不得静默降级为任意可用项。
 - **TR-001**：推荐结果与用户最终选择的差异应写入 ThreadEvent，供事后复核。
 - **NFR-001**：推荐为纯内存计算，不得获取 workspace 锁、不得创建 Run。
@@ -116,7 +119,7 @@ updated: 2026-08-02
 
 ## 6. 验收清单
 
-- [ ] **AC-001**（`FR-001`、`FR-002`）：四部分推荐齐全且确定性。
+- [ ] **AC-001**（`FR-001`、`FR-002`）：五部分推荐（issue type、issue 字段、workflow template、collaboration topology、agent roster）齐全且确定性。
 - [ ] **AC-002**（`FR-003`、`FR-004`）：推荐无副作用；过期推荐被拒绝。
 - [ ] **AC-003**（`FR-005`、`FR-006`）：adapter 解析纪律未被绕过；阻塞可解释。
 - [ ] **AC-004**（`TR-001`）：推荐与实际选择的差异可追溯。
