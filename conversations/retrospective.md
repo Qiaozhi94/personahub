@@ -1,0 +1,238 @@
+# 工作流复盘概览
+
+> 按主会话（工作流）分组，列出其派生子代理与工作量。
+
+## 工作流 1: 9b23940e-6e34-4538-9f01-81f724175d1b
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-07-11T12:43:57Z → 2026-07-11T13:27:19Z
+
+## 工作流 2: 94595b09-befc-40b8-851e-82f1670ce165
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-07-11T14:27:58Z → 2026-07-11T16:23:54Z
+
+## 工作流 3: 1e9602d9-c067-4756-965d-c1f606ba3b57
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-07-12T03:04:57Z → 2026-07-12T14:46:34Z
+
+## 工作流 4: personahub 初始 commit 推送至 GitHub
+
+- 工具: `OpenCode` · 模型: glm-5-2-260617
+- 起止: 2026-07-12T10:31:19Z → 2026-07-12T16:53:34Z
+- Token: in 192390 / out 12409 · 成本 $0.0000
+
+## 工作流 5: 91430198-ecd7-4460-b790-76106336c088
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-07-12T14:39:27Z → 2026-07-12T16:32:54Z
+
+## 工作流 6: personahub 项目 F001 开发
+
+- 工具: `OpenCode` · 模型: glm-5-2-260617
+- 起止: 2026-07-12T15:00:10Z → 2026-07-12T16:51:15Z
+- Token: in 670036 / out 96479 · 成本 $0.0000
+- 派生子代理:
+  - Explore project structure and conventions (@explore subagent) (`opencode` · 2026-07-12T15:00:27Z)
+  - Find F001 design document specifically (@explore subagent) (`opencode` · 2026-07-12T15:00:31Z)
+  - Study clowder-ai backend patterns (@explore subagent) (`opencode` · 2026-07-12T15:03:40Z)
+  - Study multica frontend patterns (@explore subagent) (`opencode` · 2026-07-12T15:03:46Z)
+  - Implement F001 backend: DB, repos, services, API (@Sisyphus-Junior subagent) (`opencode` · 2026-07-12T15:18:27Z)
+  - Implement F001 frontend: UI components, hooks, API client (@Sisyphus-Junior subagent) (`opencode` · 2026-07-12T15:19:13Z)
+  - look_at: Describe the UI layout, visual design, and whether (`opencode` · 2026-07-12T16:02:52Z)
+
+## 工作流 7: b8728fcd-913a-43b9-a220-8cf12ff55d09
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-14T15:23:58Z → 2026-07-14T15:30:34Z
+
+## 工作流 8: psersonahub f002需求开发启动
+
+- 工具: `OpenCode` · 模型: glm-5-2-260617
+- 起止: 2026-07-14T15:34:24Z → 2026-07-15T12:18:57Z
+- Token: in 1162601 / out 146799 · 成本 $0.0000
+- 派生子代理:
+  - Explore server backend structure (@explore subagent) (`opencode` · 2026-07-14T15:35:36Z)
+  - Explore shared types and web frontend (@explore subagent) (`opencode` · 2026-07-14T15:35:41Z)
+  - Explore F001 tasks and architecture docs (@explore subagent) (`opencode` · 2026-07-14T15:35:47Z)
+  - Implement F002 Phase 3-6 backend (@Sisyphus-Junior subagent) (`opencode` · 2026-07-14T15:57:40Z)
+  - Implement F002 Phase 7 Frontend UI (@Sisyphus-Junior subagent) (`opencode` · 2026-07-14T16:19:45Z)
+  - Implement F002 Phase 8 automated tests (@Sisyphus-Junior subagent) (`opencode` · 2026-07-14T16:32:33Z)
+
+## 工作流 9: f002代码检视意见审视与采纳
+
+- 工具: `OpenCode` · 模型: deepseek-v4-pro
+- 起止: 2026-07-15T12:36:08Z → 2026-07-15T17:41:48Z
+- Token: in 768416 / out 73583 · 成本 $0.9979
+- 派生子代理:
+  - Examine codex-cli-adapter implementation (@explore subagent) (`opencode` · 2026-07-15T12:36:50Z)
+  - Examine frontend SSE and Inspector code (@explore subagent) (`opencode` · 2026-07-15T12:36:58Z)
+  - Examine test coverage and trace contracts (@explore subagent) (`opencode` · 2026-07-15T12:37:08Z)
+  - Verify new review findings against code (@explore subagent) (`opencode` · 2026-07-15T13:22:05Z)
+
+## 工作流 10: dc84a73c-434d-49c3-a81f-11bab39ffeba
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-15T13:11:21Z → 2026-07-15T13:16:36Z
+
+## 工作流 11: 82c62c43-8497-4af5-beea-86ea2408781c
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-15T16:50:38Z → 2026-07-15T17:40:18Z
+
+## 工作流 12: 968c8180-d3fa-42ba-a5bc-aaab81ea212b
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-17T14:11:55Z → 2026-07-17T14:36:38Z
+
+## 工作流 13: F003需求完成所有工作项并标记状态
+
+- 工具: `OpenCode` · 模型: deepseek-v4-pro
+- 起止: 2026-07-17T14:37:35Z → 2026-07-18T05:00:10Z
+- Token: in 2177598 / out 214214 · 成本 $0.9504
+- 派生子代理:
+  - 探索server端现有代码结构 (@explore subagent) (`opencode` · 2026-07-17T14:38:29Z)
+  - 探索shared和web端现有代码结构 (@explore subagent) (`opencode` · 2026-07-17T14:38:35Z)
+
+## 工作流 14: bfe8ad05-e118-40bb-a378-50061e5ac930
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-18T05:45:18Z → 2026-07-18T06:08:33Z
+
+## 工作流 15: 7efea98a-58b8-4d04-a3ab-3e81a21730f8
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-18T06:23:22Z → 2026-07-18T10:19:54Z
+
+## 工作流 16: 611915a2-a501-4efa-ab92-0680b7b89682
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-18T12:11:22Z → 2026-07-18T12:49:03Z
+
+## 工作流 17: f004需求代码开发
+
+- 工具: `OpenCode` · 模型: deepseek-v4-pro
+- 起止: 2026-07-18T12:51:01Z → 2026-07-19T05:23:41Z
+- Token: in 1075777 / out 91854 · 成本 $0.1786
+- 派生子代理:
+  - 探索 server 端 F003 实现状态 (@explore subagent) (`opencode` · 2026-07-18T12:52:00Z)
+  - 探索 shared 和 web 端当前结构 (@explore subagent) (`opencode` · 2026-07-18T12:52:06Z)
+  - F004 Phase 2: Shared Contract + Schema v4 (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T13:06:21Z)
+  - F004 Phase 3: Repositories & CAS (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T13:42:30Z)
+  - F004 Phase 4: Pure logic (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T14:57:59Z)
+  - F004 Phase 5: Final Message Contract (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T15:26:22Z)
+  - F004 Phase 6: Trace/Query/Unblock (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T15:45:05Z)
+  - F004 Phase 6: Trace/Query/Unblock (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T16:08:48Z)
+  - F004 T037: Extend ValidationTraceService (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T16:42:39Z)
+  - F004 T038-T039: Unblock Service (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T16:51:26Z)
+  - F004 T040-T041: Validation Query Service (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T16:56:22Z)
+  - F004 T042-T047: ValidationWorkflowService core (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T17:03:15Z)
+  - F004 T048-T053: fail/round-limit/blocked (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T17:19:10Z)
+  - F004 T054-T055: stale/duplicate guard (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T17:25:14Z)
+  - F004 T056-T059: Terminal hook + validator (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T17:36:00Z)
+  - F004 T060-T062: Startup Recovery (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T18:00:59Z)
+  - F004 T063-T068: HTTP API (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T18:18:42Z)
+  - F004 T069-T079: Validation UI (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T18:40:01Z)
+  - F004 T086-T089: Doc writeback (@Sisyphus-Junior subagent) (`opencode` · 2026-07-18T19:13:55Z)
+  - F004 T082-T084: Automate manual tests (@Sisyphus-Junior subagent) (`opencode` · 2026-07-19T03:26:51Z)
+  - F003 CR Fix T089-T092: Backend High (@Sisyphus-Junior subagent) (`opencode` · 2026-07-19T04:49:10Z)
+  - F003 CR Fix T093: File pagination (@Sisyphus-Junior subagent) (`opencode` · 2026-07-19T05:04:01Z)
+  - F003 CR Fix T094-T097: Backend Med/Low (@Sisyphus-Junior subagent) (`opencode` · 2026-07-19T05:04:12Z)
+
+## 工作流 18: ced3c86e-85bd-4705-8cc0-ca3da0fa8db9
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-19T02:25:43Z → 2026-07-19T02:27:24Z
+
+## 工作流 19: 4e1b6fc7-7347-4ea2-b25d-411a7fbf81a4
+
+- 工具: `Claude Code` · 模型: claude-opus-4-8
+- 起止: 2026-07-19T03:57:18Z → 2026-07-19T11:09:11Z
+
+## 工作流 20: f004代码检视意见合理性评估
+
+- 工具: `OpenCode` · 模型: deepseek-v4-pro
+- 起止: 2026-07-19T11:28:45Z → 2026-07-19T13:39:33Z
+- Token: in 211352 / out 57563 · 成本 $0.2977
+
+## 工作流 21: stablyai/orca与Personahub项目对比分析
+
+- 工具: `OpenCode` · 模型: deepseek-v4-pro
+- 起止: 2026-07-19T11:59:05Z → 2026-07-19T12:06:21Z
+- Token: in 82126 / out 5996 · 成本 $0.0443
+- 派生子代理:
+  - Explore PersonaHub project structure (@explore subagent) (`opencode` · 2026-07-19T11:59:21Z)
+  - Analyze stablyai/orca project (@librarian subagent) (`opencode` · 2026-07-19T11:59:26Z)
+
+## 工作流 22: 10444dc4-e4d2-4b48-8451-7d2e4a919097
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-07-23T13:58:07Z → 2026-07-26T05:20:39Z
+
+## 工作流 23: 70bc58a9-ca44-41d6-af5f-40073f631791
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-07-25T16:48:07Z → 2026-07-26T05:47:43Z
+
+## 工作流 24: 1ab5a796-42ac-45dc-b9ca-38f90a28ec39
+
+- 工具: `Claude Code` · 模型: <synthetic>
+- 起止: 2026-07-26T05:44:06Z → 2026-07-26T05:47:58Z
+
+## 工作流 25: 55d2db85-22e7-4b22-a5ff-205afdce0bc1
+
+- 工具: `Claude Code` · 模型: <synthetic>
+- 起止: 2026-07-26T09:30:56Z → 2026-07-28T14:49:55Z
+
+## 工作流 26: b8505ce2-8f55-4bb5-83dd-789ab187b320
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-07-28T14:50:10Z → 2026-07-28T16:34:58Z
+
+## 工作流 27: 2ae9af96-afb7-4ecc-8352-3656ceda8b62
+
+- 工具: `Claude Code` · 模型: claude-opus-5
+- 起止: 2026-08-01T08:32:20Z → 2026-08-02T05:46:13Z
+
+## 工作流 28: v0.2 F006 需求开发
+
+- 工具: `OpenCode` · 模型: deepseek-v4-flash
+- 起止: 2026-08-02T05:54:57Z → 2026-08-07T14:26:08Z
+- Token: in 3613100 / out 302796 · 成本 $3.0908
+- 派生子代理:
+  - Explore current schema v7 (@explore subagent) (`opencode` · 2026-08-02T05:55:21Z)
+  - Explore current types and errors (@explore subagent) (`opencode` · 2026-08-02T05:55:25Z)
+  - Explore adapter resolution patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:21Z)
+  - Explore run-dispatch and workflow hook (@explore subagent) (`opencode` · 2026-08-02T07:52:24Z)
+  - Explore adapter resolution patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:25Z)
+  - Explore adapter resolution patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:25Z)
+  - Explore adapter resolution patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:25Z)
+  - Explore adapter resolution patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:26Z)
+  - Explore thread event and run context patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:27Z)
+  - Explore run-dispatch and workflow hook (@explore subagent) (`opencode` · 2026-08-02T07:52:34Z)
+  - Explore run-dispatch and workflow hook (@explore subagent) (`opencode` · 2026-08-02T07:52:34Z)
+  - Explore run-dispatch and workflow hook (@explore subagent) (`opencode` · 2026-08-02T07:52:34Z)
+  - Explore run-dispatch and workflow hook (@explore subagent) (`opencode` · 2026-08-02T07:52:34Z)
+  - Explore adapter resolution patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:36Z)
+  - Explore adapter resolution patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:36Z)
+  - Explore thread event and run context patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:37Z)
+  - Explore thread event and run context patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:38Z)
+  - Explore thread event and run context patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:38Z)
+  - Explore thread event and run context patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:38Z)
+  - Explore run-dispatch and workflow hook (@explore subagent) (`opencode` · 2026-08-02T07:52:45Z)
+  - Explore run-dispatch and workflow hook (@explore subagent) (`opencode` · 2026-08-02T07:52:45Z)
+  - Explore thread event and run context patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:46Z)
+  - Explore thread event and run context patterns (@explore subagent) (`opencode` · 2026-08-02T07:52:46Z)
+  - Create graph-recovery integration tests (@Sisyphus-Junior subagent) (`opencode` · 2026-08-05T13:35:51Z)
+  - Implement resolve-executors endpoint (@Sisyphus-Junior subagent) (`opencode` · 2026-08-05T13:36:24Z)
+  - Recovery semantics regression tests (@Sisyphus-Junior subagent) (`opencode` · 2026-08-05T14:15:08Z)
+  - Adapter escalation cancel edge-case tests (@Sisyphus-Junior subagent) (`opencode` · 2026-08-05T14:15:46Z)
+  - Fake adapter e2e test for graph (@Sisyphus-Junior subagent) (`opencode` · 2026-08-06T13:25:02Z)
+  - Graph UI in ThreadView + Inspector (@Sisyphus-Junior subagent) (`opencode` · 2026-08-06T13:25:14Z)
+
+## 工作流 29: f1b4399d-deb7-4d04-907a-fa658e6a7bac
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-08-02T12:51:38Z → 2026-08-07T17:09:22Z
+
