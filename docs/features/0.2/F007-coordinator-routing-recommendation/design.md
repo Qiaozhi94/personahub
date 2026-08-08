@@ -227,7 +227,8 @@ confirm(token, 用户最终选择)
       │    不接收 "tx" 参数、不自持事务——原子性来自整段调用被包在这个
       │    db.transaction(() => {...})() 里）：
       │    sequential            → createSequentialRun(deps, issueId, threadId, workspaceId,
-      │                             adapterConfigId, instructions)   // 本 feature 新增自由函数，见下
+      │                             projectId, adapterConfigId)   // 本 feature 新增自由函数，见下；
+      │                             instructions 不作为参数传入，函数内部从刚创建的 Issue.goal 派生
       │    orchestrator_subagent → createGraph(deps, issueId, threadId, workspaceId, projectId, plan, preflight)
       │                             // F006 的自由函数，签名与调用惯例见 F006 design.md 第 8.2 节
       └─ INSERT intake_confirmations(...) —— **完整最终行，作为事务最后一步**
@@ -241,12 +242,13 @@ confirm(token, 用户最终选择)
 
 上一轮把 `sequential` 分支写成 `GraphRuntimeService.enqueueSequential(...)`，这是错的：`server/src/services/graph-runtime.ts:222-231` 显示 `enqueueSequential()` 只是 `createGraph()` 的实例方法别名，签名要求完整的 `GraphExecutionPlan`（`nodeAssignments` 覆盖 definition 全部节点）与 `GraphPreflight`。而 F007 的 `ChosenPlan` 的 `sequential` 分支只有 `{ adapter_config_id }`（第 9 节），根本凑不出这些参数；若实现者临时伪造一份图计划，会把用户选择的"单 Run 顺序执行"静默建成 F006 的三节点 `orchestrator_subagent` 图——两者是完全不同的执行形状，且图节点 Run 用的是 `RunRole.GraphNode`，不会触发普通 implementation Run 该有的 F004 验证循环。
 
-**新增自由函数 `createSequentialRun`**，与 F006 的 `createGraph(deps, ...)` 同构（不自持事务、只写库、不拉进程）：
+**新增自由函数 `createSequentialRun`**，与 F006 的 `createGraph(deps, ...)` 同构（不自持事务、只写库、不拉进程）。**签名只有一份**——上一轮流程图与正式签名不一致（流程图多传了 `instructions`、少传了 `projectId`），且"instructions 复用既有派生方式"的说法不准确（仓库里不存在这样一个公共函数：`ManualRoutingService.dispatch()` 是把 `instructions` 当**输入**做 trim + 非空校验，不是从 Issue 派生）：
 
 ```ts
 interface SequentialRunDeps {
   runRepo: RunRepository;
   issueRepo: IssueRepository;
+  agentConfigRepo: AgentConfigRepository;
   threadEventService: ThreadEventService;
   adapterDeps: AdapterResolverDeps;
 }
@@ -263,11 +265,12 @@ function createSequentialRun(
 
 行为：
 
-1. 经共享的 `resolveEligibleAdapter()`（F006 `design.md` 第 8.3 节）复核 `adapterConfigId` 具备 `Implementation` 能力；不通过 → `ADAPTER_CAPABILITY_MISSING`，整体拒绝（与图分支同一纪律，见第 246 行）。
-2. `runRepo.create({ issue_id, thread_id, workspace_id, adapter_config_id, instructions, status: Queued, role: Implementation, purpose: WorkflowBound })`——`instructions` 取自确认的 Issue `goal`（复用既有 implementation Run 的 instructions 派生方式，不新增字段）；不设 `dispatch_source`（沿用仓库默认值 `UserExplicit`，与 F006 图节点 Run 的既有约定一致）。
-3. `issueRepo.compareAndSetStatus(issueId, Inbox, Running)`——这是 `IssueService.create()` 在同一事务里刚建出来的 Issue，理应仍是 `Inbox`；CAS 失败视为内部错误（防御性检查，正常路径不会触发）。
-4. 写 `ThreadEventType.RunQueued` 事件（字段形状与 `ManualRoutingService.dispatch()` 一致：`run_id`/`issue_id`/`thread_id`/`workspace_id`/`status`/`purpose`/`role`/`adapter_config_id`/`drives_issue_state: true`），加入 `pendingEvents`，**不在函数内 broadcast**。
-5. 返回 `{ runId, pendingEvents }`。
+1. `issueRepo.getById(issueId)`；不存在或 `issue.project_id !== projectId || issue.workspace_id !== workspaceId` → 内部契约错误（与 `createGraph` 对 Issue 归属的校验同构，`graph-runtime.ts:73-76`）。**`instructions` 唯一来源是 `issue.goal.trim()`**——不接受调用方另行传入，避免 token 中签名保护的 goal 与真实执行指令发生分叉；`goal` 为空同样视为内部契约错误（`IssueService.create()` 已保证非空，这里是防御性检查）。
+2. 经共享的 `resolveEligibleAdapter()`（F006 `design.md` 第 8.3 节）复核 `adapterConfigId` 具备 `Implementation` 能力；不通过 → `ADAPTER_CAPABILITY_MISSING`，整体拒绝（与图分支同一纪律）。`deps.agentConfigRepo.getById(adapterConfigId)` 取出 adapter 实体用于下一步的身份快照。
+3. `runRepo.create({ issue_id, thread_id, workspace_id, adapter_config_id, instructions, status: Queued, role: Implementation, purpose: WorkflowBound, dispatch_source: RunDispatchSource.UserExplicit, adapter_identity: { adapter_config_id, name, cli_provider, default_model }, context_source_run_id: null })`——`dispatch_source`/`adapter_identity` 显式写入而非依赖仓库默认值，`context_source_run_id` 为 `null` 是因为这是新 Issue 的第一个 Run，没有"之前完成的 implementation Run"可继承 handoff（与 `ManualRoutingService.dispatch()` 对首个 Run 的处理一致，`context_source_run_id` 逻辑上取 `null`）。**这与既有普通 implementation Run 使用相同的 provenance 字段**，历史执行者身份不会因 adapter 配置事后改名/换 provider 而丢失。**`Run.adapter_identity` 是执行者历史身份的唯一真相源**（第二次最终复检修正）——`coordinator.recommendation_applied` 事件的 `recommended`/`chosen` 只存 adapter id（见下方"幂等与失败原子性"一节），不独立保存 `{name, cli_provider, default_model}` 快照；该事件的职责是记录命中规则、推荐值、用户最终选择与差异，不是身份快照，v0.2 不为此新增事件字段。
+4. `issueRepo.compareAndSetStatus(issueId, Inbox, Running)`——这是 `IssueService.create()` 在同一事务里刚建出来的 Issue，理应仍是 `Inbox`；CAS 失败视为内部错误（防御性检查，正常路径不会触发）。
+5. 写 `ThreadEventType.RunQueued` 事件，payload 与 `ManualRoutingService.dispatch()` 对齐：`run_id`/`issue_id`/`thread_id`/`workspace_id`/`status`/`purpose`/`role`/`dispatch_source`/`adapter_config_id`/`cli_provider`/`context_source_run_id`/`drives_issue_state: true`，加入 `pendingEvents`，**不在函数内 broadcast**。
+6. 返回 `{ runId, pendingEvents }`。
 
 `createSequentialRun` 不复用 `ManualRoutingService.dispatch()`——后者自持 `db.transaction()` 并在内部直接 `broadcast()`，与 `confirm()` 的单外层事务、commit 后统一 broadcast/drain 的要求冲突（这正是 `ManualRoutingService` 现有设计对 F007 不适用的原因）。
 
