@@ -14,8 +14,14 @@ created: 2026-07-11
 |----|---------|------|--------|-------|------|
 | F007 | 0.2 | Coordinator Agent & Routing Recommendation | done | TBD | `docs/features/0.2/F007-coordinator-routing-recommendation/spec.md` |
 | F008 | 0.2 | Workflow Template Admin & Runtime Health | ready-for-development | TBD | `docs/features/0.2/F008-workflow-template-admin-runtime-health/spec.md` |
+| F009 | 0.3 | Artifact Foundation & Provenance | spec | TBD | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md` |
+| F010 | 0.3 | Artifact-Centered Coding Slice | spec | TBD | `docs/features/0.3/F010-artifact-centered-coding-slice/spec.md` |
+| F011 | 0.3 | Work Room & Human Intervention | spec | TBD | `docs/features/0.3/F011-work-room-human-intervention/spec.md` |
+| F012 | 0.3 | Reusable Agent Squads | spec | TBD | `docs/features/0.3/F012-reusable-agent-squads/spec.md` |
 
 > F006（Orchestrated Coding Graph Slice）已于 2026-08-08 完成全部 AC 验收（`spec.md` Status: done），按上方规则移出活跃表；详情见 `docs/features/0.2/F006-orchestrated-coding-graph-slice/spec.md`。
+
+> v0.3 的 F009-F012 已分别建立 draft `spec.md` / `design.md` / `tasks.md`，当前处于需求与设计审查阶段；版本范围、顺序与验收旅程见 `docs/features/0.3/README.md`。
 
 ## v0.2 拆分说明
 

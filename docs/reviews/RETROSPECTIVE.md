@@ -14,6 +14,14 @@
 > 用同一张表,不再区分"完整/轻量"两种格式。没有把握精确判断的字段(比如原始
 > 文件已删除、无法逆向还原具体修复轮次或来源分类的)填 `—` 占位,不编造看起来
 > 精确实则可能错的数据。
+>
+> **`CURRENT-doc.md` / `CURRENT-code.md` 只能由检视人(reviewer)在复核完成后
+> 删除,执行修复的一方不得自行删除**——哪怕修复者已经把 issue 表原样追加进本
+> 文件、自认为"已经闭环"。执行者和检视人是协议里两个独立视角,自己批准自己的
+> 修复等于取消了这层制衡;实践中也确实发生过"刚写完修复就顺手删掉检视文档"
+> 的情况,一旦复核发现修复不完整就无据可查。同一个 agent 同会话内先后扮演
+> 两个角色时,也要显式切换视角重新核对一遍再删,不能把"刚写完"当"已复核"。
+> 完整规则见 `~/.agents/skills/review-convergence/SKILL.md` 第 8 节。
 
 ---
 
@@ -502,3 +510,96 @@ nonce unique-conflict winner replay的project归属校验、响应构造和
 `drainWorkspace(confirmation.workspace_id)`;新增故障注入测试强制进入
 conflict catch,断言返回winner前完成drain。F007 server 78/78、Web 10/10、
 `npm test`/`typecheck`/`lint`/`format:check`/`git diff --check`全绿。
+
+---
+
+## 循环 7: F008 开发前需求检视
+
+- **report_type**: doc-review
+- **周期**: 2026-08-09,单轮 · **状态**: 已闭环(文档修复已落工作区,尚未提交)
+- **背景**: F008 的 spec/design/tasks 此前已在循环3(6轮)里做过自洽性检视,但
+  design.md 写于2026-08-02、彼时F006/F007尚未实现完毕,里面大量断言了具体
+  文件路径/行号/函数名。开发前最后一轮检视核对这些断言与2026-08-09实际代码
+  (F006/F007均已完整落地)是否仍然一致,方法与循环5(F007开发前检视)相同。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F008-R001 | `waiting_for_validation_due`诊断被设计成"排队Run分类"的产物,但验证者Run只在due time到达并被claim的同一事务内才创建为Queued,等待期间该workspace根本没有对应的排队Run,这条分类结构上不可能从该路径产出 | 🟠 | correctness | root-cause | spec-drift | fixed | 改为独立的Issue级只读查询(`status='Validating' AND validation_dispatch_due_at IS NOT NULL`,复用`idx_issues_validation_due`),与排队Run判定器解耦;同时更正"这是为防止queue_starved误报"的错误动机(等待期间queued计数本为0,naive检查不会因此误报) | — | 1 | 1 | — |
+| F008-R002 | design.md/tasks.md假设"存在一个与队列drain共享的、无副作用的资格判定器"可直接复用,但该判定逻辑完全内嵌在`RunDispatchService.startNextQueuedRun()`私有方法内,与取消/加锁/状态CAS/真实派发等副作用交织在同一循环体,当前没有任何可独立调用的纯函数 | 🟠 | correctness | root-cause | spec-drift | fixed | tasks.md T041b改写为"先从`startNextQueuedRun()`抽取纯函数分类器,drain与health共用同一份代码",不得在health里另写一份重复判断——本项目已在循环4(F006)/循环6(F007)反复踩过"只改对称结构一半"导致两处判断静默分叉的同类问题 | — | 1 | 1 | — |
+| F008-R003 | design.md引用的多处文件行号(`hasValidationStep()`、`run-dispatch.ts`内`AdapterFailureReprobe`字段位置等)因F007落地后代码整体下移而过期 | 🟢 | quality | symptom-patch | spec-drift | fixed | 逐处核对当前实际行号并更新design.md引用 | — | 1 | 1 | — |
+
+**可复用教训**: F008-R001/R002共同指向同一类根因——设计文档在没有真实实现的阶段,
+对"某个可复用机制已经存在"做了未经代码核实的假设。循环5(F007)的核心教训是
+"假设的接口与真实签名不符",这里进一步扩展为"假设的机制(纯函数判定器)压根不
+存在、假设的数据流(排队Run代表等待状态)在真实实现里不成立"——两类假设都只有
+逐行核对当前代码才能发现,单靠文档自洽检视(循环3的6轮)测不出来。
+
+---
+
+## 循环 8: F008 开发前需求检视(第2-3轮,diff-only复检)
+
+- **report_type**: doc-review
+- **周期**: 2026-08-09,2轮 · **状态**: 已闭环(第3轮独立复核通过,尚未提交)
+- **背景**: 循环7修完后又对F008 design.md做了一轮diff-only复检(`docs/reviews/
+  CURRENT-doc.md`,round 2),只审循环7改动的diff及其相邻契约,而不是重新通读
+  全文——三条发现都出在循环7新写的三段文字本身(而不是原有内容),说明修复动作
+  本身也需要过一遍"是否引入新的不同源判断"的检查,不能修完就当结束。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F008-R004 | `waiting_for_validation_due`查询没有比较due time与服务端当前时间,已逾期未被调度器claim的Issue会和正常等待混在同一个诊断code里 | 🟠 | correctness | root-cause | fix-regression | fixed | 按`now`分流:未到期或在`VALIDATION_DISPATCH_GRACE_MS`(新增,5秒,覆盖调度器默认1秒tick延迟)窗口内仍报`waiting_for_validation_due`;超过grace仍未被claim改报新增的`validation_dispatch_overdue`(`detail`附`overdue_ms`) | `tasks.md::T041f` | 2 | 3 | time-boundary-collapse |
+| F008-R005 | `locked_at`异常(为空/晚于当前时间)被无条件归入`stale_lock_confirmed`,但该code的真实语义是"与`cleanupStaleLocks()`一致、可安全释放"——若持有者仍running,时间戳异常并不能证明可以安全释放,建议用户手动释放会破坏workspace互斥 | 🟠 | correctness | root-cause | spec-drift | fixed | 拆分:持有者缺失/终态时`locked_at`是否异常不影响`stale_lock_confirmed`(这两种情形本就不看时长);持有者仍running且`locked_at`异常时归入新增的`lock_timestamp_invalid`,不给出释放类建议 | `tasks.md::T041` | 2 | 3 | diagnostic-recovery-rule-drift |
+| F008-R006 | `eligible_but_not_running`与`queue_starved`并列成两个同级公开DTO code,没有定义二者是否同时输出、谁是谁的聚合结果 | 🟡 | correctness | root-cause | original-coding | fixed | 明确`eligible_but_not_running`只是内部纯分类器的返回值,不进入公开`diagnostics[].code`判别联合;health服务层聚合——锁空闲时产出唯一的`queue_starved`,锁占用时不产出任何诊断 | `tasks.md::T041b,T041c,T054` | 2 | 3 | diagnostic-state-conflation |
+
+**来源标注说明**: F008-R004是循环7“改用Issue级查询”的修复动作漏掉时间比较,
+因此标`fix-regression`;F008-R005的错误兜底在循环7之前已存在,是文档与真实恢复
+规则漂移,标`spec-drift`;F008-R006是原有文字未定义清楚,标`original-coding`。
+
+**第3轮独立复核证据**: 逐项核对F008三件套与当前源码后确认:R004使用的5秒
+grace大于`ValidationDispatchScheduler`生产默认1秒tick,且未到期/窗口内/超窗三态
+已进入T041f;R005的confirmed判据重新与`stale-recovery.ts:95-113`对齐,running+
+异常时间戳有独立code且无释放建议;R006已从公开DTO移除内部分类结果,DTO与T054均
+保持10个公开code。`git diff --check`通过,无新增Critical/High。
+
+**可复用教训**: 与循环6(F007)第7轮`nonce-conflict-replay-skips-drain`同源——
+"刚写完的修复"和"被修复动作波及但没有同步更新的旧文字"之间的接缝,是本项目
+目前复现次数最多的缺陷模式(循环4/循环6/循环7/循环8至少四次独立命中)。写文档
+或代码时修复一处判断,必须顺着"这条判断还在别的地方被引用/复制/兜底过一次吗"
+往外查一圈,而不是只看被点名的那一行。
+
+---
+
+## 循环 9: v0.3 F009-F012 规划文档检视(2轮)
+
+- **report_type**: doc-review
+- **周期**: 2026-08-09,2轮 · **状态**: 已闭环(修复已落工作区,尚未提交)
+- **背景**: F009-F012(v0.3:Artifact Foundation、Artifact-Centered Coding Slice、
+  Work Room、Reusable Agent Squads)四个 Feature 的 draft spec/design/tasks 首次
+  整体评审,与 F008 的循环 7/8 是两条独立审查线(用 `docs/reviews/
+  CURRENT-doc-v0.3.md` 与 `CURRENT-doc.md` 区分,互不阻塞)。第1轮全量通读四份
+  Feature 的三件套 + README,第2轮只复核第1轮8条发现对应的文档 diff。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F010-R001 | `artifact_run_links`生产端唯一索引建在`(run_id,direction,purpose,producer_slot)`,但spec.md NFR-003把幂等键定义为`(source_run_id,artifact_type,producer_slot)`;`purpose`是consumed链路的自由描述文本,从未声明等于`artifact_type`,同一producer_slot的两次finalize换个purpose字符串即可绕过唯一约束,直接打穿AC-005"retry/restart不重复revision" | 🟠 | correctness | root-cause | original-coding | fixed | 唯一索引改为只用`(run_id,producer_slot)`;新增`CHECK((direction='produced' AND producer_slot IS NOT NULL) OR direction='consumed')`同时堵上"produced行producer_slot为NULL时NULL互不相等、唯一索引形同虚设"这个连带漏洞;spec/design两处幂等键描述统一改为同一字段组 | `tasks.md::T001,T010` | 1 | 2 | idempotency-key-field-mismatch |
+| F011-R001 | spec.md US3写"暂停只阻止尚未启动的派工",字面不限定graph节点;但design.md唯一给出的机制(`queuedRunEligibility()`加Room gate)只作用于图的排队Attempt认领,F010引入的implementation/validation Run走既有F004/ManualRoutingService路径不经过这个gate,图跑完后Room实际已拦不住后续派工,与spec字面承诺不符 | 🟡 | correctness | root-cause | spec-drift | fixed | 收窄spec而非扩大机制:非目标段、US3、FR-004、AC-002统一明确"v0.3的Room是当前orchestrator_subagent Graph(research/synthesis阶段)的控制面,不拦截图完成后在primary Thread创建的普通implementation/validation Run" | — | 1 | 2 | scope-promise-mechanism-gap |
+| F011-R002 | design.md/tasks.md假设代码库里已存在共享的`queuedRunEligibility()`可直接挂Room gate,但该函数当前并不存在(逻辑内联在`run-dispatch.ts`派工循环的`continue`分支里);F008 design.md同样只泛泛提到"复用一个共享的、无副作用的资格判定器",两份文档都没给出确切签名或提取任务 | 🟡 | correctness | root-cause | spec-drift | fixed | 明确共享classifier的提取由F008 `tasks.md::T041b`拥有(从`startNextQueuedRun()`抽取);F011 `tasks.md::T011`改为显式依赖并复用该导出,不得自行复制判断,同时在依赖关系里声明"若F008尚未落地,F011不得自行复制判定" | `F008 tasks.md::T041b`、`F011 tasks.md::T011` | 1 | 2 | cross-feature-contract-drift |
+| F010-R002 | `graph.node_result`是单一ThreadEventType且已在`TRUSTED_INTERNAL_ALLOWLIST`里,design.md称新graph definition发"v2 payload"、旧definition继续发完整payload,但没写明下游怎样在解析前区分两种形状 | 🟡 | correctness | root-cause | original-coding | fixed | 固定discriminator字段`payload_schema:"graph.node_result.v2"`,`ArtifactContextAssembler`先校验discriminator再用NodeRun→GraphRun冻结的definition id/version交叉验证;缺discriminator的事件只允许属于F006 legacy definition/version,未知/错配组合统一`artifact_invalid`,`resolveTrustedPayload()`本身不承担版本判别职责 | — | 1 | 2 | event-payload-version-ambiguity |
+| F010-R003 | F004既有验证循环允许多轮重试,但spec/design都没说清一次多轮验证对应几个`verification_results` artifact——每轮各一个,还是只有最终结果落地 | 🟡 | correctness | symptom-patch | original-coding | fixed | 明确每个成功解析出规范result的validator Run(含非最终轮、round-limit blocked)都创建独立的`verification_results`实体revision 1,轮次由可信`runs.validation_round`投影;非pass artifact进入下一轮consumed links,最终Evidence Summary引用最终轮并列出此前各轮refs | `tasks.md::T023` | 1 | 2 | cardinality-underspecified |
+| F0912-R001 | F009 design.md明确点出schema版本号依赖F008落地顺序("F008若先落地则F009用v11"),但F010/F011/F012的design.md都只写"下一个migration",没有重述这条级联,打破项目一贯"design阶段写明目标版本供评审"的约定 | 🟢 | quality | symptom-patch | process-gap | fixed | 四份design.md统一改为按既定实施顺序钉死具体版本号(F008=v10、F009=v11、F010=v12、F011=v13、F012=v14),并各自声明"若落地前实施顺序改变,整体重新编号,已应用版本永不修改或追加" | — | 1 | 2 | schema-version-not-stated |
+| F011-R003 | `threads.room_id`自schema v1建表起就存在且恒为NULL(为未来Room功能预留的正向指针),F011引入反向指针`work_rooms.thread_id`后,design.md没说清创建Room Thread时要不要顺手填上这个沉睡多年的列 | 🟢 | quality | symptom-patch | original-coding | fixed | 明确`work_rooms.thread_id`是canonical relation、`threads.room_id`是必填反向导航字段(不再保持NULL);创建Room Thread时同事务写入两侧,新增`idx_threads_one_room_thread`唯一索引,Repository/Projection每次读取断言双向一致,不一致返回`ROOM_THREAD_LINK_INVALID` | `tasks.md::T002,T003` | 1 | 2 | dead-column-disposition-unclear |
+| F009-R001 | design.md只写"并发revise由CAS保证...冲突重试一次",三方及以上并发revise时重试后仍冲突的行为未定义 | 🟢 | correctness | symptom-patch | original-coding | fixed | 明确第二次CAS冲突终止请求、返回409`ARTIFACT_REVISION_CONFLICT`+`latest_revision`,服务端不得无界重试;spec.md IR-001错误码列表同步补上该code | — | 1 | 2 | retry-bound-unspecified |
+| F011-R004 | 修复F011-R002时把"F011依赖F008 T041b"这个新的硬依赖边写进了F011自己的design.md/tasks.md,但没有同步传播到README.md的Feature依赖表(F011行仍只列F006、F007、F009、F010)和F011三件套frontmatter的`related_features` | 🟡 | quality | symptom-patch | fix-regression | fixed | README.md依赖表F011行补上F008;F011 spec/design/tasks三份frontmatter的`related_features`同步加入F008 | — | 2 | 2 | fix-propagation-gap |
+
+**来源标注说明**: F011-R004是本轮修复F011-R002时自身遗漏的传播,标`fix-regression`;
+其余7条首次出现于第1轮全量通读,标`original-coding`/`spec-drift`/`process-gap`。
+
+**可复用教训**: F010-R001与循环7的F008-R002同属一个更大的模式——**唯一性/幂等
+保证被拆成两个字段名不同但语义被默认相同的表述**(schema列名`purpose` vs 契约
+文字`artifact_type`),文档双方都没写"这两个是不是同一个东西",只有对照实际
+SQL约束逐字段核对才发现。F011-R002再次印证循环7/8已识别的"假设某个共享机制
+已存在"模式,这次额外确认了修复本身的传播盲区(F011-R004)——与循环8的教训完全
+同构:**"改完这处判断,记得回头查它在依赖表/frontmatter/相邻文档里还留了几份
+影子"**,目前已在循环4/6/7/8/9至少五次独立命中,是本项目复现率最高的缺陷模式,
+值得在未来评审的检查清单里固定一条"新增跨Feature硬依赖后,同步扫描README依赖
+表与相关frontmatter"。
