@@ -45,7 +45,7 @@ export class RuntimeHealthService {
     private expectedSchemaVersion: number = CURRENT_SCHEMA_VERSION,
   ) {}
 
-  collect(projectId: string, workspaceId?: string): RuntimeHealthSnapshot {
+  collect(projectId: string, workspaceId?: string, nowMs?: number): RuntimeHealthSnapshot {
     if (workspaceId !== undefined) {
       const workspace = this.workspaceRepo.getById(workspaceId);
       if (!workspace || workspace.project_id !== projectId) {
@@ -53,7 +53,7 @@ export class RuntimeHealthService {
       }
     }
 
-    const now = Date.now();
+    const now = nowMs ?? Date.now();
 
     const schema = this.collectSchema();
     const background = this.collectBackground();

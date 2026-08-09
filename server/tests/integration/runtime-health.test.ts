@@ -249,30 +249,33 @@ describe("RuntimeHealth (F008 Phase 4)", () => {
       if (holderStatus === RunStatus.Running) {
         services.db.prepare("UPDATE runs SET started_at = ? WHERE id = ?").run(new Date().toISOString(), holderRun.id);
       }
-      const lockedAt = lockedAtOffsetMs !== null ? new Date(Date.now() - lockedAtOffsetMs).toISOString() : null;
+      // Pin a stable clock so boundary assertions (age === THRESHOLD) are exact,
+      // instead of racing against Date.now() drift between setup and collect().
+      const now = Date.now();
+      const lockedAt = lockedAtOffsetMs !== null ? new Date(now - lockedAtOffsetMs).toISOString() : null;
       lockWorkspace(services.db, workspace.id, holderRun.id, lockedAt);
-      return { project, workspace, holderRun };
+      return { project, workspace, holderRun, now };
     }
 
     it("threshold - 1ms: no stale_lock diagnostic", () => {
-      const { project, workspace } = setupLockedWorkspace(RunStatus.Running, THRESHOLD - 1);
-      const health = makeHealthService(services).collect(project.id, workspace.id);
+      const { project, workspace, now } = setupLockedWorkspace(RunStatus.Running, THRESHOLD - 1);
+      const health = makeHealthService(services).collect(project.id, workspace.id, now);
       expect(
         health.diagnostics.filter((d) => d.code.startsWith("stale_lock") || d.code === "lock_timestamp_invalid"),
       ).toHaveLength(0);
     });
 
     it("exactly equal to threshold: no stale_lock diagnostic (strict greater-than)", () => {
-      const { project, workspace } = setupLockedWorkspace(RunStatus.Running, THRESHOLD);
-      const health = makeHealthService(services).collect(project.id, workspace.id);
+      const { project, workspace, now } = setupLockedWorkspace(RunStatus.Running, THRESHOLD);
+      const health = makeHealthService(services).collect(project.id, workspace.id, now);
       expect(
         health.diagnostics.filter((d) => d.code.startsWith("stale_lock") || d.code === "lock_timestamp_invalid"),
       ).toHaveLength(0);
     });
 
     it("over threshold: stale_lock_suspected", () => {
-      const { project, workspace, holderRun } = setupLockedWorkspace(RunStatus.Running, THRESHOLD + 1);
-      const health = makeHealthService(services).collect(project.id, workspace.id);
+      const { project, workspace, holderRun, now } = setupLockedWorkspace(RunStatus.Running, THRESHOLD + 1);
+      const health = makeHealthService(services).collect(project.id, workspace.id, now);
       const diag = health.diagnostics.find((d) => d.code === "stale_lock_suspected");
       expect(diag).toBeDefined();
       expect(diag!.workspace_id).toBe(workspace.id);
