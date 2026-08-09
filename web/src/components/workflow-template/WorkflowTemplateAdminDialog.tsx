@@ -84,10 +84,14 @@ export function WorkflowTemplateAdminDialog({ open, onOpenChange }: WorkflowTemp
   // currently-active template's validation state is unknown (before.valid=false)
   // or the target removes the validator step — never when validation is being
   // (re-)enabled on an active template that is known to have no validator.
+  function needsAcknowledgeForTarget(targetHasValidator: boolean): boolean {
+    const activeValid = activeTemplate !== null && activeTemplate.validation_enabled !== null;
+    return !activeValid || !targetHasValidator;
+  }
+
   function needsAcknowledge(stepsPreview: StepsPreview): boolean {
     if (!stepsPreview.valid) return false;
-    const activeValid = activeTemplate !== null && activeTemplate.validation_enabled !== null;
-    return !activeValid || !stepsPreview.hasValidator;
+    return needsAcknowledgeForTarget(stepsPreview.hasValidator);
   }
 
   function submitEnable(name: string, stepsJson: string | null) {
@@ -152,7 +156,7 @@ export function WorkflowTemplateAdminDialog({ open, onOpenChange }: WorkflowTemp
 
   function activateVersion(id: string, detail: WorkflowTemplateDetail | null) {
     setError(null);
-    const needsAck = detail ? detail.validation_enabled !== true : true;
+    const needsAck = needsAcknowledgeForTarget(detail ? detail.validation_enabled === true : false);
     if (needsAck) {
       setPendingActivateId(id);
       setAcknowledgeError(

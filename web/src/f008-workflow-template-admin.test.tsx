@@ -386,4 +386,30 @@ describe("T052/T053: save draft vs save & enable, and the disable-validation con
       });
     });
   });
+
+  it("activating a validator-enabled version while the active template is unparseable asks for confirmation upfront", async () => {
+    // Active template's steps_json is broken (validation state unknown) —
+    // the server would require acknowledge, so the client must prompt
+    // before firing the request instead of round-tripping a 400 first.
+    vi.mocked(apiClient.workflowTemplates.list).mockResolvedValue({
+      templates: [{ ...ACTIVE_V1, validation_enabled: null }, INACTIVE_V2],
+    });
+    vi.mocked(apiClient.workflowTemplates.get).mockResolvedValue(
+      detailResponse({ ...DETAIL_V1, id: "wft_2", name: "Fixed", status: "inactive", version: 2 }),
+    );
+    renderWithQuery(<WorkflowTemplateAdminDialog open onOpenChange={() => {}} />);
+    await waitFor(() => {
+      expect(screen.getByText("v2")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /v2/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Activate" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Activate" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Disable validation?")).toBeInTheDocument();
+    });
+    expect(apiClient.workflowTemplates.activate).not.toHaveBeenCalled();
+  });
 });
