@@ -68,7 +68,7 @@
 
 ### 第1轮(`v02-requirements.md`,10H/10M)— commit `b024220` 采纳关闭
 
-| severity | 标题 | 位置 |
+| 严重度 | 标题 | 位置 |
 |---|---|---|
 | 🟠 | F006 result refs cannot deliver predecessor output as designed | F006/design.md:153 |
 | 🟠 | Existing escalation cancels queued graph siblings, contradicting documented recovery model | F006/design.md:191 |
@@ -96,7 +96,7 @@
 
 ### 第2轮(`v02-recheck.md`,13H/16M/1L)— commit `699060d` 采纳关闭
 
-| severity | 标题 | 位置 |
+| 严重度 | 标题 | 位置 |
 |---|---|---|
 | 🟠 | F007 both forbids and requires persistence during recommendation | F007/spec.md:102 |
 | 🟠 | `recommendation_id` collides for different goals, not claimed by PK | F007/design.md:20 |
@@ -135,7 +135,7 @@
 
 ### 第3轮(`v02-recheck-2.md`,5H/11M)— commit `cd03f4c` 采纳关闭
 
-| severity | 标题 | 位置 |
+| 严重度 | 标题 | 位置 |
 |---|---|---|
 | 🟠 | Self-contained confirmation token has no integrity protection | F007/design.md:23 |
 | 🟠 | Graph creation both rejects invalid plan and persists recoverable blocked graph | F006/design.md:315 |
@@ -160,21 +160,21 @@
 
 ### 第4轮(`v02-recheck-3.md`,中文报告,6H/7M,用了H-01~M-07编号)— commit `502255a` 采纳关闭
 
-| ID | severity | 标题 |
+| 严重度 | 标题 | 位置 |
 |---|---|---|
-| H-01 | 🟠 | F007确认表只允许写"最终事实",但确认流程仍要求先写不完整的认领行 |
-| H-02 | 🟠 | F006没有定义图节点的`Run.instructions`,节点职责和输出契约无法送入执行器 |
-| H-03 | 🟠 | 已确认的adapter只在建图时校验,延迟创建Attempt时没有资格复核和blocker产生点 |
-| H-04 | 🟠 | 新增的`assigned_adapter_config_id`外键没有接入现有adapter删除保护 |
-| H-05 | 🟠 | F008把版本继承来源与当前active版本混称为source,可能绕过关闭验证的确认门 |
-| H-06 | 🟠 | F006 blocker恢复矩阵仍保留被最终决策否定的状态转换 |
-| M-01 | 🟡 | F007的HMAC密钥生命周期仍是二选一描述,没有可实现的配置契约 |
-| M-02 | 🟡 | 整图取消没有定义数据库状态变更与外部进程取消的先后顺序 |
-| M-03 | 🟡 | F006对graph事件类型数量仍同时写5类和6类 |
-| M-04 | 🟡 | `resolve-executors`的幂等响应与blocker错误矩阵在running状态下冲突 |
-| M-05 | 🟡 | F007的响应DTO漏掉已经定义的阻塞错误码 |
-| M-06 | 🟡 | F007概览仍声称确认复用`RunDispatchService.dispatch()`,与已定的分流契约相反 |
-| M-07 | 🟡 | `BACKLOG.md`仍把F007依赖写成旧的`start(issueId, plan)`签名 |
+| 🟠 | [H-01] F007确认表只允许写"最终事实",但确认流程仍要求先写不完整的认领行 | — |
+| 🟠 | [H-02] F006没有定义图节点的`Run.instructions`,节点职责和输出契约无法送入执行器 | — |
+| 🟠 | [H-03] 已确认的adapter只在建图时校验,延迟创建Attempt时没有资格复核和blocker产生点 | — |
+| 🟠 | [H-04] 新增的`assigned_adapter_config_id`外键没有接入现有adapter删除保护 | — |
+| 🟠 | [H-05] F008把版本继承来源与当前active版本混称为source,可能绕过关闭验证的确认门 | — |
+| 🟠 | [H-06] F006 blocker恢复矩阵仍保留被最终决策否定的状态转换 | — |
+| 🟡 | [M-01] F007的HMAC密钥生命周期仍是二选一描述,没有可实现的配置契约 | — |
+| 🟡 | [M-02] 整图取消没有定义数据库状态变更与外部进程取消的先后顺序 | — |
+| 🟡 | [M-03] F006对graph事件类型数量仍同时写5类和6类 | — |
+| 🟡 | [M-04] `resolve-executors`的幂等响应与blocker错误矩阵在running状态下冲突 | — |
+| 🟡 | [M-05] F007的响应DTO漏掉已经定义的阻塞错误码 | — |
+| 🟡 | [M-06] F007概览仍声称确认复用`RunDispatchService.dispatch()`,与已定的分流契约相反 | — |
+| 🟡 | [M-07] `BACKLOG.md`仍把F007依赖写成旧的`start(issueId, plan)`签名 | — |
 
 **本轮来源构成**: M-06/M-07 是典型 `origin: spec-drift`(接口签名已改,文档
 未同步);H-01~H-04 多是本文档内部未想清楚的准入/校验时序问题,`origin:
@@ -182,24 +182,24 @@ original-coding`。
 
 ### 第5轮(`v02-recheck-4.md`,6H/10M)— commit `e91f980` 采纳关闭
 
-| severity | 标题 |
-|---|---|
-| 🟠 | F007可针对非默认workspace推荐,但确认创建的Issue永远落到默认workspace |
-| 🟠 | `resolve-executors`只改执行者和图状态,没有创建此前被刻意省略的Attempt |
-| 🟠 | 新资格复核仍覆盖不到已经queued、尚未启动的前驱Attempt |
-| 🟠 | 整图取消的DB-first协议与现有`cancelRun()` CAS/锁释放路径不兼容 |
-| 🟠 | F007外层事务只禁止提前drain,没有禁止事务内broadcast phantom ThreadEvent |
-| 🟠 | 图推进"事务二"仍要求创建下游NodeRun,与全部预建模型正面冲突 |
-| 🟡 | 已确认token超期后重放究竟返回200还是409未定义 |
-| 🟡 | F007仍残留已删除的status模型和旧密钥来源 |
-| 🟡 | synthesis首次入队没有对应的`graph.node_queued`写入任务 |
-| 🟡 | `graph.completed`是否覆盖cancelled/blocked没有统一,payload又要求成功态专属字段 |
-| 🟡 | `graph.node_result`的256KB上限可被未受限的`not_reviewed`绕过 |
-| 🟡 | 目标文件glob缺少稳定排序、去重、路径安全与事务外预计算规则 |
-| 🟡 | `resolve-executors`所称"供审计"的reassigned只存在于HTTP响应 |
-| 🟡 | `CLAUDE.md`与schema摘要仍称F007只新增一张表 |
-| 🟡 | `stale_lock_suspected`的超时与宽限没有具体数值或配置来源 |
-| 🟡 | Health UI任务仍写"三条派生判断",与DTO的九类diagnostics不一致 |
+| 严重度 | 标题 | 位置 |
+|---|---|---|
+| 🟠 | F007可针对非默认workspace推荐,但确认创建的Issue永远落到默认workspace | — |
+| 🟠 | `resolve-executors`只改执行者和图状态,没有创建此前被刻意省略的Attempt | — |
+| 🟠 | 新资格复核仍覆盖不到已经queued、尚未启动的前驱Attempt | — |
+| 🟠 | 整图取消的DB-first协议与现有`cancelRun()` CAS/锁释放路径不兼容 | — |
+| 🟠 | F007外层事务只禁止提前drain,没有禁止事务内broadcast phantom ThreadEvent | — |
+| 🟠 | 图推进"事务二"仍要求创建下游NodeRun,与全部预建模型正面冲突 | — |
+| 🟡 | 已确认token超期后重放究竟返回200还是409未定义 | — |
+| 🟡 | F007仍残留已删除的status模型和旧密钥来源 | — |
+| 🟡 | synthesis首次入队没有对应的`graph.node_queued`写入任务 | — |
+| 🟡 | `graph.completed`是否覆盖cancelled/blocked没有统一,payload又要求成功态专属字段 | — |
+| 🟡 | `graph.node_result`的256KB上限可被未受限的`not_reviewed`绕过 | — |
+| 🟡 | 目标文件glob缺少稳定排序、去重、路径安全与事务外预计算规则 | — |
+| 🟡 | `resolve-executors`所称"供审计"的reassigned只存在于HTTP响应 | — |
+| 🟡 | `CLAUDE.md`与schema摘要仍称F007只新增一张表 | — |
+| 🟡 | `stale_lock_suspected`的超时与宽限没有具体数值或配置来源 | — |
+| 🟡 | Health UI任务仍写"三条派生判断",与DTO的九类diagnostics不一致 | — |
 
 **本轮来源构成**: "`CLAUDE.md`/schema摘要仍称..."、"F007仍残留已删除的status
 模型"两条是清楚的 `origin: spec-drift`;"图推进事务二仍要求创建下游NodeRun
@@ -208,22 +208,22 @@ original-coding`。
 
 ### 第6轮(`v02-recheck-5.md`,7H/7M)— commit `03ac1fb` 采纳关闭,此后转入实现
 
-| severity | 标题 |
-|---|---|
-| 🟠 | `cancelling`未贯穿迁移任务与重启恢复,重启后图可永久卡住 |
-| 🟠 | "kill无返回"会绕过既有执行超时,当前验收无法由"不修改既有cancel路径"实现 |
-| 🟠 | `graph.terminal`把可恢复的`blocked`声明成终态,事件语义与状态机相互矛盾 |
-| 🟠 | 事务外预检未进入`createGraph`契约,F007也没有可执行的调用顺序 |
-| 🟠 | 冻结的`TargetFileSet`没有结构化真相源,延迟synthesis与重启恢复无法确定性重建指令 |
-| 🟠 | `resolve-executors`不知道究竟哪些节点被资格失败阻塞,且可能越过join提前创建下游Attempt |
-| 🟠 | `cancelling`的API契约与并发守卫缺失,取消期间可能被retry/resolve反向恢复 |
-| 🟡 | `result_too_large`已称为第8个blocker,却未加入枚举清单与恢复矩阵 |
-| 🟡 | queued claim新增的`adapter_no_longer_eligible`没有进入共享`FailureReason`实施任务 |
-| 🟡 | F007的提交后收尾只写drain,漏掉F006强制的pending event broadcast |
-| 🟡 | F006 spec的Q3仍保留旧的6类事件和`completed`名称 |
-| 🟡 | F008用默认超时诊断stale lock,与实际per-adapter timeout不同源 |
-| 🟡 | 前端状态清单漏掉`cancelling`,无法呈现设计要求的卡住/健康诊断 |
-| 🟡 | 取消恢复与无运行Attempt的直接取消缺少明确的原子性验收 |
+| 严重度 | 标题 | 位置 |
+|---|---|---|
+| 🟠 | `cancelling`未贯穿迁移任务与重启恢复,重启后图可永久卡住 | — |
+| 🟠 | "kill无返回"会绕过既有执行超时,当前验收无法由"不修改既有cancel路径"实现 | — |
+| 🟠 | `graph.terminal`把可恢复的`blocked`声明成终态,事件语义与状态机相互矛盾 | — |
+| 🟠 | 事务外预检未进入`createGraph`契约,F007也没有可执行的调用顺序 | — |
+| 🟠 | 冻结的`TargetFileSet`没有结构化真相源,延迟synthesis与重启恢复无法确定性重建指令 | — |
+| 🟠 | `resolve-executors`不知道究竟哪些节点被资格失败阻塞,且可能越过join提前创建下游Attempt | — |
+| 🟠 | `cancelling`的API契约与并发守卫缺失,取消期间可能被retry/resolve反向恢复 | — |
+| 🟡 | `result_too_large`已称为第8个blocker,却未加入枚举清单与恢复矩阵 | — |
+| 🟡 | queued claim新增的`adapter_no_longer_eligible`没有进入共享`FailureReason`实施任务 | — |
+| 🟡 | F007的提交后收尾只写drain,漏掉F006强制的pending event broadcast | — |
+| 🟡 | F006 spec的Q3仍保留旧的6类事件和`completed`名称 | — |
+| 🟡 | F008用默认超时诊断stale lock,与实际per-adapter timeout不同源 | — |
+| 🟡 | 前端状态清单漏掉`cancelling`,无法呈现设计要求的卡住/健康诊断 | — |
+| 🟡 | 取消恢复与无运行Attempt的直接取消缺少明确的原子性验收 | — |
 
 **本轮来源构成**: 最后一轮,遗留的多是跨多次修复反复触碰同一处("`cancelling`
 未贯穿迁移任务与重启恢复"这类)的结构性缺口,`origin: original-coding`(设计
@@ -237,16 +237,16 @@ original-coding`。
 - **周期**: 2026-08-02 → 2026-08-07(5天) · **状态**: 已闭环,`7799603` 是确认点
 - **三条最有价值的可复用教训**,结构化记录如下(详见各轮明细叙事):
 
-| ID | 严重度 | 来源 | 状态 | 首次出现 | 修复轮次 | 模式标签 |
-|---|---|---|---|---|---|---|
-| glob-zero-depth-not-matched | Medium | original-coding | fixed | 2 | 6 | partial-symmetric-fix |
-| graph-blocked-event-half-broadcast | Medium | original-coding | fixed | 1 | ~5-6(见叙事) | partial-symmetric-fix |
-| dropped-count-truncation-uncounted | High | original-coding | fixed(第七轮前) | 见F006全文 | 见F006全文 | partial-symmetric-fix |
-| cancelling-finalizer-missing-transaction | Critical | fix-regression | fixed | 5(第5轮新引入) | 6 | partial-symmetric-fix |
-| block-cancelled-precursor-test-vacuous | High | process-gap | fixed | 8 | 9 | test-simulates-itself |
-| graph-recovery-retry-cancel-tests-vacuous | High | process-gap | fixed | 8 | 9 | test-simulates-itself |
-| tasks-md-web-ui-checked-not-implemented | Medium | process-gap | fixed | 8 | 9 | marked-done-not-implemented |
-| tasks-md-spec-md-contradict-each-other | Medium | process-gap | fixed | 4 且 8(复现2次) | 4且9 | marked-done-not-implemented |
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| glob-zero-depth-not-matched | `**/*.ts`自制glob正则漏掉workspace根目录文件(0层目录) | Medium | correctness | root-cause | original-coding | fixed | `globToRegex()`两步正则替换(`(.*/)?`前缀+`.*`),同时覆盖0层与多层路径 | Node命令行实测(未见独立测试文件) | 2 | 6 | partial-symmetric-fix |
+| graph-blocked-event-half-broadcast | `graph.blocked`事件广播只覆盖parse-failure分支,run-failure分支没有 | Medium | correctness | root-cause | original-coding | fixed | `anyFailed`分支补写`graph.blocked`事件,加入`pendingBroadcasts`统一广播 | 见F006全文(第五轮修复段落) | 1 | ~5-6(见叙事) | partial-symmetric-fix |
+| dropped-count-truncation-uncounted | `dropped_count`截断计数只算了重复计数,没算slice截断 | High | correctness | root-cause | original-coding | fixed(第七轮前) | 见F006全文相应段落 | 见F006全文 | 见F006全文 | 见F006全文 | partial-symmetric-fix |
+| cancelling-finalizer-missing-transaction | `tryFinalizeCancellingGraph()`四步操作(CAS/CAS/写事件/broadcast)没有事务包裹 | Critical | correctness | root-cause | fix-regression | fixed | `tryFinalizeCancellingGraph()`改用`db.transaction()`包裹GraphRun CAS+Issue CAS+事件write,提交后再broadcast | 独立复核实测崩溃注入场景(未见新增自动化测试文件) | 5(第5轮新引入) | 6 | partial-symmetric-fix |
+| block-cancelled-precursor-test-vacuous | `blockGraphOnCancelledPrecursor`直接单测被删,换成断言修复前错误行为的模拟测试 | High | test-coverage | symptom-patch | process-gap | fixed | 测试改为真实调用`blockGraphOnCancelledPrecursor()`,不再手写模拟 | `graph-adapter-tests.test.ts` | 8 | 9 | test-simulates-itself |
+| graph-recovery-retry-cancel-tests-vacuous | `graph-recovery.test.ts` 4条retry/cancel测试全部直接调仓储层方法模拟,从未调用真实端点 | High | test-coverage | symptom-patch | process-gap | fixed | 删除vacuous的retry/cancel flow测试,由真实HTTP调用的`graph-routes-mutations.test.ts`承担覆盖 | `graph-routes-mutations.test.ts` | 8 | 9 | test-simulates-itself |
+| tasks-md-web-ui-checked-not-implemented | `tasks.md` T052-T054b打勾但Web UI缺取消按钮/resolve-executors界面/专属测试 | Medium | quality | symptom-patch | process-gap | fixed | 补齐取消按钮+resolve-executors UI,`tasks.md`改回如实标注 | `web/src/f006-graph-run-card.test.tsx` | 8 | 9 | marked-done-not-implemented |
+| tasks-md-spec-md-contradict-each-other | `tasks.md`100%打勾与`spec.md` AC-001~009仍0%勾选互相矛盾 | Medium | quality | symptom-patch | process-gap | fixed | `tasks.md`/`spec.md`双向同步回写,AC-001~009逐条补证据引用 | — | 4 且 8(复现2次) | 4且9 | marked-done-not-implemented |
 
 1. **`partial-symmetric-fix` 复现4次以上**:glob(多层修好、0层漏了,第六轮才靠
      两步替换法彻底解决,经历"完全不工作→多层修好0层漏了→死代码删了0层仍未修→
@@ -267,14 +267,14 @@ original-coding`。
 
 ### Phase 1子检视(`F006-phase1-schema-v8.md`,1H/5M)— 独立于主线的早期子轮
 
-| severity | 状态 | 标题 |
+| 严重度 | 标题 | 位置 |
 |---|---|---|
-| 🟠 | ✅ FIXED | 约束错误mapper未接入任何生产调用链,T016的409仍不可达 |
-| 🟡 | ✅ FIXED | duplicate NodeRun被错误映射成"节点不可重试" |
-| 🟡 | ✅ FIXED | `target_files_dropped_count`接受小数,持久化的"数量"不一定是整数 |
-| 🟡 | ⏸️ DEFERRED Phase2 | `RunCreateInput`仍未用判别联合表达GraphNode/`node_run_id`关联 |
-| 🟡 | ✅ FIXED | 迁移测试仍未注入"DDL后、版本写入前"的失败 |
-| 🟡 | ⏸️ DEFERRED Phase2 | Adapter删除修复只有repository查询测试,没有service/API回归 |
+| 🟠 | [✅ FIXED] 约束错误mapper未接入任何生产调用链,T016的409仍不可达 | `server/src/db/sqlite-errors.ts` |
+| 🟡 | [✅ FIXED] duplicate NodeRun被错误映射成"节点不可重试" | `server/src/db/sqlite-errors.ts` |
+| 🟡 | [✅ FIXED] `target_files_dropped_count`接受小数,持久化的"数量"不一定是整数 | `server/src/repositories/graph-run.ts` |
+| 🟡 | [⏸️ DEFERRED Phase2] `RunCreateInput`仍未用判别联合表达GraphNode/`node_run_id`关联 | `server/src/repositories/run.ts` |
+| 🟡 | [✅ FIXED] 迁移测试仍未注入"DDL后、版本写入前"的失败 | `server/tests/integration/migration-v8.test.ts` |
+| 🟡 | [⏸️ DEFERRED Phase2] Adapter删除修复只有repository查询测试,没有service/API回归 | `server/src/services/adapter-config.ts` |
 
 ### 第1轮(`F006-implementation.md`,5C/6H/3M/1L)
 
@@ -284,44 +284,44 @@ original-coding`。
 表述持续追踪同一批问题,最终在第7轮(补完第六轮复核指出的全部剩余缺口)一次性
 清零,可信下界是"不晚于第7轮"。
 
-| severity | 状态 | resolved_round | 标题 |
-|---|---|---|---|
-| 🔴 | ✅ FIXED | 1 | F006服务未进入生产composition root,系统没有可执行的建图/恢复入口 |
-| 🔴 | ✅ FIXED | 1 | 前驱NodeRun以`pending`创建,queued Run启动时无法把它推进到`running` |
-| 🔴 | ✅ FIXED | 1 | GraphNode完成钩子直接返回,所有图节点在Run终态后停止推进 |
-| 🔴 | ✅ FIXED | 1 | 结果处理仍是skeleton:不读/解析payload、不写结果事件,join永远不执行 |
-| 🔴 | ✅ FIXED | 1 | synthesis Attempt没有任何前驱payload,边traversal也明确记录空引用 |
-| 🟠 | ✅ FIXED | 1 | 建图便利入口提交后不drain,queued Attempt不会主动开始 |
-| 🟠 | 见叙事 | ≤7 | fan-in的CAS、资格复核、Attempt与事件写入不在事务中,任一步失败留下吸收态 |
-| 🟠 | 见叙事 | ≤7 | 图失败、成功、取消与重启均无生命周期实现,非终态图会永久占用唯一索引 |
-| 🟠 | ✅ FIXED | 1 | queued claim未复核GraphNode adapter资格,escalation仍会取消所有兄弟图节点 |
-| 🟠 | ✅ FIXED | 1 | target glob实现没有匹配扩展名,symlink越界检查也可被同前缀兄弟目录绕过 |
-| 🟠 | 见叙事 | ≤7 | `createGraph()`信任调用方提供的scope/preflight,未复核实体关系/workspace path/hash |
-| 🟡 | 见叙事 | ≤7 | 结果envelope的上限统计不完整,部分可变字段仍无界 |
-| 🟡 | 见叙事 | ≤7 | Graph projection返回伪history、空edges与占位文案,Web端没有任何图展示 |
-| 🟡 | 见叙事 | ≤7 | 所谓端到端fan-in测试绕过production path,核心函数完全无测试 |
-| 🟢 | 见叙事 | ≤7 | 已注入的instruction builder未使用,另有模块级重复实例 |
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| f006-r1-01 | F006服务未进入生产composition root,系统没有可执行的建图/恢复入口 | 🔴 | correctness | root-cause | original-coding | fixed | 接入composition root,建图/恢复端点真正可调用 | — | 1 | 1 | — |
+| f006-r1-02 | 前驱NodeRun以`pending`创建,queued Run启动时无法把它推进到`running` | 🔴 | correctness | root-cause | original-coding | fixed | 前驱NodeRun创建时状态改为正确初值,queued Run能推进到running | — | 1 | 1 | — |
+| f006-r1-03 | GraphNode完成钩子直接返回,所有图节点在Run终态后停止推进 | 🔴 | correctness | root-cause | original-coding | fixed | 补齐完成钩子的推进逻辑 | — | 1 | 1 | — |
+| f006-r1-04 | 结果处理仍是skeleton:不读/解析payload、不写结果事件,join永远不执行 | 🔴 | correctness | root-cause | original-coding | fixed | 结果处理从skeleton补成读取/解析payload+写结果事件 | — | 1 | 1 | — |
+| f006-r1-05 | synthesis Attempt没有任何前驱payload,边traversal也明确记录空引用 | 🔴 | correctness | root-cause | original-coding | fixed | synthesis Attempt补齐前驱payload与边traversal引用 | — | 1 | 1 | — |
+| f006-r1-06 | 建图便利入口提交后不drain,queued Attempt不会主动开始 | 🟠 | correctness | root-cause | original-coding | fixed | 建图便利入口提交后补drain | — | 1 | 1 | — |
+| f006-r1-07 | fan-in的CAS、资格复核、Attempt与事件写入不在事务中,任一步失败留下吸收态 | 🟠 | correctness | root-cause | original-coding | 见叙事(不晚于第7轮) | 第7轮`node-completion.ts`重构统一实时/恢复两条路径的事务边界 | — | 1 | ≤7 | — |
+| f006-r1-08 | 图失败、成功、取消与重启均无生命周期实现,非终态图会永久占用唯一索引 | 🟠 | correctness | root-cause | original-coding | 见叙事(不晚于第7轮) | 第7轮`GraphRecoveryService.reconcile()`补齐join重评估与终态化 | — | 1 | ≤7 | — |
+| f006-r1-09 | queued claim未复核GraphNode adapter资格,escalation仍会取消所有兄弟图节点 | 🟠 | correctness | root-cause | original-coding | fixed | 补齐adapter资格复核 | — | 1 | 1 | — |
+| f006-r1-10 | target glob实现没有匹配扩展名,symlink越界检查也可被同前缀兄弟目录绕过 | 🟠 | correctness | root-cause | original-coding | fixed | glob匹配扩展名+symlink越界检查修复(0层目录问题留到第6轮才彻底解决) | — | 1 | 1 | partial-symmetric-fix |
+| f006-r1-11 | `createGraph()`信任调用方提供的scope/preflight,未复核实体关系/workspace path/hash | 🟠 | correctness | root-cause | original-coding | 见叙事(不晚于第7轮) | 第7轮`resolve-executors`端点实现时一并补齐scope/preflight复核 | — | 1 | ≤7 | — |
+| f006-r1-12 | 结果envelope的上限统计不完整,部分可变字段仍无界 | 🟡 | quality | root-cause | original-coding | 见叙事(不晚于第7轮) | 见F006全文 | — | 1 | ≤7 | — |
+| f006-r1-13 | Graph projection返回伪history、空edges与占位文案,Web端没有任何图展示 | 🟡 | quality | root-cause | original-coding | 见叙事(不晚于第7轮) | 第7轮`edges`字段改为查询真实`graph.edge_traversed`事件回填 | — | 1 | ≤7 | — |
+| f006-r1-14 | 所谓端到端fan-in测试绕过production path,核心函数完全无测试 | 🟡 | test-coverage | symptom-patch | original-coding | 见叙事(不晚于第7轮) | 第7轮新增18条集成测试覆盖production path | — | 1 | ≤7 | — |
+| f006-r1-15 | 已注入的instruction builder未使用,另有模块级重复实例 | 🟢 | quality | symptom-patch | original-coding | 见叙事(不晚于第7轮) | 见F006全文 | — | 1 | ≤7 | — |
 
 ### 第2轮(`F006-final-recheck.md`,4C/6H/4M/2L)
 
-| severity | 标题 |
-|---|---|
-| 🔴 | GraphRuntime仍无生产调用入口,注入到GET-only route后从未使用 |
-| 🔴 | NodeRun先置completed、再写result event,hook异常被吞后留下不可恢复永久态 |
-| 🔴 | fan-in对缺失前驱结果使用`continue`,会带半份甚至零份输入启动synthesis |
-| 🔴 | Graph成功、失败、取消与重启仍没有终态化/恢复实现 |
-| 🟠 | queued GraphNode未复核adapter/GraphRun资格,且NodeRun CAS失败也照样启动provider |
-| 🟠 | queued Run取消仍不推进NodeRun/GraphRun,系统取消路径可制造孤儿ready节点 |
-| 🟠 | fan-in绕过trusted payload resolver,edge refs写进payload而非`evidence_refs` |
-| 🟠 | graph result/node lifecycle events没有完整broadcast/持久化 |
-| 🟠 | createGraph scope/snapshot复核仍不完整,Issue状态CAS失败也会提交图 |
-| 🟠 | F006测试仍手工驱动状态,1442个绿色测试没有一条走production graph path |
-| 🟡 | Result parser的数量/字段边界仍不准确 |
-| 🟡 | Graph API仍返回伪history、空edges和占位文案,Web没有F006展示 |
-| 🟡 | `**/*.ts`的自制glob正则漏掉workspace根目录文件(即"0层目录"问题,第一次被记录) |
-| 🟡 | constraint mapper的catch丢弃AppError,重新抛出原始GraphConstraintError |
-| 🟢 | 存在两套completion实现与不安全的repository类型伪装 |
-| 🟢 | 质量门禁仍有formatting failure |
+| 严重度 | 标题 | 位置 |
+|---|---|---|
+| 🔴 | GraphRuntime仍无生产调用入口,注入到GET-only route后从未使用 | `server/src/index.ts:151-160,228-253` |
+| 🔴 | NodeRun先置completed、再写result event,hook异常被吞后留下不可恢复永久态 | `server/src/services/run-dispatch.ts:153-176,360-399` |
+| 🔴 | fan-in对缺失前驱结果使用`continue`,会带半份甚至零份输入启动synthesis | `server/src/services/graph/workflow.ts:138-167` |
+| 🔴 | Graph成功、失败、取消与重启仍没有终态化/恢复实现 | `server/src/index.ts:162-180` |
+| 🟠 | queued GraphNode未复核adapter/GraphRun资格,且NodeRun CAS失败也照样启动provider | `server/src/services/run-dispatch.ts:286-356` |
+| 🟠 | queued Run取消仍不推进NodeRun/GraphRun,系统取消路径可制造孤儿ready节点 | `server/src/services/run-dispatch.ts:216-231` |
+| 🟠 | fan-in绕过trusted payload resolver,edge refs写进payload而非`evidence_refs` | `server/src/services/graph/workflow.ts:138-197` |
+| 🟠 | graph result/node lifecycle events没有完整broadcast/持久化 | `server/src/services/run-dispatch.ts:375-424` |
+| 🟠 | createGraph scope/snapshot复核仍不完整,Issue状态CAS失败也会提交图 | `server/src/services/graph-runtime.ts:73-87,110-170` |
+| 🟠 | F006测试仍手工驱动状态,1442个绿色测试没有一条走production graph path | `server/tests/integration/graph-fanin.test.ts:71-195` |
+| 🟡 | Result parser的数量/字段边界仍不准确 | `server/src/services/graph/result-parser.ts:36-176` |
+| 🟡 | Graph API仍返回伪history、空edges和占位文案,Web没有F006展示 | `server/src/api/routes/graph.ts:28-95` |
+| 🟡 | `**/*.ts`的自制glob正则漏掉workspace根目录文件(即"0层目录"问题,第一次被记录) | `server/src/runtime/graph/preflight.ts:13-20,27-50` |
+| 🟡 | constraint mapper的catch丢弃AppError,重新抛出原始GraphConstraintError | `server/src/services/graph/workflow.ts:200-206` |
+| 🟢 | 存在两套completion实现与不安全的repository类型伪装 | `server/src/services/graph/workflow.ts:38-77` |
+| 🟢 | 质量门禁仍有formatting failure | `server/src/services/run-dispatch.ts` |
 
 **本轮来源构成**: 延续第1轮开放项的持续追踪,`origin: original-coding`。
 "0层目录"glob问题首次被明确记录于此轮(`pattern_tag: partial-symmetric-fix`
@@ -329,24 +329,24 @@ original-coding`。
 
 ### 第3轮(`F006-final-recheck-2.md`,4C/6H/4M/2L)
 
-| severity | 标题 |
-|---|---|
-| 🔴 | GraphRuntime仍没有任何生产启动入口 |
-| 🔴 | queued GraphNode先把Run置running,NodeRun CAS失败后留下永久悬空Run |
-| 🔴 | Graph成功、失败、取消与重启仍没有闭环 |
-| 🔴 | completion hook不区分Attempt终态,且CAS失败仍提交孤儿result event |
-| 🟠 | queued cancel只推进到NodeRun cancelled,GraphRun仍永久running |
-| 🟠 | fan-in仍绕过可信payload resolver |
-| 🟠 | fan-in在资格/结果校验前把synthesis置ready,失败后留下无Attempt的ready节点 |
-| 🟠 | graph blocked/terminal生命周期事件仍不完整 |
-| 🟠 | createGraph的thread/workspace scope仍未闭合 |
-| 🟠 | 现有57条F006测试没有覆盖production graph path |
-| 🟡 | Result parser仍未完全落实字段约束 |
-| 🟡 | Graph projection仍是占位实现,Web没有F006展示或恢复入口 |
-| 🟡 | projection对每个节点重复查询整个Issue的Runs |
-| 🟡 | 建图调度用节点名称硬编码precursor,而不是使用定义拓扑 |
-| 🟢 | workflow临时伪装ProjectRepository,且注入的builder/runtime service未实际使用 |
-| 🟢 | 根format check未覆盖F006新文件 |
+| 严重度 | 标题 | 位置 |
+|---|---|---|
+| 🔴 | GraphRuntime仍没有任何生产启动入口 | `server/src/api/routes/graph.ts:18-97` |
+| 🔴 | queued GraphNode先把Run置running,NodeRun CAS失败后留下永久悬空Run | `server/src/services/run-dispatch.ts:293-365` |
+| 🔴 | Graph成功、失败、取消与重启仍没有闭环 | `server/src/index.ts:162-180` |
+| 🔴 | completion hook不区分Attempt终态,且CAS失败仍提交孤儿result event | `server/src/services/run-dispatch.ts:153-176,371-455` |
+| 🟠 | queued cancel只推进到NodeRun cancelled,GraphRun仍永久running | `server/src/services/run-dispatch.ts:218-231,371-455` |
+| 🟠 | fan-in仍绕过可信payload resolver | `server/src/services/graph/workflow.ts:91-115` |
+| 🟠 | fan-in在资格/结果校验前把synthesis置ready,失败后留下无Attempt的ready节点 | `server/src/services/graph/workflow.ts:63-115` |
+| 🟠 | graph blocked/terminal生命周期事件仍不完整 | `server/src/services/run-dispatch.ts:386-425` |
+| 🟠 | createGraph的thread/workspace scope仍未闭合 | `server/src/services/graph-runtime.ts:59-108,194-210` |
+| 🟠 | 现有57条F006测试没有覆盖production graph path | `server/tests/integration/graph-fanin.test.ts:71-208` |
+| 🟡 | Result parser仍未完全落实字段约束 | `server/src/services/graph/result-parser.ts:36-178` |
+| 🟡 | Graph projection仍是占位实现,Web没有F006展示或恢复入口 | `server/src/api/routes/graph.ts:18-97` |
+| 🟡 | projection对每个节点重复查询整个Issue的Runs | `server/src/api/routes/graph.ts:45-63,80-94` |
+| 🟡 | 建图调度用节点名称硬编码precursor,而不是使用定义拓扑 | `server/src/services/graph-runtime.ts:125-143` |
+| 🟢 | workflow临时伪装ProjectRepository,且注入的builder/runtime service未实际使用 | `server/src/services/run-dispatch.ts:435-448` |
+| 🟢 | 根format check未覆盖F006新文件 | `package.json` |
 
 **本轮来源构成**: 仍是第1轮开放项的持续追踪,`origin: original-coding`。
 
@@ -357,33 +357,33 @@ original-coding`。
 骨架(`marked-done-not-implemented`,见上方复用教训表),这是本轮叙事记录、
 未在本表格单独列出的一条独立发现。
 
-| severity | 状态 | 标题 |
+| 严重度 | 标题 | 位置 |
 |---|---|---|
-| 🔴 | ✅ FIXED | Graph成功、失败、取消与重启仍没有完整生命周期 |
-| 🔴 | open | Run与NodeRun启动仍非原子,当前会留下孤儿running NodeRun |
-| 🟠 | open | queued/late terminal GraphNode没有GraphRun状态守卫 |
-| 🟠 | open | queued GraphNode启动前没有重新校验assigned adapter |
-| 🟠 | open | malformed result会形成GraphRun blocked、Issue Running的持久化矛盾 |
-| 🟠 | open | queued cancel仍无法推进GraphRun |
-| 🟠 | open | failure/block writes非原子且事件未广播 |
-| 🟠 | open | fan-in仍绕过EvidenceService的可信payload/scope校验 |
-| 🟡 | open | 新增graph start POST使用无效的TypeScript cast代替zod |
-| 🟡 | open | GraphRuntimeService仍信任调用方分别提供thread/workspace/path |
-| 🟡 | open | projection与Web仍未满足可追踪/可恢复验收 |
-| 🟡 | open | 57条F006测试仍未覆盖新增production path |
-| 🟢 | open | result parser和definition-driven调度仍有契约偏差 |
-| 🟢 | open | composition仍含unsafe repository cast,format gate再次失败 |
+| 🔴 | [✅ FIXED] Graph成功、失败、取消与重启仍没有完整生命周期 | `server/src/services/` |
+| 🔴 | [open→见叙事] Run与NodeRun启动仍非原子,当前会留下孤儿running NodeRun | `server/src/services/run-dispatch.ts:293-368` |
+| 🟠 | [open→见叙事] queued/late terminal GraphNode没有GraphRun状态守卫 | `server/src/services/run-dispatch.ts:293-346,371-474` |
+| 🟠 | [open→见叙事] queued GraphNode启动前没有重新校验assigned adapter | `server/src/services/run-dispatch.ts:293-365` |
+| 🟠 | [open→见叙事] malformed result会形成GraphRun blocked、Issue Running的持久化矛盾 | `server/src/services/run-dispatch.ts:398-409` |
+| 🟠 | [open→见叙事] queued cancel仍无法推进GraphRun | `server/src/services/run-dispatch.ts:217-227,371-395` |
+| 🟠 | [open→见叙事] failure/block writes非原子且事件未广播 | `server/src/services/run-dispatch.ts:383-409` |
+| 🟠 | [open→见叙事] fan-in仍绕过EvidenceService的可信payload/scope校验 | `server/src/services/graph/workflow.ts:82-103` |
+| 🟡 | [open→见叙事] 新增graph start POST使用无效的TypeScript cast代替zod | `server/src/api/routes/graph.ts:77-103` |
+| 🟡 | [open→见叙事] GraphRuntimeService仍信任调用方分别提供thread/workspace/path | `server/src/services/graph-runtime.ts:194-210` |
+| 🟡 | [open→见叙事] projection与Web仍未满足可追踪/可恢复验收 | `server/src/api/routes/graph.ts:22-75` |
+| 🟡 | [open→见叙事] 57条F006测试仍未覆盖新增production path | `server/tests/integration/graph-*.test.ts` |
+| 🟢 | [open→见叙事] result parser和definition-driven调度仍有契约偏差 | `server/src/services/graph/result-parser.ts:36-178` |
+| 🟢 | [open→见叙事] composition仍含unsafe repository cast,format gate再次失败 | `server/src/services/run-dispatch.ts:454-466` |
 
 ### 第5轮修复(2026-08-03,`preflight.ts`等)— 6项全部修复,resolved_round=5,origin均为original-coding(第4轮遗留)
 
-| severity | 标题 |
-|---|---|
-| 🔴 | `retry` Issue CAS用错期望值(`gr.status`大小写不匹配) |
-| 🟠 | `cancel`实时路径无法收敛(新增`tryFinalizeCancellingGraph`共享函数) |
-| 🟡 | `blocked_node_keys`过滤不完整 |
-| 🟡 | `cancel`纯空终端流程缺失 |
-| 🟡 | `handleCancellingGraph`缺`graph.terminal` |
-| 🟡 | projection `blocked_node_keys`未暴露 |
+| 严重度 | 标题 | 位置 |
+|---|---|---|
+| 🔴 | [已修复] `retry` Issue CAS用错期望值(`gr.status`大小写不匹配) | `server/src/api/routes/graph.ts:157-158` |
+| 🟠 | [已修复] `cancel`实时路径无法收敛(新增`tryFinalizeCancellingGraph`共享函数) | `server/src/services/graph/cancelling-finalizer.ts` |
+| 🟡 | [已修复] `blocked_node_keys`过滤不完整 | `server/src/services/run-dispatch.ts` |
+| 🟡 | [已修复] `cancel`纯空终端流程缺失 | `server/src/api/routes/graph.ts` |
+| 🟡 | [已修复] `handleCancellingGraph`缺`graph.terminal` | `server/src/services/graph-recovery.ts` |
+| 🟡 | [已修复] projection `blocked_node_keys`未暴露 | `server/src/api/routes/graph.ts` |
 
 **第5轮独立复核**新发现1项(自述未提及): 🟡 `tryFinalizeCancellingGraph()`本身
 没有事务包裹(GraphRun CAS、Issue CAS、事件write、broadcast四步未包在
@@ -392,10 +392,10 @@ original-coding`。
 
 ### 第6轮修复(2026-08-03同天)— 2项代码bug清零
 
-| severity | 标题 |
-|---|---|
-| 🔴 | `tryFinalizeCancellingGraph()`缺事务包裹(补第5轮遗漏) |
-| 🟡 | `preflight.ts` 0层目录文件不匹配`**` glob(两步正则替换法,四阶段生命周期终于走完) |
+| 严重度 | 标题 | 位置 |
+|---|---|---|
+| 🔴 | [已修复] `tryFinalizeCancellingGraph()`缺事务包裹(补第5轮遗漏) | `server/src/services/graph/cancelling-finalizer.ts:19-51` |
+| 🟡 | [已修复] `preflight.ts` 0层目录文件不匹配`**` glob(两步正则替换法,四阶段生命周期终于走完) | `server/src/runtime/graph/preflight.ts:21` |
 
 **第6轮独立复核结论**:代码层面"挑不出新的具体代码错误",但对"缺陷清零"整体
 定性有保留意见——`resolve-executors`端点缺失和`GraphRecoveryService`的join
@@ -404,13 +404,13 @@ original-coding`。
 
 ### 第7轮(2026-08-04,补完第六轮复核指出的全部剩余缺口)— 5项逐一实现
 
-| 状态 | 标题 |
-|---|---|
-| ✅ | `projectRepo` null依赖伪造已去掉,正常注入 |
-| ✅ | `edges`字段填充真实运行时状态(查`graph.edge_traversed`事件回填) |
-| ✅ | `resolve-executors`端点已实现(按design.md第9节优先级判断顺序) |
-| ✅ | `GraphRecoveryService.reconcile()`的join重评估(design §7 第0/3/4/5/6/7步)全部实现 |
-| ✅ | 单节点取消死锁路径已修复(`blockGraphOnCancelledPrecursor`) |
+| 严重度 | 标题 | 位置 |
+|---|---|---|
+| 🟠 | [已修复] `projectRepo` null依赖伪造已去掉,正常注入 | `server/src/services/run-dispatch.ts` |
+| 🟡 | [已修复] `edges`字段填充真实运行时状态(查`graph.edge_traversed`事件回填) | `server/src/api/routes/graph.ts` |
+| 🟠 | [已修复] `resolve-executors`端点已实现(按design.md第9节优先级判断顺序) | `server/src/api/routes/graph.ts` |
+| 🟠 | [已修复] `GraphRecoveryService.reconcile()`的join重评估(design §7 第0/3/4/5/6/7步)全部实现 | `server/src/services/graph-recovery.ts` |
+| 🟠 | [已修复] 单节点取消死锁路径已修复(`blockGraphOnCancelledPrecursor`) | `server/src/services/graph/node-completion.ts` |
 
 **写测试过程中新发现并修复1个bug**: `/cancel`端点把GraphRun自身的
 `running→cancelling` CAS放在了等待运行中节点取消完成的`await`之后,导致
@@ -441,16 +441,16 @@ original-coding`。
 - **周期**: 2026-08-08,同一文件内3轮 · **状态**: 已闭环,`3bc8d17`(R001-R005)+
   `cc57c72`(R006-R008)
 
-| ID | severity | 标题 |
+| 严重度 | 标题 | 位置 |
 |---|---|---|
-| F007-R001 | 🟠 High | `sequential`确认路径与F006实际接口不兼容 |
-| F007-R002 | 🟠 High | 推荐响应缺少PRD要求的Issue Type推荐 |
-| F007-R003 | 🟠 High | 通用`Recommendation<Record<string,string>>`无法清晰表达逐节点roster候选与排除原因 |
-| F007-R004 | 🟡 Medium | `tasks.md`和部分design文本仍引用已废弃接口与身份语义 |
-| F007-R005 | 🟡 Medium | 项目级真相源仍保留F006开发前及ADR初稿结论 |
-| F007-R006 | 🟡 Medium | `createSequentialRun()`的instructions来源存在三处不一致 |
-| F007-R007 | 🟡 Medium | sequential Run的provenance与`RunQueued`事件字段未完整定义 |
-| F007-R008 | 🟢 Low | 两处旧术语及检视状态尚未收尾 |
+| 🟠 | [F007-R001] `sequential`确认路径与F006实际接口不兼容 | — |
+| 🟠 | [F007-R002] 推荐响应缺少PRD要求的Issue Type推荐 | — |
+| 🟠 | [F007-R003] 通用`Recommendation<Record<string,string>>`无法清晰表达逐节点roster候选与排除原因 | — |
+| 🟡 | [F007-R004] `tasks.md`和部分design文本仍引用已废弃接口与身份语义 | — |
+| 🟡 | [F007-R005] 项目级真相源仍保留F006开发前及ADR初稿结论 | — |
+| 🟡 | [F007-R006] `createSequentialRun()`的instructions来源存在三处不一致 | — |
+| 🟡 | [F007-R007] sequential Run的provenance与`RunQueued`事件字段未完整定义 | — |
+| 🟢 | [F007-R008] 两处旧术语及检视状态尚未收尾 | — |
 
 ---
 
@@ -478,9 +478,9 @@ original-coding`。
 
 ### 第7轮(2026-08-09,`code-review-report-recheck-6.md`)— 已闭环
 
-| ID | severity | 来源 | 状态 | 首次出现 | 修复轮次 | 模式标签 |
-|---|---|---|---|---|---|---|
-| nonce-conflict-replay-skips-drain | 🟡 Medium | fix-regression | ✅ fixed | 7 | 7 | partial-symmetric-fix |
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| nonce-conflict-replay-skips-drain | 唯一键冲突replay绕过新加的drain恢复 | 🟡 | correctness | root-cause | fix-regression | fixed | 新增`IntakeService.returnReplay()`,统一普通replay与nonce冲突winner replay的drain逻辑 | `server/tests/integration/intake-confirm.test.ts` | 7 | 7 | partial-symmetric-fix |
 
 来源标 `fix-regression` 而非 `original-coding`:普通replay路径的drain是第6轮
 才加上的修复,唯一键冲突路径是同一次修复动作里被漏掉的对称分支,不是F007从
