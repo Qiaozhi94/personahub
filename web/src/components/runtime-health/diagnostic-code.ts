@@ -99,5 +99,8 @@ export function renderDiagnosticCode(code: HealthDiagnosticCode): DiagnosticRend
 }
 
 export function diagnosticKey(diagnostic: HealthDiagnostic): string {
-  return `${diagnostic.code}:${diagnostic.workspace_id ?? "global"}`;
+  // detail embeds the distinguishing record id (run id / issue id) for the
+  // per-run and per-issue diagnostics, so same-code entries within one
+  // workspace (e.g. two invalid queued runs) still get unique keys.
+  return `${diagnostic.code}:${diagnostic.workspace_id ?? "global"}:${diagnostic.detail}`;
 }

@@ -155,6 +155,43 @@ describe("T054: Runtime health dialog — five categories and exhaustive diagnos
     });
   });
 
+  it("renders multiple same-code diagnostics for one workspace without duplicate-key warnings", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      vi.mocked(apiClient.runtimeHealth.get).mockResolvedValue(
+        healthResponse([
+          {
+            code: "waiting_for_recovery",
+            workspace_id: "wsp_1",
+            detail: "Queued run run_1 (role graph_node) is waiting for issue-level recovery.",
+            suggested_action: "a",
+          },
+          {
+            code: "waiting_for_recovery",
+            workspace_id: "wsp_1",
+            detail: "Queued run run_2 (role graph_node) is waiting for issue-level recovery.",
+            suggested_action: "a",
+          },
+          {
+            code: "invalid_queued_run",
+            workspace_id: "wsp_1",
+            detail: "Queued run run_3 (role implementation) is no longer eligible for execution.",
+            suggested_action: "b",
+          },
+        ]),
+      );
+      renderWithQuery(<RuntimeHealthDialog open projectId="prj_1" onOpenChange={() => {}} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Waiting for recovery")).toHaveLength(2);
+      });
+      expect(screen.getByText("Invalid queued run")).toBeInTheDocument();
+      expect(errSpy).not.toHaveBeenCalled();
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
   it("renders multiple diagnostics of different codes at once", async () => {
     vi.mocked(apiClient.runtimeHealth.get).mockResolvedValue(
       healthResponse([
