@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Sparkles } from "lucide-react";
 import { useProjects } from "@/hooks/use-projects";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { useIssue, useIssues } from "@/hooks/use-issues";
@@ -10,6 +10,7 @@ import { WorkspaceBinding } from "@/components/workspace/WorkspaceBinding";
 import { AdapterSettings } from "@/components/adapter/AdapterSettings";
 import { IssueList } from "@/components/issue/IssueList";
 import { CreateIssueDialog } from "@/components/issue/CreateIssueDialog";
+import { IntakeDialog } from "@/components/intake/IntakeDialog";
 import { ThreadView } from "@/components/thread/ThreadView";
 import { IssueInspector } from "@/components/inspector/IssueInspector";
 import { NoProject } from "@/components/empty-states/NoProject";
@@ -23,6 +24,7 @@ export function App() {
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [createIssueOpen, setCreateIssueOpen] = useState(false);
+  const [intakeOpen, setIntakeOpen] = useState(false);
 
   const projectsQuery = useProjects();
   const projects = useMemo(() => projectsQuery.data?.projects ?? [], [projectsQuery.data?.projects]);
@@ -84,6 +86,16 @@ export function App() {
             >
               <Plus className="h-3.5 w-3.5" />
               New coding issue
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 border-dashed border-border-strong text-secondary-foreground"
+              disabled={!workspace}
+              onClick={() => setIntakeOpen(true)}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Intake
             </Button>
 
             <section className="grid gap-1.5">
@@ -163,6 +175,15 @@ export function App() {
           projectId={selectedProjectId}
           open={createIssueOpen}
           onOpenChange={setCreateIssueOpen}
+          onCreated={setSelectedIssueId}
+        />
+      ) : null}
+
+      {selectedProjectId ? (
+        <IntakeDialog
+          projectId={selectedProjectId}
+          open={intakeOpen}
+          onOpenChange={setIntakeOpen}
           onCreated={setSelectedIssueId}
         />
       ) : null}

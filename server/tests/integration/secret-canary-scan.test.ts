@@ -30,7 +30,9 @@ function buildApp(services: TestServices) {
       return buildErrorResponse(error);
     }
     reply.code(500);
-    return { error: { code: ErrorCode.INTERNAL_ERROR, message: error.message ?? "An internal error occurred.", details: {} } };
+    return {
+      error: { code: ErrorCode.INTERNAL_ERROR, message: error.message ?? "An internal error occurred.", details: {} },
+    };
   });
   registerRoutes(app, {
     projectService: services.projectService,
@@ -50,6 +52,19 @@ function buildApp(services: TestServices) {
     evidenceSummaryRepo: services.evidenceSummaryRepo,
     issueRepo: services.issueRepo,
     runRepo: services.runRepo,
+    graphRunRepo: services.graphRunRepo,
+    nodeRunRepo: services.nodeRunRepo,
+    workspaceRepo: services.workspaceRepo,
+    threadRepo: services.threadRepo,
+    threadEventRepo: services.threadEventRepo,
+    graphRuntimeService: services.graphRuntimeService,
+    agentConfigRepo: services.agentConfigRepo,
+    projectRepo: services.projectRepo,
+    adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
+    recommendationService: services.recommendationService,
+    intakeService: services.intakeService,
+    intakeConfirmationRepo: services.intakeConfirmationRepo,
+    db: services.db,
   });
   return app;
 }
@@ -78,11 +93,17 @@ describe("T081: canary secret scan across API/events/errors/export", () => {
     const { issue } = services.issueService.create(project.id, { title: "Canary issue", goal: "Prove no leak" });
 
     const createRes = await app.inject({
-      method: "POST", url: `/api/projects/${project.id}/adapters`,
+      method: "POST",
+      url: `/api/projects/${project.id}/adapters`,
       payload: {
-        name: "OpenCode Canary", cli_provider: CliProvider.OpenCode, command: "opencode",
-        auth_type: AdapterAuthType.ApiKey, model_provider: "openai", default_model: "gpt-5",
-        api_key: CANARY, capability_tags: [AgentCapability.Implementation],
+        name: "OpenCode Canary",
+        cli_provider: CliProvider.OpenCode,
+        command: "opencode",
+        auth_type: AdapterAuthType.ApiKey,
+        model_provider: "openai",
+        default_model: "gpt-5",
+        api_key: CANARY,
+        capability_tags: [AgentCapability.Implementation],
       },
     });
     assertNoCanary(createRes, "adapter create response");
@@ -92,7 +113,11 @@ describe("T081: canary secret scan across API/events/errors/export", () => {
     const listRes = await app.inject({ method: "GET", url: `/api/projects/${project.id}/adapters` });
     assertNoCanary(listRes, "adapter list response");
 
-    const patchRes = await app.inject({ method: "PATCH", url: `/api/adapters/${adapter.id}`, payload: { name: "Renamed" } });
+    const patchRes = await app.inject({
+      method: "PATCH",
+      url: `/api/adapters/${adapter.id}`,
+      payload: { name: "Renamed" },
+    });
     assertNoCanary(patchRes, "adapter patch response");
 
     const validateRes = await app.inject({ method: "POST", url: `/api/adapters/${adapter.id}/validate` });
@@ -100,14 +125,22 @@ describe("T081: canary secret scan across API/events/errors/export", () => {
 
     // invalid combo error path: OAuth + api_key must reject without echoing the key in the error details
     const errorRes = await app.inject({
-      method: "POST", url: `/api/projects/${project.id}/adapters`,
-      payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", auth_type: AdapterAuthType.OAuth, api_key: CANARY },
+      method: "POST",
+      url: `/api/projects/${project.id}/adapters`,
+      payload: {
+        name: "Bad",
+        cli_provider: CliProvider.Codex,
+        command: "codex",
+        auth_type: AdapterAuthType.OAuth,
+        api_key: CANARY,
+      },
     });
     expect(errorRes.statusCode).toBe(400);
     assertNoCanary(errorRes, "adapter create error response");
 
     const runRes = await app.inject({
-      method: "POST", url: `/api/issues/${issue.id}/runs`,
+      method: "POST",
+      url: `/api/issues/${issue.id}/runs`,
       payload: { instructions: "please check this", adapter_id: adapter.id },
     });
     assertNoCanary(runRes, "run create response");

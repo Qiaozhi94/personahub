@@ -5,7 +5,12 @@ import { registerRoutes } from "../../src/api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
 import {
-  IssueStatus, RunRole, RunPurpose, RunDispatchSource, AdapterStatus, AgentCapability,
+  IssueStatus,
+  RunRole,
+  RunPurpose,
+  RunDispatchSource,
+  AdapterStatus,
+  AgentCapability,
 } from "@personahub/shared/types";
 
 /**
@@ -26,7 +31,9 @@ function buildApp(services: TestServices) {
       return buildErrorResponse(error);
     }
     reply.code(500);
-    return { error: { code: ErrorCode.INTERNAL_ERROR, message: error.message ?? "An internal error occurred.", details: {} } };
+    return {
+      error: { code: ErrorCode.INTERNAL_ERROR, message: error.message ?? "An internal error occurred.", details: {} },
+    };
   });
   registerRoutes(app, {
     projectService: services.projectService,
@@ -46,6 +53,19 @@ function buildApp(services: TestServices) {
     evidenceSummaryRepo: services.evidenceSummaryRepo,
     issueRepo: services.issueRepo,
     runRepo: services.runRepo,
+    graphRunRepo: services.graphRunRepo,
+    nodeRunRepo: services.nodeRunRepo,
+    workspaceRepo: services.workspaceRepo,
+    threadRepo: services.threadRepo,
+    threadEventRepo: services.threadEventRepo,
+    graphRuntimeService: services.graphRuntimeService,
+    agentConfigRepo: services.agentConfigRepo,
+    projectRepo: services.projectRepo,
+    adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
+    recommendationService: services.recommendationService,
+    intakeService: services.intakeService,
+    intakeConfirmationRepo: services.intakeConfirmationRepo,
+    db: services.db,
   });
   return app;
 }
@@ -63,9 +83,15 @@ function setupFixture(services: TestServices, tempDir: string, status: IssueStat
   // unit tests elsewhere), so it actually needs a working registered adapter
   // to start the Run, not just create the record.
   const adapter = services.agentConfigRepo.create({
-    project_id: project.id, name: "Impl", role: "implementation", cli_provider: "fake",
-    command: "fake-cli", args: [], capability_tags: [AgentCapability.Implementation],
-    default_model: "gpt-5", status: AdapterStatus.Available,
+    project_id: project.id,
+    name: "Impl",
+    role: "implementation",
+    cli_provider: "fake",
+    command: "fake-cli",
+    args: [],
+    capability_tags: [AgentCapability.Implementation],
+    default_model: "gpt-5",
+    status: AdapterStatus.Available,
   });
   services.projectRepo.setDefaultAdapter(project.id, adapter.id);
   return { project, issue, adapter };
@@ -86,7 +112,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "do the work", adapter_id: adapter.id },
       });
       expect(res.statusCode).toBe(201);
@@ -100,7 +127,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "do the work" },
       });
       expect(res.statusCode).toBe(201);
@@ -113,7 +141,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir, IssueStatus.Running);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "just a question", adapter_id: adapter.id, purpose: "ad_hoc_consult" },
       });
       expect(res.statusCode).toBe(201);
@@ -131,7 +160,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "do the work", adapter_id: adapter.id, purpose: "workflow_bound" },
       });
       expect(res.statusCode).toBe(400);
@@ -142,7 +172,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "do the work", adapter_id: adapter.id, purpose: "not_a_real_purpose" },
       });
       expect(res.statusCode).toBe(400);
@@ -157,7 +188,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: 12345, adapter_id: adapter.id },
       });
       expect(res.statusCode).toBe(400);
@@ -168,7 +200,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "do the work", adapter_id: adapter.id, purpose: "auto" },
       });
       const body = JSON.parse(res.body);
@@ -179,10 +212,14 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: {
-          instructions: "do the work", adapter_id: adapter.id,
-          role: "validator", dispatch_source: "system", workflow_step: "validation",
+          instructions: "do the work",
+          adapter_id: adapter.id,
+          role: "validator",
+          dispatch_source: "system",
+          workflow_step: "validation",
         },
       });
       expect(res.statusCode).toBe(201);
@@ -196,7 +233,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "  ", adapter_id: adapter.id },
       });
       expect(res.statusCode).toBe(400);
@@ -207,7 +245,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir, IssueStatus.Done);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "too late", adapter_id: adapter.id },
       });
       expect(res.statusCode).toBe(409);
@@ -218,7 +257,8 @@ describe("Run routes (T077-T079)", () => {
       const { issue, adapter } = setupFixture(services, tempDir, IssueStatus.Blocked);
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
+        method: "POST",
+        url: `/api/issues/${issue.id}/runs`,
         payload: { instructions: "too late", adapter_id: adapter.id },
       });
       expect(res.statusCode).toBe(409);
@@ -228,7 +268,8 @@ describe("Run routes (T077-T079)", () => {
     it("returns 404 for a non-existent issue", async () => {
       const app = buildApp(services);
       const res = await app.inject({
-        method: "POST", url: "/api/issues/issue_nonexistent/runs",
+        method: "POST",
+        url: "/api/issues/issue_nonexistent/runs",
         payload: { instructions: "do it" },
       });
       expect(res.statusCode).toBe(404);
@@ -239,10 +280,15 @@ describe("Run routes (T077-T079)", () => {
     it("list and read both surface purpose/role/dispatch_source/context_source_run_id", async () => {
       const { issue, adapter } = setupFixture(services, tempDir);
       const app = buildApp(services);
-      const created = JSON.parse((await app.inject({
-        method: "POST", url: `/api/issues/${issue.id}/runs`,
-        payload: { instructions: "do the work", adapter_id: adapter.id },
-      })).body).run;
+      const created = JSON.parse(
+        (
+          await app.inject({
+            method: "POST",
+            url: `/api/issues/${issue.id}/runs`,
+            payload: { instructions: "do the work", adapter_id: adapter.id },
+          })
+        ).body,
+      ).run;
 
       const listRes = await app.inject({ method: "GET", url: `/api/issues/${issue.id}/runs` });
       expect(listRes.statusCode).toBe(200);

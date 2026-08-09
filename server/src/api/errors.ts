@@ -89,6 +89,13 @@ const ERROR_STATUS_MAP: Record<ErrorCode, number> = {
   [ErrorCode.GRAPH_PLAN_INCOMPLETE]: 409,
   [ErrorCode.GRAPH_TARGET_SET_EMPTY]: 409,
   [ErrorCode.RECOVERY_ACTION_NOT_APPLICABLE]: 409,
+  // F007: intake / routing recommendation errors
+  [ErrorCode.NO_AVAILABLE_ADAPTER]: 409,
+  [ErrorCode.NO_AVAILABLE_CAPABLE_ADAPTER]: 409,
+  [ErrorCode.CONFIRMATION_TOKEN_INVALID]: 400,
+  [ErrorCode.RECOMMENDATION_STALE]: 409,
+  [ErrorCode.TOPOLOGY_NOT_EXECUTABLE]: 409,
+  [ErrorCode.GRAPH_PLAN_UNKNOWN_NODE]: 400,
   [ErrorCode.INTERNAL_ERROR]: 500,
 };
 

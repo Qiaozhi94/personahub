@@ -12,7 +12,7 @@ created: 2026-07-11
 
 | ID | Version | Name | Status | Owner | Link |
 |----|---------|------|--------|-------|------|
-| F007 | 0.2 | Coordinator Agent & Routing Recommendation | ready-for-development | TBD | `docs/features/0.2/F007-coordinator-routing-recommendation/spec.md` |
+| F007 | 0.2 | Coordinator Agent & Routing Recommendation | done | TBD | `docs/features/0.2/F007-coordinator-routing-recommendation/spec.md` |
 | F008 | 0.2 | Workflow Template Admin & Runtime Health | ready-for-development | TBD | `docs/features/0.2/F008-workflow-template-admin-runtime-health/spec.md` |
 
 > F006（Orchestrated Coding Graph Slice）已于 2026-08-08 完成全部 AC 验收（`spec.md` Status: done），按上方规则移出活跃表；详情见 `docs/features/0.2/F006-orchestrated-coding-graph-slice/spec.md`。

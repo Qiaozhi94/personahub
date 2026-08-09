@@ -9,7 +9,7 @@ updated: 2026-08-08
 
 # F007：Coordinator Agent & Routing Recommendation
 
-> Status: ready-for-development | Owner: TBD | Target: v0.2
+> Status: done | Owner: TBD | Target: v0.2
 
 ## 0. 规格元信息
 
@@ -119,11 +119,11 @@ updated: 2026-08-08
 
 ## 6. 验收清单
 
-- [ ] **AC-001**（`FR-001`、`FR-002`）：五部分推荐（issue type、issue 字段、workflow template、collaboration topology、agent roster）齐全且确定性。
-- [ ] **AC-002**（`FR-003`、`FR-004`）：推荐无副作用；过期推荐被拒绝。
-- [ ] **AC-003**（`FR-005`、`FR-006`）：adapter 解析纪律未被绕过；阻塞可解释。
-- [ ] **AC-004**（`TR-001`）：推荐与实际选择的差异可追溯。
-- [ ] **AC-005**（`NFR-001`）：推荐路径不触碰 workspace 锁与 Run 表。
+- [x] **AC-001**（`FR-001`、`FR-002`）：五部分推荐（issue type、issue 字段、workflow template、collaboration topology、agent roster）齐全且确定性。—— 实现 `services/routing/rules.ts` + `RoutingRecommendationService`；测试：`intake-confirm.test.ts`「returns the full five-dimension response」「T014: deterministic」。
+- [x] **AC-002**（`FR-003`、`FR-004`）：推荐无副作用；过期推荐被拒绝。—— 推荐阶段零写入（T015 断言 issues/threads/runs/events/confirmations 计数为 0）；过期/未来时钟 token 拒绝（T021e、M3 测试）。
+- [x] **AC-003**（`FR-005`、`FR-006`）：adapter 解析纪律未被绕过；阻塞可解释。—— 推荐从不写 `default_adapter_config_id`；confirm 两条分支经共享 `resolveEligibleAdapter()`（T023）；阻塞返回结构化原因 + `suggested_action`（T032 测试）。
+- [x] **AC-004**（`TR-001`）：推荐与实际选择的差异可追溯。—— `coordinator.recommendation_applied` 事件 payload 含 `rules[]`/`recommended`/`chosen`/`diff[]`；diff 由 `computeDiff` 得出（T024 测试断言事件与 diff）。
+- [x] **AC-005**（`NFR-001`）：推荐路径不触碰 workspace 锁与 Run 表。—— 推荐仅读 repository；T015 零副作用测试覆盖锁状态/Run 表。
 
 ## 7. 待确认问题（全部已关闭，2026-08-01）
 

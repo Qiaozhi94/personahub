@@ -39,6 +39,10 @@ import {
   type GraphNodeRetryResponse,
   type GraphResolveExecutorsResponse,
   type GraphStartResponse,
+  type RecommendResponse,
+  type ConfirmResponse,
+  type ConfirmationToken,
+  type ChosenPlan,
 } from "@personahub/shared";
 
 const API_BASE = "/api";
@@ -88,8 +92,7 @@ export const apiClient = {
         method: "PUT",
         body: JSON.stringify({ local_path: localPath }),
       }),
-    getByProject: (projectId: string) =>
-      apiFetch<WorkspaceGetResponse>(`/projects/${projectId}/workspace`),
+    getByProject: (projectId: string) => apiFetch<WorkspaceGetResponse>(`/projects/${projectId}/workspace`),
     getById: (id: string) => apiFetch<WorkspaceByIdResponse>(`/workspaces/${id}`),
   },
   issues: {
@@ -98,11 +101,18 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    listByProject: (projectId: string) =>
-      apiFetch<IssueListResponse>(`/projects/${projectId}/issues`),
+    listByProject: (projectId: string) => apiFetch<IssueListResponse>(`/projects/${projectId}/issues`),
     get: (id: string) => apiFetch<IssueGetResponse>(`/issues/${id}`),
     getGraph: (id: string) => apiFetch<IssueGraphResponse>(`/issues/${id}/graph`),
-    startGraph: (issueId: string, input: { definitionId: string; definitionVersion: number; nodeAssignments: Record<string, string>; premiseHash?: string | null }) =>
+    startGraph: (
+      issueId: string,
+      input: {
+        definitionId: string;
+        definitionVersion: number;
+        nodeAssignments: Record<string, string>;
+        premiseHash?: string | null;
+      },
+    ) =>
       apiFetch<GraphStartResponse>(`/issues/${issueId}/graph-runs`, {
         method: "POST",
         body: JSON.stringify(input),
@@ -110,8 +120,7 @@ export const apiClient = {
   },
   graphRuns: {
     get: (id: string) => apiFetch<IssueGraphResponse["current"]>(`/graph-runs/${id}`),
-    cancel: (id: string) =>
-      apiFetch<GraphRunCancelResponse>(`/graph-runs/${id}/cancel`, { method: "POST" }),
+    cancel: (id: string) => apiFetch<GraphRunCancelResponse>(`/graph-runs/${id}/cancel`, { method: "POST" }),
     retryNode: (graphRunId: string, nodeKey: string) =>
       apiFetch<GraphNodeRetryResponse>(`/graph-runs/${graphRunId}/nodes/${encodeURIComponent(nodeKey)}/retry`, {
         method: "POST",
@@ -144,8 +153,7 @@ export const apiClient = {
         method: "PATCH",
         body: JSON.stringify(input),
       }),
-    delete: (adapterId: string) =>
-      apiFetch<void>(`/adapters/${adapterId}`, { method: "DELETE" }),
+    delete: (adapterId: string) => apiFetch<void>(`/adapters/${adapterId}`, { method: "DELETE" }),
     validate: (adapterId: string, workspaceId?: string) =>
       apiFetch<AdapterConfigValidateResponse>(`/adapters/${adapterId}/validate`, {
         method: "POST",
@@ -165,10 +173,8 @@ export const apiClient = {
         body: JSON.stringify(input),
       }),
     get: (runId: string) => apiFetch<RunGetResponse>(`/runs/${runId}`),
-    listByIssue: (issueId: string) =>
-      apiFetch<RunListResponse>(`/issues/${issueId}/runs`),
-    cancel: (runId: string) =>
-      apiFetch<RunCancelResponse>(`/runs/${runId}/cancel`, { method: "POST" }),
+    listByIssue: (issueId: string) => apiFetch<RunListResponse>(`/issues/${issueId}/runs`),
+    cancel: (runId: string) => apiFetch<RunCancelResponse>(`/runs/${runId}/cancel`, { method: "POST" }),
   },
   traces: {
     getIssueTrace: (issueId: string, afterEventId?: string, limit?: number) => {
@@ -196,7 +202,9 @@ export const apiClient = {
     exportMarkdown: async (issueId: string): Promise<{ blob: Blob; filename: string }> => {
       const res = await fetch(`${API_BASE}/issues/${issueId}/trace/export`);
       if (!res.ok) {
-        const errorBody = await res.json().catch(() => ({ error: { code: ErrorCode.INTERNAL_ERROR, message: "Unknown error" } }));
+        const errorBody = await res
+          .json()
+          .catch(() => ({ error: { code: ErrorCode.INTERNAL_ERROR, message: "Unknown error" } }));
         throw errorBody.error as ApiError;
       }
       const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -207,10 +215,8 @@ export const apiClient = {
     },
   },
   validation: {
-    getValidation: (issueId: string) =>
-      apiFetch<IssueValidationResponse>(`/issues/${issueId}/validation`),
-    getEvidenceSummary: (issueId: string) =>
-      apiFetch<EvidenceSummaryResponse>(`/issues/${issueId}/evidence-summary`),
+    getValidation: (issueId: string) => apiFetch<IssueValidationResponse>(`/issues/${issueId}/validation`),
+    getEvidenceSummary: (issueId: string) => apiFetch<EvidenceSummaryResponse>(`/issues/${issueId}/evidence-summary`),
     unblock: (issueId: string, operatorNote: string) =>
       apiFetch<UnblockResponse>(`/issues/${issueId}/unblock`, {
         method: "POST",
@@ -224,6 +230,18 @@ export const apiClient = {
     triggerValidation: (issueId: string) =>
       apiFetch<TriggerValidationResponse>(`/issues/${issueId}/validation`, {
         method: "POST",
+      }),
+  },
+  intake: {
+    recommend: (projectId: string, goal: string) =>
+      apiFetch<RecommendResponse>(`/projects/${projectId}/intake/recommend`, {
+        method: "POST",
+        body: JSON.stringify({ goal }),
+      }),
+    confirm: (projectId: string, token: ConfirmationToken, chosen: ChosenPlan) =>
+      apiFetch<ConfirmResponse>(`/projects/${projectId}/intake/confirm`, {
+        method: "POST",
+        body: JSON.stringify({ token, chosen }),
       }),
   },
 };

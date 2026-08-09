@@ -52,14 +52,16 @@ import { GraphConstraintError } from "./db/sqlite-errors.js";
 import { GraphRuntimeService } from "./services/graph-runtime.js";
 import { GraphRecoveryService } from "./services/graph-recovery.js";
 import { GraphNodeInstructionBuilder } from "./runtime/graph/instruction-builder.js";
+import { AppSecretRepository } from "./repositories/app-secret.js";
+import { IntakeConfirmationRepository } from "./repositories/intake-confirmation.js";
+import { ConfirmationTokenService, loadOrCreateHmacSecret } from "./services/confirmation-token.js";
+import { RoutingRecommendationService } from "./services/routing-recommendation-service.js";
+import { IntakeService } from "./services/intake-service.js";
 
 const PORT = Number(process.env.PORT ?? 4321);
 const HOST = process.env.HOST ?? "127.0.0.1";
 const DB_PATH = process.env.DB_PATH ?? "personahub.db";
-const CORS_ORIGINS = process.env.CORS_ORIGIN?.split(",") ?? [
-  "http://127.0.0.1:5173",
-  "http://localhost:5173",
-];
+const CORS_ORIGINS = process.env.CORS_ORIGIN?.split(",") ?? ["http://127.0.0.1:5173", "http://localhost:5173"];
 
 async function main() {
   const db = openDatabase(DB_PATH);
@@ -80,20 +82,34 @@ async function main() {
   const graphRunRepo = new GraphRunRepository(db);
   const adapterProbeCoordinator = new AdapterAvailabilityProbeCoordinator();
 
+  const hmacSecret = loadOrCreateHmacSecret(new AppSecretRepository(db));
+  const tokenService = new ConfirmationTokenService(hmacSecret);
+
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
 
   const projectService = new ProjectService(projectRepo, workspaceRepo);
   const workspaceService = new WorkspaceService(workspaceRepo, projectRepo, db);
   const issueService = new IssueService(
-    issueRepo, threadRepo, threadEventRepo,
-    projectRepo, workflowTemplateRepo, validationPolicyRepo, db,
+    issueRepo,
+    threadRepo,
+    threadEventRepo,
+    projectRepo,
+    workflowTemplateRepo,
+    validationPolicyRepo,
+    db,
   );
   const threadService = new ThreadService(threadRepo, threadEventRepo);
   const workspaceLockService = new WorkspaceLockService(workspaceRepo);
   const runService = new RunService(
-    runRepo, threadEventService, issueRepo, workspaceRepo,
-    agentConfigRepo, workspaceLockService, threadEventRepo, db,
+    runRepo,
+    threadEventService,
+    issueRepo,
+    workspaceRepo,
+    agentConfigRepo,
+    workspaceLockService,
+    threadEventRepo,
+    db,
   );
 
   const adapterRegistry = new AgentAdapterRegistry();
@@ -102,7 +118,16 @@ async function main() {
   adapterRegistry.register(new ClaudeCodeAdapter());
   adapterRegistry.register(new OpenCodeAdapter());
 
-  const adapterConfigService = new AdapterConfigService(agentConfigRepo, projectRepo, adapterRegistry, workspaceRepo, adapterWorkspaceStatusRepo, db, adapterProbeCoordinator, nodeRunRepo);
+  const adapterConfigService = new AdapterConfigService(
+    agentConfigRepo,
+    projectRepo,
+    adapterRegistry,
+    workspaceRepo,
+    adapterWorkspaceStatusRepo,
+    db,
+    adapterProbeCoordinator,
+    nodeRunRepo,
+  );
 
   const agentRunner = new AgentRunner({
     runService,
@@ -112,46 +137,96 @@ async function main() {
 
   const evidenceService = new EvidenceService(threadEventRepo, fileChangeRepo, runRepo, runTraceRepo);
   const developmentTraceService = new DevelopmentTraceService(
-    runRepo, runTraceRepo, fileChangeRepo, threadEventRepo,
-    issueRepo, workspaceRepo, threadEventService, evidenceService, db,
+    runRepo,
+    runTraceRepo,
+    fileChangeRepo,
+    threadEventRepo,
+    issueRepo,
+    workspaceRepo,
+    threadEventService,
+    evidenceService,
+    db,
   );
-  const validationTraceService = new ValidationTraceService(
-    threadEventService, evidenceService, issueRepo, runRepo,
-  );
+  const validationTraceService = new ValidationTraceService(threadEventService, evidenceService, issueRepo, runRepo);
 
   const traceQueryService = new TraceQueryService(
-    runRepo, threadEventRepo, fileChangeRepo, issueRepo, threadRepo, runTraceRepo, evidenceService,
+    runRepo,
+    threadEventRepo,
+    fileChangeRepo,
+    issueRepo,
+    threadRepo,
+    runTraceRepo,
+    evidenceService,
   );
   const traceExportService = new TraceExportService(
-    issueRepo, runRepo, threadEventRepo, fileChangeRepo, runTraceRepo, evidenceService,
+    issueRepo,
+    runRepo,
+    threadEventRepo,
+    fileChangeRepo,
+    runTraceRepo,
+    evidenceService,
   );
 
   const evidenceSummaryRepo = new EvidenceSummaryRepository(db);
   const validationWorkflowService = new ValidationWorkflowService(
-    db, issueRepo, runRepo, threadEventService, threadEventRepo,
-    validationTraceService, agentConfigRepo, workflowTemplateRepo,
-    validationPolicyRepo, evidenceSummaryRepo, fileChangeRepo,
+    db,
+    issueRepo,
+    runRepo,
+    threadEventService,
+    threadEventRepo,
+    validationTraceService,
+    agentConfigRepo,
+    workflowTemplateRepo,
+    validationPolicyRepo,
+    evidenceSummaryRepo,
+    fileChangeRepo,
     adapterWorkspaceStatusRepo,
   );
 
   const manualRoutingService = new ManualRoutingService(
-    runRepo, issueRepo, workspaceRepo, agentConfigRepo, projectRepo,
-    threadEventRepo, threadEventService, db, validationWorkflowService,
+    runRepo,
+    issueRepo,
+    workspaceRepo,
+    agentConfigRepo,
+    projectRepo,
+    threadEventRepo,
+    threadEventService,
+    db,
+    validationWorkflowService,
     adapterWorkspaceStatusRepo,
   );
 
   const runDispatchService = new RunDispatchService(
-    runService, workspaceLockService, adapterRegistry,
-    agentConfigRepo, issueRepo, threadRepo, workspaceRepo,
-    threadEventService, agentRunner, developmentTraceService, runTraceRepo,
-    validationWorkflowService, db,
-    runRepo, threadEventRepo, fileChangeRepo,
-    manualRoutingService, adapterWorkspaceStatusRepo, nodeRunRepo, graphRunRepo, projectRepo, adapterProbeCoordinator,
+    runService,
+    workspaceLockService,
+    adapterRegistry,
+    agentConfigRepo,
+    issueRepo,
+    threadRepo,
+    workspaceRepo,
+    threadEventService,
+    agentRunner,
+    developmentTraceService,
+    runTraceRepo,
+    validationWorkflowService,
+    db,
+    runRepo,
+    threadEventRepo,
+    fileChangeRepo,
+    manualRoutingService,
+    adapterWorkspaceStatusRepo,
+    nodeRunRepo,
+    graphRunRepo,
+    projectRepo,
+    adapterProbeCoordinator,
   );
 
   const graphRuntimeService = new GraphRuntimeService(
     {
-      graphRunRepo, nodeRunRepo, runRepo, issueRepo,
+      graphRunRepo,
+      nodeRunRepo,
+      runRepo,
+      issueRepo,
       threadEventService,
       adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
       instructionBuilder: new GraphNodeInstructionBuilder(),
@@ -160,16 +235,67 @@ async function main() {
     db,
   );
 
+  const recommendationService = new RoutingRecommendationService({
+    deps: {
+      projectRepo,
+      agentConfigRepo,
+      adapterWorkspaceStatusRepo,
+      workflowTemplateRepo,
+    },
+    tokenService,
+  });
+
+  const intakeService = new IntakeService({
+    db,
+    tokenService,
+    recommendationService,
+    confirmationRepo: new IntakeConfirmationRepository(db),
+    projectRepo,
+    workspaceRepo,
+    threadEventService,
+    issueService,
+    sequentialDeps: {
+      runRepo,
+      issueRepo,
+      agentConfigRepo,
+      threadEventService,
+      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
+    },
+    graphDeps: {
+      graphRunRepo,
+      nodeRunRepo,
+      runRepo,
+      issueRepo,
+      threadEventService,
+      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
+      instructionBuilder: new GraphNodeInstructionBuilder(),
+      drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
+    },
+    drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
+  });
+
   const staleRecoveryService = new StaleRecoveryService(
-    runRepo, workspaceRepo, threadEventService, workspaceLockService,
-    developmentTraceService, runTraceRepo,
+    runRepo,
+    workspaceRepo,
+    threadEventService,
+    workspaceLockService,
+    developmentTraceService,
+    runTraceRepo,
   );
 
   await staleRecoveryService.runAll();
 
   const graphRecoveryService = new GraphRecoveryService({
-    graphRunRepo, nodeRunRepo, runRepo, issueRepo, threadEventService,
-    threadEventRepo, agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo, db,
+    graphRunRepo,
+    nodeRunRepo,
+    runRepo,
+    issueRepo,
+    threadEventService,
+    threadEventRepo,
+    agentConfigRepo,
+    projectRepo,
+    adapterWorkspaceStatusRepo,
+    db,
   });
   const recoveryResult = await graphRecoveryService.reconcile();
   for (const event of recoveryResult.pendingEvents) {
@@ -177,14 +303,17 @@ async function main() {
   }
 
   const validationRecoveryService = new ValidationRecoveryService(
-    issueRepo, runRepo, validationWorkflowService,
-    threadEventRepo, agentConfigRepo, db, threadEventService,
+    issueRepo,
+    runRepo,
+    validationWorkflowService,
+    threadEventRepo,
+    agentConfigRepo,
+    db,
+    threadEventService,
   );
   await validationRecoveryService.reconcile();
 
-  const validationDispatchScheduler = new ValidationDispatchScheduler(
-    issueRepo, validationWorkflowService,
-  );
+  const validationDispatchScheduler = new ValidationDispatchScheduler(issueRepo, validationWorkflowService);
 
   const allWorkspaces = workspaceRepo.listAll();
   for (const ws of allWorkspaces) {
@@ -248,11 +377,13 @@ async function main() {
     traceQueryService,
     traceExportService,
     validationQueryService: new ValidationQueryService(
-      issueRepo, runRepo, evidenceSummaryRepo, validationPolicyRepo, threadEventRepo,
+      issueRepo,
+      runRepo,
+      evidenceSummaryRepo,
+      validationPolicyRepo,
+      threadEventRepo,
     ),
-    validationRecoveryActionService: new ValidationRecoveryActionService(
-      issueRepo, validationTraceService, db,
-    ),
+    validationRecoveryActionService: new ValidationRecoveryActionService(issueRepo, validationTraceService, db),
     validationWorkflowService,
     evidenceSummaryRepo,
     issueRepo,
@@ -266,16 +397,16 @@ async function main() {
     agentConfigRepo,
     projectRepo,
     adapterWorkspaceStatusRepo,
+    recommendationService,
+    intakeService,
+    intakeConfirmationRepo: new IntakeConfirmationRepository(db),
     db,
   });
 
   app.addHook("onClose", async () => {
     validationDispatchScheduler.stop();
     await agentRunner.shutdown();
-    await Promise.all([
-      runDispatchService.shutdown(),
-      adapterConfigService.shutdown(),
-    ]);
+    await Promise.all([runDispatchService.shutdown(), adapterConfigService.shutdown()]);
   });
 
   const gracefulShutdown = async (signal: string) => {

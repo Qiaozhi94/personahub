@@ -26,16 +26,17 @@ function setupV7Db(db: Database.Database): string {
   db.exec(SCHEMA_V5);
   db.exec(SCHEMA_V6);
   db.exec(SCHEMA_V7);
-  db.exec(
-    `CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`,
-  );
+  db.exec(`CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`);
   for (let v = 1; v <= 7; v++) {
     db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(v, now);
   }
   return now;
 }
 
-function seedV7Data(db: Database.Database, now: string): { projectId: string; workspaceId: string; issueId: string; threadId: string; adapterId: string; runId: string } {
+function seedV7Data(
+  db: Database.Database,
+  now: string,
+): { projectId: string; workspaceId: string; issueId: string; threadId: string; adapterId: string; runId: string } {
   const projectId = "prj_test";
   const workspaceId = "wsp_test";
   const issueId = "iss_test";
@@ -43,14 +44,61 @@ function seedV7Data(db: Database.Database, now: string): { projectId: string; wo
   const adapterId = "agt_test";
   const runId = "run_test";
 
-  db.prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)").run(projectId, "test", now, now);
-  db.prepare("INSERT INTO workspaces (id, project_id, local_path, local_path_normalized, lock_state, push_credentials_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(workspaceId, projectId, "/tmp/test", "/tmp/test", "idle", 0, now, now);
-  db.prepare("INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run("wft_test", "test", "coding", "single", "active", 1, now, now);
-  db.prepare("INSERT INTO validation_policies (id, name, issue_type, max_validation_rounds, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run("vpl_test", "test", "coding", 3, "active", 1, now, now);
-  db.prepare("INSERT INTO issues (id, project_id, workspace_id, issue_type, workflow_template_id, validation_policy_id, title, status, priority, labels, validation_round_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(issueId, projectId, workspaceId, "coding", "wft_test", "vpl_test", "test issue", "Inbox", "normal", "[]", 0, now, now);
-  db.prepare("INSERT INTO threads (id, issue_id, thread_type, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)").run(threadId, issueId, "primary", "test thread", now, now);
-  db.prepare("INSERT INTO agent_configs (id, project_id, name, cli_provider, command, args, capability_tags, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(adapterId, projectId, "test", "codex", "codex", "[]", '["implementation"]', "available", now, now);
-  db.prepare(`INSERT INTO runs (id, issue_id, thread_id, workspace_id, adapter_config_id, status, instructions, role, workflow_step, dispatch_source, purpose, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(runId, issueId, threadId, workspaceId, adapterId, "completed", "do it", "implementation", "implementation", "user_explicit", "workflow_bound", now, now);
+  db.prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)").run(
+    projectId,
+    "test",
+    now,
+    now,
+  );
+  db.prepare(
+    "INSERT INTO workspaces (id, project_id, local_path, local_path_normalized, lock_state, push_credentials_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run(workspaceId, projectId, "/tmp/test", "/tmp/test", "idle", 0, now, now);
+  db.prepare(
+    "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run("wft_test", "test", "coding", "single", "active", 1, now, now);
+  db.prepare(
+    "INSERT INTO validation_policies (id, name, issue_type, max_validation_rounds, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run("vpl_test", "test", "coding", 3, "active", 1, now, now);
+  db.prepare(
+    "INSERT INTO issues (id, project_id, workspace_id, issue_type, workflow_template_id, validation_policy_id, title, status, priority, labels, validation_round_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run(
+    issueId,
+    projectId,
+    workspaceId,
+    "coding",
+    "wft_test",
+    "vpl_test",
+    "test issue",
+    "Inbox",
+    "normal",
+    "[]",
+    0,
+    now,
+    now,
+  );
+  db.prepare(
+    "INSERT INTO threads (id, issue_id, thread_type, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+  ).run(threadId, issueId, "primary", "test thread", now, now);
+  db.prepare(
+    "INSERT INTO agent_configs (id, project_id, name, cli_provider, command, args, capability_tags, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run(adapterId, projectId, "test", "codex", "codex", "[]", '["implementation"]', "available", now, now);
+  db.prepare(
+    `INSERT INTO runs (id, issue_id, thread_id, workspace_id, adapter_config_id, status, instructions, role, workflow_step, dispatch_source, purpose, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    runId,
+    issueId,
+    threadId,
+    workspaceId,
+    adapterId,
+    "completed",
+    "do it",
+    "implementation",
+    "implementation",
+    "user_explicit",
+    "workflow_bound",
+    now,
+    now,
+  );
 
   return { projectId, workspaceId, issueId, threadId, adapterId, runId };
 }
@@ -71,14 +119,14 @@ describe("T012 schema v8 migration", () => {
     it("schema_version max is 8", () => {
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(8);
+      expect(row.v).toBe(9);
     });
 
     it("is idempotent — running twice does not error and stays at 8", () => {
       applyMigrations(db);
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(8);
+      expect(row.v).toBe(9);
     });
 
     it("creates graph_runs table", () => {
@@ -134,18 +182,18 @@ describe("T012 schema v8 migration", () => {
 
     it("creates partial unique index for non-terminal graph runs", () => {
       applyMigrations(db);
-      const indexes = db.prepare(
-        "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_graph_runs%'",
-      ).all() as Array<{ name: string }>;
+      const indexes = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_graph_runs%'")
+        .all() as Array<{ name: string }>;
       const names = indexes.map((i) => i.name);
       expect(names).toContain("idx_graph_runs_one_nonterminal_per_issue");
     });
 
     it("creates partial unique index for active graph attempts", () => {
       applyMigrations(db);
-      const indexes = db.prepare(
-        "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_runs%graph%'",
-      ).all() as Array<{ name: string }>;
+      const indexes = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_runs%graph%'")
+        .all() as Array<{ name: string }>;
       const names = indexes.map((i) => i.name);
       expect(names).toContain("idx_runs_one_active_graph_attempt");
     });
@@ -182,8 +230,11 @@ describe("T012 schema v8 migration", () => {
 
       applyMigrations(db);
 
-      db.prepare("UPDATE runs SET status = ?, updated_at = ? WHERE id = ?")
-        .run("failed", "2026-02-01T00:00:00Z", runId);
+      db.prepare("UPDATE runs SET status = ?, updated_at = ? WHERE id = ?").run(
+        "failed",
+        "2026-02-01T00:00:00Z",
+        runId,
+      );
 
       const run = db.prepare("SELECT status FROM runs WHERE id = ?").get(runId) as { status: string };
       expect(run.status).toBe("failed");
@@ -195,9 +246,9 @@ describe("T012 schema v8 migration", () => {
 
       applyMigrations(db);
 
-      const tables = db.prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
-      ).all() as Array<{ name: string }>;
+      const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as Array<{
+        name: string;
+      }>;
       const names = tables.map((t) => t.name);
       expect(names).toContain("projects");
       expect(names).toContain("workspaces");
@@ -245,7 +296,7 @@ describe("T012 schema v8 migration", () => {
       applyMigrations(db);
       expect(() => applyMigrations(db)).not.toThrow();
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(8);
+      expect(row.v).toBe(9);
     });
 
     it("v7 to v8 file-based migration preserves data and is idempotent on retry", () => {
@@ -253,59 +304,79 @@ describe("T012 schema v8 migration", () => {
       const dbPath = join(tmpDir, "test.db");
 
       try {
-      const fileDb = new Database(dbPath);
+        const fileDb = new Database(dbPath);
 
-      const now = "2026-01-01T00:00:00Z";
-      fileDb.exec(SCHEMA_V1);
-      fileDb.exec(SCHEMA_V2);
-      fileDb.exec(SCHEMA_V3);
-      fileDb.exec(SCHEMA_V4);
-      fileDb.exec(SCHEMA_V5);
-      fileDb.exec(SCHEMA_V6);
-      fileDb.exec(SCHEMA_V7);
-      fileDb.exec(
-        `CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`,
-      );
-      for (let v = 1; v <= 7; v++) {
-        fileDb.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(v, now);
-      }
+        const now = "2026-01-01T00:00:00Z";
+        fileDb.exec(SCHEMA_V1);
+        fileDb.exec(SCHEMA_V2);
+        fileDb.exec(SCHEMA_V3);
+        fileDb.exec(SCHEMA_V4);
+        fileDb.exec(SCHEMA_V5);
+        fileDb.exec(SCHEMA_V6);
+        fileDb.exec(SCHEMA_V7);
+        fileDb.exec(
+          `CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`,
+        );
+        for (let v = 1; v <= 7; v++) {
+          fileDb.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(v, now);
+        }
 
-      fileDb.prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)").run("prj_1", "test", now, now);
-      fileDb.prepare("INSERT INTO workspaces (id, project_id, local_path, local_path_normalized, lock_state, push_credentials_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run("wsp_1", "prj_1", "/tmp/test", "/tmp/test", "idle", 0, now, now);
-      fileDb.prepare("INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run("wft_1", "test", "coding", "single", "active", 1, now, now);
-      fileDb.prepare("INSERT INTO validation_policies (id, name, issue_type, max_validation_rounds, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run("vpl_1", "test", "coding", 3, "active", 1, now, now);
+        fileDb
+          .prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)")
+          .run("prj_1", "test", now, now);
+        fileDb
+          .prepare(
+            "INSERT INTO workspaces (id, project_id, local_path, local_path_normalized, lock_state, push_credentials_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          )
+          .run("wsp_1", "prj_1", "/tmp/test", "/tmp/test", "idle", 0, now, now);
+        fileDb
+          .prepare(
+            "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          )
+          .run("wft_1", "test", "coding", "single", "active", 1, now, now);
+        fileDb
+          .prepare(
+            "INSERT INTO validation_policies (id, name, issue_type, max_validation_rounds, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          )
+          .run("vpl_1", "test", "coding", 3, "active", 1, now, now);
 
-      fileDb.close();
+        fileDb.close();
 
-      // Reopen and apply v8 migration.
-      const reopened = new Database(dbPath);
-      reopened.pragma("foreign_keys = ON");
-      applyMigrations(reopened);
+        // Reopen and apply v8 migration.
+        const reopened = new Database(dbPath);
+        reopened.pragma("foreign_keys = ON");
+        applyMigrations(reopened);
 
-      // Verify v8 was applied.
-      const version = reopened.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(version.v).toBe(8);
+        // Verify v8 was applied.
+        const version = reopened.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+        expect(version.v).toBe(9);
 
-      // Verify v7 data survived.
-      const project = reopened.prepare("SELECT name FROM projects WHERE id = ?").get("prj_1") as { name: string };
-      expect(project.name).toBe("test");
+        // Verify v7 data survived.
+        const project = reopened.prepare("SELECT name FROM projects WHERE id = ?").get("prj_1") as { name: string };
+        expect(project.name).toBe("test");
 
-      // Verify new tables exist.
-      const tables = reopened.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('graph_runs','node_runs')").all() as Array<{ name: string }>;
-      expect(tables).toHaveLength(2);
+        // Verify new tables exist.
+        const tables = reopened
+          .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('graph_runs','node_runs')")
+          .all() as Array<{ name: string }>;
+        expect(tables).toHaveLength(2);
 
-      // Verify runs has node_run_id column.
-      const cols = reopened.prepare("PRAGMA table_info(runs)").all() as Array<{ name: string }>;
-      expect(cols.some((c) => c.name === "node_run_id")).toBe(true);
+        // Verify runs has node_run_id column.
+        const cols = reopened.prepare("PRAGMA table_info(runs)").all() as Array<{ name: string }>;
+        expect(cols.some((c) => c.name === "node_run_id")).toBe(true);
 
-      // Verify migration is idempotent on retry.
-      expect(() => applyMigrations(reopened)).not.toThrow();
-      const version2 = reopened.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(version2.v).toBe(8);
+        // Verify migration is idempotent on retry.
+        expect(() => applyMigrations(reopened)).not.toThrow();
+        const version2 = reopened.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+        expect(version2.v).toBe(9);
 
-      reopened.close();
+        reopened.close();
       } finally {
-        try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ok */ }
+        try {
+          rmSync(tmpDir, { recursive: true, force: true });
+        } catch {
+          /* ok */
+        }
       }
     });
 
@@ -324,7 +395,9 @@ describe("T012 schema v8 migration", () => {
         fileDb.exec(SCHEMA_V5);
         fileDb.exec(SCHEMA_V6);
         fileDb.exec(SCHEMA_V7);
-        fileDb.exec(`CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`);
+        fileDb.exec(
+          `CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`,
+        );
         for (let v = 1; v <= 7; v++) {
           fileDb.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(v, now);
         }
@@ -346,7 +419,9 @@ describe("T012 schema v8 migration", () => {
         const version = checkDb.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
         expect(version.v).toBe(7);
 
-        const tables = checkDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='graph_runs'").get() as { name: string } | undefined;
+        const tables = checkDb
+          .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='graph_runs'")
+          .get() as { name: string } | undefined;
         expect(tables).toBeUndefined();
 
         const cols = checkDb.prepare("PRAGMA table_info(runs)").all() as Array<{ name: string }>;
@@ -359,10 +434,14 @@ describe("T012 schema v8 migration", () => {
         retryDb.exec("DROP TRIGGER fail_v8_version");
         expect(() => applyMigrations(retryDb)).not.toThrow();
         const v8 = retryDb.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-        expect(v8.v).toBe(8);
+        expect(v8.v).toBe(9);
         retryDb.close();
       } finally {
-        try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ok */ }
+        try {
+          rmSync(tmpDir, { recursive: true, force: true });
+        } catch {
+          /* ok */
+        }
       }
     });
   });

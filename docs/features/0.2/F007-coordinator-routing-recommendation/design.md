@@ -9,7 +9,7 @@ updated: 2026-08-08
 
 # F007：Coordinator Agent & Routing Recommendation - 设计
 
-> Status: ready-for-development | Owner: TBD | Spec: `spec.md`
+> Status: done | Owner: TBD | Spec: `spec.md`
 
 ## 1. 技术概要
 
@@ -26,13 +26,14 @@ updated: 2026-08-08
 // 推荐响应里返回，不落库
 interface ConfirmationToken {
   payload: {
-    nonce: string;             // 每次签发全新，与内容无关，是确认的唯一身份
+    nonce: string; // 每次签发全新，与内容无关，是确认的唯一身份
     issued_at: string;
-    project_id: string; workspace_id: string;
-    premise: RecommendationPremise;    // 第 5 节
+    project_id: string;
+    workspace_id: string;
+    premise: RecommendationPremise; // 第 5 节
     recommended: RoutingRecommendation;
   };
-  signature: string;           // HMAC-SHA256(规范化序列化(payload), 服务端密钥)
+  signature: string; // HMAC-SHA256(规范化序列化(payload), 服务端密钥)
 }
 // recommendation_id = 规范化序列化(payload) 的摘要，仅用于等值比对与日志，不作身份、不作校验
 ```
@@ -119,18 +120,18 @@ CREATE TABLE intake_confirmations (
 ```ts
 interface Recommendation<T> {
   value: T;
-  rule: string;                                    // 命中的规则名
-  candidates: T[];                                 // 全部候选
-  excluded: { id: string; reason: string }[];      // 被排除项与原因
+  rule: string; // 命中的规则名
+  candidates: T[]; // 全部候选
+  excluded: { id: string; reason: string }[]; // 被排除项与原因
 }
 ```
 
-| 维度 | 规则 | v0.2 候选集 |
-|---|---|---|
-| `issue_type` | `single_active_issue_type` | `{coding}`，大小 1 |
-| `workflow_template` | `active_template_for_issue_type` | `{wft_coding_default}`，大小 1 |
-| `collaboration_topology` | `multi_perspective_keyword` 命中 → `orchestrator_subagent`，否则 `sequential` | 2 |
-| `agent_roster` | `capability_match_and_effective_availability` | 按 workspace 实际可用 adapter |
+| 维度                     | 规则                                                                          | v0.2 候选集                    |
+| ------------------------ | ----------------------------------------------------------------------------- | ------------------------------ |
+| `issue_type`             | `single_active_issue_type`                                                    | `{coding}`，大小 1             |
+| `workflow_template`      | `active_template_for_issue_type`                                              | `{wft_coding_default}`，大小 1 |
+| `collaboration_topology` | `multi_perspective_keyword` 命中 → `orchestrator_subagent`，否则 `sequential` | 2                              |
+| `agent_roster`           | `capability_match_and_effective_availability`                                 | 按 workspace 实际可用 adapter  |
 
 `issue_type` 与 `workflow_template` 候选集当前为 1，规则仍显式实现并返回 `candidates`——这样 v0.3 增加类型时规则形状不变，只是候选集变大。
 
@@ -144,12 +145,12 @@ interface Recommendation<T> {
 
 spec 承诺产出"Issue 字段 + workflow + topology + roster"四部分，但初稿的规则表只定义了 `issue_type`，title/goal/priority 全无规则。不同实现都能声称满足 AC-001 却产出不同的 Issue。补一个 `IssueDraft` 契约：
 
-| 字段 | 规则 | 说明 |
-|---|---|---|
-| `title` | `derive_title_from_first_line` | 取目标文本首个非空行，折叠连续空白，超过 120 字符按字符截断并加省略号 |
-| `goal` | `preserve_goal_verbatim` | **原文保留**，仅去除首尾空白；不做任何改写 |
-| `priority` | `default_priority` | 固定取既有默认值，v0.2 不推断优先级 |
-| `labels` | — | v0.2 不产出 |
+| 字段       | 规则                           | 说明                                                                  |
+| ---------- | ------------------------------ | --------------------------------------------------------------------- |
+| `title`    | `derive_title_from_first_line` | 取目标文本首个非空行，折叠连续空白，超过 120 字符按字符截断并加省略号 |
+| `goal`     | `preserve_goal_verbatim`       | **原文保留**，仅去除首尾空白；不做任何改写                            |
+| `priority` | `default_priority`             | 固定取既有默认值，v0.2 不推断优先级                                   |
+| `labels`   | —                              | v0.2 不产出                                                           |
 
 - 每个字段同样以 `Recommendation<T>` 形状返回（`candidates` 为单元素），与其余四个维度一致。
 - 目标文本上限 **8000 字符**：超出部分不进入关键词匹配，但 `goal` 仍存全文；这是"截断用于匹配、完整存库"的具体数值。
@@ -260,7 +261,7 @@ function createSequentialRun(
   workspaceId: string,
   projectId: string,
   adapterConfigId: string,
-): { runId: string; pendingEvents: ThreadEvent[] }
+): { runId: string; pendingEvents: ThreadEvent[] };
 ```
 
 行为：
@@ -334,16 +335,16 @@ function createSequentialRun(
 
 ## 8. 边界与失败处理
 
-| 场景 | 行为 |
-|---|---|
-| 目标文本为空/纯空白 | 400，复用既有 `ISSUE_GOAL_REQUIRED` 语义 |
-| 目标文本超长 | 截断用于规则匹配，完整文本存入 `goal`；不报错 |
-| Project 未绑定 workspace | 推荐阶段即返回阻塞，不等到确认才失败（既有 `PROJECT_WORKSPACE_REQUIRED`） |
-| 无 Available adapter | 阻塞原因 `no_available_adapter` + 建议动作"在 Adapter Settings 中验证适配器" |
+| 场景                                             | 行为                                                                                                                                                                                                  |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 目标文本为空/纯空白                              | 400，复用既有 `ISSUE_GOAL_REQUIRED` 语义                                                                                                                                                              |
+| 目标文本超长                                     | 截断用于规则匹配，完整文本存入 `goal`；不报错                                                                                                                                                         |
+| Project 未绑定 workspace                         | 推荐阶段即返回阻塞，不等到确认才失败（既有 `PROJECT_WORKSPACE_REQUIRED`）                                                                                                                             |
+| 无 Available adapter                             | 阻塞原因 `no_available_adapter` + 建议动作"在 Adapter Settings 中验证适配器"                                                                                                                          |
 | 某节点的 required capability 无任何 adapter 覆盖 | v0.2 下必然等价于"无 `Implementation` 能力" → 阻塞 `NO_AVAILABLE_CAPABLE_ADAPTER`，**不降级**（降级后的 `sequential` 需要同一项能力，同样跑不了）。**仅有一个可用 adapter 不构成降级理由**（第 7 节） |
-| 用户改选的 adapter 在确认时已不可用 | `RECOMMENDATION_STALE` + 指明该项（第 5 节） |
-| 同一 token（`nonce`）重复确认 | 返回首次结果，不重复创建 Issue（第 6 节）。`recommendation_id` 只是内容摘要，不作身份判定依据 |
-| 确认时前提已变 | `RECOMMENDATION_STALE` + 变化项 |
+| 用户改选的 adapter 在确认时已不可用              | `RECOMMENDATION_STALE` + 指明该项（第 5 节）                                                                                                                                                          |
+| 同一 token（`nonce`）重复确认                    | 返回首次结果，不重复创建 Issue（第 6 节）。`recommendation_id` 只是内容摘要，不作身份判定依据                                                                                                         |
+| 确认时前提已变                                   | `RECOMMENDATION_STALE` + 变化项                                                                                                                                                                       |
 
 ## 9. API 契约
 
@@ -353,19 +354,29 @@ function createSequentialRun(
 
 ```ts
 // 请求
-interface RecommendRequest { goal: string }   // 无 workspace_id，见下
+interface RecommendRequest {
+  goal: string;
+} // 无 workspace_id，见下
 
 // 200
 interface RecommendResponse {
-  token: ConfirmationToken;                  // 原样回传，勿解析
-  recommendation_id: string;                 // 内容摘要，仅供显示/日志
-  issue_type: Recommendation<IssueType>;      // v0.2 候选集恒为 {coding}，规则形状不因候选集大小为 1 而省略（第 3 节）
+  token: ConfirmationToken; // 原样回传，勿解析
+  recommendation_id: string; // 内容摘要，仅供显示/日志
+  issue_type: Recommendation<IssueType>; // v0.2 候选集恒为 {coding}，规则形状不因候选集大小为 1 而省略（第 3 节）
   issue_draft: { title: Recommendation<string>; goal: Recommendation<string>; priority: Recommendation<string> };
   workflow_template: Recommendation<{ id: string; version: number }>;
-  collaboration_topology: Recommendation<{ value: "sequential" | "orchestrator_subagent";
-                                          definition_id?: string; definition_version?: number }>;
-  agent_roster: AgentRosterRecommendation;    // 专用 DTO，见下（不是 Recommendation<Record<string,string>>）
-  editable: ("collaboration_topology" | "agent_roster")[];  // v0.2 仅此二者可改，见下
+  collaboration_topology: Recommendation<{
+    value: "sequential" | "orchestrator_subagent";
+    definition_id?: string;
+    definition_version?: number;
+  }>;
+  agent_roster: AgentRosterRecommendation; // 专用 DTO，见下（不是 Recommendation<Record<string,string>>）
+  rosters_by_topology: Partial<Record<CollaborationTopology, AgentRosterRecommendation>>;
+  // 每个可编辑 topology 各自的 roster；仅含实际可选/被推荐的 topology
+  // （图 definition 不可用时只含 sequential）。UI 切换 topology 时用
+  // 对应 roster 重建可编辑执行者集合，避免沿用被推荐 topology 的 roster
+  // 产生非法计划（2026-08-08 第二轮检视修正）。
+  editable: ("collaboration_topology" | "agent_roster")[]; // v0.2 仅此二者可改，见下
 }
 
 // 第 1 节 token payload 的 `recommended: RoutingRecommendation` 必须携带上面同一组五个
@@ -378,29 +389,42 @@ interface RecommendResponse {
 // "每个节点各自的候选"，且无法表达"同一 adapter 在节点 A 是候选、在节点 B 被排除"
 // （2026-08-08 检视发现，见第 3 节）。
 interface AgentRosterRecommendation {
-  value: Record<string, string>;             // node_key（sequential 分支固定键 "sequential"） → adapter_config_id
-  rule: string;                               // capability_match_and_effective_availability
-  by_node: Record<string, {
-    candidates: string[];                     // 该节点当前 workspace 下具备所需能力且 Available 的 adapter id
-    excluded: { id: string; reason: string }[];
-  }>;
+  value: Record<string, string>; // node_key（sequential 分支固定键 "sequential"） → adapter_config_id
+  rule: string; // capability_match_and_effective_availability
+  by_node: Record<
+    string,
+    {
+      candidates: string[]; // 该节点当前 workspace 下具备所需能力且 Available 的 adapter id
+      excluded: { id: string; reason: string }[];
+    }
+  >;
   // value 与 by_node 的键集合必须严格一致：sequential 分支为 { "sequential" }，
   // 图分支为 definition 的全部 node_key（含 synthesis）。
 }
 
-// 409 —— 无可执行方案
+// 409 —— 无可执行方案。阻塞原因经标准 ApiError envelope 传递，
+// `details.suggested_action` 承载建议动作（2026-08-08 第三轮检视修正，与实现对齐）。
 interface RecommendBlocked {
-  error: { code: "NO_AVAILABLE_ADAPTER" | "NO_AVAILABLE_CAPABLE_ADAPTER" | "PROJECT_WORKSPACE_REQUIRED";
-           message: string; suggested_action: string };
+  error: {
+    code:
+      | "NO_AVAILABLE_ADAPTER"
+      | "NO_AVAILABLE_CAPABLE_ADAPTER"
+      | "PROJECT_WORKSPACE_REQUIRED"
+      | "TOPOLOGY_NOT_EXECUTABLE";
+    message: string;
+    details?: { suggested_action?: string };
+  };
 }
 ```
 
-| 情形 | 状态码 | 错误码 |
-|---|---|---|
-| `goal` 空 / 纯空白 | 400 | `ISSUE_GOAL_REQUIRED` |
-| Project 未绑定 workspace | 409 | `PROJECT_WORKSPACE_REQUIRED` |
-| 无任何 Available adapter | 409 | `NO_AVAILABLE_ADAPTER` |
-| 有 Available adapter 但无一具备 `Implementation` | 409 | `NO_AVAILABLE_CAPABLE_ADAPTER`（**不降级为 `sequential`**，见第 7 节） |
+| 情形                                                           | 状态码 | 错误码                                                                                 |
+| -------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------- |
+| `goal` 空 / 纯空白                                             | 400    | `ISSUE_GOAL_REQUIRED`                                                                  |
+| Project 未绑定 workspace                                       | 409    | `PROJECT_WORKSPACE_REQUIRED`                                                           |
+| 无任何 Available adapter                                       | 409    | `NO_AVAILABLE_ADAPTER`                                                                 |
+| 有 Available adapter 但无一具备 `Implementation`               | 409    | `NO_AVAILABLE_CAPABLE_ADAPTER`（**不降级为 `sequential`**，见第 7 节）                  |
+| 无 active coding workflow template                             | 409    | `TOPOLOGY_NOT_EXECUTABLE`（+ `details.suggested_action`，F008 可能无活跃模板）         |
+| 命中 review 关键词但图 definition 不可用（F006 未落地）        | 409    | `TOPOLOGY_NOT_EXECUTABLE`（+ `details.suggested_action`，**不静默回退 `sequential`**） |
 
 ### v0.2 只对 Project 默认 workspace 推荐（第五轮检视修正）
 
@@ -422,15 +446,19 @@ Project 未绑定默认 workspace → 推荐阶段即返回 `PROJECT_WORKSPACE_R
 
 ```ts
 interface ConfirmRequest {
-  token: ConfirmationToken;      // 含 signature，服务端先验签
+  token: ConfirmationToken; // 含 signature，服务端先验签
   chosen: ChosenPlan;
 }
 
 // 判别联合——topology 与 roster 形状绑死，内部不一致的组合过不了 HTTP 边界
 type ChosenPlan =
   | { topology: "sequential"; adapter_config_id: string }
-  | { topology: "orchestrator_subagent"; definition_id: string; definition_version: number;
-      node_assignments: Record<string, string> };   // 键必须**恰好**等于 definition 的节点集
+  | {
+      topology: "orchestrator_subagent";
+      definition_id: string;
+      definition_version: number;
+      node_assignments: Record<string, string>;
+    }; // 键必须**恰好**等于 definition 的节点集
 // 201
 interface ConfirmResponse {
   issue_id: string;
@@ -440,16 +468,16 @@ interface ConfirmResponse {
 }
 ```
 
-| 情形 | 状态码 | 错误码 |
-|---|---|---|
-| 前提已变 / token 过期（>30 分钟） | 409 | `RECOMMENDATION_STALE`（附 `changed[]`） |
-| 同 token 已确认 | 200 | 返回既有 `issue_id` / `target_id`（幂等，非错误） |
-| 选中 adapter 缺该节点能力 | 409 | `ADAPTER_CAPABILITY_MISSING` |
-| `orchestrator_subagent` 但 F006 未落地 | 409 | `TOPOLOGY_NOT_EXECUTABLE`（**禁止静默回退 `sequential`**） |
-| `node_assignments` 未覆盖 definition 全部节点 | 400 | `GRAPH_PLAN_INCOMPLETE` |
-| `node_assignments` 含 definition 之外的键 | 400 | `GRAPH_PLAN_UNKNOWN_NODE` |
-| token 验签失败 / 缺 `signature` | 400 | `CONFIRMATION_TOKEN_INVALID` |
-| 路由 `:projectId` 与 payload 的 `project_id` 不符 | 400 | `CONFIRMATION_TOKEN_INVALID` |
+| 情形                                              | 状态码 | 错误码                                                     |
+| ------------------------------------------------- | ------ | ---------------------------------------------------------- |
+| 前提已变 / token 过期（>30 分钟）                 | 409    | `RECOMMENDATION_STALE`（附 `changed[]`）                   |
+| 同 token 已确认                                   | 200    | 返回既有 `issue_id` / `target_id`（幂等，非错误）          |
+| 选中 adapter 缺该节点能力                         | 409    | `ADAPTER_CAPABILITY_MISSING`                               |
+| `orchestrator_subagent` 但 F006 未落地            | 409    | `TOPOLOGY_NOT_EXECUTABLE`（**禁止静默回退 `sequential`**） |
+| `node_assignments` 未覆盖 definition 全部节点     | 400    | `GRAPH_PLAN_INCOMPLETE`                                    |
+| `node_assignments` 含 definition 之外的键         | 400    | `GRAPH_PLAN_UNKNOWN_NODE`                                  |
+| token 验签失败 / 缺 `signature`                   | 400    | `CONFIRMATION_TOKEN_INVALID`                               |
+| 路由 `:projectId` 与 payload 的 `project_id` 不符 | 400    | `CONFIRMATION_TOKEN_INVALID`                               |
 
 `chosen` 用判别联合而非平铺字段，是为了让"切成 sequential 却仍带着节点键"和"切成图却只有一个 `sequential` 键"这类内部不一致的组合**在边界就被 zod 拒掉**，而不是留到服务层再各写一遍互斥校验。`sequential` 分支的 `adapter_config_id` 同样经 `resolveEligibleAdapter()` 校验 `Implementation` 能力。`diff[]` 由归一化后的 `ChosenPlan` 与 token 中的 `recommended` 比对得出。
 

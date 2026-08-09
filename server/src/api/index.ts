@@ -8,6 +8,7 @@ import { runRoutes } from "./routes/runs.js";
 import { traceRoutes } from "./routes/traces.js";
 import { validationRoutes } from "./routes/validation.js";
 import graphRoutes from "./routes/graph.js";
+import intakeRoutes from "./routes/intake.js";
 import type { GraphRuntimeService } from "../services/graph-runtime.js";
 import type { GraphRunRepository } from "../repositories/graph-run.js";
 import type { NodeRunRepository } from "../repositories/node-run.js";
@@ -28,12 +29,15 @@ import type { ValidationQueryService } from "../services/validation/query.js";
 import type { ValidationRecoveryActionService } from "../services/validation/recovery-action.js";
 import type { ValidationWorkflowService } from "../services/validation/workflow-service.js";
 import type { EvidenceSummaryRepository } from "../repositories/evidence-summary.js";
+import type { IntakeConfirmationRepository } from "../repositories/intake-confirmation.js";
 import type { IssueRepository } from "../repositories/issue.js";
 import type { RunRepository } from "../repositories/run.js";
 import type { ThreadEventRepository } from "../repositories/thread-event.js";
 import type { AgentConfigRepository } from "../repositories/agent-config.js";
 import type { ProjectRepository } from "../repositories/project.js";
 import type { AdapterWorkspaceStatusRepository } from "../repositories/adapter-workspace-status.js";
+import type { RoutingRecommendationService } from "../services/routing-recommendation-service.js";
+import type { IntakeService } from "../services/intake-service.js";
 import type Database from "better-sqlite3";
 
 export interface Services {
@@ -63,6 +67,9 @@ export interface Services {
   agentConfigRepo: AgentConfigRepository;
   projectRepo: ProjectRepository;
   adapterWorkspaceStatusRepo: AdapterWorkspaceStatusRepository;
+  recommendationService: RoutingRecommendationService;
+  intakeService: IntakeService;
+  intakeConfirmationRepo: IntakeConfirmationRepository;
   db: Database.Database;
 }
 
@@ -108,5 +115,9 @@ export function registerRoutes(app: FastifyInstance, services: Services): void {
     projectRepo: services.projectRepo,
     adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
     db: services.db,
+  });
+  app.register(intakeRoutes, {
+    recommendationService: services.recommendationService,
+    intakeService: services.intakeService,
   });
 }

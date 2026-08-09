@@ -56,6 +56,10 @@ export const apiClient = {
     getRunEvidence: vi.fn(),
     exportMarkdown: vi.fn(),
   },
+  intake: {
+    recommend: vi.fn(),
+    confirm: vi.fn(),
+  },
 };
 
 export const toApiError = vi.fn((error: unknown) => {

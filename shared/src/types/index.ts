@@ -165,6 +165,8 @@ export enum ThreadEventType {
   GraphExecutorReassigned = "graph.executor_reassigned",
   GraphBlocked = "graph.blocked",
   GraphTerminal = "graph.terminal",
+  // F007: coordinator routing recommendation applied on confirm.
+  CoordinatorRecommendationApplied = "coordinator.recommendation_applied",
 }
 
 export enum ActorType {
@@ -322,3 +324,4 @@ export * from "./trace.js";
 export * from "./validation.js";
 export * from "./adapter.js";
 export * from "./graph.js";
+export * from "./intake.js";

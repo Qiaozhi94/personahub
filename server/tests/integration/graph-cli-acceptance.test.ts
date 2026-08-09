@@ -11,6 +11,8 @@ import { GraphRuntimeService } from "../../src/services/graph-runtime.js";
 import { GraphNodeInstructionBuilder } from "../../src/runtime/graph/instruction-builder.js";
 import { CodexCliAdapter } from "../../src/runtime/adapters/codex-cli-adapter.js";
 
+const REAL = !!process.env.REAL_CODEX;
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -32,7 +34,11 @@ function buildApp(services: TestServices) {
       runRepo: services.runRepo,
       issueRepo: services.issueRepo,
       threadEventService: services.threadEventService,
-      adapterDeps: { agentConfigRepo: services.agentConfigRepo, projectRepo: services.projectRepo, adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo },
+      adapterDeps: {
+        agentConfigRepo: services.agentConfigRepo,
+        projectRepo: services.projectRepo,
+        adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
+      },
       instructionBuilder: new GraphNodeInstructionBuilder(),
       drainWorkspace: (wsId: string) => services.runDispatchService.drainWorkspace(wsId),
     },
@@ -52,7 +58,7 @@ function buildApp(services: TestServices) {
   return app;
 }
 
-describe("T063 real-CLI acceptance", () => {
+describe.skipIf(!REAL)("T063 real-CLI acceptance", () => {
   let services: TestServices;
   let tempDir: string;
   let projectId: string;
@@ -68,36 +74,55 @@ describe("T063 real-CLI acceptance", () => {
     const workspace = services.workspaceService.bind(project.id, tempDir);
 
     mkdirSync(join(tempDir, "src"), { recursive: true });
-    writeFileSync(join(tempDir, "src", "worker.ts"), [
-      "let lock = false;",
-      "export function doWork() {",
-      "  if (lock) throw new Error('re-entrant');",
-      "  lock = true;",
-      "  try { return 42; }",
-      "  finally { lock = false; }",
-      "}",
-    ].join("\n"));
-    writeFileSync(join(tempDir, "src", "api.ts"), [
-      "export function fetchData(url: string): string | null {",
-      "  const result = '' as string | null;",
-      "  return (result?.length ?? 0) > 0 ? result : null;",
-      "}",
-    ].join("\n"));
+    writeFileSync(
+      join(tempDir, "src", "worker.ts"),
+      [
+        "let lock = false;",
+        "export function doWork() {",
+        "  if (lock) throw new Error('re-entrant');",
+        "  lock = true;",
+        "  try { return 42; }",
+        "  finally { lock = false; }",
+        "}",
+      ].join("\n"),
+    );
+    writeFileSync(
+      join(tempDir, "src", "api.ts"),
+      [
+        "export function fetchData(url: string): string | null {",
+        "  const result = '' as string | null;",
+        "  return (result?.length ?? 0) > 0 ? result : null;",
+        "}",
+      ].join("\n"),
+    );
 
-    const { issue } = services.issueService.create(project.id, { title: `CLI acceptance ${new Date().toISOString().slice(0, 19)}`, goal: "Verify graph execution" });
+    const { issue } = services.issueService.create(project.id, {
+      title: `CLI acceptance ${new Date().toISOString().slice(0, 19)}`,
+      goal: "Verify graph execution",
+    });
     issueId = issue.id;
 
     services.agentConfigRepo.create({
-      project_id: project.id, name: "Codex A", role: "implementation",
-      cli_provider: "codex", command: "codex", args: [],
+      project_id: project.id,
+      name: "Codex A",
+      role: "implementation",
+      cli_provider: "codex",
+      command: "codex",
+      args: [],
       capability_tags: [AgentCapability.Implementation],
-      default_model: null, status: AdapterStatus.Available,
+      default_model: null,
+      status: AdapterStatus.Available,
     });
     services.agentConfigRepo.create({
-      project_id: project.id, name: "Codex B", role: "implementation",
-      cli_provider: "codex", command: "codex", args: [],
+      project_id: project.id,
+      name: "Codex B",
+      role: "implementation",
+      cli_provider: "codex",
+      command: "codex",
+      args: [],
       capability_tags: [AgentCapability.Implementation],
-      default_model: null, status: AdapterStatus.Available,
+      default_model: null,
+      status: AdapterStatus.Available,
     });
   }, 30000);
 
@@ -138,7 +163,10 @@ describe("T063 real-CLI acceptance", () => {
     const maxWait = 600_000;
     const start = Date.now();
 
-    while ((status === GraphRunStatus.Running || status === GraphRunStatus.Cancelling) && Date.now() - start < maxWait) {
+    while (
+      (status === GraphRunStatus.Running || status === GraphRunStatus.Cancelling) &&
+      Date.now() - start < maxWait
+    ) {
       await wait(5000);
 
       const gr = services.graphRunRepo.getById(body.graph_run_id);
@@ -169,15 +197,19 @@ describe("T063 real-CLI acceptance", () => {
     for (const nr of nodeRuns) {
       const nodeRuns_ = runs.filter((r) => r.node_run_id === nr.id);
       const latest = nodeRuns_.sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-      console.log(`    ${nr.node_key}: ${nr.status} attempts=${nodeRuns_.length} latest=${latest?.status ?? "none"} err=${latest?.error_message?.substring(0, 100) ?? "none"}`);
+      console.log(
+        `    ${nr.node_key}: ${nr.status} attempts=${nodeRuns_.length} latest=${latest?.status ?? "none"} err=${latest?.error_message?.substring(0, 100) ?? "none"}`,
+      );
     }
 
     if (gr.blocked_reason_code && gr.blocked_node_keys) {
-      for (const key of (gr.blocked_node_keys as string[])) {
+      for (const key of gr.blocked_node_keys as string[]) {
         const nr = services.nodeRunRepo.getByGraphRunAndKey(body.graph_run_id, key);
         if (nr) {
           for (const r of runs.filter((r) => r.node_run_id === nr.id && r.status === "failed")) {
-            console.log(`    ${key} run=${r.id} reason=${r.failure_reason} msg=${r.error_message?.substring(0, 300) ?? "none"}`);
+            console.log(
+              `    ${key} run=${r.id} reason=${r.failure_reason} msg=${r.error_message?.substring(0, 300) ?? "none"}`,
+            );
           }
         }
       }
@@ -192,4 +224,3 @@ describe("T063 real-CLI acceptance", () => {
     }
   }, 660_000);
 });
-
