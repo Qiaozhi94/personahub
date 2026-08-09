@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
 import {
   RunStatus, FailureReason, IssueStatus, AdapterStatus,
@@ -7,6 +7,18 @@ import {
 import { ErrorCode } from "@personahub/shared/errors";
 import { AppError } from "../../src/api/errors.js";
 import { FakeAgentAdapter } from "../../src/runtime/adapters/fake-adapter.js";
+
+// AC-001 creates a "codex" adapter and relies on a scripted adapter's validate()
+// for availability. create()'s initial status still calls validateCommand() ->
+// resolveExecutable(), which checks PATH for a real codex binary absent on CI.
+// Mock the resolver so the literal command always resolves, keeping these tests
+// machine-independent (same convention as codex-cli-adapter.test.ts).
+vi.mock("../../src/runtime/executable-resolver.js", () => ({
+  resolveExecutable: vi.fn((command: string) => ({
+    resolved: { executable: command, prefixArgs: [], source: "direct" as const },
+    errorMessage: null,
+  })),
+}));
 
 function setupFullChain(services: TestServices, tempDir: string) {
   const project = services.projectService.create("Test", "desc");
