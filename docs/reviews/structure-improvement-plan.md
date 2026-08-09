@@ -561,7 +561,7 @@ CLAUDE 按所有权矩阵分别承载。
 - [x] S019：新增并统一 Node LTS 版本文件与 `package.json.engines` major。
 - [x] S020：新增 `.github/workflows/ci.yml`，使用 `npm ci` + `npm run verify`。
 - [x] S021：把浏览器 E2E 设为独立 job，并明确凭证/环境不足时的 gate 规则。
-- [ ] S022：推送验证提交，等待并确认当前 HEAD 的所有必需 CI job 全绿。
+- [x] S022：推送验证提交，等待并确认当前 HEAD 的所有必需 CI job 全绿。
 
 ### Phase E：本地运行产物与根目录收口
 
@@ -570,4 +570,4 @@ CLAUDE 按所有权矩阵分别承载。
 - [x] S025：确认无进程占用旧数据库后，经用户确认清理旧日志与 SQLite 运行产物。
 - [x] S026：把定稿方案迁入 `docs/reviews/`，按 review 协议处置根 `code-review-report.md`。
 - [x] S027：运行 `npm run verify`，逐项核对第 7 节五项验收标准并记录最终结果。
-- [ ] S028：提交、推送当前 main，并确认远端当前 HEAD 的全部必需 CI job 全绿。
+- [x] S028：提交、推送当前 main，并确认远端当前 HEAD 的全部必需 CI job 全绿。
