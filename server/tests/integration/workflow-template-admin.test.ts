@@ -9,7 +9,15 @@ import { WorkflowTemplateAdminService } from "../../src/services/workflow-templa
 import { workflowTemplateRoutes } from "../../src/api/routes/workflow-templates.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
-import { ValidationBlockReason } from "@personahub/shared/types";
+import {
+  ValidationBlockReason,
+  IssueStatus,
+  RunStatus,
+  RunRole,
+  RunDispatchSource,
+  AdapterStatus,
+  AgentCapability,
+} from "@personahub/shared/types";
 import { selectValidator } from "../../src/services/validation/validator-selector.js";
 
 interface ServiceFixture {
@@ -628,11 +636,73 @@ describe("F008 Phase 3: end-to-end validation disable (T032)", () => {
     disposeTestServices(services);
   });
 
-  it("T032: after enabling a no-validator template, a new Issue's default template would not trigger validation", () => {
+  it("T032: after enabling a no-validator template, a completing implementation Run does not trigger validation", () => {
     setStepsJson(services.db, DEFAULT_TEMPLATE_ID, WITH_VALIDATOR);
+    const admin = new WorkflowTemplateAdminService(
+      services.workflowTemplateRepo,
+      new AdminAuditEventRepository(services.db),
+      services.db,
+    );
+
+    const project = services.projectService.create("P");
+    services.workspaceService.bind(project.id, tempDir);
+    const implAdapter = services.agentConfigRepo.create({
+      project_id: project.id,
+      name: "Impl",
+      role: "implementation",
+      cli_provider: "codex",
+      command: "codex",
+      args: [],
+      capability_tags: [],
+      default_model: "gpt-5",
+      status: AdapterStatus.Available,
+    });
+    const valAdapter = services.agentConfigRepo.create({
+      project_id: project.id,
+      name: "Val",
+      role: "validator",
+      cli_provider: "codex",
+      command: "codex",
+      args: [],
+      capability_tags: [AgentCapability.Validator],
+      default_model: "gpt-5",
+      status: AdapterStatus.Available,
+    });
+
+    function makeCompletedImplRun(issue: { id: string; primary_thread: { id: string } | null; workspace_id: string }) {
+      return services.runRepo.create({
+        issue_id: issue.id,
+        thread_id: issue.primary_thread!.id,
+        workspace_id: issue.workspace_id,
+        adapter_config_id: implAdapter.id,
+        instructions: "do it",
+        status: RunStatus.Completed,
+        role: RunRole.Implementation,
+        dispatch_source: RunDispatchSource.UserExplicit,
+        adapter_identity: {
+          adapter_config_id: implAdapter.id,
+          name: "Impl",
+          cli_provider: "codex",
+          default_model: "gpt-5",
+        },
+      });
+    }
+
+    // Control: with the validator-containing default template AND an
+    // available validator adapter, the same completing implementation Run
+    // DOES create a validator Run — proves this test exercises the live
+    // runtime chain (workflowHook -> requestValidation -> claim), not a
+    // dead code path.
+    const control = services.issueService.create(project.id, { title: "C", goal: "G" }).issue;
+    services.issueRepo.updateStatus(control.id, { status: IssueStatus.Running, updatedAt: new Date().toISOString() });
+    const controlValidatorRun = services.validationWorkflowService.requestValidation(
+      control.id,
+      makeCompletedImplRun(control).id,
+    );
+    expect(controlValidatorRun).not.toBeNull();
+    expect(services.issueRepo.getById(control.id)!.status).toBe(IssueStatus.Validating);
+
     // Activate a no-validator template as the new default.
-    const adminRepo = new AdminAuditEventRepository(services.db);
-    const admin = new WorkflowTemplateAdminService(services.workflowTemplateRepo, adminRepo, services.db);
     const noVal = admin.createVersion(DEFAULT_TEMPLATE_ID, {
       name: "no-val",
       steps_json: NO_VALIDATOR,
@@ -641,19 +711,23 @@ describe("F008 Phase 3: end-to-end validation disable (T032)", () => {
     });
     expect(services.workflowTemplateRepo.getDefault()!.id).toBe(noVal.id);
 
-    const project = services.projectService.create("P");
-    services.workspaceService.bind(project.id, tempDir);
-    const { issue } = services.issueService.create(project.id, { title: "T", goal: "G" });
+    const issue = services.issueService.create(project.id, { title: "T", goal: "G" }).issue;
     // The new issue points at the no-validator template.
     expect(issue.workflow_template_id).toBe(noVal.id);
+    services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Running, updatedAt: new Date().toISOString() });
+    const implRun = makeCompletedImplRun(issue);
 
-    // The validator-selector reports WorkflowConfigurationInvalid (no
-    // validation step) - i.e. an implementation Run completing would NOT
-    // trigger validation (same source of truth as the runtime).
-    const template = services.workflowTemplateRepo.getById(noVal.id)!;
-    const result = selectValidator({ workflowTemplate: template, availableValidators: [] });
-    expect(result.selected).toBeNull();
-    expect(result.reason).toBe(ValidationBlockReason.WorkflowConfigurationInvalid);
+    // Same runtime entry point as the control: even with an available
+    // validator adapter, NO validator Run may be created — validation must
+    // not actually run for the no-validator template.
+    services.validationWorkflowService.requestValidation(issue.id, implRun.id);
+    const validatorRuns = services.runRepo.listByIssue(issue.id).filter((r) => r.role === RunRole.Validator);
+    expect(validatorRuns).toHaveLength(0);
+    // The issue does not proceed through validation: it is blocked with the
+    // configuration-invalid reason (validation never ran).
+    expect(services.issueRepo.getById(issue.id)!.blocked_reason_code).toBe(
+      ValidationBlockReason.WorkflowConfigurationInvalid,
+    );
   });
 });
 
