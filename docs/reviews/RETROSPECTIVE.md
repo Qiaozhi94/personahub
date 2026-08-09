@@ -8,6 +8,13 @@
 > 项目结束后复盘要能回答"某个具体问题当时是怎么发现的",只有严重度计数
 > 回答不了这个。少数标 `⚠️原文件已丢失` 的条目是本文件重写前已被删除且
 > 从未进入 git 历史的文件,细节永久丢失,只保留当时记录下的计数/摘要。
+>
+> **来源(origin)/修复轮次(resolved_round)/模式标签(pattern_tag)的记录粒度**:
+> 对已经点名成"复现模式"的案例(比如 `marked-done-not-implemented`、
+> `partial-symmetric-fix`)给了完整的逐条字段,这些是本文件最高复用价值的部分。
+> 对批量列表(如循环3的109条、循环4的90余条)只给"本轮来源构成"的汇总判断,
+> 不逐行倒查精确修复轮次——原始文件多数已删除,逐行精确倒查的把握不够,
+> 编造看起来精确实则可能错的数据比诚实地只给汇总判断更糟。
 
 ---
 
@@ -84,6 +91,9 @@
 | 🟡 | Health API lacks concrete scope, cannot reach one promised metric as designed | F008/tasks.md:35 |
 | 🟡 | All three feature designs missing required end-to-end API contracts despite `ready-for-development` | docs/features/README.md:74 |
 
+**本轮来源构成**: 三份设计文档首次成文后的第一次检视,以 `origin: original-coding`
+(单文档内部设计gap)为主,约3-4条是F006↔F007跨文档不一致(`origin: spec-drift`)。
+
 ### 第2轮(`v02-recheck.md`,13H/16M/1L)— commit `699060d` 采纳关闭
 
 | severity | 标题 | 位置 |
@@ -119,6 +129,10 @@
 | 🟡 | "Adjust each item" exceeds UI and confirmation contract | F007/spec.md:34 |
 | 🟢 | Modified documents retain stale `updated` metadata | F006/design.md:7 |
 
+**本轮来源构成**: 第1轮修复后新一轮复核,`origin: spec-drift` 明显占多数
+(F007对F006既有契约的误用、F008与已定transaction边界冲突居多),约6-8条是单
+文档内`original-coding`级别的遗留细节。
+
 ### 第3轮(`v02-recheck-2.md`,5H/11M)— commit `cd03f4c` 采纳关闭
 
 | severity | 标题 | 位置 |
@@ -140,6 +154,10 @@
 | 🟡 | Several corrected F006 contracts still retain old wording | F006/design.md:289 |
 | 🟡 | `CLAUDE.md` still presents rejected evidence path as active F006 summary | CLAUDE.md:19 |
 
+**本轮来源构成**: `CLAUDE.md`/schema摘要类条目明确是 `origin: spec-drift`
+(文档没跟上已经改变的决策),其余多数是上一轮修复动作本身引入或暴露的新细节,
+接近 `origin: fix-regression`(上一轮改了A,连带暴露了B此前被掩盖的问题)。
+
 ### 第4轮(`v02-recheck-3.md`,中文报告,6H/7M,用了H-01~M-07编号)— commit `502255a` 采纳关闭
 
 | ID | severity | 标题 |
@@ -157,6 +175,10 @@
 | M-05 | 🟡 | F007的响应DTO漏掉已经定义的阻塞错误码 |
 | M-06 | 🟡 | F007概览仍声称确认复用`RunDispatchService.dispatch()`,与已定的分流契约相反 |
 | M-07 | 🟡 | `BACKLOG.md`仍把F007依赖写成旧的`start(issueId, plan)`签名 |
+
+**本轮来源构成**: M-06/M-07 是典型 `origin: spec-drift`(接口签名已改,文档
+未同步);H-01~H-04 多是本文档内部未想清楚的准入/校验时序问题,`origin:
+original-coding`。
 
 ### 第5轮(`v02-recheck-4.md`,6H/10M)— commit `e91f980` 采纳关闭
 
@@ -179,6 +201,11 @@
 | 🟡 | `stale_lock_suspected`的超时与宽限没有具体数值或配置来源 |
 | 🟡 | Health UI任务仍写"三条派生判断",与DTO的九类diagnostics不一致 |
 
+**本轮来源构成**: "`CLAUDE.md`/schema摘要仍称..."、"F007仍残留已删除的status
+模型"两条是清楚的 `origin: spec-drift`;"图推进事务二仍要求创建下游NodeRun
+与全部预建模型正面冲突"这类是上一轮"预建模型"决策落地后新暴露的连带问题,
+`origin: fix-regression`。
+
 ### 第6轮(`v02-recheck-5.md`,7H/7M)— commit `03ac1fb` 采纳关闭,此后转入实现
 
 | severity | 标题 |
@@ -198,24 +225,45 @@
 | 🟡 | 前端状态清单漏掉`cancelling`,无法呈现设计要求的卡住/健康诊断 |
 | 🟡 | 取消恢复与无运行Attempt的直接取消缺少明确的原子性验收 |
 
+**本轮来源构成**: 最后一轮,遗留的多是跨多次修复反复触碰同一处("`cancelling`
+未贯穿迁移任务与重启恢复"这类)的结构性缺口,`origin: original-coding`(设计
+从未覆盖过这个组合态)为主,`stale_lock_suspected`超时来源、Q3事件类型两条是
+`spec-drift`。
+
 ---
 
 ## 循环 4: F006 实现代码检视(9轮)
 
 - **周期**: 2026-08-02 → 2026-08-07(5天) · **状态**: 已闭环,`7799603` 是确认点
-- **三条最有价值的可复用教训**(详见各轮明细):
-  1. **"只修对称结构的一半"复现4次以上**:glob(多层修好、0层漏了,第六轮才靠
+- **三条最有价值的可复用教训**,结构化记录如下(详见各轮明细叙事):
+
+| ID | 严重度 | 来源 | 状态 | 首次出现 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|
+| glob-zero-depth-not-matched | Medium | original-coding | fixed | 2 | 6 | partial-symmetric-fix |
+| graph-blocked-event-half-broadcast | Medium | original-coding | fixed | 1 | ~5-6(见叙事) | partial-symmetric-fix |
+| dropped-count-truncation-uncounted | High | original-coding | fixed(第七轮前) | 见F006全文 | 见F006全文 | partial-symmetric-fix |
+| cancelling-finalizer-missing-transaction | Critical | fix-regression | fixed | 5(第5轮新引入) | 6 | partial-symmetric-fix |
+| block-cancelled-precursor-test-vacuous | High | process-gap | fixed | 8 | 9 | test-simulates-itself |
+| graph-recovery-retry-cancel-tests-vacuous | High | process-gap | fixed | 8 | 9 | test-simulates-itself |
+| tasks-md-web-ui-checked-not-implemented | Medium | process-gap | fixed | 8 | 9 | marked-done-not-implemented |
+| tasks-md-spec-md-contradict-each-other | Medium | process-gap | fixed | 4 且 8(复现2次) | 4且9 | marked-done-not-implemented |
+
+1. **`partial-symmetric-fix` 复现4次以上**:glob(多层修好、0层漏了,第六轮才靠
      两步替换法彻底解决,经历"完全不工作→多层修好0层漏了→死代码删了0层仍未修→
      两步替换同时覆盖"四个阶段)、`graph.blocked`事件广播(parse-failure分支
      修了、run-failure分支没修)、`dropped_count`截断计数、`tryFinalizeCancellingGraph`
-     缺事务包裹(第五轮新引入,第六轮才修)
-  2. **测试从"验证真实代码路径"退化成"验证测试自己模拟的逻辑"**(第八轮发现):
+     缺事务包裹(第五轮新引入,第六轮才修——这条 `origin` 标 `fix-regression`
+     而非 `original-coding`,因为它是第五轮为了修另一个问题新写的函数自己带的坑)
+2. **`test-simulates-itself` 复现2次**(第八轮发现,第九轮修复):
      `blockGraphOnCancelledPrecursor`直接单测被删,换成断言修复前错误行为的模拟
      测试;`graph-recovery.test.ts` 4条retry/cancel测试全部直接调仓储层方法
-     模拟,从未调用真实端点——第九轮已修复(重新调用真实函数/删除vacuous测试)
-  3. **"标记完成/打勾"与实际证据不同步复现2次**(第四轮`tasks.md`全勾但代码只有
+     模拟,从未调用真实端点。`origin` 标 `process-gap`:production代码本身没有
+     退化,退化的是测试对"完成度"的表述——这类问题不会被任何门禁挡住(typecheck/
+     lint/test全绿是必然的,因为新测试断言的是它们自己写的逻辑)
+3. **`marked-done-not-implemented` 复现2次**(第四轮`tasks.md`全勾但代码只有
      骨架;第八轮`tasks.md`打勾但UI缺关键交互,且`tasks.md`与`spec.md`两份文档
-     互相矛盾——第九轮已修复,补齐UI+改回如实标注)
+     互相矛盾——第九轮已修复,补齐UI+改回如实标注)。和 market-game-sim 循环1
+     的三条同 `pattern_tag` 案例(KPI-011/§6.2/chain_depth)是跨项目同源问题
 
 ### Phase 1子检视(`F006-phase1-schema-v8.md`,1H/5M)— 独立于主线的早期子轮
 
@@ -230,23 +278,29 @@
 
 ### 第1轮(`F006-implementation.md`,5C/6H/3M/1L)
 
-| severity | 状态 | 标题 |
-|---|---|---|
-| 🔴 | ✅ FIXED | F006服务未进入生产composition root,系统没有可执行的建图/恢复入口 |
-| 🔴 | ✅ FIXED | 前驱NodeRun以`pending`创建,queued Run启动时无法把它推进到`running` |
-| 🔴 | ✅ FIXED | GraphNode完成钩子直接返回,所有图节点在Run终态后停止推进 |
-| 🔴 | ✅ FIXED | 结果处理仍是skeleton:不读/解析payload、不写结果事件,join永远不执行 |
-| 🔴 | ✅ FIXED | synthesis Attempt没有任何前驱payload,边traversal也明确记录空引用 |
-| 🟠 | ✅ FIXED | 建图便利入口提交后不drain,queued Attempt不会主动开始 |
-| 🟠 | open | fan-in的CAS、资格复核、Attempt与事件写入不在事务中,任一步失败留下吸收态 |
-| 🟠 | open | 图失败、成功、取消与重启均无生命周期实现,非终态图会永久占用唯一索引 |
-| 🟠 | ✅ FIXED | queued claim未复核GraphNode adapter资格,escalation仍会取消所有兄弟图节点 |
-| 🟠 | ✅ FIXED | target glob实现没有匹配扩展名,symlink越界检查也可被同前缀兄弟目录绕过 |
-| 🟠 | open | `createGraph()`信任调用方提供的scope/preflight,未复核实体关系/workspace path/hash |
-| 🟡 | open | 结果envelope的上限统计不完整,部分可变字段仍无界 |
-| 🟡 | open | Graph projection返回伪history、空edges与占位文案,Web端没有任何图展示 |
-| 🟡 | open | 所谓端到端fan-in测试绕过production path,核心函数完全无测试 |
-| 🟢 | open | 已注入的instruction builder未使用,另有模块级重复实例 |
+首轮实现检视,全部15条 `origin` 均为 `original-coding`(F006第一次实现就带的
+缺口,不是修复引入的)。`resolved_round`:同轮修复的直接标轮次;跨轮才修的,
+因中间轮次措辞在改写、无法逐条精确倒查,标"见叙事"——第2-4轮以标题类似的
+表述持续追踪同一批问题,最终在第7轮(补完第六轮复核指出的全部剩余缺口)一次性
+清零,可信下界是"不晚于第7轮"。
+
+| severity | 状态 | resolved_round | 标题 |
+|---|---|---|---|
+| 🔴 | ✅ FIXED | 1 | F006服务未进入生产composition root,系统没有可执行的建图/恢复入口 |
+| 🔴 | ✅ FIXED | 1 | 前驱NodeRun以`pending`创建,queued Run启动时无法把它推进到`running` |
+| 🔴 | ✅ FIXED | 1 | GraphNode完成钩子直接返回,所有图节点在Run终态后停止推进 |
+| 🔴 | ✅ FIXED | 1 | 结果处理仍是skeleton:不读/解析payload、不写结果事件,join永远不执行 |
+| 🔴 | ✅ FIXED | 1 | synthesis Attempt没有任何前驱payload,边traversal也明确记录空引用 |
+| 🟠 | ✅ FIXED | 1 | 建图便利入口提交后不drain,queued Attempt不会主动开始 |
+| 🟠 | 见叙事 | ≤7 | fan-in的CAS、资格复核、Attempt与事件写入不在事务中,任一步失败留下吸收态 |
+| 🟠 | 见叙事 | ≤7 | 图失败、成功、取消与重启均无生命周期实现,非终态图会永久占用唯一索引 |
+| 🟠 | ✅ FIXED | 1 | queued claim未复核GraphNode adapter资格,escalation仍会取消所有兄弟图节点 |
+| 🟠 | ✅ FIXED | 1 | target glob实现没有匹配扩展名,symlink越界检查也可被同前缀兄弟目录绕过 |
+| 🟠 | 见叙事 | ≤7 | `createGraph()`信任调用方提供的scope/preflight,未复核实体关系/workspace path/hash |
+| 🟡 | 见叙事 | ≤7 | 结果envelope的上限统计不完整,部分可变字段仍无界 |
+| 🟡 | 见叙事 | ≤7 | Graph projection返回伪history、空edges与占位文案,Web端没有任何图展示 |
+| 🟡 | 见叙事 | ≤7 | 所谓端到端fan-in测试绕过production path,核心函数完全无测试 |
+| 🟢 | 见叙事 | ≤7 | 已注入的instruction builder未使用,另有模块级重复实例 |
 
 ### 第2轮(`F006-final-recheck.md`,4C/6H/4M/2L)
 
@@ -269,6 +323,10 @@
 | 🟢 | 存在两套completion实现与不安全的repository类型伪装 |
 | 🟢 | 质量门禁仍有formatting failure |
 
+**本轮来源构成**: 延续第1轮开放项的持续追踪,`origin: original-coding`。
+"0层目录"glob问题首次被明确记录于此轮(`pattern_tag: partial-symmetric-fix`
+系列的第一次现身)。
+
 ### 第3轮(`F006-final-recheck-2.md`,4C/6H/4M/2L)
 
 | severity | 标题 |
@@ -290,7 +348,14 @@
 | 🟢 | workflow临时伪装ProjectRepository,且注入的builder/runtime service未实际使用 |
 | 🟢 | 根format check未覆盖F006新文件 |
 
+**本轮来源构成**: 仍是第1轮开放项的持续追踪,`origin: original-coding`。
+
 ### 第4轮(`F006-final-recheck-3.md`,2C/6H/4M/2L)
+
+全部14条 `origin` 仍为 `original-coding`(第1轮遗留的持续追踪,4轮里表述
+逐步变化但本质是同一批未解决问题)。第4轮起`tasks.md`已被发现全勾但代码只有
+骨架(`marked-done-not-implemented`,见上方复用教训表),这是本轮叙事记录、
+未在本表格单独列出的一条独立发现。
 
 | severity | 状态 | 标题 |
 |---|---|---|
@@ -309,7 +374,7 @@
 | 🟢 | open | result parser和definition-driven调度仍有契约偏差 |
 | 🟢 | open | composition仍含unsafe repository cast,format gate再次失败 |
 
-### 第5轮修复(2026-08-03,`preflight.ts`等)— 6项全部修复
+### 第5轮修复(2026-08-03,`preflight.ts`等)— 6项全部修复,resolved_round=5,origin均为original-coding(第4轮遗留)
 
 | severity | 标题 |
 |---|---|
@@ -413,9 +478,13 @@
 
 ### 第7轮(2026-08-09,`code-review-report-recheck-6.md`)— 已闭环
 
-| ID | severity | 状态 | 标题 |
-|---|---|---|---|
-| nonce-conflict-replay-skips-drain | 🟡 Medium | ✅ fixed | 唯一键冲突replay绕过新加的drain恢复 |
+| ID | severity | 来源 | 状态 | 首次出现 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|
+| nonce-conflict-replay-skips-drain | 🟡 Medium | fix-regression | ✅ fixed | 7 | 7 | partial-symmetric-fix |
+
+来源标 `fix-regression` 而非 `original-coding`:普通replay路径的drain是第6轮
+才加上的修复,唯一键冲突路径是同一次修复动作里被漏掉的对称分支,不是F007从
+最初设计就带的缺陷。
 
 **Problem**: 普通幂等命中路径(请求开头发现`existing`)会先`drainWorkspace`,
 但真实多进程竞争走另一条路径——失败者撞`intake_confirmations.nonce`唯一键,
