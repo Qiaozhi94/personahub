@@ -1,7 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createTestServices, disposeTestServices, type TestServices } from "../helpers.js";
 import { AdapterStatus, AgentCapability } from "@personahub/shared/types";
 import type { AgentAdapter } from "../../src/runtime/types.js";
+
+// These tests create adapters with command "codex" and rely on a scripted
+// adapter's validate() for availability. create()'s initial status still calls
+// validateCommand() -> resolveExecutable(), which checks PATH for a real `codex`
+// binary that does not exist on CI. Mock the resolver as a passthrough so the
+// literal command always resolves, keeping these tests machine-independent
+// (same convention as codex-cli-adapter.test.ts / claude-code-adapter.test.ts).
+vi.mock("../../src/runtime/executable-resolver.js", () => ({
+  resolveExecutable: vi.fn((command: string) => ({
+    resolved: { executable: command, prefixArgs: [], source: "direct" as const },
+    errorMessage: null,
+  })),
+}));
 
 // AC-001 fix: a resolvable "codex" command now starts Unknown and only
 // converges to Available via a real (here, scripted) background probe — see

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Fastify from "fastify";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
 import { registerRoutes } from "../../src/api/index.js";
@@ -6,6 +6,23 @@ import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/erro
 import { ErrorCode } from "@personahub/shared/errors";
 import { AdapterAuthType, AgentCapability, AdapterStatus, CliProvider } from "@personahub/shared/types";
 import type { AgentAdapter, AdapterValidationResult } from "../../src/runtime/types.js";
+
+// These HTTP tests create adapters with command "codex" and rely on a scripted
+// adapter's validate() for availability. create()'s initial status still calls
+// validateCommand() -> resolveExecutable(), which checks PATH for a real `codex`
+// binary that does not exist on CI. Mock the resolver to deterministically
+// resolve known provider commands but leave genuinely-unknown ones unresolved,
+// so both "available/unknown" and "unavailable" paths are machine-independent
+// (same convention as codex-cli-adapter.test.ts / claude-code-adapter.test.ts).
+vi.mock("../../src/runtime/executable-resolver.js", () => ({
+  resolveExecutable: vi.fn((command: string) => {
+    const known = new Set(["codex", "claude", "opencode"]);
+    if (known.has(command)) {
+      return { resolved: { executable: command, prefixArgs: [], source: "direct" as const }, errorMessage: null };
+    }
+    return { resolved: null, errorMessage: `Command not found: ${command}` };
+  }),
+}));
 
 /**
  * T073/T074/T075/T076/T080: HTTP-level tests for the adapter CRUD, default
