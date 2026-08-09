@@ -163,18 +163,21 @@ describe("T054: Runtime health dialog — five categories and exhaustive diagnos
           {
             code: "waiting_for_recovery",
             workspace_id: "wsp_1",
+            run_id: "run_1",
             detail: "Queued run run_1 (role graph_node) is waiting for issue-level recovery.",
             suggested_action: "a",
           },
           {
             code: "waiting_for_recovery",
             workspace_id: "wsp_1",
+            run_id: "run_2",
             detail: "Queued run run_2 (role graph_node) is waiting for issue-level recovery.",
             suggested_action: "a",
           },
           {
             code: "invalid_queued_run",
             workspace_id: "wsp_1",
+            run_id: "run_3",
             detail: "Queued run run_3 (role implementation) is no longer eligible for execution.",
             suggested_action: "b",
           },
@@ -190,6 +193,60 @@ describe("T054: Runtime health dialog — five categories and exhaustive diagnos
     } finally {
       errSpy.mockRestore();
     }
+  });
+
+  it("diagnosticKey stays stable when live detail numbers change across refetches", async () => {
+    const { diagnosticKey } = await import("@/components/runtime-health/diagnostic-code");
+    // Same run, different held_ms in detail — key must not change.
+    const before = diagnosticKey({
+      code: "stale_lock_suspected",
+      workspace_id: "wsp_1",
+      run_id: "run_1",
+      detail: "held_ms=1000",
+      suggested_action: "a",
+    });
+    const after = diagnosticKey({
+      code: "stale_lock_suspected",
+      workspace_id: "wsp_1",
+      run_id: "run_1",
+      detail: "held_ms=9000",
+      suggested_action: "a",
+    });
+    expect(after).toBe(before);
+    // Same issue, different remaining_ms — key must not change.
+    const dueBefore = diagnosticKey({
+      code: "waiting_for_validation_due",
+      workspace_id: "wsp_1",
+      issue_id: "iss_1",
+      detail: "remaining_ms=4000",
+      suggested_action: "a",
+    });
+    const dueAfter = diagnosticKey({
+      code: "waiting_for_validation_due",
+      workspace_id: "wsp_1",
+      issue_id: "iss_1",
+      detail: "remaining_ms=2000",
+      suggested_action: "a",
+    });
+    expect(dueAfter).toBe(dueBefore);
+    // Different runs of the same code in the same workspace stay unique.
+    expect(
+      diagnosticKey({
+        code: "invalid_queued_run",
+        workspace_id: "wsp_1",
+        run_id: "run_1",
+        detail: "d",
+        suggested_action: "a",
+      }),
+    ).not.toBe(
+      diagnosticKey({
+        code: "invalid_queued_run",
+        workspace_id: "wsp_1",
+        run_id: "run_2",
+        detail: "d",
+        suggested_action: "a",
+      }),
+    );
   });
 
   it("renders multiple diagnostics of different codes at once", async () => {

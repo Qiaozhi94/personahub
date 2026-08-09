@@ -83,6 +83,13 @@ export interface HealthDiagnostic {
   workspace_id: string | null;
   detail: string;
   suggested_action: string;
+  /** Stable logical identity of the record this diagnostic describes (the
+   *  run or issue it was derived from). Used by the UI as part of the list
+   *  key so same-code diagnostics stay uniquely and stably keyed across
+   *  refetches — detail text is NOT stable (it embeds held_ms/remaining_ms
+   *  style live numbers) and must not be used for keys. */
+  run_id?: string | null;
+  issue_id?: string | null;
 }
 
 export interface RuntimeHealthSnapshot {

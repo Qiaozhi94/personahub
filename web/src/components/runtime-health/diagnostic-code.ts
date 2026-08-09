@@ -99,8 +99,11 @@ export function renderDiagnosticCode(code: HealthDiagnosticCode): DiagnosticRend
 }
 
 export function diagnosticKey(diagnostic: HealthDiagnostic): string {
-  // detail embeds the distinguishing record id (run id / issue id) for the
-  // per-run and per-issue diagnostics, so same-code entries within one
-  // workspace (e.g. two invalid queued runs) still get unique keys.
-  return `${diagnostic.code}:${diagnostic.workspace_id ?? "global"}:${diagnostic.detail}`;
+  // Keys must be stable across refetches: detail embeds live numbers
+  // (held_ms / remaining_ms / overdue_ms) and must never be part of the key.
+  // run_id/issue_id are the stable logical identity of per-run/per-issue
+  // diagnostics; singletons (one per workspace, or global) share the
+  // workspace-scoped key and are inherently unique.
+  const recordId = diagnostic.run_id ?? diagnostic.issue_id ?? "single";
+  return `${diagnostic.code}:${diagnostic.workspace_id ?? "global"}:${recordId}`;
 }

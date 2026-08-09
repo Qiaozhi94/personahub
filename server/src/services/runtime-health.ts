@@ -168,13 +168,13 @@ export class RuntimeHealthService {
     const { snapshot: ws, queuedRuns } = wsi;
     const { lock, workspace_id } = ws;
     const lockFree = lock.locked_by_run_id === null;
-
     if (lock.locked_by_run_id) {
       const holderRun = this.runRepo.getById(lock.locked_by_run_id);
       if (!holderRun || isTerminalRunStatus(holderRun.status)) {
         diagnostics.push({
           code: "stale_lock_confirmed",
           workspace_id,
+          run_id: lock.locked_by_run_id,
           detail: `Workspace lock held by run ${lock.locked_by_run_id} (holder ${holderRun ? `terminal: ${holderRun.status}` : "missing"}). locked_at=${lock.locked_at ?? "null"}, held_ms=${lock.held_ms ?? "null"}.`,
           suggested_action: "Restart the server to auto-release, or manually release the lock.",
         });
@@ -185,6 +185,7 @@ export class RuntimeHealthService {
             diagnostics.push({
               code: "stale_lock_suspected",
               workspace_id,
+              run_id: lock.locked_by_run_id,
               detail: `Workspace lock held by running run ${lock.locked_by_run_id} for ${lock.held_ms}ms (threshold ${threshold}ms). locked_at=${lock.locked_at}.`,
               suggested_action: "Check the run's adapter process; it may be hung past its execution timeout.",
             });
@@ -193,6 +194,7 @@ export class RuntimeHealthService {
           diagnostics.push({
             code: "lock_timestamp_invalid",
             workspace_id,
+            run_id: lock.locked_by_run_id,
             detail: `Workspace lock held by running run ${lock.locked_by_run_id} but locked_at is missing, illegal, or in the future (locked_at=${lock.locked_at ?? "null"}).`,
             suggested_action: "Investigate the run and lock record manually; the holder is still running.",
           });
@@ -218,6 +220,7 @@ export class RuntimeHealthService {
         diagnostics.push({
           code: "waiting_for_recovery",
           workspace_id,
+          run_id: run.id,
           detail: `Queued run ${run.id} (role ${run.role}) is waiting for issue-level recovery.`,
           suggested_action: "Resolve the blocking condition on the issue; the run will proceed once unblocked.",
         });
@@ -225,6 +228,7 @@ export class RuntimeHealthService {
         diagnostics.push({
           code: "invalid_queued_run",
           workspace_id,
+          run_id: run.id,
           detail: `Queued run ${run.id} (role ${run.role}) is no longer eligible for execution.`,
           suggested_action: "Cancel the stale queued run or investigate the issue state transition.",
         });
@@ -267,6 +271,7 @@ export class RuntimeHealthService {
         diagnostics.push({
           code: "waiting_for_validation_due",
           workspace_id: issue.workspace_id,
+          issue_id: issue.id,
           detail: `Issue ${issue.id} is waiting for validation dispatch. remaining_ms=${remainingMs} (due_at=${dueAt}).`,
           suggested_action: "No action needed; the validation dispatch scheduler will claim this issue when due.",
         });
@@ -275,6 +280,7 @@ export class RuntimeHealthService {
         diagnostics.push({
           code: "validation_dispatch_overdue",
           workspace_id: issue.workspace_id,
+          issue_id: issue.id,
           detail: `Issue ${issue.id} validation dispatch is overdue. overdue_ms=${overdueMs} (due_at=${dueAt}).`,
           suggested_action: "Check the validation dispatch scheduler; it may have stopped or missed this issue.",
         });
