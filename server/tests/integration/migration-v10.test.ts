@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
-import { applyMigrations } from "../../src/db/migrations.js";
+import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
 
 // T009: v9 → v10 migration for F008. Covers: fresh install reaching v10,
 // idempotency, admin_audit_events table shape, and the two workflow_templates
@@ -29,6 +29,13 @@ describe("T009 schema v10 migration", () => {
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
     expect(row.v).toBe(10);
+  });
+
+  it("CURRENT_SCHEMA_VERSION matches the applied migration count", () => {
+    applyMigrations(db);
+    expect(CURRENT_SCHEMA_VERSION).toBe(10);
+    const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+    expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
   });
 
   it("is idempotent — running twice stays at v10", () => {

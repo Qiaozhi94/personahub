@@ -1,11 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
 import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-import {
-  RuntimeHealthService,
-  LOCK_DIAGNOSTIC_GRACE_MS,
-  EXPECTED_SCHEMA_VERSION,
-} from "../../src/services/runtime-health.js";
+import { RuntimeHealthService, LOCK_DIAGNOSTIC_GRACE_MS } from "../../src/services/runtime-health.js";
+import { CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
 import { runtimeHealthRoutes } from "../../src/api/routes/runtime-health.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
@@ -87,7 +84,7 @@ function setIssueValidatingWithDueAt(db: TestServices["db"], issueId: string, du
   );
 }
 
-function makeHealthService(services: TestServices, expectedVersion = EXPECTED_SCHEMA_VERSION) {
+function makeHealthService(services: TestServices, expectedVersion = CURRENT_SCHEMA_VERSION) {
   return new RuntimeHealthService(
     services.db,
     services.workspaceRepo,

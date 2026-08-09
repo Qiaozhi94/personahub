@@ -13,10 +13,10 @@ import type { AdapterConfigService } from "./adapter-config.js";
 import type { RunDispatchService } from "./run-dispatch.js";
 import { AppError } from "../api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
+import { CURRENT_SCHEMA_VERSION } from "../db/migrations.js";
 
 export const LOCK_DIAGNOSTIC_GRACE_MS = 60_000;
 export const VALIDATION_DISPATCH_GRACE_MS = 5_000;
-export const EXPECTED_SCHEMA_VERSION = 10;
 
 function isTerminalRunStatus(status: RunStatus): boolean {
   return (
@@ -42,7 +42,7 @@ export class RuntimeHealthService {
     private issueRepo: IssueRepository,
     private adapterConfigService: AdapterConfigService,
     private runDispatchService: RunDispatchService,
-    private expectedSchemaVersion: number = EXPECTED_SCHEMA_VERSION,
+    private expectedSchemaVersion: number = CURRENT_SCHEMA_VERSION,
   ) {}
 
   collect(projectId: string, workspaceId?: string): RuntimeHealthSnapshot {

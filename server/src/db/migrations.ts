@@ -10,6 +10,11 @@ import { SCHEMA_V8 } from "./schema-v8.js";
 import { SCHEMA_V9 } from "./schema-v9.js";
 import { SCHEMA_V10 } from "./schema-v10.js";
 
+/** Single source of truth for the current schema version — consumers (e.g.
+ *  RuntimeHealthService's expected_version) must reference this instead of
+ *  re-declaring the literal. */
+export const CURRENT_SCHEMA_VERSION = 10;
+
 export function applyMigrations(db: Database.Database): void {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY,
@@ -68,10 +73,13 @@ export function applyMigrations(db: Database.Database): void {
     })();
   }
 
-  if (currentVersion < 10) {
+  if (currentVersion < CURRENT_SCHEMA_VERSION) {
     db.transaction(() => {
       db.exec(SCHEMA_V10);
-      db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(10, new Date().toISOString());
+      db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(
+        CURRENT_SCHEMA_VERSION,
+        new Date().toISOString(),
+      );
     })();
   }
 }
