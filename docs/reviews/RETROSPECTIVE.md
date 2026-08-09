@@ -603,3 +603,63 @@ SQL约束逐字段核对才发现。F011-R002再次印证循环7/8已识别的"�
 影子"**,目前已在循环4/6/7/8/9至少五次独立命中,是本项目复现率最高的缺陷模式,
 值得在未来评审的检查清单里固定一条"新增跨Feature硬依赖后,同步扫描README依赖
 表与相关frontmatter"。
+
+---
+
+## 循环 10: 目录结构改造方案检视(2轮)
+
+- **report_type**: doc-review
+- **周期**: 2026-08-09,2轮 · **状态**: 已闭环(第2轮一致性复核通过,尚未提交)
+- **背景**: 对 `structure-improvement-plan.md` 做首轮全量审查并按用户确认正式修改
+  正文。第2轮原定 diff-only,因修复覆盖目标正文超过30%,按协议只在本轮升级为一次
+  full-scan,检查修复是否留下旧建议、状态双真相或归档路径冲突。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| canonical-feature-status | Feature 状态缺少唯一机器可读真相源 | High | 正确性 | 根因 | 契约漂移 | 已修复 | 以spec frontmatter为唯一状态源并定义枚举与门禁版本 | `structure-improvement-plan.md::2.1/2.2` | 1 | 1 | cross-artifact-status-drift |
+| incomplete-done-gate | done 门禁可放过未完成 AC 和伪造测试路径 | High | 正确性 | 根因 | 原方案 | 已修复 | 强制任务和AC全勾并验证requirement与测试路径真实性 | `structure-improvement-plan.md::2.2 test matrix` | 1 | 1 | marked-done-not-implemented |
+| backlog-two-way-consistency | BACKLOG 只做单向检查会遗漏缺行和状态漂移 | Medium | 正确性 | 根因 | 原方案 | 已修复 | 改为canonical specs与BACKLOG的双向集合比较 | `structure-improvement-plan.md::2.2 backlog cases` | 1 | 1 | partial-symmetric-fix |
+| unstable-physical-archive | 物理移动已完成版本会破坏稳定引用 | High | 质量 | 根因 | 原方案 | 已修复 | 保留版本目录并通过release摘要逻辑收口 | `structure-improvement-plan.md::1.1/2.3` | 1 | 1 | stable-path-migration |
+| implicit-legacy-exemption | 按时间猜测legacy范围不可执行 | Medium | 正确性 | 根因 | 原方案 | 已修复 | 用gate_version显式区分并规定F001-F007为历史规则 | `structure-improvement-plan.md::2.1/2.2` | 1 | 1 | implicit-compatibility-boundary |
+| active-contract-migration | CLAUDE历史迁移可能带走仍生效契约 | Medium | 正确性 | 根因 | 流程缺口 | 已修复 | 要求迁移前分类并保留活契约在自动加载路径 | `structure-improvement-plan.md::2.3` | 1 | 1 | active-contract-archived |
+| unenforced-feature-gate | 独立check脚本未进入强制流程 | Medium | 正确性 | 根因 | 流程缺口 | 已修复 | 统一npm run verify并接入SOP与未来CI | `structure-improvement-plan.md::2.2/2.4/4` | 1 | 1 | unenforced-quality-gate |
+| runtime-artifacts-scattered | 日志和SQLite等运行产物散落在根目录与server目录 | Medium | 质量 | 根因 | 原方案遗漏 | 已修复 | 增加独立的`.local/`集中方案、可配置路径和迁移前验证约束 | `structure-improvement-plan.md::1.1/2.5` | 1 | 1 | runtime-artifact-boundary |
+| plan-metadata-estimates-conflict | 创建/修订日期及“纯文档”表述与工时范围互相矛盾 | Low | 文档准确性 | 症状 | 原方案 | 已修复 | 统一日期，按改造项拆分工时并明确运行时迁移与版本收口边界 | `structure-improvement-plan.md::header/1` | 1 | 1 | planning-metadata-drift |
+
+**第2轮复核证据**: `git diff --check`通过;Markdown围栏共8个、成对闭合;旧的
+"待决策"、"仅对新TEMPLATE之后"、物理`git mv`建议与错误创建日期均已清除;
+`gate_version`、BACKLOG双向比较、真实路径边界、`npm run verify`和活契约分类均在
+正文有明确落点。无新增Critical/High。
+
+**可复用教训**: 本轮High主要来自同一个根因——把人类可读文档同时当作多份状态
+真相源。`cross-artifact-status-drift`和`partial-symmetric-fix`说明,门禁设计必须先
+确定canonical source,再做派生索引的双向集合比较;只补一条"done不能留在BACKLOG"
+仍会漏掉缺行、重复行和错误链接。最长存活轮数为0(全部在首轮修复,第2轮未产生
+fix-regression)。
+
+---
+
+## 循环 11: F008 代码检视修复轮（3 轮：full-scan → diff-only 复核 → 独立复核闭环）
+
+- **report_type**: code-review / fix-verification
+- **周期**: 2026-08-09, 3 轮
+- **状态**: 已闭环（5 条发现全部落地并有回归测试锁定；lint/typecheck/build 全绿，server 全量 1673 passed/2 与本次改动无关的已知 flaky 失败/18 skipped，web 全量 216/216）
+- **背景**: 对 5ef5055（feat(f008)）做全量代码检视。后端（schema-v10、模板管理、runtime health、queue-classifier 抽取、两条路由）与 design.md 契约逐条比对无 Critical/High；首轮 3 条发现集中在新增的前端与常量维护面。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| f008-ack-dialog-false-positive | 启用校验的编辑流程被误判为"关闭校验"并弹出错误确认文案 | Medium | correctness | root-cause | original-coding | fixed | needsAcknowledge 第三分支改为镜像服务端 runActivationGate 的 before.valid 判定：仅当 active 模板校验状态未知或目标移除 validator 时才要求确认，不再把"active 已知无 validator + target 新增 validator"误判为关闭校验 | web/src/f008-workflow-template-admin.test.tsx::enabling validation from an active no-validator template does not open the confirmation dialog | 1 | 1 | client-server-gate-logic-divergence |
+| f008-diagnostic-key-collision | 同一 workspace 内多条同 code 诊断在健康面板中产生重复 React key | Medium | correctness | root-cause | original-coding | fixed | diagnosticKey 纳入 detail（逐 Run/Issue 诊断的 detail 内含 run id/issue id，批量场景天然唯一） | web/src/f008-runtime-health.test.tsx::renders multiple same-code diagnostics for one workspace without duplicate-key warnings（断言 console.error 无重复 key 警告） | 1 | 1 | missing-batch-scenario-test |
+| f008-schema-version-hardcoded | EXPECTED_SCHEMA_VERSION 与 migrations.ts 的迁移数量各自维护，无单一真相源 | Low | quality | root-cause | original-coding | fixed | migrations.ts 导出 CURRENT_SCHEMA_VERSION 常量并用于最后一个迁移块；runtime-health.ts 默认参数改引常量，删除本地重复字面量 | server/tests/integration/migration-v10.test.ts::CURRENT_SCHEMA_VERSION matches the applied migration count | 1 | 1 | hardcoded-duplicate-constant |
+| f008-t032-not-truly-e2e | T032 测试只验证 selectValidator 标志位，未走运行时验证触发链路 | Medium | test-coverage | root-cause | process-gap | fixed | 重写为真端到端：对照组（有 validator 模板 + available validator adapter → 实现 Run 完成确实创建 validator Run 并转 Validating）证明链路是活的；无 validator 模板组走 requestValidation（workflowHook 的同一入口）断言 validator Run 从未创建、Issue 被 WorkflowConfigurationInvalid 阻塞 | server/tests/integration/workflow-template-admin.test.ts::T032: after enabling a no-validator template, a completing implementation Run does not trigger validation | 2 | 2 | test-simulates-itself |
+| f008-activate-precheck-asymmetry | activateVersion 预判与服务端闸门语义不对称，active 非法+目标有 validator 场景先发请求再弹窗 | Low | quality | root-cause | original-coding | fixed | activateVersion 改用与 needsAcknowledge 共享的 needsAcknowledgeForTarget（active 校验状态未知或目标无 validator 才确认），消除多一次往返的不对称 | web/src/f008-workflow-template-admin.test.tsx::activating a validator-enabled version while the active template is unparseable asks for confirmation upfront | 2 | 2 | client-server-gate-logic-divergence |
+| f008-diagnostic-key-volatile-detail | diagnosticKey 把含有存活时长/剩余时间的 detail 文本纳入 key，导致部分诊断每次刷新都换 key（f008-diagnostic-key-collision 修复自身带出的副作用） | Low | quality | symptom-patch→root-cause | fix-regression | fixed | HealthDiagnostic 新增结构化 run_id/issue_id 字段（后端 4 处诊断构造点补齐），diagnosticKey 改为 code:workspace_id:recordId（recordId = run_id ?? issue_id ?? "single"），detail 完全退出 key | web/src/f008-runtime-health.test.tsx::diagnosticKey stays stable when live detail numbers change across refetches | 2 | 3 | unstable-list-key-includes-volatile-data |
+| f008-process-self-closed-review | 修复方在同一批提交里自己完成"复核"并直接删除 CURRENT-code.md，未经独立检视人复核（commit ae9f648 写入 + a293263 删除均为修复执行者所为） | Low | test-coverage | root-cause | process-gap | fixed | 检视人恢复 CURRENT-code.md；后续修复批次（bf571c2/7e51bfb）改为只记录"awaiting reviewer"、不自行判定 stop_condition_met 或删除文件，由独立检视人（第 3 轮）核对后才真正关闭 | — | 2 | 3 | self-approved-fix |
+
+**第 2 轮复核证据**: 三条修复逐一与服务端/后端契约核对等价——needsAcknowledge 四象限（active 缺失/null→确认、active 有 validator+target 无→确认、active 无 validator+target 有→不确认、active 有+target 有→不确认）与服务端 `!before.valid ? true : !targetHasValidator` 完全一致；diagnosticKey 对同 workspace 同 code 批量场景唯一（detail 含 run/issue id）；CURRENT_SCHEMA_VERSION 仅作用于当前迁移块、历史块保留字面量（符合"不得追加已应用版本"铁律）。修复后 web typecheck 曾暴露一处 `activeTemplate !== undefined` 应为 `!== null` 的修正（f008-ack-dialog-false-positive 修复自身的第 2 轮捕获，fix-regression 就地闭环，存活 0 轮）。无新增 Critical/High。
+
+**闭环后追加复核（同轮延伸）**: 用户要求再审视后补发现两条——① T032 原测试只断言 `selectValidator` 返回 `WorkflowConfigurationInvalid`，是标志位层面验证，没有走 `requestValidation`（workflowHook 对实现 Run 完成的唯一验证触发入口）的真实链路，若未来有人改坏 workflowHook/claim 条件测试不会红（process-gap，`test-simulates-itself`）；重写为真端到端：对照组（有 validator 模板 + available validator adapter）证明同一入口确实创建 validator Run 并转 Validating，无 validator 模板组断言 validator Run 从未创建、Issue 被 `WorkflowConfigurationInvalid` 阻塞——顺带验证了"关闭验证的模板"的真实运行时语义（claim 阶段 selectValidator 失败 → block，而非保持 Running）。② `activateVersion` 的预判 `detail.validation_enabled !== true` 与修复后的 `needsAcknowledge` 语义不对称：active 非法 + 目标有 validator 时预判不弹窗、先发请求再等 400 兜底；统一为共享的 `needsAcknowledgeForTarget`（active 校验状态未知或目标无 validator 才确认），两条修复各自配回归测试并提交（ae39c31、8ea500c），server/web F008 相关测试全绿（124/124、34/34）。
+
+**第 3 轮：独立检视人复核（不同会话，非修复方自证）**: 上一段"闭环后追加复核"实际是修复方自己在同一批提交里完成的（写 ae9f648 报告、a293263 自行删除），复现了本文件反复记录的"自己批准自己的修复"反模式——且遗漏了 f008-diagnostic-key-collision 修复本身带出的副作用（`f008-diagnostic-key-volatile-detail`：diagnosticKey 拼 detail 后，`stale_lock_*`/`waiting_for_validation_due`/`validation_dispatch_overdue` 这类 detail 内嵌 `held_ms`/`remaining_ms` 的诊断每次刷新都换 key）。独立检视人在新会话中重新核对 diff 后记录此条为待修复；随后的修复批次（`bf571c2` 结构化 `run_id`/`issue_id` 字段替代 detail 拼接、`7e51bfb` 只记录"awaiting reviewer"不自行关闭）正确遵守了角色分离，交由本轮检视人独立验证：typecheck/lint/build 全绿，server 全量回归 1673 passed（2 个失败均是 `git-scanner.test.ts`/`scanner-selector.test.ts` 的 Windows `cmd.exe`/`rmdir` 环境噪音，与本次改动无交集，同第 1 轮结论）/18 skipped，web 全量 216/216；并用 `code-review-graph` 的 `detect_changes_tool` 对 `a293263..HEAD` 跑了一次风险扫描（risk 0.60，0 affected_flows，工具标记的"未测试"函数经人工核实是静态调用图分析盲区——React 组件内闭包函数经 `fireEvent.click` 间接触发，实际有行为测试覆盖）。确认 5 条发现全部修复、CI 未验证（未 push，留待使用者决定）后，检视人执行本文件收尾并删除 `docs/reviews/CURRENT-code.md`。
+
+**可复用教训**: ① 前端预判逻辑镜像服务端闸门时，条件必须逐象限等价而不是"看起来像"——本轮误判正是把服务端 `before.valid` 语义简化成 `!== true` 导致启用校验被当成关闭校验（client-server-gate-logic-divergence）；② 列表 key 必须覆盖批量场景，单条样本测试测不出重复 key（missing-batch-scenario-test）；③ 硬编码常量与生成源各自维护是漂移温床，导出单一真相源后要让消费方引用（hardcoded-duplicate-constant）；④ 功能验收测试必须走真实运行时入口并带"链路有效"的对照组，只断言派生函数返回值会让测试在实现悄悄改坏时依然变绿（test-simulates-itself）；⑤ 把"能定位单条记录"的字段（detail 自由文本）和"能唯一标识记录"的字段（结构化 id）混为一谈，会在解决旧问题时引入新的不稳定性——列表 key 应该用后者，不稳定数值绝不能进 key（unstable-list-key-includes-volatile-data）；⑥ "修复方=检视方"这一反模式本轮复现了两次（第2轮内的自行关闭、"追加复核"仍是修复方自己做的），且第二次复现恰恰漏掉了第一次复现该被抓到却没抓到的问题——这不是巧合，是同一根因的两次表现，印证了协议要求"执行者与检视者物理分离"不是形式主义（self-approved-fix）。最长存活轮数为 2 轮（`f008-diagnostic-key-volatile-detail`/`f008-process-self-closed-review` 从第 2 轮发现到第 3 轮独立验证关闭）。
