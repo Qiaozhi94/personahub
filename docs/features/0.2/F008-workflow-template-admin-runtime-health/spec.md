@@ -4,7 +4,7 @@ related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability, v0.2]
 doc_kind: spec
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-09
 ---
 
 # F008：Workflow Template Admin & Runtime Health
@@ -116,7 +116,7 @@ updated: 2026-08-02
 - [ ] **AC-005**：F001-F007 全量回归通过。
 - [ ] **AC-006**（`FR-007`、`FR-008`）：任何激活路径下同 `issue_type` 至多一个 active 版本（由数据库唯一索引保证，不只靠 service）；非法 `steps_json` 的版本无法被启用，但**当前 active 版本非法时仍可启用一个合法的修复版本**。
 - [ ] **AC-008**（`FR-009`）：可编辑字段仅 `steps_json` 与 `name`；其余内容字段只读且 UI 标注不影响运行时。不存在"保存并启用成功但运行时行为未变"的字段。
-- [ ] **AC-007**（`FR-006`）：health 的派生判断与运行时实际恢复规则同源——终态持有者的锁**不看时长**即报 confirmed；F006 有意保留的排队图节点与未到 due time 的 validation 不被误报为 `queue_starved`。
+- [ ] **AC-007**（`FR-006`）：health 的派生判断与运行时实际恢复规则同源——终态持有者的锁**不看时长**即报 confirmed；持有者仍 running 但 `locked_at` 异常时归入独立的 `lock_timestamp_invalid`，不给出释放类建议；F006 有意保留的排队图节点不被误报为 `queue_starved`，`eligible_but_not_running` 只在锁空闲时聚合成唯一的 `queue_starved`、锁占用时不产出诊断；等待 due time 的 validation（此时不存在对应的排队 Run）由独立的 `waiting_for_validation_due` 诊断覆盖，超过 grace 窗口仍未被调度器 claim 的则改报 `validation_dispatch_overdue`，二者不与排队 Run 分类混同也不被忽略。
 
 ## 7. 待确认问题（全部已关闭，2026-08-01）
 

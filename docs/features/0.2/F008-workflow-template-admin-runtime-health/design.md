@@ -4,7 +4,7 @@ related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability]
 doc_kind: design
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-09
 ---
 
 # F008：Workflow Template Admin & Runtime Health - 设计
@@ -87,7 +87,7 @@ CREATE UNIQUE INDEX idx_workflow_templates_one_active
 
 | 类别 | 数据来源 | 用于回答 |
 |---|---|---|
-| schema 版本 | `SELECT MAX(version) FROM schema_version`（`migrations.ts:16` 同一查询） | 数据库迁移是否落到预期版本 |
+| schema 版本 | `SELECT MAX(version) FROM schema_version`（`migrations.ts:18` 同一查询） | 数据库迁移是否落到预期版本 |
 | adapter 可用性 | `agent_configs` + `adapter_workspace_status`，经 `effectiveAdapterStatus()` | 哪个 adapter 现在不能用、上次检查是什么时候 |
 | workspace 锁 | `workspaceRepo.listLockedWorkspaces()` | 锁被哪个 Run 持有、持有多久（`locked_at` 到现在） |
 | Run 队列 | `runRepo.listQueuedByWorkspace()` + `listRunning()` | 队列多深、有没有 Run 在跑 |
@@ -95,7 +95,7 @@ CREATE UNIQUE INDEX idx_workflow_templates_one_active
 
 ### 后台任务计数怎么拿到（初稿够不着，已修正）
 
-两个 Set 都是 `private`（`adapter-config.ts:29`、`adapter-failure-reprobe.ts:13`），需要只读的 size 访问器。但仅给 `AdapterFailureReprobe` 加访问器**够不着**——它是 `RunDispatchService` 内部 `new` 出来的私有字段（`run-dispatch.ts:36,61`），没有任何外部持有者，`RuntimeHealthService` 拿不到那个实例。
+两个 Set 都是 `private`（`adapter-config.ts:30`、`adapter-failure-reprobe.ts:13`），需要只读的 size 访问器。但仅给 `AdapterFailureReprobe` 加访问器**够不着**——它是 `RunDispatchService` 内部 `new` 出来的私有字段（`run-dispatch.ts:46` 声明、构造函数体内约第 74 行实例化），没有任何外部持有者，`RuntimeHealthService` 拿不到那个实例。
 
 因此按 **service 级只读快照**暴露，而不是把 health 耦合到 Set 实例上：
 
@@ -109,33 +109,67 @@ CREATE UNIQUE INDEX idx_workflow_templates_one_active
 
 **派生判断（而非原始数据）才是有用的部分**，但初稿的两条判据都与运行时的真实行为对不上：
 
-**`stale_lock`**：初稿要求"持有超 30 分钟 **且** 持有者终态"，并说这正是启动清理处理的情况。核实后不是——`cleanupStaleLocks()` 对持有者缺失或已终态的锁是**立即释放，完全不看时长**（`stale-recovery.ts:94-112`）。按初稿实现，一个终态持有者占锁 2 分钟已经在堵队列，health 却报"无异常"。改为分级：
+**`stale_lock`**：初稿要求"持有超 30 分钟 **且** 持有者终态"，并说这正是启动清理处理的情况。核实后不是——`cleanupStaleLocks()` 对持有者缺失或已终态的锁是**立即释放，完全不看时长**（`stale-recovery.ts:95-114`）。按初稿实现，一个终态持有者占锁 2 分钟已经在堵队列，health 却报"无异常"。改为分级：
 
 | 情形 | 判断 | 建议动作 |
 |---|---|---|
 | 持有者 Run 不存在 | `stale_lock_confirmed` | 重启即自动释放；或手动释放 |
 | 持有者 Run 已终态 | `stale_lock_confirmed` | 同上 |
 | 持有者 Run 仍 running 且持有时长 > `DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS` | `stale_lock_suspected` | 检查该 Run 的 adapter 进程 |
+| 持有者 Run 仍 running，但 `locked_at` 缺失/非法/晚于当前时间（算不出持有时长） | `lock_timestamp_invalid` | **不建议直接释放**——持有者仍在运行，释放会破坏 workspace 互斥；提示人工核查该 Run 与锁记录 |
 
 阈值不能留给实现者自行决定，否则测试写不出确定的时间边界。取值与判据：
 
-- **实际超时是 per-adapter 的**：`AgentRunner` 用的是 `adapter.capabilities.executionTimeoutMs ?? DEFAULT_EXECUTION_TIMEOUT_MS`（`agent-runner.ts:107`），不是固定的默认值。直接拿 `DEFAULT` 当阈值并声称"与实际超时同源"是不成立的——未来一个长任务 adapter 会被提前误报，短超时 adapter 又会延迟告警。
+- **实际超时是 per-adapter 的**：`AgentRunner` 用的是 `adapter.capabilities.executionTimeoutMs ?? DEFAULT_EXECUTION_TIMEOUT_MS`（`agent-runner.ts:108`），不是固定的默认值。当前三个内置 adapter 都**显式**声明该字段并等于默认值（`claude-code-adapter.ts:38`、`codex-cli-adapter.ts:39`、`opencode-adapter.ts:45`），字段本身在类型上是必填的（`AgentAdapterCapabilities.executionTimeoutMs: number`，`types.ts:61`），`??` 分支目前是类型系统意义上够不到的防御，不影响下面的处置结论。直接拿 `DEFAULT` 当阈值并声称"与实际超时同源"是不成立的——未来一个长任务 adapter 会被提前误报，短超时 adapter 又会延迟告警。
 - v0.2 的处置：**限制全部 v0.2 adapter 的 `executionTimeoutMs` 必须等于 `DEFAULT_EXECUTION_TIMEOUT_MS`**（当前三个内置 adapter 恰好如此），把这条写进 adapter contract 并加一条断言测试；health 因而可以安全使用该默认值。等真出现自定义超时的 adapter 时，改为在 Run 启动时持久化 `effective_execution_timeout_ms` 快照、health 读快照——那样还能顺带避免"运行中改配置导致同一个 Run 的诊断阈值漂移"。**不假装现在就同源。**
 - 新增 `LOCK_DIAGNOSTIC_GRACE_MS = 60_000`：留出超时触发到清理落库之间的窗口，避免正常收尾被报成可疑。
 - 比较用**严格大于**；时钟一律取服务端 `Date.now()`，与 `locked_at` 同源。
-- `locked_at` 为空或晚于当前时间（时钟回拨、数据异常）→ 归入 `stale_lock_confirmed` 并在 `detail` 注明时间戳异常，不做静默忽略。
-- 测试覆盖：阈值前 1 毫秒、恰等于阈值、超过阈值、`locked_at` 非法四类。
+- **`locked_at` 异常时不能无条件归入 `stale_lock_confirmed`（初稿漏洞，已修正）**：`confirmed` 的语义是"与 `cleanupStaleLocks()` 的真实释放条件一致"——那个函数只看持有者是否缺失/终态，从不比较时长。若持有者**仍 running**，仅仅因为算不出持有时长就默认"安全释放"，会让 UI 建议用户手动释放一个正在跑的 Run，这本身就会破坏 workspace 互斥、与真实恢复规则相悖。因此拆开：持有者缺失/终态时，`locked_at` 是否异常不影响 `stale_lock_confirmed` 结论（这两行本就不看时长）；持有者仍 running 且 `locked_at` 异常时，归入独立诊断 `lock_timestamp_invalid`（见上表第四行），不给出释放类建议。
+- 测试覆盖：阈值前 1 毫秒、恰等于阈值、超过阈值、`locked_at` 非法（持有者缺失/终态 → confirmed；持有者 running → `lock_timestamp_invalid`）四类以上。
 
 一并返回持有者 run id、`locked_at` 与已持有时长。
 
-**`queue_starved`**：初稿判据"有 queued、无 running、锁空闲"会把**故意不可执行**的队列误报成故障。至少两类正常情况会命中：F006 在 Issue `Blocked` 时**有意保留**排队中的图节点；validation 的派发受 due time 与状态门控制。改为复用一个与队列 drain **共享的、无副作用的资格判定器**，分状态报告：
+**`queue_starved`**：初稿判据"有 queued、无 running、锁空闲"会把**故意不可执行**的队列误报成故障。F006 在 Issue `Blocked` 时**有意保留**排队中的图节点是其中一类。改为复用一个与队列 drain **共享的、无副作用的资格判定器**，分状态报告：
 
 - `eligible_but_not_running`（真正的 drain 没被触发）
 - `waiting_for_recovery`（等节点级恢复，F006 场景）
-- `waiting_for_validation_due`
 - `invalid_queued_run`（既不合格也无合法等待理由，真异常）
 
 **只有至少一个 queued Run 当前合格且锁空闲时才标 `queue_starved`。**
+
+### `eligible_but_not_running` 不是公开 code，是内部分类结果（初稿未定义两者关系，已修正）
+
+上面三个分类是**内部纯函数**的返回值，但 §5b 的 `diagnostics[].code` 判别联合最初把 `eligible_but_not_running` 和 `queue_starved` 并列成两个同级的公开 code，没有说明二者到底是分类层与聚合层的关系、还是会同时出现在响应里。核实后二者不能同时公开：
+
+- `waiting_for_recovery`、`invalid_queued_run` 这两类分类结果本身就是异常（是否成立与锁状态无关），**原样**作为公开诊断输出。
+- `eligible_but_not_running` 不是异常本身，只是"这个 Run 现在有没有资格跑"的中间判断。health 服务层再结合锁状态聚合一次：**锁空闲**时，只要至少一个 Run 分类为 `eligible_but_not_running`，就产出**唯一**的公开诊断 `queue_starved`（不重复输出内部分类结果）；**锁被占用**时，`eligible_but_not_running` 只表示"正常排在前面 Run 后面"，不产出任何诊断。
+
+因此 `eligible_but_not_running` 从 §5b 的公开 `diagnostics[].code` 判别联合中移除，只作为内部分类函数返回类型的一个 variant，不出现在对外 API 响应里。
+
+### 该判定器目前不存在，必须从 `startNextQueuedRun()` 抽取（初稿"复用现成"的假设不成立，已修正）
+
+上面三类判据的实现前提是"存在一个与 drain 共享的纯函数"，但核实后**这样的函数当前不存在**：全部判定逻辑内嵌在 `RunDispatchService.startNextQueuedRun()`（`run-dispatch.ts` 约 310-397 行，私有方法）内部，且与副作用（`cancelQueued`、`workspaceLockService.acquire`、`nodeRunRepo.compareAndSetStatus`、真实派发 `startAdapter`）交织在同一循环体里，没有任何可以脱离副作用单独调用的分类函数。因此 Phase 4 必须先把这段分类逻辑（Blocked/Done/角色状态门/round 匹配）从 `startNextQueuedRun()` 里**抽取成一个新的纯函数**，drain 与 health 共用同一份判定代码——而不是在 health 里重新写一份"看起来一样"的判断。两处判断各自实现、只靠人工保持同步，正是本项目已经反复踩过的失败模式（`RETROSPECTIVE.md` 循环4/循环6 记录的"只修对称结构的一半"）。
+
+### `waiting_for_validation_due` 不是排队 Run 的分类，是完全独立的 Issue 级诊断（初稿数据流不成立，已修正）
+
+初稿把 `waiting_for_validation_due` 也列进上面"排队 Run 分类"的判定结果里，但核实后这条**结构上不可能从那条路径产出**：验证者 Run 只在 due time 到达并被 `claimValidatorSlot()` 消费的**同一事务**内才创建为 `Queued`（`validator-slot-claimer.ts:207-225`），该事务同时把 `validation_dispatch_due_at` 清空。也就是说，等待 due time 期间，这个 workspace 里**根本没有对应的 queued Run 行**——不存在"一个排队中但因 due time 未到而不合格"的 Run 可供分类器判断。连带地，初稿"这是为了防止 naive `queue_starved` 误报"的动机也不成立：等待期间 queued 计数本来就是 0（或与本次等待无关的其它 Run），naive 检查根本不会因为这个场景而误报。
+
+这条诊断真正的价值不是"修正误报"，而是主动回答 SC-003（"能定位卡住的直接原因"）——用户看到 Issue 停在 `Validating` 却没有任何 Run 在跑，需要一个信号告诉他"这是在等 grace period，不是故障"。数据源必须独立于队列判定器，直接查询 Issue 表：
+
+```sql
+SELECT * FROM issues WHERE status = 'Validating' AND validation_dispatch_due_at IS NOT NULL
+```
+
+复用调度器已有的 `idx_issues_validation_due`（`schema-v6.ts`），只读、无副作用，符合 FR-006。
+
+**查出的行不能不加区分地都算"正常等待"（初稿漏洞，已修正）**：`ValidationDispatchScheduler` 只在 `validation_dispatch_due_at` 到期后才去 claim（`validation-dispatch-scheduler.ts`，默认 1 秒 tick），如果查询时刻这个字段仍在未来，属于正常等待；但如果它已经**早于当前时间却仍未被 claim**（对应的 Queued Validator Run 依然不存在），说明调度器可能已经停止 tick 或这个 Issue 被漏处理——这是真实异常，和"正在正常等待"是两种完全不同的用户认知，混在一个 code 里会让用户把故障当成"系统在正常工作，别急"。
+
+对每一行，与服务端 `Date.now()` 比较（与其它 health 判断同一时钟来源），并留出覆盖调度器 tick 延迟的 grace 窗口（新增 `VALIDATION_DISPATCH_GRACE_MS = 5_000`，5 秒，明显大于默认 1 秒 tick 间隔，避免一个刚跨过 due time、还在等下一次 tick 的正常 Issue 被误报）：
+
+- `validation_dispatch_due_at > now - VALIDATION_DISPATCH_GRACE_MS`（即尚未到期，或刚到期还在 grace 窗口内）：`waiting_for_validation_due`——正常等待，`detail` 附剩余毫秒数（未到期时为正）。
+- `validation_dispatch_due_at <= now - VALIDATION_DISPATCH_GRACE_MS`（超过 grace 窗口仍未被 claim）：`validation_dispatch_overdue`——真实异常，`detail` 附 `overdue_ms = now - due_at`。
+
+按 `issue.workspace_id` 归入对应 workspace 的诊断列表；两者都与 `queue_starved` 互斥，因为等待/逾期期间这个 workspace 都没有对应的 queued Run（那次判定压根不会因为这个场景而触发）。
 
 `no_available_adapter`：该 Project 在该 workspace 下没有任何 Available adapter。
 
@@ -165,9 +199,10 @@ interface RuntimeHealthSnapshot {
     queue: { queued_count: number; running_run_id: string | null };
   }>;
   diagnostics: Array<{
-    code: "stale_lock_confirmed" | "stale_lock_suspected" | "queue_starved"
-        | "eligible_but_not_running" | "waiting_for_recovery" | "waiting_for_validation_due"
-        | "invalid_queued_run" | "no_available_adapter" | "schema_version_mismatch";
+    code: "stale_lock_confirmed" | "stale_lock_suspected" | "lock_timestamp_invalid" | "queue_starved"
+        | "waiting_for_recovery" | "invalid_queued_run"
+        | "waiting_for_validation_due" | "validation_dispatch_overdue"
+        | "no_available_adapter" | "schema_version_mismatch";
     workspace_id: string | null; detail: string; suggested_action: string;
   }>;
 }
@@ -182,7 +217,7 @@ interface RuntimeHealthSnapshot {
 
 ## 5c. 可编辑字段白名单：只有 `steps_json` 真正生效
 
-`workflow_templates` 有 `collaboration_topology`、`validation_policy_id`、`steps_json`、`handoff_policy_json`、`evidence_requirements_json` 五个内容字段，但**运行时只消费 `steps_json`**（`validator-selector.ts:94-103` 的 `hasValidationStep()`）。其余四个全仓库没有任何运行时读取方：
+`workflow_templates` 有 `collaboration_topology`、`validation_policy_id`、`steps_json`、`handoff_policy_json`、`evidence_requirements_json` 五个内容字段，但**运行时只消费 `steps_json`**（`validator-selector.ts:61-63` 的 `hasValidationStep()`）。其余四个全仓库没有任何运行时读取方：
 
 - `issues.validation_policy_id` 来自 `IssueService.create()` 对 `validation_policies` 表的独立查询（`issue.ts:108`），不是从模板取的。
 - `policy-gate.ts` 读的 `evidence_requirements_json` 是 `validation_policies` 表的同名列，与模板无关。
@@ -237,7 +272,7 @@ interface RuntimeHealthSnapshot {
 
 ### 严格校验器与宽松解析器是两件事
 
-启用闸门要求"拒绝未知 schema 版本与未知 role"，但 `parseWorkflowSteps()` **做不到**：它完全忽略 `schema_version`、接受任意 role 字符串、并且**静默过滤掉畸形条目**（`validator-selector.ts:25-58`）。拿它当写入闸门，会把部分损坏的内容洗成看起来合法的内容。
+启用闸门要求"拒绝未知 schema 版本与未知 role"，但 `parseWorkflowSteps()` **做不到**：它完全忽略 `schema_version`、接受任意 role 字符串、并且**静默过滤掉畸形条目**（`validator-selector.ts:30-59`）。拿它当写入闸门，会把部分损坏的内容洗成看起来合法的内容。
 
 因此分成两个：
 
@@ -261,7 +296,7 @@ interface RuntimeHealthSnapshot {
 
 - 模板管理是**全局**的——`workflow_templates` 表没有 `project_id`（`schema-v1.ts:27-41`），也没有 workspace 归属。
 - 改模板发生在任何受影响的 Issue **存在之前**，那些 Issue 还没被创建。
-- `thread_events.thread_id` 是 `NOT NULL REFERENCES threads(id)`（`schema-v1.ts:89`），没有合法的 thread 可写。把它塞进某个无关 Issue 的 thread 更糟：审计溯源被挂到了一个与该改动无关的实体上。
+- `thread_events.thread_id` 是 `NOT NULL REFERENCES threads(id)`（`schema-v1.ts:93`），没有合法的 thread 可写。把它塞进某个无关 Issue 的 thread 更糟：审计溯源被挂到了一个与该改动无关的实体上。
 
 新增一张全局审计表（`schema-v10.ts`，版本号按实际落地顺序取，**不得追加进已应用版本**）：
 

@@ -4,7 +4,7 @@ related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability]
 doc_kind: tasks
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-09
 ---
 
 # F008：Workflow Template Admin & Runtime Health - 任务
@@ -53,9 +53,11 @@ updated: 2026-08-02
 - [ ] T040d：`schema_version_mismatch` 诊断——`behind`（迁移没跑）与 `ahead`（库被更新版本的程序打开过）都要报出。
 - [ ] T040e：workspace 覆盖回归——同一 adapter 在 workspace A 可用、B 不可用时，断言聚合响应里两者各自呈现，不被合并成一个状态（F005 核心不变量）。
 - [ ] T040b：`AdapterConfigService.healthSnapshot()` 与 `RunDispatchService.healthSnapshot()` 两个只读快照访问器；**不得暴露 Set 的可变引用**（它们参与 shutdown 等待）。`AdapterFailureReprobe` 是 `RunDispatchService` 的私有字段，只给它自己加访问器够不着（`design.md` 第 5 节）。
-- [ ] T041：`stale_lock` 分级——持有者缺失/终态 → `stale_lock_confirmed`（**不看时长**，与 `cleanupStaleLocks()` 的实际行为一致）；running 且持有时长 **严格大于** `DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS`（后者新增，60 秒）→ `stale_lock_suspected`。**另加一条断言测试：全部 v0.2 adapter 的 `capabilities.executionTimeoutMs` 均等于 `DEFAULT_EXECUTION_TIMEOUT_MS`**——实际超时是 per-adapter 的（`agent-runner.ts:107`），该断言是 health 能安全使用默认值的前提，不能只在文档里声称同源；`locked_at` 为空或晚于当前时间 → 归入 confirmed 并注明时间戳异常。附持有者 run id、`locked_at`、已持有时长。测试覆盖阈值前 1 毫秒、恰等于、超过、`locked_at` 非法四类。
-- [ ] T041b：`queue_starved` 复用与 drain **共享的无副作用资格判定器**，分报 `eligible_but_not_running` / `waiting_for_recovery` / `waiting_for_validation_due` / `invalid_queued_run`；只有存在当前合格的 queued Run 且锁空闲才标 `queue_starved`。
-- [ ] T041c：误报回归测试——F006 的 Issue `Blocked` 保留图节点排队、validation 未到 due time 两种正常状态，断言**不被**标为 `queue_starved`。
+- [ ] T041：`stale_lock` 分级——持有者缺失/终态 → `stale_lock_confirmed`（**不看时长**，与 `cleanupStaleLocks()` 的实际行为一致，`locked_at` 是否异常不影响这个结论）；持有者仍 running 且持有时长 **严格大于** `DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS`（后者新增，60 秒）→ `stale_lock_suspected`；持有者仍 running 但 `locked_at` 缺失/非法/晚于当前时间（算不出时长）→ `lock_timestamp_invalid`，**不给出释放类建议**（持有者还在跑，"confirmed 可安全释放"这套建议不能套用到它身上，会诱导用户破坏 workspace 互斥）。**另加一条断言测试：全部 v0.2 adapter 的 `capabilities.executionTimeoutMs` 均等于 `DEFAULT_EXECUTION_TIMEOUT_MS`**——实际超时是 per-adapter 的（`agent-runner.ts:108`），该断言是 health 能安全使用默认值的前提，不能只在文档里声称同源。附持有者 run id、`locked_at`、已持有时长。测试覆盖阈值前 1 毫秒、恰等于、超过、`locked_at` 非法且持有者缺失/终态（仍 confirmed）、`locked_at` 非法且持有者 running（`lock_timestamp_invalid`）五类（`design.md` 第 5 节）。
+- [ ] T041b：**该判定器目前不存在，先从 `startNextQueuedRun()` 抽取**——把 `RunDispatchService.startNextQueuedRun()`（`run-dispatch.ts` 约 310-397 行，当前私有方法，判定与副作用交织在同一循环体）里的 Blocked/Done/角色状态门/round 匹配这段分类逻辑抽取成一个新的、无副作用的纯函数，drain 与 health **共用同一份代码**（不得在 health 里另写一份"看起来一样"的判断——这是本项目已反复踩过的"对称结构只改一半"失败模式，见 `RETROSPECTIVE.md` 循环4/循环6）。仅覆盖已经处于 Queued 状态的 Run，返回三类内部分类结果：`eligible_but_not_running` / `waiting_for_recovery` / `invalid_queued_run`。**`eligible_but_not_running` 不是公开 DTO code**——health 服务层再结合锁状态聚合一次：锁空闲时才产出唯一的公开诊断 `queue_starved`；锁被占用时不产出任何诊断（正常排队）。`waiting_for_recovery`、`invalid_queued_run` 与锁状态无关，原样作为公开诊断输出（`design.md` 第 5 节）。
+- [ ] T041c：误报回归测试——F006 的 Issue `Blocked` 保留图节点排队这一正常状态，断言**不被**标为 `queue_starved`；另加一条锁占用测试——存在 `eligible_but_not_running` 的 Run 但锁被占用时，断言**不产出**任何诊断（不是 `queue_starved`，也不是裸露的内部分类 code）。
+- [ ] T041e：**`waiting_for_validation_due` 不是排队 Run 的分类，是独立的 Issue 级诊断**——验证者 Run 只在 due time 到达并被 `claimValidatorSlot()` 消费的同一事务内才创建为 `Queued`（同时清空 `validation_dispatch_due_at`，`validator-slot-claimer.ts:207-225`），等待期间该 workspace 没有对应的 queued Run 行，T041b 抽取的判定器结构上不可能产出这个分类。改为直接查询 `issues` 表 `status = 'Validating' AND validation_dispatch_due_at IS NOT NULL`（复用 `idx_issues_validation_due`，`schema-v6.ts`），只读、无副作用。测试：构造一个正等待 due time 的 Validating Issue（该 workspace 此时 queued 计数为 0），断言 health 报告 `waiting_for_validation_due` 而**不是**误判 `queue_starved`——这条诊断的价值是主动定位"卡在等 grace period"，不是修正一个原本存在的误报（等待期间本就没有 queued Run，naive 检查不会因此误报）（`design.md` 第 5 节）。
+- [ ] T041f：**`waiting_for_validation_due` 必须按 due time 与当前时间分流，不能把逾期未派发也算作正常等待**——`ValidationDispatchScheduler` 默认 1 秒 tick 才去 claim 到期的 Issue；若查出的 `validation_dispatch_due_at` 已经早于 `now - VALIDATION_DISPATCH_GRACE_MS`（新增常量，5 秒，覆盖 tick 延迟）仍未被 claim（对应 Queued Validator Run 依然不存在），说明调度器可能已停摆或该 Issue 被漏处理，改报 `validation_dispatch_overdue`（`detail` 附 `overdue_ms`），不能和真正在等待的 `waiting_for_validation_due` 混为一谈。测试覆盖：未到期、grace 窗口内刚过期、超过 grace 窗口三类边界（`design.md` 第 5 节）。
 - [ ] T041d：`no_available_adapter` 判断 + 各条判断的建议动作文案。
 - [ ] T042：只读性测试——调用 health 后断言无 probe 被触发、无锁被获取、无任何表被写入（AC-004）。
 - [ ] T043：`GET /api/projects/:projectId/health/runtime?workspace_id=`，zod 边界校验 + Project 归属校验；非法/跨 Project `workspace_id` → `WORKSPACE_NOT_FOUND`（`design.md` 第 5b 节）。
@@ -66,7 +68,7 @@ updated: 2026-08-02
 - [ ] T051：模板详情——步骤、`validation_enabled` 显著展示，讲清 `steps_json` 是验证开关而非普通字段。
 - [ ] T052：保存与启用拆成两个动作；启用时提示影响范围（`design.md` 第 4 节）。
 - [ ] T053：关闭验证的二次确认对话框。
-- [ ] T054：Health 面板——五类状态 + **对 `RuntimeHealthSnapshot.diagnostics.code` 判别联合穷尽渲染**（当前 9 个取值），每个 code 各有建议动作文案与至少一条 UI 测试。用 `assertNever` 兜底，保证将来新增 code 时**编译期**报漏项。旧表述"三条派生判断"已不成立——DTO 里 stale lock 两类、queue 四类、外加 adapter 与 schema，按三类验收会让其余 code 落进空白 UI。
+- [ ] T054：Health 面板——五类状态 + **对 `RuntimeHealthSnapshot.diagnostics.code` 判别联合穷尽渲染**（当前 10 个公开取值：`stale_lock_confirmed` / `stale_lock_suspected` / `lock_timestamp_invalid` / `queue_starved` / `waiting_for_recovery` / `invalid_queued_run` / `waiting_for_validation_due` / `validation_dispatch_overdue` / `no_available_adapter` / `schema_version_mismatch`；`eligible_but_not_running` 是内部分类结果，不出现在这个联合类型里，不需要 UI 分支），每个 code 各有建议动作文案与至少一条 UI 测试。用 `assertNever` 兜底，保证将来新增 code 时**编译期**报漏项。旧表述"三条派生判断"已不成立——按三类验收会让其余 code 落进空白 UI。
 
 ## Phase 6：验收
 
