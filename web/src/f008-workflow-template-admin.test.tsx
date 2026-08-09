@@ -252,6 +252,32 @@ describe("T052/T053: save draft vs save & enable, and the disable-validation con
     });
   });
 
+  it("enabling validation from an active no-validator template does not open the confirmation dialog", async () => {
+    vi.mocked(apiClient.workflowTemplates.list).mockResolvedValue({
+      templates: [{ ...ACTIVE_V1, validation_enabled: false }],
+    });
+    vi.mocked(apiClient.workflowTemplates.get).mockResolvedValue(
+      detailResponse({
+        ...DETAIL_V1,
+        steps_json: JSON.stringify({ schema_version: 1, steps: [{ id: "implementation", role: "implementation" }] }),
+        steps: [{ id: "implementation", role: "implementation" }],
+        validation_enabled: false,
+      }),
+    );
+    await openEditor();
+    fireEvent.change(screen.getByLabelText("steps_json"), { target: { value: VALID_STEPS } });
+    fireEvent.click(screen.getByRole("button", { name: "Save & enable" }));
+
+    await waitFor(() => {
+      expect(apiClient.workflowTemplates.createVersion).toHaveBeenCalledWith("wft_1", {
+        name: "Default workflow",
+        steps_json: VALID_STEPS,
+        activate: true,
+      });
+    });
+    expect(screen.queryByText("Disable validation?")).not.toBeInTheDocument();
+  });
+
   it("surfaces VALIDATION_DISABLE_NOT_ACKNOWLEDGED by opening the confirmation dialog", async () => {
     vi.mocked(apiClient.workflowTemplates.createVersion).mockRejectedValue({
       code: "VALIDATION_DISABLE_NOT_ACKNOWLEDGED",

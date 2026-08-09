@@ -80,10 +80,14 @@ export function WorkflowTemplateAdminDialog({ open, onOpenChange }: WorkflowTemp
     setError(null);
   }
 
+  // Mirrors server runActivationGate(): acknowledge is required only when the
+  // currently-active template's validation state is unknown (before.valid=false)
+  // or the target removes the validator step — never when validation is being
+  // (re-)enabled on an active template that is known to have no validator.
   function needsAcknowledge(stepsPreview: StepsPreview): boolean {
     if (!stepsPreview.valid) return false;
-    if (!stepsPreview.hasValidator) return true;
-    return activeTemplate?.validation_enabled !== true;
+    const activeValid = activeTemplate !== null && activeTemplate.validation_enabled !== null;
+    return !activeValid || !stepsPreview.hasValidator;
   }
 
   function submitEnable(name: string, stepsJson: string | null) {
