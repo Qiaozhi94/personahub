@@ -1,5 +1,9 @@
 ---
-feature_ids: [F008]
+kind: feature
+id: F008
+version: "0.2"
+status: done
+gate_version: 0
 related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability, v0.2]
 doc_kind: spec

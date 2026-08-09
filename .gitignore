@@ -10,6 +10,9 @@
 *.db-shm
 *.db-wal
 
+# Local runtime artifacts (dev DB, logs)
+.local/
+
 # Dependencies
 node_modules/
 

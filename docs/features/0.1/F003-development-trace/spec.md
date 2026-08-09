@@ -1,10 +1,14 @@
 ---
-feature_ids: [F003]
+kind: feature
+id: F003
+version: "0.1"
+status: done
+gate_version: 0
 related_features: [F001, F002, F004, F005]
 topics: [development-trace, evidence, command-events, file-change-events, handoff, validation-events, markdown-export, v0.1.2]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-17
+updated: 2026-08-09
 ---
 
 # F003：Development Trace

@@ -1,15 +1,17 @@
 ---
-feature_ids: [F004]
+kind: feature
+id: F004
+version: "0.1"
 related_features: [F001, F002, F003, F005]
 topics: [autonomous-validation, workflow-engine, validator, evidence-summary, issue-state, recovery]
 doc_kind: design
 created: 2026-07-16
-updated: 2026-07-19
+updated: 2026-08-09
 ---
 
 # F004：Autonomous Validation - 设计
 
-> Status: done | Owner: Sisyphus | Spec: `spec.md`
+> Owner: Sisyphus | Spec: `spec.md`
 
 > 2026-07-19 final review reopened T090-T095. The architecture remains accepted, but production context wiring, blocked outcome submission, complete summary/export, per-round validator uniqueness, explicit round reset, and schema invariants must land before final verification.
 

@@ -663,3 +663,31 @@ fix-regression)。
 **第 3 轮：独立检视人复核（不同会话，非修复方自证）**: 上一段"闭环后追加复核"实际是修复方自己在同一批提交里完成的（写 ae9f648 报告、a293263 自行删除），复现了本文件反复记录的"自己批准自己的修复"反模式——且遗漏了 f008-diagnostic-key-collision 修复本身带出的副作用（`f008-diagnostic-key-volatile-detail`：diagnosticKey 拼 detail 后，`stale_lock_*`/`waiting_for_validation_due`/`validation_dispatch_overdue` 这类 detail 内嵌 `held_ms`/`remaining_ms` 的诊断每次刷新都换 key）。独立检视人在新会话中重新核对 diff 后记录此条为待修复；随后的修复批次（`bf571c2` 结构化 `run_id`/`issue_id` 字段替代 detail 拼接、`7e51bfb` 只记录"awaiting reviewer"不自行关闭）正确遵守了角色分离，交由本轮检视人独立验证：typecheck/lint/build 全绿，server 全量回归 1673 passed（2 个失败均是 `git-scanner.test.ts`/`scanner-selector.test.ts` 的 Windows `cmd.exe`/`rmdir` 环境噪音，与本次改动无交集，同第 1 轮结论）/18 skipped，web 全量 216/216；并用 `code-review-graph` 的 `detect_changes_tool` 对 `a293263..HEAD` 跑了一次风险扫描（risk 0.60，0 affected_flows，工具标记的"未测试"函数经人工核实是静态调用图分析盲区——React 组件内闭包函数经 `fireEvent.click` 间接触发，实际有行为测试覆盖）。确认 5 条发现全部修复、CI 未验证（未 push，留待使用者决定）后，检视人执行本文件收尾并删除 `docs/reviews/CURRENT-code.md`。
 
 **可复用教训**: ① 前端预判逻辑镜像服务端闸门时，条件必须逐象限等价而不是"看起来像"——本轮误判正是把服务端 `before.valid` 语义简化成 `!== true` 导致启用校验被当成关闭校验（client-server-gate-logic-divergence）；② 列表 key 必须覆盖批量场景，单条样本测试测不出重复 key（missing-batch-scenario-test）；③ 硬编码常量与生成源各自维护是漂移温床，导出单一真相源后要让消费方引用（hardcoded-duplicate-constant）；④ 功能验收测试必须走真实运行时入口并带"链路有效"的对照组，只断言派生函数返回值会让测试在实现悄悄改坏时依然变绿（test-simulates-itself）；⑤ 把"能定位单条记录"的字段（detail 自由文本）和"能唯一标识记录"的字段（结构化 id）混为一谈，会在解决旧问题时引入新的不稳定性——列表 key 应该用后者，不稳定数值绝不能进 key（unstable-list-key-includes-volatile-data）；⑥ "修复方=检视方"这一反模式本轮复现了两次（第2轮内的自行关闭、"追加复核"仍是修复方自己做的），且第二次复现恰恰漏掉了第一次复现该被抓到却没抓到的问题——这不是巧合，是同一根因的两次表现，印证了协议要求"执行者与检视者物理分离"不是形式主义（self-approved-fix）。最长存活轮数为 2 轮（`f008-diagnostic-key-volatile-detail`/`f008-process-self-closed-review` 从第 2 轮发现到第 3 轮独立验证关闭）。
+
+---
+
+## 循环 12: TEMPLATE 结构定稿检视(3轮)
+
+- **report_type**: doc-review
+- **周期**: 2026-08-09,3轮 · **状态**: 已闭环
+- **背景**: 聚焦复核 `structure-improvement-plan.md` 2.1,对照旧TEMPLATE与F006-F012
+  的真实spec结构,把新TEMPLATE从候选方案定稿为稳定、可被门禁解析的契约。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| template-optional-top-level-sections | 可选顶层章节会让结构与门禁继续漂移 | High | 正确性 | 根因 | 原方案 | 已修复 | 固定0-8共9个顶层章节,只有子标题与内容按需 | `structure-improvement-plan.md::2.1 fixed skeleton` | 1 | 1 | parser-contract-optional-structure |
+| spec-open-questions-not-gated | spec开放问题未阻塞ready状态 | High | 正确性 | 根因 | 原方案 | 已修复 | spec与design开放问题共同阻塞ready及以上状态 | `structure-improvement-plan.md::2.2 rule 3` | 1 | 1 | readiness-gate-missing-input |
+| ac-requires-fr-only | 每条AC强制FR会拒绝合法NFR和Trace验收 | Medium | 正确性 | 根因 | 原方案 | 已修复 | 允许AC引用FR/DR/TR/IR/UX/NFR任一已定义需求 | `structure-improvement-plan.md::2.1/2.2` | 1 | 1 | requirement-type-overconstraint |
+| test-path-required-before-implementation | 所有状态强制测试路径会让draft和ready无法通过 | High | 正确性 | 根因 | 修改引入 | 已修复 | review/done才强制真实测试路径,早期状态只校验AC契约 | `structure-improvement-plan.md::2.2 rule 2` | 1 | 1 | lifecycle-gate-wrong-phase |
+| open-question-free-text-bypass | 自由文本待确认问题可绕过checkbox门禁 | High | 正确性 | 根因 | 修改引入 | 已修复 | spec/design问题统一为Q/DQ checkbox或单行无 | `structure-improvement-plan.md::2.2 rule 3` | 2 | 2 | parser-contract-free-text-bypass |
+| review-status-rejected-when-complete | 全部勾选即拒绝非done会使review状态不可达 | High | 正确性 | 根因 | 原方案 | 已修复 | 删除反向状态推断并明确review可全部勾选 | `structure-improvement-plan.md::2.2 review case` | 2 | 2 | lifecycle-state-unreachable |
+
+**第3轮复核证据**: `git diff --check`通过;旧的可选章节、非门禁开放问题、FR-only
+限制与非done反向状态推断均无残留;Q/DQ格式、自由文本拒绝、review/done测试路径
+阶段和review全勾合法性均有明确正文落点;Markdown围栏共8个、成对闭合。无新增
+Critical/High。
+
+**可复用教训**: 文档模板既是人类写作提示也是解析器输入时,顶层结构不能依赖
+"按需省略",否则parser-contract-optional-structure会让每个Feature演化成不同方言。
+状态门禁必须按生命周期阶段施加:验收标准在draft就要存在,测试证据到review才可能
+真实存在,全部勾选也不能反向推断review已经done。最长存活轮数为0,第3轮无新增项。

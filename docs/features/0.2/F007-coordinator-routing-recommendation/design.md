@@ -1,15 +1,17 @@
 ---
-feature_ids: [F007]
+kind: feature
+id: F007
+version: "0.2"
 related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, explainability]
 doc_kind: design
 created: 2026-08-01
-updated: 2026-08-08
+updated: 2026-08-09
 ---
 
 # F007：Coordinator Agent & Routing Recommendation - 设计
 
-> Status: done | Owner: TBD | Spec: `spec.md`
+> Owner: TBD | Spec: `spec.md`
 
 ## 1. 技术概要
 

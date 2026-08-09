@@ -1,14 +1,16 @@
 ---
-feature_ids: [F004]
+kind: feature
+id: F004
+version: "0.1"
 related_features: [F001, F002, F003, F005]
 topics: [autonomous-validation, workflow, evidence-summary, state-machine, tests, v0.1.3]
 doc_kind: tasks
 created: 2026-07-16
-updated: 2026-07-19
+updated: 2026-08-09
 ---
 
 # F004：Autonomous Validation - 任务
-> Status: done | Owner: Sisyphus | Spec: `spec.md` | Design: `design.md`
+> Owner: Sisyphus | Spec: `spec.md` | Design: `design.md`
 
 ## 规则
 

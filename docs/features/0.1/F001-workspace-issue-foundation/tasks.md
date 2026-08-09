@@ -1,15 +1,17 @@
 ---
-feature_ids: [F001]
+kind: feature
+id: F001
+version: "0.1"
 related_features: []
 topics: [project, workspace, issue, thread, sqlite, api, ui, v0.1.0]
 doc_kind: tasks
 created: 2026-07-12
-updated: 2026-07-16
+updated: 2026-08-09
 ---
 
 # F001：Workspace & Issue Foundation - 任务
 
-> Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
 ## 规则
 

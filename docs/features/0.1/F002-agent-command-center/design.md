@@ -1,15 +1,17 @@
 ---
-feature_ids: [F002]
+kind: feature
+id: F002
+version: "0.1"
 related_features: [F001]
 topics: [agent-adapter, codex-cli, run-events, workspace-lock, escalation, api, ui, v0.1.1]
 doc_kind: design
 created: 2026-07-12
-updated: 2026-07-16
+updated: 2026-08-09
 ---
 
 # F002：Agent Command Center - 设计
 
-> Status: done | Owner: TBD | Spec: `spec.md`
+> Owner: TBD | Spec: `spec.md`
 
 ## 1. 技术概要
 

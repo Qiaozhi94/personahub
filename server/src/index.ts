@@ -49,6 +49,9 @@ import { OpenCodeAdapter } from "./runtime/adapters/opencode-adapter.js";
 import { registerRoutes } from "./api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "./api/errors.js";
 import { GraphConstraintError } from "./db/sqlite-errors.js";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { GraphRuntimeService } from "./services/graph-runtime.js";
 import { GraphRecoveryService } from "./services/graph-recovery.js";
 import { GraphNodeInstructionBuilder } from "./runtime/graph/instruction-builder.js";
@@ -63,10 +66,16 @@ import { RuntimeHealthService } from "./services/runtime-health.js";
 
 const PORT = Number(process.env.PORT ?? 4321);
 const HOST = process.env.HOST ?? "127.0.0.1";
-const DB_PATH = process.env.DB_PATH ?? "personahub.db";
+// Dev DB defaults to the repo-local, gitignored `.local/db/`; DB_PATH overrides (tests/CI use temp paths).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const defaultDbPath = path.resolve(__dirname, "..", "..", ".local", "db", "personahub.db");
+const DB_PATH = process.env.DB_PATH ?? defaultDbPath;
+const defaultLogFile = path.resolve(__dirname, "..", "..", ".local", "logs", "server.log");
+const LOG_FILE = process.env.LOG_FILE ?? defaultLogFile;
 const CORS_ORIGINS = process.env.CORS_ORIGIN?.split(",") ?? ["http://127.0.0.1:5173", "http://localhost:5173"];
 
 async function main() {
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   const db = openDatabase(DB_PATH);
 
   const projectRepo = new ProjectRepository(db);
@@ -340,7 +349,15 @@ async function main() {
     await runDispatchService.drainWorkspace(ws.id);
   }
 
-  const app = Fastify({ logger: true });
+  const app = Fastify({
+    logger: {
+      level: "info",
+      transport: {
+        target: "pino/file",
+        options: { destination: LOG_FILE, mkdir: true },
+      },
+    },
+  });
 
   await app.register(cors, { origin: CORS_ORIGINS });
 

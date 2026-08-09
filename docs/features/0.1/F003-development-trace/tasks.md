@@ -1,15 +1,17 @@
 ---
-feature_ids: [F003]
+kind: feature
+id: F003
+version: "0.1"
 related_features: [F001, F002, F004, F005]
 topics: [development-trace, evidence, runtime, api, ui, tests, v0.1.2]
 doc_kind: tasks
 created: 2026-07-15
-updated: 2026-07-19
+updated: 2026-08-09
 ---
 
 # F003：Development Trace - 任务
 
-> Status: done | Owner: Sisyphus | Spec: `spec.md` | Design: `design.md`
+> Owner: Sisyphus | Spec: `spec.md` | Design: `design.md`
 
 ## 规则
 

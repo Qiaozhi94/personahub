@@ -26,10 +26,16 @@
     "typecheck": "npm -w @personahub/server run typecheck && npm -w @personahub/web run typecheck && npm -w @personahub/e2e run typecheck",
     "pretest:e2e": "npm run build:shared",
     "test:e2e": "npm -w @personahub/e2e run test",
-    "test:e2e:install": "npm -w @personahub/e2e exec playwright install chromium"
+    "test:e2e:install": "npm -w @personahub/e2e exec playwright install chromium",
+    "check:features": "node tools/check-feature-gates.mjs",
+    "test:feature-gates": "node --test tools/check-feature-gates.test.mjs",
+    "check:doc-links": "node tools/check-doc-links.mjs",
+    "check:doc-ownership": "node tools/check-doc-ownership.mjs",
+    "test:docs": "node --test tools/check-docs.test.mjs",
+    "verify": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run test:feature-gates && npm run test:docs && npm run check:features && npm run check:doc-links && npm run check:doc-ownership && npm run build"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.19",

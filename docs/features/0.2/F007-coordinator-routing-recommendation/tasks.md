@@ -1,15 +1,17 @@
 ---
-feature_ids: [F007]
+kind: feature
+id: F007
+version: "0.2"
 related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, explainability]
 doc_kind: tasks
 created: 2026-08-01
-updated: 2026-08-08
+updated: 2026-08-09
 ---
 
 # F007：Coordinator Agent & Routing Recommendation - 任务
 
-> Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
 > **实施证据（2026-08-08 完成）**：F007 服务端测试见 `server/tests/integration/{intake-confirm,intake-routes,intake-secret,intake-null-definition}.test.ts`，前端测试见 `web/src/f007-intake-dialog.test.tsx`。全部任务经 `npm run lint && npm run format:check && npm run typecheck && npm test && npm run build` 验证通过。
 >

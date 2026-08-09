@@ -1,5 +1,7 @@
 ---
-feature_ids: [F008]
+kind: feature
+id: F008
+version: "0.2"
 related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability]
 doc_kind: design
@@ -9,7 +11,7 @@ updated: 2026-08-09
 
 # F008：Workflow Template Admin & Runtime Health - 设计
 
-> Status: ready-for-development | Owner: TBD | Spec: `spec.md`
+> Owner: TBD | Spec: `spec.md`
 
 ## 1. 技术概要
 

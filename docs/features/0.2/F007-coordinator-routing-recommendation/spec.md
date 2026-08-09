@@ -1,10 +1,14 @@
 ---
-feature_ids: [F007]
+kind: feature
+id: F007
+version: "0.2"
+status: done
+gate_version: 0
 related_features: [F005, F006]
 topics: [coordinator, routing-recommendation, issue-intake, explainability, v0.2]
 doc_kind: spec
 created: 2026-08-01
-updated: 2026-08-08
+updated: 2026-08-09
 ---
 
 # F007：Coordinator Agent & Routing Recommendation

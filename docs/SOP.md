@@ -26,7 +26,7 @@ updated: 2026-08-09
 |------|------|
 | 1 | 建分支/worktree 做隔离开发 |
 | 2 | 严格按 `tasks.md` 里的顺序逐项实现，不跳过、不并成大块一次性写完；每完成一项立即在 `tasks.md` 里勾掉，不要攒到最后统一补标。标记为 `[P]` 的任务可以并行，其余按文档顺序来。如果实现中发现某个任务顺序不对或已经过时，先改 `tasks.md` 再继续，不要绕开文档直接改代码 |
-| 3 | 自检：对照 spec / acceptance criteria 过一遍，跑测试（含真实环境测试，见下方“真实环境测试纪律”） |
+| 3 | 自检：对照 spec / acceptance criteria 过一遍，跑 `npm run verify`（统一质量门禁，串联 lint、format:check、typecheck、测试、文档门禁与 build；含真实环境测试，见下方“真实环境测试纪律”） |
 | 4 | （可选）让 AI agent 扮演 reviewer 角色审一遍 diff，输出 findings |
 | 5 | 合并 + 清理分支 |
 

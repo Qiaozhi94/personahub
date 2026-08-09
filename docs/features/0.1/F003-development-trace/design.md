@@ -1,15 +1,17 @@
 ---
-feature_ids: [F003]
+kind: feature
+id: F003
+version: "0.1"
 related_features: [F001, F002, F004, F005]
 topics: [development-trace, adapter-trace, evidence-refs, file-snapshot, handoff, validation-events, export]
 doc_kind: design
 created: 2026-07-15
-updated: 2026-07-17
+updated: 2026-08-09
 ---
 
 # F003：Development Trace - 设计
 
-> Status: done | Owner: Sisyphus | Spec: `spec.md`
+> Owner: Sisyphus | Spec: `spec.md`
 
 ## 1. 技术概要
 

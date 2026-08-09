@@ -1,5 +1,7 @@
 ---
-feature_ids: [F008]
+kind: feature
+id: F008
+version: "0.2"
 related_features: [F004, F005, F007]
 topics: [workflow-template, admin-ui, runtime-health, observability]
 doc_kind: tasks
@@ -9,7 +11,7 @@ updated: 2026-08-09
 
 # F008：Workflow Template Admin & Runtime Health - 任务
 
-> Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
 ## Phase 1：模板读取与派生投影（FR-001）
 

@@ -1,10 +1,14 @@
 ---
-feature_ids: [F006]
+kind: feature
+id: F006
+version: "0.2"
+status: done
+gate_version: 0
 related_features: [F003, F004, F005]
 topics: [executable-work-graph, orchestrator-subagent, fan-out, fan-in, recovery, v0.2]
 doc_kind: spec
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-09
 ---
 
 # F006：Orchestrated Coding Graph Slice

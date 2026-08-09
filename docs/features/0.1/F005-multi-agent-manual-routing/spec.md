@@ -1,10 +1,14 @@
 ---
-feature_ids: [F005]
+kind: feature
+id: F005
+version: "0.1"
+status: done
+gate_version: 0
 related_features: [F002, F003, F004]
 topics: [agent-adapter, claude-code, opencode, manual-routing, multi-agent, v0.1.4]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-28
+updated: 2026-08-09
 ---
 
 # F005：Manual Multi-Agent Routing（手动多 Agent 路由）

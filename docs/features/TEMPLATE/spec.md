@@ -1,5 +1,9 @@
 ---
-feature_ids: [Fxxx]
+kind: feature
+id: Fxxx
+version: "0.x"
+status: draft
+gate_version: 1
 related_features: []
 topics: []
 doc_kind: spec
@@ -9,20 +13,20 @@ updated: YYYY-MM-DD
 
 # Fxxx：功能名称
 
-> Status: draft | Owner: TBD | Target: v0.x.y
+> Owner: TBD | Target: v0.x.y
 
-## 0. 规格元信息
+## 0. 来源与意图
 
-- **PRD 来源**：`docs/personahub-prd.md` 相关章节：...
-- **架构来源**：`docs/personahub-architecture.md` 相关章节：...
-- **系统设计来源**：`docs/personahub-system-design.md` 相关实体/章节：...
+- **PRD 来源**：`docs/<project>-prd.md` 相关章节：...
+- **架构来源**：`docs/<project>-architecture.md` 相关章节：...
+- **系统设计 / Research / Contract 来源**：`docs/...` 相关实体/章节：...
 - **上游决策**：`docs/decisions/...`
 - **功能类型**：user-facing / backend / data-model / runtime / workflow / validation / docs
 - **规格模式**：lite / full
 - **变更类型**：ADDED / MODIFIED / REMOVED / MIXED
 - **一句话意图**：...
 
-## 1. 问题与目标
+## 1. 问题、目标与非目标
 
 ### 问题
 
@@ -37,11 +41,11 @@ updated: YYYY-MM-DD
 - 本 feature 不做 ...
 - 本 feature 将 ... 留给 `Fxxx` / v0.x。
 
-## 2. 用户场景与独立测试
+## 2. 用户场景
 
 每个用户场景都应该能独立交付价值，并能独立验证。按优先级排序，确保只完成 P1 时也能形成一个有意义的最小切片。
 
-### US1：场景标题（Priority: P1）
+### US-001：场景标题（Priority: P1）
 
 作为 `<用户或系统角色>`，我希望 `<能力>`，以便 `<结果>`。
 
@@ -54,7 +58,7 @@ updated: YYYY-MM-DD
 1. Given `<初始状态>`，when `<用户/系统动作>`，then `<可观察结果>`。
 2. Given `<边界/错误状态>`，when `<动作>`，then `<预期行为>`。
 
-### US2：场景标题（Priority: P2）
+### US-002：场景标题（Priority: P2）
 
 作为 `<用户或系统角色>`，我希望 `<能力>`，以便 `<结果>`。
 
@@ -66,7 +70,7 @@ updated: YYYY-MM-DD
 
 1. Given `<初始状态>`，when `<动作>`，then `<预期结果>`。
 
-### US3：场景标题（Priority: P3）
+### US-003：场景标题（Priority: P3）
 
 作为 `<用户或系统角色>`，我希望 `<能力>`，以便 `<结果>`。
 
@@ -78,7 +82,7 @@ updated: YYYY-MM-DD
 
 1. Given `<初始状态>`，when `<动作>`，then `<预期结果>`。
 
-## 3. 范围
+## 3. 范围与边界
 
 ### 范围内
 
@@ -156,16 +160,9 @@ updated: YYYY-MM-DD
 - **NFR-004**：本地优先 / 离线行为：...
 - **NFR-005**：兼容性，尤其是 Windows 路径 / 进程行为：...
 
-## 5. 关键实体 / 概念
+## 5. 生命周期与不变量
 
-只描述领域含义和重要属性。详细 schema 放到 system design 或实现 migration 中。
-
-- **实体 / 概念 1**：表示 ... 关键属性：...
-- **实体 / 概念 2**：表示 ... 与 ... 的关系：...
-
-## 6. 状态、工作流或生命周期
-
-如果 feature 改变状态流转、workflow 执行、run 生命周期、validation loop、lock 生命周期等行为，填写本节。
+描述状态流转、workflow、run、validation、lock 生命周期，以及跨状态必须始终成立的不变量。
 
 ```text
 状态 A -> 状态 B  触发条件 / 进入条件
@@ -173,11 +170,15 @@ updated: YYYY-MM-DD
 状态 B -> Blocked escalation 条件
 ```
 
-规则：
+不变量：
 
 - ...
 
-## 7. 成功标准
+不适用时写：`不适用：<理由>`。
+
+## 6. 成功与验收
+
+### 成功标准
 
 定义能证明该 feature 完成且有用的可衡量结果。
 
@@ -185,75 +186,49 @@ updated: YYYY-MM-DD
 - **SC-002**：...
 - **SC-003**：...
 
-## 8. 验收清单
+### 验收清单
 
-清单项应当具体、可测试，并能追踪到需求 ID。
+清单项必须具体、可观察，并引用第 4 节真实存在的需求 ID。进入 `review` 前回填
+`tests:` 路径，标记 `done` 前勾选。
 
-- [ ] **AC-001**（`FR-001`, `UX-001`）：...
-- [ ] **AC-002**（`FR-002`, `DR-001`）：...
-- [ ] **AC-003**（`TR-001`）：...
-- [ ] **AC-004**（`NFR-002`）：...
+- [ ] **AC-001** (`FR-001`, `UX-001`): 可观察行为 — tests: `path/to/test_file`
+- [ ] **AC-002** (`DR-001`, `TR-001`): 可观察行为
+- [ ] **AC-003** (`NFR-002`): 可观察行为
 
-## 9. 测试计划
+## 7. 测试、依赖与决策
 
-### 单元测试
+### 测试策略
 
-- ...
+- 单元测试：...
+- 集成测试：...
+- UI / E2E：...
+- 真实环境 / 手动验证：...
 
-### 集成测试
+### 依赖
 
-- ...
+- 上游 Feature / Contract：...
+- 下游消费者：...
+- 外部 / 环境依赖：...
 
-### UI / 端到端测试
+### 决策与风险
 
-- ...
+| 决策 / 风险 | 结论或缓解 | 理由 | 后续 |
+|---|---|---|---|
+| ... | ... | ... | ... |
 
-### 手动验证
+只放已经拍板的权衡和残余风险；实现结构与详细技术选择写入 `design.md`。
 
-- ...
+## 8. 待确认问题
 
-## 10. 依赖
+只允许以下两种形式：
 
-### 上游依赖
+```markdown
+- [ ] Q-001: <阻塞范围或行为契约的问题>
+- [x] Q-002: <已关闭问题> — 决策：<结论>
+```
 
-- ...
+没有开放或历史问题时写：
 
-### 下游依赖
-
-- ...
-
-### 外部 / 环境依赖
-
-- ...
-
-## 11. 风险与缓解
-
-| 风险 | 影响 | 缓解 |
-| --- | --- | --- |
-| ... | ... | ... |
-
-## 12. 待确认问题
-
-只记录真正阻塞实现或会改变范围的问题。优先给出推荐倾向。
-
-- **Q1**：...  
-  **推荐**：...
-
-## 13. 可追踪性
-
-| 规格项 | 来源 | 验证方式 |
-| --- | --- | --- |
-| `FR-001` | PRD section ... | `AC-001`，test ... |
-| `TR-001` | Architecture section ... | `AC-003`，test ... |
-
-## 14. 实现备注
-
-本节可选。只记录后续 design/tasks 必须遵守的约束，不写详细代码设计。
-
-- ...
-
-## 15. 参考
-
-- GitHub Spec Kit `spec-template.md`：用户场景、独立测试、功能需求、关键实体、可衡量结果。
-- Kiro 风格 SDD 流程：requirements -> design -> tasks；requirements 常使用 EARS 等结构化验收标准。
-- Specification by Example / BDD：具体例子和 Given/When/Then 场景作为共享、可测试需求。
+```text
+无
+```

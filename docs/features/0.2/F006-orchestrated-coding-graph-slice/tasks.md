@@ -1,15 +1,17 @@
 ---
-feature_ids: [F006]
+kind: feature
+id: F006
+version: "0.2"
 related_features: [F003, F004, F005]
 topics: [executable-work-graph, orchestrator-subagent, recovery]
 doc_kind: tasks
 created: 2026-08-01
-updated: 2026-08-03
+updated: 2026-08-09
 ---
 
 # F006：Orchestrated Coding Graph Slice - 任务
 
-> Status: complete (97/97 ✅；含 Web 发起图入口；T054b 的 kill 时序三项 UI 测试仍未补，见该条注记) | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
 ## Phase 0：设计收敛（已完成）
 

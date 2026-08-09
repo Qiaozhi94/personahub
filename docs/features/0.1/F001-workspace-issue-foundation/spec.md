@@ -1,10 +1,14 @@
 ---
-feature_ids: [F001]
+kind: feature
+id: F001
+version: "0.1"
+status: done
+gate_version: 0
 related_features: []
 topics: [project, workspace, issue, thread, sqlite, v0.1.0]
 doc_kind: spec
 created: 2026-07-12
-updated: 2026-07-16
+updated: 2026-08-09
 ---
 
 # F001：Workspace & Issue Foundation

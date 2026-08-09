@@ -1,15 +1,17 @@
 ---
-feature_ids: [F006]
+kind: feature
+id: F006
+version: "0.2"
 related_features: [F003, F004, F005]
 topics: [executable-work-graph, orchestrator-subagent, fan-out, fan-in, recovery]
 doc_kind: design
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-09
 ---
 
 # F006：Orchestrated Coding Graph Slice - 设计
 
-> Status: done（`spec.md` 全部 AC 验收通过；见 `spec.md` Status 行） | Owner: TBD | Spec: `spec.md`
+> Owner: TBD | Spec: `spec.md`
 
 ## 1. 技术概要
 

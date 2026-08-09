@@ -1,5 +1,7 @@
 ---
-feature_ids: [F009]
+kind: feature
+id: F009
+version: "0.3"
 related_features: [F003, F004, F006, F010]
 topics: [artifact, provenance, evidence, typed-ref]
 doc_kind: tasks
@@ -9,41 +11,70 @@ updated: 2026-08-09
 
 # F009：Artifact Foundation & Provenance - 任务
 
-> Status: draft | Owner: TBD | Spec: `spec.md` | Design: `design.md`
+> Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
-## Phase 1：Contract 与 migration
+## 0. 来源与执行规则
 
-- [ ] T001（DR-001~003）：新增 shared Artifact 类型、状态、storage、resolution DTO 与事件枚举。
-- [ ] T002（DR-001~003）：新增 schema v11 migration、索引/CHECK、migration 注册与升级测试；F008=v10、F010=v12、F011=v13、F012=v14，已应用版本不得修改或追加。
-- [ ] T003（FR-003）：扩展 typed ref parser，区分 pinned execution ref 与 floating UI ref，覆盖 malformed/overflow。
-- [ ] T004（FR-004/NFR-003）：实现 inline/hash/size/path guard 和 Windows containment/junction 测试。
+- 行为与验收真相源：`spec.md`。
+- 技术方案与边界：`design.md`。
+- 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
+- 完成且验证后立即把 `[ ]` 改为 `[x]`，不得最后统一补勾。
+- `[P]` 只用于修改不同文件、没有显式前置依赖且不会争用同一状态的任务。
+- 实现中若任务顺序或契约失效，先修订三件套，再继续编码。
 
-## Phase 2：Repository 与 Service
+统一任务格式：
 
-- [ ] T010（FR-001/002）：实现 ArtifactRepository 的 create/get/list/revise-CAS/archive。
-- [ ] T011（FR-001/002/TR-001）：实现 ArtifactService 事务、归属复核与 pending event 提交后广播。
-- [ ] T012（FR-004）：实现受控目录 temp→hash→transaction→atomic rename，覆盖每个故障点清理。
-- [ ] T013（FR-003/006）：EvidenceService 扩展 artifact resolution 与反向 evidence 查询。
-- [ ] T014（NFR-002）：事件写入/DB/文件故障注入，断言无孤儿 revision、无幽灵 SSE。
-- [ ] T015（FR-002/IR-001）：三个独立连接同时 revise，确定性触发首次冲突与重试后再次冲突；断言胜者 revision 唯一单调、旧 ref 不漂移，败者收到 409 `ARTIFACT_REVISION_CONFLICT` 与最新 revision。
+```markdown
+- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <一个可验证动作> - verify: `path/to/test.ts`
+```
 
-## Phase 3：API 与 UI
+## 1. 前置条件
 
-- [ ] T020（IR-001）：实现六条 Artifact API、zod schema、scope-safe 404 与错误映射。
-- [ ] T021（UX-001）：新增 API client/hook，列表请求不含/不读取正文。
-- [ ] T022（UX-001）：Artifact Inspector 列表、详情、revision selector、source/evidence 链。
-- [ ] T023（UX-001）：穷尽渲染 loading/empty/missing/invalid/hash-mismatch/archived。
+不适用：`spec.md` 第 8 节与 `design.md` 第 10 节的待确认问题已全部关闭；上游 F003/F004 已 done，无待验证 Contract。实现任务从 T001 连续编号。
 
-## Phase 4：恢复与验收
+## 2. 实现任务
 
-- [ ] T030（FR-007）：archive/历史 ref/重启回放集成测试。
-- [ ] T031（NFR-003）：真实 Windows 手动验证绝对路径、UNC、`..`、大小写和 junction 越界。
-- [ ] T032（AC-001~006）：完成 API/UI/集成验收矩阵，回归 F001-F008。
-- [ ] T033：运行 lint、format check、typecheck、全量测试、生产构建；新增文件纳入 format targets。
-- [ ] T034：回写 spec AC、BACKLOG 与全局 architecture/system-design 的最终模型。
+### Phase 1：Contract 与 migration
 
-## 依赖关系
+- [ ] T001 (`DR-001`, `DR-002`, `DR-003`): 新增 shared Artifact 类型、状态、storage、resolution DTO 与事件枚举。 - verify: `shared/src/artifact/types.ts`
+- [ ] T002 (`DR-001`, `DR-002`, `DR-003`): 新增 schema v11 migration、索引/CHECK、migration 注册与升级测试；F008=v10、F010=v12、F011=v13、F012=v14，已应用版本不得修改或追加。 - verify: `server/tests/integration/migration-v11.test.ts`
+- [ ] T003 (`FR-003`): 扩展 typed ref parser，区分 pinned execution ref 与 floating UI ref，覆盖 malformed/overflow。 - verify: `server/tests/unit/artifact-ref-parser.test.ts`
+- [ ] T004 (`FR-004`, `NFR-003`): 实现 inline/hash/size/path guard 和 Windows containment/junction 测试。 - verify: `server/tests/unit/artifact-path-guard.test.ts`
 
-- Phase 1 → Phase 2 → Phase 3 → Phase 4。
-- T012 与 T013 可在 T010 后并行；UI 依赖 API DTO 冻结。
-- F010 必须等待 T003、T011、T013 完成。
+### Phase 2：Repository 与 Service
+
+- [ ] T010 (`FR-001`, `FR-002`): 实现 ArtifactRepository 的 create/get/list/revise-CAS/archive。 - verify: `server/tests/integration/artifact-repository.test.ts`
+- [ ] T011 (`FR-001`, `FR-002`, `TR-001`): 实现 ArtifactService 事务、归属复核与 pending event 提交后广播。 - verify: `server/tests/integration/artifact-service-tx.test.ts`
+- [ ] T012 (`FR-004`): 实现受控目录 temp->hash->transaction->atomic rename，覆盖每个故障点清理。 - verify: `server/tests/integration/artifact-local-file.test.ts`
+- [ ] T013 (`FR-003`, `FR-006`): EvidenceService 扩展 artifact resolution 与反向 evidence 查询。 - verify: `server/tests/integration/artifact-evidence-query.test.ts`
+- [ ] T014 (`NFR-002`): 事件写入/DB/文件故障注入，断言无孤儿 revision、无幽灵 SSE。 - verify: `server/tests/integration/artifact-transaction-fault.test.ts`
+- [ ] T015 (`FR-002`, `IR-001`): 三个独立连接同时 revise，确定性触发首次冲突与重试后再次冲突；断言胜者 revision 唯一单调、旧 ref 不漂移，败者收到 409 `ARTIFACT_REVISION_CONFLICT` 与最新 revision。 - verify: `server/tests/integration/artifact-revise-cas.test.ts`
+
+### Phase 3：API 与 UI
+
+- [ ] T020 (`IR-001`): 实现六条 Artifact API、zod schema、scope-safe 404 与错误映射。 - verify: `server/tests/integration/artifact-routes.test.ts`
+- [ ] T021 (`UX-001`): 新增 API client/hook，列表请求不含/不读取正文。 - verify: `web/src/artifact/api.test.ts`
+- [ ] T022 (`UX-001`): Artifact Inspector 列表、详情、revision selector、source/evidence 链。 - verify: `web/src/artifact/inspector.test.tsx`
+- [ ] T023 (`UX-001`): 穷尽渲染 loading/empty/missing/invalid/hash-mismatch/archived。 - verify: `web/src/artifact/inspector-states.test.tsx`
+
+## 3. 验证与验收任务
+
+- [ ] T030 (`FR-007`, `AC-006`): archive/历史 ref/重启回放集成测试。 - verify: `server/tests/integration/artifact-archive-replay.test.ts`
+- [ ] T031 (`AC-003`): 真实 Windows 手动验证绝对路径、UNC、`..`、大小写和 junction 越界。 - verify: 真实 Windows 环境手动验证
+- [ ] T032 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`, `AC-006`): 完成 API/UI/集成验收矩阵，回归 F001-F008。 - verify: `npm test`
+- [ ] T033 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`, `AC-006`): 运行 lint、format check、typecheck、全量测试、生产构建；新增文件纳入 format targets。 - verify: `npm run lint && npm run format:check && npm run typecheck && npm test && npm run build`
+- [ ] T034: 回写 spec AC、BACKLOG 与全局 architecture/system-design 的最终模型。 - verify: `docs/features/0.3/F009-artifact-foundation-provenance/spec.md`
+
+## 4. 依赖与并行关系
+
+- `T001 -> T010`：Phase 1 完成后进入 Phase 2。
+- `T010 -> T020`：Repository/Service 完成后进入 API/UI。
+- `T012` 与 `T013` 可在 `T010` 后并行，原因是修改不同文件且无共享状态。
+- UI（`T021`/`T022`/`T023`）依赖 `T020` 的 API DTO 冻结。
+- `T020` -> `T030` -> `T032` -> `T033` -> `T034`：验收链按序推进。
+- F010 必须等待 `T003`、`T011`、`T013` 完成。
+
+## 5. 明确后移
+
+- 自动从 agent 输出生成 artifact -> `F010`：本 Feature 只建立 artifact 实体与引用契约，不接入工作流产出。
+- Room/Squad、全文搜索、外部 URL、Memory/Skill 自动沉淀 -> `v0.3` 其它 Feature / 后续版本：不在本切片范围。
