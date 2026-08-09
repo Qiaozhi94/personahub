@@ -41,6 +41,7 @@ import { buildRunContext } from "./run-context-builder.js";
 import { AdapterAvailabilityProbeCoordinator } from "./adapter-probe-coordinator.js";
 import { AdapterFailureReprobe } from "./adapter-failure-reprobe.js";
 import { RunEscalationHandler } from "./run-escalation-handler.js";
+import { classifyQueuedRun } from "./queue-classifier.js";
 
 export class RunDispatchService {
   private failureReprobe: AdapterFailureReprobe;
@@ -185,6 +186,10 @@ export class RunDispatchService {
     await this.failureReprobe.shutdown(timeoutMs);
   }
 
+  healthSnapshot(): { pendingReprobeCount: number } {
+    return this.failureReprobe.healthSnapshot();
+  }
+
   private async workflowHook(runId: string): Promise<void> {
     const run = this.runService.get(runId);
     if (!run || !run.role) return;
@@ -311,43 +316,20 @@ export class RunDispatchService {
     const queuedRuns = this.runService.listQueuedByWorkspace(workspaceId);
     for (const run of queuedRuns) {
       const issue = this.issueRepo.getById(run.issue_id);
-      if (!issue) continue;
-      if (issue.status === IS.Blocked) {
-        if (run.role === RunRole.GraphNode) continue;
-        this.runService.cancelQueued(run.id, "issue_blocked_before_start");
-        continue;
-      }
-      if (issue.status === IS.Done) {
-        this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
-        continue;
-      }
-      // design §7.5: eligibility is role-specific, not just "validator vs
-      // everything else" — consult stays eligible through Validating too
-      // (it never drives workflow state, so it doesn't compete with the
-      // validator for that round; only implementation is excluded once
-      // Validating starts).
-      if (
-        run.role === RunRole.Implementation &&
-        issue.status !== IS.Inbox &&
-        issue.status !== IS.Ready &&
-        issue.status !== IS.Running
-      ) {
-        this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
-        continue;
-      }
-      if (run.role === RunRole.Validator) {
-        if (issue.status !== IS.Validating) {
-          this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
-          continue;
+      const classification = classifyQueuedRun(run, issue);
+
+      if (classification === "invalid_queued_run") {
+        if (issue) {
+          const reason =
+            issue.status === IS.Blocked ? "issue_blocked_before_start" : "issue_state_changed_before_start";
+          this.runService.cancelQueued(run.id, reason);
         }
-        const expectedRound = issue.validation_round_count + 1;
-        if (run.validation_round !== expectedRound) {
-          this.runService.cancelQueued(run.id, "issue_state_changed_before_start");
-          continue;
-        }
+        continue;
       }
-      // consult: eligible on Inbox/Ready/Running/Validating — Done/Blocked
-      // already handled above, nothing further to check here.
+
+      if (classification === "waiting_for_recovery") {
+        continue;
+      }
 
       const lockAcquired = this.workspaceLockService.acquire(workspaceId, run.id);
       if (!lockAcquired) return;

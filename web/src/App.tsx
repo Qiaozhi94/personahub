@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Settings, Sparkles } from "lucide-react";
+import { Activity, FileText, Plus, Settings, Sparkles } from "lucide-react";
 import { useProjects } from "@/hooks/use-projects";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { useIssue, useIssues } from "@/hooks/use-issues";
@@ -11,6 +11,8 @@ import { AdapterSettings } from "@/components/adapter/AdapterSettings";
 import { IssueList } from "@/components/issue/IssueList";
 import { CreateIssueDialog } from "@/components/issue/CreateIssueDialog";
 import { IntakeDialog } from "@/components/intake/IntakeDialog";
+import { WorkflowTemplateAdminDialog } from "@/components/workflow-template/WorkflowTemplateAdminDialog";
+import { RuntimeHealthDialog } from "@/components/runtime-health/RuntimeHealthDialog";
 import { ThreadView } from "@/components/thread/ThreadView";
 import { IssueInspector } from "@/components/inspector/IssueInspector";
 import { NoProject } from "@/components/empty-states/NoProject";
@@ -25,6 +27,8 @@ export function App() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [createIssueOpen, setCreateIssueOpen] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [workflowTemplatesOpen, setWorkflowTemplatesOpen] = useState(false);
+  const [healthOpen, setHealthOpen] = useState(false);
 
   const projectsQuery = useProjects();
   const projects = useMemo(() => projectsQuery.data?.projects ?? [], [projectsQuery.data?.projects]);
@@ -112,6 +116,23 @@ export function App() {
 
             <section className="mt-auto grid gap-1.5">
               <div className="px-2.5 text-xs text-muted-foreground">Configuration</div>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 text-secondary-foreground"
+                onClick={() => setWorkflowTemplatesOpen(true)}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Workflow templates
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 text-secondary-foreground"
+                disabled={!selectedProjectId}
+                onClick={() => setHealthOpen(true)}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                Runtime health
+              </Button>
               <Button variant="ghost" className="w-full justify-start gap-2 text-secondary-foreground" disabled>
                 <Settings className="h-3.5 w-3.5" />
                 Settings
@@ -186,6 +207,12 @@ export function App() {
           onOpenChange={setIntakeOpen}
           onCreated={setSelectedIssueId}
         />
+      ) : null}
+
+      <WorkflowTemplateAdminDialog open={workflowTemplatesOpen} onOpenChange={setWorkflowTemplatesOpen} />
+
+      {selectedProjectId ? (
+        <RuntimeHealthDialog projectId={selectedProjectId} open={healthOpen} onOpenChange={setHealthOpen} />
       ) : null}
     </>
   );

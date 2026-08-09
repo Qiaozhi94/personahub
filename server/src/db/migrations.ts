@@ -8,6 +8,7 @@ import { SCHEMA_V6 } from "./schema-v6.js";
 import { SCHEMA_V7 } from "./schema-v7.js";
 import { SCHEMA_V8 } from "./schema-v8.js";
 import { SCHEMA_V9 } from "./schema-v9.js";
+import { SCHEMA_V10 } from "./schema-v10.js";
 
 export function applyMigrations(db: Database.Database): void {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_version (
@@ -64,6 +65,13 @@ export function applyMigrations(db: Database.Database): void {
     db.transaction(() => {
       db.exec(SCHEMA_V9);
       db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(9, new Date().toISOString());
+    })();
+  }
+
+  if (currentVersion < 10) {
+    db.transaction(() => {
+      db.exec(SCHEMA_V10);
+      db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(10, new Date().toISOString());
     })();
   }
 }

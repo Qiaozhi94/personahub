@@ -9,7 +9,7 @@ updated: 2026-08-09
 
 # F008：Workflow Template Admin & Runtime Health
 
-> Status: ready-for-development | Owner: TBD | Target: v0.2
+> Status: done | Owner: TBD | Target: v0.2
 
 ## 0. 规格元信息
 
@@ -109,14 +109,14 @@ updated: 2026-08-09
 
 ## 6. 验收清单
 
-- [ ] **AC-001**（`FR-001`）：`validation_enabled` 与 `hasValidationStep()` 同源。
-- [ ] **AC-002**（`FR-002`、`FR-003`）：版本不可变；进行中 Issue 不受影响。
-- [ ] **AC-003**（`FR-004`、`FR-005`）：关闭验证需显式确认并记入审计；最后一个 active 模板不可停用。
-- [ ] **AC-004**（`FR-006`、`TR-001`）：health 只读且覆盖五类状态。
-- [ ] **AC-005**：F001-F007 全量回归通过。
-- [ ] **AC-006**（`FR-007`、`FR-008`）：任何激活路径下同 `issue_type` 至多一个 active 版本（由数据库唯一索引保证，不只靠 service）；非法 `steps_json` 的版本无法被启用，但**当前 active 版本非法时仍可启用一个合法的修复版本**。
-- [ ] **AC-008**（`FR-009`）：可编辑字段仅 `steps_json` 与 `name`；其余内容字段只读且 UI 标注不影响运行时。不存在"保存并启用成功但运行时行为未变"的字段。
-- [ ] **AC-007**（`FR-006`）：health 的派生判断与运行时实际恢复规则同源——终态持有者的锁**不看时长**即报 confirmed；持有者仍 running 但 `locked_at` 异常时归入独立的 `lock_timestamp_invalid`，不给出释放类建议；F006 有意保留的排队图节点不被误报为 `queue_starved`，`eligible_but_not_running` 只在锁空闲时聚合成唯一的 `queue_starved`、锁占用时不产出诊断；等待 due time 的 validation（此时不存在对应的排队 Run）由独立的 `waiting_for_validation_due` 诊断覆盖，超过 grace 窗口仍未被调度器 claim 的则改报 `validation_dispatch_overdue`，二者不与排队 Run 分类混同也不被忽略。
+- [x] **AC-001**（`FR-001`）：`validation_enabled` 与 `hasValidationStep()` 同源。
+- [x] **AC-002**（`FR-002`、`FR-003`）：版本不可变；进行中 Issue 不受影响。
+- [x] **AC-003**（`FR-004`、`FR-005`）：关闭验证需显式确认并记入审计；最后一个 active 模板不可停用。
+- [x] **AC-004**（`FR-006`、`TR-001`）：health 只读且覆盖五类状态。
+- [x] **AC-005**：F001-F007 全量回归通过。
+- [x] **AC-006**（`FR-007`、`FR-008`）：任何激活路径下同 `issue_type` 至多一个 active 版本（由数据库唯一索引保证，不只靠 service）；非法 `steps_json` 的版本无法被启用，但**当前 active 版本非法时仍可启用一个合法的修复版本**。
+- [x] **AC-008**（`FR-009`）：可编辑字段仅 `steps_json` 与 `name`；其余内容字段只读且 UI 标注不影响运行时。不存在"保存并启用成功但运行时行为未变"的字段。
+- [x] **AC-007**（`FR-006`）：health 的派生判断与运行时实际恢复规则同源——终态持有者的锁**不看时长**即报 confirmed；持有者仍 running 但 `locked_at` 异常时归入独立的 `lock_timestamp_invalid`，不给出释放类建议；F006 有意保留的排队图节点不被误报为 `queue_starved`，`eligible_but_not_running` 只在锁空闲时聚合成唯一的 `queue_starved`、锁占用时不产出诊断；等待 due time 的 validation（此时不存在对应的排队 Run）由独立的 `waiting_for_validation_due` 诊断覆盖，超过 grace 窗口仍未被调度器 claim 的则改报 `validation_dispatch_overdue`，二者不与排队 Run 分类混同也不被忽略。
 
 ## 7. 待确认问题（全部已关闭，2026-08-01）
 

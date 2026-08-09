@@ -55,7 +55,7 @@ function seedV7Data(
   ).run(workspaceId, projectId, "/tmp/test", "/tmp/test", "idle", 0, now, now);
   db.prepare(
     "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-  ).run("wft_test", "test", "coding", "single", "active", 1, now, now);
+  ).run("wft_test", "test", "coding", "single", "inactive", 2, now, now);
   db.prepare(
     "INSERT INTO validation_policies (id, name, issue_type, max_validation_rounds, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   ).run("vpl_test", "test", "coding", 3, "active", 1, now, now);
@@ -119,14 +119,14 @@ describe("T012 schema v8 migration", () => {
     it("schema_version max is 8", () => {
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(9);
+      expect(row.v).toBe(10);
     });
 
     it("is idempotent — running twice does not error and stays at 8", () => {
       applyMigrations(db);
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(9);
+      expect(row.v).toBe(10);
     });
 
     it("creates graph_runs table", () => {
@@ -296,7 +296,7 @@ describe("T012 schema v8 migration", () => {
       applyMigrations(db);
       expect(() => applyMigrations(db)).not.toThrow();
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(9);
+      expect(row.v).toBe(10);
     });
 
     it("v7 to v8 file-based migration preserves data and is idempotent on retry", () => {
@@ -333,7 +333,7 @@ describe("T012 schema v8 migration", () => {
           .prepare(
             "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
           )
-          .run("wft_1", "test", "coding", "single", "active", 1, now, now);
+          .run("wft_1", "test", "coding", "single", "inactive", 2, now, now);
         fileDb
           .prepare(
             "INSERT INTO validation_policies (id, name, issue_type, max_validation_rounds, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -349,7 +349,7 @@ describe("T012 schema v8 migration", () => {
 
         // Verify v8 was applied.
         const version = reopened.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-        expect(version.v).toBe(9);
+        expect(version.v).toBe(10);
 
         // Verify v7 data survived.
         const project = reopened.prepare("SELECT name FROM projects WHERE id = ?").get("prj_1") as { name: string };
@@ -368,7 +368,7 @@ describe("T012 schema v8 migration", () => {
         // Verify migration is idempotent on retry.
         expect(() => applyMigrations(reopened)).not.toThrow();
         const version2 = reopened.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-        expect(version2.v).toBe(9);
+        expect(version2.v).toBe(10);
 
         reopened.close();
       } finally {
@@ -434,7 +434,7 @@ describe("T012 schema v8 migration", () => {
         retryDb.exec("DROP TRIGGER fail_v8_version");
         expect(() => applyMigrations(retryDb)).not.toThrow();
         const v8 = retryDb.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-        expect(v8.v).toBe(9);
+        expect(v8.v).toBe(10);
         retryDb.close();
       } finally {
         try {

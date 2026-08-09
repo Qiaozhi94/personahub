@@ -60,6 +60,23 @@ export const apiClient = {
     recommend: vi.fn(),
     confirm: vi.fn(),
   },
+  workflowTemplates: {
+    list: vi.fn().mockResolvedValue({ templates: [] }),
+    get: vi.fn(),
+    createVersion: vi.fn(),
+    activate: vi.fn(),
+    deactivate: vi.fn(),
+  },
+  runtimeHealth: {
+    get: vi.fn().mockResolvedValue({
+      health: {
+        schema: { actual_version: 10, expected_version: 10, status: "current" },
+        background: { pending_probe_count: 0, pending_reprobe_count: 0 },
+        workspaces: [],
+        diagnostics: [],
+      },
+    }),
+  },
 };
 
 export const toApiError = vi.fn((error: unknown) => {

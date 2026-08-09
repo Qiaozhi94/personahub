@@ -57,6 +57,9 @@ import { IntakeConfirmationRepository } from "./repositories/intake-confirmation
 import { ConfirmationTokenService, loadOrCreateHmacSecret } from "./services/confirmation-token.js";
 import { RoutingRecommendationService } from "./services/routing-recommendation-service.js";
 import { IntakeService } from "./services/intake-service.js";
+import { WorkflowTemplateAdminService } from "./services/workflow-template-admin.js";
+import { AdminAuditEventRepository } from "./repositories/admin-audit-event.js";
+import { RuntimeHealthService } from "./services/runtime-health.js";
 
 const PORT = Number(process.env.PORT ?? 4321);
 const HOST = process.env.HOST ?? "127.0.0.1";
@@ -274,6 +277,23 @@ async function main() {
     drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
   });
 
+  const workflowTemplateAdminService = new WorkflowTemplateAdminService(
+    workflowTemplateRepo,
+    new AdminAuditEventRepository(db),
+    db,
+  );
+
+  const runtimeHealthService = new RuntimeHealthService(
+    db,
+    workspaceRepo,
+    agentConfigRepo,
+    adapterWorkspaceStatusRepo,
+    runRepo,
+    issueRepo,
+    adapterConfigService,
+    runDispatchService,
+  );
+
   const staleRecoveryService = new StaleRecoveryService(
     runRepo,
     workspaceRepo,
@@ -400,6 +420,8 @@ async function main() {
     recommendationService,
     intakeService,
     intakeConfirmationRepo: new IntakeConfirmationRepository(db),
+    workflowTemplateAdminService,
+    runtimeHealthService,
     db,
   });
 

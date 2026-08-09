@@ -35,3 +35,12 @@ export function generateFileChangeId(): string {
 export function generateEvidenceSummaryId(): string {
   return `evs_${ulid()}`;
 }
+
+// F008: workflow template admin
+export function generateWorkflowTemplateId(): string {
+  return `wft_${ulid()}`;
+}
+
+export function generateAdminAuditEventId(): string {
+  return `aev_${ulid()}`;
+}

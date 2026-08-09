@@ -96,6 +96,13 @@ const ERROR_STATUS_MAP: Record<ErrorCode, number> = {
   [ErrorCode.RECOMMENDATION_STALE]: 409,
   [ErrorCode.TOPOLOGY_NOT_EXECUTABLE]: 409,
   [ErrorCode.GRAPH_PLAN_UNKNOWN_NODE]: 400,
+  // F008: workflow template admin & runtime health errors
+  [ErrorCode.TEMPLATE_NOT_FOUND]: 404,
+  [ErrorCode.TEMPLATE_STEPS_INVALID]: 400,
+  [ErrorCode.VALIDATION_DISABLE_NOT_ACKNOWLEDGED]: 400,
+  [ErrorCode.TEMPLATE_FIELD_NOT_EDITABLE]: 400,
+  [ErrorCode.TEMPLATE_VERSION_CONFLICT]: 409,
+  [ErrorCode.LAST_ACTIVE_TEMPLATE]: 409,
   [ErrorCode.INTERNAL_ERROR]: 500,
 };
 

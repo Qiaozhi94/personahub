@@ -9,6 +9,10 @@ import { traceRoutes } from "./routes/traces.js";
 import { validationRoutes } from "./routes/validation.js";
 import graphRoutes from "./routes/graph.js";
 import intakeRoutes from "./routes/intake.js";
+import { workflowTemplateRoutes } from "./routes/workflow-templates.js";
+import { runtimeHealthRoutes } from "./routes/runtime-health.js";
+import type { WorkflowTemplateAdminService } from "../services/workflow-template-admin.js";
+import type { RuntimeHealthService } from "../services/runtime-health.js";
 import type { GraphRuntimeService } from "../services/graph-runtime.js";
 import type { GraphRunRepository } from "../repositories/graph-run.js";
 import type { NodeRunRepository } from "../repositories/node-run.js";
@@ -70,6 +74,8 @@ export interface Services {
   recommendationService: RoutingRecommendationService;
   intakeService: IntakeService;
   intakeConfirmationRepo: IntakeConfirmationRepository;
+  workflowTemplateAdminService: WorkflowTemplateAdminService;
+  runtimeHealthService: RuntimeHealthService;
   db: Database.Database;
 }
 
@@ -119,5 +125,12 @@ export function registerRoutes(app: FastifyInstance, services: Services): void {
   app.register(intakeRoutes, {
     recommendationService: services.recommendationService,
     intakeService: services.intakeService,
+  });
+  app.register(workflowTemplateRoutes, {
+    workflowTemplateAdminService: services.workflowTemplateAdminService,
+  });
+  app.register(runtimeHealthRoutes, {
+    runtimeHealthService: services.runtimeHealthService,
+    projectRepo: services.projectRepo,
   });
 }

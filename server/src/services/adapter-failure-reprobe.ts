@@ -38,6 +38,10 @@ export class AdapterFailureReprobe {
     await Promise.race([settled, timeout]);
   }
 
+  healthSnapshot(): { pendingReprobeCount: number } {
+    return { pendingReprobeCount: this.pending.size };
+  }
+
   private async reprobe(runId: string): Promise<void> {
     const run = this.runRepo.getById(runId);
     if (!run || run.status !== RS.Failed) return;

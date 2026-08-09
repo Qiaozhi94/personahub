@@ -43,6 +43,14 @@ import {
   type ConfirmResponse,
   type ConfirmationToken,
   type ChosenPlan,
+  type WorkflowTemplateListResponse,
+  type WorkflowTemplateDetailResponse,
+  type CreateWorkflowTemplateVersionInput,
+  type CreateWorkflowTemplateVersionResponse,
+  type ActivateWorkflowTemplateInput,
+  type ActivateWorkflowTemplateResponse,
+  type DeactivateWorkflowTemplateResponse,
+  type RuntimeHealthResponse,
 } from "@personahub/shared";
 
 const API_BASE = "/api";
@@ -243,5 +251,32 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ token, chosen }),
       }),
+  },
+  workflowTemplates: {
+    list: (issueType?: string) =>
+      apiFetch<WorkflowTemplateListResponse>(
+        `/workflow-templates${issueType ? `?issue_type=${encodeURIComponent(issueType)}` : ""}`,
+      ),
+    get: (id: string) => apiFetch<WorkflowTemplateDetailResponse>(`/workflow-templates/${id}`),
+    createVersion: (sourceId: string, input: CreateWorkflowTemplateVersionInput) =>
+      apiFetch<CreateWorkflowTemplateVersionResponse>(`/workflow-templates/${sourceId}/versions`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    activate: (id: string, input?: ActivateWorkflowTemplateInput) =>
+      apiFetch<ActivateWorkflowTemplateResponse>(`/workflow-templates/${id}/activate`, {
+        method: "POST",
+        body: JSON.stringify(input ?? {}),
+      }),
+    deactivate: (id: string) =>
+      apiFetch<DeactivateWorkflowTemplateResponse>(`/workflow-templates/${id}/deactivate`, {
+        method: "POST",
+      }),
+  },
+  runtimeHealth: {
+    get: (projectId: string, workspaceId?: string) =>
+      apiFetch<RuntimeHealthResponse>(
+        `/projects/${projectId}/health/runtime${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ""}`,
+      ),
   },
 };

@@ -60,6 +60,10 @@ export class AdapterConfigService {
     await Promise.race([pending, timeout]);
   }
 
+  healthSnapshot(): { pendingProbeCount: number } {
+    return { pendingProbeCount: this.pendingAvailabilityProbes.size };
+  }
+
   /** Probe first; assign the deferred default only if the original snapshot is still current. */
   private async autoValidateAfterCreate(
     adapterId: string,
