@@ -1,0 +1,18 @@
+# Normalize all text files to CRLF on checkout on every platform.
+# Prettier is configured with `endOfLine: "crlf"` (see .prettierrc.json), so CI
+# (Linux) must check out CRLF to match the local Windows dev checkout.
+* text=auto eol=crlf
+
+# Binary files must not be touched.
+*.db binary
+*.db-shm binary
+*.db-wal binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.ttf binary
