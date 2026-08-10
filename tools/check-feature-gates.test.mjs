@@ -1944,3 +1944,26 @@ test('Regress r3: traceability — doc-backfill task without refs but with actio
   const tasks = parseTaskLines('- [ ] T034: 回写 - verify: `docs/spec.md`');
   assert.equal(tasks.length, 1);
 });
+
+// ---------------------------------------------------------------------------
+// Round-4 regression tests (diff-only review of the round-3 fixes)
+// ---------------------------------------------------------------------------
+
+test('Regress r4: task format — canonical "T001 [P]" (P after id) is accepted', () => {
+  const tasks = parseTaskLines('- [ ] T001 [P] (`FR-001`, `AC-001`): do - verify: `server/tests/x.test.ts`');
+  assert.equal(tasks.length, 1);
+});
+
+test('Regress r4: task format — non-canonical "[P] T001" (P before id) is rejected', () => {
+  const tasks = parseTaskLines('- [ ] [P] T001 (`FR-001`): do - verify: `server/tests/x.test.ts`');
+  assert.equal(tasks.length, 0);
+});
+
+test('Regress r4: task format — empty verify value is rejected', () => {
+  assert.equal(parseTaskLines('- [ ] T001: do - verify: ').length, 0);
+  assert.equal(parseTaskLines('- [ ] T001: do - verify: ``').length, 0);
+});
+
+test('Regress r4: task format — non-empty verify value is accepted', () => {
+  assert.equal(parseTaskLines('- [ ] T001: do - verify: `server/tests/x.test.ts`').length, 1);
+});

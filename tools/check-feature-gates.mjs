@@ -381,16 +381,19 @@ export function parseRequirementIds(section4Content) {
 /**
  * Parse task lines from tasks.md content (sections 2 and 3).
  *
- * Enforces the canonical task contract:
+ * Enforces the canonical task contract (see docs/features/README.md and
+ * TEMPLATE/tasks.md):
  *   - [ ] T001 [P] (`FR-001`, `AC-001`): action - verify: `path`
  *   - [ ] T034: 回写文档 - verify: `docs/...`   (refs may be absent for
  *     documentation/maintenance tasks, but action and verify are required)
  *
- * A valid task must have:
- *   - a leading T-id (optionally preceded by `[P]`), and
- *   - an action after a colon, and
- *   - a `verify:` marker.
- * Loose text such as `- [x] T001` (no action, no verify) is not a task.
+ * The canonical order is `T001 [P]` — `[P]` comes AFTER the T-id. A valid task
+ * must have:
+ *   - a leading T-id, then an optional `[P]`, then an optional parenthesised
+ *     ref group, then an action after a colon, and
+ *   - a `verify:` marker with a non-empty value (e.g. a backtick-wrapped path).
+ * Loose text such as `- [x] T001` (no action/verify) or `- [x] [P] T001 (...)`
+ * (`[P]` before the T-id) is not accepted.
  *
  * Returns array of { id, checked, isParallel, refIds, section, raw }.
  */
@@ -399,11 +402,14 @@ export function parseTaskLines(sectionContent) {
   const lines = stripped.split('\n');
   const result = [];
   const checkboxRe = /^-\s+\[([ xX])\]\s+/;
-  // Leading T-id, optional [P], optional parenthesised ref group, then the
-  // action after a colon.
-  const taskRe = /^(?:\[P\]\s*)?(T\d{3})\b\s*(?:[（(][^）)]*[）)])?\s*[：:]\s*\S/;
+  // Leading T-id, then optional [P] AFTER the id, then optional parenthesised
+  // ref group, then the action after a colon.
+  const taskRe = /^(T\d{3})\b\s*(?:\[P\]\s*)?(?:[（(][^）)]*[）)])?\s*[：:]\s*\S/;
   const parallelRe = /\[P\]/;
-  const verifyRe = /verify\s*[：:]/i;
+  // verify marker with a non-empty value: a backtick-wrapped path with content
+  // (verify: `path`), or non-backtick text (verify: <cmd>). Empty `` or bare
+  // `verify:` are rejected.
+  const verifyRe = /verify\s*[：:]\s*(?:`[^`\s][^`]*`|(?!`)\S)/i;
 
   for (const line of lines) {
     const cbMatch = line.match(checkboxRe);
@@ -414,12 +420,13 @@ export function parseTaskLines(sectionContent) {
     const idMatch = rest.match(taskRe);
     if (!idMatch) continue;
     const id = idMatch[1];
-    const isParallel = parallelRe.test(line);
 
-    // Contract: a verify marker must be present.
+    // Contract: a verify marker with a non-empty value must be present.
     if (!verifyRe.test(rest)) {
       continue;
     }
+
+    const isParallel = parallelRe.test(line);
 
     // Extract referenced IDs
     const refIds = [];
@@ -1014,8 +1021,8 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
   // --- illegal task format: checkbox lines in sections 2/3 must be a
   // canonical task line (leading T-id + optional [P] + optional ref group +
   // colon-led action + verify marker) or an explicit N/A item ---
-  const taskContractRe = /^(?:\[P\]\s*)?T\d{3}\b\s*(?:[（(][^）)]*[）)])?\s*[：:]\s*\S/;
-  const taskVerifyRe = /verify\s*[：:]/i;
+  const taskContractRe = /^T\d{3}\b\s*(?:\[P\]\s*)?(?:[（(][^）)]*[）)])?\s*[：:]\s*\S/;
+  const taskVerifyRe = /verify\s*[：:]\s*(?:`[^`\s][^`]*`|(?!`)\S)/i;
   for (const [secName, secContent] of [['section 2', sec2Content], ['section 3', sec3Content]]) {
     const secStripped = stripCodeBlocks(secContent);
     const secLines = secStripped.split('\n');
