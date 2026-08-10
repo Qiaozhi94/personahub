@@ -1885,3 +1885,62 @@ test('Regress: traceability — loose task text is not accepted as a task', () =
   const tasks = parseTaskLines('- [x] blah T001');
   assert.equal(tasks.length, 0);
 });
+
+// ---------------------------------------------------------------------------
+// Round-3 regression tests (diff-only review of the round-2 fixes)
+// ---------------------------------------------------------------------------
+
+test('Regress r3: open-question — a checked item without a 决策 conclusion is not closed', () => {
+  const result = checkOpenQuestionsClosed('- [x] Q-001: unresolved question', 'Q');
+  assert.equal(result.closed, false);
+});
+
+test('Regress r3: open-question — "无" mixed with checklist items is not closed', () => {
+  const result = checkOpenQuestionsClosed('- [x] Q-001: q - 决策：conclusion\n\n无', 'Q');
+  assert.equal(result.closed, false);
+});
+
+test('Regress r3: open-question — a checked item WITH a 决策 conclusion is closed', () => {
+  const result = checkOpenQuestionsClosed('- [x] Q-001: q - 决策：conclusion', 'Q');
+  assert.equal(result.closed, true);
+});
+
+test('Regress r3: open-question — a closed DQ item (design) with 决策 is closed', () => {
+  const result = checkOpenQuestionsClosed('- [x] DQ-001: design question - 决策：decision', 'DQ');
+  assert.equal(result.closed, true);
+});
+
+test('Regress r3: traceability — bold prose mention is NOT a requirement definition', () => {
+  const ids = parseRequirementIds('这里只是加粗引用 **FR-999**，不是定义');
+  assert.ok(!ids.has('FR-999'));
+});
+
+test('Regress r3: traceability — a definition bullet **FR-xxx** IS a requirement definition', () => {
+  const ids = parseRequirementIds('- **FR-001**：定义');
+  assert.ok(ids.has('FR-001'));
+});
+
+test('Regress r3: traceability — single-star AC is rejected', () => {
+  const acs = parseAcLines('- [x] *AC-001* (FR-999): vague');
+  assert.equal(acs.length, 0);
+});
+
+test('Regress r3: traceability — double-star AC is accepted', () => {
+  const acs = parseAcLines('- [x] **AC-001** (`FR-001`): ok');
+  assert.equal(acs.length, 1);
+});
+
+test('Regress r3: traceability — bare task without action/verify is rejected', () => {
+  const tasks = parseTaskLines('- [x] T001');
+  assert.equal(tasks.length, 0);
+});
+
+test('Regress r3: traceability — valid task with refs, action and verify is accepted', () => {
+  const tasks = parseTaskLines('- [x] T001 (`FR-001`): do - verify: `server/tests/x.test.ts`');
+  assert.equal(tasks.length, 1);
+});
+
+test('Regress r3: traceability — doc-backfill task without refs but with action+verify is accepted', () => {
+  const tasks = parseTaskLines('- [ ] T034: 回写 - verify: `docs/spec.md`');
+  assert.equal(tasks.length, 1);
+});

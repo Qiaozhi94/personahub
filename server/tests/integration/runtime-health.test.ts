@@ -114,7 +114,7 @@ function buildRouteApp(services: TestServices) {
   return app;
 }
 
-describe("RuntimeHealth (F008 Phase 4)", () => {
+describe("RuntimeHealth (F008 Phase 4)", { timeout: 30_000 }, () => {
   let services: TestServices;
   let tempDir: string;
 

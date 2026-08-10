@@ -287,7 +287,9 @@ export function parseAcLines(section6Content) {
   const lines = stripped.split('\n');
   const result = [];
   const checkboxRe = /^-\s+\[([ xX])\]\s+/;
-  const acIdRe = /^\*\*?(AC-\d{3})\*\*?\s*/;
+  // Canonical AC format uses a bold id (**AC-001**). A single-star *AC-001* is
+  // not the contract — reject it so loose text cannot pass as an AC.
+  const acIdRe = /^\*\*(AC-\d{3})\*\*\s*/;
 
   for (const line of lines) {
     const cbMatch = line.match(checkboxRe);
@@ -340,11 +342,13 @@ export function parseAcLines(section6Content) {
  *
  * Only IDs in a definition position count as defined:
  *   - a `### Requirement: ...（FR-001）` / `### ...（FR-001）` heading, or
- *   - a bolded bullet `- **FR-001**：...`
+ *   - a definition bullet `- **FR-001**：...` where the bold ID is the very
+ *     first content token of the bullet.
  *
- * A mere prose mention (e.g. "see FR-999") is NOT a definition — otherwise a
- * Feature could reference an arbitrary ID in section 4 prose and then pass the
- * "AC references a defined requirement" check without ever defining it.
+ * A mere prose mention — bold or not — elsewhere on a line (e.g. "这里只是加粗
+ * 引用 **FR-999**，不是定义") is NOT a definition. Otherwise a Feature could
+ * reference an arbitrary ID in section 4 prose and then pass the "AC references
+ * a defined requirement" check without ever defining it.
  * Returns a Set of ID strings.
  */
 export function parseRequirementIds(section4Content) {
@@ -353,7 +357,8 @@ export function parseRequirementIds(section4Content) {
   const ids = new Set();
 
   const headingIdRe = /\b(FR|DR|TR|IR|UX|NFR)-(\d{3})\b/g;
-  const boldIdRe = /\*\*(FR|DR|TR|IR|UX|NFR)-(\d{3})\*\*/g;
+  // Definition bullet: the bold ID must be the first token after the bullet marker.
+  const defBulletRe = /^-\s*\*\*(FR|DR|TR|IR|UX|NFR)-(\d{3})\*\*/;
 
   for (const line of lines) {
     const lt = line.trim();
@@ -364,10 +369,10 @@ export function parseRequirementIds(section4Content) {
       while ((m = re.exec(lt)) !== null) ids.add(`${m[1]}-${m[2]}`);
       continue;
     }
-    // Non-heading line: only bolded requirement ids count as definitions.
-    let m;
-    const bold = new RegExp(boldIdRe.source, 'g');
-    while ((m = bold.exec(lt)) !== null) ids.add(`${m[1]}-${m[2]}`);
+    // Non-heading line: only a definition bullet (bold ID as first token)
+    // counts as a definition. A bare or mid-line mention does not.
+    const def = lt.match(defBulletRe);
+    if (def) ids.add(`${def[1]}-${def[2]}`);
   }
 
   return ids;
@@ -378,9 +383,14 @@ export function parseRequirementIds(section4Content) {
  *
  * Enforces the canonical task contract:
  *   - [ ] T001 [P] (`FR-001`, `AC-001`): action - verify: `path`
- * The T-id must be the leading token (optionally preceded by `[P]`). Loose text
- * that merely mentions a T-id later in the line (e.g. `- [x] blah T001`) is not
- * accepted as a task.
+ *   - [ ] T034: 回写文档 - verify: `docs/...`   (refs may be absent for
+ *     documentation/maintenance tasks, but action and verify are required)
+ *
+ * A valid task must have:
+ *   - a leading T-id (optionally preceded by `[P]`), and
+ *   - an action after a colon, and
+ *   - a `verify:` marker.
+ * Loose text such as `- [x] T001` (no action, no verify) is not a task.
  *
  * Returns array of { id, checked, isParallel, refIds, section, raw }.
  */
@@ -389,8 +399,11 @@ export function parseTaskLines(sectionContent) {
   const lines = stripped.split('\n');
   const result = [];
   const checkboxRe = /^-\s+\[([ xX])\]\s+/;
-  const taskIdRe = /^(?:\[P\]\s*)?(T\d{3})\b/;
+  // Leading T-id, optional [P], optional parenthesised ref group, then the
+  // action after a colon.
+  const taskRe = /^(?:\[P\]\s*)?(T\d{3})\b\s*(?:[（(][^）)]*[）)])?\s*[：:]\s*\S/;
   const parallelRe = /\[P\]/;
+  const verifyRe = /verify\s*[：:]/i;
 
   for (const line of lines) {
     const cbMatch = line.match(checkboxRe);
@@ -398,10 +411,15 @@ export function parseTaskLines(sectionContent) {
     const checked = cbMatch[1].toLowerCase() === 'x';
     const rest = line.slice(cbMatch[0].length);
 
-    const idMatch = rest.match(taskIdRe);
+    const idMatch = rest.match(taskRe);
     if (!idMatch) continue;
     const id = idMatch[1];
     const isParallel = parallelRe.test(line);
+
+    // Contract: a verify marker must be present.
+    if (!verifyRe.test(rest)) {
+      continue;
+    }
 
     // Extract referenced IDs
     const refIds = [];
@@ -441,17 +459,18 @@ export function isNaWithReason(content) {
  * Check if an open-questions section is properly closed.
  * Returns { closed: boolean, reason?: string }.
  *
- * Closed means either:
- *   - Content is just "无"
- *   - Content has only properly-formed [x] Q-xxx / DQ-xxx items (all closed)
+ * The section is either:
+ *   - exactly a standalone "无" (no items at all), or
+ *   - a list of properly-formed Q-xxx / DQ-xxx checkbox items, every one of
+ *     which is checked AND carries a non-empty decision conclusion
+ *     ("决策：<结论>" / "决策:<结论>").
  *
  * Not closed means:
- *   - Has [ ] items (open)
- *   - Has free-text bullets
- *   - Has a checkbox that is NOT a valid Q-xxx / DQ-xxx item (e.g. arbitrary
- *     "[x] some note" — this would otherwise let free text masquerade as a
- *     closed question and bypass the gate)
- *   - Empty
+ *   - Has any open [ ] item
+ *   - Has a checked item lacking a decision conclusion (a closed question must
+ *     record what was decided — a bare "[x] Q-001: ..." is not closed)
+ *   - Mixes "无" with checklist items (it must be standalone or absent)
+ *   - Has free text / free-text bullets / non-Q-DQ checkboxes / empty
  */
 export function checkOpenQuestionsClosed(sectionText, prefix = '(?:Q|DQ)') {
   const stripped = stripCodeBlocks(sectionText);
@@ -464,20 +483,31 @@ export function checkOpenQuestionsClosed(sectionText, prefix = '(?:Q|DQ)') {
   // A valid question item id: Q-xxx (spec) or DQ-xxx (design)
   const idRe = new RegExp(`^${prefix}-\\d{3}\\b`);
   const checkboxRe = /^-\s+\[([ xX])\]\s+(.+)$/;
+  // A closed item must record a decision conclusion: 决策：<非空> / 决策:<非空>
+  const decisionRe = /决策\s*[：:]\s*\S/;
 
   const lines = trimmed.split('\n');
   const openItems = [];
   const malformedItems = [];
-  let sawValidClosedItem = false;
+  const undecidedItems = [];
+  let sawAnyItem = false;
+  let sawNaLine = false;
 
   for (const line of lines) {
     const lt = line.trim();
     if (!lt) continue;
-    // A plain text line other than 无 is free text -> not a valid closed section
+
+    // A standalone "无" line is only valid when nothing else is present.
+    if (lt === '无') {
+      sawNaLine = true;
+      continue;
+    }
+
+    // Any plain text line is free text -> not a valid closed section.
     if (!/^-\s+/.test(lt)) {
-      if (lt === '无') continue;
       return { closed: false, reason: 'free-text content present' };
     }
+
     const cb = lt.match(checkboxRe);
     if (!cb) {
       return { closed: false, reason: 'free-text bullet present' };
@@ -488,13 +518,19 @@ export function checkOpenQuestionsClosed(sectionText, prefix = '(?:Q|DQ)') {
       malformedItems.push(lt);
       continue;
     }
+    sawAnyItem = true;
     if (checked) {
-      sawValidClosedItem = true;
+      if (!decisionRe.test(rest)) {
+        undecidedItems.push(lt);
+      }
     } else {
       openItems.push(lt);
     }
   }
 
+  if (sawNaLine && sawAnyItem) {
+    return { closed: false, reason: '"无" mixed with checklist items' };
+  }
   if (malformedItems.length > 0) {
     return {
       closed: false,
@@ -504,8 +540,14 @@ export function checkOpenQuestionsClosed(sectionText, prefix = '(?:Q|DQ)') {
   if (openItems.length > 0) {
     return { closed: false, reason: `${openItems.length} open item(s)` };
   }
-  if (!sawValidClosedItem) {
-    return { closed: false, reason: 'no valid closed Q/DQ items' };
+  if (undecidedItems.length > 0) {
+    return {
+      closed: false,
+      reason: `checked item lacks a 决策 conclusion: ${undecidedItems[0]}`,
+    };
+  }
+  if (!sawAnyItem) {
+    return { closed: false, reason: 'no valid Q/DQ items and not 无' };
   }
   return { closed: true };
 }
@@ -970,8 +1012,10 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
   const allTasks = [...sec2Tasks, ...sec3Tasks];
 
   // --- illegal task format: checkbox lines in sections 2/3 must be a
-  // canonical task line (T-id as the leading token) or an explicit N/A item ---
-  const taskLeadRe = /^(?:\[P\]\s*)?T\d{3}\b/;
+  // canonical task line (leading T-id + optional [P] + optional ref group +
+  // colon-led action + verify marker) or an explicit N/A item ---
+  const taskContractRe = /^(?:\[P\]\s*)?T\d{3}\b\s*(?:[（(][^）)]*[）)])?\s*[：:]\s*\S/;
+  const taskVerifyRe = /verify\s*[：:]/i;
   for (const [secName, secContent] of [['section 2', sec2Content], ['section 3', sec3Content]]) {
     const secStripped = stripCodeBlocks(secContent);
     const secLines = secStripped.split('\n');
@@ -981,9 +1025,10 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
       if (!m) continue;
       const rest = m[2];
       if (/^N\/A[：:]/.test(rest.trim())) continue;
-      if (!taskLeadRe.test(rest.trim())) {
+      const valid = taskContractRe.test(rest.trim()) && taskVerifyRe.test(rest);
+      if (!valid) {
         errors.push(
-          `${relDir}/tasks.md: ${secName} checkbox line is not a valid task (T-id must be the leading token, line ${i + 1}): ${secLines[i].trim()}`,
+          `${relDir}/tasks.md: ${secName} checkbox line is not a valid task (needs leading T-id, optional [P]/ref group, colon-led action and verify marker, line ${i + 1}): ${secLines[i].trim()}`,
         );
       }
     }
@@ -1036,7 +1081,7 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
     const sec6Stripped = stripCodeBlocks(specSec6.content);
     const sec6Lines = sec6Stripped.split('\n');
     const cbRe = /^-\s+\[([ xX])\]\s+(.+)$/;
-    const acLeadRe = /^\*\*?AC-\d{3}\*\*?\s*[（(]/;
+    const acLeadRe = /^\*\*AC-\d{3}\*\*\s*[（(]/;
     for (let i = 0; i < sec6Lines.length; i++) {
       const m = sec6Lines[i].match(cbRe);
       if (!m) continue;
