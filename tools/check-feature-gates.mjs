@@ -12,6 +12,12 @@ import { fileURLToPath } from 'node:url';
 // ---------------------------------------------------------------------------
 
 const SUPPORTED_GATE_VERSIONS = [0, 1];
+// gate_version: 0 is a recorded legacy exemption, reserved exclusively for the
+// historical batch (F001-F008). A new Feature must use gate_version: 1 — it may
+// not silently opt out of the full v1 gate by declaring 0.
+const LEGACY_GATE_ZERO_IDS = new Set([
+  'F001', 'F002', 'F003', 'F004', 'F005', 'F006', 'F007', 'F008',
+]);
 const LEGAL_STATUSES = [
   'draft',
   'ready-for-development',
@@ -263,9 +269,17 @@ export function extractCheckboxes(text) {
 
 /**
  * Parse AC lines from spec section 6 content.
- * Handles formats:
- *   - [ ] **AC-001** (`FR-001`, `UX-001`): text - tests: `path`
- *   - [x] **AC-001**（FR-001/DR-001）：text
+ *
+ * Enforces the canonical AC contract:
+ *   - [ ] **AC-001** (`FR-001`, `UX-001`): 可观察行为 - tests: `path`
+ *   - [x] **AC-001**（FR-001/DR-001）：可观察行为
+ *
+ * A checkbox line only counts as an AC when it carries a bold `**AC-xxx**` id
+ * immediately followed by a parenthesised requirement list. Loose text that
+ * merely mentions an AC id (e.g. `- [x] garbage AC-001 mentions FR-999`) is
+ * NOT accepted — it would otherwise let arbitrary text pass the traceability
+ * gate.
+ *
  * Returns array of { id, checked, reqIds: string[], text, testPaths: string[] }.
  */
 export function parseAcLines(section6Content) {
@@ -273,7 +287,7 @@ export function parseAcLines(section6Content) {
   const lines = stripped.split('\n');
   const result = [];
   const checkboxRe = /^-\s+\[([ xX])\]\s+/;
-  const acIdRe = /\*?\*?(AC-\d{3})\*?\*?/;
+  const acIdRe = /^\*\*?(AC-\d{3})\*\*?\s*/;
 
   for (const line of lines) {
     const cbMatch = line.match(checkboxRe);
@@ -281,15 +295,24 @@ export function parseAcLines(section6Content) {
     const checked = cbMatch[1].toLowerCase() === 'x';
     const rest = line.slice(cbMatch[0].length);
 
+    // The AC id must be the leading token (bold in the canonical format).
     const idMatch = rest.match(acIdRe);
     if (!idMatch) continue;
     const id = idMatch[1];
+    const afterId = rest.slice(idMatch[0].length);
 
-    // Extract requirement IDs
+    // Requirement list must be a parenthesised group right after the id.
+    // Accept both half-width `(...)` and full-width `（...）` parens.
+    const parenRe = /^\s*[（(]([^）)]*)[）)]/;
+    const parenMatch = afterId.match(parenRe);
+    if (!parenMatch) continue;
+    const reqList = parenMatch[1];
+
+    // Extract requirement IDs from the parenthesised group only.
     const reqIds = [];
     let m;
     const re = new RegExp(REQ_ID_RE.source, 'g');
-    while ((m = re.exec(line)) !== null) {
+    while ((m = re.exec(reqList)) !== null) {
       const fullId = `${m[1]}-${m[2]}`;
       if (!reqIds.includes(fullId)) reqIds.push(fullId);
     }
@@ -313,23 +336,52 @@ export function parseAcLines(section6Content) {
 }
 
 /**
- * Parse requirement IDs defined in spec section 4.
- * Looks for patterns like **FR-001**, `FR-001`, ### Requirement: ... (`FR-001`)
+ * Parse requirement IDs *defined* in spec section 4.
+ *
+ * Only IDs in a definition position count as defined:
+ *   - a `### Requirement: ...（FR-001）` / `### ...（FR-001）` heading, or
+ *   - a bolded bullet `- **FR-001**：...`
+ *
+ * A mere prose mention (e.g. "see FR-999") is NOT a definition — otherwise a
+ * Feature could reference an arbitrary ID in section 4 prose and then pass the
+ * "AC references a defined requirement" check without ever defining it.
  * Returns a Set of ID strings.
  */
 export function parseRequirementIds(section4Content) {
   const stripped = stripCodeBlocks(section4Content);
+  const lines = stripped.split('\n');
   const ids = new Set();
-  let m;
-  const re = new RegExp(REQ_ID_RE.source, 'g');
-  while ((m = re.exec(stripped)) !== null) {
-    ids.add(`${m[1]}-${m[2]}`);
+
+  const headingIdRe = /\b(FR|DR|TR|IR|UX|NFR)-(\d{3})\b/g;
+  const boldIdRe = /\*\*(FR|DR|TR|IR|UX|NFR)-(\d{3})\*\*/g;
+
+  for (const line of lines) {
+    const lt = line.trim();
+    if (/^#/.test(lt)) {
+      // Heading line: any requirement id in a heading counts as a definition.
+      let m;
+      const re = new RegExp(headingIdRe.source, 'g');
+      while ((m = re.exec(lt)) !== null) ids.add(`${m[1]}-${m[2]}`);
+      continue;
+    }
+    // Non-heading line: only bolded requirement ids count as definitions.
+    let m;
+    const bold = new RegExp(boldIdRe.source, 'g');
+    while ((m = bold.exec(lt)) !== null) ids.add(`${m[1]}-${m[2]}`);
   }
+
   return ids;
 }
 
 /**
  * Parse task lines from tasks.md content (sections 2 and 3).
+ *
+ * Enforces the canonical task contract:
+ *   - [ ] T001 [P] (`FR-001`, `AC-001`): action - verify: `path`
+ * The T-id must be the leading token (optionally preceded by `[P]`). Loose text
+ * that merely mentions a T-id later in the line (e.g. `- [x] blah T001`) is not
+ * accepted as a task.
+ *
  * Returns array of { id, checked, isParallel, refIds, section, raw }.
  */
 export function parseTaskLines(sectionContent) {
@@ -337,7 +389,7 @@ export function parseTaskLines(sectionContent) {
   const lines = stripped.split('\n');
   const result = [];
   const checkboxRe = /^-\s+\[([ xX])\]\s+/;
-  const taskIdRe = /\b(T\d{3})\b/;
+  const taskIdRe = /^(?:\[P\]\s*)?(T\d{3})\b/;
   const parallelRe = /\[P\]/;
 
   for (const line of lines) {
@@ -391,14 +443,17 @@ export function isNaWithReason(content) {
  *
  * Closed means either:
  *   - Content is just "无"
- *   - Content has only [x] checkbox items (all closed)
+ *   - Content has only properly-formed [x] Q-xxx / DQ-xxx items (all closed)
  *
  * Not closed means:
  *   - Has [ ] items (open)
  *   - Has free-text bullets
+ *   - Has a checkbox that is NOT a valid Q-xxx / DQ-xxx item (e.g. arbitrary
+ *     "[x] some note" — this would otherwise let free text masquerade as a
+ *     closed question and bypass the gate)
  *   - Empty
  */
-export function checkOpenQuestionsClosed(sectionText) {
+export function checkOpenQuestionsClosed(sectionText, prefix = '(?:Q|DQ)') {
   const stripped = stripCodeBlocks(sectionText);
   const trimmed = stripped.trim();
 
@@ -406,29 +461,51 @@ export function checkOpenQuestionsClosed(sectionText) {
 
   if (!trimmed) return { closed: false, reason: 'empty section' };
 
+  // A valid question item id: Q-xxx (spec) or DQ-xxx (design)
+  const idRe = new RegExp(`^${prefix}-\\d{3}\\b`);
+  const checkboxRe = /^-\s+\[([ xX])\]\s+(.+)$/;
+
   const lines = trimmed.split('\n');
-  const checkboxLines = [];
-  const freeTextBullets = [];
+  const openItems = [];
+  const malformedItems = [];
+  let sawValidClosedItem = false;
 
   for (const line of lines) {
     const lt = line.trim();
     if (!lt) continue;
-    if (/^-\s+\[[ xX]\]\s+/.test(lt)) {
-      checkboxLines.push(lt);
-    } else if (/^-\s+/.test(lt)) {
-      freeTextBullets.push(lt);
+    // A plain text line other than 无 is free text -> not a valid closed section
+    if (!/^-\s+/.test(lt)) {
+      if (lt === '无') continue;
+      return { closed: false, reason: 'free-text content present' };
+    }
+    const cb = lt.match(checkboxRe);
+    if (!cb) {
+      return { closed: false, reason: 'free-text bullet present' };
+    }
+    const checked = cb[1].toLowerCase() === 'x';
+    const rest = cb[2].trim();
+    if (!idRe.test(rest)) {
+      malformedItems.push(lt);
+      continue;
+    }
+    if (checked) {
+      sawValidClosedItem = true;
+    } else {
+      openItems.push(lt);
     }
   }
 
-  if (freeTextBullets.length > 0) {
-    return { closed: false, reason: 'free-text bullets present' };
+  if (malformedItems.length > 0) {
+    return {
+      closed: false,
+      reason: `checkbox without valid ${prefix}-xxx item: ${malformedItems[0]}`,
+    };
   }
-  if (checkboxLines.length === 0) {
-    return { closed: false, reason: 'no valid checkboxes and not 无' };
-  }
-  const openItems = checkboxLines.filter((l) => /^-\s+\[\s\]\s/.test(l));
   if (openItems.length > 0) {
     return { closed: false, reason: `${openItems.length} open item(s)` };
+  }
+  if (!sawValidClosedItem) {
+    return { closed: false, reason: 'no valid closed Q/DQ items' };
   }
   return { closed: true };
 }
@@ -512,9 +589,35 @@ export function validateTestPathExistence(rawPath, repoRoot) {
 /**
  * Compare actual sections against expected sections.
  * Returns array of error strings.
+ *
+ * Beyond checking presence/title/extra, it also rejects:
+ *   - duplicate section numbers (same number appearing more than once)
+ *   - out-of-order sections (numbers not in strictly increasing order)
+ * The gate's fixed-section contract requires the sections to appear exactly
+ * once, in the canonical order — a reordered or duplicated section list is a
+ * contract violation, not a pass.
  */
 export function compareSectionHeadings(actualSections, expectedSections, docName) {
   const errors = [];
+
+  // Duplicate section numbers
+  const seen = new Set();
+  for (const actual of actualSections) {
+    if (seen.has(actual.num)) {
+      errors.push(`${docName}: duplicate section ${actual.num}. ${actual.title}`);
+    }
+    seen.add(actual.num);
+  }
+
+  // Order: section numbers must be strictly increasing as they appear
+  for (let i = 1; i < actualSections.length; i++) {
+    if (actualSections[i].num <= actualSections[i - 1].num) {
+      errors.push(
+        `${docName}: sections out of order — "${actualSections[i - 1].num}. ${actualSections[i - 1].title}" appears before "${actualSections[i].num}. ${actualSections[i].title}"`,
+      );
+    }
+  }
+
   const actualByNum = new Map(actualSections.map((s) => [s.num, s]));
 
   for (const expected of expectedSections) {
@@ -755,6 +858,12 @@ export function checkFeatureBase(featureDir, repoRoot) {
       `${relDir}/spec.md: illegal gate_version "${specFm.gate_version}" (must be one of: ${SUPPORTED_GATE_VERSIONS.join(', ')})`,
     );
   }
+  const resolvedId = specFm.id || dirId;
+  if (gateVersion === 0 && !LEGACY_GATE_ZERO_IDS.has(resolvedId)) {
+    errors.push(
+      `${relDir}/spec.md: gate_version 0 is a legacy exemption reserved for ${[...LEGACY_GATE_ZERO_IDS].join(', ')}; new Feature ${resolvedId} must use gate_version 1`,
+    );
+  }
 
   // --- design.md / tasks.md must not declare independent Status ---
   const designText = readFileSafe(designPath);
@@ -860,7 +969,9 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
   const sec3Tasks = parseTaskLines(sec3Content);
   const allTasks = [...sec2Tasks, ...sec3Tasks];
 
-  // --- illegal task format: checkbox lines without Txxx in sections 2/3 ---
+  // --- illegal task format: checkbox lines in sections 2/3 must be a
+  // canonical task line (T-id as the leading token) or an explicit N/A item ---
+  const taskLeadRe = /^(?:\[P\]\s*)?T\d{3}\b/;
   for (const [secName, secContent] of [['section 2', sec2Content], ['section 3', sec3Content]]) {
     const secStripped = stripCodeBlocks(secContent);
     const secLines = secStripped.split('\n');
@@ -870,9 +981,9 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
       if (!m) continue;
       const rest = m[2];
       if (/^N\/A[：:]/.test(rest.trim())) continue;
-      if (!/\bT\d{3}\b/.test(rest)) {
+      if (!taskLeadRe.test(rest.trim())) {
         errors.push(
-          `${relDir}/tasks.md: ${secName} checkbox line without Txxx ID (line ${i + 1}): ${secLines[i].trim()}`,
+          `${relDir}/tasks.md: ${secName} checkbox line is not a valid task (T-id must be the leading token, line ${i + 1}): ${secLines[i].trim()}`,
         );
       }
     }
@@ -918,6 +1029,25 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
   // --- Parse AC lines from spec section 6 ---
   const specSec6 = getSectionByNum(specSections, 6);
   const acLines = specSec6 ? parseAcLines(specSec6.content) : [];
+
+  // --- illegal AC format: checkbox lines in the acceptance list must be a
+  // canonical AC line (bold AC-id + parenthesised requirement list) ---
+  if (specSec6) {
+    const sec6Stripped = stripCodeBlocks(specSec6.content);
+    const sec6Lines = sec6Stripped.split('\n');
+    const cbRe = /^-\s+\[([ xX])\]\s+(.+)$/;
+    const acLeadRe = /^\*\*?AC-\d{3}\*\*?\s*[（(]/;
+    for (let i = 0; i < sec6Lines.length; i++) {
+      const m = sec6Lines[i].match(cbRe);
+      if (!m) continue;
+      if (/^N\/A[：:]/.test(m[2].trim())) continue;
+      if (!acLeadRe.test(m[2].trim())) {
+        errors.push(
+          `${relDir}/spec.md: acceptance-list checkbox line is not a valid AC (line ${i + 1}): ${sec6Lines[i].trim()}`,
+        );
+      }
+    }
+  }
 
   // --- AC uniqueness ---
   const acIds = new Set();
@@ -1015,7 +1145,7 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
     if (!specSec8) {
       errors.push(`${relDir}/spec.md: missing section 8. 待确认问题`);
     } else {
-      const result = checkOpenQuestionsClosed(specSec8.content);
+      const result = checkOpenQuestionsClosed(specSec8.content, 'Q');
       if (!result.closed) {
         errors.push(
           `${relDir}/spec.md: section 8. 待确认问题 not closed — ${result.reason}`,
@@ -1027,7 +1157,7 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
     if (!designSec10) {
       errors.push(`${relDir}/design.md: missing section 10. 待确认设计问题`);
     } else {
-      const result = checkOpenQuestionsClosed(designSec10.content);
+      const result = checkOpenQuestionsClosed(designSec10.content, 'DQ');
       if (!result.closed) {
         errors.push(
           `${relDir}/design.md: section 10. 待确认设计问题 not closed — ${result.reason}`,

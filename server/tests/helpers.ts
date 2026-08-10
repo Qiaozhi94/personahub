@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { openDatabase } from "../src/db/index.js";
 import { ProjectRepository } from "../src/repositories/project.js";
 import { WorkspaceRepository } from "../src/repositories/workspace.js";
@@ -62,6 +63,20 @@ export function createTempDir(): string {
 
 export function cleanupTempDir(dir: string): void {
   rmSync(dir, { recursive: true, force: true });
+}
+
+/**
+ * Initialise a throwaway git repo in `dir`, isolating it from the developer's
+ * global git config. In particular it clears `core.hooksPath`: the global
+ * config on some machines points at a hooks dir with a slow pre-commit hook
+ * (e.g. a code-review graph updater) that would otherwise run on every commit
+ * in these scanner tests and blow the execSync timeout.
+ */
+export function initGitRepo(dir: string): void {
+  execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
+  execSync('git config user.email "test@test.com"', { cwd: dir, encoding: "utf-8" });
+  execSync('git config user.name "Test"', { cwd: dir, encoding: "utf-8" });
+  execSync("git config core.hooksPath /dev/null", { cwd: dir, encoding: "utf-8" });
 }
 
 export interface TestServices {

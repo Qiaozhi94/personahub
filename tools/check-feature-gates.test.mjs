@@ -1014,7 +1014,10 @@ test('V1: illegal task format (no Txxx ID)', async () => {
     });
     const base = checkFeatureBase(dir, repo);
     const v1 = checkFeatureGateV1(dir, repo, base.feature);
-    assert.ok(v1.errors.some((e) => e.includes('without Txxx ID')));
+    assert.ok(
+      v1.errors.some((e) => e.includes('not a valid task') || e.includes('without Txxx')),
+      v1.errors.join('\n'),
+    );
   } finally {
     cleanup(repo);
   }
@@ -1232,7 +1235,10 @@ test('AC: no requirement ID reference', async () => {
     });
     const base = checkFeatureBase(dir, repo);
     const v1 = checkFeatureGateV1(dir, repo, base.feature);
-    assert.ok(v1.errors.some((e) => e.includes('does not reference')));
+    assert.ok(
+      v1.errors.some((e) => e.includes('not a valid AC') || e.includes('does not reference')),
+      v1.errors.join('\n'),
+    );
   } finally {
     cleanup(repo);
   }
@@ -1802,4 +1808,80 @@ test('Batch: v0 does not run v1 checks', async () => {
   } finally {
     cleanup(repo);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Regression tests for structure-improvement code review round 1 (2026-08-10)
+// ---------------------------------------------------------------------------
+
+test('Regress: gate-v0-bypass — new Feature declaring gate_version 0 is rejected', async () => {
+  let repo;
+  try {
+    repo = createTempRepo();
+    // A new (non-legacy) Feature id must not be able to declare gate_version 0.
+    const dir = writeFeature(repo, '0.3', 'F020', 'new-feature', {
+      spec: makeSpec({ id: 'F020', version: '0.3', gateVersion: 0 }),
+    });
+    const result = checkFeatureBase(dir, repo);
+    assert.ok(
+      result.errors.some((e) => e.includes('gate_version 0 is a legacy exemption')),
+      result.errors.join('\n'),
+    );
+  } finally {
+    cleanup(repo);
+  }
+});
+
+test('Regress: gate-v0-bypass — legacy F001 may still declare gate_version 0', async () => {
+  let repo;
+  try {
+    repo = createTempRepo();
+    const dir = writeFeature(repo, '0.1', 'F001', 'legacy', {
+      spec: makeSpec({ id: 'F001', version: '0.1', gateVersion: 0 }),
+    });
+    const result = checkFeatureBase(dir, repo);
+    assert.ok(!result.errors.some((e) => e.includes('gate_version 0 is a legacy exemption')));
+  } finally {
+    cleanup(repo);
+  }
+});
+
+test('Regress: section-order-duplicate — reversed sections are rejected', () => {
+  const actual = [...SPEC_SECTIONS].reverse().map((s) => ({ ...s, content: 'x' }));
+  const errors = compareSectionHeadings(actual, SPEC_SECTIONS, 'spec.md');
+  assert.ok(errors.some((e) => e.includes('out of order')), errors.join('\n'));
+});
+
+test('Regress: section-order-duplicate — duplicate section number is rejected', () => {
+  const actual = [
+    ...SPEC_SECTIONS.map((s) => ({ ...s, content: 'x' })),
+    { num: 0, title: '来源与意图', content: 'dup' },
+  ];
+  const errors = compareSectionHeadings(actual, SPEC_SECTIONS, 'spec.md');
+  assert.ok(errors.some((e) => e.includes('duplicate section 0')), errors.join('\n'));
+});
+
+test('Regress: open-question-syntax — arbitrary checked checkbox is NOT closed', () => {
+  const result = checkOpenQuestionsClosed('- [x] not-a-Q and no decision');
+  assert.equal(result.closed, false);
+});
+
+test('Regress: open-question-syntax — a valid closed Q item IS closed', () => {
+  const result = checkOpenQuestionsClosed('- [x] Q-001: question - 决策：conclusion');
+  assert.equal(result.closed, true);
+});
+
+test('Regress: traceability — prose mention of an ID is not a requirement definition', () => {
+  const ids = parseRequirementIds('本文仅引用 FR-999，并未定义它');
+  assert.ok(!ids.has('FR-999'));
+});
+
+test('Regress: traceability — loose AC text is not accepted as an AC', () => {
+  const acs = parseAcLines('- [x] garbage AC-001 mentions FR-999');
+  assert.equal(acs.length, 0);
+});
+
+test('Regress: traceability — loose task text is not accepted as a task', () => {
+  const tasks = parseTaskLines('- [x] blah T001');
+  assert.equal(tasks.length, 0);
 });

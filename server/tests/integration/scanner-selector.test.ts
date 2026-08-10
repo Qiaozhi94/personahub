@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createTempDir, cleanupTempDir } from "../helpers.js";
+import { createTempDir, cleanupTempDir, initGitRepo } from "../helpers.js";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
@@ -16,9 +16,7 @@ describe("Scanner Selector (T030)", () => {
   });
 
   it("uses git scanner for git workspace", () => {
-    execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
-    execSync('git config user.email "t@t.com"', { cwd: dir, encoding: "utf-8" });
-    execSync('git config user.name "T"', { cwd: dir, encoding: "utf-8" });
+    initGitRepo(dir);
     writeFileSync(join(dir, "app.ts"), "content");
     execSync("git add -A && git commit -m init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
 

@@ -1,16 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createTempDir, cleanupTempDir } from "../helpers.js";
+import { createTempDir, cleanupTempDir, initGitRepo } from "../helpers.js";
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import { captureGitSnapshot, diffGitSnapshots } from "../../src/runtime/trace/git-workspace-scanner.js";
 import { FileChangeType } from "@personahub/shared/types";
-
-function initGitRepo(dir: string): void {
-  execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
-  execSync('git config user.email "test@test.com"', { cwd: dir, encoding: "utf-8" });
-  execSync('git config user.name "Test"', { cwd: dir, encoding: "utf-8" });
-}
 
 function gitCommit(dir: string, msg: string): void {
   execSync("git add -A", { cwd: dir, encoding: "utf-8", timeout: 5000 });
