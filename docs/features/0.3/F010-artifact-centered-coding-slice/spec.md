@@ -8,7 +8,7 @@ related_features: [F004, F006, F007, F009]
 topics: [artifact, coding-workflow, graph, handoff, validation, v0.3]
 doc_kind: spec
 created: 2026-08-09
-updated: 2026-08-09
+updated: 2026-08-11
 ---
 
 # F010：Artifact-Centered Coding Slice
@@ -114,7 +114,7 @@ F009 只有管理能力仍可能成为“附件 CRUD”。artifact 必须接入�
 
 ### 边界场景
 
-- 当 artifact 跨 Issue、类型不匹配、unpinned、missing 或 hash mismatch 时会发生什么？阻塞对应节点/Run，不创建部分状态。
+- 当 artifact 跨 Issue、类型不匹配、unpinned、missing、hash mismatch 或来源已归档时会发生什么？阻塞对应节点/Run，不创建部分状态。
 - 如果 retry/restart 重新 finalize，系统应如何处理？不重复 revision，旧 Attempt 链保持可回放。
 - 在一次性重写 F006 的情况下，哪些事情绝不能发生？不破坏历史 graph 恢复；保留 v1 definition 原样回放。
 
@@ -126,7 +126,7 @@ F009 只有管理能力仍可能成为“附件 CRUD”。artifact 必须接入�
 
 - **FR-001**：新增 versioned `artifact_coding_v1` graph definition；不得修改 F006 已存在 definition/version。
 - **FR-002**：每个 graph node 的 output contract 声明 artifact type；节点逻辑成功要求 result envelope 与 artifact 创建同事务成功。
-- **FR-003**：fan-in 只接受来自声明前驱、同 Issue/graph、类型匹配的 pinned refs，并记录实际消费 revision。
+- **FR-003**：fan-in 只接受来自声明前驱、同 Issue/graph、类型匹配、且来源 artifact 未被归档（`F009 ArtifactService.validateAttachableRef`）的 pinned refs，并记录实际消费 revision；命中已归档来源时计入 omitted refs 并阻塞对应节点，不静默丢弃。
 - **FR-004**：implementation instructions 必须包含 synthesis plan ref；完成时以 Handoff/trace 派生 `implementation_log`，不能信任 agent 自报命令或文件变化。
 - **FR-005**：validator context 必须包含 plan/log pinned refs；每个成功解析出规范 pass/non-pass result 的 validator Run（包括非最终轮）都创建一个独立的 `verification_results` Artifact 实体 revision 1，并通过 `source_run_id`/`validation_round` 追溯轮次。非 pass 结果由下一轮 implementation 消费；最终 Evidence Summary 引用最终轮 artifact，并同时列出此前各轮的 pinned refs。进程失败或 result unparsable 不伪造 artifact，只保留既有失败 trace。
 - **FR-006**：HandoffPayload 增加 `artifact_refs` 与 `consumed_artifact_refs`，均去重、限额、保持 pinned。
@@ -177,7 +177,7 @@ Attempt process completed
 - [ ] **AC-001** (`FR-002`, `FR-003`): 两个 research artifacts -> 一个 synthesis plan，fan-in 输入只有 refs。
 - [ ] **AC-002** (`FR-004`): implementation log 的命令/文件数据与可信 trace 一致，agent 文本无法伪造。
 - [ ] **AC-003** (`FR-005`): 每个成功解析的 validation round 均有独立 verification artifact；下一轮实现消费上一轮，最终轮与 Evidence Summary 相互可追溯且保留此前轮 refs。
-- [ ] **AC-004** (`FR-003`, `FR-004`, `FR-005`): 跨 Issue/type/unpinned/missing/hash mismatch 均阻塞且不创建部分状态。
+- [ ] **AC-004** (`FR-003`, `FR-004`, `FR-005`): 跨 Issue/type/unpinned/missing/hash mismatch/来源已归档均阻塞且不创建部分状态。
 - [ ] **AC-005** (`FR-007`, `NFR-003`): retry/restart 不重复 revision，旧 Attempt 链保持可回放。
 - [ ] **AC-006** (`FR-006`, `FR-008`): 真实 CLI 完成四类 artifact 旅程；隐藏早期聊天事件正文后仍能完成后续阶段。
 

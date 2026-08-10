@@ -6,7 +6,7 @@ related_features: [F004, F006, F007, F009]
 topics: [artifact, coding-workflow, graph, handoff, validation]
 doc_kind: tasks
 created: 2026-08-09
-updated: 2026-08-09
+updated: 2026-08-11
 ---
 
 # F010：Artifact-Centered Coding Slice - 任务
@@ -45,9 +45,9 @@ updated: 2026-08-09
 
 - [ ] T010 (`FR-002`, `NFR-002`, `NFR-003`): 实现 DB-only `createArtifactFromRun(tx, ...)` 与 `(run_id, producer_slot)` 幂等；命中既有 link 时复核 type/hash，purpose 不参与唯一性。 - verify: `server/tests/integration/artifact-production-service.test.ts`
 - [ ] T011 (`FR-002`, `TR-002`): 接入 node result processor；artifact/link/event/NodeRun CAS 同事务。v2 事件必须带 `payload_schema`，并与冻结 definition id/version 交叉校验；覆盖 legacy 无 discriminator、v2 正常、未知/错配 schema 四类。 - verify: `server/tests/integration/node-result-processor-v2.test.ts`
-- [ ] T012 (`FR-003`): ArtifactContextAssembler 完成 pinned/scope/type/slot/budget 校验。 - verify: `server/tests/unit/artifact-context-assembler.test.ts`
+- [ ] T012 (`FR-003`): ArtifactContextAssembler 完成 pinned/scope/type/slot/budget 校验，并在 resolve 前对每个 ref 调用 F009 `ArtifactService.validateAttachableRef()`；archived 命中 `archived_rejected` 计入 omitted refs（非静默丢弃），覆盖断言。 - verify: `server/tests/unit/artifact-context-assembler.test.ts`
 - [ ] T013 (`FR-003`): synthesis instruction builder 改为 v2 refs 输入；v1 路径保持原样。 - verify: `server/tests/integration/synthesis-instruction-v2.test.ts`
-- [ ] T014 (`FR-003`, `FR-007`): fan-in missing/type/scope/hash/重复 finalize/retry/restart 集成矩阵。 - verify: `server/tests/integration/fan-in-matrix.test.ts`
+- [ ] T014 (`FR-003`, `FR-007`, `AC-004`): fan-in missing/type/scope/hash/来源已归档（`validateAttachableRef` 命中 `archived_rejected`）/重复 finalize/retry/restart 集成矩阵。 - verify: `server/tests/integration/fan-in-matrix.test.ts`
 - [ ] T015 (`FR-001`): F007 premise/recommend/confirm 使用冻结 definition id/version，过期返回 stale。 - verify: `server/tests/integration/intake-definition-stale.test.ts`
 
 ### Phase 3：Implementation 与 Validation

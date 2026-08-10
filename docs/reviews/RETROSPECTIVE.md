@@ -717,3 +717,30 @@ Critical/High。
 始终由可执行证据和独立复核共同支撑。其余 4 个模式各出现 1 次。存活轮数最长的是
 `structure-traceability-format-bypass`：第 1 轮发现、第 4 轮关闭，存活 3 轮；它说明
 解析器契约修复必须同时锁定合法样例与最小反例，不能只让现有 happy path 重新变绿。
+
+---
+
+## 循环 14: F009 开发前需求与设计文档检视（4轮／2周期）
+
+- **report_type**: doc-review
+- **周期**: 2026-08-11，4轮／2周期 · **状态**: 已收敛（以本次文档提交触发的 CI 全绿为闭环生效条件）
+- **背景**: 检视 F009 Artifact Foundation & Provenance 的 spec/design/tasks，并核对 F010
+  消费侧契约。首周期第 3 轮发现 inline/file 协议混用后按三轮封顶结束；窄范围新周期
+  用两轮确认协议拆分无修复回归。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F009-DOC-001 | SQLite 与文件系统之间缺少可恢复的一致性协议 | High | correctness | root-cause | original-coding | fixed | 明确 rename-then-commit、失败补偿、启动时孤儿隔离及提交后广播语义，不再宣称跨资源真原子。 | `docs/features/0.3/F009-artifact-foundation-provenance/design.md::5.1` | 1 | 2 | cross-resource-atomicity-gap |
+| F009-DOC-002 | revise CAS 没有定义调用方提交的基线 revision | High | correctness | root-cause | original-coding | fixed | revise 强制 expected_revision，单条 CAS 失败立即 409，服务端不再自动重放陈旧编辑。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::IR-001` | 1 | 2 | optimistic-concurrency-without-precondition |
+| F009-DOC-003 | local_file_path 同时被定义为输入源路径和不可变归档路径 | High | correctness | root-cause | original-coding | fixed | source/archive locator 已拆分；source 采用 open-then-verify-then-read，并新增静态与竞态路径测试任务。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::AC-003` | 1 | 3 | storage-source-identity-conflation |
+| F009-DOC-004 | archived ref 的历史解析与新引用限制缺少可判定边界 | High | correctness | root-cause | original-coding | fixed | 拆分 resolvePinned 与 validateAttachableRef，并定义重复 archive 不追加事件。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::AC-006` | 1 | 2 | lifecycle-context-missing |
+| F009-DOC-005 | 验收与任务门禁未覆盖完整公开契约 | Medium | test-coverage | root-cause | process-gap | fixed | CAS 测试改为一 stale 加两 current writer；新增 T016，并在 F010 assembler/fan-in 任务中接入 attach 校验与阻塞断言。 | `docs/features/0.3/F009-artifact-foundation-provenance/tasks.md::T015-T016` | 1 | 3 | acceptance-contract-gap |
+| F009-DOC-006 | 确定性归档路径在并发 revise 下发生写入碰撞 | High | correctness | root-cause | fix-regression | fixed | archived locator 改为 artifact 内按 content_sha256 寻址；CAS 败者不盲删，延迟孤儿扫描按所有 revision 引用判定。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::AC-007` | 2 | 3 | pre-cas-shared-side-effect |
+| F009-DOC-007 | inline_markdown 被错误纳入文件归档协议 | High | correctness | root-cause | fix-regression | fixed | inline_markdown 与 local_file 拆成纯 DB 与文件系统加 DB 两条独立协议，并补充双分支故障注入任务。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::FR-004` | 3 | 4 | storage-branch-contract-collapse |
+
+**模式性教训**: 7 条问题中 4 条来自初始设计、2 条来自修复回归、1 条来自流程缺口；
+说明跨资源协议修复必须按 storage type 分支检查，不能把“共享 CAS”误扩展成“共享持久化
+流程”。7 个模式各出现 1 次。存活轮数最长的是 F009-DOC-003 与 F009-DOC-005，均从
+第 1 轮到第 3 轮关闭，存活 2 轮；它们共同表明 locator 命名和验收任务必须同步覆盖生产者
+与消费者边界。最终定向复核确认 inline 只写 DB、local file 独占文件协议，且 F010 对
+archived ref 的消费限制与 F009 契约一致。

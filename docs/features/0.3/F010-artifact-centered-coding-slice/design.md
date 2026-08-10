@@ -6,7 +6,7 @@ related_features: [F004, F006, F007, F009]
 topics: [artifact, coding-workflow, graph, handoff, validation]
 doc_kind: design
 created: 2026-08-09
-updated: 2026-08-09
+updated: 2026-08-11
 ---
 
 # F010：Artifact-Centered Coding Slice - 设计
@@ -34,7 +34,7 @@ updated: 2026-08-09
 ## 2. 架构与模块边界
 
 - `ArtifactProductionService`：DB-only `createArtifactFromRun(tx, ...)` 与 `(run_id, producer_slot)` 幂等；命中既有 link 时复核 type/hash，`purpose` 不参与唯一性。
-- `ArtifactContextAssembler`：`assemble(refs, scope, budget)` 逐项 parse pinned -> scope/type/link 校验 -> resolve/hash -> 确定性排序/预算 -> 返回 sections + consumed links + omitted refs；排序为 required type/slot、producer node key、ref，不按 DB 偶然顺序。
+- `ArtifactContextAssembler`：`assemble(refs, scope, budget)` 逐项 parse pinned -> scope/type/link 校验 -> `ArtifactService.validateAttachableRef()` 校验（archived 一律拒绝新挂接，命中 `archived_rejected` 计入 omitted refs 并记录原因，不静默丢弃）-> resolve/hash -> 确定性排序/预算 -> 返回 sections + consumed links + omitted refs；排序为 required type/slot、producer node key、ref，不按 DB 偶然顺序。
 - node result processor：解析 result envelope -> artifact create/links/node_result event/NodeRun CAS 同事务；`resolveTrustedPayload()` 仍只负责 trusted event/scope，不负责 payload 版本判别。
 - implementation/validator finalize：在既有 finalize 事务内调用 DB-only production primitive；禁止内层自开事务。
 - 唯一真相源：produced link 唯一幂等键为 `(run_id, producer_slot)`；artifact revision 内容由 F009 `(artifact_id, revision)` 唯一确定。
@@ -88,7 +88,7 @@ consumed_artifact_refs: string[];
 artifact_refs_truncated: boolean;
 ```
 
-implementation Run 的输入 refs 在创建 Run 时冻结并写 consumed links；instructions 只包含 ref 摘要，正文由 context builder 装配。完成时 `implementation_log` 从 `buildHandoff()`、file-change-set 和 verified events 构建，不直接接受 agent 返回的日志字段。
+implementation Run 的输入 refs 在创建 Run 时先经 `ArtifactContextAssembler`（含 `validateAttachableRef`）校验再冻结并写 consumed links；instructions 只包含 ref 摘要，正文由 context builder 装配。完成时 `implementation_log` 从 `buildHandoff()`、file-change-set 和 verified events 构建，不直接接受 agent 返回的日志字段。
 
 validator context assembler 加入 synthesis/log refs。每个成功解析出规范 result 的 validator Run，无论 pass、要求修改还是 round-limit blocked，都创建一个新的 `verification_results` Artifact 实体 revision 1；`source_run_id` 指向该 validator Run，轮次从可信 `runs.validation_round` 投影，producer slot 恒为 `verification_results`。非 pass artifact 写入下一轮 implementation 的 consumed links；最终 Evidence Summary 以最终轮 ref 为主，并按 round 升序附上此前所有 verification refs。validator 进程失败/result unparsable 不创建伪 artifact。任一应产出 artifact 的事务失败时 policy gate 不允许 Done。
 
