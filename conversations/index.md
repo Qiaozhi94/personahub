@@ -1,19 +1,18 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 134
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 159
 
 ## 工具统计
 
 | 工具 | 会话数 |
 |---|---|
 
-| OpenCode | 82 |
-| Claude Code | 20 |
-| Codex CLI | 32 |
+| OpenCode | 91 |
+| Claude Code | 25 |
+| Codex CLI | 43 |
 
 ## 会话血缘树
 
-- **9b23940e-6e34-4538-9f01-81f724175d1b** (`claude` · 2026-07-11T12:43:57Z)
 - **94595b09-befc-40b8-851e-82f1670ce165** (`claude` · 2026-07-11T14:27:58Z)
 - **1e9602d9-c067-4756-965d-c1f606ba3b57** (`claude` · 2026-07-12T03:04:57Z)
 - **personahub 初始 commit 推送至 GitHub** (`opencode` · 2026-07-12T10:31:19Z)
@@ -115,12 +114,26 @@
   - Fake adapter e2e test for graph (@Sisyphus-Junior subagent) (`opencode` · 2026-08-06T13:25:02Z)
   - Graph UI in ThreadView + Inspector (@Sisyphus-Junior subagent) (`opencode` · 2026-08-06T13:25:14Z)
 - **f1b4399d-deb7-4d04-907a-fa658e6a7bac** (`claude` · 2026-08-02T12:51:38Z)
+- **0f3bc05f-33f7-4f4c-be0c-fef50c5a6ec7** (`claude` · 2026-08-08T04:49:04Z)
+- **F007设计文档开发实现** (`opencode` · 2026-08-08T05:57:43Z)
+  - Build F007 Intake UI (@Sisyphus-Junior subagent) (`opencode` · 2026-08-08T07:01:12Z)
+- **0a9343d9-66bc-4a78-92f9-9db9317a2801** (`claude` · 2026-08-09T08:44:54Z)
+- **720be8ab-1e5d-4a17-ad5d-bdacf80a60ea** (`claude` · 2026-08-09T09:11:10Z)
+- **f008需求开发启动** (`opencode` · 2026-08-09T10:13:15Z)
+  - F008 template admin backend (@Sisyphus-Junior subagent) (`opencode` · 2026-08-09T10:27:24Z)
+  - F008 runtime health backend (@Sisyphus-Junior subagent) (`opencode` · 2026-08-09T10:28:45Z)
+  - F008 template admin + health UI (@Sisyphus-Junior subagent) (`opencode` · 2026-08-09T11:35:26Z)
+- **8257ee74-500c-433a-a4fa-eb9e997a7671** (`claude` · 2026-08-09T10:15:28Z)
+- **788e0286-97b0-4e3b-b298-fc8e48745bb6** (`claude` · 2026-08-09T12:29:40Z)
+- **dc155cb5-2087-4fce-8cba-796dff34f29a** (`claude` · 2026-08-09T14:07:36Z)
+- **项目结构改造方案执行** (`opencode` · 2026-08-09T15:31:04Z)
+  - Implement feature-gate & doc-check scripts (@Sisyphus-Junior subagent) (`opencode` · 2026-08-09T15:37:25Z)
+  - Normalize feature docs to new template (@Sisyphus-Junior subagent) (`opencode` · 2026-08-09T15:41:20Z)
 
 ## 原始会话清单
 
 | 时间 | 工具 | 标题 | 模型 | 文件 |
 |---|---|---|---|---|
-| 2026-07-11T12:43:57Z | Claude Code | 9b23940e-6e34-4538-9f01-81f724175d1b | claude-sonnet-5 | `claude/9b23940e-6e34-4538-9f01-81f724175d1b.md` |
 | 2026-07-11T13:47:24Z | Codex CLI | rollout-2026-07-11T21-45-50-019f516d-5fe5-7680-abcb-48f330084101 | openai | `codex/rollout-2026-07-11T21-45-50-019f516d-5fe5-7680-abcb-48f330084101.md` |
 | 2026-07-11T14:27:58Z | Claude Code | 94595b09-befc-40b8-851e-82f1670ce165 | claude-sonnet-5 | `claude/94595b09-befc-40b8-851e-82f1670ce165.md` |
 | 2026-07-12T03:04:57Z | Claude Code | 1e9602d9-c067-4756-965d-c1f606ba3b57 | claude-sonnet-5 | `claude/1e9602d9-c067-4756-965d-c1f606ba3b57.md` |
@@ -254,3 +267,29 @@
 | 2026-08-05T14:15:46Z | OpenCode | Adapter escalation cancel edge-case tests (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_02db83b8dffejTGFwdP4KdcDRM.md` |
 | 2026-08-06T13:25:02Z | OpenCode | Fake adapter e2e test for graph (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_028c05404ffe4VutUZZHdlr5JH.md` |
 | 2026-08-06T13:25:14Z | OpenCode | Graph UI in ThreadView + Inspector (@Sisyphus-Junior subagent) | kimi-k2.7-code | `opencode/ses_028c02431ffeRRaoII6RGpYLQF.md` |
+| 2026-08-08T04:35:58Z | Codex CLI | rollout-2026-08-08T12-35-30-019fdfa7-94f7-7df3-9fed-24ea67944061 | openai | `codex/rollout-2026-08-08T12-35-30-019fdfa7-94f7-7df3-9fed-24ea67944061.md` |
+| 2026-08-08T04:49:04Z | Claude Code | 0f3bc05f-33f7-4f4c-be0c-fef50c5a6ec7 | claude-sonnet-5 | `claude/0f3bc05f-33f7-4f4c-be0c-fef50c5a6ec7.md` |
+| 2026-08-08T05:57:43Z | OpenCode | F007设计文档开发实现 | deepseek-v4-flash | `opencode/ses_0200d212fffeCSNFjRL2KmD0J8.md` |
+| 2026-08-08T07:01:12Z | OpenCode | Build F007 Intake UI (@Sisyphus-Junior subagent) | kimi-k2.7-code | `opencode/ses_01fd3019cffevOsrDprLNNjw2P.md` |
+| 2026-08-08T10:47:37Z | Codex CLI | rollout-2026-08-08T18-47-14-019fe0fb-e8bf-7e92-8997-618bd03ab364 | openai | `codex/rollout-2026-08-08T18-47-14-019fe0fb-e8bf-7e92-8997-618bd03ab364.md` |
+| 2026-08-09T06:52:40Z | Codex CLI | rollout-2026-08-09T14-52-35-019fe54b-7388-7ce0-a8d6-d6bf92e47511 | openai | `codex/rollout-2026-08-09T14-52-35-019fe54b-7388-7ce0-a8d6-d6bf92e47511.md` |
+| 2026-08-09T08:44:54Z | Claude Code | 0a9343d9-66bc-4a78-92f9-9db9317a2801 | claude-sonnet-5 | `claude/0a9343d9-66bc-4a78-92f9-9db9317a2801.md` |
+| 2026-08-09T08:47:52Z | Codex CLI | rollout-2026-08-09T16-47-22-019fe5b4-89da-7481-bd78-acc6b255b544 | openai | `codex/rollout-2026-08-09T16-47-22-019fe5b4-89da-7481-bd78-acc6b255b544.md` |
+| 2026-08-09T09:09:48Z | Codex CLI | rollout-2026-08-09T17-09-43-019fe5c9-0260-7951-a11d-34e19ff5f181 | openai | `codex/rollout-2026-08-09T17-09-43-019fe5c9-0260-7951-a11d-34e19ff5f181.md` |
+| 2026-08-09T09:11:10Z | Claude Code | 720be8ab-1e5d-4a17-ad5d-bdacf80a60ea | claude-sonnet-5 | `claude/720be8ab-1e5d-4a17-ad5d-bdacf80a60ea.md` |
+| 2026-08-09T09:59:31Z | Codex CLI | rollout-2026-08-09T17-59-26-019fe5f6-86cd-7de2-88ca-222e842f53a3 | openai | `codex/rollout-2026-08-09T17-59-26-019fe5f6-86cd-7de2-88ca-222e842f53a3.md` |
+| 2026-08-09T10:13:15Z | OpenCode | f008需求开发启动 | deepseek-v4-flash | `opencode/ses_019fcd1b2ffeVhLjSmKAXA2M0m.md` |
+| 2026-08-09T10:15:28Z | Claude Code | 8257ee74-500c-433a-a4fa-eb9e997a7671 | claude-sonnet-5 | `claude/8257ee74-500c-433a-a4fa-eb9e997a7671.md` |
+| 2026-08-09T10:27:24Z | OpenCode | F008 template admin backend (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_019efdfd4ffeO4PfN4dX6VfSyf.md` |
+| 2026-08-09T10:28:45Z | OpenCode | F008 runtime health backend (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_019eea13bffezbslxUY6Bo88yf.md` |
+| 2026-08-09T10:54:38Z | Codex CLI | rollout-2026-08-09T18-53-56-019fe628-6acf-7f93-835f-cee953f7aa18 | openai | `codex/rollout-2026-08-09T18-53-56-019fe628-6acf-7f93-835f-cee953f7aa18.md` |
+| 2026-08-09T11:35:26Z | OpenCode | F008 template admin + health UI (@Sisyphus-Junior subagent) | kimi-k2.7-code | `opencode/ses_019b19595ffez4FeyznixMFLCC.md` |
+| 2026-08-09T12:29:40Z | Claude Code | 788e0286-97b0-4e3b-b298-fc8e48745bb6 | claude-sonnet-5 | `claude/788e0286-97b0-4e3b-b298-fc8e48745bb6.md` |
+| 2026-08-09T14:07:36Z | Claude Code | dc155cb5-2087-4fce-8cba-796dff34f29a | claude-sonnet-5 | `claude/dc155cb5-2087-4fce-8cba-796dff34f29a.md` |
+| 2026-08-09T14:42:32Z | Codex CLI | rollout-2026-08-09T22-42-28-019fe6f9-a465-7480-898c-828f5ad0cbc1 | openai | `codex/rollout-2026-08-09T22-42-28-019fe6f9-a465-7480-898c-828f5ad0cbc1.md` |
+| 2026-08-09T15:31:04Z | OpenCode | 项目结构改造方案执行 | deepseek-v4-flash | `opencode/ses_018d9da68ffeJ8OxqaL1v7OOzo.md` |
+| 2026-08-09T15:37:25Z | OpenCode | Implement feature-gate & doc-check scripts (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_018d40b81ffeSid7eQjOl5dNFf.md` |
+| 2026-08-09T15:41:20Z | OpenCode | Normalize feature docs to new template (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_018d07672ffes6FE5L3muotLI8.md` |
+| 2026-08-10T11:25:17Z | Codex CLI | rollout-2026-08-10T19-24-52-019feb6b-1791-7c63-8bb9-f3f2d989d266 | openai | `codex/rollout-2026-08-10T19-24-52-019feb6b-1791-7c63-8bb9-f3f2d989d266.md` |
+| 2026-08-10T11:26:54Z | Codex CLI | rollout-2026-08-10T19-26-29-019feb6c-942f-7c50-82ed-318f92b90984 | openai | `codex/rollout-2026-08-10T19-26-29-019feb6c-942f-7c50-82ed-318f92b90984.md` |
+| 2026-08-10T12:56:41Z | Codex CLI | rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d | openai | `codex/rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d.md` |

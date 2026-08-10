@@ -2,8 +2,6 @@
 
 > 仅保留会话起止与子代理派发/收集等编排级事件，供快速复盘协作穿插。
 
-- `2026-07-11T12:43:57Z` **session-start** claude/9b23940e-6e34-4538-9f01-81f724175d1b
-- `2026-07-11T13:27:19Z` **session-end** claude/9b23940e-6e34-4538-9f01-81f724175d1b
 - `2026-07-11T13:47:24Z` **session-start** codex/rollout-2026-07-11T21-45-50-019f516d-5fe5-7680-abcb-48f330084101
 - `2026-07-11T14:27:58Z` **session-start** claude/94595b09-befc-40b8-851e-82f1670ce165
 - `2026-07-11T14:42:39Z` **ToolSearch** claude/94595b09-befc-40b8-851e-82f1670ce165: ToolSearch({"query": "select:TaskCreate,TaskUpdate", "max_results": 5})
@@ -173,7 +171,7 @@
 - `2026-07-18T18:00:36Z` **session-end** opencode/F004 T056-T059: Terminal hook + validator (@Sisyphus-Junior subagent)
 - `2026-07-18T18:00:59Z` **session-start** opencode/F004 T060-T062: Startup Recovery (@Sisyphus-Junior subagent)
 - `2026-07-18T18:18:04Z` **session-end** opencode/F004 T060-T062: Startup Recovery (@Sisyphus-Junior subagent)
-- `2026-07-18T18:18:27Z` **task** opencode/f004需求代码开发: task({"category": "quick", "description": "F004 T063-T068: HTTP API", "load_skills": [], "prompt": "## TASK: Implement F004 T063-T068 - HTTP API Routes\n\nCreate Fastify routes for validation API and register dependencies.\n\n## Read these files first:\n1. `docs/features/0.1/F004-autonomous-validation/design.md` - §7 (API contracts: GET validation, GET summary, POST validation, POST unblock)\n2. `server/src/api/routes/` - Existing route files (issues.ts, adapters.ts, etc.) for pattern reference\n3. 
+- `2026-07-18T18:18:27Z` **task** opencode/f004需求代码开发: task({"category": "quick", "description": "F004 T063-T068: HTTP API", "load_skills": [], "prompt": "## TASK: Implement F004 T063-T068 - HTTP API Routes\n\nCreate Fastify routes for validation API and register dependencies.\n\n## Read these files first:\n1. `docs/features/0.1/F004-autonomous-validation/design.md` - §7 (API contracts: GET validation, GET summary, POST validation, POST unblock)\n2. `server/src/api/routes/` - Existing route files (issues.ts, adapters.ts, etc.) for pattern reference\n3.
 - `2026-07-18T18:18:42Z` **session-start** opencode/F004 T063-T068: HTTP API (@Sisyphus-Junior subagent)
 - `2026-07-18T18:39:16Z` **session-end** opencode/F004 T063-T068: HTTP API (@Sisyphus-Junior subagent)
 - `2026-07-18T18:40:01Z` **session-start** opencode/F004 T069-T079: Validation UI (@Sisyphus-Junior subagent)
@@ -334,3 +332,71 @@
 - `2026-08-07T14:26:08Z` **session-end** opencode/v0.2 F006 需求开发
 - `2026-08-07T17:04:35Z` **ToolSearch** claude/f1b4399d-deb7-4d04-907a-fa658e6a7bac: ToolSearch({"query": "select:TaskList,TaskOutput", "max_results": 5})
 - `2026-08-07T17:09:22Z` **session-end** claude/f1b4399d-deb7-4d04-907a-fa658e6a7bac
+- `2026-08-08T04:35:58Z` **session-start** codex/rollout-2026-08-08T12-35-30-019fdfa7-94f7-7df3-9fed-24ea67944061
+- `2026-08-08T04:49:04Z` **session-start** claude/0f3bc05f-33f7-4f4c-be0c-fef50c5a6ec7
+- `2026-08-08T05:04:09Z` **ToolSearch** claude/0f3bc05f-33f7-4f4c-be0c-fef50c5a6ec7: ToolSearch({"query": "select:TaskCreate,TaskUpdate", "max_results": 5})
+- `2026-08-08T05:46:15Z` **session-end** codex/rollout-2026-08-08T12-35-30-019fdfa7-94f7-7df3-9fed-24ea67944061
+- `2026-08-08T05:56:22Z` **session-end** claude/0f3bc05f-33f7-4f4c-be0c-fef50c5a6ec7
+- `2026-08-08T05:57:43Z` **session-start** opencode/F007设计文档开发实现
+- `2026-08-08T07:01:12Z` **session-start** opencode/Build F007 Intake UI (@Sisyphus-Junior subagent)
+- `2026-08-08T07:11:41Z` **background_output** opencode/F007设计文档开发实现: background_output({"task_id": "bg_30ddfa46", "block": true, "timeout": 600000})
+- `2026-08-08T07:33:12Z` **session-end** opencode/Build F007 Intake UI (@Sisyphus-Junior subagent)
+- `2026-08-08T07:33:13Z` **background_output** opencode/F007设计文档开发实现: background_output({"task_id": "bg_30ddfa46"})
+- `2026-08-08T10:47:37Z` **session-start** codex/rollout-2026-08-08T18-47-14-019fe0fb-e8bf-7e92-8997-618bd03ab364
+- `2026-08-08T17:42:49Z` **session-end** opencode/F007设计文档开发实现
+- `2026-08-09T06:52:40Z` **session-start** codex/rollout-2026-08-09T14-52-35-019fe54b-7388-7ce0-a8d6-d6bf92e47511
+- `2026-08-09T06:54:24Z` **session-end** codex/rollout-2026-08-09T14-52-35-019fe54b-7388-7ce0-a8d6-d6bf92e47511
+- `2026-08-09T06:54:49Z` **session-end** codex/rollout-2026-08-08T18-47-14-019fe0fb-e8bf-7e92-8997-618bd03ab364
+- `2026-08-09T08:44:54Z` **session-start** claude/0a9343d9-66bc-4a78-92f9-9db9317a2801
+- `2026-08-09T08:47:52Z` **session-start** codex/rollout-2026-08-09T16-47-22-019fe5b4-89da-7481-bd78-acc6b255b544
+- `2026-08-09T09:09:48Z` **session-start** codex/rollout-2026-08-09T17-09-43-019fe5c9-0260-7951-a11d-34e19ff5f181
+- `2026-08-09T09:11:10Z` **session-start** claude/720be8ab-1e5d-4a17-ad5d-bdacf80a60ea
+- `2026-08-09T09:11:19Z` **Skill** claude/720be8ab-1e5d-4a17-ad5d-bdacf80a60ea: Skill({"skill": "review-convergence"})
+- `2026-08-09T09:42:41Z` **session-end** claude/0a9343d9-66bc-4a78-92f9-9db9317a2801
+- `2026-08-09T09:46:55Z` **session-end** codex/rollout-2026-08-09T16-47-22-019fe5b4-89da-7481-bd78-acc6b255b544
+- `2026-08-09T09:59:31Z` **session-start** codex/rollout-2026-08-09T17-59-26-019fe5f6-86cd-7de2-88ca-222e842f53a3
+- `2026-08-09T10:02:03Z` **session-end** codex/rollout-2026-08-09T17-59-26-019fe5f6-86cd-7de2-88ca-222e842f53a3
+- `2026-08-09T10:02:12Z` **session-end** codex/rollout-2026-08-09T17-09-43-019fe5c9-0260-7951-a11d-34e19ff5f181
+- `2026-08-09T10:04:59Z` **session-end** claude/720be8ab-1e5d-4a17-ad5d-bdacf80a60ea
+- `2026-08-09T10:13:15Z` **session-start** opencode/f008需求开发启动
+- `2026-08-09T10:15:28Z` **session-start** claude/8257ee74-500c-433a-a4fa-eb9e997a7671
+- `2026-08-09T10:27:24Z` **session-start** opencode/F008 template admin backend (@Sisyphus-Junior subagent)
+- `2026-08-09T10:28:45Z` **session-start** opencode/F008 runtime health backend (@Sisyphus-Junior subagent)
+- `2026-08-09T10:48:41Z` **session-end** opencode/F008 template admin backend (@Sisyphus-Junior subagent)
+- `2026-08-09T10:52:00Z` **session-end** opencode/F008 runtime health backend (@Sisyphus-Junior subagent)
+- `2026-08-09T10:52:00Z` **background_output** opencode/f008需求开发启动: background_output({"task_id": "bg_363f8284"})
+- `2026-08-09T10:52:00Z` **background_output** opencode/f008需求开发启动: background_output({"task_id": "bg_37c75a8f"})
+- `2026-08-09T10:54:21Z` **session-end** claude/8257ee74-500c-433a-a4fa-eb9e997a7671
+- `2026-08-09T10:54:38Z` **session-start** codex/rollout-2026-08-09T18-53-56-019fe628-6acf-7f93-835f-cee953f7aa18
+- `2026-08-09T11:35:26Z` **session-start** opencode/F008 template admin + health UI (@Sisyphus-Junior subagent)
+- `2026-08-09T11:50:19Z` **session-end** opencode/F008 template admin + health UI (@Sisyphus-Junior subagent)
+- `2026-08-09T12:29:40Z` **session-start** claude/788e0286-97b0-4e3b-b298-fc8e48745bb6
+- `2026-08-09T12:29:47Z` **Skill** claude/788e0286-97b0-4e3b-b298-fc8e48745bb6: Skill({"skill": "review-convergence", "args": "F008 Workflow Template Admin & Runtime Health - 代码检视并输出文档"})
+- `2026-08-09T12:30:41Z` **ToolSearch** claude/788e0286-97b0-4e3b-b298-fc8e48745bb6: ToolSearch({"query": "select:TodoWrite", "max_results": 1})
+- `2026-08-09T12:59:55Z` **skill** opencode/f008需求开发启动: skill({"name": "review-convergence", "user_message": "对刚提交的 F008 实现做全量代码检视并修复发现的问题"})
+- `2026-08-09T13:41:44Z` **session-end** opencode/f008需求开发启动
+- `2026-08-09T13:52:11Z` **ToolSearch** claude/788e0286-97b0-4e3b-b298-fc8e48745bb6: ToolSearch({"query": "select:mcp__code-review-graph__detect_changes_tool", "max_results": 1})
+- `2026-08-09T14:05:33Z` **session-end** claude/788e0286-97b0-4e3b-b298-fc8e48745bb6
+- `2026-08-09T14:07:36Z` **session-start** claude/dc155cb5-2087-4fce-8cba-796dff34f29a
+- `2026-08-09T14:16:51Z` **ToolSearch** claude/dc155cb5-2087-4fce-8cba-796dff34f29a: ToolSearch({"query": "select:TodoWrite", "max_results": 1})
+- `2026-08-09T14:26:32Z` **session-end** claude/dc155cb5-2087-4fce-8cba-796dff34f29a
+- `2026-08-09T14:42:32Z` **session-start** codex/rollout-2026-08-09T22-42-28-019fe6f9-a465-7480-898c-828f5ad0cbc1
+- `2026-08-09T15:29:36Z` **session-end** codex/rollout-2026-08-09T22-42-28-019fe6f9-a465-7480-898c-828f5ad0cbc1
+- `2026-08-09T15:29:57Z` **session-end** codex/rollout-2026-08-09T18-53-56-019fe628-6acf-7f93-835f-cee953f7aa18
+- `2026-08-09T15:31:04Z` **session-start** opencode/项目结构改造方案执行
+- `2026-08-09T15:37:25Z` **session-start** opencode/Implement feature-gate & doc-check scripts (@Sisyphus-Junior subagent)
+- `2026-08-09T15:40:24Z` **task** opencode/项目结构改造方案执行: task({"category": "unspecified-high", "description": "Normalize feature docs to new template", "load_skills": [], "prompt": "TASK: Normalize Feature trio docs in the PersonaHub repo at D:\\Projects\\personahub to a newly-finalized fixed template structure. This covers tasks S005 and S006 of a directory-structure improvement plan.\n\nBACKGROUND: The repo has 12 features across versions 0.1 (F001-F005), 0.2 (F006-F008), 0.3 (F009-F012), each in `docs/features/<version>/Fxxx-*name/` containing `spec.md
+- `2026-08-09T15:41:20Z` **session-start** opencode/Normalize feature docs to new template (@Sisyphus-Junior subagent)
+- `2026-08-09T16:00:26Z` **session-end** opencode/Implement feature-gate & doc-check scripts (@Sisyphus-Junior subagent)
+- `2026-08-09T16:01:06Z` **session-end** opencode/Normalize feature docs to new template (@Sisyphus-Junior subagent)
+- `2026-08-09T16:01:06Z` **background_output** opencode/项目结构改造方案执行: background_output({"task_id": "bg_0229a5e7"})
+- `2026-08-09T16:01:06Z` **background_output** opencode/项目结构改造方案执行: background_output({"task_id": "bg_67c137c3"})
+- `2026-08-10T10:45:39Z` **background_cancel** opencode/项目结构改造方案执行: background_cancel({"all": false, "taskId": "bg_0229a5e7"})
+- `2026-08-10T11:25:17Z` **session-start** codex/rollout-2026-08-10T19-24-52-019feb6b-1791-7c63-8bb9-f3f2d989d266
+- `2026-08-10T11:26:06Z` **session-end** codex/rollout-2026-08-10T19-24-52-019feb6b-1791-7c63-8bb9-f3f2d989d266
+- `2026-08-10T11:26:54Z` **session-start** codex/rollout-2026-08-10T19-26-29-019feb6c-942f-7c50-82ed-318f92b90984
+- `2026-08-10T12:56:41Z` **session-start** codex/rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d
+- `2026-08-10T13:10:08Z` **skill** opencode/项目结构改造方案执行: skill({"name": "review-convergence"})
+- `2026-08-10T14:49:04Z` **session-end** opencode/项目结构改造方案执行
+- `2026-08-10T15:05:22Z` **session-end** codex/rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d
+- `2026-08-10T15:09:17Z` **session-end** codex/rollout-2026-08-10T19-26-29-019feb6c-942f-7c50-82ed-318f92b90984

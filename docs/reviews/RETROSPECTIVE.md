@@ -691,3 +691,29 @@ Critical/High。
 "按需省略",否则parser-contract-optional-structure会让每个Feature演化成不同方言。
 状态门禁必须按生命周期阶段施加:验收标准在draft就要存在,测试证据到review才可能
 真实存在,全部勾选也不能反向推断review已经done。最长存活轮数为0,第3轮无新增项。
+
+---
+
+## 循环 13: 目录结构改造成果代码检视（4轮）
+
+- **report_type**: fix-verification
+- **周期**: 2026-08-10,4轮 · **状态**: 已闭环
+- **背景**: 对目录结构改造提交做首轮全量检视，随后只复核各轮修复 diff；最终提交
+  `d2c7d3b` 的任务 parser 与文档唯一契约对齐，定向回归 129/129 通过，GitHub
+  Actions run `31399608090` 的统一门禁与 E2E 均全绿。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| structure-gate-v0-bypass | 新 Feature 可声明 gate_version 0 绕过全部 v1 门禁 | High | 正确性 | 根因 | 原始编码 | 已修复 | F001-F008 白名单限定 v0 | `tools/check-feature-gates.test.mjs::Regress gate-v0-bypass` | 1 | 2 | lifecycle-gate-wrong-phase |
+| structure-section-order-duplicate-bypass | 固定章节检查放过乱序与重复编号章节 | High | 正确性 | 根因 | 原始编码 | 已修复 | 检测重复编号与非递增顺序 | `tools/check-feature-gates.test.mjs::Regress section-order-duplicate` | 1 | 2 | parser-contract-optional-structure |
+| structure-local-verify-git-hook-timeout | Git scanner 测试继承全局 hooksPath 导致统一质量门本机失败 | High | 测试覆盖 | 根因 | 流程缺口 | 已修复 | 临时仓库覆盖 hooksPath | `git-scanner.test.ts + scanner-selector.test.ts` | 1 | 2 | machine-dependent-test-environment |
+| structure-open-question-syntax-bypass | 任意已勾 checkbox 可伪装成已关闭 Q/DQ | High | 正确性 | 根因 | 原始编码 | 已修复 | 已勾 Q/DQ 必须含非空“决策：<结论>”；拒绝“无”混用 | `tools/check-feature-gates.test.mjs::Regress r3 open-question` | 1 | 3 | parser-contract-free-text-bypass |
+| structure-traceability-format-bypass | AC、需求定义和任务格式可用松散文本绕过追踪门禁 | High | 正确性 | 根因 | 原始编码 | 已修复 | 需求只认定义位置；AC 双星号；任务采用 `T001 [P]` 顺序并要求非空 verify 值 | `tools/check-feature-gates.test.mjs::Regress r4 task-format` | 1 | 4 | marked-done-not-implemented |
+| structure-review-self-approval | 修复者不得在 reviewer 复核前自行闭环或写非协议报告格式 | High | 正确性 | 根因 | 流程缺口 | 已修复 | 协议格式 + 等待 reviewer 复核，不自行删除 | — | 2 | 3 | marked-done-not-implemented |
+
+**模式性教训**: 6 条问题中 4 条来自原始编码、2 条来自流程缺口；没有修复回归或
+契约漂移。`marked-done-not-implemented` 出现 2 次，分别落在 parser 实现没有真正
+覆盖文档契约，以及修复方在 reviewer 复核前自行标记闭环，说明“状态已完成”必须
+始终由可执行证据和独立复核共同支撑。其余 4 个模式各出现 1 次。存活轮数最长的是
+`structure-traceability-format-bypass`：第 1 轮发现、第 4 轮关闭，存活 3 轮；它说明
+解析器契约修复必须同时锁定合法样例与最小反例，不能只让现有 happy path 重新变绿。
