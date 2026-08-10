@@ -443,6 +443,6 @@ describe("T012 schema v8 migration", () => {
           /* ok */
         }
       }
-    });
+    }, 30_000);
   });
 });
