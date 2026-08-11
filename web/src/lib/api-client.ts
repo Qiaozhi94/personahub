@@ -56,10 +56,13 @@ import {
 const API_BASE = "/api";
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    ...options,
-  });
+  // Only send `Content-Type: application/json` when there is a body. Sending it
+  // on a bodyless POST (e.g. /runs/:id/cancel, /graph-runs/:id/cancel) makes
+  // Fastify's JSON parser reject the empty body (FST_ERR_CTP_EMPTY_JSON_BODY).
+  const hasBody = options?.body !== undefined && options?.body !== null;
+  const init: RequestInit = { ...options };
+  if (hasBody) init.headers = { "Content-Type": "application/json", ...options?.headers };
+  const res = await fetch(`${API_BASE}${path}`, init);
   if (!res.ok) {
     const errorBody = await res
       .json()
