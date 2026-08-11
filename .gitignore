@@ -43,6 +43,7 @@ docs/reviews/*
 # produces — these are meant to be committed, unlike raw per-round scratch files.
 !docs/reviews/RETROSPECTIVE.md
 !docs/reviews/CURRENT-doc.md
+!docs/reviews/dogfooding-bugs.md
 !docs/reviews/CURRENT-code.md
 
 # Probe raw output streams
