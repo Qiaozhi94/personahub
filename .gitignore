@@ -44,6 +44,7 @@ docs/reviews/*
 !docs/reviews/RETROSPECTIVE.md
 !docs/reviews/CURRENT-doc.md
 !docs/reviews/dogfooding-bugs.md
+!docs/reviews/dogfooding-notes.md
 !docs/reviews/CURRENT-code.md
 
 # Probe raw output streams

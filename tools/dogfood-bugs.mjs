@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 const BUG_DOC = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'reviews', 'dogfooding-bugs.md');
 
 const LEGAL_STATUSES = ['fixed', 'open'];
+const LEGAL_SEVERITIES = ['高', '中', '低'];
 const EMPTY = '—';
 const SEPARATOR_CELL = /^:?-+:?$/;
 
@@ -95,6 +96,9 @@ export function validateBugs(issues) {
     seen.add(issue.id);
     if (!LEGAL_STATUSES.includes(issue.status)) {
       errors.push(`${issue.id}: invalid status "${issue.status}" (legal: ${LEGAL_STATUSES.join('/')})`);
+    }
+    if (!LEGAL_SEVERITIES.includes(issue.severity)) {
+      errors.push(`${issue.id}: invalid severity "${issue.severity}" (legal: ${LEGAL_SEVERITIES.join('/')})`);
     }
     if (issue.status === 'open' && issue.fixCommit && issue.fixCommit !== EMPTY) {
       errors.push(`${issue.id}: status is open but has fix commit "${issue.fixCommit}"`);

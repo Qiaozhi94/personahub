@@ -25,6 +25,8 @@ updated: 2026-08-09
 | 当前 active Feature 与强提醒 | `../CLAUDE.md` | 自动加载入口 |
 | 非 done Feature 派生索引 | `../BACKLOG.md` | 活跃 feature 索引 |
 | 缺陷和过程教训 | `reviews/RETROSPECTIVE.md` | 检视复盘 |
+| 使用中发现的 bug 实时记录 | `reviews/dogfooding-bugs.md` | 主表唯一事实源；`npm run bug:log` 统计/校验 |
+| 使用中发现的体验类问题实时记录 | `reviews/dogfooding-notes.md` | 主表唯一事实源；不算 bug 的交互/易用性/缺失能力等 |
 
 ## 权威文档导航
 
@@ -42,6 +44,8 @@ updated: 2026-08-09
   - [0.2 收口于 2026-08-09](features/releases/0.2.md)
 - **ADR（决策记录）**：→ [`decisions/`](decisions/)
 - **检视复盘**：→ [`reviews/RETROSPECTIVE.md`](reviews/RETROSPECTIVE.md)
+- **使用问题记录（dogfooding bug log，实时追踪）**：→ [`reviews/dogfooding-bugs.md`](reviews/dogfooding-bugs.md)
+- **使用体验记录（dogfooding notes，实时追踪）**：→ [`reviews/dogfooding-notes.md`](reviews/dogfooding-notes.md)
 
 ## 所有权规则（机器可校验）
 
