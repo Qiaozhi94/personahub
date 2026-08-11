@@ -342,7 +342,12 @@ async function main() {
   );
   await validationRecoveryService.reconcile();
 
-  const validationDispatchScheduler = new ValidationDispatchScheduler(issueRepo, validationWorkflowService);
+  const validationDispatchScheduler = new ValidationDispatchScheduler(
+    issueRepo,
+    validationWorkflowService,
+    1_000,
+    (workspaceId) => runDispatchService.drainWorkspace(workspaceId),
+  );
 
   const allWorkspaces = workspaceRepo.listAll();
   for (const ws of allWorkspaces) {

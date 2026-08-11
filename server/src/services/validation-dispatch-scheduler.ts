@@ -22,11 +22,21 @@ export class ValidationDispatchScheduler {
     private issueRepo: IssueRepository,
     private validationWorkflowService: ValidationWorkflowService,
     private tickMs: number = DEFAULT_TICK_MS,
+    /**
+     * design §8.2/§5.2: a claimed validator slot produces a Queued validator
+     * Run that must still be dispatched (startNextQueuedRun) or it sits
+     * `queued` forever. The implementation-completion sync path
+     * (finalizeAndDrain) and the manual trigger path both drain after
+     * claiming; the scheduler path alone did not. Defaults to a no-op so
+     * call sites that only assert claiming behavior keep working, but any
+     * production wiring must pass the real drainWorkspace.
+     */
+    private drainWorkspace: (workspaceId: string) => Promise<void> = async () => {},
   ) {}
 
   start(): void {
     if (this.timer) return;
-    this.timer = setInterval(() => this.tick(), this.tickMs);
+    this.timer = setInterval(() => void this.tick(), this.tickMs);
     this.timer.unref?.();
   }
 
@@ -37,14 +47,19 @@ export class ValidationDispatchScheduler {
     }
   }
 
-  tick(): void {
+  async tick(): Promise<void> {
     if (this.ticking) return;
     this.ticking = true;
     try {
       const now = new Date().toISOString();
       const dueIssues = this.issueRepo.listValidatingWithDueBefore(now);
+      const claimedWorkspaces = new Set<string>();
       for (const issue of dueIssues) {
-        this.validationWorkflowService.claimValidatorSlot(issue.id, { mode: "auto" });
+        const claimed = this.validationWorkflowService.claimValidatorSlot(issue.id, { mode: "auto" });
+        if (claimed.ok) claimedWorkspaces.add(issue.workspace_id);
+      }
+      for (const workspaceId of claimedWorkspaces) {
+        await this.drainWorkspace(workspaceId);
       }
     } finally {
       this.ticking = false;

@@ -75,6 +75,21 @@ describe("T067: ValidationDispatchScheduler", () => {
     expect(services.issueRepo.getById(issue.id)!.validation_dispatch_due_at).toBeNull();
   });
 
+  it("dispatches the claimed validator by draining the workspace", async () => {
+    const { issue } = setupPendingIssue(services, tempDir);
+    makeDue(services, issue.id);
+    const drain = vi.fn(async () => {});
+    const scheduler = new ValidationDispatchScheduler(
+      services.issueRepo,
+      services.validationWorkflowService,
+      1000,
+      drain,
+    );
+    await scheduler.tick();
+    expect(services.runRepo.getActiveValidator(issue.id)).not.toBeNull();
+    expect(drain).toHaveBeenCalledWith(issue.workspace_id);
+  });
+
   it("claims for multiple due issues in one tick", () => {
     const { issue: issue1 } = setupPendingIssue(services, tempDir);
     const { issue: issue2 } = setupPendingIssue(services, tempDir);
