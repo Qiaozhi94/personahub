@@ -36,16 +36,9 @@ npm-debug.log*
 server-stdout.txt
 server-stderr.txt
 
-# Local-only docs (kept on disk, not tracked)
-docs/research/
-docs/reviews/*
-# ...except the curated, permanent summaries the review-convergence skill
-# produces — these are meant to be committed, unlike raw per-round scratch files.
-!docs/reviews/RETROSPECTIVE.md
-!docs/reviews/CURRENT-doc.md
-!docs/reviews/dogfooding-bugs.md
-!docs/reviews/dogfooding-notes.md
-!docs/reviews/CURRENT-code.md
+# 注：docs/ 下不再有本地-only 目录。2026-08-12 起 docs/reviews/ 与 docs/research/
+# 全部纳入 git——检视记录、dogfood 日志、产品级计划和调研结论都需要可追溯、可 diff、
+# 可在多机之间同步；本地-only 让复盘时拿不到当时的原始判断和证据来源。
 
 # Probe raw output streams
 server/scripts/codex-probe-*.jsonl

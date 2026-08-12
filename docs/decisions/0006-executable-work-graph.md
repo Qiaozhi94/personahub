@@ -120,4 +120,4 @@ created: 2026-07-28
 - 触发条件出现前，`server/src/services/manual-routing-service.ts`、`run-context-builder.ts`、`workflow-template.ts` 等现有代码按各自 feature 的既有设计继续演进，不因本决策产生额外重构任务。
 - `docs/personahub-architecture.md` 第 5 节此前描述的 `TopologyExecutor`/`SequentialTopologyExecutor` 从未真正实现，与本决策的代码审计结论矛盾，已在同一批改动中修正：原设计草图标注"未实现，仅存档"，新增"实际实现"小节如实描述当前的 service 驱动执行路径，并指向本决策作为 `orchestrator_subagent` 等非 sequential topology 的目标架构。
 - `docs/personahub-architecture.md` 第 2 节"Workspace 执行边界"一行此前声称 `WorkspaceContext` 携带"允许写入的路径"，与 `server/src/runtime/types.ts` 的实际接口（无访问模式字段）不符，已修正为如实描述，并注明这是本决策"只读 Node 不持锁并行"这条边界当前无法直接开放的根本原因。
-- `docs/research/graph-engineering-agentspace-personahub-analysis.md`（AgentSpace 对比调研）是本决策的背景材料之一；该文件在 `docs/research/` 下，按仓库约定 local-only、不纳入 git，本决策已把其中与判断相关的证据摘录进"背景"一节，本 ADR 自身不依赖该文件也能独立成立。
+- `docs/research/graph-engineering-agentspace-personahub-analysis.md`（AgentSpace 对比调研）是本决策的背景材料之一（该文件 2026-08-12 起随 `docs/research/` 一并纳入 git，此前为 local-only）；本决策已把其中与判断相关的证据摘录进"背景"一节，本 ADR 自身不依赖该文件也能独立成立。

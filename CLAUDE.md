@@ -18,8 +18,8 @@ v0.1（F001-F005：Workspace/Issue 基础、Agent Command Center、Development T
 - `docs/SOP.md`：个人开发流程约定。
 - `docs/features/`：功能规格目录，按大版本（0.1、0.2…）分层；`docs/features/releases/` 存放版本收口摘要。
 - `docs/decisions/`：重要产品/技术决策记录目录。
-- `docs/research/`：前期调研和竞品分析归档，仅作背景材料；**本地-only，不纳入 git**（见 `.gitignore`）。
-- `docs/reviews/`：设计/代码评审记录；除 `RETROSPECTIVE.md`（检视复盘）、`dogfooding-bugs.md`（使用问题记录，主表唯一事实源，`npm run bug:log` 统计/校验）与 `dogfooding-notes.md`（使用体验记录，不算 bug 的交互/易用性等发现）外**本地-only，不纳入 git**（见 `.gitignore`）。
+- `docs/research/`：前期调研和竞品分析归档，仅作背景材料，不作为产品/技术判断的真相源；2026-08-12 起纳入 git。
+- `docs/reviews/`：设计/代码评审记录与产品级计划，**全量纳入 git**（2026-08-12 起，见 `.gitignore`）。常驻文件：`RETROSPECTIVE.md`（检视复盘）、`dogfooding-bugs.md`（使用问题记录，主表唯一事实源，`npm run bug:log` 统计/校验）、`dogfooding-notes.md`（使用体验记录，不算 bug 的交互/易用性等发现）；`CURRENT-doc.md` / `CURRENT-code.md` 是检视进行中的临时文件，按 `docs/SOP.md`「检视文档生命周期纪律」由检视人复核后删除。
 - `server/scripts/`：一次性/可复现的运维与 probe 脚本（如 Codex final-message probe，见 F004 T002/T003）。
 - `BACKLOG.md`：近期功能拆分和执行跟踪入口，只列非 done Feature。
 - `shared/` / `server/` / `web/`：npm workspaces monorepo 代码，目录结构和分层约定见 `docs/decisions/0005-code-directory-structure.md`。
