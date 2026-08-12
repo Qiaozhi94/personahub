@@ -7,6 +7,12 @@ updated: 2026-08-09
 
 # v0.3 Artifact-Centered Collaboration 规划审查稿
 
+> **暂停（2026-08-12）**：v0.2 首轮 dogfood 暴露了阻塞性用户旅程与操作可发现性缺口，
+> 因此本版本停止需求评审和开发排期。F009-F012 保持 `draft`，不得推进到
+> `ready-for-development`，原有 25-40 日时间线作废。恢复条件和当前执行顺序以
+> <a href="../../reviews/product-experience-reset-plan.md">`docs/reviews/product-experience-reset-plan.md`</a>
+> 为准：先批准用户旅程，再批准 HTML 原型，最后依据影响面分析重估 v0.3。
+>
 > Status: review-draft。本文确定版本目标、Feature 边界、顺序和验收口径；F009-F012 已分别建立 draft `spec.md` / `design.md` / `tasks.md`，评审通过后再把对应 Feature 推进到 `ready-for-development`。产品范围仍以 `docs/personahub-prd.md` 第 15 节为准。
 
 ## 1. 版本判断

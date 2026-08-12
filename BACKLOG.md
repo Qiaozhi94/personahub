@@ -6,6 +6,12 @@ created: 2026-07-11
 
 # Feature Roadmap
 
+> **Development freeze (2026-08-12)**: v0.3 product development is paused after the first
+> v0.2 dogfood exposed blocking journey and discoverability gaps. F009-F012 remain `draft`;
+> do not advance them or implement new business code until the user journeys and clickable
+> prototype are explicitly approved. The execution source of truth is
+> [`docs/reviews/product-experience-reset-plan.md`](docs/reviews/product-experience-reset-plan.md).
+
 > **Rules**: Only active Features (idea/spec/ready-for-development/in-progress/review). Move to done after completion.
 > `ready-for-development` = spec 与 design 均已定稿、`design.md` 的待确认问题全部关闭（`docs/features/README.md` 的硬性约束），可以开始写代码。
 > Details live in `docs/features/{version}/Fxxx-feature-name/`（`spec.md`、`design.md`、`tasks.md`），按大版本（0.1、0.2…）分层，见 `docs/features/README.md`。

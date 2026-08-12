@@ -2,14 +2,20 @@
 topics: [product-reset, user-journey, ux-prototype, self-test, replanning]
 doc_kind: plan
 created: 2026-08-12
-updated: 2026-08-12
+updated: 2026-08-13
 ---
 
 # PersonaHub 产品体验重置与开发计划调整方案
 
-> 结论：暂停当前功能开发。先完成用户旅程定稿、可点击 HTML 原型定稿和开发自测试
-> 体系设计，再依据定稿结果输出整体整改方案。F009–F012 保留为历史规划输入，但不得
-> 原样进入开发，也不在本阶段修改业务代码、API、schema 或测试。
+> 结论：暂停当前功能开发。先从本机 `clowder-ai` 与 `multica` 的真实代码还原各自用户
+> 旅程，并分别还原可点击的参考页面；用户看过并选择借鉴方向后，再设计 PersonaHub
+> 用户旅程、产品原型和开发自测试体系。F009–F012 保留为历史规划输入，但不得原样进入
+> 开发，也不在本阶段修改业务代码、API、schema 或测试。
+>
+> **2026-08-12 方法修正**：参考页面的还原方式由「手写单文件静态 HTML」改为「渲染冻结」
+> （第 3.1 节）。前者已实测失败两次，产物 `multica/prototype/` 与 `clowder-ai/prototypes/`
+> 均为 agent 自造 design system 的结果，与真值无对应关系。后者已完成 multica 22 页、
+> clowder-ai 5 页，验收全绿。
 
 ## 1. 背景与问题判断
 
@@ -40,15 +46,21 @@ Feature、FR/AC 和代码正确性，没有把“用户能否从目标出发完�
 - 从产品意图重新推导的信息架构、入口、状态反馈和错误恢复方式。
 - 开发流程、Feature 门禁、E2E 和 dogfood 验收方式。
 
-### 清白起点原则（clean-room）
+### 参考优先、PersonaHub 现状隔离原则
 
-用户旅程和原型**从 PRD、architecture、system-design 与 ADR 重新推导，不参考任何现有实现、
-现有页面结构、组件命名或代码逻辑**。原因：现有实现正是被 dogfood 判定为偏离预期的对象，
-以它为起点会把既有的信息架构和术语当成既定事实，只做局部修补。
+第一步不自行设计 PersonaHub，而是从本机 `D:\Projects\clowder-ai` 与
+`D:\Projects\multica` 的 README、产品文档和真实前端代码分别还原用户旅程与页面状态，
+再各做一个忠于原项目的静态 HTML 参考页。用户看过两套参考后，明确选择“直接借鉴 / 调整
+借鉴 / 不采用”的方向，PersonaHub 用户旅程设计才能开始。
+
+这里允许阅读两个参考项目的实现，但仍禁止用 PersonaHub 当前 `web/` 实现作为设计起点。
+原因：参考项目是外部设计证据；PersonaHub 现有实现则是本轮 dogfood 判定需要重新检验的对象。
 
 具体约束：
 
-- 工作流 A、B 阶段不阅读 `web/` 源码，不以现有页面截图为设计输入。
+- 参考还原与 PersonaHub 旅程阶段不阅读 PersonaHub `web/` 源码，不以现有页面截图为设计输入。
+- 两个参考项目必须分开还原，不先混成一套“理想设计”；旅程结论需引用具体代码/文档路径。
+- 参考静态 HTML 用于展示原项目的页面结构、状态和点击路径，不添加 PersonaHub 特有功能。
 - 不因"现在已经这样实现了"而保留某个入口、术语或步骤；只因"PRD 要求"而保留。
 - 现有实现与既有 dogfood 问题记录（`dogfooding-bugs.md` / `dogfooding-notes.md`）
   **只在 P3 影响面分析阶段作为差距对照输入使用**，不进入旅程设计和原型设计阶段。
@@ -60,7 +72,124 @@ Feature、FR/AC 和代码正确性，没有把“用户能否从目标出发完�
 - 本阶段只允许调研、旅程文档、HTML 原型、检视记录和测试流程设计。
 - 用户明确批准原型前，不输出可直接执行的详细代码任务，不提前实现“看起来确定”的页面。
 
-## 3. 工作流 A：用户旅程梳理
+## 3. 工作流 A0：参考项目用户旅程与页面还原
+
+**预计时间：1–2 个工作日。必须先于 PersonaHub 用户旅程。**
+
+1. 分别读取两个项目自身的 `AGENTS.md` / `CLAUDE.md`、README、产品文档、路由与关键页面代码。
+2. 每个项目独立产出：目标用户、首次进入、创建核心工作、执行/协作、完成/恢复旅程，及页面/状态矩阵。
+3. 每个项目独立还原代表性页面，**方法见第 3.1 节（不是手写静态 HTML）**。
+4. 用真实浏览器验证还原页的点击连续性、1024px 与 1440px 布局、键盘焦点和控制台错误。
+5. 输出中立对照表；由用户决定哪些直接借鉴、哪些调整借鉴、哪些不采用。
+
+**退出条件**：用户明确完成参考评审并给出借鉴方向。未达到时，不进入 PersonaHub 用户旅程设计。
+
+### 3.1 页面还原方法：渲染冻结，不是手写 HTML
+
+**本节修正了原计划中「制作单文件静态 HTML」的做法。该做法已实测失败，不再采用。**
+
+#### 失败证据
+
+2026-08-12 当晚曾用 agent 对两个项目各重绘过一次，产物仍在（均未提交）：
+
+| 产物 | 规模 | 结果 |
+|---|---|---|
+| `D:\Projects\multica\prototype\` | 36 个 HTML + 373 行 CSS | 不像 |
+| `D:\Projects\clowder-ai\prototypes\` | 11 个 HTML + 430 行 CSS | 不像 |
+
+两份的失败模式完全相同 —— agent 自造了一套 design system：
+
+| 项目 | 真实体系 | 重绘产物 |
+|---|---|---|
+| multica | Tailwind v4 `@theme inline` + OKLCH | 手写 `--brand: #3b6df2` 平铺变量 |
+| clowder-ai | OKLCH 四旋钮派生（`--accent-hue` / `--surface-chroma`） | 手写 hex `--brand-pink: #f9af00` + emoji 图标 |
+
+**根因**：agent 读 React 源码 → 脑内渲染 → 写 HTML，是「翻译」不是「提取」。Tailwind 类名的实际数值（间距、字阶、色值、阴影）由编译期算出，源码里根本不存在这些数字，agent 只能猜。猜 5000 行，必然处处偏差。
+
+这也解释了为什么「再改细一点」没用：产物与真值之间没有对应关系，改一处偏一处。
+
+#### 替代方法
+
+让浏览器当唯一真相源，机器提取渲染结果。渲染后的 DOM + 编译后的 CSS 拼起来**就是原页面本身**。
+
+四个阶段：真值提取 → 静态化 → 交互还原 → 自动验收。完整方法、脚本与踩坑清单见 `frontend-replication` skill（用户级，`~/.claude/skills/frontend-replication/`），本文档只记录两个参考项目的具体接入参数（第 3.2、3.3 节）。
+
+**关键点**：静态化阶段只做减法（剥框架运行时、改资源引用），**不重写 CSS、不重命名 class、不重建 token**。打开发现不一样，是漏了某个 CSS 或字体，去补，不要动样式。
+
+#### 已完成的实测结果（2026-08-12）
+
+| 项目 | 页面数 | 验收项 | 结果 |
+|---|---|---|---|
+| multica | 22 | 66（22 DOM + 44 样式） | **66/66 通过** |
+| clowder-ai | 5 | 15（5 DOM + 10 样式） | **15/15 通过** |
+
+产物落点 `D:\Projects\ui-reference\`（独立目录，不进任何现有仓库）。验收标准为「结构与交互一致」：DOM 树逐节点比对 + 每节点约 60 个 computed style 属性比对，非像素级截图比对。
+
+multica 已还原页面：landing / login / about / issues / my-issues / projects / agents / autopilots / skills / runtimes / squads / inbox / chat / usage / billing / settings / issue-detail / project-detail / agent-detail / skill-detail / member-detail / agent-new。
+
+clowder-ai 已还原页面：settings / memory / chat / dev-overflow / showcase-f11。
+
+### 3.2 multica 接入参数
+
+| 项 | 值 |
+|---|---|
+| 前端 | `http://localhost:3002`（Docker `multica-frontend-1`） |
+| 后端 | `http://localhost:3001`（Docker `multica-backend-1`） |
+| 数据库 | 容器 `multica-postgres-1`，**宿主访问不到** |
+| 栈 | Next.js 16 + Tailwind v4 + Base UI |
+| 主题 | `<html class="dark">`，216 个 CSS 变量 |
+
+**数据库只能走容器**：compose 里映射的 5433 被本机另一个 postgres（`lobe-postgres`）占用，所以宿主连不上。所有 SQL 走 `docker exec multica-postgres-1 psql -U multica -d multica -c '...'`。
+
+**登录**：后端设了 `MULTICA_DEV_VERIFICATION_CODE=888888` 且 `APP_ENV=development`，任何邮箱都能用这个码登进去。流程是两个 POST：先 `/auth/send-code`（必须调，服务端要有验证码记录才肯验），再 `/auth/verify-code`。本机 SMTP 未接通，不会真发邮件。
+
+**账号选择（重要）**：用 `qiaozhi_li@126.com`，不要新建账号。它已完成引导且填过来源问卷，天然没有弹窗；名下 `test` 工作区带产品内置的 4 个默认 agent（Code Developer / Code Reviewer / Plan Builder / Multica Helper）+ 3 个自建 agent + 4 个 skill + 1 个 project。
+
+新建账号踩过的两个坑（现已绕过，仅作记录）：
+
+1. 未完成引导 → 应用内路由重定向到 onboarding，节点数 144（正常 419）。需 `UPDATE "user" SET onboarded_at = now()`。
+2. 首次进入弹「你是从哪里了解到 Multica 的？」来源调研，遮罩盖住整页、背景模糊，419 个节点里 112 个属于弹窗。触发条件在 `packages/views/onboarding/source-backfill-merge.ts`：`source` 有值或 `source_skipped: true` 即不弹。**不要用选择器删弹窗**，遮罩和 body 的 `overflow:hidden` 会残留。
+
+**工作区**：`test`（slug）。详情页 ID —— issue 用人类可读标识 `TES-1`，其余用 UUID，从库里取。
+
+**数据密度对比**：新建空工作区的 issues 页 307 节点、显示「还没有 issue」；`test` 工作区同一路由 565 节点，分组/状态色/优先级图标齐全。
+
+### 3.3 clowder-ai 接入参数
+
+| 项 | 值 |
+|---|---|
+| 前端 | `http://localhost:3003` |
+| 后端 | `http://localhost:3004` |
+| Redis | `6399`（自带端口隔离，不冲突） |
+| 栈 | Next.js 14 + Tailwind v3 + 手写组件（无 Radix / 无 Base UI） |
+| 主题 | `<html data-theme="dark">`，**667 个 CSS 变量**（每只猫一套 persona 色） |
+
+**关键认知：Electron 只是套壳。** `desktop-dist/resources/app/main.js:67` 写死 `FRONTEND_PORT = 3003`，`:132` 是 `mainWindow.loadURL("http://localhost:3003")`。所以直接用浏览器访问 3003 即可，**不需要 CDP 控制 Electron**——渲染出的 DOM 完全一致，而走 CDP 反而要处理应用内导航（不能直接 goto 路由）。
+
+**启动**：打开桌面应用即可，它会自己拉起前后端。若 3003 无监听说明服务没起来（界面可能还在但那是内存里的残留页面），重启应用即可。
+
+**不要在仓库内落脚本或产物**：clowder-ai 是 cat-cafe 的下游同步镜像，git log 里有大量 `sync: cat-cafe <sha> → clowder-ai` 自动提交，在其中改动会与上游同步冲突。
+
+**实时推送不是问题**：仓库里 55 个文件用 socket.io、34 个用 `setInterval`，原以为会让 DOM 永不安定。实测 chat 主页抓取 10.7s，与静态页相当——持续推送改的多是文本内容，DOM 结构很快就稳。无需断开 socket。
+
+**建议排除 `pixel-brawl`**：phaser 游戏，内容全部画在 canvas 里，DOM 复刻出来是一块空白画布。`starry` / `mission-control` 若也是 canvas 主导，同样处理。
+
+### 3.4 两个项目共同的坑（已固化进 skill，此处仅备查）
+
+| 现象 | 根因 | 处理 |
+|---|---|---|
+| 整页报结构不同 | `<next-route-announcer>` 宽 0 不可见，但插入位置在两次加载间会变，导致其后所有兄弟节点索引偏移 | 加进 `removeSelectors` |
+| 某个 input 颜色每次都不同 | 采样到 `transition-colors` 过渡中间值 | 提取与验证两端都注入冻结样式 |
+| spinner 每次角度不同 | `animation-play-state: paused` 停在当前帧 | 改用 `animation: none` |
+| 节点数在两次运行间跳动 | 挂载后才 fetch 的内容（如 star 数）赶不上静默窗口，二次运行走缓存就赶上了 | 预热重载，让每次抓取都是热加载 |
+| 某控件多一圈焦点环 | 页面 `autofocus` | 提取前 blur + 静态化剥离 `autofocus` + 验证端同样 blur |
+| 上百个宽度差异 | 字体没本地化，`@font-face` 指向源站，停机后 404 回退系统字体 | 下载字体到本地并改写 CSS 引用 |
+
+**通用原则：提取端做的任何稳定化，验证端必须原样做一遍。** 实测两次栽在这条上（冻结动画、blur 都曾只做了一端），表现都是「某个 input 的颜色对不上」。
+
+**唯一验收发现不了的错误**：公开页（落地页/登录页/营销页）在有 session 时会重定向进应用，抓到的是错页面，而 DOM diff 和样式 diff 都会报 ok —— 因为真值和复刻抓的是同一个错页面。必须人工给这些页面标 `anonymous: true`。实测 multica 的 `/` 曾抓成 419 节点的工作区页，而非 985 节点的落地页。
+
+## 4. 工作流 A：PersonaHub 用户旅程梳理
 
 **预计时间：1–2 个工作日。**
 
@@ -118,7 +247,7 @@ Feature、FR/AC 和代码正确性，没有把“用户能否从目标出发完�
 
 **退出条件**：用户旅程成为后续原型的唯一行为输入；未通过的争议点不得交给原型阶段猜测。
 
-## 4. 工作流 B：前端 HTML 原型
+## 5. 工作流 B：PersonaHub 前端 HTML 原型
 
 **预计时间：2–4 个工作日，在工作流 A 初稿通过后开始，与工作流 C 并行推进。**
 
@@ -207,7 +336,7 @@ Feature、FR/AC 和代码正确性，没有把“用户能否从目标出发完�
 
 **退出条件**：用户明确说“原型定稿”；单纯没有新反馈不等于批准。
 
-## 5. 工作流 C：开发自测试体系
+## 6. 工作流 C：开发自测试体系
 
 **流程设计预计 1–2 个工作日，在工作流 A 初稿通过后开始，与工作流 B 并行推进；实际门禁在重构实施阶段落地。**
 
@@ -288,7 +417,7 @@ Feature、FR/AC 和代码正确性，没有把“用户能否从目标出发完�
 - 发布级 dogfood 三类数据状态通过。
 - 任一项失败，版本回到整改；不得把核心路径不可用写入“已知限制”后继续收口。
 
-## 6. 当前 v0.3 开发计划修改评估
+## 7. 当前 v0.3 开发计划修改评估
 
 ### 总体判断
 
@@ -329,7 +458,7 @@ P4 是原型定稿后才启动的独立实施阶段，不计入这两周窗口�
 4. `docs/SOP.md` / `docs/features/README.md`：加入强制旅程、原型和真实浏览器门禁。
 5. `package.json` / CI：统一 verify、E2E 和发布级 dogfood 入口。
 
-## 7. 整体整改阶段的规划原则
+## 8. 整体整改阶段的规划原则
 
 原型定稿后先做影响面分析，不立即全仓重写。**这里是现有实现第一次被允许作为输入的地方**
 （见"清白起点原则"）：把定稿旅程与现有实现逐条对照，产出「可复用 / 需改造 / 需废弃」三类
@@ -347,7 +476,7 @@ P4 是原型定稿后才启动的独立实施阶段，不计入这两周窗口�
 每个切片独立实现、独立验证、独立复核；上一个切片未通过真实浏览器旅程前，不进入
 下一个切片。
 
-## 8. 风险与控制
+## 9. 风险与控制
 
 | 风险 | 影响 | 控制方式 |
 |---|---|---|
@@ -359,7 +488,7 @@ P4 是原型定稿后才启动的独立实施阶段，不计入这两周窗口�
 | 全仓一次性重构 | 回归范围过大，无法定位问题 | 按五个垂直切片逐个闭环 |
 | 自动化再次替代人工使用 | 可发现性问题重复发生 | 发布前固定真实浏览器 dogfood，不允许豁免核心旅程 |
 
-## 9. 评审、批准与执行门禁
+## 10. 评审、批准与执行门禁
 
 本计划采用有限两轮文档检视：
 
@@ -369,7 +498,7 @@ P4 是原型定稿后才启动的独立实施阶段，不计入这两周窗口�
 4. 用户明确批准后，本计划才成为执行依据。
 5. 批准前不继续用户旅程、HTML 原型、自测试整改或业务开发。
 
-## 10. 计划阶段最终交付物
+## 11. 计划阶段最终交付物
 
 - 一份经批准的产品级用户旅程文档。
 - 一个经批准的可点击 HTML 原型及场景清单。
@@ -377,7 +506,7 @@ P4 是原型定稿后才启动的独立实施阶段，不计入这两周窗口�
 - 一份整体整改影响面与垂直切片实施计划。
 - 一份重新评估后的 v0.3 版本计划，明确 F009–F012 的保留、重写或后移结论。
 
-## 11. 执行任务清单
+## 12. 执行任务清单
 
 本节是本计划的**执行进度真相源**。开始一项时在任务末尾标记 `（进行中）`；完成并验证后
 立即把 `[ ]` 改为 `[x]`，不得攒到最后统一补勾。`[P]` 只用于修改不同文件且无顺序依赖的任务。
@@ -389,26 +518,61 @@ P2 与 P3 两个阶段整体并行，但各阶段内部按顺序执行。进度�
 |---|---|---|
 | 用户旅程文档 | `docs/personahub-user-journeys.md` | 产品级真相源，需登记进 `docs/README.md` 所有权矩阵 |
 | 可点击 HTML 原型 | `docs/prototype/index.html` | 单文件，可直接本地打开 |
+| clowder-ai 旅程还原 | `docs/research/clowder-ai-user-journeys.md` | 参考证据，不是 PersonaHub 真相源 |
+| multica 旅程还原 | `docs/research/multica-user-journeys.md` | 参考证据，不是 PersonaHub 真相源 |
+| clowder-ai 页面还原 | `D:\Projects\ui-reference\clowder\` | 渲染冻结产物，仓外独立目录，勿入库 |
+| multica 页面还原 | `D:\Projects\ui-reference\multica\` | 渲染冻结产物，仓外独立目录，勿入库 |
+| 参考借鉴决策表 | `docs/reviews/reference-borrowing-decisions.md` | 用户评审入口；记录直接借鉴/调整/不采用 |
 | 旅程—测试映射矩阵 | `docs/reviews/journey-test-matrix.md` | 过程产物 |
 | 影响面与切片实施计划 | `docs/reviews/refactor-impact-plan.md` | 过程产物 |
 | 检视进行中记录 | `docs/reviews/CURRENT-doc.md` | 按 SOP 生命周期纪律，由检视人删除 |
 
 ### Phase P0：开发冻结与基线（0.5 天）
 
-- [ ] R001：在 `BACKLOG.md` 与 `docs/features/0.3/README.md` 标注 v0.3 暂停、原因与本计划链接；
+- [x] R001：在 `BACKLOG.md` 与 `docs/features/0.3/README.md` 标注 v0.3 暂停、原因与本计划链接；
   F009–F012 保持 `draft` 不变。
-- [ ] R002 [P]：记录冻结基线——当前 HEAD commit、最近一次全绿 CI run id、`npm run bug:log`
+- [x] R002 [P]：记录冻结基线——当前 HEAD commit、最近一次全绿 CI run id、`npm run bug:log`
   输出快照，作为整改前后的对照点。
-- [ ] R003：按第 12 节规则逐份判定工作区已有草稿（旅程/原型/冻结规则）为保留输入、重写或撤销，
+- [x] R003：按第 13 节规则逐份判定工作区已有草稿（旅程/原型/冻结规则）为保留输入、重写或撤销，
   并写下判定理由。
 
-### Phase P1：工作流 A 用户旅程（1–2 天）
+#### P0 执行记录（2026-08-12）
+
+- 冻结 commit：`002568142e0a4e8611d23b0992c3f9037a81a49c`；执行前 `main` 与
+  `origin/main` 一致且工作区干净。
+- CI 对照点：无可记录的全绿 run id。通过 GitHub Actions API 查询
+  `Qiaozhi94/personahub` 的 workflow runs，结果为空；仓库虽已有 `.github/workflows/ci.yml`，
+  但截至冻结时尚无远端 run 记录。后续不得把“无运行记录”表述为 CI 通过。
+- `npm run bug:log` 快照：共 3 条（2 `fixed`、1 `open`）；severity 为 2 高、1 中；
+  唯一开放项为 `BUG-003`（高）“中断 validator 死锁 round 槽位，重验证无法开始”。
+- 旧草稿判定：工作树、ignored 文件及全部 Git 历史中均不存在
+  `docs/personahub-user-journeys.md` 或 `docs/prototype/index.html`，也未找到独立冻结规则草稿。
+  因此三类旧草稿均按“无可验证来源，视为不存在/不可复用”处理；P1/P2 必须从本计划指定的
+  真相源重新产出，不得以 `docs/features/0.1/ux-prototype.html` 等历史 Feature 原型替代。
+
+### Phase P0.5：参考项目还原（1–2 天）
+
+- [ ] RR001：分别读取 `D:\Projects\clowder-ai` 与 `D:\Projects\multica` 的项目约束、README、
+  产品文档、路由和关键页面代码，建立“旅程步骤 → 代码/文档证据”索引。（进行中）
+- [ ] RR002：产出 clowder-ai 用户旅程与页面/状态矩阵，不混入 PersonaHub 需求。
+- [ ] RR003：产出 multica 用户旅程与页面/状态矩阵，不混入 PersonaHub 需求。
+- [x] RR004：还原 clowder-ai 代表性页面。**方法变更**：不手写静态 HTML，改用第 3.1 节的
+  渲染冻结流水线。已完成 5 页（settings / memory / chat / dev-overflow / showcase-f11），
+  验收 15/15 通过。
+- [x] RR005：还原 multica 代表性页面，同上。已完成 22 页，验收 66/66 通过。
+- [ ] RR006：用真实浏览器验证还原页的连续点击路径、1024px/1440px 布局、键盘焦点和
+  控制台错误；记录结果与限制。**注**：结构与样式已由脚本自动验收；本项只需补人工过一遍
+  交互路径，以及 1024px 断点（当前只抓了 1440px）。
+- [ ] RR007：生成中立对照与借鉴决策表，等待用户逐项选择“直接借鉴 / 调整借鉴 / 不采用”。
+
+### Phase P1：工作流 A PersonaHub 用户旅程（1–2 天，RR007 批准后）
 
 - [ ] R004：A1 产品意图重建——从 PRD 抽出用户目标、核心概念与成功定义；从 architecture /
   system-design / ADR 抽出真实技术约束。**全程不读 `web/` 源码。**
 - [ ] R005：A1 概念清单，逐个标注"用户必须理解"或"实现细节、不应出现在界面"。
 - [ ] R006：A2 确认核心用户定义与三个 P0 任务，划定 P0/P1 范围边界。
-- [ ] R007：A3 设计三条目标旅程，每条含触发条件、用户动作、系统反馈、空/错误/恢复路径、
+- [ ] R007：A3 结合用户批准的参考借鉴决策设计三条目标旅程，每条含触发条件、用户动作、
+  系统反馈、空/错误/恢复路径、
   概念暴露级别与可观察验收标准。
 - [ ] R008：A4 把五条验收指标写进旅程文档，逐条给出可计时/可观察的判定方式。
 - [ ] R009：A5 第 1 轮全量检视（目标、范围、步骤、异常、恢复完整性）并修复。
@@ -450,7 +614,7 @@ P2 与 P3 两个阶段整体并行，但各阶段内部按顺序执行。进度�
 
 - [ ] R027：第 5 个工作日做一次中检——P1 是否已批准、P2/P3 是否按期推进。未达进度时
   **缩小范围**（例如原型只覆盖三条 P0 旅程的主路径），不顺延两周窗口。
-- [ ] R028：第 10 个工作日收口 P0–P3，输出第 10 节的五份交付物；仍未定稿的部分明确记录
+- [ ] R028：第 10 个工作日收口 P0–P3，输出第 11 节的五份交付物；仍未定稿的部分明确记录
   卡在哪一步、缺什么输入，不含糊写成"基本完成"。
 
 ### Phase P4：整体整改
@@ -458,7 +622,7 @@ P2 与 P3 两个阶段整体并行，但各阶段内部按顺序执行。进度�
 原型定稿前**不展开**任务。R025 的切片实施计划批准后，另建任务清单或按 SOP 拆成 Feature
 三件套执行；本节不提前枚举，避免在旅程未定稿时产生虚假的可执行任务。
 
-## 12. 当前工作区说明
+## 13. 当前工作区说明
 
 在本计划提出前，工作区已存在未提交的用户旅程、HTML 原型和冻结规则草稿。它们均为
 探索性内容，不代表用户批准，也不作为本计划已执行的证据。本计划获批后，应先决定这些
