@@ -718,6 +718,12 @@ Critical/High。
 `structure-traceability-format-bypass`：第 1 轮发现、第 4 轮关闭，存活 3 轮；它说明
 解析器契约修复必须同时锁定合法样例与最小反例，不能只让现有 happy path 重新变绿。
 
+**方案文档归档（2026-08-12）**：`docs/reviews/structure-improvement-plan.md` 的 28 项任务
+（S001–S028）已全部完成并勾选，产出固化在 `docs/features/README.md`、
+`tools/check-feature-gates.mjs`、`docs/features/releases/`、`.github/workflows/ci.yml` 与
+`.local/` 运行产物路径；方案文档本身已删除，不再单独维护，后续追溯改造细节以本循环记录
+和上述落点为准。
+
 ---
 
 ## 循环 14: F009 开发前需求与设计文档检视（4轮／2周期）
