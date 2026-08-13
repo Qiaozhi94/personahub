@@ -15,6 +15,14 @@ updated: 2026-08-11
 
 > Owner: TBD | Target: v0.3
 
+> **⚠️ SUPERSEDED PENDING REVIEW（2026-08-13）**：本文的用户场景、UX 需求与非目标
+> 写于产品体验重置之前，其产品判断已不可直接使用。v0.3 已暂停，PersonaHub 用户旅程
+> 正在重做，本 Feature 的三件套（`spec.md` / `design.md` / `tasks.md`）在旅程与原型
+> 定稿前**不得作为开发输入**，`status: draft` 不代表可用。处理结论见
+> <a href="../../../reviews/product-experience-reset-plan.md">`docs/reviews/product-experience-reset-plan.md`</a>
+> 第 7 节；重新进入计划的条件按该节表格逐项判定。技术契约部分（数据模型、接口）
+> 可作为背景材料，但需与新旅程重新对齐后才生效。
+
 ## 0. 来源与意图
 
 - **PRD 来源**：`docs/personahub-prd.md` 第 5 节 Artifact、Handoff Packet，第 15 节 v0.3。
