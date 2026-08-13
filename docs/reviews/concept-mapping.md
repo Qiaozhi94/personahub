@@ -138,43 +138,116 @@ clowder 的协作发生在 thread 里（含平行世界、cross-thread 投递）
 只有 `cat_cafe_update_workflow`（阶段进度告示牌，"给下棒可见"）和 SOP stage 模板。
 没有"按 Issue 类型选择流程模板"这一层。可借的只有**阶段进度对下游可见**这个交互点。
 
-## 5. 右栏 Context Inspector：重点参考 clowder，但必须做减法
+## 5. 中间与右栏的职责划分（2026-08-14 定稿）
 
-clowder chat 页右栏实测区块：
+### 5.1 划分标准：事件进中间，快照进右栏
+
+> **事件**（发生了什么，有时间顺序，不可变）→ 中间协作现场
+> **快照**（现在是什么状态，可聚合、可索引）→ 右栏 Context Inspector
+
+**为什么不用「通用 vs 特定 Issue」来划**：PRD §6 给右栏列的七项里，Issue info 与 Blockers
+恰恰是特定 Issue 的，按通用性划会与 PRD 直接冲突。而「事件 / 快照」这条线能把同一件事
+正确拆开——例如验证轮次：
+
+| 内容 | 归属 | 理由 |
+|---|---|---|
+| 第 1 轮 findings、第 2 轮 findings、哪些重复 | **中间** | 是事件流，有时间顺序 |
+| 「第 2 轮 / 共 3 轮」这个数字 | **右栏** | 是状态快照，可聚合 |
+
+### 5.2 全部介入动作在中间，右栏不承载动作
+
+**PRD §10 已写死**：
+
+> 中间协作现场必须支持：**支持输入新指令或 @agent**；
+> 支持用户作为 **Human Lead 打断讨论、纠正方向、补充约束、暂停 Room**。
+
+右侧 Context Inspector 那节 PRD 未列任何动作。clowder 的实现完全一致——`@句柄` 在消息
+输入框，审批卡片带 `cardMessageId` 作为**消息**出现在 thread 里，打断纠偏就是发消息。
+
+**因此右栏是仪表盘，不是驾驶位。** 用户 2026-08-14 判断：「基础部分 clowder 已经做得比较好，
+没必要创新，直接借鉴即可」——这正是 §5.1 拼装优先级链第 4 层的实践版本。
+
+### 5.3 中间协作现场：借 clowder，几乎不用新建
+
+| 内容 | clowder 现成 | 处理 |
+|---|---|---|
+| 事件流（run / handoff / validation / decisions） | 消息流 + 卡片块 | 借形态，换事件类型 |
+| `@` 指派 | `@句柄` 行首路由（见 §9.5 机械规则） | 直接借 |
+| 打断 / 纠正方向 / 补充约束 | 直接发消息介入 | 直接借 |
+| **阶段完成的交接卡片**（含「指定下一步给谁」） | DispatchProposal 卡片（§9.2） | **直接借**，加倒计时默认放行 |
+| 不收敛提示 + 四条动作 | 无 | 新建，但沿用卡片形态 |
+| Blocked 卡片 + 推荐动作 | 审批卡片形态可复用 | 借形态，换内容 |
+
+### 5.4 右栏 Context Inspector：clowder 实测结构与承载分析
+
+`packages/web/src/components/RightStatusPanel.tsx`（526 行，宽 304px）实际结构——
+**六个区块全部堆叠，无 tab，靠滚动**：
 
 ```text
-状态栏      当前模式 / 猫猫状态 / 消息统计（总数·猫猫消息·系统消息·Evidence·Follow-up）
-            / Session Chain（active · total）
-对话信息    Thread / Thinking / CLI 气泡 / 心里话 / 悄悄话 / 揭秘全部
-审计&Session 审计事件 / Session / Runtime / 搜索
-运行日志    查看日志
+当前模式：{空闲/…}
+┌ 猫猫状态 ─────────────────────────┐
+│ ● 名字            [状态标签]        │  活跃时色点 pulse
+│   S#3 sealed   ⏱耗时               │  会话序号 + 执行时间
+│   token 用量 / 上下文健康度          │
+│   ▸ session / invocation ID（可复制）│  默认折叠
+│ ▸ 历史参与者（可折叠）               │
+├ Session Chain ────────────────────┤
+├ 消息统计（总数/猫猫/系统/Evidence/    │
+│          Follow-up）               │
+├ 对话信息（Thread ID + 调试开关）      │
+└ 运行日志 →                          ┘
 ```
 
-对照 PRD §6 要求的 Context Inspector：
+设计约束（`docs/design/console-design-system.md:208`）：
 
-| PRD §6 要求 | clowder 对应 | 判定 |
+> 右侧 Inspector 是一个 L2 槽位，**不堆叠独立白卡**；状态、统计、健康信息使用
+> soft chips / rows 直接排布。
+
+**✅ 现成可直接搬（结构与交互一并借用）**
+
+| PersonaHub 需求 | clowder 现成 |
+|---|---|
+| 谁在执行 + 状态 | 猫猫状态 section：色点 + 名字 + 状态标签，活跃时 pulse |
+| 执行耗时 | `CatInvocationTime` |
+| 会话连续性 | `S#N` chip + `sealed` 标记 + Session Chain → 对应 PersonaHub 的 Run / Attempt |
+| 诊断 ID | `CollapsibleIds` 默认折叠 + 点击复制 → 正好是三层披露的第三层 |
+| 运行日志入口 | `RuntimeLogsButton` |
+| 空闲态与历史参与者 | 「空闲」文案 + 可折叠历史 |
+
+**⚠️ 形态可用、语义要换**
+
+| 需求 | clowder 有 | 缺什么 |
 |---|---|---|
-| Issue info | 对话信息 | ✅ 借 |
-| Agent status | 猫猫状态 / 当前模式 | ✅ 借 |
-| Message stats | 消息统计 | ✅ 借 |
-| Evidence | 消息统计中的 Evidence 计数 | ✅ 借，且要更重（PersonaHub 的竞争力） |
-| Run logs | 运行日志 | ✅ 借 |
-| Audit / trace events | 审计事件 / Session / Runtime | ✅ 借，分层方式很好 |
-| Blockers | 无 | ❌ 需原创 |
+| Evidence | 只有计数（消息统计里一个数字） | 内容、分类、可追溯链——这是 PersonaHub 的核心竞争力，一个数字撑不住 |
+| Thread 标识 | 对话信息 section | 换成 Issue info：goal、状态、工作方式、验证要求 |
 
-**几乎逐项对应**——PRD 的 Inspector 设计与 clowder 的右栏高度一致，这是最强的可借鉴项。
+**❌ 右栏需新建（快照类，不含动作）**
 
-**但必须做减法（用户 2026-08-13 判断：参考项目缺产品思维导致过于冗余）**：
+1. **Issue info** —— goal / 状态 / 工作方式 / 验证要求，clowder 无 Issue 概念
+2. **当前阶段与下一步执行者**（只显示，不操作）
+3. **Blockers 摘要** —— PRD §6 明列；处理动作在中间
+4. **轮次计数**（第 N 轮 / 共 M 轮）—— findings 对比在中间
+5. **Evidence 索引与入口** —— 明细展开可在右栏，生成过程在中间
+6. **文件变化摘要**
+
+**必须删除的冗余**（用户判断：参考项目缺产品思维导致界面冗余）
 
 | 删掉 | 原因 |
 |---|---|
 | 心里话 / 悄悄话 / 揭秘全部 | IP 玩法，与工作无关 |
-| 切换游戏 / 猫猫训练营 / 首选猫 | 同上 |
-| Thinking 折叠、CLI 气泡开关 | 调试开关不该占据一级位置，收进设置或开发者模式 |
+| Thinking 折叠、CLI 气泡开关 | 调试开关不该占一级位置，收进设置或开发者模式 |
 | 状态面板与状态栏重复 | 同一信息两处呈现，合并 |
 
 **减法原则**：右栏每个区块必须回答 PRD §6 明列的某一项；回答不了的一律删。
-**PRD §13「UI 过重」是硬约束**——右侧 Inspector 分 tab，不允许无限堆叠面板。
+PRD §13「UI 过重」是硬约束——右侧 Inspector 分 tab，不允许无限堆叠面板。
+
+**布局结论**：右栏只放快照，clowder 的固定堆叠形态**够用，直接照搬**。
+（早前「右栏需随状态重排布局」的判断基于「右栏要承载主操作」，该前提已被 §5.2 推翻。）
+
+### 5.5 一个值得借鉴的意外发现
+
+`CatTokenUsage` + `contextHealth`（上下文健康度）——PersonaHub 无此概念，但对真实 coding
+任务有价值：agent 上下文接近上限时输出质量下降，用户应当可见。记入借鉴清单，非 P0。
 
 ## 6. "不该要"的内容：结合 PRD 判断未来归属
 
@@ -256,9 +329,11 @@ PRD §5 Agent 当前**同时**有两套：
    Thread Memory）、Squad（删人类成员）、Workspace（取 clowder 归属心智，弃 multica 切换器）。
 3. **真正需要原创的只剩 Room**——从原判四项缩减为一项。Artifact / Provenance Gate /
    Handoff Packet 都有 clowder 实现可参考。
-4. **右栏是最大的借鉴收益点**，PRD §6 的 Inspector 与 clowder 右栏几乎逐项对应；
-   但必须按 §5 做减法，且 Blockers 一项需原创。
-5. **Agent 字段结构按 §7 调整**，这会直接改变 agent 新建/详情页的拼装方案。
+4. **介入动作全部在中间，且 clowder 已有现成实现**（§5.2/§5.3）——`@` 路由、打断纠偏、
+   审批卡片形态都可直接借。**它不再属于空白区**，早前判断已修正。
+5. **右栏是快照面板，不是驾驶位**（§5.2）。PRD §6 的七项与 clowder 右栏大部分对应，
+   固定堆叠形态直接照搬即可；需新建的六项都是快照类内容，不含动作。
+6. **Agent 字段结构按 §7 调整**，这会直接改变 agent 新建/详情页的拼装方案。
 
 **下一步**：M4-T02（旅程步骤定位到三栏）与 M4-T03（页面选型表），均需 M3-T04 旅程草稿。
 

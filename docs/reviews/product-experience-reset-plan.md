@@ -407,10 +407,15 @@ Evidence 体系（11 kind × 10 status）、审批中心 + Marker 生命周期�
 因此当前预判的真空白区只剩（以实际拼装结果为准）：
 
 1. **Room** —— 唯一无对应的核心概念，竞争力 `graph-orchestrated` 的落点。
-2. **Blockers 面板** —— PRD §6 明列但两个参考项目右栏都没有。
-3. 多 agent 并行执行时的状态汇总。
-4. validation 自动 loop 的过程表达（两个参考项目的验收都是人工 gate 或互审）。
-5. workspace 排他锁冲突的表达。
+2. **Issue 上下文快照** —— goal / 状态 / 工作方式 / 验证要求，clowder 无 Issue 概念。
+3. **Blockers** —— PRD §6 明列，两个参考项目右栏都没有。
+4. **validation 轮次与 findings 对比** —— 两个参考项目的验收都是人工 gate 或互审，
+   没有自动 loop 的过程表达。
+5. workspace 排他锁冲突与排队的表达。
+
+**已从空白区划掉（2026-08-14）**：介入动作（`@` 指派 / 打断 / 纠偏 / 交接确认）——
+clowder 的 `@` 行首路由与 DispatchProposal 卡片是现成实现，且 PRD §10 明确它们属于
+中间协作现场，不是右栏。详见 `concept-mapping.md` §5.2/§5.3。
 
 **这份清单同时是 v0.3 重估的直接输入**：上述场景与 F009（Artifact / 证据）、F011（Room /
 人工介入）高度重合，第 7 节表格里"重新进入计划的条件"到这一步才有具体依据。
