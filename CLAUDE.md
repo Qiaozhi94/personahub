@@ -37,4 +37,4 @@ v0.1（F001-F005：Workspace/Issue 基础、Agent Command Center、Development T
 - 开发流程见 `docs/SOP.md`。
 - Feature 记录见 `BACKLOG.md` 和 `docs/features/`。
 - 代码目录结构、分层规则、命名约定见 `docs/decisions/0005-code-directory-structure.md`；新增代码前先看这份文档确定该放哪一层。
-- 质量门禁：统一入口 `npm run verify`（串联 lint、format:check、typecheck、测试、文档门禁 `check:features` / `check:doc-links` / `check:doc-ownership` 与 build）。Feature 状态变更前必须运行它；需要自动格式化当前增量基线文件时运行 `npm run format`。Prettier 暂采用增量目标，修改未纳入的旧文件时同步扩展 `package.json` 中的 format targets，避免一次性制造全仓格式噪声。
+- 质量门禁：本地高频入口 `npm run verify`（串联 lint、format:check、typecheck、测试与文档门禁 `check:features` / `check:doc-links` / `check:doc-ownership`；**不含 build 与真实浏览器 E2E**，两者在 CI 与 `npm run verify:release` 里跑）。发布/收口入口 `npm run verify:release` = `verify` + build + Playwright E2E，推 main 前与 Feature 状态变更前跑，分层理由见 `docs/reviews/self-test-system-plan.md` 第 4 节。需要自动格式化当前增量基线文件时运行 `npm run format`。Prettier 暂采用增量目标，修改未纳入的旧文件时同步扩展 `package.json` 中的 format targets，避免一次性制造全仓格式噪声。

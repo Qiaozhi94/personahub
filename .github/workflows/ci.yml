@@ -27,6 +27,12 @@ jobs:
       - name: Run unified quality gate
         run: npm run verify
 
+      # Not part of `verify`: the local loop already gets type safety from
+      # typecheck, so paying for a full production build on every local run
+      # buys nothing. CI is where the build artifact actually has to hold up.
+      - name: Production build
+        run: npm run build
+
   e2e:
     name: E2E (Playwright Chromium)
     runs-on: windows-latest
