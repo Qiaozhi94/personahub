@@ -553,6 +553,9 @@ M6 是目标形态定稿后才启动的独立实施阶段，不计入这两周�
    已持久化 Markdown 的操作」需降级——用户裁决复制/下载/导出属同一类能力，统一为 P1，
    P0 只保证应用内查看与追溯。依据见 `personahub-user-journeys.md` §7.4。
    同节的 `Message / event stats` 亦无 P0 信息需求承载，一并在 PRD 修订时重估。
+   **同批（2026-08-15）**：§6「第一屏」的「中间默认显示最近 active Issue」需改为按注意力
+   优先级选择默认任务——手动指派下停住的任务不会自己前进，按最近排序会让用户每次自行寻找。
+   依据见 `personahub-user-journeys.md` §6.1。
 2. `docs/features/0.3/README.md`：版本目标、Feature 顺序、里程碑和验收旅程。
 3. F009–F012 三件套：用户场景、UX 需求、非目标、依赖和任务顺序。
 4. `docs/SOP.md` / `docs/features/README.md`：加入强制旅程、原型和真实浏览器门禁。

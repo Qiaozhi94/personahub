@@ -1,11 +1,11 @@
 ---
 report_type: doc-review
-round: 1
+round: 2
 date: 2026-08-15
-prior_report: RETROSPECTIVE.md 循环 15（用户旅程文档检视，3 轮，已闭环）
-scope: full-scan
+prior_report: 第 1 轮见 commit e5740b5（同一文件）
+scope: diff-only
 stop_condition_met: false
-severity_counts: { critical: 0, high: 3, medium: 4, low: 3 }
+severity_counts: { critical: 0, high: 3, medium: 5, low: 5 }
 issues:
   - id: JRN2-001
     title: Issues 列表行的信息需求未定义，拼装 issue list 与验收指标 9 都无断言点
@@ -19,7 +19,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.4.1-issue-list-row-requirements
     location: docs/personahub-user-journeys.md:376-404
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-002
     title: 第一屏默认落点（最近 Project / 最近 active Issue）未收进旅程
     severity: high
@@ -32,7 +32,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.1-default-landing
     location: docs/personahub-user-journeys.md:262-276
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-003
     title: Done evidence summary 复制/下载被降级为 P1，与 PRD §10 必须项冲突
     severity: high
@@ -45,7 +45,7 @@ issues:
     regression_test: docs/reviews/product-experience-reset-plan.md::section-7-prd-impact
     location: docs/personahub-user-journeys.md:462,472-484
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-004
     title: 信息需求矩阵缺已中断/已取消/正在修复三个状态
     severity: medium
@@ -58,7 +58,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.4-state-information-matrix
     location: docs/personahub-user-journeys.md:351-364
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-005
     title: 右栏是否分 tab 三份文档结论冲突，且旅程越界给出形态判断
     severity: medium
@@ -71,7 +71,7 @@ issues:
     regression_test: docs/reviews/concept-mapping.md::5.4-layout-conclusion
     location: docs/personahub-user-journeys.md:369-372
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-006
     title: 指派的两个入口（交接卡片按钮 / composer @）主次未定
     severity: medium
@@ -84,7 +84,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.5-assignment-entry-priority
     location: docs/personahub-user-journeys.md:275,406-411
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-007
     title: Room 列为用户必须理解的概念，但四条旅程无任何步骤涉及
     severity: medium
@@ -97,7 +97,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::2.3-room-p0-handling
     location: docs/personahub-user-journeys.md:107-114,150
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-008
     title: 左栏 Automations 占位入口未在跨旅程导航能力中登记
     severity: low
@@ -110,7 +110,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::2.4-cross-journey-navigation
     location: docs/personahub-user-journeys.md:118
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-009
     title: PRD §10 右栏 Message/event stats 在旅程无对应需求且未显式裁决
     severity: low
@@ -123,7 +123,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.4-prd-right-panel-exclusion
     location: docs/personahub-user-journeys.md:374-376
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 2
   - id: JRN2-010
     title: NOTE-001/002 旅程步骤仍为占位，实际已由 J1.4 覆盖
     severity: low
@@ -136,10 +136,49 @@ issues:
     regression_test: docs/reviews/dogfooding-notes.md::note-001-002-journey-mapping
     location: docs/reviews/dogfooding-notes.md:14-15
     first_seen_round: 1
+    resolved_round: 2
+  - id: JRN2-011
+    title: 第一屏中间默认落点改按注意力优先级，与 PRD §6 分叉却未登记影响面
+    severity: medium
+    category: correctness
+    root_cause: root-cause
+    origin: fix-regression
+    pattern_tag: cross-feature-contract-drift
+    status: fixed
+    fix_summary: §6.1 补「与 PRD §6 的差异」段说明分叉条件（仅多任务并存时），并登记进 reset-plan §7 的 PRD 重估清单，与 JRN2-003 同规格处理
+    regression_test: docs/reviews/product-experience-reset-plan.md::section-7-prd-impact
+    location: docs/personahub-user-journeys.md:272-278
+    first_seen_round: 2
+    resolved_round:
+  - id: JRN2-012
+    title: 默认落点表右栏行写「收起或显示项目级摘要」，既是形态判断又未裁决
+    severity: low
+    category: quality
+    root_cause: root-cause
+    origin: fix-regression
+    pattern_tag: journey-writes-page-form
+    status: fixed
+    fix_summary: 改为行为语言「无选中任务时不呈现空壳区块」，具体呈现方式交 M4-T02，与本轮 JRN2-005 刚确立的边界一致
+    regression_test: docs/personahub-user-journeys.md::6.1-default-landing
+    location: docs/personahub-user-journeys.md:268
+    first_seen_round: 2
+    resolved_round:
+  - id: JRN2-013
+    title: 指派入口表使用 composer 组件名，越出行为层用语
+    severity: low
+    category: quality
+    root_cause: root-cause
+    origin: fix-regression
+    pattern_tag: journey-writes-page-form
+    status: fixed
+    fix_summary: 改为「指令输入处」，不指定具体控件
+    regression_test: docs/personahub-user-journeys.md::6.5-assignment-entry-priority
+    location: docs/personahub-user-journeys.md:412
+    first_seen_round: 2
     resolved_round:
 ---
 
-# 用户旅程文档检视（M4 页面拼装前复核）· 第 1 轮
+# 用户旅程文档检视（M4 页面拼装前复核）· 第 2 轮
 
 ## 结论先行
 
@@ -153,7 +192,24 @@ issues:
 没有行级信息需求（JRN2-001）、拼第一屏没有默认落点（JRN2-002）、拼 Done 视图不知道
 要不要放下载入口（JRN2-003）。
 
-**10 条已全部在本轮修复**，待第 2 轮 diff-only 复核确认无修复引入的新问题。
+**10 条已全部在第 1 轮修复。**
+
+## 第 2 轮（diff-only）结论
+
+只审第 1 轮修复的 diff（commit `e5740b5`）及相邻步骤，未重新通读全文，diff 未超过旅程
+文档 30%，不升级为 full-scan。
+
+**第 1 轮 10 条修复全部成立，resolved_round = 2。** 复核逐条确认：§6.4.1 引用的
+`concept-mapping.md` §2「团队字段按旅程重判」措辞属实；§2.4 新增行对 PRD §15
+「Scheduled Issue 在至少一个非 coding 垂直切片稳定后按需引入」的引述属实；
+§6.4 三个新增状态行与 §8 的「默认下一步/主操作」逐条对得上。
+
+**但第 1 轮修复自身引入 3 条新问题（JRN2-011/012/013，均 `fix-regression`）**，
+已在第 2 轮修复，待第 3 轮独立复核。其中 JRN2-011 是实质问题：修 JRN2-002 时把 PRD §6
+的「最近 active Issue」改成了「注意力优先级最高」，这是与 PRD 的第二处分叉，却没有像
+JRN2-003 那样登记影响面——同一轮里对同类问题采取了不同规格的处理。
+JRN2-012/013 同属一个模式：**刚在 JRN2-005 立下「旅程不写页面形态」的边界，转身在自己
+新写的段落里越了两次界**（「右栏收起」「composer」）。
 
 ## 本轮检查清单（有限，走完即通过）
 
@@ -172,16 +228,19 @@ issues:
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| JRN2-001 | Issues 列表行的信息需求未定义 | High | 正确性 | 根因 | 初稿 | fixed | 新增 §6.4.1 行级信息需求表与三条规则 | `docs/personahub-user-journeys.md::6.4.1-issue-list-row-requirements` | 1 | — | missing-list-level-requirements |
-| JRN2-002 | 第一屏默认落点未收进旅程 | High | 正确性 | 根因 | 初稿 | fixed | §6.1 补默认落点表，冲突时以需要用户者优先 | `docs/personahub-user-journeys.md::6.1-default-landing` | 1 | — | prd-requirement-not-carried-into-journey |
-| JRN2-003 | Done 摘要复制/下载被降级 P1，与 PRD §10 冲突 | High | 正确性 | 根因 | 契约漂移 | fixed | 查看/追溯 P0、复制/下载/导出 P1；差异登记进 reset-plan §7 | `docs/reviews/product-experience-reset-plan.md::section-7-prd-impact` | 1 | — | cross-feature-contract-drift |
-| JRN2-004 | 信息需求矩阵缺已中断/已取消/正在修复 | Medium | 正确性 | 根因 | 初稿 | fixed | §6.4 补三行并声明不并入 Blocked | `docs/personahub-user-journeys.md::6.4-state-information-matrix` | 1 | — | state-matrix-coverage-gap |
-| JRN2-005 | 右栏是否分 tab 三文档冲突，旅程越界写形态 | Medium | 正确性 | 根因 | 契约漂移 | fixed | 旅程移除形态断言，分区交 M4-T02；concept-mapping 补优先级链澄清 | `docs/reviews/concept-mapping.md::5.4-layout-conclusion` | 1 | — | cross-feature-contract-drift |
-| JRN2-006 | 指派两个入口主次未定 | Medium | 正确性 | 根因 | 初稿 | fixed | 卡片按钮为主路径、`@` 为常驻快捷入口，J3.2 同步 | `docs/personahub-user-journeys.md::6.5-assignment-entry-priority` | 1 | — | dual-entry-priority-undefined |
-| JRN2-007 | Room 是必须理解概念但无旅程步骤 | Medium | 质量 | 根因 | 初稿 | fixed | Room 标 [P1]；P0 不承载但不得做排斥性结构假设 | `docs/personahub-user-journeys.md::2.3-room-p0-handling` | 1 | — | concept-without-journey-step |
-| JRN2-008 | Automations 占位入口未登记 | Low | 质量 | 根因 | 初稿 | fixed | §2.4 补占位行并指向 PRD §15 | `docs/personahub-user-journeys.md::2.4-cross-journey-navigation` | 1 | — | prd-requirement-not-carried-into-journey |
-| JRN2-009 | 右栏 Message/event stats 未显式裁决 | Low | 质量 | 根因 | 初稿 | fixed | §6.4 显式裁决不进右栏，回流走 M4-T05 | `docs/personahub-user-journeys.md::6.4-prd-right-panel-exclusion` | 1 | — | concept-without-journey-step |
-| JRN2-010 | NOTE-001/002 旅程步骤仍为占位 | Low | 质量 | 根因 | 流程缺口 | fixed | 回填 J1.4 与 adopted，触发自测试体系 §7.2 重复升级 | `docs/reviews/dogfooding-notes.md::note-001-002-journey-mapping` | 1 | — | marked-done-not-recorded |
+| JRN2-001 | Issues 列表行的信息需求未定义 | High | 正确性 | 根因 | 初稿 | fixed | 新增 §6.4.1 行级信息需求表与三条规则 | `docs/personahub-user-journeys.md::6.4.1-issue-list-row-requirements` | 1 | 2 | missing-list-level-requirements |
+| JRN2-002 | 第一屏默认落点未收进旅程 | High | 正确性 | 根因 | 初稿 | fixed | §6.1 补默认落点表，冲突时以需要用户者优先 | `docs/personahub-user-journeys.md::6.1-default-landing` | 1 | 2 | prd-requirement-not-carried-into-journey |
+| JRN2-003 | Done 摘要复制/下载被降级 P1，与 PRD §10 冲突 | High | 正确性 | 根因 | 契约漂移 | fixed | 查看/追溯 P0、复制/下载/导出 P1；差异登记进 reset-plan §7 | `docs/reviews/product-experience-reset-plan.md::section-7-prd-impact` | 1 | 2 | cross-feature-contract-drift |
+| JRN2-004 | 信息需求矩阵缺已中断/已取消/正在修复 | Medium | 正确性 | 根因 | 初稿 | fixed | §6.4 补三行并声明不并入 Blocked | `docs/personahub-user-journeys.md::6.4-state-information-matrix` | 1 | 2 | state-matrix-coverage-gap |
+| JRN2-005 | 右栏是否分 tab 三文档冲突，旅程越界写形态 | Medium | 正确性 | 根因 | 契约漂移 | fixed | 旅程移除形态断言，分区交 M4-T02；concept-mapping 补优先级链澄清 | `docs/reviews/concept-mapping.md::5.4-layout-conclusion` | 1 | 2 | cross-feature-contract-drift |
+| JRN2-006 | 指派两个入口主次未定 | Medium | 正确性 | 根因 | 初稿 | fixed | 卡片按钮为主路径、`@` 为常驻快捷入口，J3.2 同步 | `docs/personahub-user-journeys.md::6.5-assignment-entry-priority` | 1 | 2 | dual-entry-priority-undefined |
+| JRN2-007 | Room 是必须理解概念但无旅程步骤 | Medium | 质量 | 根因 | 初稿 | fixed | Room 标 [P1]；P0 不承载但不得做排斥性结构假设 | `docs/personahub-user-journeys.md::2.3-room-p0-handling` | 1 | 2 | concept-without-journey-step |
+| JRN2-008 | Automations 占位入口未登记 | Low | 质量 | 根因 | 初稿 | fixed | §2.4 补占位行并指向 PRD §15 | `docs/personahub-user-journeys.md::2.4-cross-journey-navigation` | 1 | 2 | prd-requirement-not-carried-into-journey |
+| JRN2-009 | 右栏 Message/event stats 未显式裁决 | Low | 质量 | 根因 | 初稿 | fixed | §6.4 显式裁决不进右栏，回流走 M4-T05 | `docs/personahub-user-journeys.md::6.4-prd-right-panel-exclusion` | 1 | 2 | concept-without-journey-step |
+| JRN2-010 | NOTE-001/002 旅程步骤仍为占位 | Low | 质量 | 根因 | 流程缺口 | fixed | 回填 J1.4 与 adopted，触发自测试体系 §7.2 重复升级 | `docs/reviews/dogfooding-notes.md::note-001-002-journey-mapping` | 1 | 2 | marked-done-not-recorded |
+| JRN2-011 | 默认落点与 PRD §6 分叉未登记影响面 | Medium | 正确性 | 根因 | 修复引入 | fixed | §6.1 补差异段并登记进 reset-plan §7，与 JRN2-003 同规格 | `docs/reviews/product-experience-reset-plan.md::section-7-prd-impact` | 2 | — | cross-feature-contract-drift |
+| JRN2-012 | 默认落点表写「右栏收起」，越界写形态 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「不呈现空壳区块」，呈现方式交 M4-T02 | `docs/personahub-user-journeys.md::6.1-default-landing` | 2 | — | journey-writes-page-form |
+| JRN2-013 | 指派入口表用 composer 组件名 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「指令输入处」 | `docs/personahub-user-journeys.md::6.5-assignment-entry-priority` | 2 | — | journey-writes-page-form |
 
 ## 逐条问题与修复依据
 
@@ -267,7 +326,6 @@ M5-T02 会漏判。**修复**：两行改 `adopted`、旅程步骤填 `J1.4`。
 
 ## 下一轮范围
 
-第 2 轮 scope 为 `diff-only`：只审本轮修复的 diff 及相邻步骤（§2.3、§2.4、§3.1、§6.1、
-§6.4、§6.4.1、§6.5、§7.2、§7.4，以及 concept-mapping §5.4、reset-plan §7、
-dogfooding-notes 主表两行），不重新通读全文。本轮 diff 未超过旅程文档 30%，不升级为
-full-scan。
+第 3 轮 scope 为 `diff-only`，且**只审第 2 轮那三处修改**（§6.1 差异段与右栏行、§6.5
+入口表一行、reset-plan §7 新增段）。这是协议规定的封顶轮：仅因第 2 轮自身引入了新问题
+才触发，不再连锁续轮。
