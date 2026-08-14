@@ -144,7 +144,7 @@ I'll start by reading the plan doc and TEMPLATE files to understand the exact st
   },
   {
     "content": "Create tools/check-feature-gates.test.mjs",
-
+    
 …[truncated]
   ```
   </details>
@@ -160,7 +160,7 @@ I'll start by reading the plan doc and TEMPLATE files to understand the exact st
 <type>file</type>
 <content>
 1: # PersonaHub 目录结构改造方案
-2:
+2: 
 3: > 状态：**Candidate v3（待确认，尚未实施）**
 4: > 创建：2026-08-09
 5: > 修订：2026-08-09（完成方案审查并把全部风险处置正式并入正文）
@@ -171,11 +171,11 @@ I'll start by reading the plan doc and TEMPLATE files to understand the exact st
 10: > 原则：**只补缺口，不动已经有效的东西**。feature 三件套 + TEMPLATE、Fxxx 跨版本
 11: > 编号、ADR、SOP.md 真实环境纪律、Review Checklist、BACKLOG 单一入口都是标杆级
 12: > 实践，不在改造范围内。
-13:
+13: 
 14: ## 0. 现状结论（复核后）
-15:
+15: 
 16: 对照 market-game-sim 与 OpenSpec 循环并复核当前仓库后，剩余缺口收敛为六类：
-17:
+17: 
 18: 1. **TEMPLATE 已经和实际写法脱节**：`docs/features/TEMPLATE/spec.md` 还是旧的
 19:    15 节结构（含独立的「13. 可追踪性」表格章节）；但从 F006 起，
 …[truncated]
@@ -208,13 +208,13 @@ Now let me read the TEMPLATE files and explore the repo structure in parallel.
 10: created: YYYY-MM-DD
 11: updated: YYYY-MM-DD
 12: ---
-13:
+13: 
 14: # Fxxx：功能名称
-15:
+15: 
 16: > Owner: TBD | Target: v0.x.y
-17:
+17: 
 18: ## 0. 来源与意图
-19:
+19: 
 20: - **PRD 来源**：`docs/<project>-prd.md` 相关章节：...
 21: - **架构来源**：`docs/<project>-architecture.md` 相关章节：...
 22: - **系统设计 / Research / Contract 来源**：`docs/...` 相关实体/章节：...
@@ -223,7 +223,7 @@ Now let me read the TEMPLATE files and explore the repo structure in parallel.
 25: - **规格模式**：lite / full
 26: - **变更类型**：ADDED / MODIFIED / REMOVED / MIXED
 27: - **一句话意图**：...
-28:
+28: 
 29: ## 1. 问题、目标与非目
 …[truncated]
   ```
@@ -252,35 +252,35 @@ Now let me read the TEMPLATE files and explore the repo structure in parallel.
 8: created: YYYY-MM-DD
 9: updated: YYYY-MM-DD
 10: ---
-11:
+11: 
 12: # Fxxx：功能名称 - 设计
-13:
+13: 
 14: > Owner: TBD | Spec: `spec.md` | Tasks: `tasks.md`
-15:
+15: 
 16: ## 0. 输入与约束
-17:
+17: 
 18: - **行为契约**：`spec.md`
 19: - **PRD / Architecture / System Design**：...
 20: - **ADR / 上游 Contract**：...
 21: - **实现约束**：...
-22:
+22: 
 23: ## 1. 技术概要与影响面
-24:
+24: 
 25: 用一段话概述实现方案，并列出受影响区域：
-26:
+26: 
 27: - 前端：...
 28: - 后端 / API：...
 29: - 存储 / Migration：...
 30: - Runtime / Agent Adapter：...
 31: - Event / Evidence：...
 32: - 文档 / 配置：...
-33:
+33: 
 34: ## 2. 架构与模块边界
-35:
+35: 
 36: 说明模块职责、依赖方向、事务边界和唯一真相源。必要时使用简短流程图。
-37:
+37: 
 38: ## 3. 数据模型与 Migration
-39:
+39: 
 40
 …[truncated]
   ```
@@ -306,29 +306,29 @@ Now let me read the TEMPLATE files and explore the repo structure in parallel.
 8: created: YYYY-MM-DD
 9: updated: YYYY-MM-DD
 10: ---
-11:
+11: 
 12: # Fxxx：功能名称 - 任务
-13:
+13: 
 14: > Owner: TBD | Spec: `spec.md` | Design: `design.md`
-15:
+15: 
 16: ## 0. 来源与执行规则
-17:
+17: 
 18: - 行为与验收真相源：`spec.md`。
 19: - 技术方案与边界：`design.md`。
 20: - 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
 21: - 完成且验证后立即把 `[ ]` 改为 `[x]`，不得最后统一补勾。
 22: - `[P]` 只用于修改不同文件、没有显式前置依赖且不会争用同一状态的任务。
 23: - 实现中若任务顺序或契约失效，先修订三件套，再继续编码。
-24:
+24: 
 25: 统一任务格式：
-26:
+26: 
 27: ```markdown
 28: - [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <一个可验证动作> — verify: `path/to/test.ts`
 29: ```
-30:
+30: 
 31: ## 1. 前置条件
-32:
-33: - [ ] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题
+32: 
+33: - [ ] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题 
 …[truncated]
   ```
   </details>
@@ -443,20 +443,20 @@ README.md
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F009：Artifact Foundation & Provenance
-11:
+11: 
 12: > Status: draft | Owner: TBD | Target: v0.3
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 16: - **PRD 来源**：`docs/personahub-prd.md` 第 5 节 Artifact、Handoff Packet，第 15 节 v0.3。
 17: - **架构来源**：`docs/personahub-architecture.md` 第 7 节。
 18: - **系统设计来源**：`docs/personahub-system-design.md` Artifact 草案。
 19: - **一句话意图**：让阶段成果成为有稳定版本、明确来源、可被统一引用和验证的一级实体。
-20:
+20: 
 21: ## 1. 问题与目标
-22:
+22: 
 23: 当前协作结果主要存在 ThreadEvent payload、Run final message 和聊天文
 …[truncated]
   ```
@@ -483,13 +483,13 @@ Now let me read the BACKLOG.md and check existing feature structures to understa
 3: doc_kind: note
 4: created: 2026-07-11
 5: ---
-6:
+6: 
 7: # Feature Roadmap
-8:
+8: 
 9: > **Rules**: Only active Features (idea/spec/ready-for-development/in-progress/review). Move to done after completion.
 10: > `ready-for-development` = spec 与 design 均已定稿、`design.md` 的待确认问题全部关闭（`docs/features/README.md` 的硬性约束），可以开始写代码。
 11: > Details live in `docs/features/{version}/Fxxx-feature-name/`（`spec.md`、`design.md`、`tasks.md`），按大版本（0.1、0.2…）分层，见 `docs/features/README.md`。
-12:
+12: 
 13: | ID | Version | Name | Status | Owner | Link |
 14: |----|---------|------|--------|-------|------|
 15: | F009 | 0.3 | Artifact Foundation & Provenance | spec | TBD | `docs/features/0.3/F009-artifact-foundation-provenance/spec
@@ -535,13 +535,13 @@ README.md
 6: created: 2026-08-01
 7: updated: 2026-08-02
 8: ---
-9:
+9: 
 10: # F006：Orchestrated Coding Graph Slice
-11:
+11: 
 12: > Status: done (全部 AC-001~009 验收通过：后端 1460+ 测试 + 真实 CLI 验收 + Web UI 展示/取消/resolve-executors 入口) | Owner: TBD | Target: v0.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 16: - **PRD 来源**：`docs/personahub-prd.md` 第 15 节 v0.2 `orchestrator_subagent` 完成判据。
 17: - **架构来源**：`docs/personahub-architecture.md` 第 2、5 节。
 18: - **系统设计来源**：现有 Issue / Run / ThreadEvent / HandoffPacket；最终字段形状由本 feature design 验证后确定。
@@ -1032,13 +1032,13 @@ ux-prototype.html
 6: created: 2026-07-12
 7: updated: 2026-07-16
 8: ---
-9:
+9: 
 10: # F001：Workspace & Issue Foundation
-11:
+11: 
 12: > Status: done | Owner: TBD | Target: v0.1.0
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 
 (Showing lines 1-15 of 505. Use offset=16 to continue.)
 </content>
@@ -1069,7 +1069,7 @@ updated: 2026-08-09
 - **tool**: `bash({"command": "head -15 \"D:\\Projects\\personahub\\docs\\features\\0.2\\F006-orchestrated-coding-graph-slice\\design.md\""})`
 
 
-> [reasoning] Good. Now I have a good understanding of the repo structure. The `docs/README.md` already exists with the ownership matrix.
+> [reasoning] Good. Now I have a good understanding of the repo structure. The `docs/README.md` already exists with the ownership matrix. 
 
 Now let me understand what the doc-link checker and doc-ownership checker need to do:
 
@@ -1461,14 +1461,14 @@ Let me implement:
 function checkOpenQuestionsClosed(sectionText) {
   const stripped = stripCodeBlocks(sectionText);
   const trimmed = stripped.trim();
-
+  
   if (trimmed === '无' || trimmed === '无\n') return { closed: true };
-
+  
   const lines = trimmed.split(/\r?\n/);
   const checkboxLines = [];
   const freeTextBullets = [];
   let hasContent = false;
-
+  
   for (const line of lines) {
     const lt = line.trim();
     if (!lt) continue;
@@ -1480,14 +1480,14 @@ function checkOpenQuestionsClosed(sectionText) {
     }
     // Non-bullet lines (paragraphs) are ignored? Or are they violations?
   }
-
+  
   if (!hasContent) return { closed: false, reason: 'empty section' };
   if (freeTextBullets.length > 0) return { closed: false, reason: 'free-text bullets' };
   if (checkboxLines.length === 0) return { closed: false, reason: 'no valid checkboxes and not 无' };
-
+  
   const openItems = checkboxLines.filter(l => /^-\s+\[\s\]\s/.test(l));
   if (openItems.length > 0) return { closed: false, reason: `${openItems.length} open item(s)` };
-
+  
   return { closed: true };
 }
 ```
@@ -1695,8 +1695,7 @@ Let me check how existing features handle the Status field in design/tasks.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mhead: [31;1mThe term 'head' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
-
+[31;1mhead: [31;1mThe term 'head' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
 [31;1m[31;1mCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.[0m
   ```
   </details>
@@ -1719,13 +1718,13 @@ Let me check how existing features handle the Status field in design/tasks.
 6: created: 2026-08-01
 7: updated: 2026-08-02
 8: ---
-9:
+9: 
 10: # F006：Orchestrated Coding Graph Slice - 设计
-11:
+11: 
 12: > Status: done（`spec.md` 全部 AC 验收通过；见 `spec.md` Status 行） | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
-15:
+15: 
 
 (Showing lines 1-15 of 920. Use offset=16 to continue.)
 </content>
@@ -2468,7 +2467,7 @@ function findIllegalTaskFormat(sectionContent) {
   const lines = stripped.split('\n');
   const illegal = [];
   const checkboxRe = /^-\s+\[([ xX])\]\s+(.+)$/;
-
+  
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(checkboxRe);
     if (!m) continue;
@@ -3130,8 +3129,7 @@ Now let me run the tests. First, the feature gates test:
   <details><summary>tool output</summary>
 
   ```text
-[31;1mhead: [31;1mThe term 'head' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
-
+[31;1mhead: [31;1mThe term 'head' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
 [31;1m[31;1mCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.[0m
   ```
   </details>
@@ -3143,42 +3141,24 @@ Now let me run the tests. First, the feature gates test:
   <details><summary>tool output</summary>
 
   ```text
-TAP version 13
-
-# file:///D:/Projects/personahub/tools/check-feature-gates.mjs:605
-
-#  * Excludes TEMPLATE/, releases/, version README.md.
-
-#  ^
-
-# SyntaxError: Unexpected token '*'
-
-#     at compileSourceTextModule (node:internal/modules/esm/utils:338:16)
-
-#     at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:102:18)
-
-#     at \#translate (node:internal/modules/esm/loader:468:12)
-
-#     at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:515:27)
-
-# Node.js v22.14.0
-
-# Subtest: tools\\check-feature-gates.test.mjs
-
-not ok 1 - tools\\check-feature-gates.test.mjs
-
-  ---
-
-  duration_ms: 163.0985
-
-  location: 'D:\\Projects\\personahub\\tools\\check-feature-gates.test.mjs:1:1'
-
-  failureType: 'testCodeFailure'
-
-  exitCode: 1
-
-  signal: ~
-
+TAP version 13
+# file:///D:/Projects/personahub/tools/check-feature-gates.mjs:605
+#  * Excludes TEMPLATE/, releases/, version README.md.
+#  ^
+# SyntaxError: Unexpected token '*'
+#     at compileSourceTextModule (node:internal/modules/esm/utils:338:16)
+#     at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:102:18)
+#     at \#translate (node:internal/modules/esm/loader:468:12)
+#     at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:515:27)
+# Node.js v22.14.0
+# Subtest: tools\\check-feature-gates.test.mjs
+not ok 1 - tools\\check-feature-gates.test.mjs
+  ---
+  duration_ms: 163.0985
+  location: 'D:\\Projects\\personahub\\tools\\check-feature-gates.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
   error: 'test faile
 …[truncated]
   ```
@@ -3206,7 +3186,7 @@ There's a syntax error. Let me check the file around line 605:
 <content>
 600: // Feature discovery
 601: // ---------------------------------------------------------------------------
-602:
+602: 
 603: /**
 604:  * Discover Feature directories under docs/features/<version>/Fxxx-*/
 605:  * Excludes TEMPLATE/, releases/, version README.md.
@@ -3215,7 +3195,7 @@ There's a syntax error. Let me check the file around line 605:
 608: export function discoverFeatures(featuresRoot, repoRoot) {
 609:   const features = [];
 610:   if (!existsSync(featuresRoot)) return features;
-611:
+611: 
 612:   let versionDirs;
 613:   try {
 614:     versionDirs = readdirSync(featuresRoot).filter((name) => {
@@ -3227,7 +3207,7 @@ There's a syntax error. Let me check the file around line 605:
 
 ## assistant · 2026-08-09T15:52:36Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "/**\n * Discover Feature directories under docs/features/<version>/Fxxx-...\n * Excludes TEMPLATE/, releases/, version README.md.\n * Returns array of { dir, version, id } where dir is the absolute path.\n */", "oldString": "/**\n * Discover Feature directories under docs/features/<version>/Fxxx-*/\n * Excludes TEMPLATE/, releases/, version README.md.\n * Returns array of { dir, version, id } where dir is the
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "/**\n * Discover Feature directories under docs/features/<version>/Fxxx-...\n * Excludes TEMPLATE/, releases/, version README.md.\n * Returns array of { dir, version, id } where dir is the absolute path.\n */", "oldString": "/**\n * Discover Feature directories under docs/features/<version>/Fxxx-*/\n * Excludes TEMPLATE/, releases/, version README.md.\n * Returns array of { dir, version, id } where dir is the 
 …[truncated])`
 
 
@@ -3248,50 +3228,28 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-TAP version 13
-
-# Subtest: parseFrontmatter
-
-    # Subtest: parses simple key-value
-
-    not ok 1 - parses simple key-value
-
-      ---
-
-      duration_ms: 1.9265
-
-      location: 'D:\\Projects\\personahub\\tools\\check-feature-gates.test.mjs:373:11'
-
-      failureType: 'testCodeFailure'
-
-      error: |-
-
-        Expected values to be strictly equal:
-
-
-
-        0.1 !== '0.1'
-
-
-
-      code: 'ERR_ASSERTION'
-
-      name: 'AssertionError'
-
-      expected: '0.1'
-
-      actual: 0.1
-
-      operator: 'strictEqual'
-
-      stack: |-
-
-        TestContext.<anonymous> (file:///D:/Projects/personahub/tools/check-feature-gates.test.mjs:385:12)
-
-        Test.runInAsyncScope (node:async_hooks:211:14)
-
-        Test.run (node:internal/test_runner/test:979:25)
-
+TAP version 13
+# Subtest: parseFrontmatter
+    # Subtest: parses simple key-value
+    not ok 1 - parses simple key-value
+      ---
+      duration_ms: 1.9265
+      location: 'D:\\Projects\\personahub\\tools\\check-feature-gates.test.mjs:373:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        0.1 !== '0.1'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: '0.1'
+      actual: 0.1
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (file:///D:/Projects/personahub/tools/check-feature-gates.test.mjs:385:12)
+        Test.runInAsyncScope (node:async_hooks:211:14)
+        Test.run (node:internal/test_runner/test:979:25)
         Test.start (node:internal
 …[truncated]
   ```
@@ -3299,7 +3257,7 @@ TAP version 13
 
 ## assistant · 2026-08-09T15:52:56Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "    const key = trimmed.slice(0, colonIdx).trim();\n    let value = trimmed.slice(colonIdx + 1).trim();\n    if (!key) continue;\n\n    // Track whether the value was quoted\n    let wasQuoted = false;\n\n    // Strip quotes\n    if (\n      (value.startsWith('\"') && value.endsWith('\"')) ||\n      (value.startsWith(\"'\") && value.endsWith(\"'\"))\n    ) {\n      value = value.slice(1, -1);\n      wasQuoted
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "    const key = trimmed.slice(0, colonIdx).trim();\n    let value = trimmed.slice(colonIdx + 1).trim();\n    if (!key) continue;\n\n    // Track whether the value was quoted\n    let wasQuoted = false;\n\n    // Strip quotes\n    if (\n      (value.startsWith('\"') && value.endsWith('\"')) ||\n      (value.startsWith(\"'\") && value.endsWith(\"'\"))\n    ) {\n      value = value.slice(1, -1);\n      wasQuoted 
 …[truncated])`
 
 
@@ -3347,78 +3305,42 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-...
-
-# Subtest: BACKLOG: missing row for non-done Feature
-
-ok 57 - BACKLOG: missing row for non-done Feature
-
-  ---
-
-  duration_ms: 24.6547
-
-  ...
-
-# Subtest: BACKLOG: duplicate rows
-
-ok 58 - BACKLOG: duplicate rows
-
-  ---
-
-  duration_ms: 29.2099
-
-  ...
-
-# Subtest: BACKLOG: done Feature residue
-
-ok 59 - BACKLOG: done Feature residue
-
-  ---
-
-  duration_ms: 24.4986
-
-  ...
-
-# Subtest: BACKLOG: status mismatch
-
-ok 60 - BACKLOG: status mismatch
-
-  ---
-
-  duration_ms: 19.7071
-
-  ...
-
-# Subtest: BACKLOG: version mismatch
-
-ok 61 - BACKLOG: version mismatch
-
-  ---
-
-  duration_ms: 27.9658
-
-  ...
-
-# Subtest: BACKLOG: link mismatch
-
-ok 62 - BACKLOG: link mismatch
-
-  ---
-
-  duration_ms: 26.115
-
-  ...
-
-# Subtest: BACKLOG: broken link
-
-ok 63 - BACKLOG: broken link
-
-  ---
-
-  duration_ms: 27.7492
-
-  ...
-
+...
+# Subtest: BACKLOG: missing row for non-done Feature
+ok 57 - BACKLOG: missing row for non-done Feature
+  ---
+  duration_ms: 24.6547
+  ...
+# Subtest: BACKLOG: duplicate rows
+ok 58 - BACKLOG: duplicate rows
+  ---
+  duration_ms: 29.2099
+  ...
+# Subtest: BACKLOG: done Feature residue
+ok 59 - BACKLOG: done Feature residue
+  ---
+  duration_ms: 24.4986
+  ...
+# Subtest: BACKLOG: status mismatch
+ok 60 - BACKLOG: status mismatch
+  ---
+  duration_ms: 19.7071
+  ...
+# Subtest: BACKLOG: version mismatch
+ok 61 - BACKLOG: version mismatch
+  ---
+  duration_ms: 27.9658
+  ...
+# Subtest: BACKLOG: link mismatch
+ok 62 - BACKLOG: link mismatch
+  ---
+  duration_ms: 26.115
+  ...
+# Subtest: BACKLOG: broken link
+ok 63 - BACKLOG: broken link
+  ---
+  duration_ms: 27.7492
+  ...
 #
 …[truncated]
   ```
@@ -3446,38 +3368,22 @@ Almost there - 104 pass, 1 fail. Let me find the failing test:
   <details><summary>tool output</summary>
 
   ```text
-> [7mnot ok 19[0m - Base checks: version mismatch with directory[0m
-
-[7m[0m    ---[0m
-
-[7m[0m    duration_ms: 49.9031[0m
-
-[7m[0m    location: 'D:\\Projects\\personahub\\tools\\check-feature-gates.test.mjs:768:1'[0m
-
-[7m[0m    failureType: 'testCodeFailure'[0m
-
-[7m[0m    error: |-[0m
-
-[7m[0m      The expression evaluated to a falsy value:[0m
-
-[7m[0m      [0m
-
-[7m[0m        assert.ok(result.errors.some((e) => e.includes('version') && e.includes('mismatch')))[0m
-
-[7m[0m      [0m
-
-[7m[0m    code: 'ERR_ASSERTION'[0m
-
-[7m[0m    name: 'AssertionError'[0m
-
-[7m[0m    expected: true[0m
-
-[7m[0m    actual: false[0m
-
-[7m[0m    operator: '=='[0m
-
-[7m[0m    stack: |-[0m
-
+> [7mnot ok 19[0m - Base checks: version mismatch with directory[0m
+[7m[0m    ---[0m
+[7m[0m    duration_ms: 49.9031[0m
+[7m[0m    location: 'D:\\Projects\\personahub\\tools\\check-feature-gates.test.mjs:768:1'[0m
+[7m[0m    failureType: 'testCodeFailure'[0m
+[7m[0m    error: |-[0m
+[7m[0m      The expression evaluated to a falsy value:[0m
+[7m[0m      [0m
+[7m[0m        assert.ok(result.errors.some((e) => e.includes('version') && e.includes('mismatch')))[0m
+[7m[0m      [0m
+[7m[0m    code: 'ERR_ASSERTION'[0m
+[7m[0m    name: 'AssertionError'[0m
+[7m[0m    expected: true[0m
+[7m[0m    actual: false[0m
+[7m[0m    operator: '=='[0m
+[7m[0m    stack: |-[0m
 [7m[0m      TestContext.<anonymous> (file:///D:/Projects/personahub/tools/check-featu
 …[truncated]
   ```
@@ -3562,36 +3468,21 @@ Let me debug the version mismatch test:
   <details><summary>tool output</summary>
 
   ```text
-file:///D:/Projects/personahub/[eval1]:11
-
-const spec = \---
-
-             ^
-
-
-
-SyntaxError: Invalid or unexpected token
-
-    at compileSourceTextModule (node:internal/modules/esm/utils:338:16)
-
-    at ModuleLoader.createModuleWrap (node:internal/modules/esm/loader:220:12)
-
-    at ModuleLoader.eval (node:internal/modules/esm/loader:259:23)
-
-    at node:internal/process/execution:72:24
-
-    at asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:11)
-
-    at Object.runEntryPointWithESMLoader (node:internal/modules/run_main:138:19)
-
-    at evalModuleEntryPoint (node:internal/process/execution:71:47)
-
-    at evalScript (node:internal/process/execution:84:7)
-
-    at node:internal/main/eval_string:74:3
-
-
-
+file:///D:/Projects/personahub/[eval1]:11
+const spec = \---
+             ^
+
+SyntaxError: Invalid or unexpected token
+    at compileSourceTextModule (node:internal/modules/esm/utils:338:16)
+    at ModuleLoader.createModuleWrap (node:internal/modules/esm/loader:220:12)
+    at ModuleLoader.eval (node:internal/modules/esm/loader:259:23)
+    at node:internal/process/execution:72:24
+    at asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:11)
+    at Object.runEntryPointWithESMLoader (node:internal/modules/run_main:138:19)
+    at evalModuleEntryPoint (node:internal/process/execution:71:47)
+    at evalScript (node:internal/process/execution:84:7)
+    at node:internal/main/eval_string:74:3
+
 Node.js v22.14.0
   ```
   </details>
@@ -3618,32 +3509,19 @@ Wrote file successfully.
   <details><summary>tool output</summary>
 
   ```text
-node:internal/modules/run_main:122
-
-    triggerUncaughtException(
-
-    ^
-
-
-
-Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'D:\Projects\personahub\tools\tools\check-feature-gates.mjs' imported from D:\Projects\personahub\tools\_debug.mjs
-
-Did you mean to import "./check-feature-gates.mjs"?
-
-    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
-
-    at moduleResolve (node:internal/modules/esm/resolve:860:10)
-
-    at defaultResolve (node:internal/modules/esm/resolve:984:11)
-
-    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
-
-    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
-
-    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
-
-    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:273:38)
-
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'D:\Projects\personahub\tools\tools\check-feature-gates.mjs' imported from D:\Projects\personahub\tools\_debug.mjs
+Did you mean to import "./check-feature-gates.mjs"?
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:273:38)
 …[truncated]
   ```
   </details>
@@ -3680,7 +3558,7 @@ errors: [
 - **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.test.mjs", "newString": "    assert.ok(result.errors.some((e) => e.includes('version') && e.includes('does not match')));", "oldString": "    assert.ok(result.errors.some((e) => e.includes('version') && e.includes('mismatch')));"})`
 
 
-> [reasoning] OK so the version mismatch error IS being generated: `'docs/features/0.1/F001-test/spec.md: frontmatter version "0.2" does not match directory version "0.1"'`. This includes both 'version' and 'mismatch'.
+> [reasoning] OK so the version mismatch error IS being generated: `'docs/features/0.1/F001-test/spec.md: frontmatter version "0.2" does not match directory version "0.1"'`. This includes both 'version' and 'mismatch'. 
 
 So why is the test failing? Let me look at the test more carefully:
 
@@ -3748,44 +3626,25 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-...
-
-# Subtest: Batch: duplicate ID across versions fails
-
-ok 65 - Batch: duplicate ID across versions fails
-
-  ---
-
-  duration_ms: 30.03
-
-  ...
-
-# Subtest: Batch: v0 does not run v1 checks
-
-ok 66 - Batch: v0 does not run v1 checks
-
-  ---
-
-  duration_ms: 21.0345
-
-  ...
-
-1..66
-
-# tests 105
-
-# suites 0
-
-# pass 105
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+...
+# Subtest: Batch: duplicate ID across versions fails
+ok 65 - Batch: duplicate ID across versions fails
+  ---
+  duration_ms: 30.03
+  ...
+# Subtest: Batch: v0 does not run v1 checks
+ok 66 - Batch: v0 does not run v1 checks
+  ---
+  duration_ms: 21.0345
+  ...
+1..66
+# tests 105
+# suites 0
+# pass 105
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 1426.0144
   ```
   </details>
@@ -3799,64 +3658,35 @@ All 105 tests pass. Now let me run the docs tests:
   <details><summary>tool output</summary>
 
   ```text
-# Subtest: broken link in docs fails
-
-    ok 2 - broken link in docs fails
-
-      ---
-
-      duration_ms: 30.4832
-
-      ...
-
-    1..2
-
-ok 14 - checkAllDocLinks: integration
-
-  ---
-
-  duration_ms: 59.3679
-
-  ...
-
-# Subtest: checkAllOwnership: integration
-
-    # Subtest: status in design.md fails ownership check
-
-    ok 1 - status in design.md fails ownership check
-
-      ---
-
-      duration_ms: 34.8649
-
-      ...
-
-    1..1
-
-ok 15 - checkAllOwnership: integration
-
-  ---
-
-  duration_ms: 35.2273
-
-  ...
-
-1..15
-
-# tests 60
-
-# suites 0
-
-# pass 57
-
-# fail 3
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+# Subtest: broken link in docs fails
+    ok 2 - broken link in docs fails
+      ---
+      duration_ms: 30.4832
+      ...
+    1..2
+ok 14 - checkAllDocLinks: integration
+  ---
+  duration_ms: 59.3679
+  ...
+# Subtest: checkAllOwnership: integration
+    # Subtest: status in design.md fails ownership check
+    ok 1 - status in design.md fails ownership check
+      ---
+      duration_ms: 34.8649
+      ...
+    1..1
+ok 15 - checkAllOwnership: integration
+  ---
+  duration_ms: 35.2273
+  ...
+1..15
+# tests 60
+# suites 0
+# pass 57
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 922.2174
   ```
   </details>
@@ -3872,10 +3702,8 @@ ok 15 - checkAllOwnership: integration
   <details><summary>tool output</summary>
 
   ```text
-[7mnot ok[0m 1 - release declared as truth source fails
-
-    [7mnot ok[0m 2 - RETROSPECTIVE declared as truth source fails
-
+[7mnot ok[0m 1 - release declared as truth source fails
+    [7mnot ok[0m 2 - RETROSPECTIVE declared as truth source fails
 [7mnot ok[0m 13 - checkReleaseNotTruthSource
   ```
   </details>
@@ -3887,38 +3715,22 @@ ok 15 - checkAllOwnership: integration
   <details><summary>tool output</summary>
 
   ```text
->     [7mnot ok 1 - release[0m declared as truth source fails[0m
-
-[7m[0m        ---[0m
-
-[7m[0m        duration_ms: 20.9142[0m
-
-[7m[0m        location: 'D:\\Projects\\personahub\\tools\\check-docs.test.mjs:557:11'[0m
-
-[7m[0m        failureType: 'testCodeFailure'[0m
-
-[7m[0m        error: |-[0m
-
-[7m[0m          The expression evaluated to a falsy value:[0m
-
-[7m[0m          [0m
-
-[7m[0m            assert.ok(result.errors.some((e) => e.includes('releases/') && e.includes('truth source')))[0m
-
-[7m[0m          [0m
-
-[7m[0m        code: 'ERR_ASSERTION'[0m
-
-[7m[0m        name: 'AssertionError'[0m
-
-[7m[0m        expected: true[0m
-
-[7m[0m        actual: false[0m
-
-[7m[0m        operator: '=='[0m
-
-[7m[0m        stack: |-[0m
-
+>     [7mnot ok 1 - release[0m declared as truth source fails[0m
+[7m[0m        ---[0m
+[7m[0m        duration_ms: 20.9142[0m
+[7m[0m        location: 'D:\\Projects\\personahub\\tools\\check-docs.test.mjs:557:11'[0m
+[7m[0m        failureType: 'testCodeFailure'[0m
+[7m[0m        error: |-[0m
+[7m[0m          The expression evaluated to a falsy value:[0m
+[7m[0m          [0m
+[7m[0m            assert.ok(result.errors.some((e) => e.includes('releases/') && e.includes('truth source')))[0m
+[7m[0m          [0m
+[7m[0m        code: 'ERR_ASSERTION'[0m
+[7m[0m        name: 'AssertionError'[0m
+[7m[0m        expected: true[0m
+[7m[0m        actual: false[0m
+[7m[0m        operator: '=='[0m
+[7m[0m        stack: |-[0m
 [7m[0m          TestContext.<a
 …[truncated]
   ```
@@ -4009,44 +3821,25 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-# Subtest: checkAllOwnership: integration
-
-    # Subtest: status in design.md fails ownership check
-
-    ok 1 - status in design.md fails ownership check
-
-      ---
-
-      duration_ms: 23.2965
-
-      ...
-
-    1..1
-
-ok 15 - checkAllOwnership: integration
-
-  ---
-
-  duration_ms: 23.6913
-
-  ...
-
-1..15
-
-# tests 60
-
-# suites 0
-
-# pass 60
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+# Subtest: checkAllOwnership: integration
+    # Subtest: status in design.md fails ownership check
+    ok 1 - status in design.md fails ownership check
+      ---
+      duration_ms: 23.2965
+      ...
+    1..1
+ok 15 - checkAllOwnership: integration
+  ---
+  duration_ms: 23.6913
+  ...
+1..15
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 675.3998
   ```
   </details>
@@ -4071,52 +3864,29 @@ All 60 docs tests pass. Now let me clean up the debug file and run both test sui
   <details><summary>tool output</summary>
 
   ```text
----
-
-  duration_ms: 20.6095
-
-  ...
-
-1..66
-
-# tests 105
-
-# suites 0
-
-# pass 105
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
-# duration_ms 1361.0365
-
-  ---
-
-  duration_ms: 17.1451
-
-  ...
-
-1..15
-
-# tests 60
-
-# suites 0
-
-# pass 60
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+---
+  duration_ms: 20.6095
+  ...
+1..66
+# tests 105
+# suites 0
+# pass 105
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1361.0365
+  ---
+  duration_ms: 17.1451
+  ...
+1..15
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 620.393
   ```
   </details>
@@ -4175,22 +3945,14 @@ All tests pass: 105 feature gate tests + 60 docs tests = 165 total. Now let me r
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[0m
-
-[31;1mFeature gate check FAILED �?68 error(s):[0m
-
-[31;1m[0m
-
-[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: frontmatter kind must be "feature", got undefined[0m
-
-[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: frontmatter missing id[0m
-
-[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: frontmatter version "" does not match directory version "0.1"[0m
-
-[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: illegal status "undefined" (must be one of: draft, ready-for-development, in-progress, review, done)[0m
-
-[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: illegal gate_version "undefined" (must be one of: 0, 1)[0m
-
+[31;1m[0m
+[31;1mFeature gate check FAILED �?68 error(s):[0m
+[31;1m[0m
+[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: frontmatter kind must be "feature", got undefined[0m
+[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: frontmatter missing id[0m
+[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: frontmatter version "" does not match directory version "0.1"[0m
+[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: illegal status "undefined" (must be one of: draft, ready-for-development, in-progress, review, done)[0m
+[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/spec.md: illegal gate_version "undefined" (must be one of: 0, 1)[0m
 [31;1m  FAIL  docs/features/0.1/F
 …[truncated]
   ```
@@ -4232,20 +3994,13 @@ Good - 68 expected violations. Now let me also run the doc-link and doc-ownershi
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[0m
-
-[31;1mDoc ownership check FAILED - 22 error(s):[0m
-
-[31;1m[0m
-
-[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/design.md: must not declare Status in blockquote (spec.md is the single source)[0m
-
-[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/tasks.md: must not declare Status in blockquote (spec.md is the single source)[0m
-
-[31;1m  FAIL  docs/features/0.1/F002-agent-command-center/design.md: must not declare Status in blockquote (spec.md is the single source)[0m
-
-[31;1m  FAIL  docs/features/0.1/F002-agent-command-center/tasks.md: must not declare Status in blockquote (spec.md is the single source)[0m
-
+[31;1m[0m
+[31;1mDoc ownership check FAILED - 22 error(s):[0m
+[31;1m[0m
+[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/design.md: must not declare Status in blockquote (spec.md is the single source)[0m
+[31;1m  FAIL  docs/features/0.1/F001-workspace-issue-foundation/tasks.md: must not declare Status in blockquote (spec.md is the single source)[0m
+[31;1m  FAIL  docs/features/0.1/F002-agent-command-center/design.md: must not declare Status in blockquote (spec.md is the single source)[0m
+[31;1m  FAIL  docs/features/0.1/F002-agent-command-center/tasks.md: must not declare Status in blockquote (spec.md is the single source)[0m
 [31;1m  FAIL  docs/features/0.1/F003-development-trace/design.md: must not declare Status in blockquote (spec.md is the single source
 …[truncated]
   ```
@@ -4276,9 +4031,9 @@ updated: 2026-08-09
 ---
 ```
 
-No `status` field. So `specFm.status` should be `undefined`. But the error says `spec "draft"`.
+No `status` field. So `specFm.status` should be `undefined`. But the error says `spec "draft"`. 
 
-Wait, looking at the check-doc-ownership.mjs code, it calls `checkFeatureBase` which creates a feature object with `status: specFm.status`. If `specFm.status` is `undefined`, the feature status would be `undefined`. But the BACKLOG check says `spec "draft"`.
+Wait, looking at the check-doc-ownership.mjs code, it calls `checkFeatureBase` which creates a feature object with `status: specFm.status`. If `specFm.status` is `undefined`, the feature status would be `undefined`. But the BACKLOG check says `spec "draft"`. 
 
 Hmm, let me look more carefully at the F009 spec. Maybe it does have a status somewhere that I'm missing... No, I read the file earlier and it doesn't have `status` in the frontmatter.
 
@@ -4370,7 +4125,7 @@ Actually, wait - looking back at the feature gate output, the F009-F012 errors s
 BACKLOG.md: F009 status mismatch — BACKLOG "spec", spec "draft"
 ```
 
-But the feature gate output for F009 doesn't show "illegal status" like F001-F008 do. For F001-F008 it says `illegal status "undefined"`. For F009-F012, there's no "illegal status" error in the feature gate output.
+But the feature gate output for F009 doesn't show "illegal status" like F001-F008 do. For F001-F008 it says `illegal status "undefined"`. For F009-F012, there's no "illegal status" error in the feature gate output. 
 
 Oh wait, let me re-read the feature gate output. I see the last few errors are:
 ```
@@ -4384,7 +4139,7 @@ But where does `draft` come from? Let me look at the F009 spec again:
 
 The F009 spec frontmatter starts with `feature_ids: [F009]` - it uses `feature_ids`, not `id`. And there's no `status` field.
 
-Actually wait - I also see from the feature gate output that F009-F012 don't have the "illegal status" error. But they should, since their frontmatter doesn't have a status field. Unless...
+Actually wait - I also see from the feature gate output that F009-F012 don't have the "illegal status" error. But they should, since their frontmatter doesn't have a status field. Unless... 
 
 Oh! I think the issue is that the F009-F012 specs might have a `status` field that I missed. Let me re-check.
 
@@ -4560,10 +4315,10 @@ export function checkAllFeatures(repoRoot) {
   ...
   const discovered = discoverFeatures(featuresRoot, repoRoot);
   const features = [];
-
+  
   // ID uniqueness
   ...
-
+  
   // Base checks
   for (const d of discovered) {
     const result = checkFeatureBase(d.dir, repoRoot);
@@ -4573,7 +4328,7 @@ export function checkAllFeatures(repoRoot) {
       features.push(result.feature);
     }
   }
-
+  
   // Gate v1 checks
   for (const d of discovered) {
     const baseResult = features.find(...);
@@ -4582,7 +4337,7 @@ export function checkAllFeatures(repoRoot) {
       ...
     }
   }
-
+  
   // BACKLOG consistency
   ...
 }
@@ -4707,7 +4462,7 @@ Wait, but the file I read earlier (when I first read it at the beginning) showed
 
 That's different from what I see now! Did the file change? Or did I read a different file?
 
-Wait, I see now - the first read showed the file at `D:\Projects\personahub\docs\features\0.3\F009-artifact-foundation-provenance\spec.md` and it showed `feature_ids: [F009]`. But now it shows `kind: feature\nid: F009\nversion: "0.3"\nstatus: draft\ngate_version: 1`.
+Wait, I see now - the first read showed the file at `D:\Projects\personahub\docs\features\0.3\F009-artifact-foundation-provenance\spec.md` and it showed `feature_ids: [F009]`. But now it shows `kind: feature\nid: F009\nversion: "0.3"\nstatus: draft\ngate_version: 1`. 
 
 Hmm, that's very different. Maybe the first read was from a different file or was cached? Or maybe I'm confused. Let me look at the original read output again.
 
@@ -4745,7 +4500,7 @@ Actually, wait. Looking at the earlier read output more carefully, it showed 123
 ```
 ## 0. 规格元信息
 ```
-and
+and 
 ```
 ## 8. 依赖、风险与待确认
 ```
@@ -4934,28 +4689,17 @@ Good - F009 has been updated to the new template structure (by a prior process).
   <details><summary>tool output</summary>
 
   ```text
----
-
-  duration_ms: 22.7004
-
-  ...
-
-1..66
-
-# tests 105
-
-# suites 0
-
-# pass 105
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+---
+  duration_ms: 22.7004
+  ...
+1..66
+# tests 105
+# suites 0
+# pass 105
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 1636.5498
   ```
   </details>
@@ -4967,28 +4711,17 @@ Good - F009 has been updated to the new template structure (by a prior process).
   <details><summary>tool output</summary>
 
   ```text
----
-
-  duration_ms: 23.1138
-
-  ...
-
-1..15
-
-# tests 60
-
-# suites 0
-
-# pass 60
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+---
+  duration_ms: 23.1138
+  ...
+1..15
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 671.3171
   ```
   </details>
@@ -5004,12 +4737,9 @@ Let me also verify the check scripts work via npm and run lsp_diagnostics on the
   <details><summary>tool output</summary>
 
   ```text
-> check:doc-links
-
-> node tools/check-doc-links.mjs
-
-
-
+> check:doc-links
+> node tools/check-doc-links.mjs
+
 [31;1mDoc link check PASSED - all links OK.[0m
   ```
   </details>

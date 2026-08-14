@@ -3,19 +3,12 @@
 > 仅保留会话起止与子代理派发/收集等编排级事件，供快速复盘协作穿插。
 
 - `2026-07-11T13:47:24Z` **session-start** codex/rollout-2026-07-11T21-45-50-019f516d-5fe5-7680-abcb-48f330084101
-- `2026-07-11T14:27:58Z` **session-start** claude/94595b09-befc-40b8-851e-82f1670ce165
-- `2026-07-11T14:42:39Z` **ToolSearch** claude/94595b09-befc-40b8-851e-82f1670ce165: ToolSearch({"query": "select:TaskCreate,TaskUpdate", "max_results": 5})
 - `2026-07-11T16:04:58Z` **session-end** codex/rollout-2026-07-11T21-45-50-019f516d-5fe5-7680-abcb-48f330084101
-- `2026-07-11T16:23:54Z` **session-end** claude/94595b09-befc-40b8-851e-82f1670ce165
-- `2026-07-12T03:04:57Z` **session-start** claude/1e9602d9-c067-4756-965d-c1f606ba3b57
 - `2026-07-12T06:37:43Z` **session-start** codex/rollout-2026-07-12T14-37-20-019f550b-5a49-7fd0-b06e-3d508bb8ad41
 - `2026-07-12T09:57:18Z` **session-end** codex/rollout-2026-07-12T14-37-20-019f550b-5a49-7fd0-b06e-3d508bb8ad41
 - `2026-07-12T10:31:19Z` **session-start** opencode/personahub 初始 commit 推送至 GitHub
 - `2026-07-12T10:38:14Z` **session-start** codex/rollout-2026-07-12T18-34-58-019f55e4-e9fd-7420-ade1-17cdeb3bf27f
-- `2026-07-12T10:50:08Z` **ToolSearch** claude/1e9602d9-c067-4756-965d-c1f606ba3b57: ToolSearch({"query": "WebSearch", "max_results": 3})
 - `2026-07-12T11:06:07Z` **session-end** codex/rollout-2026-07-12T18-34-58-019f55e4-e9fd-7420-ade1-17cdeb3bf27f
-- `2026-07-12T14:39:27Z` **session-start** claude/91430198-ecd7-4460-b790-76106336c088
-- `2026-07-12T14:46:34Z` **session-end** claude/1e9602d9-c067-4756-965d-c1f606ba3b57
 - `2026-07-12T15:00:10Z` **session-start** opencode/personahub 项目 F001 开发
 - `2026-07-12T15:00:27Z` **session-start** opencode/Explore project structure and conventions (@explore subagent)
 - `2026-07-12T15:00:31Z` **session-start** opencode/Find F001 design document specifically (@explore subagent)
@@ -43,13 +36,10 @@
 - `2026-07-12T15:57:17Z` **skill** opencode/personahub 项目 F001 开发: skill({"name": "playwright"})
 - `2026-07-12T16:02:52Z` **session-start** opencode/look_at: Describe the UI layout, visual design, and whether
 - `2026-07-12T16:03:00Z` **session-end** opencode/look_at: Describe the UI layout, visual design, and whether
-- `2026-07-12T16:32:54Z` **session-end** claude/91430198-ecd7-4460-b790-76106336c088
 - `2026-07-12T16:38:42Z` **session-start** codex/rollout-2026-07-13T00-37-07-019f5730-7892-7783-8706-7b20f64a16e7
 - `2026-07-12T16:43:06Z` **session-end** codex/rollout-2026-07-13T00-37-07-019f5730-7892-7783-8706-7b20f64a16e7
 - `2026-07-12T16:51:15Z` **session-end** opencode/personahub 项目 F001 开发
 - `2026-07-12T16:53:34Z` **session-end** opencode/personahub 初始 commit 推送至 GitHub
-- `2026-07-14T15:23:58Z` **session-start** claude/b8728fcd-913a-43b9-a220-8cf12ff55d09
-- `2026-07-14T15:30:34Z` **session-end** claude/b8728fcd-913a-43b9-a220-8cf12ff55d09
 - `2026-07-14T15:34:24Z` **session-start** opencode/psersonahub f002需求开发启动
 - `2026-07-14T15:35:36Z` **session-start** opencode/Explore server backend structure (@explore subagent)
 - `2026-07-14T15:35:41Z` **session-start** opencode/Explore shared types and web frontend (@explore subagent)
@@ -171,7 +161,7 @@
 - `2026-07-18T18:00:36Z` **session-end** opencode/F004 T056-T059: Terminal hook + validator (@Sisyphus-Junior subagent)
 - `2026-07-18T18:00:59Z` **session-start** opencode/F004 T060-T062: Startup Recovery (@Sisyphus-Junior subagent)
 - `2026-07-18T18:18:04Z` **session-end** opencode/F004 T060-T062: Startup Recovery (@Sisyphus-Junior subagent)
-- `2026-07-18T18:18:27Z` **task** opencode/f004需求代码开发: task({"category": "quick", "description": "F004 T063-T068: HTTP API", "load_skills": [], "prompt": "## TASK: Implement F004 T063-T068 - HTTP API Routes\n\nCreate Fastify routes for validation API and register dependencies.\n\n## Read these files first:\n1. `docs/features/0.1/F004-autonomous-validation/design.md` - §7 (API contracts: GET validation, GET summary, POST validation, POST unblock)\n2. `server/src/api/routes/` - Existing route files (issues.ts, adapters.ts, etc.) for pattern reference\n3.
+- `2026-07-18T18:18:27Z` **task** opencode/f004需求代码开发: task({"category": "quick", "description": "F004 T063-T068: HTTP API", "load_skills": [], "prompt": "## TASK: Implement F004 T063-T068 - HTTP API Routes\n\nCreate Fastify routes for validation API and register dependencies.\n\n## Read these files first:\n1. `docs/features/0.1/F004-autonomous-validation/design.md` - §7 (API contracts: GET validation, GET summary, POST validation, POST unblock)\n2. `server/src/api/routes/` - Existing route files (issues.ts, adapters.ts, etc.) for pattern reference\n3. 
 - `2026-07-18T18:18:42Z` **session-start** opencode/F004 T063-T068: HTTP API (@Sisyphus-Junior subagent)
 - `2026-07-18T18:39:16Z` **session-end** opencode/F004 T063-T068: HTTP API (@Sisyphus-Junior subagent)
 - `2026-07-18T18:40:01Z` **session-start** opencode/F004 T069-T079: Validation UI (@Sisyphus-Junior subagent)
@@ -398,5 +388,46 @@
 - `2026-08-10T12:56:41Z` **session-start** codex/rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d
 - `2026-08-10T13:10:08Z` **skill** opencode/项目结构改造方案执行: skill({"name": "review-convergence"})
 - `2026-08-10T14:49:04Z` **session-end** opencode/项目结构改造方案执行
-- `2026-08-10T15:05:22Z` **session-end** codex/rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d
-- `2026-08-10T15:09:17Z` **session-end** codex/rollout-2026-08-10T19-26-29-019feb6c-942f-7c50-82ed-318f92b90984
+- `2026-08-10T15:33:50Z` **session-start** codex/rollout-2026-08-10T23-33-12-019fec4e-721e-79a0-b5b8-3f04d3297ead
+- `2026-08-10T15:38:23Z` **session-start** claude/36ff3739-27e3-445b-b12d-1f189117baa1
+- `2026-08-10T15:41:49Z` **ToolSearch** claude/36ff3739-27e3-445b-b12d-1f189117baa1: ToolSearch({"query": "select:TodoWrite", "max_results": 1})
+- `2026-08-10T16:10:28Z` **session-end** codex/rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d
+- `2026-08-10T16:21:38Z` **session-end** claude/36ff3739-27e3-445b-b12d-1f189117baa1
+- `2026-08-10T16:47:03Z` **session-start** codex/rollout-2026-08-11T00-46-59-019fec92-006f-70b1-bd18-0ff2aff57203
+- `2026-08-10T17:21:43Z` **session-end** codex/rollout-2026-08-11T00-46-59-019fec92-006f-70b1-bd18-0ff2aff57203
+- `2026-08-11T13:57:04Z` **session-start** opencode/启动项目并运行真实场景任务
+- `2026-08-11T14:07:55Z` **session-start** opencode/Agent Adapters仅能创建一个？缺少新增按钮
+- `2026-08-11T14:13:40Z` **session-end** opencode/Agent Adapters仅能创建一个？缺少新增按钮
+- `2026-08-11T15:08:31Z` **skill** opencode/启动项目并运行真实场景任务: skill({"name": "review-convergence"})
+- `2026-08-11T15:29:10Z` **session-start** codex/rollout-2026-08-11T23-29-04-019ff171-07cc-7333-9c09-118b16397eeb
+- `2026-08-11T15:30:45Z` **session-end** codex/rollout-2026-08-11T23-29-04-019ff171-07cc-7333-9c09-118b16397eeb
+- `2026-08-11T15:31:09Z` **session-end** codex/rollout-2026-08-10T19-26-29-019feb6c-942f-7c50-82ed-318f92b90984
+- `2026-08-11T16:01:10Z` **session-end** codex/rollout-2026-08-10T23-33-12-019fec4e-721e-79a0-b5b8-3f04d3297ead
+- `2026-08-11T16:13:35Z` **session-start** codex/rollout-2026-08-12T00-13-01-019ff199-42e7-70c0-bee6-851e51881e42
+- `2026-08-11T16:15:17Z` **session-end** opencode/启动项目并运行真实场景任务
+- `2026-08-11T16:15:51Z` **session-start** codex/rollout-2026-08-12T00-13-03-019ff199-475e-7852-b7d7-9db64d0e8058
+- `2026-08-11T16:18:58Z` **session-start** claude/4c330174-c9d0-41e4-86f3-8522db27f0c3
+- `2026-08-11T16:21:51Z` **session-end** codex/rollout-2026-08-12T00-13-03-019ff199-475e-7852-b7d7-9db64d0e8058
+- `2026-08-11T16:26:37Z` **session-start** codex/rollout-2026-08-12T00-23-08-019ff1a2-855b-7261-9784-55c65b5f81c7
+- `2026-08-11T16:26:44Z` **session-end** codex/rollout-2026-08-12T00-23-08-019ff1a2-855b-7261-9784-55c65b5f81c7
+- `2026-08-11T16:27:14Z` **session-end** codex/rollout-2026-08-12T00-13-01-019ff199-42e7-70c0-bee6-851e51881e42
+- `2026-08-11T16:54:10Z` **session-end** claude/4c330174-c9d0-41e4-86f3-8522db27f0c3
+- `2026-08-12T11:17:00Z` **session-start** codex/rollout-2026-08-12T19-14-43-019ff5ae-838a-75d0-bacf-f09186a6c9bb
+- `2026-08-12T11:36:39Z` **session-start** codex/rollout-2026-08-12T19-15-22-019ff5af-1c13-7db0-9807-3d31a24b1d6b
+- `2026-08-12T11:36:45Z` **session-end** codex/rollout-2026-08-12T19-15-22-019ff5af-1c13-7db0-9807-3d31a24b1d6b
+- `2026-08-12T11:37:19Z` **session-end** codex/rollout-2026-08-12T19-14-43-019ff5ae-838a-75d0-bacf-f09186a6c9bb
+- `2026-08-12T11:43:46Z` **session-start** claude/b423aec9-ef49-4ab7-9c82-84a1aa4bcadc
+- `2026-08-12T12:26:10Z` **session-end** claude/b423aec9-ef49-4ab7-9c82-84a1aa4bcadc
+- `2026-08-12T12:32:45Z` **session-start** codex/rollout-2026-08-12T20-32-32-019ff5f5-c413-7a03-a3e4-b35d7b0a60fa
+- `2026-08-12T12:34:22Z` **session-start** codex/rollout-2026-08-12T20-34-18-019ff5f7-6261-73e0-8600-ba58f8dc2ae8
+- `2026-08-12T12:34:52Z` **session-end** codex/rollout-2026-08-12T20-34-18-019ff5f7-6261-73e0-8600-ba58f8dc2ae8
+- `2026-08-12T13:07:51Z` **session-end** codex/rollout-2026-08-12T20-32-32-019ff5f5-c413-7a03-a3e4-b35d7b0a60fa
+- `2026-08-13T13:48:24Z` **session-start** claude/e33db601-0d61-45ea-9986-100fb6113347
+- `2026-08-13T14:38:38Z` **session-start** claude/3758d65f-a9cb-49fb-86a6-89f96e1c4125
+- `2026-08-13T17:17:15Z` **ToolSearch** claude/3758d65f-a9cb-49fb-86a6-89f96e1c4125: ToolSearch({"query": "select:Monitor", "max_results": 1})
+- `2026-08-14T11:49:59Z` **session-end** claude/e33db601-0d61-45ea-9986-100fb6113347
+- `2026-08-14T12:31:02Z` **session-start** codex/rollout-2026-08-14T20-30-02-01a00040-2e9c-79f1-a85d-cd729d7ab195
+- `2026-08-14T12:33:33Z` **session-start** codex/rollout-2026-08-14T20-33-28-01a00043-58ac-7a93-99f2-7c8c289a7013
+- `2026-08-14T13:17:30Z` **session-end** claude/3758d65f-a9cb-49fb-86a6-89f96e1c4125
+- `2026-08-14T13:18:07Z` **session-end** codex/rollout-2026-08-14T20-30-02-01a00040-2e9c-79f1-a85d-cd729d7ab195
+- `2026-08-14T13:18:16Z` **session-end** codex/rollout-2026-08-14T20-33-28-01a00043-58ac-7a93-99f2-7c8c289a7013

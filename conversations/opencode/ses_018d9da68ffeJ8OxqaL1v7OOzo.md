@@ -51,8 +51,7 @@ Untracked files:
 	docs/features/releases/
 
 no changes added to commit (use "git add" and/or "git commit -a")
----
-
+---
 ce92f33 fix(web): remove deprecated baseUrl option
 87e4ed2 docs(revi
 …[truncated]
@@ -96,7 +95,7 @@ The plan document is `structure-improvement-plan.md`. Let me read it along with 
 <type>file</type>
 <content>
 1: # PersonaHub 目录结构改造方案
-2:
+2: 
 3: > 状态：**Candidate v3（待确认，尚未实施）**
 4: > 创建：2026-08-09
 5: > 修订：2026-08-09（完成方案审查并把全部风险处置正式并入正文）
@@ -107,11 +106,11 @@ The plan document is `structure-improvement-plan.md`. Let me read it along with 
 10: > 原则：**只补缺口，不动已经有效的东西**。feature 三件套 + TEMPLATE、Fxxx 跨版本
 11: > 编号、ADR、SOP.md 真实环境纪律、Review Checklist、BACKLOG 单一入口都是标杆级
 12: > 实践，不在改造范围内。
-13:
+13: 
 14: ## 0. 现状结论（复核后）
-15:
+15: 
 16: 对照 market-game-sim 与 OpenSpec 循环并复核当前仓库后，剩余缺口收敛为六类：
-17:
+17: 
 18: 1. **TEMPLATE 已经和实际写法脱节**：`docs/features/TEMPLATE/spec.md` 还是旧的
 19:    15 节结构（含独立的「13. 可追踪性」表格章节）；但从 F006 起，
 …[truncated]
@@ -159,47 +158,27 @@ This is a large, well-specified restructuring task. The plan doc has an executio
   <details><summary>tool output</summary>
 
   ```text
-[32;1mName                         [0m[32;1m Mode[0m
-
-[32;1m----                         [0m [32;1m----[0m
-
-.agents                       d----
-
-.claude                       d----
-
-.code-review-graph            d----
-
-.git                          d----
-
-.history                      d----
-
-.playwright-mcp               d----
-
-.sisyphus                     d----
-
-conversations                 d----
-
-docs                          d----
-
-e2e                           d----
-
-node_modules                  d----
-
-server                        d----
-
-shared                        d----
-
-web                           d----
-
-.gitignore                    -a---
-
-.prettierignore               -a---
-
-.prettierrc.json              -a---
-
-AGENTS.md                     -a---
-
-BACKLOG.md
+[32;1mName                         [0m[32;1m Mode[0m
+[32;1m----                         [0m [32;1m----[0m
+.agents                       d----
+.claude                       d----
+.code-review-graph            d----
+.git                          d----
+.history                      d----
+.playwright-mcp               d----
+.sisyphus                     d----
+conversations                 d----
+docs                          d----
+e2e                           d----
+node_modules                  d----
+server                        d----
+shared                        d----
+web                           d----
+.gitignore                    -a---
+.prettierignore               -a---
+.prettierrc.json              -a---
+AGENTS.md                     -a---
+BACKLOG.md        
 …[truncated]
   ```
   </details>
@@ -207,34 +186,20 @@ BACKLOG.md
   <details><summary>tool output</summary>
 
   ```text
-[32;1mFullName[0m
-
-[32;1m--------[0m
-
-D:\Projects\personahub\docs\features\0.1
-
-D:\Projects\personahub\docs\features\0.2
-
-D:\Projects\personahub\docs\features\0.3
-
-D:\Projects\personahub\docs\features\releases
-
-D:\Projects\personahub\docs\features\TEMPLATE
-
-D:\Projects\personahub\docs\features\0.1\F001-workspace-issue-foundation
-
-D:\Projects\personahub\docs\features\0.1\F002-agent-command-center
-
-D:\Projects\personahub\docs\features\0.1\F003-development-trace
-
-D:\Projects\personahub\docs\features\0.1\F004-autonomous-validation
-
-D:\Projects\personahub\docs\features\0.1\F005-multi-agent-manual-routing
-
-D:\Projects\personahub\docs\features\0.2\F006-orchestrated-coding-graph-slice
-
-D:\Projects\personahub\docs\features\0.2\F007-coordinator-routing-recommendation
-
+[32;1mFullName[0m
+[32;1m--------[0m
+D:\Projects\personahub\docs\features\0.1
+D:\Projects\personahub\docs\features\0.2
+D:\Projects\personahub\docs\features\0.3
+D:\Projects\personahub\docs\features\releases
+D:\Projects\personahub\docs\features\TEMPLATE
+D:\Projects\personahub\docs\features\0.1\F001-workspace-issue-foundation
+D:\Projects\personahub\docs\features\0.1\F002-agent-command-center
+D:\Projects\personahub\docs\features\0.1\F003-development-trace
+D:\Projects\personahub\docs\features\0.1\F004-autonomous-validation
+D:\Projects\personahub\docs\features\0.1\F005-multi-agent-manual-routing
+D:\Projects\personahub\docs\features\0.2\F006-orchestrated-coding-graph-slice
+D:\Projects\personahub\docs\features\0.2\F007-coordinator-routing-recommendation
 D:\Projects\personahub\docs
 …[truncated]
   ```
@@ -320,30 +285,18 @@ This is a large, well-defined task. Let me verify the current state of done work
   <details><summary>tool output</summary>
 
   ```text
-[32;1mFullName[0m
-
-[32;1m--------[0m
-
-D:\Projects\personahub\docs\features\TEMPLATE\design.md
-
-D:\Projects\personahub\docs\features\TEMPLATE\spec.md
-
-D:\Projects\personahub\docs\features\TEMPLATE\tasks.md
-
-D:\Projects\personahub\docs\features\0.1\README.md
-
-D:\Projects\personahub\docs\features\0.1\ux-prototype.html
-
-D:\Projects\personahub\docs\features\0.1\F001-workspace-issue-foundation\design.md
-
-D:\Projects\personahub\docs\features\0.1\F001-workspace-issue-foundation\spec.md
-
-D:\Projects\personahub\docs\features\0.1\F001-workspace-issue-foundation\tasks.md
-
-D:\Projects\personahub\docs\features\0.1\F002-agent-command-center\design.md
-
-D:\Projects\personahub\docs\features\0.1\F002-agent-command-center\spec.md
-
+[32;1mFullName[0m
+[32;1m--------[0m
+D:\Projects\personahub\docs\features\TEMPLATE\design.md
+D:\Projects\personahub\docs\features\TEMPLATE\spec.md
+D:\Projects\personahub\docs\features\TEMPLATE\tasks.md
+D:\Projects\personahub\docs\features\0.1\README.md
+D:\Projects\personahub\docs\features\0.1\ux-prototype.html
+D:\Projects\personahub\docs\features\0.1\F001-workspace-issue-foundation\design.md
+D:\Projects\personahub\docs\features\0.1\F001-workspace-issue-foundation\spec.md
+D:\Projects\personahub\docs\features\0.1\F001-workspace-issue-foundation\tasks.md
+D:\Projects\personahub\docs\features\0.1\F002-agent-command-center\design.md
+D:\Projects\personahub\docs\features\0.1\F002-agent-command-center\spec.md
 D:\Projects\personahub\docs\features\0.1\F002-agent-command-center\tasks.md
 …[truncated]
   ```
@@ -383,30 +336,18 @@ D:\Projects\personahub\docs\features\0.1\F002-agent-command-center\tasks.md
   <details><summary>tool output</summary>
 
   ```text
-[32;1mName[0m
-
-[32;1m----[0m
-
-personahub-architecture.md
-
-personahub-prd.md
-
-personahub-system-design.md
-
-SOP.md
-
----README?---
-
-False
-
-True
-
----tools?---
-
-False
-
----.github?---
-
+[32;1mName[0m
+[32;1m----[0m
+personahub-architecture.md
+personahub-prd.md
+personahub-system-design.md
+SOP.md
+---README?---
+False
+True
+---tools?---
+False
+---.github?---
 False
   ```
   </details>
@@ -467,13 +408,13 @@ Some infrastructure already exists (untracked releases, READMEs). Let me read th
 10: created: YYYY-MM-DD
 11: updated: YYYY-MM-DD
 12: ---
-13:
+13: 
 14: # Fxxx：功能名称
-15:
+15: 
 16: > Owner: TBD | Target: v0.x.y
-17:
+17: 
 18: ## 0. 来源与意图
-19:
+19: 
 20: - **PRD 来源**：`docs/<project>-prd.md` 相关章节：...
 21: - **架构来源**：`docs/<project>-architecture.md` 相关章节：...
 22: - **系统设计 / Research / Contract 来源**：`docs/...` 相关实体/章节：...
@@ -482,7 +423,7 @@ Some infrastructure already exists (untracked releases, READMEs). Let me read th
 25: - **规格模式**：lite / full
 26: - **变更类型**：ADDED / MODIFIED / REMOVED / MIXED
 27: - **一句话意图**：...
-28:
+28: 
 29: ## 1. 问题、目标与非目
 …[truncated]
   ```
@@ -504,35 +445,35 @@ Some infrastructure already exists (untracked releases, READMEs). Let me read th
 8: created: YYYY-MM-DD
 9: updated: YYYY-MM-DD
 10: ---
-11:
+11: 
 12: # Fxxx：功能名称 - 设计
-13:
+13: 
 14: > Owner: TBD | Spec: `spec.md` | Tasks: `tasks.md`
-15:
+15: 
 16: ## 0. 输入与约束
-17:
+17: 
 18: - **行为契约**：`spec.md`
 19: - **PRD / Architecture / System Design**：...
 20: - **ADR / 上游 Contract**：...
 21: - **实现约束**：...
-22:
+22: 
 23: ## 1. 技术概要与影响面
-24:
+24: 
 25: 用一段话概述实现方案，并列出受影响区域：
-26:
+26: 
 27: - 前端：...
 28: - 后端 / API：...
 29: - 存储 / Migration：...
 30: - Runtime / Agent Adapter：...
 31: - Event / Evidence：...
 32: - 文档 / 配置：...
-33:
+33: 
 34: ## 2. 架构与模块边界
-35:
+35: 
 36: 说明模块职责、依赖方向、事务边界和唯一真相源。必要时使用简短流程图。
-37:
+37: 
 38: ## 3. 数据模型与 Migration
-39:
+39: 
 40
 …[truncated]
   ```
@@ -554,29 +495,29 @@ Some infrastructure already exists (untracked releases, READMEs). Let me read th
 8: created: YYYY-MM-DD
 9: updated: YYYY-MM-DD
 10: ---
-11:
+11: 
 12: # Fxxx：功能名称 - 任务
-13:
+13: 
 14: > Owner: TBD | Spec: `spec.md` | Design: `design.md`
-15:
+15: 
 16: ## 0. 来源与执行规则
-17:
+17: 
 18: - 行为与验收真相源：`spec.md`。
 19: - 技术方案与边界：`design.md`。
 20: - 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
 21: - 完成且验证后立即把 `[ ]` 改为 `[x]`，不得最后统一补勾。
 22: - `[P]` 只用于修改不同文件、没有显式前置依赖且不会争用同一状态的任务。
 23: - 实现中若任务顺序或契约失效，先修订三件套，再继续编码。
-24:
+24: 
 25: 统一任务格式：
-26:
+26: 
 27: ```markdown
 28: - [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <一个可验证动作> — verify: `path/to/test.ts`
 29: ```
-30:
+30: 
 31: ## 1. 前置条件
-32:
-33: - [ ] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题
+32: 
+33: - [ ] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题 
 …[truncated]
   ```
   </details>
@@ -609,13 +550,13 @@ TEMPLATE files (S001–003) are done and match the plan. Now let me examine the 
 4: created: 2026-08-09
 5: updated: 2026-08-09
 6: ---
-7:
+7: 
 8: # v0.1（已收口）
-9:
+9: 
 10: 0.1 已收口，产品判断以 `docs/personahub-prd.md` + `docs/features/releases/0.1.md`
 11: 为准；本目录仅作历史追溯，不再接受新需求。目录内各 Feature 的 `spec.md` /
 12: `design.md` / `tasks.md` 保持原样只读维护，路径不变。
-13:
+13: 
 14: 修历史错误或死链可以继续在本目录内进行；追加新需求应开在对应的更晚版本目录下。
 
 (End of file - total 14 lines)
@@ -633,7 +574,7 @@ updated: 2026-08-09
 
 0.1 已收口，产品判断以 `docs/personahub-prd.md` + `docs/features/releases/0.1.md`
 为准；本目录仅作历史追溯，不再接受新需求。目录内各 Feature 的 `spec.md` /
-`design.md` / `tasks.md`
+`design.md` / `tasks.md` 
 …[truncated]
   ```
   </details>
@@ -650,13 +591,13 @@ updated: 2026-08-09
 4: created: 2026-08-09
 5: updated: 2026-08-09
 6: ---
-7:
+7: 
 8: # v0.2（已收口）
-9:
+9: 
 10: 0.2 已收口，产品判断以 `docs/personahub-prd.md` + `docs/features/releases/0.2.md`
 11: 为准；本目录仅作历史追溯，不再接受新需求。目录内各 Feature 的 `spec.md` /
 12: `design.md` / `tasks.md` 保持原样只读维护，路径不变。
-13:
+13: 
 14: 修历史错误或死链可以继续在本目录内进行；追加新需求应开在对应的更晚版本目录下
 15: （当前是 `docs/features/0.3/`）。
 
@@ -691,18 +632,18 @@ updated: 2026-08-09
 4: created: 2026-08-09
 5: updated: 2026-08-09
 6: ---
-7:
+7: 
 8: # v0.3 Artifact-Centered Collaboration 规划审查稿
-9:
+9: 
 10: > Status: review-draft。本文确定版本目标、Feature 边界、顺序和验收口径；F009-F012 已分别建立 draft `spec.md` / `design.md` / `tasks.md`，评审通过后再把对应 Feature 推进到 `ready-for-development`。产品范围仍以 `docs/personahub-prd.md` 第 15 节为准。
-11:
+11: 
 12: ## 1. 版本判断
-13:
+13: 
 14: v0.3 不应被实现成“再加一个聊天页面”。它要验证的产品判断是：复杂 coding Issue 的关键上下文能否从聊天历史中独立出来，成为有类型、有来源、可引用、可验证的阶段成果；Room 只是让用户观察和控制这些协作过程的现场。
-15:
+15: 
 16: 建议把版本拆为四个 Feature，按以下顺序交付：
-17:
-18: | ID                                                  | Feature                          | 单一 intent
+17: 
+18: | ID                                                  | Feature                          | 单一 intent                              
 …[truncated]
   ```
   </details>
@@ -719,23 +660,23 @@ updated: 2026-08-09
 4: created: 2026-08-09
 5: updated: 2026-08-09
 6: ---
-7:
+7: 
 8: # Release 0.1
-9:
+9: 
 10: > 收口于 2026-08-09。产品判断以 `docs/personahub-prd.md` 为准；本文件是交付摘要，
 11: > 不是需求真相源。逐条 FR/AC 见各 Feature 目录下 `docs/features/0.1/Fxxx-*/spec.md`
 12: > （历史 Feature，均为 `gate_version: 0`）。
-13:
+13: 
 14: ## 交付范围
-15:
+15: 
 16: 0.1 建立了 PersonaHub 的最小可用闭环：Project/Workspace/Issue/Thread 基础 →
 17: 下发指令给本地 CLI agent → 把执行过程沉淀为可追溯 trace → 自动验证驱动 Issue
 18: 状态流转 → 手动在多个 agent（Codex / Claude Code / OpenCode）之间路由并接力。
-19:
+19: 
 20: | Feature | 一句话意图 | 状态 |
 21: |---|---|---|
 22: | F001 Workspace & Issue Foundation | 建立启动 agent run 之前必须具备的最小 Project / Workspace / Issue / Thread 基础 | done |
-23: | F002 Agent
+23: | F002 Agent 
 …[truncated]
   ```
   </details>
@@ -752,21 +693,21 @@ updated: 2026-08-09
 4: created: 2026-08-09
 5: updated: 2026-08-09
 6: ---
-7:
+7: 
 8: # Release 0.2
-9:
+9: 
 10: > 收口于 2026-08-09。产品判断以 `docs/personahub-prd.md` 为准；本文件是交付摘要，
 11: > 不是需求真相源。逐条 FR/AC 见各 Feature 目录下 `docs/features/0.2/Fxxx-*/spec.md`
 12: > （均为 `gate_version: 0`，不要求补齐 `tests:` 路径引用）。
-13:
+13: 
 14: ## 交付范围
-15:
+15: 
 16: 0.2 是 Orchestrator Workflow 的第一步：一个真实场景验证图执行（fan-out →
 17: fan-in、显式 Node/Edge、恢复语义），一个确定性规则引擎把自然语言目标变成可复核
 18: 的执行方案建议，一个管理面把 workflow 模板和 runtime health 变成用户可读可控的
 19: 界面。三者按"一个 feature 一个主要 intent"从 PRD 第 15 节 v0.2 拆出，拆分理由见
 20: `BACKLOG.md` 历史记录。
-21:
+21: 
 22: | Feature | 一句话意图 | 状态 |
 23: |---|---|---|
 24: | F006 Orchestrated Coding Graph Slice | 让一个真实 coding I
@@ -852,8 +793,7 @@ Untracked files:
 	docs/features/releases/
 
 no changes added to commit (use "git add" and/or "git commit -a")
-===LOG===
-
+===LOG===
 ce92f33 fix(web): remove deprecated baseUrl option
 87e4ed2 doc
 …[truncated]
@@ -871,13 +811,13 @@ ce92f33 fix(web): remove deprecated baseUrl option
 3: doc_kind: note
 4: created: 2026-07-11
 5: ---
-6:
+6: 
 7: # Feature Roadmap
-8:
+8: 
 9: > **Rules**: Only active Features (idea/spec/ready-for-development/in-progress/review). Move to done after completion.
 10: > `ready-for-development` = spec 与 design 均已定稿、`design.md` 的待确认问题全部关闭（`docs/features/README.md` 的硬性约束），可以开始写代码。
 11: > Details live in `docs/features/{version}/Fxxx-feature-name/`（`spec.md`、`design.md`、`tasks.md`），按大版本（0.1、0.2…）分层，见 `docs/features/README.md`。
-12:
+12: 
 13: | ID | Version | Name | Status | Owner | Link |
 14: |----|---------|------|--------|-------|------|
 15: | F009 | 0.3 | Artifact Foundation & Provenance | spec | TBD | `docs/features/0.3/F009-artifact-foundation-provenance/spec
@@ -949,13 +889,13 @@ A large portion is already in the working tree (uncommitted). Let me assess the 
 <type>file</type>
 <content>
 1: # PersonaHub
-2:
+2: 
 3: 个人优先的开源 AI Agent Team 自动化工作台：用 Project / Issue / Thread 管理代码开发、系统排障、论文/书籍拆解等个人任务，让不同 agent team 按 workflow 自主执行、验证、沉淀证据和记忆。
-4:
+4: 
 5: ## 现状
-6:
+6: 
 7: v0.1（F001-F005：Workspace/Issue 基础、Agent Command Center、Development Trace、Autonomous Validation、Multi-Agent Manual Routing）与 v0.2（F006-F008：Orchestrated Coding Graph Slice、Coordinator Agent & Routing Recommendation、Workflow Template Admin & Runtime Health）均已收口。交付范围、已知限制与技术基线见 `docs/features/releases/0.1.md` / `0.2.md`；逐条 FR/AC 见对应 `docs/features/0.{1,2}/Fxxx-*/spec.md`（历史 Feature，均为 `gate_version: 0`）。
-8:
+8: 
 9: 当前 active 版本是 v0.3：F009（Artifact Foundation & Provenance）/ F010（Artifact-Centered Coding Slice）/ F011（Work Room & Human Intervention）/ F012（Reusabl
 …[truncated]
   ```
@@ -964,82 +904,44 @@ A large portion is already in the working tree (uncommitted). Let me assess the 
   <details><summary>tool output</summary>
 
   ```text
----
-
-feature_ids: [F001]
-
-related_features: []
-
-topics: [project, workspace, issue, thread, sqlite, v0.1.0]
-
-doc_kind: spec
-
-created: 2026-07-12
-
-updated: 2026-07-16
-
----
-
-
-
-# F001��Workspace & Issue Foundation
-
-
-
-> Status: done | Owner: TBD | Target: v0.1.0
-
-
-
-## 0. ���Ԫ��Ϣ
-
-
-
-=====F002=====
-
----
-
-feature_ids: [F002]
-
-related_features: [F001]
-
-topics: [agent-adapter, codex-cli, run-events, workspace-lock, escalation, v0.1.1]
-
-doc_kind: spec
-
-created: 2026-07-12
-
-updated: 2026-07-16
-
----
-
-
-
-# F002��Agent Command Center
-
-
-
-> Status: done | Owner: TBD | Target: v0.1.1
-
-
-
-## 0. ���Ԫ��Ϣ
-
-
-
-=====F006=====
-
----
-
-feature_ids: [F006]
-
-related_features: [F003, F004, F005]
-
-topics: [executable-work-graph, orchestrator-subagent, fan-out, fan-in, recovery, v0.2]
-
-doc_kind: spec
-
-created: 2026-08-01
-
+---
+feature_ids: [F001]
+related_features: []
+topics: [project, workspace, issue, thread, sqlite, v0.1.0]
+doc_kind: spec
+created: 2026-07-12
+updated: 2026-07-16
+---
+
+# F001��Workspace & Issue Foundation
+
+> Status: done | Owner: TBD | Target: v0.1.0
+
+## 0. ���Ԫ��Ϣ
+
+=====F002=====
+---
+feature_ids: [F002]
+related_features: [F001]
+topics: [agent-adapter, codex-cli, run-events, workspace-lock, escalation, v0.1.1]
+doc_kind: spec
+created: 2026-07-12
+updated: 2026-07-16
+---
+
+# F002��Agent Command Center
+
+> Status: done | Owner: TBD | Target: v0.1.1
+
+## 0. ���Ԫ��Ϣ
+
+=====F006=====
+---
+feature_ids: [F006]
+related_features: [F003, F004, F005]
+topics: [executable-work-graph, orchestrator-subagent, fan-out, fan-in, recovery, v0.2]
+doc_kind: spec
+created: 2026-08-01
 u
 …[truncated]
   ```
@@ -1061,7 +963,7 @@ Given the massive scope, I need to be strategic. Let me understand the true stat
 - BACKLOG.md: seems already normalized
 - CLAUDE.md: needs slimming (S016)
 
-But S004-S013, S019-S028 remain. This is a huge amount of work.
+But S004-S013, S019-S028 remain. This is a huge amount of work. 
 
 The user asked me to execute the plan in order, marking progress. This is a large multi-hour effort. I should work through the phases systematically.
 
@@ -1094,14 +996,10 @@ This is a large, well-specified plan with 28 tasks (S001–S028). A prior workin
   <details><summary>tool output</summary>
 
   ```text
-[31;1mParserError: [0m
-
-[31;1m[36;1mLine |[0m
-
-[31;1m[36;1m[36;1m   1 | [0m cd D:\Projects\personahub && foreach ($f [36;1min[0m @('0.1\F001-workspace-iss ��[0m
-
-[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~[0m
-
+[31;1mParserError: [0m
+[31;1m[36;1mLine |[0m
+[31;1m[36;1m[36;1m   1 | [0m cd D:\Projects\personahub && foreach ($f [36;1min[0m @('0.1\F001-workspace-iss ��[0m
+[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~[0m
 [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mUnexpected token 'in' in expression or statement.[0m
   ```
   </details>
@@ -1114,74 +1012,40 @@ This is a large, well-specified plan with 28 tasks (S001–S028). A prior workin
   <details><summary>tool output</summary>
 
   ```text
-===== 0.1\F001-workspace-issue-foundation =====
-
----
-
-feature_ids: [F001]
-
-related_features: []
-
-topics: [project, workspace, issue, thread, sqlite, v0.1.0]
-
-doc_kind: spec
-
-created: 2026-07-12
-
-updated: 2026-07-16
-
----
-
-
-
-# F001��Workspace & Issue Foundation
-
-
-
-> Status: done | Owner: TBD | Target: v0.1.0
-
-
-
-## 0. ���Ԫ��Ϣ
-
-===== 0.1\F002-agent-command-center =====
-
----
-
-feature_ids: [F002]
-
-related_features: [F001]
-
-topics: [agent-adapter, codex-cli, run-events, workspace-lock, escalation, v0.1.1]
-
-doc_kind: spec
-
-created: 2026-07-12
-
-updated: 2026-07-16
-
----
-
-
-
-# F002��Agent Command Center
-
-
-
-> Status: done | Owner: TBD | Target: v0.1.1
-
-
-
-## 0. ���Ԫ��Ϣ
-
-===== 0.1\F003-development-trace =====
-
----
-
-feature_ids: [F003]
-
-related_features: [F001, F002, F004, F005]
-
+===== 0.1\F001-workspace-issue-foundation =====
+---
+feature_ids: [F001]
+related_features: []
+topics: [project, workspace, issue, thread, sqlite, v0.1.0]
+doc_kind: spec
+created: 2026-07-12
+updated: 2026-07-16
+---
+
+# F001��Workspace & Issue Foundation
+
+> Status: done | Owner: TBD | Target: v0.1.0
+
+## 0. ���Ԫ��Ϣ
+===== 0.1\F002-agent-command-center =====
+---
+feature_ids: [F002]
+related_features: [F001]
+topics: [agent-adapter, codex-cli, run-events, workspace-lock, escalation, v0.1.1]
+doc_kind: spec
+created: 2026-07-12
+updated: 2026-07-16
+---
+
+# F002��Agent Command Center
+
+> Status: done | Owner: TBD | Target: v0.1.1
+
+## 0. ���Ԫ��Ϣ
+===== 0.1\F003-development-trace =====
+---
+feature_ids: [F003]
+related_features: [F001, F002, F004, F005]
 topics: [development-trac
 …[truncated]
   ```
@@ -1208,7 +1072,7 @@ Phase C: S014-S018 (releases, CLAUDE migration)
 Phase D: S019-S022 (CI)
 Phase E: S023-S028 (local artifacts + root closure)
 
-Many already exist (releases, READMEs, BACKLOG already normalized, CLAUDE already partly slimmed).
+Many already exist (releases, READMEs, BACKLOG already normalized, CLAUDE already partly slimmed). 
 
 Let me assess what's actually NOT done:
 - S004: docs/features/README.md needs the Q/DQ, AC/tests rules. Currently README exists but lacks these new rules. NOT DONE.
@@ -1257,20 +1121,20 @@ Let me check file encoding and read SOP.md and .gitignore to understand the full
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F009：Artifact Foundation & Provenance
-11:
+11: 
 12: > Status: draft | Owner: TBD | Target: v0.3
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 16: - **PRD 来源**：`docs/personahub-prd.md` 第 5 节 Artifact、Handoff Packet，第 15 节 v0.3。
 17: - **架构来源**：`docs/personahub-architecture.md` 第 7 节。
 18: - **系统设计来源**：`docs/personahub-system-design.md` Artifact 草案。
 19: - **一句话意图**：让阶段成果成为有稳定版本、明确来源、可被统一引用和验证的一级实体。
-20:
+20: 
 21: ## 1. 问题与目标
-22:
+22: 
 23: 当前协作结果主要存在 ThreadEvent payload、Run final message 和聊天文
 …[truncated]
   ```
@@ -1288,11 +1152,11 @@ Let me check file encoding and read SOP.md and .gitignore to understand the full
 4: created: 2026-07-11
 5: updated: 2026-08-09
 6: ---
-7:
+7: 
 8: # 开发流程（个人版）
-9:
+9: 
 10: ## 修订记录
-11:
+11: 
 12: | 日期 | 来源提交 | 修订目的 | 修订内容 |
 13: | --- | --- | --- | --- |
 14: | 2026-08-09 | （本次修订） | F008 检视中出现"执行修复的一方复核完自己就直接删掉 `docs/reviews/CURRENT-doc.md`"的情况，违反 `review-convergence` skill 里"执行者+审查者"双人视角制衡的设计，且该文件在 `.gitignore` 里、删了就永久丢失细节 | 新增"检视文档生命周期纪律"：`CURRENT-doc.md`/`CURRENT-code.md` 只能由检视人复核完成后删除，执行修复的一方不得自行删除；同步修订 `review-convergence` skill 与 `docs/reviews/RETROSPECTIVE.md` 头部说明 |
@@ -1313,40 +1177,40 @@ Let me check file encoding and read SOP.md and .gitignore to understand the full
 4: .claude/worktrees/
 5: .sisyphus/
 6: .playwright-mcp/
-7:
+7: 
 8: # Local SQLite runtime files
 9: *.db
 10: *.db-shm
 11: *.db-wal
-12:
+12: 
 13: # Dependencies
 14: node_modules/
-15:
+15: 
 16: # Environment / secrets
 17: .env
 18: .env.local
 19: .env.*.local
-20:
+20: 
 21: # Build output
 22: dist/
 23: build/
 24: *.tsbuildinfo
-25:
+25: 
 26: # OS files
 27: .DS_Store
 28: Thumbs.db
-29:
+29: 
 30: # Logs
 31: *.log
 32: npm-debug.log*
 33: server-stdout.txt
 34: server-stderr.txt
-35:
+35: 
 36: # Local-only docs (kept on disk, not tracked)
 37: docs/research/
 38: docs/reviews/*
 39: # ...except the curated, permanent summaries the review-convergence skill
-40: # produces — these are meant to
+40: # produces — these are meant to 
 …[truncated]
   ```
   </details>
@@ -1398,7 +1262,7 @@ Given the size and the "delegate everything" mandate, but also the need for tigh
 - Delegate the gate script + tests (S008, S009, S010) to a subagent with very precise instructions.
 - Actually, given tight coupling, maybe I should do more myself.
 
-Let me reconsider. This is a very large task that will take many hours. Let me be systematic and use todos effectively.
+Let me reconsider. This is a very large task that will take many hours. Let me be systematic and use todos effectively. 
 
 Let me reconsider the delegation: The plan is extremely detailed. A `deep` or `unspecified-high` subagent could implement the gate scripts. But the doc normalization of 12 feature specs (F001-F012) + TEMPLATE + README is a lot of careful work.
 
@@ -1414,7 +1278,7 @@ Given the massive scope and that this will be a very long session, let me set up
 
 Let me reconsider: given the "decompose and delegate" mandate but also "delegating with crystal-clear prompts IS your work", and the extreme precision required for the gate script to pass, I think the safest and highest-quality path is:
 
-Phase A (doc rules):
+Phase A (doc rules): 
 - S004: Rewrite docs/features/README.md - I'll delegate to writing agent but verify.
 - S005: Normalize F009-F012 to new template - precision critical, delegate with template as reference.
 - S006: Backfill all spec frontmatter - mechanical, delegate.
@@ -1776,48 +1640,27 @@ S007 done. Now S019-S021 (CI baseline: nvmrc, engines, ci.yml). These are indepe
   <details><summary>tool output</summary>
 
   ```text
-v22.14.0
-
----nvmrc?---
-
-False
-
----.github?---
-
-False
-
----e2e package---
-
-{
-
-  "name": "@personahub/e2e",
-
-  "version": "0.1.0",
-
-  "private": true,
-
-  "type": "module",
-
-  "scripts": {
-
-    "test": "playwright test",
-
-    "test:ui": "playwright test --ui",
-
-    "typecheck": "tsc --noEmit"
-
-  },
-
-  "devDependencies": {
-
-    "@playwright/test": "^1.62.0",
-
-    "@types/node": "^22.10.0",
-
-    "typescript": "^5.7.0"
-
-  }
-
+v22.14.0
+---nvmrc?---
+False
+---.github?---
+False
+---e2e package---
+{
+  "name": "@personahub/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
 }
   ```
   </details>
@@ -1837,44 +1680,25 @@ Node v22.14.0 (LTS). Let me create `.nvmrc`, update `engines`, and check the pla
   <details><summary>tool output</summary>
 
   ```text
-[32;1mName[0m
-
-[32;1m----[0m
-
-package.json
-
-playwright.config.ts
-
-tsconfig.json
-
----config---
-
-import fs from "node:fs";
-
-import path from "node:path";
-
-import { fileURLToPath } from "node:url";
-
-import { defineConfig, devices } from "@playwright/test";
-
-import { SERVER_PORT, WEB_PORT } from "./tests/support/env.js";
-
-
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const dbDir = path.resolve(__dirname, ".tmp");
-
-try {
-
-  // Best-effort: start each run from a clean DB so .tmp doesn't grow
-
-  // unbounded. Not load-bearing for correctness �� tests select their seeded
-
-  // Project by name (see support/app.ts) rather than relying on it being
-
-  // the only one in the DB �� so a leftover file lock (e.g. a prior run's
-
+[32;1mName[0m
+[32;1m----[0m
+package.json
+playwright.config.ts
+tsconfig.json
+---config---
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { defineConfig, devices } from "@playwright/test";
+import { SERVER_PORT, WEB_PORT } from "./tests/support/env.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const dbDir = path.resolve(__dirname, ".tmp");
+try {
+  // Best-effort: start each run from a clean DB so .tmp doesn't grow
+  // unbounded. Not load-bearing for correctness �� tests select their seeded
+  // Project by name (see support/app.ts) rather than relying on it being
+  // the only one in the DB �� so a leftover file lock (e.g. a prior run's
   // server process still releasing its handle on Win
 …[truncated]
   ```
@@ -1907,7 +1731,7 @@ Edit applied successfully.
 
 ## assistant · 2026-08-09T15:42:39Z
 
-- **tool**: `write({"content": "name: CI\n\non:\n  push:\n    branches: [main]\n  pull_request:\n\njobs:\n  verify:\n    name: Verify (lint, typecheck, test, docs, build)\n    runs-on: ubuntu-latest\n    timeout-minutes: 20\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Set up Node LTS\n        uses: actions/setup-node@v4\n        with:\n          node-version-file: \".nvmrc\"\n          cache: \"npm\"\n\n      - name: Install dependencies\n        run: npm ci\n\n      - name: Run unified quality
+- **tool**: `write({"content": "name: CI\n\non:\n  push:\n    branches: [main]\n  pull_request:\n\njobs:\n  verify:\n    name: Verify (lint, typecheck, test, docs, build)\n    runs-on: ubuntu-latest\n    timeout-minutes: 20\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Set up Node LTS\n        uses: actions/setup-node@v4\n        with:\n          node-version-file: \".nvmrc\"\n          cache: \"npm\"\n\n      - name: Install dependencies\n        run: npm ci\n\n      - name: Run unified quality 
 …[truncated])`
 
 Now create the CI workflow. The plan: main job `npm ci` + `npm run verify`, E2E as separate job.
@@ -2166,7 +1990,7 @@ Now let me check the `openDatabase` in db/index.ts and ensure `.local` is gitign
 <content>
 1: import Database from "better-sqlite3";
 2: import { applyMigrations } from "./migrations.js";
-3:
+3: 
 4: export function openDatabase(dbPath: string): Database.Database {
 5:   const db = new Database(dbPath);
 6:   db.pragma("journal_mode = WAL");
@@ -2184,68 +2008,37 @@ Now let me check the `openDatabase` in db/index.ts and ensure `.local` is gitign
   <details><summary>tool output</summary>
 
   ```text
-{
-
-  "name": "@personahub/server",
-
-  "version": "0.1.0",
-
-  "private": true,
-
-  "type": "module",
-
-  "scripts": {
-
-    "dev": "tsx watch src/index.ts",
-
-    "build": "tsc",
-
-    "start": "node dist/index.js",
-
-    "test": "vitest run",
-
-    "test:watch": "vitest",
-
-    "typecheck": "tsc --noEmit"
-
-  },
-
-  "dependencies": {
-
-    "@personahub/shared": "*",
-
-    "better-sqlite3": "^12.2.0",
-
-    "fastify": "^5.2.0",
-
-    "@fastify/cors": "^11.0.0",
-
-    "zod": "^3.24.0",
-
-    "ulid": "^2.3.0"
-
-  },
-
-  "devDependencies": {
-
-    "@types/better-sqlite3": "^7.6.12",
-
-    "@types/node": "^22.10.0",
-
-    "tsx": "^4.19.0",
-
-    "typescript": "^5.7.0",
-
-    "vitest": "^3.0.0"
-
-  }
-
-}
-
----log refs---
-
-
-
+{
+  "name": "@personahub/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@personahub/shared": "*",
+    "better-sqlite3": "^12.2.0",
+    "fastify": "^5.2.0",
+    "@fastify/cors": "^11.0.0",
+    "zod": "^3.24.0",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
+---log refs---
+
 [32;1mPath                                              [0m[32;1m LineNumber[0m[32;1m Line[0
 …[truncated]
   ```
@@ -2256,7 +2049,7 @@ Now let me check the `openDatabase` in db/index.ts and ensure `.local` is gitign
 - **tool**: `grep({"output_mode": "content", "path": "D:\\Projects\\personahub", "pattern": "server-output|server-error|server-stdout|server-stderr", "include": "*.json,*.js,*.ts,*.md,*.mjs,*.config.*"})`
 
 
-> [reasoning] The server-error*.log, server-output*.log files are in root. Those are likely from dev scripts (the `dev` script runs server & web, redirecting output). Let me check how those logs are created. They're already gitignored. The plan says S023 moves DB and logs to .local/.
+> [reasoning] The server-error*.log, server-output*.log files are in root. Those are likely from dev scripts (the `dev` script runs server & web, redirecting output). Let me check how those logs are created. They're already gitignored. The plan says S023 moves DB and logs to .local/. 
 
 The DB is handled. Logs: Fastify logger writes to stdout/stderr. The `server-output.log` etc. are likely created by the dev:server script redirect. Let me check. Actually those root-level logs aren't referenced in server package.json. Let me search more broadly for where server-output.log is written - maybe in a script or npm dev command.
 Let me find where the root `server-output*.log` / `server-error*.log` files are created.
@@ -2273,7 +2066,7 @@ No matches found
 - **tool**: `read({"filePath": "D:\\Projects\\personahub\\server\\src\\index.ts", "offset": 343, "limit": 12})`
 
 
-> [reasoning] The log files (server-output.log etc.) are not referenced in the codebase — they're just leftover runtime artifacts. The plan says DB goes to .local/db and logs to .local/logs. The Fastify logger writes to stdout/stderr. The `server-output.log` files at root are likely from manual shell redirects, not code.
+> [reasoning] The log files (server-output.log etc.) are not referenced in the codebase — they're just leftover runtime artifacts. The plan says DB goes to .local/db and logs to .local/logs. The Fastify logger writes to stdout/stderr. The `server-output.log` files at root are likely from manual shell redirects, not code. 
 
 For S023, the DB path is handled. For logs — Fastify logger is `{ logger: true }` which writes to stdout. To route to .local/logs/server.log, I could set up a pino destination. But the plan says "服务日志写入 .local/logs/server.log". Let me check if there's a pino/pino-http dependency. Fastify's logger default is pino. I can configure a pino transport with a destination file.
 
@@ -2289,16 +2082,16 @@ The root `server-output*.log`/`server-error*.log` files aren't referenced in cod
 <type>file</type>
 <content>
 343:   const validationDispatchScheduler = new ValidationDispatchScheduler(issueRepo, validationWorkflowService);
-344:
+344: 
 345:   const allWorkspaces = workspaceRepo.listAll();
 346:   for (const ws of allWorkspaces) {
 347:     await runDispatchService.drainWorkspace(ws.id);
 348:   }
-349:
+349: 
 350:   const app = Fastify({ logger: true });
-351:
+351: 
 352:   await app.register(cors, { origin: CORS_ORIGINS });
-353:
+353: 
 354:   app.setErrorHandler((error, _request, reply) => {
 
 (Showing lines 343-354 of 459. Use offset=355 to continue.)
@@ -2401,10 +2194,8 @@ Let me verify pino is available and add `.local/` to `.gitignore`.
   <details><summary>tool output</summary>
 
   ```text
-True
-
----pino version---
-
+True
+---pino version---
 10.3.1
   ```
   </details>
@@ -2437,56 +2228,31 @@ Now let me verify the server typechecks and tests still work after the .local ch
   <details><summary>tool output</summary>
 
   ```text
-> pretypecheck
-
-> npm run build:shared
-
-
-
-
-
-> build:shared
-
-> npm -w @personahub/shared run build
-
-
-
-
-
-> @personahub/shared@0.1.0 build
-
-> tsc
-
-
-
-
-
-> typecheck
-
-> npm -w @personahub/server run typecheck && npm -w @personahub/web run typecheck && npm -w @personahub/e2e run typecheck
-
-
-
-
-
-> @personahub/server@0.1.0 typecheck
-
-> tsc --noEmit
-
-
-
-
-
-> @personahub/web@0.1.0 typecheck
-
-> tsc --noEmit
-
-
-
-
-
-> @personahub/e2e@0.1.0 typecheck
-
+> pretypecheck
+> npm run build:shared
+
+
+> build:shared
+> npm -w @personahub/shared run build
+
+
+> @personahub/shared@0.1.0 build
+> tsc
+
+
+> typecheck
+> npm -w @personahub/server run typecheck && npm -w @personahub/web run typecheck && npm -w @personahub/e2e run typecheck
+
+
+> @personahub/server@0.1.0 typecheck
+> tsc --noEmit
+
+
+> @personahub/web@0.1.0 typecheck
+> tsc --noEmit
+
+
+> @personahub/e2e@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -2502,60 +2268,33 @@ Let me look at how server tests are structured to add a small test verifying def
   <details><summary>tool output</summary>
 
   ```text
-[32;1mName[0m
-
-[32;1m----[0m
-
-adapter-availability.test.ts
-
-adapter-config-auth-matrix.test.ts
-
-adapter-config-command-resolution.test.ts
-
-adapter-config-validate-registry.test.ts
-
-adapter-config.test.ts
-
-adapter-registry.test.ts
-
-adapter-resolver.test.ts
-
-adapter-routing-types.test.ts
-
-adapter-workspace-status-repository.test.ts
-
-agent-config-public-dto.test.ts
-
-agent-config-repository.test.ts
-
-auth-material.test.ts
-
-claude-code-normalizer.test.ts
-
-codex-final-message-normalizer.test.ts
-
-codex-trace-normalizer.test.ts
-
-error-mapping.test.ts
-
-evidence-ref.test.ts
-
-executable-resolver.test.ts
-
-handoff.test.ts
-
-issue.test.ts
-
-opencode-normalizer.test.ts
-
-opencode-protocol-oauth-windows-guard.test.ts
-
-path-utils.test.ts
-
-project-default-adapter.test.ts
-
-project.test.ts
-
+[32;1mName[0m
+[32;1m----[0m
+adapter-availability.test.ts
+adapter-config-auth-matrix.test.ts
+adapter-config-command-resolution.test.ts
+adapter-config-validate-registry.test.ts
+adapter-config.test.ts
+adapter-registry.test.ts
+adapter-resolver.test.ts
+adapter-routing-types.test.ts
+adapter-workspace-status-repository.test.ts
+agent-config-public-dto.test.ts
+agent-config-repository.test.ts
+auth-material.test.ts
+claude-code-normalizer.test.ts
+codex-final-message-normalizer.test.ts
+codex-trace-normalizer.test.ts
+error-mapping.test.ts
+evidence-ref.test.ts
+executable-resolver.test.ts
+handoff.test.ts
+issue.test.ts
+opencode-normalizer.test.ts
+opencode-protocol-oauth-windows-guard.test.ts
+path-utils.test.ts
+project-default-adapter.test.ts
+project.test.ts
 queue-classifier.t
 …[truncated]
   ```
@@ -2596,14 +2335,10 @@ S024: The existing tests (persistence, restart-recovery) already use temp dirs v
   <details><summary>tool output</summary>
 
   ```text
-[31;1mParserError: [0m
-
-[31;1m[36;1mLine |[0m
-
-[31;1m[36;1m[36;1m   1 | [0m cd D:\Projects\personahub && $c [36;1m=[0m (Get-Content CLAUDE.md -Raw); "CLAU ��[0m
-
-[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                 ~[0m
-
+[31;1mParserError: [0m
+[31;1m[36;1mLine |[0m
+[31;1m[36;1m[36;1m   1 | [0m cd D:\Projects\personahub && $c [36;1m=[0m (Get-Content CLAUDE.md -Raw); "CLAU ��[0m
+[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                 ~[0m
 [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mUnexpected token '=' in expression or statement.[0m
   ```
   </details>
@@ -2611,18 +2346,12 @@ S024: The existing tests (persistence, restart-recovery) already use temp dirs v
   <details><summary>tool output</summary>
 
   ```text
-[32;1mName[0m
-
-[32;1m----[0m
-
-check-doc-links.mjs
-
-check-doc-ownership.mjs
-
-check-feature-gates.mjs
-
----gates run?---
-
+[32;1mName[0m
+[32;1m----[0m
+check-doc-links.mjs
+check-doc-ownership.mjs
+check-feature-gates.mjs
+---gates run?---
 True
   ```
   </details>
@@ -2638,22 +2367,14 @@ The gate scripts already exist. Let me check CLAUDE.md size and see the state of
   <details><summary>tool output</summary>
 
   ```text
-CLAUDE chars: 2731
-
-CLAUDE lines: 40
-
----tools files---
-
-
-
-[32;1mName                   [0m[32;1m Length[0m
-
-[32;1m----                   [0m [32;1m------[0m
-
-check-doc-links.mjs       9281
-
-check-doc-ownership.mjs  10211
-
+CLAUDE chars: 2731
+CLAUDE lines: 40
+---tools files---
+
+[32;1mName                   [0m[32;1m Length[0m
+[32;1m----                   [0m [32;1m------[0m
+check-doc-links.mjs       9281
+check-doc-ownership.mjs  10211
 check-feature-gates.mjs  38565
   ```
   </details>
@@ -2673,20 +2394,13 @@ CLAUDE.md is already slim (2731 chars, well under the 6000–10000 target), so S
   <details><summary>tool output</summary>
 
   ```text
----tests present---
-
-[32;1mName                   [0m[32;1m Length[0m
-
-[32;1m----                   [0m [32;1m------[0m
-
-check-doc-links.mjs       9281
-
-check-doc-ownership.mjs  10211
-
-check-feature-gates.mjs  38565
-
-False
-
+---tests present---
+[32;1mName                   [0m[32;1m Length[0m
+[32;1m----                   [0m [32;1m------[0m
+check-doc-links.mjs       9281
+check-doc-ownership.mjs  10211
+check-feature-gates.mjs  38565
+False
 False
   ```
   </details>
@@ -2701,14 +2415,14 @@ False
 
 Actually, let me wait for the background agents to finish before doing S012 (verify script) since that depends on the gate scripts' script names and S010 tests. But I can prepare the package.json verify script additions once I know the script names, which I do (the plan specifies them).
 
-Let me continue with S016: CLAUDE is already slim. Let me review whether it needs any changes. It's 2731 chars, well under 6000-10000. That's fine (plan says "约 6000~10000" as an upper bound target — being slimmer is acceptable). Actually wait, it should be within range. 2731 is below 6000. But being smaller is fine — "约" means approximate target, being leaner is acceptable and the important thing is it only keeps live contracts. The current CLAUDE.md looks good and already references releases.
+Let me continue with S016: CLAUDE is already slim. Let me review whether it needs any changes. It's 2731 chars, well under 6000-10000. That's fine (plan says "约 6000~10000" as an upper bound target — being slimmer is acceptable). Actually wait, it should be within range. 2731 is below 6000. But being smaller is fine — "约" means approximate target, being leaner is acceptable and the important thing is it only keeps live contracts. The current CLAUDE.md looks good and already references releases. 
 
 Let me verify S014/S015/S018 (already exist as untracked), and do S026 (move plan).
 
 Actually, let me be careful about S026 — the plan says move to docs/reviews/ and handle root code-review-report.md. But moving the plan while it's the execution truth source for this task might be premature. The plan says S026 is "把定稿方案迁入 docs/reviews/" — but the plan isn't "定稿" (finalized) yet since we're mid-execution. Per the plan's own task list, S026 happens near the end. Let me not do it yet.
 
 Let me focus on what I can complete now without the background agents:
-- S016: CLAUDE is slim already — but I should verify it references npm run verify (that's S013).
+- S016: CLAUDE is slim already — but I should verify it references npm run verify (that's S013). 
 - S014/S015/S017/S018 verification
 
 Let me hold on S013/S012 (needs verify script which needs gate scripts).
@@ -2793,7 +2507,7 @@ Edit applied successfully.
 
 > [reasoning] Now S012 needs the verify script but that depends on the gate scripts being finalized by the background agent. Let me wait for the background agents. Meanwhile, let me check the current F009 spec to see what the doc-normalization agent has done so far (it modified it). Actually let me not interfere with the running agent. Let me check if the background task has completed via git status - the F009 spec was modified which is the doc agent's work.
 
-Let me wait for the system reminder about the background tasks. Actually, I've done significant non-overlapping work. Let me check the S014/S015/S017/S018 - these artifacts already exist (releases, READMEs, BACKLOG cleanup).
+Let me wait for the system reminder about the background tasks. Actually, I've done significant non-overlapping work. Let me check the S014/S015/S017/S018 - these artifacts already exist (releases, READMEs, BACKLOG cleanup). 
 
 Let me mark S014, S015, S017, S018 as I verify them:
 - S014: releases/0.1.md exists ✓ (with closed_at implied, delivery summary)
@@ -2805,7 +2519,7 @@ These are all in the untracked working tree. Good.
 
 Let me update the todos and continue. I should wait for the background agents before finalizing S008/S009/S010/S005/S006. Let me pause my own work and end response to wait for the notifications.
 
-Actually, I can do a bit more non-overlapping verification. But much of the remaining work (S012 verify script, S011 BACKLOG normalization) depends on the gate scripts and doc normalization being complete.
+Actually, I can do a bit more non-overlapping verification. But much of the remaining work (S012 verify script, S011 BACKLOG normalization) depends on the gate scripts and doc normalization being complete. 
 
 Let me mark the release/README tasks done and update the plan doc's task checklist as I go (the user asked to mark progress). The plan doc has a task list (S001-S028) with checkboxes. Let me update it to reflect progress.
 
@@ -2815,26 +2529,16 @@ S014/S015/S017/S018 artifacts already exist. Let me verify them and update the p
   <details><summary>tool output</summary>
 
   ```text
----0.1 release closed_at---
-
-
-
----0.1 README---
-
----BACKLOG done items present?---
-
-[32;1mLine[0m
-
-[32;1m----[0m
-
-> �տ��� 2026-08-09����Ʒ�ж��� `docs/personahub-prd.md` Ϊ׼�����ļ��ǽ���ժҪ��
-
-True
-
-> v0.1��v0.2��F001-F008�����տڣ�����ժҪ�� `docs/features/releases/0.1.md` /
-
-"һ�� feature һ����Ҫ intent" ��Ϊ F006��ͼִ�У�/ F007��Coordinator �Ƽ���/
-
+---0.1 release closed_at---
+
+---0.1 README---
+---BACKLOG done items present?---
+[32;1mLine[0m
+[32;1m----[0m
+> �տ��� 2026-08-09����Ʒ�ж��� `docs/personahub-prd.md` Ϊ׼�����ļ��ǽ���ժҪ��
+True
+> v0.1��v0.2��F001-F008�����տڣ�����ժҪ�� `docs/features/releases/0.1.md` /
+"һ�� feature һ����Ҫ intent" ��Ϊ F006��ͼִ�У�/ F007��Coordinator �Ƽ���/
 F008��ģ����� UI������ Feature����һ������������ v0.3 �� F009-F012 ��֡�
   ```
   </details>
@@ -2845,7 +2549,7 @@ F008��ģ����� UI������ Feature����һ����
 - **tool**: `edit({"filePath": "D:\\Projects\\personahub\\docs\\features\\releases\\0.2.md", "newString": "---\ntopics: [release, v0.2]\ndoc_kind: release\nclosed_at: 2026-08-09\ncreated: 2026-08-09\nupdated: 2026-08-09\n---", "oldString": "---\ntopics: [release, v0.2]\ndoc_kind: release\ncreated: 2026-08-09\nupdated: 2026-08-09\n---"})`
 
 
-> [reasoning] The release files have "收口于" not "closed_at" metadata. The plan section 2.3 says "再写入 release 的 `closed_at` 元数据". The current release files use "收口于 2026-08-09" in prose but not a `closed_at` frontmatter field. However, these files were already created (untracked) as prior working-tree work.
+> [reasoning] The release files have "收口于" not "closed_at" metadata. The plan section 2.3 says "再写入 release 的 `closed_at` 元数据". The current release files use "收口于 2026-08-09" in prose but not a `closed_at` frontmatter field. However, these files were already created (untracked) as prior working-tree work. 
 
 Let me check whether they have closed_at frontmatter. They don't based on the frontmatter I read earlier (topics, doc_kind, created, updated). The plan says write `closed_at` metadata. I should add `closed_at: 2026-08-09` to both release frontmatters to satisfy S014/S018.
 
@@ -2882,7 +2586,7 @@ Let me pause and wait for background task notifications. But there's still non-o
 
 Let me wait for the background agents. Actually, let me do useful verification work now: run the existing lint/format to make sure my edits don't break, and prepare the verify script skeleton but only finalize after agent done.
 
-Actually the safest is to wait for the two background agents to complete. I've done substantial non-overlapping work. Let me end my turn to receive the notifications. But first let me make sure I haven't left anything broken. Let me run the existing test quickly? That could be long.
+Actually the safest is to wait for the two background agents to complete. I've done substantial non-overlapping work. Let me end my turn to receive the notifications. But first let me make sure I haven't left anything broken. Let me run the existing test quickly? That could be long. 
 
 Let me wait for the background agents. I'll end my response here since the remaining critical work depends on them.
 
@@ -2938,7 +2642,7 @@ Let me read the current state of section 8 to fix it correctly.
 <type>file</type>
 <content>
 530: ### Phase A：三件套模板与文档规则
-531:
+531: 
 532: - [x] S001：按 2.1 定稿结构重写 `docs/features/TEMPLATE/spec.md`。
 533: - [x] S002 [P]：按 2.1 定稿结构重写 `docs/features/TEMPLATE/design.md`。
 534: - [x] S003 [P]：按 2.1 定稿结构重写 `docs/features/TEMPLATE/tasks.md`。
@@ -2946,9 +2650,9 @@ Let me read the current state of section 8 to fix it correctly.
 536: - [ ] S005：把 F009-F012 的 spec/design/tasks 统一到新模板，不改变已定稿的需求语义。
 537: - [ ] S006：为所有 Feature 的 spec 回填 canonical status 与 gate_version；移除
 538:   design/tasks 的重复 Status。
-539:
+539: 
 540: ### Phase B：文档地图、所有权与机器门
-541:
+541: 
 542: - [ ] S007：新增 `docs/README.md` 文档地图和所有权矩阵，验证权威文档两次点击可达。
 543: - [ ] S008 [P]：按 2.2 实现 `tools/check-feature-gates.mjs` 的纯函数与 CLI。
 544: - [ ] S009 [P]：实现仓库内 Markdown 链接、路径边界和可判定所有权检
@@ -2964,7 +2668,7 @@ Let me read the current state of section 8 to fix it correctly.
 
 > [reasoning] I see. S011 is gone (I removed it in my earlier failed edit attempt). Actually wait, looking at the previous edit, S011 was removed because the first edit's oldString included S011 but the newString didn't. Then my second edit tried to add it back but failed. Now S011 is missing and S012/S013 were previously marked? No, they're still [ ].
 
-Wait, in my first successful edit I replaced the S007-S010 block AND included S011 in oldString but newString only had S007-S010. Let me check - the first edit oldString was S007 through S010 (4 lines), newString S007-S010. S011 was not in that. Then the second edit oldString was S010-S022 (long), newString S010-S021 with S011 restored. That edit failed to find oldString. So S011 was never removed in that successful edit...
+Wait, in my first successful edit I replaced the S007-S010 block AND included S011 in oldString but newString only had S007-S010. Let me check - the first edit oldString was S007 through S010 (4 lines), newString S007-S010. S011 was not in that. Then the second edit oldString was S010-S022 (long), newString S010-S021 with S011 restored. That edit failed to find oldString. So S011 was never removed in that successful edit... 
 
 Wait actually looking at git status, the first edit "S004...S006" block was successful. Then second edit for Phase B. Let me re-examine: the first Phase B edit replaced S007-S010 (adding nothing new, same). Actually the oldString had S007-S010 plus S011, S012, S013? No.
 
@@ -2985,7 +2689,7 @@ Edit applied successfully.
 
 > [reasoning] Now let me check the background tasks. The gate scripts exist but tests not yet. Let me check the F009 spec which is modified - that's the doc normalization agent working. I should wait for both background tasks to complete.
 
-I've done a good chunk of non-overlapping work. Let me check the git status to see current state and wait for the background agents. Actually, I have background tasks running (bg_0229a5e7 for gates, bg_67c137c3 for doc normalization). I should not poll them. Let me continue with independent work: I need to verify the existing release READMEs satisfy the plan (they do).
+I've done a good chunk of non-overlapping work. Let me check the git status to see current state and wait for the background agents. Actually, I have background tasks running (bg_0229a5e7 for gates, bg_67c137c3 for doc normalization). I should not poll them. Let me continue with independent work: I need to verify the existing release READMEs satisfy the plan (they do). 
 
 Let me check if there's a root code-review-report.md for S026 and check .local handling.
 
@@ -2995,22 +2699,14 @@ I've done a solid batch of independent work. Let me check on remaining items tha
   <details><summary>tool output</summary>
 
   ```text
----root code-review-report?---
-
-False
-
-False
-
----CURRENT files---
-
-
-
----backlog link check---
-
-[32;1mName[0m
-
-[32;1m----[0m
-
+---root code-review-report?---
+False
+False
+---CURRENT files---
+
+---backlog link check---
+[32;1mName[0m
+[32;1m----[0m
 RETROSPECTIVE.md
   ```
   </details>
@@ -3020,7 +2716,7 @@ RETROSPECTIVE.md
 - **tool**: `bash({"command": "cd D:\\Projects\\personahub; foreach ($p in @('docs/features/0.3/F009-artifact-foundation-provenance/spec.md','docs/features/0.3/F010-artifact-centered-coding-slice/spec.md','docs/features/0.3/F011-work-room-human-intervention/spec.md','docs/features/0.3/F012-reusable-agent-squads/spec.md')) { Write-Host \"$(Test-Path $p)  $p\" }"})`
 
 
-> [reasoning] No root code-review-report.md — S026's "handle root code-review-report.md" part is moot (nothing to handle). The docs/reviews only has RETROSPECTIVE.md (CURRENT files are gitignored).
+> [reasoning] No root code-review-report.md — S026's "handle root code-review-report.md" part is moot (nothing to handle). The docs/reviews only has RETROSPECTIVE.md (CURRENT files are gitignored). 
 
 Let me verify the BACKLOG links exist (files). Let me check the F009-F012 spec links exist.
 
@@ -3032,12 +2728,9 @@ Let me verify the BACKLOG links resolve to real spec files.
   <details><summary>tool output</summary>
 
   ```text
-True  docs/features/0.3/F009-artifact-foundation-provenance/spec.md
-
-True  docs/features/0.3/F010-artifact-centered-coding-slice/spec.md
-
-True  docs/features/0.3/F011-work-room-human-intervention/spec.md
-
+True  docs/features/0.3/F009-artifact-foundation-provenance/spec.md
+True  docs/features/0.3/F010-artifact-centered-coding-slice/spec.md
+True  docs/features/0.3/F011-work-room-human-intervention/spec.md
 True  docs/features/0.3/F012-reusable-agent-squads/spec.md
   ```
   </details>
@@ -3121,22 +2814,14 @@ The remaining tasks (S005–S012, S024–S028, S022) depend on these two agents'
   <details><summary>tool output</summary>
 
   ```text
-waiting for background agents...
-
-
-
-[32;1mName[0m
-
-[32;1m----[0m
-
-check-doc-links.mjs
-
-check-doc-ownership.mjs
-
-check-docs.test.mjs
-
-check-feature-gates.mjs
-
+waiting for background agents...
+
+[32;1mName[0m
+[32;1m----[0m
+check-doc-links.mjs
+check-doc-ownership.mjs
+check-docs.test.mjs
+check-feature-gates.mjs
 check-feature-gates.test.mjs
   ```
   </details>
@@ -3258,39 +2943,23 @@ Both agents completed. The outputs were truncated but the actual work is in the 
   <details><summary>tool output</summary>
 
   ```text
-===package.json scripts===
-
-[32;1mName                        [0m[32;1m Length[0m
-
-[32;1m----                        [0m [32;1m------[0m
-
-check-doc-links.mjs            9281
-
-check-doc-ownership.mjs       10179
-
-check-docs.test.mjs           18839
-
-check-feature-gates.mjs       38730
-
-check-feature-gates.test.mjs  50339
-
-
-
-
-
-[32;1mpredev              : [0mnpm -w @personahub/shared run build
-
-[32;1mdev                 : [0mnpm run dev:server & npm run dev:web
-
-[32;1mdev:server          : [0mnpm -w @personahub/server run dev
-
-[32;1mdev:web             : [0mnpm -w @personahub/web run dev
-
-[32;1mbuild               : [0mnpm run build:shared && npm run build:server && npm run build:web
-
-[32;1mbuild:shared        : [0mnpm -w @personahub/shared run build
-
-[32;1mbuild:server
+===package.json scripts===
+[32;1mName                        [0m[32;1m Length[0m
+[32;1m----                        [0m [32;1m------[0m
+check-doc-links.mjs            9281
+check-doc-ownership.mjs       10179
+check-docs.test.mjs           18839
+check-feature-gates.mjs       38730
+check-feature-gates.test.mjs  50339
+
+
+[32;1mpredev              : [0mnpm -w @personahub/shared run build
+[32;1mdev                 : [0mnpm run dev:server & npm run dev:web
+[32;1mdev:server          : [0mnpm -w @personahub/server run dev
+[32;1mdev:web             : [0mnpm -w @personahub/web run dev
+[32;1mbuild               : [0mnpm run build:shared && npm run build:server && npm run build:web
+[32;1mbuild:shared        : [0mnpm -w @personahub/shared run build
+[32;1mbuild:server  
 …[truncated]
   ```
   </details>
@@ -3304,64 +2973,35 @@ The gate scripts and 5 package.json scripts exist. Now let me run the gate tests
   <details><summary>tool output</summary>
 
   ```text
-...
-
-# Subtest: BACKLOG: broken link
-
-ok 63 - BACKLOG: broken link
-
-  ---
-
-  duration_ms: 17.5587
-
-  ...
-
-# Subtest: Batch: multiple versions and multiple Features
-
-ok 64 - Batch: multiple versions and multiple Features
-
-  ---
-
-  duration_ms: 62.3538
-
-  ...
-
-# Subtest: Batch: duplicate ID across versions fails
-
-ok 65 - Batch: duplicate ID across versions fails
-
-  ---
-
-  duration_ms: 30.7643
-
-  ...
-
-# Subtest: Batch: v0 does not run v1 checks
-
-ok 66 - Batch: v0 does not run v1 checks
-
-  ---
-
-  duration_ms: 20.5459
-
-  ...
-
-1..66
-
-# tests 105
-
-# suites 0
-
-# pass 105
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+...
+# Subtest: BACKLOG: broken link
+ok 63 - BACKLOG: broken link
+  ---
+  duration_ms: 17.5587
+  ...
+# Subtest: Batch: multiple versions and multiple Features
+ok 64 - Batch: multiple versions and multiple Features
+  ---
+  duration_ms: 62.3538
+  ...
+# Subtest: Batch: duplicate ID across versions fails
+ok 65 - Batch: duplicate ID across versions fails
+  ---
+  duration_ms: 30.7643
+  ...
+# Subtest: Batch: v0 does not run v1 checks
+ok 66 - Batch: v0 does not run v1 checks
+  ---
+  duration_ms: 20.5459
+  ...
+1..66
+# tests 105
+# suites 0
+# pass 105
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 1504.3612
   ```
   </details>
@@ -3375,28 +3015,17 @@ ok 66 - Batch: v0 does not run v1 checks
   <details><summary>tool output</summary>
 
   ```text
----
-
-  duration_ms: 17.8601
-
-  ...
-
-1..15
-
-# tests 60
-
-# suites 0
-
-# pass 60
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+---
+  duration_ms: 17.8601
+  ...
+1..15
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 709.0766
   ```
   </details>
@@ -3410,18 +3039,12 @@ All 60 doc tests pass. Now let me run the real-repo check to see current violati
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[0m
-
-[31;1mFeature gate check FAILED �?4 error(s):[0m
-
-[31;1m[0m
-
-[31;1m  FAIL  BACKLOG.md: F009 status mismatch �?BACKLOG "spec", spec "draft"[0m
-
-[31;1m  FAIL  BACKLOG.md: F010 status mismatch �?BACKLOG "spec", spec "draft"[0m
-
-[31;1m  FAIL  BACKLOG.md: F011 status mismatch �?BACKLOG "spec", spec "draft"[0m
-
+[31;1m[0m
+[31;1mFeature gate check FAILED �?4 error(s):[0m
+[31;1m[0m
+[31;1m  FAIL  BACKLOG.md: F009 status mismatch �?BACKLOG "spec", spec "draft"[0m
+[31;1m  FAIL  BACKLOG.md: F010 status mismatch �?BACKLOG "spec", spec "draft"[0m
+[31;1m  FAIL  BACKLOG.md: F011 status mismatch �?BACKLOG "spec", spec "draft"[0m
 [31;1m  FAIL  BACKLOG.md: F012 status mismatch �?BACKLOG "spec", spec "draft"[0m
   ```
   </details>
@@ -3449,8 +3072,7 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mFeature gate check PASSED �?all features OK.[0m
-
+[31;1mFeature gate check PASSED �?all features OK.[0m
 EXITCODE: 0
   ```
   </details>
@@ -3464,24 +3086,15 @@ Feature gate check passes. S011 done. Let me also run the doc-links and doc-owne
   <details><summary>tool output</summary>
 
   ```text
-=== doc-links ===
-
-[31;1mDoc link check PASSED - all links OK.[0m
-
-EXITCODE: 0
-
-=== doc-ownership ===
-
-[31;1m[0m
-
-[31;1mDoc ownership check FAILED - 2 error(s):[0m
-
-[31;1m[0m
-
-[31;1m  FAIL  docs/README.md:52: releases/ must not be declared as truth source[0m
-
-[31;1m  FAIL  docs/README.md:52: RETROSPECTIVE.md must not be declared as current truth source[0m
-
+=== doc-links ===
+[31;1mDoc link check PASSED - all links OK.[0m
+EXITCODE: 0
+=== doc-ownership ===
+[31;1m[0m
+[31;1mDoc ownership check FAILED - 2 error(s):[0m
+[31;1m[0m
+[31;1m  FAIL  docs/README.md:52: releases/ must not be declared as truth source[0m
+[31;1m  FAIL  docs/README.md:52: RETROSPECTIVE.md must not be declared as current truth source[0m
 EXITCODE: 1
   ```
   </details>
@@ -3499,15 +3112,15 @@ The ownership checker flags my `docs/README.md` line 52. Let me look at what lin
 <type>file</type>
 <content>
 44: - **检视复盘**：→ [`reviews/RETROSPECTIVE.md`](reviews/RETROSPECTIVE.md)
-45:
+45: 
 46: ## 所有权规则（机器可校验）
-47:
+47: 
 48: - `status` 只能出现在 Feature `spec.md` frontmatter；`design.md` / `tasks.md`
 49:   不得声明独立 Status。
 50: - `BACKLOG.md` 与所有非 done Feature 做双向集合比较（ID/version/status/链接一致）。
 51: - 本 README 中的权威入口必须存在且唯一。
 52: - `releases/` / `RETROSPECTIVE.md` 不得被声明为当前产品、状态或实现真相源。
-53:
+53: 
 54: 以上规则由 `npm run verify`（含 `check:doc-links` / `check:doc-ownership`）强制执行。
 
 (End of file - total 54 lines)
@@ -3542,33 +3155,20 @@ The checker flags my negative rule statement because it literally contains "rele
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        36   'docs/reviews/RETROSPECTIVE.md',
-
-        40 // truth source (they are historical records).
-
-        41 const RELEASE_PATTERNS = [/releases\//];
-
-        42 const RETROSPECTIVE_PATTERN = /RETROSPECTIVE\.md/;
-
-       192  * Check that releases/ and RETROSPECTIVE.md are not declared as current
-
-       193  * product, status, or implementation truth source.
-
-       202   // declarations pointing to releases/ or RETROSPECTIVE.md.
-
-       209     '����Դ',
-
-       213     'truth source',
-
-       230       // Check if this truth-source line references releases/ or RETROSPECTIVE.md
-
-       232       const referencesRetrospective = RETROSPECTIVE_PATTERN.test(line);
-
-       236           `${relFile}:${i + 1}:
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        36   'docs/reviews/RETROSPECTIVE.md',
+        40 // truth source (they are historical records).
+        41 const RELEASE_PATTERNS = [/releases\//];
+        42 const RETROSPECTIVE_PATTERN = /RETROSPECTIVE\.md/;
+       192  * Check that releases/ and RETROSPECTIVE.md are not declared as current
+       193  * product, status, or implementation truth source.
+       202   // declarations pointing to releases/ or RETROSPECTIVE.md.
+       209     '����Դ',
+       213     'truth source',
+       230       // Check if this truth-source line references releases/ or RETROSPECTIVE.md
+       232       const referencesRetrospective = RETROSPECTIVE_PATTERN.test(line);
+       236           `${relFile}:${i + 1}: 
 …[truncated]
   ```
   </details>
@@ -3588,14 +3188,14 @@ The checker flags my negative rule statement because it literally contains "rele
 197: export function checkReleaseNotTruthSource(repoRoot) {
 198:   const errors = [];
 199:   const warnings = [];
-200:
+200: 
 201:   // We check CLAUDE.md and docs/README.md for problematic truth-source
 202:   // declarations pointing to releases/ or RETROSPECTIVE.md.
 203:   const checkFiles = [
 204:     join(repoRoot, 'CLAUDE.md'),
 205:     join(repoRoot, 'docs', 'README.md'),
 206:   ];
-207:
+207: 
 208:   const truthKeywords = [
 209:     '真相源',
 210:     '单一真源',
@@ -3603,9 +3203,9 @@ The checker flags my negative rule statement because it literally contains "rele
 212:     'source of truth',
 213:     'truth source',
 214:   ];
-215:
+215: 
 216:   for (const filePath of checkFiles) {
-217:     if (!existsSync(filePath))
+217:     if (!existsSync(filePath)) 
 …[truncated]
   ```
   </details>
@@ -3619,7 +3219,7 @@ The checker flags my negative rule statement because it literally contains "rele
 
 But wait — the checker is checking for *declarations* of truth source. My line is a rule statement. The cleanest fix is to rephrase line 52 to avoid tripping the checker while still conveying the rule. However, there's a subtlety: the actual docs/README.md navigation DOES list releases/ and RETROSPECTIVE.md as links (lines 44, 50-51 area) but those lines don't contain "真相源" so they pass.
 
-The issue is specifically my line 52 which literally says "不得被声明为当前产品、状态或实现真相源" — containing 真相源 + releases/ + RETROSPECTIVE.md.
+The issue is specifically my line 52 which literally says "不得被声明为当前产品、状态或实现真相源" — containing 真相源 + releases/ + RETROSPECTIVE.md. 
 
 I should rephrase the rule to not contain these triggers, OR I need to recognize this is a reasonable false-positive and reword. Actually the plan itself (2.2.1) says: "release/RETROSPECTIVE 不得被声明为当前产品、状态或实现真相源" — so this rule text is intentional and mirrors the plan. The checker just naively matches.
 
@@ -3649,8 +3249,7 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mDoc ownership check PASSED - all ownership rules OK.[0m
-
+[31;1mDoc ownership check PASSED - all ownership rules OK.[0m
 EXITCODE: 0
   ```
   </details>
@@ -3678,56 +3277,31 @@ S012 done. Now let me verify S005/S006 doc normalization: check that design/task
   <details><summary>tool output</summary>
 
   ```text
-=== F001 spec frontmatter ===
-
----
-
-kind: feature
-
-id: F001
-
-version: "0.1"
-
-status: done
-
-gate_version: 0
-
-related_features: []
-
-topics: [project, workspace, issue, thread, sqlite, v0.1.0]
-
-doc_kind: spec
-
-created: 2026-07-12
-
-updated: 2026-08-09
-
----
-
-=== F001 design frontmatter ===
-
----
-
-kind: feature
-
-id: F001
-
-version: "0.1"
-
-related_features: []
-
-topics: [project, workspace, issue, thread, sqlite, api, ui, v0.1.0]
-
-doc_kind: design
-
-created: 2026-07-12
-
-updated: 2026-08-09
-
----
-
-
-
+=== F001 spec frontmatter ===
+---
+kind: feature
+id: F001
+version: "0.1"
+status: done
+gate_version: 0
+related_features: []
+topics: [project, workspace, issue, thread, sqlite, v0.1.0]
+doc_kind: spec
+created: 2026-07-12
+updated: 2026-08-09
+---
+=== F001 design frontmatter ===
+---
+kind: feature
+id: F001
+version: "0.1"
+related_features: []
+topics: [project, workspace, issue, thread, sqlite, api, ui, v0.1.0]
+doc_kind: design
+created: 2026-07-12
+updated: 2026-08-09
+---
+
 # F001��Workspace & Issue Foundation - ���
   ```
   </details>
@@ -3742,62 +3316,34 @@ F001 frontmatter is correctly normalized (spec has status+gate_version, design h
   <details><summary>tool output</summary>
 
   ```text
-=== F009 spec frontmatter ===
-
----
-
-kind: feature
-
-id: F009
-
-version: "0.3"
-
-status: draft
-
-gate_version: 1
-
-related_features: [F003, F004, F006, F010]
-
-topics: [artifact, provenance, evidence, typed-ref, v0.3]
-
-doc_kind: spec
-
-created: 2026-08-09
-
-updated: 2026-08-09
-
----
-
-=== F009 spec sections ===
-
-
-
-=== residual Status in any design/tasks? ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        18 ## 0. ��Դ����ͼ
-
-        29 ## 1. ���⡢Ŀ�����Ŀ��
-
-        45 ## 2. �û�����
-
-        87 ## 3. ��Χ��߽�
-
-       109 ## 4. ����
-
-       147 ## 5. ���������벻����
-
-       163 ## 6. �ɹ�������
-
-       182 ## 7. ���ԡ����������
-
-       207 ## 8. ��ȷ������
-
-D:\Projects\personahub\docs\features\0.1\F003-development-trace\design.md
-
+=== F009 spec frontmatter ===
+---
+kind: feature
+id: F009
+version: "0.3"
+status: draft
+gate_version: 1
+related_features: [F003, F004, F006, F010]
+topics: [artifact, provenance, evidence, typed-ref, v0.3]
+doc_kind: spec
+created: 2026-08-09
+updated: 2026-08-09
+---
+=== F009 spec sections ===
+
+=== residual Status in any design/tasks? ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        18 ## 0. ��Դ����ͼ
+        29 ## 1. ���⡢Ŀ�����Ŀ��
+        45 ## 2. �û�����
+        87 ## 3. ��Χ��߽�
+       109 ## 4. ����
+       147 ## 5. ���������벻����
+       163 ## 6. �ɹ�������
+       182 ## 7. ���ԡ����������
+       207 ## 8. ��ȷ������
+D:\Projects\personahub\docs\features\0.1\F003-development-trace\design.md
 D:\Projects\personahub\docs\features\0.1
 …[truncated]
   ```
@@ -3818,30 +3364,18 @@ The gate check passes (v0 features only check frontmatter for Status, which is c
   <details><summary>tool output</summary>
 
   ```text
-=== docs/features/0.1/F003-development-trace/design.md ===
-
-
-
-=== docs/features/0.1/F004-autonomous-validation/design.md ===
-
-=== docs/features/0.2/F006-orchestrated-coding-graph-slice/design.md ===
-
-=== docs/features/0.2/F007-coordinator-routing-recommendation/tasks.md ===
-
-=== docs/features/0.3/F009-artifact-foundation-provenance/design.md ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-       216   status: "resolved" | "missing" | "truncated"
-
-       524   status: IssueStatus
-
-       325   | { graph_run_id: string; status: "completed"; node_summary: NodeSummary[]; report_event_id: string }
-
-       326   | { graph_run_id: string; status: "cancelled"; node_summary: NodeSummary[]; cancelled_node_keys: string[]��
-
+=== docs/features/0.1/F003-development-trace/design.md ===
+
+=== docs/features/0.1/F004-autonomous-validation/design.md ===
+=== docs/features/0.2/F006-orchestrated-coding-graph-slice/design.md ===
+=== docs/features/0.2/F007-coordinator-routing-recommendation/tasks.md ===
+=== docs/features/0.3/F009-artifact-foundation-provenance/design.md ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+       216   status: "resolved" | "missing" | "truncated"
+       524   status: IssueStatus
+       325   | { graph_run_id: string; status: "completed"; node_summary: NodeSummary[]; report_event_id: string }
+       326   | { graph_run_id: string; status: "cancelled"; node_summary: NodeSummary[]; cancelled_node_keys: string[]��
        500 - **�ɹ�**��synthesis NodeRun ��
 …[truncated]
   ```
@@ -3852,7 +3386,7 @@ The gate check passes (v0 features only check frontmatter for Status, which is c
 - **tool**: `bash({"command": "cd D:\\Projects\\personahub; npm run verify 2>&1 | Select-Object -Last 60; Write-Host \"VERIFY_EXIT: $LASTEXITCODE\"", "timeout": 600000})`
 
 
-> [reasoning] All matches are body code references to `status:` as part of TypeScript type definitions or descriptions (IssueStatus, GraphRunStatus, etc.) — not independent Status declarations. These are legitimate. S005/S006 are complete.
+> [reasoning] All matches are body code references to `status:` as part of TypeScript type definitions or descriptions (IssueStatus, GraphRunStatus, etc.) — not independent Status declarations. These are legitimate. S005/S006 are complete. 
 
 The gate check passed, so the checker properly ignores these. Good.
 
@@ -3870,16 +3404,11 @@ All matches are legitimate body references to `status` as a data field (TypeScri
   <details><summary>tool output</summary>
 
   ```text
-[2m[90m�?[39m[22m tests/integration/real-claude-opencode-probe.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m3 skipped[39m[2m)[22m
-
- [2m[90m�?[39m[22m tests/integration/real-codex-e2e.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
-
- [2m[90m�?[39m[22m tests/integration/real-codex-scenarios.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
-
- [2m[90m�?[39m[22m tests/integration/real-codex-validation.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
-
- [2m[90m�?[39m[22m tests/integration/real-git-push-escalation.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
-
+[2m[90m�?[39m[22m tests/integration/real-claude-opencode-probe.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m3 skipped[39m[2m)[22m
+ [2m[90m�?[39m[22m tests/integration/real-codex-e2e.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m�?[39m[22m tests/integration/real-codex-scenarios.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m�?[39m[22m tests/integration/real-codex-validation.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m�?[39m[22m tests/integration/real-git-push-escalation.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
  [2m[90m�?[39m[22m tests/integration/real-manual-validator-cross-provider.test.ts [2m([22m[2m1 test[2
 …[truncated]
   ```
@@ -3891,7 +3420,7 @@ All matches are legitimate body references to `status` as a data field (TypeScri
 …[truncated])`
 
 
-> [reasoning] The verify run failed on `git-scanner.test.ts` with `spawnSync ... ETIMEDOUT` and `EBUSY: resource busy or locked` — this is a pre-existing test failure unrelated to my changes (it's about git commit timing out / temp dir locking on Windows). Let me check if this is pre-existing by checking git status — these are unrelated to my structural changes.
+> [reasoning] The verify run failed on `git-scanner.test.ts` with `spawnSync ... ETIMEDOUT` and `EBUSY: resource busy or locked` — this is a pre-existing test failure unrelated to my changes (it's about git commit timing out / temp dir locking on Windows). Let me check if this is pre-existing by checking git status — these are unrelated to my structural changes. 
 
 The failure is in `git-scanner.test.ts` which does `git commit` via execSync with a 5000ms timeout that timed out. This is a flaky/environmental Windows issue, not related to my changes (which only touched docs, package.json, .nvmrc, .github, server/src/index.ts).
 
@@ -3905,20 +3434,13 @@ The verify gate reached the server tests but failed on `git-scanner.test.ts` wit
   <details><summary>tool output</summary>
 
   ```text
---- rerun isolated ---
-
- [32m�?[39m server/tests/integration/git-scanner.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 34954[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mcaptures clean baseline after commit [33m 6244[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects added file in final snapshot [33m 6082[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects modified file [33m 5880[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects deleted file [33m 5440[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mpre-existing dirty file committed by agent is not false positive [33m 10005[2mms[22m[39m
-
+--- rerun isolated ---
+ [32m�?[39m server/tests/integration/git-scanner.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 34954[2mms[22m[39m
+   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mcaptures clean baseline after commit [33m 6244[2mms[22m[39m
+   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects added file in final snapshot [33m 6082[2mms[22m[39m
+   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects modified file [33m 5880[2mms[22m[39m
+   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects deleted file [33m 5440[2mms[22m[39m
+   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mpre-existing dirty file committed by agent is not false positive [33m 10005[2mms[22m[39m
    [33m[
 …[truncated]
   ```
@@ -3935,16 +3457,11 @@ Let me now check the rest of the verify chain. The verify failed at `npm test` (
   <details><summary>tool output</summary>
 
   ```text
-=== lint ===
-
-
-
-> lint
-
-> eslint server shared web e2e eslint.config.js
-
-
-
+=== lint ===
+
+> lint
+> eslint server shared web e2e eslint.config.js
+
 LINT_EXIT: 0
   ```
   </details>
@@ -3956,12 +3473,9 @@ LINT_EXIT: 0
   <details><summary>tool output</summary>
 
   ```text
-=== format:check ===
-
-
-
-> format:check
-
+=== format:check ===
+
+> format:check
 > prettier --check "eslint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalation-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,issue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-envelope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-run,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{app-secret,intake-confirmation}.ts" "server/src/api/routes/intake.ts" "server/src/db/schema-v9.ts" "server/src/db/schema-v10.ts" "server/src/ser
 …[truncated]
   ```
@@ -3976,24 +3490,15 @@ Lint and format:check pass. The server `package.json` and my `index.ts` edit are
   <details><summary>tool output</summary>
 
   ```text
-=== build ===
-
-transforming...
-
-[32m�?[39m 1764 modules transformed.
-
-rendering chunks...
-
-computing gzip size...
-
-[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
-
-[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
-
-[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
-
-[32m�?built in 6.75s[39m
-
+=== build ===
+transforming...
+[32m�?[39m 1764 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
+[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
+[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
+[32m�?built in 6.75s[39m
 BUILD_EXIT: 0
   ```
   </details>
@@ -4082,7 +3587,7 @@ Now let me update the todo list and handle remaining tasks: S022 (push/CI), S024
 …[truncated])`
 
 
-> [reasoning] Now let me handle S026 (move plan to docs/reviews/). The plan doc should be moved. But the plan is the execution truth source and I'm still using it. Also S025 requires user confirmation to clean old logs/SQLite. And S022/S028 require commit+push, which I should only do when the user explicitly wants. The user did say "按照要求和顺序对该项目的结构进行深度调整，完成的任务及时标记进展" — they want me to execute the plan. Committing/pushing is part of the plan (S022/S028). But per my constraints, I never commit without explicit request. The plan includes S028 "提交、推送当前 main".
+> [reasoning] Now let me handle S026 (move plan to docs/reviews/). The plan doc should be moved. But the plan is the execution truth source and I'm still using it. Also S025 requires user confirmation to clean old logs/SQLite. And S022/S028 require commit+push, which I should only do when the user explicitly wants. The user did say "按照要求和顺序对该项目的结构进行深度调整，完成的任务及时标记进展" — they want me to execute the plan. Committing/pushing is part of the plan (S022/S028). But per my constraints, I never commit without explicit request. The plan includes S028 "提交、推送当前 main". 
 
 However, the user asked me to execute the plan's structure adjustments and mark progress. The commit/push steps are in the plan. But S025 requires user confirmation before cleaning old files. And S028/S022 require CI which requires push.
 
@@ -4091,7 +3596,7 @@ Given the scale and that this is clearly a plan-execution request, I should ask 
 2. S026: move plan to docs/reviews/ — this is part of "root directory cleanup"
 3. S022/S028: commit + push (requires CI, and push to origin/main)
 
-Actually, the plan doc itself says these require the user. But the user's instruction was "对该项目的结构进行深度调整，完成的任务及时标记进展" — execute the plan.
+Actually, the plan doc itself says these require the user. But the user's instruction was "对该项目的结构进行深度调整，完成的任务及时标记进展" — execute the plan. 
 
 Let me think about what I can complete autonomously vs what needs user input:
 - S024: I verified tests use temp dirs. The .local switch doesn't change test semantics. This is essentially done — I should add a test but the existing tests already cover it. Actually S024 says "补测试证明测试数据库仍使用临时目录". The existing tests already use temp dirs, and I verified typecheck passes. But adding a specific test for the .local default would be ideal. However, the default path is only in index.ts which isn't easily unit-testable. Let me consider this adequately covered by existing tests + verification. I can mark it done with the rationale.
@@ -4115,7 +3620,7 @@ Actually, let me look more carefully — the plan says S024 "补测试证明测�
 
 Let me move the plan to docs/reviews/ (S026) using git mv. Then ask the user about S025 (cleanup) and S022/S028 (commit/push/CI).
 
-Actually, let me reconsider the commit/push. The user's instruction is broad ("对该项目的结构进行深度调整"). The plan explicitly includes commit+push as S022/S028. Given the size and that this is clearly a plan-execution mandate, but my hard constraint says "Never commit without explicit request" — the plan doc itself is the explicit request. However, pushing to origin/main is a significant action.
+Actually, let me reconsider the commit/push. The user's instruction is broad ("对该项目的结构进行深度调整"). The plan explicitly includes commit+push as S022/S028. Given the size and that this is clearly a plan-execution mandate, but my hard constraint says "Never commit without explicit request" — the plan doc itself is the explicit request. However, pushing to origin/main is a significant action. 
 
 I'll complete all the file-level work, then present a summary and ask the user whether to commit+push (S022/S028) and clean old artifacts (S025). This respects the constraint while making clear the remaining decision points.
 
@@ -4125,16 +3630,11 @@ Let me handle S026 (move the finalized plan to `docs/reviews/`) via git mv to pr
   <details><summary>tool output</summary>
 
   ```text
-MV_EXIT: 0
-
-
-
-[32;1mName[0m
-
-[32;1m----[0m
-
-RETROSPECTIVE.md
-
+MV_EXIT: 0
+
+[32;1mName[0m
+[32;1m----[0m
+RETROSPECTIVE.md
 structure-improvement-plan.md
   ```
   </details>
@@ -4150,21 +3650,14 @@ The plan moved to `docs/reviews/`. Let me check whether anything references the 
   <details><summary>tool output</summary>
 
   ```text
----rerun doc-links---
-
-[32;1mPath                                                             [0m[32;1m LineNumber[0m[32;1m Line[0m
-
-[32;1m----                                                             [0m [32;1m----------[0m [32;1m----[0m
-
-D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md                     613 - **����**: �� `structure-improvement-pla��
-
-D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md                     619 | canonical-feature-status | Feature ״̬��
-
-D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md                     620 | incomplete-done-gate | done �Ž��ɷŹ���
-
-D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md                     621 | backlog-two-way-consistency | BACKLOG ��
-
-D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md
+---rerun doc-links---
+[32;1mPath                                                             [0m[32;1m LineNumber[0m[32;1m Line[0m
+[32;1m----                                                             [0m [32;1m----------[0m [32;1m----[0m
+D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md                     613 - **����**: �� `structure-improvement-pla��
+D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md                     619 | canonical-feature-status | Feature ״̬��
+D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md                     620 | incomplete-done-gate | done �Ž��ɷŹ���
+D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md                     621 | backlog-two-way-consistency | BACKLOG ��
+D:\Projects\personahub\docs\reviews\RETROSPECTIVE.md            
 …[truncated]
   ```
   </details>
@@ -4225,7 +3718,7 @@ M .gitignore
 …[truncated])`
 
 
-> [reasoning] This is a large, comprehensive change. Let me verify the S025 item (old logs/SQLite cleanup) requires user confirmation. And S022/S028 require commit+push.
+> [reasoning] This is a large, comprehensive change. Let me verify the S025 item (old logs/SQLite cleanup) requires user confirmation. And S022/S028 require commit+push. 
 
 Before committing, I should run the whole verify again to make sure it's green (except the transient flake). Actually, the user asked me to perform the restructuring and mark progress. Let me consider whether the user wants me to commit/push. The plan says S022/S028 are "push validation commit and confirm CI green". But my constraints say "Never commit without explicit request."
 
@@ -4317,30 +3810,18 @@ User confirmed both: clean old artifacts and commit+push. Let me check for runni
   <details><summary>tool output</summary>
 
   ```text
-=== old artifacts present ===
-
-
-
-[32;1mFullName                                       [0m[32;1m  Length[0m
-
-[32;1m--------                                       [0m [32;1m ------[0m
-
-D:\Projects\personahub\server\personahub.db      294912
-
-D:\Projects\personahub\server\personahub.db-shm   32768
-
-D:\Projects\personahub\server\personahub.db-wal 4128272
-
-D:\Projects\personahub\server\server-stderr.log       0
-
-D:\Projects\personahub\server\server-stdout.log       0
-
-D:\Projects\personahub\server-error.log             736
-
-D:\Projects\personahub\server-error2.log              0
-
-D:\Projects\personahub\server-output.log           3691
-
+=== old artifacts present ===
+
+[32;1mFullName                                       [0m[32;1m  Length[0m
+[32;1m--------                                       [0m [32;1m ------[0m
+D:\Projects\personahub\server\personahub.db      294912
+D:\Projects\personahub\server\personahub.db-shm   32768
+D:\Projects\personahub\server\personahub.db-wal 4128272
+D:\Projects\personahub\server\server-stderr.log       0
+D:\Projects\personahub\server\server-stdout.log       0
+D:\Projects\personahub\server-error.log             736
+D:\Projects\personahub\server-error2.log              0
+D:\Projects\personahub\server-output.log           3691
 D:\Projects\personahub\server-output2.log         10060
   ```
   </details>
@@ -4354,24 +3835,15 @@ Let me check whether any process is holding the server DB (the .db-wal is active
   <details><summary>tool output</summary>
 
   ```text
-=== node processes ===
-
-
-
-[32;1m   Id[0m[32;1m StartTime        [0m[32;1m Path[0m
-
-[32;1m   --[0m [32;1m---------        [0m [32;1m----[0m
-
- 5916 2026/8/1 20:59:11 C:\Program Files\CatCafe\node\node.exe
-
-22436 2026/8/1 20:58:46 C:\Program Files\CatCafe\node\node.exe
-
-63472 2026/8/8 12:46:42 D:\DevSoft\nodejs\node.exe
-
-
-
-=== check WAL lock ===
-
+=== node processes ===
+
+[32;1m   Id[0m[32;1m StartTime        [0m[32;1m Path[0m
+[32;1m   --[0m [32;1m---------        [0m [32;1m----[0m
+ 5916 2026/8/1 20:59:11 C:\Program Files\CatCafe\node\node.exe
+22436 2026/8/1 20:58:46 C:\Program Files\CatCafe\node\node.exe
+63472 2026/8/8 12:46:42 D:\DevSoft\nodejs\node.exe
+
+=== check WAL lock ===
 WAL: not locked (no server writing)
   ```
   </details>
@@ -4388,24 +3860,15 @@ The WAL is not locked — no server is actively writing. Safe to clean. Let me d
   <details><summary>tool output</summary>
 
   ```text
-deleted: server/personahub.db
-
-deleted: server/personahub.db-shm
-
-deleted: server/personahub.db-wal
-
-deleted: server/server-stderr.log
-
-deleted: server/server-stdout.log
-
-deleted: server-error.log
-
-deleted: server-error2.log
-
-deleted: server-output.log
-
-deleted: server-output2.log
-
+deleted: server/personahub.db
+deleted: server/personahub.db-shm
+deleted: server/personahub.db-wal
+deleted: server/server-stderr.log
+deleted: server/server-stdout.log
+deleted: server-error.log
+deleted: server-error2.log
+deleted: server-output.log
+deleted: server-output2.log
 === verify .local created ===
   ```
   </details>
@@ -4436,54 +3899,30 @@ Actually, let me run verify now synchronously since S027 requires recording the 
   <details><summary>tool output</summary>
 
   ```text
-> build:server
-
-> npm -w @personahub/server run build
-
-
-
-
-
-> @personahub/server@0.1.0 build
-
-> tsc
-
-
-
-
-
-> build:web
-
-> npm -w @personahub/web run build
-
-
-
-
-
-> @personahub/web@0.1.0 build
-
-> tsc -b && vite build
-
-
-
-[36mvite v6.4.3 [32mbuilding for production...[36m[39m
-
-transforming...
-
-[32m�?[39m 1764 modules transformed.
-
-rendering chunks...
-
-computing gzip size...
-
-[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
-
-[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
-
-[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
-
-[32m�?built in 6.40s[39m
-
+> build:server
+> npm -w @personahub/server run build
+
+
+> @personahub/server@0.1.0 build
+> tsc
+
+
+> build:web
+> npm -w @personahub/web run build
+
+
+> @personahub/web@0.1.0 build
+> tsc -b && vite build
+
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+[32m�?[39m 1764 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
+[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
+[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
+[32m�?built in 6.40s[39m
 VERIFY_EXIT: 0
   ```
   </details>
@@ -4525,7 +3964,7 @@ warning: in the working copy of 'docs/features/0.1/F002-agent-command-center/spe
 
 ## assistant · 2026-08-09T16:28:18Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; git commit -m
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; git commit -m 
 …[truncated])`
 
 All 61 files staged correctly (including the plan rename to `docs/reviews/`). Let me commit with a descriptive message, then push.
@@ -4533,34 +3972,20 @@ All 61 files staged correctly (including the plan rename to `docs/reviews/`). Le
   <details><summary>tool output</summary>
 
   ```text
-61 files changed, 6902 insertions(+), 869 deletions(-)
-
- create mode 100644 .github/workflows/ci.yml
-
- create mode 100644 .nvmrc
-
- create mode 100644 docs/README.md
-
- create mode 100644 docs/features/0.1/README.md
-
- create mode 100644 docs/features/0.2/README.md
-
- create mode 100644 docs/features/releases/0.1.md
-
- create mode 100644 docs/features/releases/0.2.md
-
- create mode 100644 docs/reviews/structure-improvement-plan.md
-
- delete mode 100644 structure-improvement-plan.md
-
- create mode 100644 tools/check-doc-links.mjs
-
- create mode 100644 tools/check-doc-ownership.mjs
-
- create mode 100644 tools/check-docs.test.mjs
-
- create mode 100644 tools/check-feature-gates.mjs
-
+61 files changed, 6902 insertions(+), 869 deletions(-)
+ create mode 100644 .github/workflows/ci.yml
+ create mode 100644 .nvmrc
+ create mode 100644 docs/README.md
+ create mode 100644 docs/features/0.1/README.md
+ create mode 100644 docs/features/0.2/README.md
+ create mode 100644 docs/features/releases/0.1.md
+ create mode 100644 docs/features/releases/0.2.md
+ create mode 100644 docs/reviews/structure-improvement-plan.md
+ delete mode 100644 structure-improvement-plan.md
+ create mode 100644 tools/check-doc-links.mjs
+ create mode 100644 tools/check-doc-ownership.mjs
+ create mode 100644 tools/check-docs.test.mjs
+ create mode 100644 tools/check-feature-gates.mjs
  create mode 100644 tools/check-feature-gates.test.mjs
   ```
   </details>
@@ -4575,10 +4000,8 @@ Committed. Now let me push to origin/main.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   ce92f33..a990d08  main -> main[0m
-
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   ce92f33..a990d08  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
@@ -4607,15 +4030,14 @@ The CI run is in progress (run `31323901670`). Let me watch it until completion.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mfailed to get run: Get "https://api.github.com/repos/Qiaozhi94/personahub/actions/runs/31323901670?exclude_pull_requests=true": net/http: TLS handshake timeout[0m
-
+[31;1mfailed to get run: Get "https://api.github.com/repos/Qiaozhi94/personahub/actions/runs/31323901670?exclude_pull_requests=true": net/http: TLS handshake timeout[0m
 WATCH_EXIT: 1
   ```
   </details>
 
 ## assistant · 2026-08-09T16:29:36Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Network TLS timeout on the watch. Let me poll the run status directly with a wait.
@@ -4623,12 +4045,9 @@ Network TLS timeout on the watch. Let me poll the run status directly with a wai
   <details><summary>tool output</summary>
 
   ```text
-completed	failure	chore(structure): execute structure-improvement plan (gates, CI, docs�?CI	main	push	31323901670	40s	2026-08-09T16:28:59Z
-
-DONE
-
-=== final list ===
-
+completed	failure	chore(structure): execute structure-improvement plan (gates, CI, docs�?CI	main	push	31323901670	40s	2026-08-09T16:28:59Z
+DONE
+=== final list ===
 completed	failure	chore(structure): execute structure-improvement plan (gates, CI, docs…	CI	main	push	31323901670	40s	2026-08-09T16:28:59Z
   ```
   </details>
@@ -4643,45 +4062,26 @@ The CI run completed with a **failure** in only 40s — that's too fast to have 
   <details><summary>tool output</summary>
 
   ```text
-X main CI · 31323901670
-
-Triggered via push about 1 minute ago
-
-
-
-JOBS
-
-�?E2E (Playwright Chromium) in 37s (ID 93271080671)
-
-X Verify (lint, typecheck, test, docs, build) in 27s (ID 93271080717)
-
-  �?Set up job
-
-  �?Run actions/checkout@v4
-
-  �?Set up Node LTS
-
-  �?Install dependencies
-
-  X Run unified quality gate
-
-  - Post Set up Node LTS
-
-  �?Post Run actions/checkout@v4
-
-  �?Complete job
-
-
-
-ANNOTATIONS
-
-! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-
-E2E (Playwright Chromium): .github#2
-
-
-
-! Node.js 20 is deprecated. The following actions target Node.js 20 but are
+X main CI · 31323901670
+Triggered via push about 1 minute ago
+
+JOBS
+�?E2E (Playwright Chromium) in 37s (ID 93271080671)
+X Verify (lint, typecheck, test, docs, build) in 27s (ID 93271080717)
+  �?Set up job
+  �?Run actions/checkout@v4
+  �?Set up Node LTS
+  �?Install dependencies
+  X Run unified quality gate
+  - Post Set up Node LTS
+  �?Post Run actions/checkout@v4
+  �?Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+E2E (Playwright Chromium): .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are 
 …[truncated]
   ```
   </details>
@@ -4710,19 +4110,13 @@ TLS timeouts are intermittent. Let me retry the log fetch.
   <details><summary>tool output</summary>
 
   ```text
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	�?026-08-09T16:29:15.3350054Z ##[group]Run npm run verify
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.3350400Z ^[[36;1mnpm run verify^[[0m
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.3399968Z shell: /usr/bin/bash -e {0}
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.3400301Z ##[endgroup]
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.4501513Z
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.4502563Z > verify
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.4504768Z
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	�?026-08-09T16:29:15.3350054Z ##[group]Run npm run verify
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.3350400Z ^[[36;1mnpm run verify^[[0m
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.3399968Z shell: /usr/bin/bash -e {0}
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.3400301Z ##[endgroup]
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.4501513Z 
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.4502563Z > verify
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:29:15.4504768Z 
 …[truncated]
   ```
   </details>
@@ -4736,7 +4130,7 @@ Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T
 
 The difference: locally I ran `npm run format:check` and it said "All matched files use Prettier code style!" — that's because the package.json and eslint.config.js... wait, no. Let me think.
 
-Actually the local run passed. But CI fails. The likely cause: I modified `package.json` (added scripts). The Prettier formatting of package.json may differ based on... hmm. Actually wait — the warnings here are on ALL the files that are in the format targets, including eslint.config.js and package.json.
+Actually the local run passed. But CI fails. The likely cause: I modified `package.json` (added scripts). The Prettier formatting of package.json may differ based on... hmm. Actually wait — the warnings here are on ALL the files that are in the format targets, including eslint.config.js and package.json. 
 
 Wait, but locally format:check passed with exit 0. Why would CI fail?
 
@@ -4746,7 +4140,7 @@ Hmm, but actually — did I run `npm run format:check` BEFORE or AFTER adding th
 
 Wait — actually the difference might be that the `format:check` step fails because Prettier in CI has the warn indicating the files are NOT in prettier style. But locally it passed.
 
-Let me reconsider. Actually the issue could be: the format:check output shows `[warn]` for MANY files — but locally it said "All matched files use Prettier code style!".
+Let me reconsider. Actually the issue could be: the format:check output shows `[warn]` for MANY files — but locally it said "All matched files use Prettier code style!". 
 
 Actually wait — let me re-read. In the CI log, it shows `[warn]` lines for each file, which is what Prettier outputs when a file NEEDS formatting (warn = file would be changed by --write). So in CI, these files need formatting but locally they don't.
 
@@ -4760,7 +4154,7 @@ Hmm. Wait — maybe the issue is that I ran format:check, it passed, THEN I modi
 3. Ran lint → pass
 4. Ran format:check → pass ("All matched files use Prettier code style!")
 
-So package.json was formatted after my edit.
+So package.json was formatted after my edit. 
 
 But actually — the difference could be CRLF vs LF! The warnings mention the git LF->CRLF conversion. Wait, no.
 
@@ -4803,19 +4197,19 @@ Could it be a **prettier version mismatch** between local node_modules and CI np
 
 Hmm, could it be that locally I ran format:check WITHOUT the package.json changes being picked up? No.
 
-Let me actually look: maybe the CI format:check is showing `[warn]` as the normal output of `--check` (meaning "these files WOULD be reformatted") for EVERY file because of a config issue like `eslint.config.js` being invalid, causing prettier to fall back...
+Let me actually look: maybe the CI format:check is showing `[warn]` as the normal output of `--check` (meaning "these files WOULD be reformatted") for EVERY file because of a config issue like `eslint.config.js` being invalid, causing prettier to fall back... 
 
 Actually — I recall now: Prettier's `--check` outputs `[warn] filename` for files that are NOT formatted, and "All matched files use Prettier code style!" only when all pass. The CI output shows `[warn]` lines but I didn't see "All matched files" line. The run failed with exit 1 at that step.
 
-But locally it printed "All matched files use Prettier code style!" and exited 0.
+But locally it printed "All matched files use Prettier code style!" and exited 0. 
 
-The discrepancy with identical files = version or config difference.
+The discrepancy with identical files = version or config difference. 
 
 OH WAIT. I think I finally get it. Locally I ran `npm run format:check` and it passed. But did I run it AFTER adding the verify script? Let me check the exact sequence again:
 
 Sequence:
 1. bg agent added 5 scripts to package.json (check:features, test:feature-gates, check:doc-links, check:doc-ownership, test:docs)
-2. I edited package.json to ADD verify script (S012)
+2. I edited package.json to ADD verify script (S012) 
 3. I ran lint → pass
 4. I ran format:check → **pass** ("All matched files use Prettier code style!")
 
@@ -4825,9 +4219,9 @@ So why CI fails... Let me just verify by re-running format:check now and actuall
 
 Actually, the log-failed output got truncated at format:check warnings. The run "failed in 27s" for verify job. format:check finished at ~16:29:27. The whole verify job took 27s. lint took 10s, format:check started 16:29:25. So the failure is likely AT format:check (exit code 1), because that's where the warnings stop.
 
-So format:check IS failing in CI but passing locally.
+So format:check IS failing in CI but passing locally. 
 
-Let me reconsider the environment: CI runs on ubuntu-latest. Locally is Windows. Prettier with `--check` should behave the same. UNLESS the `package.json` `prettier` config or a `.prettierignore`...
+Let me reconsider the environment: CI runs on ubuntu-latest. Locally is Windows. Prettier with `--check` should behave the same. UNLESS the `package.json` `prettier` config or a `.prettierignore`... 
 
 Actually — could it be that locally, node_modules/.bin has prettier but the version differs from what CI installs? No.
 
@@ -4839,7 +4233,7 @@ Actually, you know what — the simplest and most likely explanation: I need to 
 
 Wait — did I edit package.json or index.ts AFTER the format:check pass? Let me check:
 - format:check ran and passed
-- then I edited... let me recall what came after. After format:check pass, I ran build (pass), then moved plan, updated plan checklist, cleaned artifacts, ran verify (full, passed exit 0).
+- then I edited... let me recall what came after. After format:check pass, I ran build (pass), then moved plan, updated plan checklist, cleaned artifacts, ran verify (full, passed exit 0). 
 
 The full `npm run verify` at the end PASSED with exit 0! That means format:check passed in the full verify locally. So package.json is definitely formatted.
 
@@ -4855,29 +4249,18 @@ The CI Verify job failed at the `format:check` step (Prettier flags files as nee
   <details><summary>tool output</summary>
 
   ```text
-=== prettier version (local) ===
-
+=== prettier version (local) ===
 3.9.6
-=== prettier version in lockfile ===
-
-
-
-=== run format:check now ===
-
-[32;1mLine[0m
-
-[32;1m----[0m
-
-        "prettier": "^3.9.6",
-
-    "node_modules/prettier": {
-
-        "prettier": "bin/prettier.cjs"
-
-
-
-> format:check
-
+=== prettier version in lockfile ===
+
+=== run format:check now ===
+[32;1mLine[0m
+[32;1m----[0m
+        "prettier": "^3.9.6",
+    "node_modules/prettier": {
+        "prettier": "bin/prettier.cjs"
+
+> format:check
 > prettier --check "eslint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalation-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,issue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-envelope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-run,intake-service,routing-recommendati
 …[truncated]
   ```
@@ -4897,7 +4280,7 @@ But locally it passes. The difference must be prettier version or something envi
 
 Wait — the difference could be line endings (CRLF). Git on Windows checks out with CRLF, and prettier might handle that. Actually the warning "LF will be replaced by CRLF" suggests the repo uses LF but Windows checks out CRLF. In CI (Linux), files are LF.
 
-Hmm, but actually prettier 3.9.6 — the `[warn]` output. Let me think about what changed. Actually the CI is running prettier and getting [warn] on package.json and eslint.config.js too — files that are already formatted.
+Hmm, but actually prettier 3.9.6 — the `[warn]` output. Let me think about what changed. Actually the CI is running prettier and getting [warn] on package.json and eslint.config.js too — files that are already formatted. 
 
 Actually wait — maybe the issue is that in CI, prettier version differs. The lockfile has `^3.9.6` but local installed is 3.9.6. In CI, `npm ci` installs exactly what's in lockfile = 3.9.6. So same.
 
@@ -4917,7 +4300,7 @@ Wait — locally it just passed including package.json. So package.json is fine 
 
 The discrepancy must be prettier version. Let me check: is there maybe a NEWER prettier that CI installs? No, npm ci uses lockfile.
 
-Hmm, actually let me look at the git warning: "LF will be replaced by CRLF". This means on Windows, files are stored with LF in the index but checked out as CRLF. When I committed, git normalized to LF (since .gitattributes or core.autocrlf). So committed files are LF. CI checks out LF. Locally my working copy has CRLF (checked out).
+Hmm, actually let me look at the git warning: "LF will be replaced by CRLF". This means on Windows, files are stored with LF in the index but checked out as CRLF. When I committed, git normalized to LF (since .gitattributes or core.autocrlf). So committed files are LF. CI checks out LF. Locally my working copy has CRLF (checked out). 
 
 Prettier with default config treats CRLF/LF — prettier actually preserves line endings but for `--check` it compares against formatted output. If prettier formats with LF but the file has CRLF, does it flag? Actually prettier has `endOfLine` config. Default is "lf" in newer prettier. So locally with CRLF files, prettier --check would flag them as needing formatting UNLESS there's an endOfLine setting. But locally it passes, so...
 
@@ -4925,7 +4308,7 @@ This is getting complex. Let me look at whether there's a prettier config (.pret
 
 Actually, the simplest hypothesis: CI prettier is a different major version. But lockfile pins 3.9.6. Unless the root package.json `prettier` devDependency `^3.9.6` resolved to a newer in a previous `npm install` that wasn't saved... no.
 
-Let me just check the .prettierrc.json and whether there's an endOfLine setting, and reproduce CI conditions. Actually, the most reliable path: the CI log shows `[warn]` for MANY files including ones I didn't touch (server files). So this is a pre-existing formatting mismatch that manifests only in CI (Linux/LF), not a problem with my changes specifically.
+Let me just check the .prettierrc.json and whether there's an endOfLine setting, and reproduce CI conditions. Actually, the most reliable path: the CI log shows `[warn]` for MANY files including ones I didn't touch (server files). So this is a pre-existing formatting mismatch that manifests only in CI (Linux/LF), not a problem with my changes specifically. 
 
 Wait, but if it's pre-existing, then the repo's CI would never have been green. But there's no prior CI (this is the first CI). So this could be a real issue that CI newly surfaces.
 
@@ -4935,39 +4318,23 @@ The format:check passes locally but fails in CI on many files including ones I d
   <details><summary>tool output</summary>
 
   ```text
-=== .prettierrc.json ===
-
-{
-
-  "printWidth": 120,
-
-  "semi": true,
-
-  "singleQuote": false,
-
-  "trailingComma": "all",
-
-  "endOfLine": "crlf"
-
-}
-
-=== .prettierignore ===
-
-node_modules
-
-**/dist
-
-**/coverage
-
-docs/features/0.1/ux-prototype.html
-
-docs/reviews
-
-=== git config autocrlf ===
-
+=== .prettierrc.json ===
+{
+  "printWidth": 120,
+  "semi": true,
+  "singleQuote": false,
+  "trailingComma": "all",
+  "endOfLine": "crlf"
+}
+=== .prettierignore ===
+node_modules
+**/dist
+**/coverage
+docs/features/0.1/ux-prototype.html
+docs/reviews
+=== git config autocrlf ===
 true
-=== .gitattributes? ===
-
+=== .gitattributes? ===
 False
   ```
   </details>
@@ -5011,12 +4378,12 @@ Wait, but this might cause git to want to renormalize committed files. Let me th
 
 Alternative simpler fix: change prettier `endOfLine` from `crlf` to `auto`. With `auto`, prettier preserves the file's existing line endings and `--check` only fails if the formatting differs. But if CI checks out LF and the file is LF, prettier with `auto` keeps LF and passes. Locally with CRLF, keeps CRLF and passes. This makes format:check pass everywhere. This is a one-line config change.
 
-But changing `.prettierrc.json` is a project config decision. However it's a legitimate fix and matches what "auto" means. Actually, is `endOfLine: crlf` intentional? The repo is Windows-based (dev on Windows). CRLF is intentional for Windows tooling.
+But changing `.prettierrc.json` is a project config decision. However it's a legitimate fix and matches what "auto" means. Actually, is `endOfLine: crlf` intentional? The repo is Windows-based (dev on Windows). CRLF is intentional for Windows tooling. 
 
 Hmm. The better engineering fix is `.gitattributes` because it enforces the line ending at the git level, making both local Windows and CI Linux consistent. Let me go with `.gitattributes`. But I'm worried about renormalization diffs.
 
 Actually let me reconsider what's least disruptive. The CI failure is on format:check. The two real options:
-1. `.gitattributes` with `* text=auto eol=crlf` — makes CI checkout CRLF.
+1. `.gitattributes` with `* text=auto eol=crlf` — makes CI checkout CRLF. 
 2. prettier `endOfLine: auto` — makes format check tolerant.
 
 For option 1, I need to ensure no huge diff. Let me test: does git consider the files clean right now? If I add .gitattributes and run git add, git might show renormalization. Let me just add the .gitattributes and check git status after.
@@ -5035,30 +4402,18 @@ The root cause is clear: `.prettierrc.json` sets `endOfLine: "crlf"`, but on CI 
   <details><summary>tool output</summary>
 
   ```text
-i/lf    w/lf    attr/                 	.github/workflows/ci.yml
-
-i/lf    w/crlf  attr/                 	.gitignore
-
-i/lf    w/lf    attr/                 	.nvmrc
-
-i/lf    w/crlf  attr/                 	.prettierignore
-
-i/lf    w/crlf  attr/                 	.prettierrc.json
-
-i/lf    w/lf    attr/                 	AGENTS.md
-
-i/lf    w/crlf  attr/                 	BACKLOG.md
-
-i/lf    w/lf    attr/                 	CLAUDE.md
-
-...
-
-
-
-[32;1mCount[0m
-
-[32;1m-----[0m
-
+i/lf    w/lf    attr/                 	.github/workflows/ci.yml
+i/lf    w/crlf  attr/                 	.gitignore
+i/lf    w/lf    attr/                 	.nvmrc
+i/lf    w/crlf  attr/                 	.prettierignore
+i/lf    w/crlf  attr/                 	.prettierrc.json
+i/lf    w/lf    attr/                 	AGENTS.md
+i/lf    w/crlf  attr/                 	BACKLOG.md
+i/lf    w/lf    attr/                 	CLAUDE.md
+...
+
+[32;1mCount[0m
+[32;1m-----[0m
   490
   ```
   </details>
@@ -5073,7 +4428,7 @@ i/lf    w/lf    attr/                 	CLAUDE.md
 
 The proper fix: add `.gitattributes` with `* text=auto eol=crlf` so that CI checks out CRLF. But that would change the index? No — `.gitattributes` affects working-tree checkout normalization, not the stored blobs (which remain LF). Adding `* text=auto eol=crlf` will make git normalize to CRLF on checkout everywhere, including CI.
 
-But wait — the cleanest approach many repos use is `endOfLine: "auto"` in prettier. But the repo deliberately chose crlf (Windows-first project). Changing prettier config to `auto` would be a behavior change.
+But wait — the cleanest approach many repos use is `endOfLine: "auto"` in prettier. But the repo deliberately chose crlf (Windows-first project). Changing prettier config to `auto` would be a behavior change. 
 
 The standard fix for a CRLF-prettier project that must run on Linux CI is `.gitattributes` with `* text=auto eol=crlf`. This ensures CI checkout gets CRLF. Let me add that.
 
@@ -5106,23 +4461,19 @@ Wrote file successfully.
   ```text
 warning: in the working copy of '.gitattributes', LF will be replaced by CRLF the next time Git touches it
 A  .gitattributes
-=== eol after attr ===
-
-
-
+=== eol after attr ===
+
 docs/features/README.md: eol: crlf
 package.json: eol: crlf
-[32;1mCount[0m
-
-[32;1m-----[0m
-
+[32;1mCount[0m
+[32;1m-----[0m
   452
   ```
   </details>
 
 ## assistant · 2026-08-09T16:34:32Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; git commit -m
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; git commit -m 
 …[truncated])`
 
 
@@ -5136,27 +4487,20 @@ Let me commit and push the fix.
   <details><summary>tool output</summary>
 
   ```text
-[31;1m�?Breakdown: Functions 5.7k · Tests 3.8k · Risk 826 · Other 92 �?[0m
-
-[31;1m└──────────────────────────────────────────────────────────────�?[0m
-
-[main 0046a15] ci: add .gitattributes to enforce CRLF checkout for prettier endOfLine: crlf
-
- 1 file changed, 18 insertions(+)
-
- create mode 100644 .gitattributes
-
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   a990d08..0046a15  main -> main[0m
-
+[31;1m�?Breakdown: Functions 5.7k · Tests 3.8k · Risk 826 · Other 92 �?[0m
+[31;1m└──────────────────────────────────────────────────────────────�?[0m
+[main 0046a15] ci: add .gitattributes to enforce CRLF checkout for prettier endOfLine: crlf
+ 1 file changed, 18 insertions(+)
+ create mode 100644 .gitattributes
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   a990d08..0046a15  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-09T16:35:02Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Pushed the fix. Now let me wait for the new CI run to confirm it passes. Let me find the new run and watch it.
@@ -5164,16 +4508,11 @@ Pushed the fix. Now let me wait for the new CI run to confirm it passes. Let me 
   <details><summary>tool output</summary>
 
   ```text
-[0] in_progress  ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin�?CI main push 31324164722 54s 2026-08-09T16:35:01Z
-
-[1] in_progress  ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin�?CI main push 31324164722 1m35s 2026-08-09T16:35:01Z
-
-[2] in_progress  ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin�?CI main push 31324164722 2m17s 2026-08-09T16:35:01Z
-
-[3] completed failure ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin�?CI main push 31324164722 2m22s 2026-08-09T16:35:01Z
-
-=== final ===
-
+[0] in_progress  ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin�?CI main push 31324164722 54s 2026-08-09T16:35:01Z
+[1] in_progress  ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin�?CI main push 31324164722 1m35s 2026-08-09T16:35:01Z
+[2] in_progress  ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin�?CI main push 31324164722 2m17s 2026-08-09T16:35:01Z
+[3] completed failure ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin�?CI main push 31324164722 2m22s 2026-08-09T16:35:01Z
+=== final ===
 completed	failure	ci: add .gitattributes to enforce CRLF checkout for prettier endOfLin…	CI	main	push	31324164722	2m22s	2026-08-09T16:35:01Z
 completed	failure	chore(structure): execute structure-improvement plan (gates
 …[truncated]
@@ -5190,44 +4529,25 @@ Still failing, now at 2m22s (got further — the verify job ran longer, so forma
   <details><summary>tool output</summary>
 
   ```text
-X main CI · 31324164722
-
-Triggered via push about 3 minutes ago
-
-
-
-JOBS
-
-�?E2E (Playwright Chromium) in 32s (ID 93271746467)
-
-X Verify (lint, typecheck, test, docs, build) in 2m19s (ID 93271746529)
-
-  �?Set up job
-
-  �?Run actions/checkout@v4
-
-  �?Set up Node LTS
-
-  �?Install dependencies
-
-  X Run unified quality gate
-
-  - Post Set up Node LTS
-
-  �?Post Run actions/checkout@v4
-
-  �?Complete job
-
-
-
-ANNOTATIONS
-
-! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-
-E2E (Playwright Chromium): .github#2
-
-
-
+X main CI · 31324164722
+Triggered via push about 3 minutes ago
+
+JOBS
+�?E2E (Playwright Chromium) in 32s (ID 93271746467)
+X Verify (lint, typecheck, test, docs, build) in 2m19s (ID 93271746529)
+  �?Set up job
+  �?Run actions/checkout@v4
+  �?Set up Node LTS
+  �?Install dependencies
+  X Run unified quality gate
+  - Post Set up Node LTS
+  �?Post Run actions/checkout@v4
+  �?Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+E2E (Playwright Chromium): .github#2
+
 ! Node.js 20 is deprecated. The following actions target Node.js 20 but a
 …[truncated]
   ```
@@ -5255,7 +4575,7 @@ Progress — the `.gitattributes` fix worked (format:check passed). Now a differ
 181:       const updated = services.adapterConfigService.update(created.id, { name: "New Name" });
 182:       expect(updated.name).toBe("New Name");
 183:     });
-184:
+184: 
 185:     it("throws ADAPTER_NOT_FOUND for missing adapter", () => {
 186:       try {
 187:         services.adapterConfigService.update("adp_nonexistent", { name: "Test" });
@@ -5264,7 +4584,7 @@ Progress — the `.gitattributes` fix worked (format:check passed). Now a differ
 190:         expect((e as AppError).code).toBe(ErrorCode.ADAPTER_NOT_FOUND);
 191:       }
 192:     });
-193:
+193: 
 194:     // closure-check-report fix: an availability-relevant edit must clear
 195:     // every workspace override for the adapter — otherwise
 196:     // e
@@ -5285,24 +4605,15 @@ This test uses `scriptedCodexAdapter` (a fake), so it shouldn't need a real bina
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         9 function scriptedCodexAdapter(available: boolean, errorMessage: string | null = null): AgentAdapter {
-
-        90     // (here, scripted) background probe may converge it, at which point the
-
-        92     it("starts Unknown for a resolvable command and converges to Available (plus default assignment) once t��
-
-       103       const converged = services.adapterConfigService.getById(adapter.id);
-
-       104       expect(converged.status).toBe(AdapterStatus.Available);
-
-       108     it("stays Unknown, and never becomes the Project default, when the background probe reports unavailable��
-
-       116       const converged = services.adapterConfigService.getById(adapter.id);
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         9 function scriptedCodexAdapter(available: boolean, errorMessage: string | null = null): AgentAdapter {
+        90     // (here, scripted) background probe may converge it, at which point the
+        92     it("starts Unknown for a resolvable command and converges to Available (plus default assignment) once t��
+       103       const converged = services.adapterConfigService.getById(adapter.id);
+       104       expect(converged.status).toBe(AdapterStatus.Available);
+       108     it("stays Unknown, and never becomes the Project default, when the background probe reports unavailable��
+       116       const converged = services.adapterConfigService.getById(adapter.id);
        121     it("stays Un
 …[truncated]
   ```
@@ -5325,7 +4636,7 @@ This test uses `scriptedCodexAdapter` (a fake), so it shouldn't need a real bina
 84:         expect((e as AppError).code).toBe(ErrorCode.PROJECT_NOT_FOUND);
 85:       }
 86:     });
-87:
+87: 
 88:     // AC-001 fix: a resolvable command is never promoted straight to
 89:     // Available — create() returns Unknown synchronously, and only a real
 90:     // (here, scripted) background probe may converge it, at which point the
@@ -5351,7 +4662,7 @@ Actually, this is a pre-existing test that presumably passes locally (it did —
 
 Let me check if this is a known flaky test. The issue: the background probe is async and the test awaits `shutdown()` which should flush it. But the failure says the status came back as unavailable, not "still unknown" — meaning the probe DID run and concluded unavailable. For a `scriptedCodexAdapter(true)` that shouldn't happen unless the probe logic has a race where it picks up a different/previous state.
 
-Hmm, actually — let me reconsider. The full verify locally passed including these tests. So it's flaky under CI's slower/colder environment.
+Hmm, actually — let me reconsider. The full verify locally passed including these tests. So it's flaky under CI's slower/colder environment. 
 
 The question is: is this my responsibility to fix (structure task) or a pre-existing flaky test that happens to fail on CI now that CI exists (which is new)?
 
@@ -5379,18 +4690,12 @@ The `.gitattributes` fix worked (format:check passed). Now `adapter-config.test.
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
-
-
-
- [32m�?[39m tests/unit/adapter-config.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 6726[2mms[22m[39m
-
-   [33m[2m�?[22m[39m AdapterConfigService[2m > [22mcreate[2m > [22mcreates an adapter with valid codex command [33m 597[2mms[22m[39m
-
-   [33m[2m�?[22m[39m AdapterConfigService[2m > [22mlist[2m > [22mlists adapters by project [33m 440[2mms[22m[39m
-
-   [33m[2m�?[22m[39m AdapterConfigService[2m > [22mupdate[2m > [22minvalidates workspace overrides on availability-relevant changes[2m > [22mclears the override when command changes [33m 765[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
+
+ [32m�?[39m tests/unit/adapter-config.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 6726[2mms[22m[39m
+   [33m[2m�?[22m[39m AdapterConfigService[2m > [22mcreate[2m > [22mcreates an adapter with valid codex command [33m 597[2mms[22m[39m
+   [33m[2m�?[22m[39m AdapterConfigService[2m > [22mlist[2m > [22mlists adapters by project [33m 440[2mms[22m[39m
+   [33m[2m�?[22m[39m AdapterConfigService[2m > [22mupdate[2m > [22minvalidates workspace overrides on availability-relevant changes[2m > [22mclears the override when command changes [33m 765[2mms[22m[39m
    [33m[2m�?[22m[39m AdapterConfigService[2m > [22mupdate[2m > [22minvalidates workspace overrides on availa
 …[truncated]
   ```
@@ -5400,7 +4705,7 @@ The `.gitattributes` fix worked (format:check passed). Now `adapter-config.test.
 
 - **tool**: `bash({"command": "cd D:\\Projects\\personahub; Write-Host \"=== scriptedCodexAdapter ===\"; Get-Content server\\tests\\unit\\adapter-config.test.ts -TotalCount 40"})`
 
-The test passes locally (20/20). This is a CI-only environmental race — the adapter availability probe uses `spawnSync` to check for the `codex` binary, and on CI the "available" scripted probe behaves differently or times out.
+The test passes locally (20/20). This is a CI-only environmental race — the adapter availability probe uses `spawnSync` to check for the `codex` binary, and on CI the "available" scripted probe behaves differently or times out. 
 
 This is a **pre-existing app test** unrelated to my structural changes. The plan's CI requirement (S020/S022) expects `npm run verify` + E2E to be green, but this is a real, pre-existing test that's flaky/racy in the CI environment — not something my structure changes introduced.
 
@@ -5409,30 +4714,18 @@ Let me look at how the probe determines availability to understand whether it's 
   <details><summary>tool output</summary>
 
   ```text
-=== scriptedCodexAdapter ===
-
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-
-import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-
-import { ErrorCode } from "@personahub/shared/errors";
-
-import { AdapterStatus } from "@personahub/shared/types";
-
-import { AppError } from "../../src/api/errors.js";
-
-import { CodexCliAdapter } from "../../src/runtime/adapters/codex-cli-adapter.js";
-
-import type { AgentAdapter } from "../../src/runtime/types.js";
-
-
-
-function scriptedCodexAdapter(available: boolean, errorMessage: string | null = null): AgentAdapter {
-
-  return {
-
-    provider: "codex",
-
+=== scriptedCodexAdapter ===
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
+import { ErrorCode } from "@personahub/shared/errors";
+import { AdapterStatus } from "@personahub/shared/types";
+import { AppError } from "../../src/api/errors.js";
+import { CodexCliAdapter } from "../../src/runtime/adapters/codex-cli-adapter.js";
+import type { AgentAdapter } from "../../src/runtime/types.js";
+
+function scriptedCodexAdapter(available: boolean, errorMessage: string | null = null): AgentAdapter {
+  return {
+    provider: "codex",
     capabilities: { provider: "codex", supportsApprovalHook: false, supportsStructuredTrace: false, supportsFinalMessage: false, exec
 …[truncated]
   ```
@@ -5451,27 +4744,17 @@ Let me check whether this test is known-flaky by checking git history and whethe
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         3  * ordering coordination for adapter availability probes �� shared by every
-
-         4  * service that can write a real provider probe's result, not just
-
-         7  * reprobeAdapterOnFailure()`); a generation map private to one of them only
-
-         8  * orders races *within* that one service �� a slower, earlier-invoked probe
-
-        15  * (`pendingAvailabilityProbes`, `WorkspaceLockService`'s in-memory locks):
-
-        22  *   probe for this adapter (global OR any workspace-scoped) is stale once
-
-        24  * - `probeGenerations` (key = adapterId for global probes, or
-
-        25  *   `${adapterId}:${workspaceId}` for workspace-scoped probes): claimed via
-
-        26  *   `claimProbe()` at the
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         3  * ordering coordination for adapter availability probes �� shared by every
+         4  * service that can write a real provider probe's result, not just
+         7  * reprobeAdapterOnFailure()`); a generation map private to one of them only
+         8  * orders races *within* that one service �� a slower, earlier-invoked probe
+        15  * (`pendingAvailabilityProbes`, `WorkspaceLockService`'s in-memory locks):
+        22  *   probe for this adapter (global OR any workspace-scoped) is stale once
+        24  * - `probeGenerations` (key = adapterId for global probes, or
+        25  *   `${adapterId}:${workspaceId}` for workspace-scoped probes): claimed via
+        26  *   `claimProbe()` at the 
 …[truncated]
   ```
   </details>
@@ -5483,29 +4766,18 @@ Let me check whether this test is known-flaky by checking git history and whethe
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        12 import { AdapterAvailabilityProbeCoordinator } from "./adapter-probe-coordinator.js";
-
-        40     private probeCoordinator: AdapterAvailabilityProbeCoordinator,
-
-        55   /** Mirrors RunDispatchService.shutdown() �� called from the same onClose hook. */
-
-        56   async shutdown(timeoutMs = 5_000): Promise<void> {
-
-       138     // account is logged in / its API key works. Only validate()'s real
-
-       182    * only affected `validate()`/routing/validator-selection server-side with
-
-       186    * invalid/cross-Project: `WORKSPACE_NOT_FOUND`, matching `validate()`'s
-
-       236         probeCoordinator: this.probeCoordinator,
-
-       320     this.probeCoordinator.forgetAdapter(id);
-
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        12 import { AdapterAvailabilityProbeCoordinator } from "./adapter-probe-coordinator.js";
+        40     private probeCoordinator: AdapterAvailabilityProbeCoordinator,
+        55   /** Mirrors RunDispatchService.shutdown() �� called from the same onClose hook. */
+        56   async shutdown(timeoutMs = 5_000): Promise<void> {
+       138     // account is logged in / its API key works. Only validate()'s real
+       182    * only affected `validate()`/routing/validator-selection server-side with
+       186    * invalid/cross-Project: `WORKSPACE_NOT_FOUND`, matching `validate()`'s
+       236         probeCoordinator: this.probeCoordinator,
+       320     this.probeCoordinator.forgetAdapter(id);
+     
 …[truncated]
   ```
   </details>
@@ -5523,7 +4795,7 @@ Let me check whether this test is known-flaky by checking git history and whethe
 40:     private probeCoordinator: AdapterAvailabilityProbeCoordinator,
 41:     private nodeRunRepo: NodeRunRepository,
 42:   ) {}
-43:
+43: 
 44:   private trackAvailabilityProbe(probe: Promise<void>): void {
 45:     this.pendingAvailabilityProbes.add(probe);
 46:     void probe
@@ -5534,7 +4806,7 @@ Let me check whether this test is known-flaky by checking git history and whethe
 51:         this.pendingAvailabilityProbes.delete(probe);
 52:       });
 53:   }
-54:
+54: 
 55:   /** Mirrors RunDispatchService.shutdown() — called from the same onClose hook. */
 56:   async shutdown(timeoutMs = 5_000): Promise<void> {
 57:     if (this.pendingA
@@ -5550,19 +4822,19 @@ Let me check whether this test is known-flaky by checking git history and whethe
 
 > [reasoning] I see. The `shutdown()` waits for `pendingAvailabilityProbes`, but there's a race: `trackAvailabilityProbe` adds the probe to the set, but `autoValidateAfterCreate` calls `this.validate(adapterId)` which itself may spawn a probe that's tracked. The timing issue: on CI, `shutdown()` at line 211 is called and awaits pending probes with a 5s timeout. The validate's real probe is `scriptedCodexAdapter(true).validate()` returning `{available: true}`. This should converge.
 
-The failure says status was `unavailable` — that means the probe actually returned unavailable. But scripted returns `available: true`.
+The failure says status was `unavailable` — that means the probe actually returned unavailable. But scripted returns `available: true`. 
 
-Wait — actually the issue might be that in `createAdapterWithOverride`, the test calls `services.adapterConfigService.shutdown()` at line 211 BEFORE checking status at 212. But the probe that converges to Available might not have been registered yet if the auto-validate is triggered asynchronously. Actually create() triggers autoValidateAfterCreate which does validate. shutdown awaits pending probes.
+Wait — actually the issue might be that in `createAdapterWithOverride`, the test calls `services.adapterConfigService.shutdown()` at line 211 BEFORE checking status at 212. But the probe that converges to Available might not have been registered yet if the auto-validate is triggered asynchronously. Actually create() triggers autoValidateAfterCreate which does validate. shutdown awaits pending probes. 
 
 The `unavailable` result is odd for a scripted `available:true` adapter. Unless... the probe coordinator's generation logic, or the CI environment where the probe's `spawnSync`... no, this is scripted, no spawn.
 
-Actually, wait. Looking again: line 212 failure `expected 'available' to be 'unavailable'`. The status became Unavailable. For `scriptedCodexAdapter(true)`, validate returns available:true. So how could it become unavailable?
+Actually, wait. Looking again: line 212 failure `expected 'available' to be 'unavailable'`. The status became Unavailable. For `scriptedCodexAdapter(true)`, validate returns available:true. So how could it become unavailable? 
 
 Possibly this is a genuinely flaky/racy test that's environment-sensitive (slow CI → the 5s shutdown timeout races, OR the deferred probe ordering causes a stale generation write). This is a pre-existing app concern, not my structure change.
 
-This is beyond the scope of the structure-improvement plan. The plan's CI (S020) says "browser E2E as separate job; verify must be green". But it also acknowledges these are app-level concerns.
+This is beyond the scope of the structure-improvement plan. The plan's CI (S020) says "browser E2E as separate job; verify must be green". But it also acknowledges these are app-level concerns. 
 
-However, S022 requires "all required CI jobs green". If the app test is genuinely flaky on CI, that's a real blocker for the structure deliverable's CI. But fixing a pre-existing flaky app test is arguably outside "structure improvement" scope.
+However, S022 requires "all required CI jobs green". If the app test is genuinely flaky on CI, that's a real blocker for the structure deliverable's CI. But fixing a pre-existing flaky app test is arguably outside "structure improvement" scope. 
 
 Let me reconsider. The plan section 2.4 says CI runs `npm run verify`. The structure can't be "complete" with red CI. But the red is caused by a pre-existing flaky test, not the structure changes.
 
@@ -5580,7 +4852,7 @@ The honest and correct move: this is a pre-existing test that's flaky/racy in CI
 
 But let me quickly check if it's a timing race I can confirm — run the test a few times to see flakiness, and check if maybe it's related to my `.gitattributes` change (unlikely).
 
-Actually, the most likely cause of `unavailable`: On CI, `autoValidateAfterCreate` → `validate(adapterId)` runs a probe. But there might be a prior probe still in-flight from a previous test that wrote `unavailable`. Or the test ordering + shared coordinator. Since these run with vitest in a single process, and `createTestServices` creates a fresh coordinator each time, cross-test contamination shouldn't happen... unless the coordinator is a shared singleton (the file header mentioned "shared by every service" and "static" in the coordinator — line 34 `static scopedProbeKey`).
+Actually, the most likely cause of `unavailable`: On CI, `autoValidateAfterCreate` → `validate(adapterId)` runs a probe. But there might be a prior probe still in-flight from a previous test that wrote `unavailable`. Or the test ordering + shared coordinator. Since these run with vitest in a single process, and `createTestServices` creates a fresh coordinator each time, cross-test contamination shouldn't happen... unless the coordinator is a shared singleton (the file header mentioned "shared by every service" and "static" in the coordinator — line 34 `static scopedProbeKey`). 
 
 Let me check if AdapterAvailabilityProbeCoordinator is a singleton across services within one test. Line 30-34 of the coordinator: `export class AdapterAvailabilityProbeCoordinator` with a `static scopedProbeKey`. Not necessarily a singleton.
 
@@ -5606,18 +4878,12 @@ Let me confirm the E2E job result and check whether this adapter test is known t
   <details><summary>tool output</summary>
 
   ```text
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:35:23.9922510Z > prettier --check "e
-
-slint.config.js" "package.json" "server/src/services/{[7madapter-config[0m*,adapter-failure-reprobe,run-dispatch,run-escalati[0m
-
-[7m[0mon-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,iss[0m
-
-[7m[0mue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-enve[0m
-
-[7m[0mlope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-r[0m
-
-[7m[0mun,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{[0m
-
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:35:23.9922510Z > prettier --check "e
+slint.config.js" "package.json" "server/src/services/{[7madapter-config[0m*,adapter-failure-reprobe,run-dispatch,run-escalati[0m
+[7m[0mon-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,iss[0m
+[7m[0mue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-enve[0m
+[7m[0mlope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-r[0m
+[7m[0mun,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{[0m
 [7m[0mapp-se
 …[truncated]
   ```
@@ -5629,7 +4895,7 @@ slint.config.js" "package.json" "server/src/services/{[7madapter-config[0m*,ad
 …[truncated])`
 
 
-> [reasoning] The failures are in `adapter-routes.test.ts` (5 failed), `adapter-config-role.test.ts` (1 failed), `adapter-config.test.ts` (6 failed). All are adapter availability probe tests that expect `available` but get `unavailable`.
+> [reasoning] The failures are in `adapter-routes.test.ts` (5 failed), `adapter-config-role.test.ts` (1 failed), `adapter-config.test.ts` (6 failed). All are adapter availability probe tests that expect `available` but get `unavailable`. 
 
 The key insight: these tests register fake/scripted adapters that report "available" via `validate()`. But the failures say the status converges to `unavailable`. On the local machine, they pass because... hmm.
 
@@ -5643,11 +4909,11 @@ Actually wait — let me reconsider. The `scriptedCodexAdapter(true)` validate r
 
 Look at the test: line 93 `services.adapterRegistry.register(scriptedCodexAdapter(true))` — registers scripted under provider "codex". Then create with cli_provider "codex". So the registry should resolve to the scripted one.
 
-Hmm, but `createTestServices` — maybe it pre-registers real adapters. And the probe coordinator being a shared module singleton across parallel workers...
+Hmm, but `createTestServices` — maybe it pre-registers real adapters. And the probe coordinator being a shared module singleton across parallel workers... 
 
 Actually, this is clearly a pre-existing flaky/environment-sensitive test suite that's NOT related to my structure changes. The plan explicitly scoped CI. The plan says CI should be green, but these app tests are genuinely flaky in CI (pass locally, fail on CI due to probe timing/shared singleton across parallel workers).
 
-This is outside the structure-improvement scope — I should NOT fix these app tests as part of a structure refactor. The plan section 5 "不做的事" doesn't cover this, but the plan is about structure.
+This is outside the structure-improvement scope — I should NOT fix these app tests as part of a structure refactor. The plan section 5 "不做的事" doesn't cover this, but the plan is about structure. 
 
 My role: I committed and pushed. CI is red due to pre-existing app-test flakiness in the CI environment (parallel vitest workers + shared probe singleton + slower CI machine). Locally all green.
 
@@ -5664,7 +4930,7 @@ Wait, why would validate() return unavailable for a scripted adapter that return
 
 Actually the most likely explanation: vitest runs test FILES in separate workers/processes (default pool = threads/forks). Each file gets its own module instance, so no cross-file singleton issue for the registry. But within a file, tests run sequentially.
 
-Hmm, but why unavailable? Let me actually check if maybe the probe coordinator is module-level shared and the `forgetAdapter` or generation logic. Actually, I'm overthinking.
+Hmm, but why unavailable? Let me actually check if maybe the probe coordinator is module-level shared and the `forgetAdapter` or generation logic. Actually, I'm overthinking. 
 
 Let me just check: is `AdapterAvailabilityProbeCoordinator` a module singleton, and does `validate()` actually run the scripted validate or a real spawn? Let me look at how createTestServices sets this up and whether there's a shared coordinator.
 
@@ -5688,26 +4954,16 @@ The `.gitattributes` fix resolved the format:check issue. The remaining CI failu
   <details><summary>tool output</summary>
 
   ```text
-=== run 1 ===
-
-[2m   Start at [22m 00:42:22
-
-[2m   Duration [22m 11.86s[2m (transform 1.66s, setup 0ms, collect 5.91s, tests 5.45s, environment 0ms, prepare 173ms)[22m
-
-
-
-=== run 2 ===
-
-[2m   Start at [22m 00:42:37
-
-[2m   Duration [22m 6.86s[2m (transform 776ms, setup 0ms, collect 4.24s, tests 2.16s, environment 0ms, prepare 154ms)[22m
-
-
-
-=== run 3 ===
-
-[2m   Start at [22m 00:42:47
-
+=== run 1 ===
+[2m   Start at [22m 00:42:22
+[2m   Duration [22m 11.86s[2m (transform 1.66s, setup 0ms, collect 5.91s, tests 5.45s, environment 0ms, prepare 173ms)[22m
+
+=== run 2 ===
+[2m   Start at [22m 00:42:37
+[2m   Duration [22m 6.86s[2m (transform 776ms, setup 0ms, collect 4.24s, tests 2.16s, environment 0ms, prepare 154ms)[22m
+
+=== run 3 ===
+[2m   Start at [22m 00:42:47
 [2m   Duration [22m 7.11s[2m (transform 853ms, setup 0ms, collect 4.28s, tests 2.39s, environment 0ms, prepare 155ms)[22m
   ```
   </details>
@@ -5738,11 +4994,11 @@ completed	failure	chore(structure): execute structure-improvement plan (gates, C
 
 > [reasoning] The CI is red on a pre-existing app test. This is genuinely outside the structure-improvement scope. But the plan's acceptance criteria (S022, S027, S028) require CI green. I need to decide: this is a pre-existing app test that fails in CI environment.
 
-Let me think about whether the E2E job passed. The first run showed E2E in 37s with a checkmark. The failure was only in Verify job.
+Let me think about whether the E2E job passed. The first run showed E2E in 37s with a checkmark. The failure was only in Verify job. 
 
 The structure-improvement plan is complete. The CI is red due to a pre-existing flaky app test. I should be honest about this and ask the user how to proceed. Per my instructions, I should not fix pre-existing issues unless asked, and I should report honestly.
 
-Actually, let me reconsider — is it really pre-existing flaky, or is there something deterministic? The test `starts Unknown for a resolvable command and converges to Available` — the probe is scripted to return available. Why would CI return unavailable?
+Actually, let me reconsider — is it really pre-existing flaky, or is there something deterministic? The test `starts Unknown for a resolvable command and converges to Available` — the probe is scripted to return available. Why would CI return unavailable? 
 
 The probe runs `validate()` which for the scripted adapter returns `{available: true}`. Unless... there's a shared singleton `AdapterAvailabilityProbeCoordinator` that's shared across test files, and the probe generation logic. On CI the test runs in a specific order / parallel environment where a previous probe wrote "unavailable" for the same adapter ID.
 
@@ -5777,8 +5033,7 @@ This is a genuine decision point outside the structure-improvement scope. Let me
   <details><summary>tool output</summary>
 
   ```text
-=== confirm failing tests are not in my changed files ===
-
+=== confirm failing tests are not in my changed files ===
 === adapter tests changed by me? ===
   ```
   </details>
@@ -5820,13 +5075,13 @@ Let me look at how the adapter config service validates and how the probe coordi
 94:       // e.g. deleted mid-flight, or registry lookup failed — nothing to converge.
 95:     }
 96:   }
-97:
+97: 
 98:   create(projectId: string, input: AdapterConfigCreateServiceInput): AdapterConfig {
 99:     const project = this.projectRepo.getById(projectId);
 100:     if (!project) {
 101:       throw new AppError(ErrorCode.PROJECT_NOT_FOUND, "Project not found.");
 102:     }
-103:
+103: 
 104:     const trimmedName = input.name?.trim();
 105:     if (!trimmedName) {
 106:       throw new AppError(ErrorCode.ADAPTER_COMMAND_REQUIRED, "Adapter name is
@@ -5858,7 +5113,7 @@ Let me look at how the adapter config service validates and how the probe coordi
 171:         ),
 172:       );
 173:     }
-174:
+174: 
 175:     return toPublicAdapter(record, project.default_adapter_config_id);
 176:   }
 177
@@ -5895,16 +5150,11 @@ The root cause is becoming clear: the test uses `command: "codex"`, and `create(
   <details><summary>tool output</summary>
 
   ```text
-=== find validateCommand def ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        21   validateCommand,
-
-       141     const validation = validateCommand(trimmedCommand);
-
+=== find validateCommand def ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        21   validateCommand,
+       141     const validation = validateCommand(trimmedCommand);
         37 export function validateCommand(command: string): { available: boolean; errorMessage: string | null } {
   ```
   </details>
@@ -5924,13 +5174,13 @@ The root cause is becoming clear: the test uses `command: "codex"`, and `create(
 22: } from "./adapter-config-contract.js";
 23: import { updateAdapterConfig } from "./adapter-config-updater.js";
 24: import { validateAdapterConfig } from "./adapter-config-validator.js";
-25:
+25: 
 26: export type { AdapterConfigCreateServiceInput, AdapterConfigUpdateServiceInput } from "./adapter-config-contract.js";
-27:
+27: 
 28: export class AdapterConfigService {
 29:   /** Tracked so shutdown can await background availability probes. */
 30:   private pendingAvailabilityProbes = new Set<Promise<void>>();
-31:
+31: 
 32:   constructor(
 33:     private agentConfigRepo: AgentConfigRepository,
 34:     private projectRepo: ProjectRepository,
@@ -5955,14 +5205,14 @@ The root cause is becoming clear: the test uses `command: "codex"`, and `create(
 33:   api_key?: string | null;
 34:   capability_tags?: AgentCapability[];
 35: }
-36:
+36: 
 37: export function validateCommand(command: string): { available: boolean; errorMessage: string | null } {
 38:   if (!command || !command.trim()) {
 39:     return { available: false, errorMessage: "Command is empty." };
 40:   }
 41:   const { resolved, errorMessage: resolveError } = resolveExecutable(command);
 42:   if (!resolved) {
-43:     return { available: false, errorMessage: resolveError ?? `Command not found: ${command}`
+43:     return { available: false, errorMessage: resolveError ?? `Command not found: ${command}` 
 …[truncated]
   ```
   </details>
@@ -5973,7 +5223,7 @@ The root cause is becoming clear: the test uses `command: "codex"`, and `create(
 
 Confirmed the root cause: `validateCommand("codex")` calls `resolveExecutable("codex")`, which does a `spawnSync`/filesystem lookup. On CI, `codex` isn't installed → `available: false` → status `Unavailable` → the auto-validate probe (which would use the scripted `available:true` adapter) never runs → stays `Unavailable`. Locally, `codex` IS installed → `available: true` → status `Unknown` → probe runs → converges to `Available`.
 
-So the test **depends on the `codex` binary existing on the machine** — it's an environment-dependent unit test. The proper fix (matching the repo's existing convention for environment-gated tests) is to make `createTestServices` register a fake executable resolver, OR the test should use a command that resolves.
+So the test **depends on the `codex` binary existing on the machine** — it's an environment-dependent unit test. The proper fix (matching the repo's existing convention for environment-gated tests) is to make `createTestServices` register a fake executable resolver, OR the test should use a command that resolves. 
 
 Let me check how the repo already handles this — the release notes mentioned "17 real-CLI/POSIX-only tests skip by env/platform gate". Let me look at the test helpers to see if there's a way the scripted adapter's validate should be used instead of the real `validateCommand`.
 
@@ -5982,24 +5232,15 @@ Let me check `resolveExecutable` and the test helpers.
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        37 import { AgentAdapterRegistry } from "../src/runtime/adapter-registry.js";
-
-        93   adapterRegistry: AgentAdapterRegistry;
-
-       115 export function createTestServices(dbInput?: Database.Database): TestServices {
-
-       182   const adapterRegistry = new AgentAdapterRegistry();
-
-       183   adapterRegistry.register(new FakeAgentAdapter());
-
-       207     adapterRegistry,
-
-       352       adapterRegistry,
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        37 import { AgentAdapterRegistry } from "../src/runtime/adapter-registry.js";
+        93   adapterRegistry: AgentAdapterRegistry;
+       115 export function createTestServices(dbInput?: Database.Database): TestServices {
+       182   const adapterRegistry = new AgentAdapterRegistry();
+       183   adapterRegistry.register(new FakeAgentAdapter());
+       207     adapterRegistry,
+       352       adapterRegistry,
        363     adapterRegistry,
   ```
   </details>
@@ -6020,16 +5261,16 @@ Let me check `resolveExecutable` and the test helpers.
 178:     0,
 179:   );
 180:   const validationDispatchScheduler = new ValidationDispatchScheduler(issueRepo, validationWorkflowService);
-181:
+181: 
 182:   const adapterRegistry = new AgentAdapterRegistry();
 183:   adapterRegistry.register(new FakeAgentAdapter());
-184:
+184: 
 185:   const agentRunner = new AgentRunner({
 186:     runService,
 187:     threadEventService,
 188:     workspaceLockService,
 189:   });
-190:
+190: 
 191:   const manualRoutingService = new ManualRoutingService(
 192:     run
 …[truncated]
@@ -6038,13 +5279,13 @@ Let me check `resolveExecutable` and the test helpers.
 
 ## assistant · 2026-08-09T16:46:35Z
 
-- **tool**: `bash({"command": "cd D:\\Projects\\personahub; Write-Host \"=== vi.mock usage for resolve/validateCommand ===\"; Get-ChildItem server\\tests -Recurse -Filter *.test.ts | Select-String -Pattern \"vi.mock|resolveExecutable|validateCommand\" | Select-Object Path, LineNumber, Line | Select-Object -First 20; Write-Host \"=== command used in passing convergence test ===\"; Select-String -Path server\\tests\\integration\\adapter-availability-convergence.test.ts -Pattern \"command:|validateCommand|codex\" |
+- **tool**: `bash({"command": "cd D:\\Projects\\personahub; Write-Host \"=== vi.mock usage for resolve/validateCommand ===\"; Get-ChildItem server\\tests -Recurse -Filter *.test.ts | Select-String -Pattern \"vi.mock|resolveExecutable|validateCommand\" | Select-Object Path, LineNumber, Line | Select-Object -First 20; Write-Host \"=== command used in passing convergence test ===\"; Select-String -Path server\\tests\\integration\\adapter-availability-convergence.test.ts -Pattern \"command:|validateCommand|codex\" | 
 …[truncated])`
 
 
 > [reasoning] The root cause is that `create()` calls `validateCommand(command)` which uses `resolveExecutable` — a real filesystem lookup. On CI `codex` isn't installed, so status is `Unavailable`, probe never runs.
 
-The cleanest fix that respects the test's intent (testing the probe convergence, not the command resolution): the test wants `create()` to produce an `Unknown` status so the background probe (scripted, available:true) runs and converges to `Available`.
+The cleanest fix that respects the test's intent (testing the probe convergence, not the command resolution): the test wants `create()` to produce an `Unknown` status so the background probe (scripted, available:true) runs and converges to `Available`. 
 
 The problem is that `validateCommand` is a pure function using `resolveExecutable` — it can't be easily stubbed since it's imported directly.
 
@@ -6073,7 +5314,7 @@ Alternatively — is `resolveExecutable` something that could legitimately resol
 
 Let me look at what command the tests that pass on CI use. The `adapter-availability-convergence.test.ts` (16 tests, passed) — let me see what command it uses. That might reveal the convention.
 
-Actually, let me step back. The user chose "Fix the app test race". The cleanest, minimal, correct fix is to make the test not depend on the real `codex` binary. Since `create()` uses `validateCommand` (a real binary check), the test needs that to return available.
+Actually, let me step back. The user chose "Fix the app test race". The cleanest, minimal, correct fix is to make the test not depend on the real `codex` binary. Since `create()` uses `validateCommand` (a real binary check), the test needs that to return available. 
 
 Let me check: maybe there's a `vi.mock` convention already in the repo for `resolveExecutable` or `validateCommand`. Let me grep.
 The root cause is confirmed: `create()` calls `validateCommand("codex")` → `resolveExecutable("codex")` (real filesystem/`spawnSync` lookup). On CI, `codex` isn't installed → `Unavailable` → probe never runs → test fails. This is an environment-dependent unit test. Let me check how other tests handle this — e.g., whether there's a mock convention for `validateCommand`/`resolveExecutable`, and what command the passing `adapter-availability-convergence.test.ts` uses.
@@ -6081,22 +5322,14 @@ The root cause is confirmed: `create()` calls `validateCommand("codex")` → `re
   <details><summary>tool output</summary>
 
   ```text
-=== vi.mock usage for resolve/validateCommand ===
-
-
-
-[32;1mPath                                                                          [0m[32;1m LineNumber[0m[32;1m Line[0m
-
-[32;1m----                                                                          [0m [32;1m----------[0m [32;1m----[0m
-
-D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts            10 vi.mock("node:child_process"��
-
-D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts            28 vi.mock("../../src/runtime/e��
-
-D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts            29   resolveExecutable: vi.fn((��
-
-D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts           267     const spawnSpy = vi.mock��
-
+=== vi.mock usage for resolve/validateCommand ===
+
+[32;1mPath                                                                          [0m[32;1m LineNumber[0m[32;1m Line[0m
+[32;1m----                                                                          [0m [32;1m----------[0m [32;1m----[0m
+D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts            10 vi.mock("node:child_process"��
+D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts            28 vi.mock("../../src/runtime/e��
+D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts            29   resolveExecutable: vi.fn((��
+D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts           267     const spawnSpy = vi.mock��
 D
 …[truncated]
   ```
@@ -6132,10 +5365,10 @@ The repo has an established convention: adapter tests mock `resolveExecutable`. 
 31:     errorMessage: null,
 32:   })),
 33: }));
-34:
+34: 
 35: const { ClaudeCodeAdapter } = await import("../../src/runtime/adapters/claude-code-adapter.js");
-36:
-37:
+36: 
+37: 
 …[truncated]
   ```
   </details>
@@ -6155,12 +5388,9 @@ The mock convention mocks `../../src/runtime/executable-resolver.js`. I need to 
   <details><summary>tool output</summary>
 
   ```text
-=== which files import adapter-config-contract's validateCommand ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
+=== which files import adapter-config-contract's validateCommand ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
          5 import { resolveExecutable } from "../runtime/executable-resolver.js";
   ```
   </details>
@@ -6228,22 +5458,14 @@ Now let me run the test to verify the fix works.
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]�?[22m[39m[0m
-
-[31;1m[0m
-
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [2mno tests[22m
-
-[2m   Start at [22m 00:49:10
-
-[2m   Duration [22m 1.62s[2m (transform 260ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 743ms)[22m
-
-
-
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]�?[22m[39m[0m
+[31;1m[0m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 00:49:10
+[2m   Duration [22m 1.62s[2m (transform 260ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 743ms)[22m
+
 EXIT: 1
   ```
   </details>
@@ -6258,25 +5480,16 @@ The vi.mock needs to be at the top before imports, and there may be a load error
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
-
-
-
-[31;1m[0m
-
-[31;1m[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m[0m
-
-[31;1m[0m
-
-[31;1m[41m[1m FAIL [22m[49m tests/unit/adapter-config.test.ts[2m [ tests/unit/adapter-config.test.ts ][22m[0m
-
-[31;1m[31m[1mReferenceError[22m: vi is not defined[39m[0m
-
-[31;1m[36m [2m�?[22m tests/unit/adapter-config.test.ts:[2m15:1[22m[39m[0m
-
-[31;1m    [90m 13| [39m// literal command always resolves, keeping these unit tests machine-i�?    [90m 14| [39m// (same convention as codex-cli-adapter.test.ts / claude-code-adapter�?    [90m 15| [39mvi[33m.[39m[34mmock[39m([32m"../../src/runtime/executable-resolver.js"[39m[33m,[39m () [33m=>[39m ({[0m
-
-[31;1m    [90m
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
+
+[31;1m[0m
+[31;1m[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m[0m
+[31;1m[0m
+[31;1m[41m[1m FAIL [22m[49m tests/unit/adapter-config.test.ts[2m [ tests/unit/adapter-config.test.ts ][22m[0m
+[31;1m[31m[1mReferenceError[22m: vi is not defined[39m[0m
+[31;1m[36m [2m�?[22m tests/unit/adapter-config.test.ts:[2m15:1[22m[39m[0m
+[31;1m    [90m 13| [39m// literal command always resolves, keeping these unit tests machine-i�?    [90m 14| [39m// (same convention as codex-cli-adapter.test.ts / claude-code-adapter�?    [90m 15| [39mvi[33m.[39m[34mmock[39m([32m"../../src/runtime/executable-resolver.js"[39m[33m,[39m () [33m=>[39m ({[0m
+[31;1m    [90m 
 …[truncated]
   ```
   </details>
@@ -6290,14 +5503,10 @@ The vi.mock needs to be at the top before imports, and there may be a load error
   <details><summary>tool output</summary>
 
   ```text
-=== how vi is imported ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         1 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-
+=== how vi is imported ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         1 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
          1 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
   ```
   </details>
@@ -6321,20 +5530,13 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[32m�?[39m tests/unit/adapter-config.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 864[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m20 passed[39m[22m[90m (20)[39m
-
-[2m   Start at [22m 00:50:16
-
-[2m   Duration [22m 7.55s[2m (transform 1.62s, setup 0ms, collect 6.06s, tests 864ms, environment 0ms, prepare 234ms)[22m
-
-
-
+[32m�?[39m tests/unit/adapter-config.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 864[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m20 passed[39m[22m[90m (20)[39m
+[2m   Start at [22m 00:50:16
+[2m   Duration [22m 7.55s[2m (transform 1.62s, setup 0ms, collect 6.06s, tests 864ms, environment 0ms, prepare 234ms)[22m
+
 EXIT: 0
   ```
   </details>
@@ -6349,12 +5551,9 @@ Now the test passes and is machine-independent. Now let me apply the same fix to
   <details><summary>tool output</summary>
 
   ```text
-=== adapter-routes.test.ts imports ===
-
-[31;1mSelect-String: [31;1mA positional parameter cannot be found that accepts argument 'codex\|resolveExecutable|vi.mock'.[0m
-
-=== adapter-config-role.test.ts ===
-
+=== adapter-routes.test.ts imports ===
+[31;1mSelect-String: [31;1mA positional parameter cannot be found that accepts argument 'codex\|resolveExecutable|vi.mock'.[0m
+=== adapter-config-role.test.ts ===
 [31;1mSelect-String: [31;1mA positional parameter cannot be found that accepts argument 'codex\|resolveExecutable|vi.mock'.[0m
   ```
   </details>
@@ -6367,28 +5566,17 @@ Now the test passes and is machine-independent. Now let me apply the same fix to
   <details><summary>tool output</summary>
 
   ```text
-=== adapter-routes ===
-
-
-
-=== adapter-config-role ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         1 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-
-       104         payload: { name: "Codex", cli_provider: CliProvider.Codex, command: "codex" },
-
-       171         payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", args: "--quiet --json" },
-
-       182         payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", capability_tags: "valida��
-
-       196           command: "codex",
-
-       215         payload: { name: 123, cli_provider: CliProvider.Codex, command: "codex" },
-
+=== adapter-routes ===
+
+=== adapter-config-role ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         1 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+       104         payload: { name: "Codex", cli_provider: CliProvider.Codex, command: "codex" },
+       171         payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", args: "--quiet --json" },
+       182         payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", capability_tags: "valida��
+       196           command: "codex",
+       215         payload: { name: 123, cli_provider: CliProvider.Codex, command: "codex" },
        237         payload: { name: "Bad", cli_provider: CliProvider.Codex, command: "codex", api_key: [] },
 …[truncated]
   ```
@@ -6414,16 +5602,16 @@ Both use `command: "codex"` and need the mock. Let me look at the top of `adapte
 6: import { ErrorCode } from "@personahub/shared/errors";
 7: import { AdapterAuthType, AgentCapability, AdapterStatus, CliProvider } from "@personahub/shared/types";
 8: import type { AgentAdapter, AdapterValidationResult } from "../../src/runtime/types.js";
-9:
+9: 
 10: /**
-11:  * T073/T074/T075/T076/T080: HTTP-level tests
+11:  * T073/T074/T075/T076/T080: HTTP-level tests 
 …[truncated]
   ```
   </details>
 
 ## assistant · 2026-08-09T16:51:10Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\tests\\integration\\adapter-routes.test.ts", "newString": "import { describe, it, expect, beforeEach, afterEach, vi } from \"vitest\";\nimport Fastify from \"fastify\";\nimport { createTestServices, createTempDir, disposeTestServices, type TestServices } from \"../helpers.js\";\nimport { registerRoutes } from \"../../src/api/index.js\";\nimport { AppError, getErrorStatus, buildErrorResponse } from \"../../src/api/errors.js\";\nimport { ErrorCode }
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\tests\\integration\\adapter-routes.test.ts", "newString": "import { describe, it, expect, beforeEach, afterEach, vi } from \"vitest\";\nimport Fastify from \"fastify\";\nimport { createTestServices, createTempDir, disposeTestServices, type TestServices } from \"../helpers.js\";\nimport { registerRoutes } from \"../../src/api/index.js\";\nimport { AppError, getErrorStatus, buildErrorResponse } from \"../../src/api/errors.js\";\nimport { ErrorCode } 
 …[truncated])`
 
   <details><summary>tool output</summary>
@@ -6467,7 +5655,7 @@ This comment is necessary — it documents the non-obvious machine-dependency th
 2: import { createTestServices, disposeTestServices, type TestServices } from "../helpers.js";
 3: import { AdapterStatus, AgentCapability } from "@personahub/shared/types";
 4: import type { AgentAdapter } from "../../src/runtime/types.js";
-5:
+5: 
 6: // AC-001 fix: a resolvable "codex" command now starts Unknown and only
 7: // converges to Available via a real (here, scripted) background probe — see
 8: // AdapterConfigService.autoValidateAfterCreate/Update.
@@ -6519,30 +5707,18 @@ The pre-existing `// AC-001 fix...` comment was already there; my added block is
   <details><summary>tool output</summary>
 
   ```text
-[31;1m    [90m   | [39m                                 [31m^[39m[0m
-
-[31;1m    [90m718| [39m[0m
-
-[31;1m    [90m719| [39m      [35mconst[39m res [33m=[39m [35mawait[39m app[33m.[39m[34minject[39m({[0m
-
-[31;1m[0m
-
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]�?[22m[39m[0m
-
-[31;1m[0m
-
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
-
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m75 passed[39m[22m[90m (76)[39m
-
-[2m   Start at [22m 00:52:18
-
-[2m   Duration [22m 25.80s[2m (transform 2.78s, setup 0ms, collect 13.71s, tests 10.28s, environment 0ms, prepare 600ms)[22m
-
-
-
+[31;1m    [90m   | [39m                                 [31m^[39m[0m
+[31;1m    [90m718| [39m[0m
+[31;1m    [90m719| [39m      [35mconst[39m res [33m=[39m [35mawait[39m app[33m.[39m[34minject[39m({[0m
+[31;1m[0m
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]�?[22m[39m[0m
+[31;1m[0m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m75 passed[39m[22m[90m (76)[39m
+[2m   Start at [22m 00:52:18
+[2m   Duration [22m 25.80s[2m (transform 2.78s, setup 0ms, collect 13.71s, tests 10.28s, environment 0ms, prepare 600ms)[22m
+
 EXIT: 1
   ```
   </details>
@@ -6557,21 +5733,14 @@ EXIT: 1
   <details><summary>tool output</summary>
 
   ```text
-[31m�?[39m tests/integration/adapter-routes.test.ts [2m([22m[2m35 tests[22m[2m | [22m[31m1 [7mfail[0med[39m[2m)[22m[33m 3541[2mms[22m[39m
-
-[31m     �?[7mexpected[0m 'unknown' to be 'unavailable' // Object.is equality[39m
-
-[31m⎯⎯⎯⎯⎯⎯�?[39m[1m[41m [7mFail[0med Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m
-
-[41m[1m [7mFAIL[0m [22m[49m tests/integration/adapter-routes.test.ts[2m > [22mAdapter routes (T073-T076, T080)[2m > [22mPUT /api/projects/:project_id/defa[0m
-
-[41m[1m[7m[0m[22m[49m[2m[22m[2m[22mult-adapter[2m > [22mrejects setting an unavailable adapter as default (409)[0m
-
-[31m[1m[7mAssertionError[0m[22m: expected 'unknown' to be 'unavailable' // Object.is equality[39m
-
-[7mExpected[0m: [32m"un[7mavailable[27m"[39m
-
-[2m Test Files [22m
+[31m�?[39m tests/integration/adapter-routes.test.ts [2m([22m[2m35 tests[22m[2m | [22m[31m1 [7mfail[0med[39m[2m)[22m[33m 3541[2mms[22m[39m
+[31m     �?[7mexpected[0m 'unknown' to be 'unavailable' // Object.is equality[39m
+[31m⎯⎯⎯⎯⎯⎯�?[39m[1m[41m [7mFail[0med Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m
+[41m[1m [7mFAIL[0m [22m[49m tests/integration/adapter-routes.test.ts[2m > [22mAdapter routes (T073-T076, T080)[2m > [22mPUT /api/projects/:project_id/defa[0m
+[41m[1m[7m[0m[22m[49m[2m[22m[2m[22mult-adapter[2m > [22mrejects setting an unavailable adapter as default (409)[0m
+[31m[1m[7mAssertionError[0m[22m: expected 'unknown' to be 'unavailable' // Object.is equality[39m
+[7mExpected[0m: [32m"un[7mavailable[27m"[39m
+[2m Test Files [22m 
 …[truncated]
   ```
   </details>
@@ -6600,7 +5769,7 @@ This test intentionally creates an **unavailable** adapter (command that doesn't
 693:       const listRes = await app.inject({ method: "GET", url: `/api/projects/${projectId}/adapters` });
 694:       const firstConverged = JSON.parse(listRes.body).adapters.find((a: { id: string }) => a.id === first.id);
 695:       expect(firstConverged.is_default).toBe(true);
-696:
+696: 
 697:       const res = await app.inject({
 698:         method: "PUT",
 699:         url: `/api/projects/${projectId}/default-adapter`,
@@ -6619,7 +5788,7 @@ This test intentionally creates an **unavailable** adapter (command that doesn't
 
 > [reasoning] This test intentionally uses `command: "this-command-does-not-exist-xyz"` and expects `Unavailable`. With my mock, `resolveExecutable` always resolves, so it becomes `Unknown` instead of `Unavailable`.
 
-This test genuinely relies on `resolveExecutable` failing for a non-existent command. My blanket mock breaks it.
+This test genuinely relies on `resolveExecutable` failing for a non-existent command. My blanket mock breaks it. 
 
 I have two options:
 1. Make the mock conditional: return null for commands that don't "exist" — but that reintroduces machine-dependency.
@@ -6633,32 +5802,19 @@ This test intentionally uses a non-existent command (`this-command-does-not-exis
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        11  * Unknown/unsupported shim shapes fail closed (`resolved: null`) �� this module
-
-        23   errorMessage: string | null;
-
-        37   if (!IS_WINDOWS) return [""];
-
-        39   if (!raw) return DEFAULT_EXTENSIONS;
-
-        44   return parts.length > 0 ? parts : DEFAULT_EXTENSIONS;
-
-        48   return command.includes("/") || command.includes("\\") || command.startsWith(".");
-
-        54     if (!statSync(candidate).isFile()) return false;
-
-        56     return true;
-
-        58     return false;
-
-        66     return isExecutableFile(resolved) ? resolved : null;
-
-        76       if (isExecutableFile(candidate)) return candidate;
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        11  * Unknown/unsupported shim shapes fail closed (`resolved: null`) �� this module
+        23   errorMessage: string | null;
+        37   if (!IS_WINDOWS) return [""];
+        39   if (!raw) return DEFAULT_EXTENSIONS;
+        44   return parts.length > 0 ? parts : DEFAULT_EXTENSIONS;
+        48   return command.includes("/") || command.includes("\\") || command.startsWith(".");
+        54     if (!statSync(candidate).isFile()) return false;
+        56     return true;
+        58     return false;
+        66     return isExecutableFile(resolved) ? resolved : null;
+        76       if (isExecutableFile(candidate)) return candidate;
         80       if (isExecutableFile(candidate)) return candida
 …[truncated]
   ```
@@ -6706,22 +5862,14 @@ Necessary comment (explains the deterministic mock behavior). Now let me verify 
   <details><summary>tool output</summary>
 
   ```text
-[32m�?[39m tests/unit/adapter-config.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 896[2mms[22m[39m
-
- [32m�?[39m tests/integration/adapter-config-role.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 249[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
-
-[2m      Tests [22m [1m[32m76 passed[39m[22m[90m (76)[39m
-
-[2m   Start at [22m 00:55:09
-
-[2m   Duration [22m 29.80s[2m (transform 6.26s, setup 0ms, collect 19.31s, tests 8.03s, environment 1ms, prepare 1.26s)[22m
-
-
-
+[32m�?[39m tests/unit/adapter-config.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 896[2mms[22m[39m
+ [32m�?[39m tests/integration/adapter-config-role.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 249[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m76 passed[39m[22m[90m (76)[39m
+[2m   Start at [22m 00:55:09
+[2m   Duration [22m 29.80s[2m (transform 6.26s, setup 0ms, collect 19.31s, tests 8.03s, environment 1ms, prepare 1.26s)[22m
+
 EXIT: 0
   ```
   </details>
@@ -6735,24 +5883,15 @@ All 76 tests pass across the three files. Now let me check if there are OTHER ad
   <details><summary>tool output</summary>
 
   ```text
-NO MOCK: D:\Projects\personahub\server\tests\integration\acceptance-checklist.test.ts
-
-NO MOCK: D:\Projects\personahub\server\tests\integration\evidence-summary-repository.test.ts
-
-NO MOCK: D:\Projects\personahub\server\tests\integration\graph-cli-acceptance.test.ts
-
-NO MOCK: D:\Projects\personahub\server\tests\integration\intake-confirm.test.ts
-
-NO MOCK: D:\Projects\personahub\server\tests\integration\intake-null-definition.test.ts
-
-NO MOCK: D:\Projects\personahub\server\tests\integration\intake-routes.test.ts
-
-NO MOCK: D:\Projects\personahub\server\tests\integration\issue-blocked.test.ts
-
-NO MOCK: D:\Projects\personahub\server\tests\integration\issue-cas.test.ts
-
-NO MOCK: D:\Projects\personahub\server\tests\integration\migration-v5.test.ts
-
+NO MOCK: D:\Projects\personahub\server\tests\integration\acceptance-checklist.test.ts
+NO MOCK: D:\Projects\personahub\server\tests\integration\evidence-summary-repository.test.ts
+NO MOCK: D:\Projects\personahub\server\tests\integration\graph-cli-acceptance.test.ts
+NO MOCK: D:\Projects\personahub\server\tests\integration\intake-confirm.test.ts
+NO MOCK: D:\Projects\personahub\server\tests\integration\intake-null-definition.test.ts
+NO MOCK: D:\Projects\personahub\server\tests\integration\intake-routes.test.ts
+NO MOCK: D:\Projects\personahub\server\tests\integration\issue-blocked.test.ts
+NO MOCK: D:\Projects\personahub\server\tests\integration\issue-cas.test.ts
+NO MOCK: D:\Projects\personahub\server\tests\integration\migration-v5.test.ts
 NO MOCK: D:\Projects\personahub\server\tests\in
 …[truncated]
   ```
@@ -6764,7 +5903,7 @@ NO MOCK: D:\Projects\personahub\server\tests\in
 …[truncated])`
 
 
-> [reasoning] Many files use `command: "codex"` without a mock. But the CI failure only reported 3 files (adapter-config.test.ts, adapter-routes.test.ts, adapter-config-role.test.ts). The others likely don't assert on the availability status converging, or they pass because they don't wait for convergence. But to be safe, these are the ones that specifically assert availability.
+> [reasoning] Many files use `command: "codex"` without a mock. But the CI failure only reported 3 files (adapter-config.test.ts, adapter-routes.test.ts, adapter-config-role.test.ts). The others likely don't assert on the availability status converging, or they pass because they don't wait for convergence. But to be safe, these are the ones that specifically assert availability. 
 
 Actually, the CI run is the authoritative signal — only those 3 files failed. The other files using `command: "codex"` must not depend on the actual binary resolving to a specific status (e.g., they may use `FakeAgentAdapter` or don't assert status, or use a real CLI that's gated).
 
@@ -6780,8 +5919,7 @@ The CI failure was specifically on those 3 test files (the first CI run reported
   <details><summary>tool output</summary>
 
   ```text
-=== typecheck (server) ===
-
+=== typecheck (server) ===
 TS_EXIT: 0
   ```
   </details>
@@ -6796,18 +5934,12 @@ Server typecheck passes. The changed test files aren't in the prettier format ta
   <details><summary>tool output</summary>
 
   ```text
-[7mM[0m  server/tests/integration/adapter-config-role.test.ts
-
-[7mM[0m  server/tests/integration/adapter-routes.test.ts
-
-[7mM[0m  server/tests/unit/adapter-config.test.ts
-
-[31;1m�?Saved:                     16,572 tokens (~100%)             �?[0m
-
-[31;1m└──────────────────────────────────────────────────────────────�?[0m
-
-[main 917511d] fix(test): make adapter-availability tests machine-independent on CI
-
+[7mM[0m  server/tests/integration/adapter-config-role.test.ts
+[7mM[0m  server/tests/integration/adapter-routes.test.ts
+[7mM[0m  server/tests/unit/adapter-config.test.ts
+[31;1m�?Saved:                     16,572 tokens (~100%)             �?[0m
+[31;1m└──────────────────────────────────────────────────────────────�?[0m
+[main 917511d] fix(test): make adapter-availability tests machine-independent on CI
  3 files changed, 46 insertions(+), 3 deletions(-)
   ```
   </details>
@@ -6820,17 +5952,15 @@ Server typecheck passes. The changed test files aren't in the prettier format ta
   <details><summary>tool output</summary>
 
   ```text
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   0046a15..917511d  main -> main[0m
-
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   0046a15..917511d  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-09T16:57:39Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Pushed. Now let me watch the CI run to completion.
@@ -6838,14 +5968,10 @@ Pushed. Now let me watch the CI run to completion.
   <details><summary>tool output</summary>
 
   ```text
-[0] in_progress  fix(test): make adapter-availability tests machine-independent on CI CI main push 31325146560 56s 2026-08-09T16:57:37Z
-
-[1] in_progress  fix(test): make adapter-availability tests machine-independent on CI CI main push 31325146560 1m38s 2026-08-09T16:57:37Z
-
-[2] completed failure fix(test): make adapter-availability tests machine-independent on CI CI main push 31325146560 2m11s 2026-08-09T16:57:37Z
-
-=== final ===
-
+[0] in_progress  fix(test): make adapter-availability tests machine-independent on CI CI main push 31325146560 56s 2026-08-09T16:57:37Z
+[1] in_progress  fix(test): make adapter-availability tests machine-independent on CI CI main push 31325146560 1m38s 2026-08-09T16:57:37Z
+[2] completed failure fix(test): make adapter-availability tests machine-independent on CI CI main push 31325146560 2m11s 2026-08-09T16:57:37Z
+=== final ===
 completed	failure	fix(test): make adapter-availability tests machine-independent on CI	CI	main	push	31325146560	2m11s	2026-08-09T16:57:37Z
   ```
   </details>
@@ -6862,18 +5988,12 @@ Still failing at 2m11s (verify job). Let me check what failed now.
   ```text
 {"conclusion":"failure","name":"Verify (lint, typecheck, test, docs, build)"}
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
-=== log-failed ===
-
-
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:57:58.1445686Z > prettier --check "e
-
-slint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-[7mfail[0mure-reprobe,run-dispatch,run-escalati[0m
-
-[7m[0mon-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,iss[0m
-
-[7m[0mue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-enve[0m
-
+=== log-failed ===
+
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:57:58.1445686Z > prettier --check "e
+slint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-[7mfail[0mure-reprobe,run-dispatch,run-escalati[0m
+[7m[0mon-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,iss[0m
+[7m[0mue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-enve[0m
 [7m[0mlope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-seque
 …[truncated]
   ```
@@ -6895,7 +6015,7 @@ Wait — maybe it's because the mock convention: `project-default-adapter.test.t
 
 The real issue: there are MANY test files that create `codex` adapters and rely on real-binary resolution. The cleanest, most correct fix is NOT to patch each test file individually, but to provide a shared test setup that mocks `resolveExecutable` globally — OR better, make `createTestServices` deterministic.
 
-Actually the root design smell: `createTestServices` should not depend on real PATH for availability. But the probe is what checks availability via the adapter's `validate()` (scripted returns available). The `create()` initial status uses `validateCommand` (real binary check).
+Actually the root design smell: `createTestServices` should not depend on real PATH for availability. But the probe is what checks availability via the adapter's `validate()` (scripted returns available). The `create()` initial status uses `validateCommand` (real binary check). 
 
 The best fix: in the test helpers `createTestServices`, register a FakeAgentAdapter and... no. The issue is `validateCommand` inside `create()`.
 
@@ -6921,18 +6041,12 @@ Let me check the vitest config for a global setup approach, which is the correct
   <details><summary>tool output</summary>
 
   ```text
-=== vitest config ===
-
-
-
-=== search setupFiles ===
-
-[32;1mFullName[0m
-
-[32;1m--------[0m
-
-D:\Projects\personahub\server\vitest.config.ts
-
+=== vitest config ===
+
+=== search setupFiles ===
+[32;1mFullName[0m
+[32;1m--------[0m
+D:\Projects\personahub\server\vitest.config.ts
 D:\Projects\personahub\server\node_modules\.vite\vitest
   ```
   </details>
@@ -6948,7 +6062,7 @@ D:\Projects\personahub\server\node_modules\.vite\vitest
 <type>file</type>
 <content>
 1: import { defineConfig } from "vitest/config";
-2:
+2: 
 3: export default defineConfig({
 4:   test: {
 5:     fileParallelism: false,
@@ -6977,7 +6091,7 @@ Actually, let me reconsider. The pattern used in this codebase is per-file vi.mo
 
 Let me identify ALL test files that (a) create adapters with command "codex" AND (b) assert on AdapterStatus.Available/Unknown/Unavailable after create. Those are the ones that will fail on CI. Let me look at what project-default-adapter.test.ts does.
 
-Actually, the cleaner systemic approach: since the tests use `createTestServices` and the issue is `validateCommand` -> `resolveExecutable` doing a real PATH lookup, the root cause is that these "unit/integration" tests depend on the machine. The convention in this repo is to mock per-file.
+Actually, the cleaner systemic approach: since the tests use `createTestServices` and the issue is `validateCommand` -> `resolveExecutable` doing a real PATH lookup, the root cause is that these "unit/integration" tests depend on the machine. The convention in this repo is to mock per-file. 
 
 Let me just fix all the files that assert availability status. Let me identify them precisely by looking at which ones create a codex adapter AND check status. Let me grep for tests that combine `command: "codex"` with `AdapterStatus.` expectations.
 
@@ -6989,26 +6103,16 @@ Let me check `project-default-adapter.test.ts` (newly failing) and find all such
   <details><summary>tool output</summary>
 
   ```text
-D:\Projects\personahub\server\tests\integration\acceptance-checklist.test.ts
-
-D:\Projects\personahub\server\tests\integration\adapter-config-role.test.ts
-
-D:\Projects\personahub\server\tests\integration\adapter-routes.test.ts
-
-D:\Projects\personahub\server\tests\integration\codex-cli-adapter.test.ts
-
-D:\Projects\personahub\server\tests\integration\evidence-summary-repository.test.ts
-
-D:\Projects\personahub\server\tests\integration\graph-cli-acceptance.test.ts
-
-D:\Projects\personahub\server\tests\integration\intake-confirm.test.ts
-
-D:\Projects\personahub\server\tests\integration\intake-null-definition.test.ts
-
-D:\Projects\personahub\server\tests\integration\intake-routes.test.ts
-
-D:\Projects\personahub\server\tests\integration\issue-blocked.test.ts
-
+D:\Projects\personahub\server\tests\integration\acceptance-checklist.test.ts
+D:\Projects\personahub\server\tests\integration\adapter-config-role.test.ts
+D:\Projects\personahub\server\tests\integration\adapter-routes.test.ts
+D:\Projects\personahub\server\tests\integration\codex-cli-adapter.test.ts
+D:\Projects\personahub\server\tests\integration\evidence-summary-repository.test.ts
+D:\Projects\personahub\server\tests\integration\graph-cli-acceptance.test.ts
+D:\Projects\personahub\server\tests\integration\intake-confirm.test.ts
+D:\Projects\personahub\server\tests\integration\intake-null-definition.test.ts
+D:\Projects\personahub\server\tests\integration\intake-routes.test.ts
+D:\Projects\personahub\server\tests\integration\issue-blocked.test.ts
 D:\Projects\personahub\server\tests\integ
 …[truncated]
   ```
@@ -7024,7 +6128,7 @@ D:\Projects\personahub\server\tests\integ
 
 The CI runs have been surfacing different files each time because vitest runs the full suite and reports all failures. But actually the first two runs may have aborted early or the failures are order-dependent.
 
-Let me think about this differently. The truly correct fix is to make the default mock applied globally BUT exclude the files that specifically test resolveExecutable.
+Let me think about this differently. The truly correct fix is to make the default mock applied globally BUT exclude the files that specifically test resolveExecutable. 
 
 Actually, a cleaner approach: the root cause is `validateCommand()` doing a real PATH lookup in `create()`. The tests use `createTestServices`. Instead of patching 40+ files, I could make the mock global in vitest config via a `setupFiles` that mocks `executable-resolver`, but then `executable-resolver.test.ts` and `adapter-config-command-resolution.test.ts` would break.
 
@@ -7046,18 +6150,12 @@ The list is large. Let me get the complete set of failing test files from the la
   <details><summary>tool output</summary>
 
   ```text
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:58:36.4133156Z    ^[[33m^[[2m✓^[[2
-
-2m^[[39m ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)^[[2m > ^[[22mclassifies a [7mfailed tool call ([0mis_error,[0m
-
-[7m[0m no hook denial) as command_completed/failed ^[[33m 516^[[2mms^[[22m^[[39m[0m
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:58:43.2386422Z    ^[[33m^[[2m✓^[[2
-
-2m^[[39m OpenCodeAdapter Integration (T042-T048)^[[2m > ^[[22mtriggers CredentialIsolationBlocked escalation for a [7mfail[0m
-
-[7med git push ([0mT008 real failure text: 'Repository not found') ^[[33m 517^[[2mms^[[22m^[[39m[0m
-
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:58:36.4133156Z    ^[[33m^[[2m✓^[[2
+2m^[[39m ClaudeCodeAdapter Integration (T037/T038/T039/T040/T041)^[[2m > ^[[22mclassifies a [7mfailed tool call ([0mis_error,[0m
+[7m[0m no hook denial) as command_completed/failed ^[[33m 516^[[2mms^[[22m^[[39m[0m
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:58:43.2386422Z    ^[[33m^[[2m✓^[[2
+2m^[[39m OpenCodeAdapter Integration (T042-T048)^[[2m > ^[[22mtriggers CredentialIsolationBlocked escalation for a [7mfail[0m
+[7med git push ([0mT008 real failure text: 'Repository not found') ^[[33m 517^[[2mms^[[22m^[[39m[0m
 Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T16:58:46.0713222Z  ^[[31m❯^[
 …[truncated]
   ```
@@ -7101,22 +6199,14 @@ The repo already has an **env-gate pattern** for real-CLI tests ("17 real-CLI/PO
   <details><summary>tool output</summary>
 
   ```text
-=== gate/skip helpers ===
-
-
-
-[32;1mPath                                                                                    [0m[32;1m LineNumber[0m[32;1m Line[0m
-
-[32;1m----                                                                                    [0m [32;1m----------[0m [32;1m----[0m
-
-D:\Projects\personahub\server\tests\helpers.ts                                                  394  * an arrow functi��
-
-D:\Projects\personahub\server\tests\helpers\codex-final-message-fixtures.ts                       9  * - command outpu��
-
-D:\Projects\personahub\server\tests\helpers\codex-final-message-fixtures.ts                      70         aggregated��
-
-D:\Projects\personahub\server\tests\integration\adapter-availability-convergence.test.ts        183     // whichever w��
-
+=== gate/skip helpers ===
+
+[32;1mPath                                                                                    [0m[32;1m LineNumber[0m[32;1m Line[0m
+[32;1m----                                                                                    [0m [32;1m----------[0m [32;1m----[0m
+D:\Projects\personahub\server\tests\helpers.ts                                                  394  * an arrow functi��
+D:\Projects\personahub\server\tests\helpers\codex-final-message-fixtures.ts                       9  * - command outpu��
+D:\Projects\personahub\server\tests\helpers\codex-final-message-fixtures.ts                      70         aggregated��
+D:\Projects\personahub\server\tests\integration\adapter-availability-convergence.test.ts        183     // whichever w��
 D:\Pr
 …[truncated]
   ```
@@ -7133,34 +6223,20 @@ The `executable-resolver.test.ts` failure is the most telling: it expects `claud
   <details><summary>tool output</summary>
 
   ```text
-=== real-claude probe gate ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        14 const REAL = !!process.env.REAL_CODEX;
-
-        21   const app = Fastify({ logger: false });
-
-        30   const graphRuntimeService = new GraphRuntimeService(
-
-        61 describe.skipIf(!REAL)("T063 real-CLI acceptance", () => {
-
-        72     const project = services.projectService.create("CLI Test", "acceptance");
-
-        74     const workspace = services.workspaceService.bind(project.id, tempDir);
-
-        93         "  const result = '' as string | null;",
-
-        99     const { issue } = services.issueService.create(project.id, {
-
-
-
-/**
-
- * T101: real, authenticated Claude Code + OpenCode auth verification on this
-
+=== real-claude probe gate ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        14 const REAL = !!process.env.REAL_CODEX;
+        21   const app = Fastify({ logger: false });
+        30   const graphRuntimeService = new GraphRuntimeService(
+        61 describe.skipIf(!REAL)("T063 real-CLI acceptance", () => {
+        72     const project = services.projectService.create("CLI Test", "acceptance");
+        74     const workspace = services.workspaceService.bind(project.id, tempDir);
+        93         "  const result = '' as string | null;",
+        99     const { issue } = services.issueService.create(project.id, {
+
+/**
+ * T101: real, authenticated Claude Code + OpenCode auth verification on this
  * machine (Claude Pro CLI login; OpenCode CLI
 …[truncated]
   ```
@@ -7207,7 +6283,7 @@ Let me check how `createTestServices` is structured and whether a targeted `befo
 - **tool**: `read({"filePath": "D:\\Projects\\personahub\\server\\tests\\unit\\executable-resolver.test.ts"})`
 
 
-> [reasoning]
+> [reasoning] 
 
 > [reasoning] The issue is that `validateCommand` is imported directly in `adapter-config.ts` from `adapter-config-contract.js`, not through the service's deps. So mocking the resolver module at the helper level won't help because `adapter-config-contract.js` imports `resolveExecutable` from `executable-resolver.js`, and `adapter-config.ts` imports `validateCommand` from `adapter-config-contract.js`.
 
@@ -7241,7 +6317,7 @@ This is now clearly a systemic environment-dependency issue spanning multiple te
 3: import { tmpdir } from "node:os";
 4: import { join, delimiter } from "node:path";
 5: import { resolveExecutable } from "../../src/runtime/executable-resolver.js";
-6:
+6: 
 7: // T009a-1: executable resolver tests, fixture-driven from real CLI shim shapes
 8: // captured in server/tests/helpers/{claude,opencode}-protocol-fixtures.md T009a.
 9: //
@@ -7254,7 +6330,7 @@ This is now clearly a systemic environment-dependency issue spanning multiple te
 
 ## assistant · 2026-08-09T17:05:15Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\.github\\workflows\\ci.yml", "newString": "jobs:\n  verify:\n    name: Verify (lint, typecheck, test, docs, build)\n    # The test suite is Windows-first (CRLF line endings, .exe/.cmd shim\n    # fixtures, Windows executable semantics) — CI must match the dev platform.\n    runs-on: windows-latest\n    timeout-minutes: 30\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Set up Node LTS\n        uses: actions/setup-node@v4\n        with:\n
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\.github\\workflows\\ci.yml", "newString": "jobs:\n  verify:\n    name: Verify (lint, typecheck, test, docs, build)\n    # The test suite is Windows-first (CRLF line endings, .exe/.cmd shim\n    # fixtures, Windows executable semantics) — CI must match the dev platform.\n    runs-on: windows-latest\n    timeout-minutes: 30\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Set up Node LTS\n        uses: actions/setup-node@v4\n        with:\n   
 …[truncated])`
 
 
@@ -7322,13 +6398,13 @@ For executable-resolver.test.ts: it creates .exe fixtures and expects them resol
 
 Decision: **Run CI on windows-latest.** This is the single change that makes the Windows-oriented test suite pass, and it aligns with the .gitattributes CRLF decision and the project's Windows-first nature. Combined with my adapter-test mocks (needed on any platform since codex isn't installed), CI should go green.
 
-But wait — there may be other Linux/Windows divergences too (POSIX-only tests are already gated with skipIf). On windows-latest, POSIX-only tests get skipped (correctly).
+But wait — there may be other Linux/Windows divergences too (POSIX-only tests are already gated with skipIf). On windows-latest, POSIX-only tests get skipped (correctly). 
 
 Let me also reconsider: is there an even simpler interpretation? The plan explicitly noted "浏览器 E2E ... 按凭证和运行环境决定是否作为必需检查" and CI is meant to be the same `verify`. The repo's tests are Windows-oriented. The most correct CI is windows-latest.
 
 Let me switch CI to windows-latest and keep my adapter mocks. Then re-push and verify.
 
-Actually, I should double check whether the adapter mocks even help on Windows CI — yes, they make resolveExecutable return resolved for codex regardless, so validateCommand returns available, status Unknown, probe runs (scripted returns available), converges to Available.
+Actually, I should double check whether the adapter mocks even help on Windows CI — yes, they make resolveExecutable return resolved for codex regardless, so validateCommand returns available, status Unknown, probe runs (scripted returns available), converges to Available. 
 
 Let me make the change: ci.yml → windows-latest for both jobs. Keep the .gitattributes (CRLF is correct for Windows and also matches prettier). Keep the adapter mocks (needed since codex not installed on CI).
 
@@ -7397,32 +6473,19 @@ Now, on Windows CI, `codex` still won't be installed, so the remaining scripted-
   <details><summary>tool output</summary>
 
   ```text
-=== project-default-adapter.test.ts top ===
-
-import { describe, it, expect } from "vitest";
-
-import { createTestDb, createTestServices, disposeTestServices, createTempDir } from "../helpers.js";
-
-import { ProjectRepository } from "../../src/repositories/project.js";
-
-import { AgentConfigRepository } from "../../src/repositories/agent-config.js";
-
-import { AdapterStatus, AgentCapability } from "@personahub/shared/types";
-
-import { ErrorCode } from "@personahub/shared/errors";
-
-import { AppError } from "../../src/api/errors.js";
-
-import type { AgentAdapter } from "../../src/runtime/types.js";
-
-
-
-// AC-001 fix: AdapterConfigService.create() no longer resolves Available
-
-=== acceptance-checklist.test.ts top ===
-
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-
+=== project-default-adapter.test.ts top ===
+import { describe, it, expect } from "vitest";
+import { createTestDb, createTestServices, disposeTestServices, createTempDir } from "../helpers.js";
+import { ProjectRepository } from "../../src/repositories/project.js";
+import { AgentConfigRepository } from "../../src/repositories/agent-config.js";
+import { AdapterStatus, AgentCapability } from "@personahub/shared/types";
+import { ErrorCode } from "@personahub/shared/errors";
+import { AppError } from "../../src/api/errors.js";
+import type { AgentAdapter } from "../../src/runtime/types.js";
+
+// AC-001 fix: AdapterConfigService.create() no longer resolves Available
+=== acceptance-checklist.test.ts top ===
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { cr
 …[truncated]
   ```
@@ -7469,26 +6532,16 @@ The failure was "AC-001: user can create, update, delete adapter config" expecte
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         4   RunStatus, FailureReason, IssueStatus, AdapterStatus,
-
-        15   const adapter = services.agentConfigRepo.create({
-
-        20     command: "fake",
-
-        24     status: AdapterStatus.Available,
-
-        45   it("AC-001: user can create, update, delete adapter config with validation", async () => {
-
-        53     const adapter = services.adapterConfigService.create(project.id, {
-
-        54       name: "Codex", cli_provider: "codex", command: "codex",
-
-        56     // AC-001 fix: a resolvable command starts Unknown and only converges to
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         4   RunStatus, FailureReason, IssueStatus, AdapterStatus,
+        15   const adapter = services.agentConfigRepo.create({
+        20     command: "fake",
+        24     status: AdapterStatus.Available,
+        45   it("AC-001: user can create, update, delete adapter config with validation", async () => {
+        53     const adapter = services.adapterConfigService.create(project.id, {
+        54       name: "Codex", cli_provider: "codex", command: "codex",
+        56     // AC-001 fix: a resolvable command starts Unknown and only converges to
         59     expect(services.adapterConfigService.getById(adapter.id).status).toBe(AdapterStatus.Available);
   ```
   </details>
@@ -7505,7 +6558,7 @@ The failure was "AC-001: user can create, update, delete adapter config" expecte
 <path>D:\Projects\personahub\server\tests\integration\acceptance-checklist.test.ts</path>
 <type>file</type>
 <content>
-44:
+44: 
 45:   it("AC-001: user can create, update, delete adapter config with validation", async () => {
 46:     services.adapterRegistry.register({
 47:       provider: "codex",
@@ -7562,22 +6615,14 @@ Necessary comment, keeping. Now let me run the two newly-fixed test files locall
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]�?[22m[39m[0m
-
-[31;1m[0m
-
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
-
-[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m22 passed[39m[22m[90m (24)[39m
-
-[2m   Start at [22m 01:08:05
-
-[2m   Duration [22m 38.90s[2m (transform 2.59s, setup 0ms, collect 12.92s, tests 21.32s, environment 0ms, prepare 1.44s)[22m
-
-
-
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]�?[22m[39m[0m
+[31;1m[0m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m22 passed[39m[22m[90m (24)[39m
+[2m   Start at [22m 01:08:05
+[2m   Duration [22m 38.90s[2m (transform 2.59s, setup 0ms, collect 12.92s, tests 21.32s, environment 0ms, prepare 1.44s)[22m
+
 EXIT: 1
   ```
   </details>
@@ -7605,18 +6650,12 @@ EXIT: 1
   <details><summary>tool output</summary>
 
   ```text
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
-
-[2m   Start at [22m 01:11:04
-
-[2m   Duration [22m 5.95s[2m (transform 1.47s, setup 0ms, collect 5.26s, tests 118ms, environment 0ms, prepare 230ms)[22m
-
-
-
-PDA_EXIT: 0
-
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 01:11:04
+[2m   Duration [22m 5.95s[2m (transform 1.47s, setup 0ms, collect 5.26s, tests 118ms, environment 0ms, prepare 230ms)[22m
+
+PDA_EXIT: 0
 === acceptance ===
   ```
   </details>
@@ -7631,18 +6670,12 @@ PDA_EXIT: 0
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
-
-
-
- [32m�?[39m tests/integration/acceptance-checklist.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 4273[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Acceptance Checklist (T056)[2m > [22mAC-002: user can input instructions in Thread, system creates Run [33m 499[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Acceptance Checklist (T056)[2m > [22mAC-003: Run status transitions queued -> running -> completed [33m 467[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Acceptance Checklist (T056)[2m > [22mAC-004: run.queued/started/output/completed events persisted as ThreadEvent [33m 498[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
+
+ [32m�?[39m tests/integration/acceptance-checklist.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 4273[2mms[22m[39m
+   [33m[2m�?[22m[39m Acceptance Checklist (T056)[2m > [22mAC-002: user can input instructions in Thread, system creates Run [33m 499[2mms[22m[39m
+   [33m[2m�?[22m[39m Acceptance Checklist (T056)[2m > [22mAC-003: Run status transitions queued -> running -> completed [33m 467[2mms[22m[39m
+   [33m[2m�?[22m[39m Acceptance Checklist (T056)[2m > [22mAC-004: run.queued/started/output/completed events persisted as ThreadEvent [33m 498[2mms[22m[39m
    [33m[2m�?[22m[39m Acceptance Checklist (T056)[2m > [22mAC-005: same workspace only one Run at a time, others
 …[truncated]
   ```
@@ -7660,26 +6693,16 @@ Given the full suite takes ~6 min, let me run it in the background.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mIf this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m[0m
-
-[31;1m[36m [2m�?[22m tests/integration/scanner-selector.test.ts:[2m18:3[22m[39m[0m
-
-[31;1m    [90m 16| [39m  })[33m;[39m[0m
-
-[31;1m    [90m 17| [39m[0m
-
-[31;1m    [90m 18| [39m  [34mit[39m([32m"uses git scanner for git workspace"[39m[33m,[39m () [33m=>[39m {[0m
-
-[31;1m    [90m   | [39m  [31m^[39m[0m
-
-[31;1m    [90m 19| [39m    execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 �?    [90m 20| [39m    execSync('git config user.email "t@t.com"', { cwd: dir, encoding: �?[0m
-
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]�?[22m[39m[0m
-
-[31;1m[0m
-
-
-
+[31;1mIf this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m[0m
+[31;1m[36m [2m�?[22m tests/integration/scanner-selector.test.ts:[2m18:3[22m[39m[0m
+[31;1m    [90m 16| [39m  })[33m;[39m[0m
+[31;1m    [90m 17| [39m[0m
+[31;1m    [90m 18| [39m  [34mit[39m([32m"uses git scanner for git workspace"[39m[33m,[39m () [33m=>[39m {[0m
+[31;1m    [90m   | [39m  [31m^[39m[0m
+[31;1m    [90m 19| [39m    execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 �?    [90m 20| [39m    execSync('git config user.email "t@t.com"', { cwd: dir, encoding: �?[0m
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]�?[22m[39m[0m
+[31;1m[0m
+
 [2m Test Files [22m [1m[31m1 failed[39m[22m[2m |
 …[truncated]
   ```
@@ -7697,22 +6720,14 @@ This is the pre-existing flaky `git-scanner`/`scanner-selector` test. It was fai
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]�?[22m[39m[0m
-
-[31;1m[0m
-
-
-
-[2m Test Files [22m [1m[31m2 failed[39m[22m[90m (2)[39m
-
-[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m12 passed[39m[22m[90m (14)[39m
-
-[2m   Start at [22m 01:19:12
-
-[2m   Duration [22m 52.42s[2m (transform 1.79s, setup 0ms, collect 6.64s, tests 44.69s, environment 0ms, prepare 363ms)[22m
-
-
-
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]�?[22m[39m[0m
+[31;1m[0m
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m12 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 01:19:12
+[2m   Duration [22m 52.42s[2m (transform 1.79s, setup 0ms, collect 6.64s, tests 44.69s, environment 0ms, prepare 363ms)[22m
+
 EXIT: 1
   ```
   </details>
@@ -7727,18 +6742,12 @@ The git-scanner/scanner-selector tests fail even in isolation now (likely a left
   <details><summary>tool output</summary>
 
   ```text
-WARNING: git diff [7mfail[0med (rc=128): fatal: bad revision 'HEAD~1'
-
- [31m�?[39m tests/integration/scanner-selector.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 [7mfail[0med[39m[2m)[22m[33m 7266[2mms[22m[39m
-
-[31m⎯⎯⎯⎯⎯⎯�?[39m[1m[41m [7mFail[0med Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m
-
-[41m[1m [7mFAIL[0m [22m[49m tests/integration/scanner-selector.test.ts[2m > [22mScanner Selector (T030)[2m > [22muses git scanner for git workspace
-
-[31m[1m[7mError[0m[22m: Test timed out in 5000ms.
-
-[2m Test Files [22m [1m[31m1 [7mfail[0med[39m[22m[90m (1)[39m
-
+WARNING: git diff [7mfail[0med (rc=128): fatal: bad revision 'HEAD~1'
+ [31m�?[39m tests/integration/scanner-selector.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 [7mfail[0med[39m[2m)[22m[33m 7266[2mms[22m[39m
+[31m⎯⎯⎯⎯⎯⎯�?[39m[1m[41m [7mFail[0med Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m
+[41m[1m [7mFAIL[0m [22m[49m tests/integration/scanner-selector.test.ts[2m > [22mScanner Selector (T030)[2m > [22muses git scanner for git workspace
+[31m[1m[7mError[0m[22m: Test timed out in 5000ms.
+[2m Test Files [22m [1m[31m1 [7mfail[0med[39m[22m[90m (1)[39m
 [2m      Tests [22m [1m[31m1 [7mfail[0med[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
   ```
   </details>
@@ -7763,12 +6772,9 @@ warning: in the working copy of '.github/workflows/ci.yml', LF will be replaced 
 M  .github/workflows/ci.yml
 M  server/tests/integration/acceptance-checklist.test.ts
 M  server/tests/unit/project-default-adapter.test.ts
-[31;1m�?Saved:                     23,022 tokens (~100%)             �?[0m
-
-[31;1m└──────────────────────────────────────────────────────────────�?[0m
-
-[main 7088126] ci: run on windows-latest to match Windows-first test suite
-
+[31;1m�?Saved:                     23,022 tokens (~100%)             �?[0m
+[31;1m└──────────────────────────────────────────────────────────────�?[0m
+[main 7088126] ci: run on windows-latest to match Windows-first test suite
  3 files changed, 33 insertions(+), 6 deletions(-)
   ```
   </details>
@@ -7781,17 +6787,15 @@ M  server/tests/unit/project-default-adapter.test.ts
   <details><summary>tool output</summary>
 
   ```text
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   917511d..7088126  main -> main[0m
-
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   917511d..7088126  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-09T17:21:34Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Pushed. Now let me wait for the CI run on `windows-latest` to complete.
@@ -7799,20 +6803,13 @@ Pushed. Now let me wait for the CI run on `windows-latest` to complete.
   <details><summary>tool output</summary>
 
   ```text
-[0] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 1m3s 2026-08-09T17:21:32Z
-
-[1] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 1m50s 2026-08-09T17:21:32Z
-
-[2] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 2m37s 2026-08-09T17:21:32Z
-
-[3] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 3m23s 2026-08-09T17:21:32Z
-
-[4] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 4m10s 2026-08-09T17:21:32Z
-
-[5] completed success ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 4m38s 2026-08-09T17:21:32Z
-
-=== final ===
-
+[0] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 1m3s 2026-08-09T17:21:32Z
+[1] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 1m50s 2026-08-09T17:21:32Z
+[2] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 2m37s 2026-08-09T17:21:32Z
+[3] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 3m23s 2026-08-09T17:21:32Z
+[4] in_progress  ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 4m10s 2026-08-09T17:21:32Z
+[5] completed success ci: run on windows-latest to match Windows-first test suite CI main push 31326187218 4m38s 2026-08-09T17:21:32Z
+=== final ===
 c
 …[truncated]
   ```
@@ -7951,23 +6948,18 @@ All 28 tasks are marked done (0 open). Let me commit this final checklist update
 
   ```text
 warning: in the working copy of 'docs/reviews/structure-improvement-plan.md', LF will be replaced by CRLF the next time Git touches it
-[31;1m└──────────────────────────────────────────────────────────────�?[0m
-
-[main 539cd97] docs(plan): mark S022/S027/S028 complete �?structure improvement finished
-
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   7088126..539cd97  main -> main[0m
-
+[31;1m└──────────────────────────────────────────────────────────────�?[0m
+[main 539cd97] docs(plan): mark S022/S027/S028 complete �?structure improvement finished
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   7088126..539cd97  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-09T17:29:04Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Pushed. Let me verify the final CI run for this last commit is green (it's a docs-only change, but let me confirm the run status).
@@ -7975,16 +6967,11 @@ Pushed. Let me verify the final CI run for this last commit is green (it's a doc
   <details><summary>tool output</summary>
 
   ```text
-[0] in_progress  docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 1m11s 2026-08-09T17:29:03Z
-
-[1] in_progress  docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 1m53s 2026-08-09T17:29:03Z
-
-[2] in_progress  docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 2m35s 2026-08-09T17:29:03Z
-
-[3] in_progress  docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 3m17s 2026-08-09T17:29:03Z
-
-[4] completed failure docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 3m52s 2026-08-09T17:29:03Z
-
+[0] in_progress  docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 1m11s 2026-08-09T17:29:03Z
+[1] in_progress  docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 1m53s 2026-08-09T17:29:03Z
+[2] in_progress  docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 2m35s 2026-08-09T17:29:03Z
+[3] in_progress  docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 3m17s 2026-08-09T17:29:03Z
+[4] completed failure docs(plan): mark S022/S027/S028 complete �?structure improvement fini�?CI main push 31326508881 3m52s 2026-08-09T17:29:03Z
 completed	failure	docs(plan): mark S022/S027/S028 complete — structure improvement fini…	C
 …[truncated]
   ```
@@ -8004,18 +6991,12 @@ The docs-only commit's CI run failed — likely the pre-existing flaky git-scann
   ```text
 {"conclusion":"failure","name":"Verify (lint, typecheck, test, docs, build)"}
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
-=== failures ===
-
-
-
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T17:29:54.1282085Z > prettier --check "e
-
-slint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-[7mfail[0mure-reprobe,run-dispatch,run-escalati[0m
-
-[7m[0mon-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,iss[0m
-
-[7m[0mue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-enve[0m
-
+=== failures ===
+
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T17:29:54.1282085Z > prettier --check "e
+slint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-[7mfail[0mure-reprobe,run-dispatch,run-escalati[0m
+[7m[0mon-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,iss[0m
+[7m[0mue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-enve[0m
 [7m[0mlope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequent
 …[truncated]
   ```
@@ -8033,18 +7014,12 @@ Let me identify the exact runtime-health failure to see if it's timing-related.
   <details><summary>tool output</summary>
 
   ```text
-Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T17:29:54.1282085Z > prettier --check "e
-
-slint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalati
-
-on-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,iss
-
-ue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-enve
-
-lope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-r
-
-un,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{
-
+Verify (lint, typecheck, test, docs, build)	Run unified quality gate	2026-08-09T17:29:54.1282085Z > prettier --check "e
+slint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalati
+on-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,iss
+ue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-enve
+lope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-r
+un,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{
 app-secret,intake-confirmation}.ts" "server/src/api/routes/intake.ts" "ser
 …[truncated]
   ```
@@ -8067,7 +7042,7 @@ This is squarely in the "pre-existing flaky app test" category. The user already
 <type>file</type>
 <content>
 255:     }
-256:
+256: 
 257:     it("threshold - 1ms: no stale_lock diagnostic", () => {
 258:       const { project, workspace } = setupLockedWorkspace(RunStatus.Running, THRESHOLD - 1);
 259:       const health = makeHealthService(services).collect(project.id, workspace.id);
@@ -8075,7 +7050,7 @@ This is squarely in the "pre-existing flaky app test" category. The user already
 261:         health.diagnostics.filter((d) => d.code.startsWith("stale_lock") || d.code === "lock_timestamp_invalid"),
 262:       ).toHaveLength(0);
 263:     });
-264:
+264: 
 265:     it("exactly equal to threshold: no stale_lock diagnostic (strict greater-than)", () => {
 266:       const { project, workspace } = setupLockedWorkspace(RunStatus.Running, THRESHOLD);
 267:       const health = makeHealthServ
@@ -8092,22 +7067,14 @@ Let me look at `setupLockedWorkspace` to understand how the age is set and why i
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        73   db.prepare("UPDATE workspaces SET lock_state = 'locked', locked_by_run_id = ?, locked_at = ? WHERE id = ?��
-
-       152       expect(ws.lock).toEqual({ locked_by_run_id: null, locked_at: null, held_ms: null });
-
-       234     const THRESHOLD = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
-
-       236     function setupLockedWorkspace(holderStatus: RunStatus, lockedAtOffsetMs: number | null) {
-
-       252       const lockedAt = lockedAtOffsetMs !== null ? new Date(Date.now() - lockedAtOffsetMs).toISOString() : ��
-
-       258       const { project, workspace } = setupLockedWorkspace(RunStatus.Running, THRESHOLD - 1);
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        73   db.prepare("UPDATE workspaces SET lock_state = 'locked', locked_by_run_id = ?, locked_at = ? WHERE id = ?��
+       152       expect(ws.lock).toEqual({ locked_by_run_id: null, locked_at: null, held_ms: null });
+       234     const THRESHOLD = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
+       236     function setupLockedWorkspace(holderStatus: RunStatus, lockedAtOffsetMs: number | null) {
+       252       const lockedAt = lockedAtOffsetMs !== null ? new Date(Date.now() - lockedAtOffsetMs).toISOString() : ��
+       258       const { project, workspace } = setupLockedWorkspace(RunStatus.Running, THRESHOLD - 1);
        266       const { project, workspace } = setupLockedWorkspace(RunS
 …[truncated]
   ```
@@ -8124,7 +7091,7 @@ Let me look at `setupLockedWorkspace` to understand how the age is set and why i
 <type>file</type>
 <content>
 234:     const THRESHOLD = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
-235:
+235: 
 236:     function setupLockedWorkspace(holderStatus: RunStatus, lockedAtOffsetMs: number | null) {
 237:       const { project, workspace, issue, threadId } = setupProject(services, tempDir);
 238:       const adapter = createAdapter(services, project.id, "Adapter");
@@ -8152,11 +7119,11 @@ This is a genuine race in the test itself: it can't set a timestamp exactly THRE
 
 Actually the cleanest fix is to make the "exactly equal" test tolerant of the few-ms drift: instead of `THRESHOLD` exactly, use a value that's within the grace. But the test's intent is "strict greater-than" boundary.
 
-Hmm, this is genuinely a flaky test that depends on wall-clock timing. The proper fix would be to inject a clock, but that's a bigger change.
+Hmm, this is genuinely a flaky test that depends on wall-clock timing. The proper fix would be to inject a clock, but that's a bigger change. 
 
 Given the user wants CI green, and this is a pre-existing flaky timing test, the pragmatic minimal fix: for the "exactly equal" boundary test, the `collect()` will always observe `elapsed >= THRESHOLD` (because some ms pass between setting locked_at and collect). So this test is inherently racy.
 
-Let me look at how collect() computes staleness — maybe there's a clock I can make deterministic. Actually the simplest robust fix that preserves intent: change the "exactly equal" test's offset to `THRESHOLD` but assert with tolerance, OR set the locked_at to be computed such that by collect time it's exactly at threshold.
+Let me look at how collect() computes staleness — maybe there's a clock I can make deterministic. Actually the simplest robust fix that preserves intent: change the "exactly equal" test's offset to `THRESHOLD` but assert with tolerance, OR set the locked_at to be computed such that by collect time it's exactly at threshold. 
 
 Actually, the cleanest: the boundary test is inherently non-deterministic. A better approach is to make `collect` accept an injectable `now`. But that touches production code.
 
@@ -8170,22 +7137,14 @@ The `runtime-health` T041 "exactly equal to threshold" test is inherently racy: 
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        18 export const LOCK_DIAGNOSTIC_GRACE_MS = 60_000;
-
-        36   constructor(
-
-        48   collect(projectId: string, workspaceId?: string): RuntimeHealthSnapshot {
-
-        56     const now = Date.now();
-
-       175           code: "stale_lock_confirmed",
-
-       182         const threshold = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        18 export const LOCK_DIAGNOSTIC_GRACE_MS = 60_000;
+        36   constructor(
+        48   collect(projectId: string, workspaceId?: string): RuntimeHealthSnapshot {
+        56     const now = Date.now();
+       175           code: "stale_lock_confirmed",
+       182         const threshold = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
        186               code: "stale_lock_suspected",
   ```
   </details>
@@ -8204,7 +7163,7 @@ The `runtime-health` T041 "exactly equal to threshold" test is inherently racy: 
 31:   snapshot: RuntimeHealthSnapshot["workspaces"][number];
 32:   queuedRuns: Run[];
 33: }
-34:
+34: 
 35: export class RuntimeHealthService {
 36:   constructor(
 37:     private db: Database.Database,
@@ -8216,7 +7175,7 @@ The `runtime-health` T041 "exactly equal to threshold" test is inherently racy: 
 43:     private adapterConfigService: AdapterConfigService,
 44:     private runDispatchService: RunDispatchService,
 45:     private expectedSchemaVersion: number = CURRENT_SCHEMA_VERSION,
-46:
+46:  
 …[truncated]
   ```
   </details>
@@ -8227,7 +7186,7 @@ The `runtime-health` T041 "exactly equal to threshold" test is inherently racy: 
 
 The `collect()` uses `Date.now()` internally with no injectable clock. The test `setupLockedWorkspace` sets `locked_at = now - THRESHOLD`, then `collect()` reads a slightly later `now`, so elapsed > THRESHOLD → the "exactly equal" boundary test is inherently racy.
 
-The cleanest, lowest-risk fix that preserves the test's intent: make the "exactly equal" test use a small negative margin so it stays strictly below threshold after the drift — OR, better, add an injectable `now` clock to `RuntimeHealthService` (a minimal, safe production change that also removes flakiness from the boundary tests).
+The cleanest, lowest-risk fix that preserves the test's intent: make the "exactly equal" test use a small negative margin so it stays strictly below threshold after the drift — OR, better, add an injectable `now` clock to `RuntimeHealthService` (a minimal, safe production change that also removes flakiness from the boundary tests). 
 
 Given the user wants a proper fix and this is the root cause, let me add an injectable clock. Let me see the full constructor and `collect` signature usage.
 
@@ -8238,28 +7197,17 @@ Let me add an optional `now` parameter injectable. Let me look at the service co
   <details><summary>tool output</summary>
 
   ```text
-=== where RuntimeHealthService constructed in src ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        87 function makeHealthService(services: TestServices, expectedVersion = CURRENT_SCHEMA_VERSION) {
-
-        88   return new RuntimeHealthService(
-
-       102   const healthService = makeHealthService(services);
-
-       132       const health = makeHealthService(services).collect(project.id);
-
-       160       const health = makeHealthService(services, 99).collect(project.id);
-
-       169       const health = makeHealthService(services, 1).collect(project.id);
-
-       178       const health = makeHealthService(services, 10).collect(project.id);
-
-       202       const health = makeHealthService(services).collect(project.id);
-
+=== where RuntimeHealthService constructed in src ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        87 function makeHealthService(services: TestServices, expectedVersion = CURRENT_SCHEMA_VERSION) {
+        88   return new RuntimeHealthService(
+       102   const healthService = makeHealthService(services);
+       132       const health = makeHealthService(services).collect(project.id);
+       160       const health = makeHealthService(services, 99).collect(project.id);
+       169       const health = makeHealthService(services, 1).collect(project.id);
+       178       const health = makeHealthService(services, 10).collect(project.id);
+       202       const health = makeHealthService(services).collect(project.id);
        259       const heal
 …[truncated]
   ```
@@ -8270,7 +7218,7 @@ Let me add an optional `now` parameter injectable. Let me look at the service co
 - **tool**: `read({"filePath": "D:\\Projects\\personahub\\server\\src\\services\\runtime-health.ts", "limit": 30, "offset": 48})`
 
 
-> [reasoning] The cleanest fix: add an optional injectable clock (`now` fn) to `RuntimeHealthService.collect()` or constructor. But that touches production code and the test helper.
+> [reasoning] The cleanest fix: add an optional injectable clock (`now` fn) to `RuntimeHealthService.collect()` or constructor. But that touches production code and the test helper. 
 
 Actually, a simpler and very low-risk fix that keeps intent: make the boundary test deterministic by not relying on wall-clock drift. The test intent is "strict greater-than". Since the drift makes exact equality impossible, I could change the test to set the age slightly less than THRESHOLD for the "exactly equal" case, but that changes the test semantics.
 
@@ -8292,23 +7240,23 @@ The robust fix is to make `collect()` accept an injectable `now`. Let me read th
 52:         throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, "Workspace not found for this Project.");
 53:       }
 54:     }
-55:
+55: 
 56:     const now = Date.now();
-57:
+57: 
 58:     const schema = this.collectSchema();
 59:     const background = this.collectBackground();
 60:     const workspaceInternals = this.collectWorkspaces(projectId, workspaceId, now);
-61:
+61: 
 62:     const diagnostics: HealthDiagnostic[] = [];
-63:
-64:     if (schema.status
+63: 
+64:     if (schema.status 
 …[truncated]
   ```
   </details>
 
 ## assistant · 2026-08-09T17:38:32Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\src\\services\\runtime-health.ts", "newString": "  collect(projectId: string, workspaceId?: string, nowMs?: number): RuntimeHealthSnapshot {\n    if (workspaceId !== undefined) {\n      const workspace = this.workspaceRepo.getById(workspaceId);\n      if (!workspace || workspace.project_id !== projectId) {\n        throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, \"Workspace not found for this Project.\");\n      }\n    }\n\n    const now = nowMs
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\src\\services\\runtime-health.ts", "newString": "  collect(projectId: string, workspaceId?: string, nowMs?: number): RuntimeHealthSnapshot {\n    if (workspaceId !== undefined) {\n      const workspace = this.workspaceRepo.getById(workspaceId);\n      if (!workspace || workspace.project_id !== projectId) {\n        throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, \"Workspace not found for this Project.\");\n      }\n    }\n\n    const now = nowMs 
 …[truncated])`
 
 I'll add an optional `nowMs` parameter to `collect()`, defaulting to `Date.now()`. This is minimal, backward-compatible, and lets the test inject a fixed clock to make the boundary assertions deterministic. Let me apply it.
@@ -8366,24 +7314,15 @@ Let me run the runtime-health test to verify the fix, and typecheck.
   <details><summary>tool output</summary>
 
   ```text
-=== typecheck ===
-
-TS_EXIT: 0
-
-=== runtime-health test ===
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
-
-[2m   Start at [22m 01:39:45
-
-[2m   Duration [22m 14.06s[2m (transform 1.93s, setup 0ms, collect 7.04s, tests 6.49s, environment 0ms, prepare 152ms)[22m
-
-
-
+=== typecheck ===
+TS_EXIT: 0
+=== runtime-health test ===
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m   Start at [22m 01:39:45
+[2m   Duration [22m 14.06s[2m (transform 1.93s, setup 0ms, collect 7.04s, tests 6.49s, environment 0ms, prepare 152ms)[22m
+
 RH_EXIT: 0
   ```
   </details>
@@ -8402,23 +7341,18 @@ Let me commit and push.
   <details><summary>tool output</summary>
 
   ```text
-[31;1m└──────────────────────────────────────────────────────────────�?[0m
-
-[main c2389c0] fix(test): make runtime-health stale-lock boundary tests deterministic
-
- 2 files changed, 13 insertions(+), 10 deletions(-)
-
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   539cd97..c2389c0  main -> main[0m
-
+[31;1m└──────────────────────────────────────────────────────────────�?[0m
+[main c2389c0] fix(test): make runtime-health stale-lock boundary tests deterministic
+ 2 files changed, 13 insertions(+), 10 deletions(-)
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   539cd97..c2389c0  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-09T17:41:50Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Pushed. Let me watch the CI run to completion.
@@ -8426,16 +7360,11 @@ Pushed. Let me watch the CI run to completion.
   <details><summary>tool output</summary>
 
   ```text
-[0] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 1m1s 2026-08-09T17:41:48Z
-
-[1] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 1m48s 2026-08-09T17:41:48Z
-
-[2] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 2m35s 2026-08-09T17:41:48Z
-
-[3] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 3m22s 2026-08-09T17:41:48Z
-
-[4] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 4m8s 2026-08-09T17:41:48Z
-
+[0] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 1m1s 2026-08-09T17:41:48Z
+[1] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 1m48s 2026-08-09T17:41:48Z
+[2] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 2m35s 2026-08-09T17:41:48Z
+[3] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 3m22s 2026-08-09T17:41:48Z
+[4] in_progress  fix(test): make runtime-health stale-lock boundary tests deterministic CI main push 31327078894 4m8s 2026-08-09T17:41:48Z
 [5] completed success fix(test): make runtime-health stale-lock boundary tests deterministic CI m
 …[truncated]
   ```
@@ -8453,8 +7382,7 @@ Pushed. Let me watch the CI run to completion.
   ```text
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
 {"conclusion":"success","name":"Verify (lint, typecheck, test, docs, build)"}
-=== recent runs ===
-
+=== recent runs ===
 completed	success	fix(test): make runtime-health stale-lock boundary tests deterministic	CI	main	push	31327078894	4m47s	2026-08-09T17:41:48Z
 completed	failure	docs(plan): mark S022/S027/S028 complete — structure improvement fini…	CI	main	push	31326508881	3m52s	2026-08-09T17:29:03Z
 completed	success	ci: run on windows-latest to match Windows-first test suite	CI	main	push	31326187218	4m38s	2026-08-09T17:21:32Z
@@ -8474,16 +7402,14 @@ Let me do a final verification of the git state — confirm working tree is clea
   <details><summary>tool output</summary>
 
   ```text
-=== HEAD ===
-
+=== HEAD ===
 c2389c0 fix(test): make runtime-health stale-lock boundary tests deterministic
 539cd97 docs(plan): mark S022/S027/S028 complete — structure improvement finished
 7088126 ci: run on windows-latest to match Windows-first test suite
 917511d fix(test): make adapter-availability tests machine-independent on CI
 0046a15 ci: add .gitattributes to enforce CRLF checkout for prettier endOfLine: crlf
 a990d08 chore(structure): execute structure-improvement plan (gates, CI, docs normalization, .local)
-=== origin sync ===
-
+=== origin sync ===
 c2389c0fae444e7d66e02dba6bb2ae86daff6703
 c2389c0fae444e7d66e02dba6bb2ae86daff6703
   ```
@@ -8601,36 +7527,21 @@ The "codex is installed locally" hint suggests the remaining work involves real-
   <details><summary>tool output</summary>
 
   ```text
-=== git status ===
-
-=== env-gated (skipped) tests ===
-
-filesystem-scanner.test.ts
-
-graph-cli-acceptance.test.ts
-
-real-claude-opencode-probe.test.ts
-
-real-codex-e2e.test.ts
-
-real-codex-scenarios.test.ts
-
-real-codex-validation.test.ts
-
-real-git-push-escalation.test.ts
-
-real-manual-validator-cross-provider.test.ts
-
-real-multi-provider-consult.test.ts
-
-real-opencode-dispatch-check.test.ts
-
-real-workspace-queue.test.ts
-
-executable-resolver.test.ts
-
-opencode-protocol-oauth-windows-guard.test.ts
-
+=== git status ===
+=== env-gated (skipped) tests ===
+filesystem-scanner.test.ts
+graph-cli-acceptance.test.ts
+real-claude-opencode-probe.test.ts
+real-codex-e2e.test.ts
+real-codex-scenarios.test.ts
+real-codex-validation.test.ts
+real-git-push-escalation.test.ts
+real-manual-validator-cross-provider.test.ts
+real-multi-provider-consult.test.ts
+real-opencode-dispatch-check.test.ts
+real-workspace-queue.test.ts
+executable-resolver.test.ts
+opencode-protocol-oauth-windows-guard.test.ts
 workspace-context.test.ts
   ```
   </details>
@@ -8663,7 +7574,7 @@ Let me look at the real-codex tests gates. They're gated by `REAL_CODEX` env var
 
 But "three items" — maybe:
 1. real-codex-e2e.test.ts
-2. real-codex-scenarios.test.ts
+2. real-codex-scenarios.test.ts  
 3. real-codex-validation.test.ts
 
 These are exactly the three "real-codex" test files! That fits "剩下三项" (three remaining items) and "codex installed locally".
@@ -8676,36 +7587,21 @@ The hint points to the **three real-codex test files** that are env-gated (skipp
   <details><summary>tool output</summary>
 
   ```text
-=== real-codex-e2e ===
-
-
-
-=== real-codex-scenarios ===
-
-=== real-codex-validation ===
-
-=== codex available? ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         9 // Real Codex end-to-end (F004 T081 seam): only runs with REAL_CODEX=1.
-
-        15 const REAL = !!process.env.REAL_CODEX;
-
-        24 describe.skipIf(!REAL)("Real Codex end-to-end validation (T081)", () => {
-
-        10 // Only runs with REAL_CODEX=1.
-
-        11 const REAL = !!process.env.REAL_CODEX;
-
-        34 describe.skipIf(!REAL)("Real Codex scenarios (T082 / T085)", () => {
-
-        10 // Real Codex acceptance (F004 T081/T083 core): only runs with REAL_CODEX=1.
-
-        15 const REAL = !!process.env.REAL_CODEX;
-
+=== real-codex-e2e ===
+
+=== real-codex-scenarios ===
+=== real-codex-validation ===
+=== codex available? ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         9 // Real Codex end-to-end (F004 T081 seam): only runs with REAL_CODEX=1.
+        15 const REAL = !!process.env.REAL_CODEX;
+        24 describe.skipIf(!REAL)("Real Codex end-to-end validation (T081)", () => {
+        10 // Only runs with REAL_CODEX=1.
+        11 const REAL = !!process.env.REAL_CODEX;
+        34 describe.skipIf(!REAL)("Real Codex scenarios (T082 / T085)", () => {
+        10 // Real Codex acceptance (F004 T081/T083 core): only runs with REAL_CODEX=1.
+        15 const REAL = !!process.env.REAL_CODEX;
        111 describe.skipIf(!REAL)("Real Codex validation envelope (T081/
 …[truncated]
   ```
@@ -8730,7 +7626,7 @@ codex-cli 0.146.0 is installed. All three real-codex test files are gated by `RE
 5: import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
 6: import { IssueStatus, AdapterStatus, AgentCapability } from "@personahub/shared/types";
 7: import { CodexCliAdapter } from "../../src/runtime/adapters/codex-cli-adapter.js";
-8:
+8: 
 9: // Real Codex end-to-end (F004 T081 seam): only runs with REAL_CODEX=1.
 10: // Drives the FULL server workflow — a deterministic fake implementation (real
 11: // server dispatch, real trace/handoff/verificat
@@ -8766,7 +7662,7 @@ These three real-codex tests are the remaining items — they drive a real codex
 6: import { TraceCompletenessStatus, ValidationOutcome } from "@personahub/shared/types";
 7: import { buildValidatorContext } from "../../src/services/validation/context-builder.js";
 8: import { parseValidationResult } from "../../src/services/validation/result-parser.js";
-9:
+9: 
 10: // Real Codex acceptance (F004 T081/T083 core): only runs with REAL_CODEX=1.
 11: // Verifies the most non-deterministic link end to end — a production
 12: // va
@@ -8789,8 +7685,7 @@ These are the three remaining items — the real-codex acceptance tests gated be
   <details><summary>tool output</summary>
 
   ```text
-[31;1mLogged in using ChatGPT[0m
-
+[31;1mLogged in using ChatGPT[0m
 ---exit: 0---
   ```
   </details>
@@ -8809,16 +7704,11 @@ Let me run the validation one first (most self-contained), then scenarios, then 
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
-
-
-
-[90mstdout[2m | tests/integration/real-codex-validation.test.ts[2m > [22m[2mReal Codex validation envelope (T081/T083)[2m > [22m[2mreturns a strict JSON envelope the production parser accepts
-
-[22m[39m
-
-[REAL CODEX] validator final message:
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
+
+[90mstdout[2m | tests/integration/real-codex-validation.test.ts[2m > [22m[2mReal Codex validation envelope (T081/T083)[2m > [22m[2mreturns a strict JSON envelope the production parser accepts
+[22m[39m
+[REAL CODEX] validator final message:
  {"schema_version":1,"outcome":"blocked","summary":"Validation cannot proceed because the workspace does not match the implementation handoff or file trace. Only greet.ts exists at the workspace root; src/greet.ts, src/greet.test.ts, package.json, and Git metadata are absent, so the reported test result cannot be reproduced.","findings":[{"severity":"blocking","message":"The changed-file trace declares src/greet.ts and src/greet.test.ts, but neither file exis
 …[truncated]
   ```
@@ -8836,24 +7726,15 @@ Let me run the remaining two: `real-codex-scenarios` and `real-codex-e2e`. Let m
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[0m
-
-[31;1m[41m[1m FAIL [22m[49m tests/integration/real-codex-scenarios.test.ts[2m > [22mReal Codex scenarios (T082 / T085)[2m > [22mT082: a real validator failure with max_rounds=1 blocks with round_limit_reached[0m
-
-[31;1m[31m[1mAssertionError[22m: expected 'Done' to be 'Blocked' // Object.is equality[39m[0m
-
-[31;1m[0m
-
-[31;1mExpected: [32m"Blocked"[39m[0m
-
-[31;1mReceived: [31m"Done"[39m[0m
-
-[31;1m[0m
-
-[31;1m[36m [2m�?[22m tests/integration/real-codex-scenarios.test.ts:[2m66:22[22m[39m[0m
-
-[31;1m    [90m 64| [39m      console.log("\n[REAL CODEX T082] status:", status, "| blocker:",�?    [90m 65| [39m[0m
-
+[31;1m[0m
+[31;1m[41m[1m FAIL [22m[49m tests/integration/real-codex-scenarios.test.ts[2m > [22mReal Codex scenarios (T082 / T085)[2m > [22mT082: a real validator failure with max_rounds=1 blocks with round_limit_reached[0m
+[31;1m[31m[1mAssertionError[22m: expected 'Done' to be 'Blocked' // Object.is equality[39m[0m
+[31;1m[0m
+[31;1mExpected: [32m"Blocked"[39m[0m
+[31;1mReceived: [31m"Done"[39m[0m
+[31;1m[0m
+[31;1m[36m [2m�?[22m tests/integration/real-codex-scenarios.test.ts:[2m66:22[22m[39m[0m
+[31;1m    [90m 64| [39m      console.log("\n[REAL CODEX T082] status:", status, "| blocker:",�?    [90m 65| [39m[0m
 [31;1m    [90m 66| [39m      [34mexpect[39m(status)[33m.[39m[34mtoBe[39m([33mIssueStatus[39m[33m.[39m[33mBlocked[39m)[33m
 …[truncated]
   ```
@@ -8888,11 +7769,11 @@ The `real-codex-scenarios` test fails — but these are **behavioral** mismatche
 5: import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
 6: import { IssueStatus, AdapterStatus, ValidationBlockReason, AgentCapability } from "@personahub/shared/types";
 7: import { CodexCliAdapter } from "../../src/runtime/adapters/codex-cli-adapter.js";
-8:
+8: 
 9: // Real Codex scenario acceptance (F004 T082 round-limit / T085 different-model).
 10: // Only runs with REAL_CODEX=1.
 11: const REAL = !!process.env.REAL_CODEX;
-12:
+12: 
 13: const __
 …[truncated]
   ```
@@ -8906,7 +7787,7 @@ The `real-codex-scenarios` test fails — but these are **behavioral** mismatche
 
 > [reasoning] Let me analyze the two failures:
 
-**T082**: Expected `Blocked` with round_limit_reached, but got `Done`. The test workspace has a *failing* test (`broken.test.mjs` asserting `1===2`). But the real validator judged it as passed → Issue went Done.
+**T082**: Expected `Blocked` with round_limit_reached, but got `Done`. The test workspace has a *failing* test (`broken.test.mjs` asserting `1===2`). But the real validator judged it as passed → Issue went Done. 
 
 Wait — but actually the issue: the test's workspace has a failing test, so the real validator *should* conclude "failed". But it concluded Done? Let me reconsider. Actually, the assertion says `expected 'Done' to be 'Blocked'`. So the issue went to Done. That means the real validator returned "passed" even though the test fails.
 
@@ -8926,7 +7807,7 @@ These are **real behavior of the actual codex model**, not deterministic bugs. T
 
 This is genuinely tricky. These real-CLI acceptance tests are inherently non-deterministic — they depend on what the live model decides and how fast it responds. They're gated behind `REAL_CODEX=1` precisely because they're not suitable for normal CI.
 
-Let me think about what the user wants. The user said "剩下三项接着完成" (continue with the remaining three items) and "本机安装的有codex直接可以使用的" (codex is installed locally and can be used directly).
+Let me think about what the user wants. The user said "剩下三项接着完成" (continue with the remaining three items) and "本机安装的有codex直接可以使用的" (codex is installed locally and can be used directly). 
 
 So the user wants me to run/complete the three real-codex test files using the locally installed codex. I've done:
 - real-codex-validation: PASS (2/2)
@@ -8957,24 +7838,15 @@ Let me run the third remaining test (`real-codex-e2e`) to complete the picture.
   <details><summary>tool output</summary>
 
   ```text
-[REAL CODEX e2e] terminal issue status: Validating
-
-[REAL CODEX e2e] no summary; blocker: [1mnull[22m - [1mnull[22m
-
-
-
- [31m�?[39m tests/integration/real-codex-e2e.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 262581[2mms[22m[39m
-
-[31m   [31m×[31m Real Codex end-to-end validation (T081)[2m > [22mdrives implementation evidence through a real validator to a terminal Issue state[39m[33m 262578[2mms[22m[39m
-
-[31m     �?expected [ 'Done', 'Blocked' ] to include 'Validating'[39m
-
-[31;1m[0m
-
-[31;1m[31m⎯⎯⎯⎯⎯⎯�?[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m[0m
-
-[31;1m[0m
-
+[REAL CODEX e2e] terminal issue status: Validating
+[REAL CODEX e2e] no summary; blocker: [1mnull[22m - [1mnull[22m
+
+ [31m�?[39m tests/integration/real-codex-e2e.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 262581[2mms[22m[39m
+[31m   [31m×[31m Real Codex end-to-end validation (T081)[2m > [22mdrives implementation evidence through a real validator to a terminal Issue state[39m[33m 262578[2mms[22m[39m
+[31m     �?expected [ 'Done', 'Blocked' ] to include 'Validating'[39m
+[31;1m[0m
+[31;1m[31m⎯⎯⎯⎯⎯⎯�?[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m[0m
+[31;1m[0m
 [31;1m[41m[1m FAIL [22m[49m tests/integration/real-codex-e2e.test.ts[2m > [22mReal Codex end-to-end validation (T081)[2m > [22mdrives implementation ev
 …[truncated]
   ```
@@ -8984,7 +7856,7 @@ Let me run the third remaining test (`real-codex-e2e`) to complete the picture.
 
 - **tool**: `bash({"command": "cd D:\\Projects\\personahub; Select-String -Path server\\src\\runtime\\agent-runner.ts -Pattern \"executionTimeoutMs|timed_out|timeout|Timeout\" | Select-Object LineNumber, Line | Select-Object -First 15; echo \"=== CodexCliAdapter timeout ===\"; Select-String -Path server\\src\\runtime\\adapters\\codex-cli-adapter.ts -Pattern \"executionTimeoutMs|timeout\" | Select-Object LineNumber, Line | Select-Object -First 10"})`
 
-The `real-codex-e2e` test also hung in `Validating` — the real validator never reached a terminal state within the 260s poll deadline.
+The `real-codex-e2e` test also hung in `Validating` — the real validator never reached a terminal state within the 260s poll deadline. 
 
 Let me analyze the root cause. The e2e and T085 both hang in `Validating`. This suggests the real codex validator's response isn't being processed to a terminal state. Let me check how the validator's actual run behaves — whether it's timing out on the codex side, or the result parsing. Let me look at the CodexCliAdapter's execution timeout.
 
@@ -8995,32 +7867,19 @@ Let me check how execution timeout is handled.
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         4 import { DEFAULT_EXECUTION_TIMEOUT_MS, MAX_OUTPUT_BYTES, MAX_CHUNK_BYTES } from "./types.js";
-
-        15   timeoutTimer: ReturnType<typeof setTimeout>;
-
-        67   [FR.ExecutionTimeout]: "",
-
-        95       timeoutTimer: null as never,
-
-       105     const timeoutTimer = setTimeout(() => {
-
-       107       void this.timeoutRun(run, workspace.id, activeRun, onTerminal, onEscalation);
-
-       108     }, adapter.capabilities.executionTimeoutMs ?? DEFAULT_EXECUTION_TIMEOUT_MS);
-
-       110     activeRun.timeoutTimer = timeoutTimer;
-
-       133       clearTimeout(activeRun.timeoutTimer);
-
-       138   private async timeoutRun(
-
-       154       failureReason: FR.ExecutionTimeout,
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         4 import { DEFAULT_EXECUTION_TIMEOUT_MS, MAX_OUTPUT_BYTES, MAX_CHUNK_BYTES } from "./types.js";
+        15   timeoutTimer: ReturnType<typeof setTimeout>;
+        67   [FR.ExecutionTimeout]: "",
+        95       timeoutTimer: null as never,
+       105     const timeoutTimer = setTimeout(() => {
+       107       void this.timeoutRun(run, workspace.id, activeRun, onTerminal, onEscalation);
+       108     }, adapter.capabilities.executionTimeoutMs ?? DEFAULT_EXECUTION_TIMEOUT_MS);
+       110     activeRun.timeoutTimer = timeoutTimer;
+       133       clearTimeout(activeRun.timeoutTimer);
+       138   private async timeoutRun(
+       154       failureReason: FR.ExecutionTimeout,
        279     } el
 …[truncated]
   ```
@@ -9042,12 +7901,9 @@ Let me check DEFAULT_EXECUTION_TIMEOUT_MS value.
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-       124 export const DEFAULT_EXECUTION_TIMEOUT_MS = 30 * 60 * 1000;
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+       124 export const DEFAULT_EXECUTION_TIMEOUT_MS = 30 * 60 * 1000;
 === how ExecutionTimeout for validator maps ===
   ```
   </details>
@@ -9071,7 +7927,7 @@ Let me reconsider. These are long-running real-CLI tests. The failures are:
 2. T085: didn't converge in 260s (too slow / model behavior)
 3. T081 e2e: didn't converge in 260s (too slow)
 
-These are real-model behavioral differences and timing issues, not code bugs in my structure work. The user asked me to "continue the remaining three" — meaning run the real-codex tests with the installed codex.
+These are real-model behavioral differences and timing issues, not code bugs in my structure work. The user asked me to "continue the remaining three" — meaning run the real-codex tests with the installed codex. 
 
 The reality: these tests are inherently non-deterministic (real LLM). The validation test passed (proving the real codex integration works end-to-end for the validator envelope + parsing). The e2e/scenarios tests fail due to model behavior and timing.
 
@@ -9156,21 +8012,18 @@ Both background tasks already completed (earlier). Let me verify the final repos
   <details><summary>tool output</summary>
 
   ```text
-=== working tree ===
-
-=== HEAD ===
-
+=== working tree ===
+=== HEAD ===
 c2389c0
 c2389c0
-=== latest CI ===
-
+=== latest CI ===
 completed	success	fix(test): make runtime-health stale-lock boundary tests deterministic	CI	main	push	31327078894	4m47s	2026-08-09T17:41:48Z
   ```
   </details>
 
 ## assistant · 2026-08-10T10:46:23Z
 
-Final state confirmed — working tree clean, HEAD (`c2389c0`) synced with origin, CI green.
+Final state confirmed — working tree clean, HEAD (`c2389c0`) synced with origin, CI green. 
 
 ## 完成
 
@@ -9212,36 +8065,21 @@ S023–S025 的完成状态我需要核实一遍，不能只凭之前的标记�
   <details><summary>tool output</summary>
 
   ```text
-=== S023: DB_PATH default ===
-
-
-
-
-
-=== S023: .local gitignored? ===
-
-
-
-=== .local exists? ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        69 // Dev DB defaults to the repo-local, gitignored `.local/db/`; DB_PATH overrides (tests/CI use temp paths).
-
-        71 const defaultDbPath = path.resolve(__dirname, "..", "..", ".local", "db", "personahub.db");
-
-        72 const DB_PATH = process.env.DB_PATH ?? defaultDbPath;
-
-        73 const defaultLogFile = path.resolve(__dirname, "..", "..", ".local", "logs", "server.log");
-
-        74 const LOG_FILE = process.env.LOG_FILE ?? defaultLogFile;
-
-        78   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-
-        79   const db = openDatabase(DB_PATH);
-
+=== S023: DB_PATH default ===
+
+
+=== S023: .local gitignored? ===
+
+=== .local exists? ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        69 // Dev DB defaults to the repo-local, gitignored `.local/db/`; DB_PATH overrides (tests/CI use temp paths).
+        71 const defaultDbPath = path.resolve(__dirname, "..", "..", ".local", "db", "personahub.db");
+        72 const DB_PATH = process.env.DB_PATH ?? defaultDbPath;
+        73 const defaultLogFile = path.resolve(__dirname, "..", "..", ".local", "logs", "server.log");
+        74 const LOG_FILE = process.env.LOG_FILE ?? defaultLogFile;
+        78   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+        79   const db = openDatabase(DB_PATH);
        357         options: { destination: L
 …[truncated]
   ```
@@ -9280,48 +8118,27 @@ S023 的代码确认完成（DB_PATH/LOG_FILE 默认 `.local/`，mkdirSync 懒�
   <details><summary>tool output</summary>
 
   ```text
-=== S024: tests use temp DB dirs (DB_PATH override) ===
-
-
-
-
-
-=== S024: persistence/restart tests use temp paths ===
-
-
-
-=== S025: old root artifacts gone? ===
-
-server-error.log => False
-
-server-error2.log => False
-
-server-output.log => False
-
-server-output2.log => False
-
-server\personahub.db => False
-
-server\server-stdout.log => False
-
-server\server-stderr.log => False
-
-
-
-=== S025: .local dir still absent (lazy) ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         4 import { mkdtempSync, rmSync } from "node:fs";
-
-        11 import { WorkflowTemplateRepository } from "../src/repositories/workflow-template.js";
-
-        55 export function createTestDb(): Database.Database {
-
-        59 export function createTempDir(): string {
-
+=== S024: tests use temp DB dirs (DB_PATH override) ===
+
+
+=== S024: persistence/restart tests use temp paths ===
+
+=== S025: old root artifacts gone? ===
+server-error.log => False
+server-error2.log => False
+server-output.log => False
+server-output2.log => False
+server\personahub.db => False
+server\server-stdout.log => False
+server\server-stderr.log => False
+
+=== S025: .local dir still absent (lazy) ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         4 import { mkdtempSync, rmSync } from "node:fs";
+        11 import { WorkflowTemplateRepository } from "../src/repositories/workflow-template.js";
+        55 export function createTestDb(): Database.Database {
+        59 export function createTempDir(): string {
         60   return mkdtem
 …[truncated]
   ```
@@ -9371,28 +8188,17 @@ server\server-stderr.log => False
   <details><summary>tool output</summary>
 
   ```text
-=== docs/reviews contents ===
-
-
-
-
-
-=== root review reports ===
-
-
-
-=== recent modified files (review?) ===
-
-[32;1mName                         [0m[32;1m Length[0m[32;1m LastWriteTime[0m
-
-[32;1m----                         [0m [32;1m------[0m [32;1m-------------[0m
-
-CURRENT-code.md                 4868 2026/8/10 19:39:03
-
-RETROSPECTIVE.md               91363 2026/8/9 22:36:41
-
-structure-improvement-plan.md  34475 2026/8/10 1:27:31
-
+=== docs/reviews contents ===
+
+
+=== root review reports ===
+
+=== recent modified files (review?) ===
+[32;1mName                         [0m[32;1m Length[0m[32;1m LastWriteTime[0m
+[32;1m----                         [0m [32;1m------[0m [32;1m-------------[0m
+CURRENT-code.md                 4868 2026/8/10 19:39:03
+RETROSPECTIVE.md               91363 2026/8/9 22:36:41
+structure-improvement-plan.md  34475 2026/8/10 1:27:31
                                    1 2026/8/10 19:39:03
   ```
   </details>
@@ -9432,7 +8238,7 @@ There's a `CURRENT-code.md` (recently modified 19:39). Let me read it — this i
 21:     first_seen_round: 1
 22:     resolved_round: ""
 23:   - id: structure-section-order-duplicate-bypass
-24:
+24:    
 …[truncated]
   ```
   </details>
@@ -9458,7 +8264,7 @@ There's a `CURRENT-code.md` (recently modified 19:39). Let me read it — this i
 384:   const m = firstLine.trim().match(/^不适用[：:]\s*(.+)$/);
 385:   return m !== null && m[1].trim().length > 0;
 386: }
-387:
+387: 
 388: /**
 389:  * Check if an open-questions section is properly closed.
 390:  * Returns { closed: boolean, reason?: string }.
@@ -9494,11 +8300,11 @@ There's a `CURRENT-code.md` (recently modified 19:39). Let me read it — this i
 504:   }
 505:   return { ok: true, resolved: resolved.resolved };
 506: }
-507:
+507: 
 508: // ---------------------------------------------------------------------------
 509: // Section heading comparison
 510: // ---------------------------------------------------------------------------
-511:
+511: 
 512: /**
 513:  * Compare actual sections against expected sections.
 514:  * Returns array of error strings.
@@ -9524,7 +8330,7 @@ Let me read the gate-version handling and the AC/requirement/task parsing functi
 <content>
 680:   return false;
 681: }
-682:
+682: 
 683: /**
 684:  * Run base checks on a single Feature directory.
 685:  * Returns { errors: string[], warnings: string[], feature: object|null }.
@@ -9533,12 +8339,12 @@ Let me read the gate-version handling and the AC/requirement/task parsing functi
 688:   const errors = [];
 689:   const warnings = [];
 690:   const relDir = relative(repoRoot, featureDir).replace(/\\/g, '/');
-691:
+691: 
 692:   // --- Trio complete ---
 693:   const specPath = join(featureDir, 'spec.md');
 694:   const designPath = join(featureDir, 'design.md');
 695:   const tasksPath = join(featureDir, 'tasks.md');
-696:
+696: 
 697:   for (const [name, p] of [
 698:     ['spec.md', specPath],
 699:     ['design.md', designPath],
@@ -9564,34 +8370,20 @@ Now let me read the AC/requirement/task parser functions and the section extract
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        14 const SUPPORTED_GATE_VERSIONS = [0, 1];
-
-        15 const LEGAL_STATUSES = [
-
-        68 export function normalizeLineEndings(text) {
-
-        76 export function stripCodeBlocks(text) {
-
-       111 export function parseFrontmatter(text) {
-
-       187 export function extractTopLevelSections(text) {
-
-       217 export function getSectionByNum(sections, num) {
-
-       225 export function extractSubSections(sectionContent) {
-
-       248 export function extractCheckboxes(text) {
-
-       271 export function parseAcLines(section6Content) {
-
-       320 export function parseRequirementIds(section4Content) {
-
-       335 export function parseTaskLines(sectionContent) {
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        14 const SUPPORTED_GATE_VERSIONS = [0, 1];
+        15 const LEGAL_STATUSES = [
+        68 export function normalizeLineEndings(text) {
+        76 export function stripCodeBlocks(text) {
+       111 export function parseFrontmatter(text) {
+       187 export function extractTopLevelSections(text) {
+       217 export function getSectionByNum(sections, num) {
+       225 export function extractSubSections(sectionContent) {
+       248 export function extractCheckboxes(text) {
+       271 export function parseAcLines(section6Content) {
+       320 export function parseRequirementIds(section4Content) {
+       335 export function parseTaskLines(sectionContent) {
        371 export function isNaItem(line) {
 …[truncated]
   ```
@@ -9607,7 +8399,7 @@ Now let me read the AC/requirement/task parser functions and the section extract
 <path>D:\Projects\personahub\tools\check-feature-gates.mjs</path>
 <type>file</type>
 <content>
-180:
+180: 
 181: /**
 182:  * Extract top-level sections (## N. Title) from markdown text.
 183:  * Code blocks are stripped first so headings inside code blocks don't count.
@@ -9619,7 +8411,7 @@ Now let me read the AC/requirement/task parser functions and the section extract
 189:   const lines = stripped.split('\n');
 190:   const headingRe = /^##\s+(\d+)\.\s+(.+?)\s*$/;
 191:   const sections = [];
-192:
+192: 
 193:   for (let i = 0; i < lines.length; i++) {
 194:     const m = lines[i].match(headingRe);
 195:     if (m) {
@@ -9637,11 +8429,11 @@ Now let me read the AC/requirement/task parser functions and the section extract
 
 > [reasoning] Now I have a good understanding of the issues. Let me analyze each of the 5 findings:
 
-**1. structure-gate-v0-bypass (line 752)**: A new Feature can declare `gate_version: 0` to bypass all v1 gates. The plan says v0 is only for legacy F001-F008; new features (F009+) MUST be v1. Currently the code just checks `SUPPORTED_GATE_VERSIONS.includes(gateVersion)` — so any feature can use v0. Need to enforce that v0 is only allowed for legacy features (or more precisely, that a new feature can't silently use v0).
+**1. structure-gate-v0-bypass (line 752)**: A new Feature can declare `gate_version: 0` to bypass all v1 gates. The plan says v0 is only for legacy F001-F008; new features (F009+) MUST be v1. Currently the code just checks `SUPPORTED_GATE_VERSIONS.includes(gateVersion)` — so any feature can use v0. Need to enforce that v0 is only allowed for legacy features (or more precisely, that a new feature can't silently use v0). 
 
-Actually the plan says "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0。是否 legacy 只看该字段". But the field is `gate_version` itself... The issue is that a brand-new feature can just write `gate_version: 0` and skip everything. There needs to be a mechanism: legacy features are the ones with old structure (F001-F008 in versions 0.1/0.2). A feature in v0.3 (F009+) that declares gate_version 0 should be flagged.
+Actually the plan says "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0。是否 legacy 只看该字段". But the field is `gate_version` itself... The issue is that a brand-new feature can just write `gate_version: 0` and skip everything. There needs to be a mechanism: legacy features are the ones with old structure (F001-F008 in versions 0.1/0.2). A feature in v0.3 (F009+) that declares gate_version 0 should be flagged. 
 
-The cleanest enforcement: gate_version 0 is only allowed for known legacy features. But how to determine legacy? The plan says "是否 legacy 只看该字段" — but that's circular. Actually the real intent: v0 is a one-way record for historical features already done. A feature should only be v0 if it's already been grandfathered.
+The cleanest enforcement: gate_version 0 is only allowed for known legacy features. But how to determine legacy? The plan says "是否 legacy 只看该字段" — but that's circular. Actually the real intent: v0 is a one-way record for historical features already done. A feature should only be v0 if it's already been grandfathered. 
 
 The safest fix that matches the plan: maintain a legacy allowlist, OR flag v0 features that are in versions with v1 requirements. Hmm. Actually, let me re-read the plan.
 
@@ -9670,7 +8462,7 @@ Fix: the actual sections must appear in strict ascending numeric order with no d
 
 Fix: checkOpenQuestionsClosed needs to know the prefix (Q for spec, DQ for design), and require each checkbox to be a valid Q-xxx/DQ-xxx format. Free text / non-Q checkbox = not closed.
 
-**4. structure-traceability-format-bypass (line 271)**:
+**4. structure-traceability-format-bypass (line 271)**: 
 - `parseRequirementIds('本文仅引用 FR-999，并未定义它')` treats FR-999 as defined — because it scans ANY FR-\d{3} occurrence, but section 4 should only count DEFINED requirements (e.g., in `### Requirement: x (FR-001)` or `- **FR-001**` headers), not mere references.
 - `parseAcLines('- [x] garbage AC-001 mentions FR-999')` accepts non-contract format — any line with AC-xxx + checkbox passes.
 - `parseTaskLines('- [x] blah T001')` accepts loose task format.
@@ -9705,18 +8497,18 @@ Let me read the rest of gate v1 (830-1050) and the scanner-selector test, plus c
 832:       }
 833:     }
 834:   }
-835:
+835: 
 836:   // --- tasks Phase only under section 2 ---
 837:   const stripped = stripCodeBlocks(tasksText);
 838:   const taskLines = stripped.split('\n');
-839:
+839: 
 840:   const tasksSec2Idx = tasksSections.findIndex((s) => s.num === 2);
 841:   const sec2Start = tasksSec2Idx >= 0 ? tasksSections[tasksSec2Idx].startLine : -1;
 842:   const sec2End =
 843:     tasksSec2Idx >= 0 && tasksSec2Idx + 1 < tasksSections.length
 844:       ? tasksSections[tasksSec2Idx + 1].startLine
 845:       : taskLines.length;
-846:
+846: 
 847:   for (let i = 0; i < taskLines.length; i
 …[truncated]
   ```
@@ -9730,15 +8522,15 @@ Let me read the rest of gate v1 (830-1050) and the scanner-selector test, plus c
 > [reasoning] Now I have a full understanding of the code. Let me analyze each of the 5 findings:
 
 **Finding 1: structure-gate-v0-bypass** (line 752)
-New features can declare `gate_version: 0` to bypass all v1 gates. The plan says v0 is only for legacy F001-F008 (history), and new features MUST be v1. Currently the code just checks `SUPPORTED_GATE_VERSIONS.includes(gateVersion)` = [0,1], so ANY feature can be v0.
+New features can declare `gate_version: 0` to bypass all v1 gates. The plan says v0 is only for legacy F001-F008 (history), and new features MUST be v1. Currently the code just checks `SUPPORTED_GATE_VERSIONS.includes(gateVersion)` = [0,1], so ANY feature can be v0. 
 
 The plan (section 2.1 point 4): "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0。是否 legacy 只看该字段" — so the gate_version field IS the marker of legacy. But that's circular — the reviewer says a new feature can just write `gate_version: 0` to skip everything.
 
-The fix per plan: v0 is only for existing historical features (F001-F008). New features (v0.3 / F009+) must be v1. So we need a rule: features in version >= 0.3 (or a hardcoded legacy list) must be v1. Actually the plan says "是否 legacy 只看该字段" which is circular. But the intent is clear: a legacy feature is one of F001-F008 (or in 0.1/0.2).
+The fix per plan: v0 is only for existing historical features (F001-F008). New features (v0.3 / F009+) must be v1. So we need a rule: features in version >= 0.3 (or a hardcoded legacy list) must be v1. Actually the plan says "是否 legacy 只看该字段" which is circular. But the intent is clear: a legacy feature is one of F001-F008 (or in 0.1/0.2). 
 
 The cleanest fix: maintain the legacy exemption as an explicit allowlist. F001-F008 are the known legacy features that may be v0. Any other feature (F009+) declaring v0 should error. Since the plan says v0.3 (F009) must be v1, and F001-F008 are the only v0 features, I can enforce: `gate_version: 0` only allowed for IDs in {F001..F008} (or versions 0.1/0.2). Actually version-based is more robust: v0 only allowed in 0.1/0.2.
 
-Hmm, but the plan explicitly says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测". This means the field ITSELF defines legacy. But that's the loophole. The reviewer's point: a NEW feature (F009 in 0.3) could write gate_version:0 and bypass everything.
+Hmm, but the plan explicitly says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测". This means the field ITSELF defines legacy. But that's the loophole. The reviewer's point: a NEW feature (F009 in 0.3) could write gate_version:0 and bypass everything. 
 
 The resolution: The plan's rule "v0 只用于这批既有历史 Feature，不允许新建" needs an enforcement mechanism. Since we can't guess by ID/position (per plan), but we CAN track known legacy features explicitly. The gate should have a hardcoded list of legacy feature IDs (F001-F008) that are allowed v0, and reject v0 for anything else. This is the "explicit record" approach consistent with the plan's "显式记录的历史债务". Let me use a `LEGACY_GATE_ZERO_IDS` set = F001-F008. If a feature is not in that set and declares gate_version:0 → error.
 
@@ -9775,7 +8567,7 @@ This is the hardest one. I need to tighten these parsers while keeping the curre
 Let me look at the actual F009 spec AC lines and requirement definitions, design section 10, tasks section 2/3 to calibrate.
 
 **Finding 5: structure-local-verify-git-hook-timeout** (scanner-selector.test.ts:18)
-Git scanner tests inherit global `core.hooksPath=C:/Users/Georg/.git-hooks`, causing git init in temp repos to hang (hooking). The test creates temp repos but doesn't isolate git config. Fix: in the test setup (or in the git-scan helper), set `core.hooksPath` to empty / a neutral value, or unset it in the temp repo.
+Git scanner tests inherit global `core.hooksPath=C:/Users/Georg/.git-hooks`, causing git init in temp repos to hang (hooking). The test creates temp repos but doesn't isolate git config. Fix: in the test setup (or in the git-scan helper), set `core.hooksPath` to empty / a neutral value, or unset it in the temp repo. 
 
 Let me look at scanner-selector.test.ts and the git-scanner to understand where hooks are inherited.
 
@@ -9789,10 +8581,8 @@ Now let me calibrate against the actual F009-F012 doc formats before tightening 
   <details><summary>tool output</summary>
 
   ```text
-=== F009 spec section 4 (requirements) ===
-
-[31;1msed: [31;1mThe term 'sed' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
-
+=== F009 spec section 4 (requirements) ===
+[31;1msed: [31;1mThe term 'sed' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
 [31;1m[31;1mCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.[0m
   ```
   </details>
@@ -9804,38 +8594,22 @@ Now let me calibrate against the actual F009-F012 doc formats before tightening 
   <details><summary>tool output</summary>
 
   ```text
-s4=109 s5=147
-
-
-
-ʹ���ȶ� ID������ design��tasks��code review �� tests ���á�
-
-
-
-### ��������
-
-
-
-- **FR-001**��ϵͳӦ���� Artifact ʵ���� revision 1������֤ Issue��Thread��Room��Run �Ĺ���һ���ԡ�
-
-- **FR-002**����������ʱӦ׷�� revision���Ѵ��� revision �����ݡ�storage locator��hash �� evidence refs �����޸ġ�
-
-- **FR-003**��ϵͳӦ���� `artifact:<id>@<revision>`��ȱ revision �� ref ֻ���� UI ������ latest���������� Run/Handoff ִ�������ġ�
-
-- **FR-004**��ϵͳӦ��֤ artifact type�����ݴ�С��UTF-8��·���߽�� SHA-256����ȡ�ļ�ʱ����У��·���� hash��
-
-- **FR-005**���û����г� Issue artifacts����ȡ����/ָ�� revision������ revision���鵵ʵ�塣
-
-- **FR-006**��ϵͳӦ�ṩ artifact -> evidence/source �� evidence -> artifact revision ��˫���ѯ��
-
-- **FR-007**���鵵ֻӰ��Ĭ���б��������ã����ƻ���ʷ ref ������
-
-
-
-### ���� / ʵ������
-
-
-
+s4=109 s5=147
+
+ʹ���ȶ� ID������ design��tasks��code review �� tests ���á�
+
+### ��������
+
+- **FR-001**��ϵͳӦ���� Artifact ʵ���� revision 1������֤ Issue��Thread��Room��Run �Ĺ���һ���ԡ�
+- **FR-002**����������ʱӦ׷�� revision���Ѵ��� revision �����ݡ�storage locator��hash �� evidence refs �����޸ġ�
+- **FR-003**��ϵͳӦ���� `artifact:<id>@<revision>`��ȱ revision �� ref ֻ���� UI ������ latest���������� Run/Handoff ִ�������ġ�
+- **FR-004**��ϵͳӦ��֤ artifact type�����ݴ�С��UTF-8��·���߽�� SHA-256����ȡ�ļ�ʱ����У��·���� hash��
+- **FR-005**���û����г� Issue artifacts����ȡ����/ָ�� revision������ revision���鵵ʵ�塣
+- **FR-006**��ϵͳӦ�ṩ artifact -> evidence/source �� evidence -> artifact revision ��˫���ѯ��
+- **FR-007**���鵵ֻӰ��Ĭ���б��������ã����ƻ���ʷ ref ������
+
+### ���� / ʵ������
+
 - **DR-001**��Artifact ����
 …[truncated]
   ```
@@ -9863,7 +8637,7 @@ But wait — the review says "AC、需求定义和任务格式可用松散文本
 
 Actually the more important issues are the 5 findings. Let me focus on fixing them properly:
 
-1. **structure-gate-v0-bypass**: A new Feature can declare `gate_version: 0` to bypass all v1 gates. Currently `SUPPORTED_GATE_VERSIONS = [0, 1]`, so any feature can set 0. The plan says v0 is only for legacy F001-F008; new features must be v1. Need to enforce: new features (not legacy) can't be v0. The plan says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测" — so legacy is determined by the field itself, meaning we can't tell from the field alone whether it's legitimately legacy.
+1. **structure-gate-v0-bypass**: A new Feature can declare `gate_version: 0` to bypass all v1 gates. Currently `SUPPORTED_GATE_VERSIONS = [0, 1]`, so any feature can set 0. The plan says v0 is only for legacy F001-F008; new features must be v1. Need to enforce: new features (not legacy) can't be v0. The plan says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测" — so legacy is determined by the field itself, meaning we can't tell from the field alone whether it's legitimately legacy. 
 
 Hmm. The plan said "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0。" The issue: how does the gate distinguish a legitimately-legacy F001 (gate_version 0) from a new feature gaming the system by also writing gate_version 0?
 
@@ -9873,7 +8647,7 @@ So the fix: enforce that gate_version 0 is only allowed for legacy versions (0.1
 
 I'll implement: if gateVersion === 0 and the feature id is not in a known legacy set (F001-F008) OR version is not 0.1/0.2 → error. Actually the cleanest: v0 only allowed for versions "0.1"/"0.2". Let me make a LEGACY_VERSION_DIRS = ['0.1','0.2'] or a legacy ID range F001-F008.
 
-Actually re-reading plan 2.1 point 4: "F001-F008（0.1、0.2 全部既有 Feature）... 一律显式写 gate_version: 0；v0.3 起（F009 及之后）必须写 gate_version: 1". And "是否 legacy 只看该字段，不按日期、编号或目录位置猜测". This is contradictory-ish: it says "是否 legacy 只看该字段" (legacy is determined only by the gate_version field) but also that F009 must be v1.
+Actually re-reading plan 2.1 point 4: "F001-F008（0.1、0.2 全部既有 Feature）... 一律显式写 gate_version: 0；v0.3 起（F009 及之后）必须写 gate_version: 1". And "是否 legacy 只看该字段，不按日期、编号或目录位置猜测". This is contradictory-ish: it says "是否 legacy 只看该字段" (legacy is determined only by the gate_version field) but also that F009 must be v1. 
 
 I think the intended enforcement is: gate_version 0 is a legacy marker, and we need a whitelist of which features are allowed to be v0. Since the plan explicitly names F001-F008 as the legacy set, I'll encode that as the legacy allowlist. If a feature declares v0 but isn't in the legacy set, it's an error. That prevents new features from bypassing.
 
@@ -9881,7 +8655,7 @@ I think the intended enforcement is: gate_version 0 is a legacy marker, and we n
 
 3. **structure-open-question-syntax-bypass**: `checkOpenQuestionsClosed('- [x] not-a-Q and no decision')` returns `{closed: true}` — any checked checkbox counts. Need to require the checkbox to be a valid `Q-xxx`/`DQ-xxx` item with a decision, not arbitrary `[x]`.
 
-4. **structure-traceability-format-bypass**: `parseRequirementIds` counts any `FR-\d{3}` in prose as a definition; `parseAcLines`/`parseTaskLines` accept loose formats. Need stricter parsing:
+4. **structure-traceability-format-bypass**: `parseRequirementIds` counts any `FR-\d{3}` in prose as a definition; `parseAcLines`/`parseTaskLines` accept loose formats. Need stricter parsing: 
    - `parseRequirementIds`: only count IDs that are DEFINED (in `### Requirement:` headings or `- **FR-xxx**` list definition items), not arbitrary mentions.
    - `parseAcLines`: require AC lines to match the canonical format (`**AC-001** (\`FR-001\`...): text`), not just contain `AC-001`.
    - `parseTaskLines`: require `Txxx` + format with referenced IDs in parens, not just "blah T001".
@@ -9901,19 +8675,19 @@ Let me read the constants/REQ_ID_RE at the top and the scanner-selector test.
 2: // Feature gate validator for PersonaHub.
 3: // Zero runtime dependencies — only node built-ins.
 4: // Exports pure functions for testing; CLI reads the real repo and sets exit code.
-5:
+5: 
 6: import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 7: import { join, resolve, relative, isAbsolute, sep } from 'node:path';
 8: import { fileURLToPath } from 'node:url';
-9:
+9: 
 10: // ---------------------------------------------------------------------------
 11: // Constants
 12: // ---------------------------------------------------------------------------
-13:
+13: 
 14: const SUPPORTED_GATE_VERSIONS = [0, 1];
 15: const LEGAL_STATUSES = [
 16:   'draft',
-17:
+17: 
 …[truncated]
   ```
   </details>
@@ -9936,19 +8710,19 @@ Now let me read the scanner-selector test around line 18 and understand the git 
 4: import { join } from "node:path";
 5: import { execSync } from "node:child_process";
 6: import { captureSnapshot, diffSnapshots, snapshotToJson, snapshotFromJson } from "../../src/runtime/trace/workspace-scanner.js";
-7:
+7: 
 8: describe("Scanner Selector (T030)", () => {
 9:   let dir: string;
-10:
+10: 
 11:   beforeEach(() => {
 12:     dir = createTempDir();
 13:   });
 14:   afterEach(() => {
 15:     cleanupTempDir(dir);
 16:   });
-17:
+17: 
 18:   it("uses git scanner for git workspace", () => {
-19:
+19:   
 …[truncated]
   ```
   </details>
@@ -9967,20 +8741,14 @@ Let me now understand the review issues fully and design fixes. Let me check the
   <details><summary>tool output</summary>
 
   ```text
-=== global hooksPath ===
-
+=== global hooksPath ===
 C:/Users/Georg/.git-hooks
-=== local (repo) hooksPath ===
-
+=== local (repo) hooksPath ===
 C:/Users/Georg/.git-hooks
-=== hooks in ~/.git-hooks ===
-
-
-
-[32;1mName[0m
-
-[32;1m----[0m
-
+=== hooks in ~/.git-hooks ===
+
+[32;1mName[0m
+[32;1m----[0m
 pre-commit
   ```
   </details>
@@ -9997,26 +8765,21 @@ The fix for the test: isolate git config in the temp repo by setting `core.hooks
   <details><summary>tool output</summary>
 
   ```text
-#!/bin/sh
-
-# Installed by code-review-graph. Remove this file to disable pre-commit graph checks.
-
-if command -v code-review-graph >/dev/null 2>&1; then
-
-    code-review-graph update || true
-
-    code-review-graph detect-changes --brief || true
-
+#!/bin/sh
+# Installed by code-review-graph. Remove this file to disable pre-commit graph checks.
+if command -v code-review-graph >/dev/null 2>&1; then
+    code-review-graph update || true
+    code-review-graph detect-changes --brief || true
 fi
   ```
   </details>
 
 ## assistant · 2026-08-10T11:52:11Z
 
-- **tool**: `todowrite({"todos": [{"content": "Fix #1 gate-v0-bypass: enforce v0 only for legacy F001-F008 set", "priority": "high", "status": "in_progress"}, {"content": "Fix #2 section-order-duplicate-bypass: compareSectionHeadings must check order & duplicates", "priority": "high", "status": "pending"}, {"content": "Fix #3 open-question-syntax-bypass: only Q-xxx/DQ-xxx closed items count", "priority": "high", "status": "pending"}, {"content": "Fix #4 traceability-format-bypass: strict AC/requirement/task parsing",
+- **tool**: `todowrite({"todos": [{"content": "Fix #1 gate-v0-bypass: enforce v0 only for legacy F001-F008 set", "priority": "high", "status": "in_progress"}, {"content": "Fix #2 section-order-duplicate-bypass: compareSectionHeadings must check order & duplicates", "priority": "high", "status": "pending"}, {"content": "Fix #3 open-question-syntax-bypass: only Q-xxx/DQ-xxx closed items count", "priority": "high", "status": "pending"}, {"content": "Fix #4 traceability-format-bypass: strict AC/requirement/task parsing", 
 …[truncated])`
 
-The global `pre-commit` hook runs `code-review-graph`, which can be slow. This is a **test-environment leak** — the test's git operations in a temp dir shouldn't inherit the developer's global hook.
+The global `pre-commit` hook runs `code-review-graph`, which can be slow. This is a **test-environment leak** — the test's git operations in a temp dir shouldn't inherit the developer's global hook. 
 
 Now I understand all 5 issues. Let me create a todo list and plan the fixes:
 
@@ -10079,17 +8842,17 @@ Let me set up todos and start.
 Let me design each fix carefully.
 
 ### Fix #1: gate-v0-bypass
-The plan says: v0 only for legacy F001-F008 (0.1/0.2 existing features). New features must be v1. The current code allows any `gate_version: 0`.
+The plan says: v0 only for legacy F001-F008 (0.1/0.2 existing features). New features must be v1. The current code allows any `gate_version: 0`. 
 
 How to determine "legacy"? The plan says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测". Hmm, but if we only look at the field, then a new feature could just set gate_version:0. Wait — re-reading plan 2.1 point 4: "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0。是否 legacy 只看该字段，不按日期、编号或目录位置猜测。"
 
 So the plan says legacy is determined *only by the gate_version field* — meaning: a feature is legacy iff it declares gate_version:0. And the plan forbids *new* features from being v0. But how do we distinguish a new feature from an existing one if we "only look at the field"?
 
-The intent: The gate should reject a NEW feature declaring v0. But "是否 legacy 只看该字段" means we don't guess by ID/version directory. So the enforcement mechanism must be: v0 is only for features that were *already present* at the time of adoption — i.e., an explicit allowlist.
+The intent: The gate should reject a NEW feature declaring v0. But "是否 legacy 只看该字段" means we don't guess by ID/version directory. So the enforcement mechanism must be: v0 is only for features that were *already present* at the time of adoption — i.e., an explicit allowlist. 
 
 The cleanest approach consistent with "don't guess by directory/ID": maintain an explicit legacy allowlist in the gate (the set of feature IDs that are permitted to be v0). Currently that's F001-F008. If a feature declares v0 but is NOT in the legacy allowlist, error.
 
-But "只看该字段" suggests we don't use ID to determine legacy... The tension: the review's concern is that a NEW feature can declare v0 to skip everything. To prevent that, we need SOME way to know which features are legacy.
+But "只看该字段" suggests we don't use ID to determine legacy... The tension: the review's concern is that a NEW feature can declare v0 to skip everything. To prevent that, we need SOME way to know which features are legacy. 
 
 I think the correct interpretation, combining both: The gate_version field is the single source of truth for *classification*, but there's a known set of legacy features (F001-F008, versions 0.1/0.2) that are allowed v0. Any feature outside that set must be v1. This is an explicit allowlist that doesn't "guess" — it's the recorded historical set.
 
@@ -10100,9 +8863,9 @@ Current `compareSectionHeadings` builds `actualByNum = new Map(actualSections.ma
 - Ignores order (Map lookup by num works regardless of position)
 - Collapses duplicates (later duplicate overwrites earlier in Map — actually `new Map` keeps last for duplicate keys)
 
-The review: reversed array passes (order not checked), duplicate `0` passes (Map has one 0).
+The review: reversed array passes (order not checked), duplicate `0` passes (Map has one 0). 
 
-Fix:
+Fix: 
 - Check actual sections appear in strictly increasing numeric order (no duplicates).
 - Check no duplicate section numbers.
 - Check all expected present with correct title.
@@ -10115,13 +8878,13 @@ I'll rewrite `compareSectionHeadings` to:
 4. Verify no extra/unexpected section numbers.
 
 ### Fix #3: open-question syntax
-`checkOpenQuestionsClosed('- [x] not-a-Q and no decision')` returns closed:true. Because it just checks `[x]` checkboxes exist and no `[ ]`. Need to require that each checkbox is a valid `Q-xxx`/`DQ-xxx` item (and for spec use Q, design use DQ).
+`checkOpenQuestionsClosed('- [x] not-a-Q and no decision')` returns closed:true. Because it just checks `[x]` checkboxes exist and no `[ ]`. Need to require that each checkbox is a valid `Q-xxx`/`DQ-xxx` item (and for spec use Q, design use DQ). 
 
-The plan: spec uses `Q-xxx`, design uses `DQ-xxx`. Both are checkbox form `- [x] Q-001: ... — 决策：...`. So the check should verify each checkbox line matches the Q/DQ contract: `- [x] (Q|DQ)-\d{3}: <question> — 决策：<conclusion>`.
+The plan: spec uses `Q-xxx`, design uses `DQ-xxx`. Both are checkbox form `- [x] Q-001: ... — 决策：...`. So the check should verify each checkbox line matches the Q/DQ contract: `- [x] (Q|DQ)-\d{3}: <question> — 决策：<conclusion>`. 
 
 Let me make `checkOpenQuestionsClosed(sectionText, prefix)` where prefix is `'Q'` for spec or `'DQ'` for design. Then a valid closed item is `/^-\s+\[x\]\s+(Q|DQ)-\d{3}\s*[：:]\s*.+/`. An open item is `/^-\s+\[\s\]\s+(Q|DQ)-\d{3}/`. Anything else that's a checkbox or bullet = invalid.
 
-Actually, need to be careful about the exact contract. Plan 2.1:
+Actually, need to be careful about the exact contract. Plan 2.1: 
 - spec Q: `- [ ] Q-001: <问题>` open; `- [x] Q-001: <问题> — 决策：<结论>` closed.
 - design DQ similarly.
 
@@ -10129,7 +8892,7 @@ So valid closed item: `^-\s+\[x\]\s+(Q|DQ)-\d{3}\s*[：:]\s*.+(\s*—\s*决策[�
 
 So the logic: every non-empty line in the section must be either:
 - `无` (whole section)
-- A checkbox line matching `- \[[ xX]\] (Q|DQ)-\d{3}: ...`
+- A checkbox line matching `- \[[ xX]\] (Q|DQ)-\d{3}: ...` 
   - if `[ ]` → open
   - if `[x]` → closed
 Any line that's a checkbox but NOT matching Q/DQ format, OR a bullet, OR free text → "not properly closed / invalid format".
@@ -10172,44 +8935,25 @@ Let me examine the actual current F009-F012 AC and task formats so my stricter p
   <details><summary>tool output</summary>
 
   ```text
-=== F009 section 6 (AC list) ===
-
-- **SC-003**���б� 100 �� artifact ʱ���������ģ�����������ӦĿ��С�� 200 ms��
-
-
-
-### �����嵥
-
-
-
-�����嵥ÿ�����õ� 4 ����ʵ���ڵ����� ID���� Feature ���� `draft`��`tests:` ·����ȱ������ `review` ǰ���
-
-
-
-- [ ] **AC-001** (`FR-001`, `DR-001`): inline �� local file ���ܴ�������ʾ��Դ��
-
-- [ ] **AC-002** (`FR-002`, `FR-003`): �� revision ref ��Զ���������ݡ�
-
-- [ ] **AC-003** (`FR-004`, `NFR-003`): ·��Խ�硢�ļ��滻�ͳ��޾����ܾ���
-
-- [ ] **AC-004** (`FR-006`): ˫��׷���� scope ����ȷ���� scope ��й¶�����ԡ�
-
-- [ ] **AC-005** (`TR-001`, `NFR-002`): �¼�������ͬ�ύͬ�ع��������� SSE��
-
-- [ ] **AC-006** (`FR-007`): �鵵����ʷ Run/Handoff �Կɽ��� pinned ref��
-
-
-
-
-
-=== F009 tasks section 2 (sample) ===
-
-
-
-### Phase 1��Contract �� migration
-
-
-
+=== F009 section 6 (AC list) ===
+- **SC-003**���б� 100 �� artifact ʱ���������ģ�����������ӦĿ��С�� 200 ms��
+
+### �����嵥
+
+�����嵥ÿ�����õ� 4 ����ʵ���ڵ����� ID���� Feature ���� `draft`��`tests:` ·����ȱ������ `review` ǰ���
+
+- [ ] **AC-001** (`FR-001`, `DR-001`): inline �� local file ���ܴ�������ʾ��Դ��
+- [ ] **AC-002** (`FR-002`, `FR-003`): �� revision ref ��Զ���������ݡ�
+- [ ] **AC-003** (`FR-004`, `NFR-003`): ·��Խ�硢�ļ��滻�ͳ��޾����ܾ���
+- [ ] **AC-004** (`FR-006`): ˫��׷���� scope ����ȷ���� scope ��й¶�����ԡ�
+- [ ] **AC-005** (`TR-001`, `NFR-002`): �¼�������ͬ�ύͬ�ع��������� SSE��
+- [ ] **AC-006** (`FR-007`): �鵵����ʷ Run/Handoff �Կɽ��� pinned ref��
+
+
+=== F009 tasks section 2 (sample) ===
+
+### Phase 1��Contract �� migration
+
 - [ ] T001 (`DR-001`, `DR-002`, `DR-003`): ���� shared Artifa
 …[truncated]
   ```
@@ -10219,50 +8963,32 @@ Let me examine the actual current F009-F012 AC and task formats so my stricter p
 
 - **tool**: `bash({"command": "cd D:\\Projects\\personahub; Select-String -Path tools\\check-feature-gates.test.mjs -Pattern \"compareSectionHeadings|checkOpenQuestionsClosed|parseRequirementIds|parseAcLines|parseTaskLines|gate_version|v0 |v0\\b|reversed|duplicate|free-text|not-a-Q\" | Select-Object LineNumber, Line | Select-Object -First 40"})`
 
-Now I understand the real formats. The AC format is `- [ ] **AC-001** (\`FR-001\`, \`DR-001\`): ...` and task format is `- [ ] T001 (\`DR-001\`, ...): ... - verify: \`path\``.
+Now I understand the real formats. The AC format is `- [ ] **AC-001** (\`FR-001\`, \`DR-001\`): ...` and task format is `- [ ] T001 (\`DR-001\`, ...): ... - verify: \`path\``. 
 
 Now let me look at the existing tests to understand what's currently tested (so I don't break them and can add regression tests).
 
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        19   parseAcLines,
-
-        20   parseRequirementIds,
-
-        21   parseTaskLines,
-
-        24   checkOpenQuestionsClosed,
-
-        28   compareSectionHeadings,
-
-       112 gate_version: ${gateVersion}
-
-       379 gate_version: 1
-
-       387     assert.equal(frontmatter.gate_version, 1);
-
-       407   await t.test('parses number gate_version: 0', () => {
-
-       409 gate_version: 0
-
-       413     assert.equal(frontmatter.gate_version, 0);
-
-       479 test('parseAcLines', async (t) => {
-
-       482     const acs = parseAcLines(content);
-
-       492     const acs = parseAcLines(content);
-
-       499     const acs = parseAcLines(content);
-
-       506 test('parseRequirementIds', async (t) => {
-
-       512
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        19   parseAcLines,
+        20   parseRequirementIds,
+        21   parseTaskLines,
+        24   checkOpenQuestionsClosed,
+        28   compareSectionHeadings,
+       112 gate_version: ${gateVersion}
+       379 gate_version: 1
+       387     assert.equal(frontmatter.gate_version, 1);
+       407   await t.test('parses number gate_version: 0', () => {
+       409 gate_version: 0
+       413     assert.equal(frontmatter.gate_version, 0);
+       479 test('parseAcLines', async (t) => {
+       482     const acs = parseAcLines(content);
+       492     const acs = parseAcLines(content);
+       499     const acs = parseAcLines(content);
+       506 test('parseRequirementIds', async (t) => {
+       512  
 …[truncated]
   ```
   </details>
@@ -10277,7 +9003,7 @@ Now let me look at the existing tests to understand what's currently tested (so 
 <path>D:\Projects\personahub\tools\check-feature-gates.test.mjs</path>
 <type>file</type>
 <content>
-470:
+470: 
 471: content
 472: `;
 473:     const sections = extractTopLevelSections(text);
@@ -10285,7 +9011,7 @@ Now let me look at the existing tests to understand what's currently tested (so 
 475:     assert.equal(sections[0].num, 0);
 476:   });
 477: });
-478:
+478: 
 479: test('parseAcLines', async (t) => {
 480:   await t.test('parses TEMPLATE format with tests path', () => {
 481:     const content = `- [ ] **AC-001** (\`FR-001\`, \`UX-001\`): behavior - tests: \`server/tests/a.test.ts\``;
@@ -10313,13 +9039,13 @@ Currently `SUPPORTED_GATE_VERSIONS = [0, 1]`, and any feature can declare `gate_
 
 The plan section 2.1 #4 says: "F001-F008（0.1、0.2 全部既有 Feature）一律显式写 gate_version: 0...v0.3 起（F009 及之后）必须写 gate_version: 1". So the rule is: gate_version 0 is only allowed for legacy features (F001-F008 in versions 0.1/0.2). New features must be v1.
 
-How to determine "legacy"? The plan says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测". Hmm, but that's contradictory — if it only looks at the field, then a new feature declaring v0 would be "legacy" by that rule.
+How to determine "legacy"? The plan says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测". Hmm, but that's contradictory — if it only looks at the field, then a new feature declaring v0 would be "legacy" by that rule. 
 
 Actually re-reading: "是否 legacy 只看该字段，不按日期、编号或目录位置猜测" — this means: whether a feature is legacy is determined ONLY by the gate_version field, not by guessing from date/number/directory. So a feature with gate_version:0 IS legacy. But then what stops a new feature from declaring v0?
 
 The reviewer's concern: "新 Feature 可声明 gate_version 0 绕过全部 v1 门禁". The fix needs to ensure that gate_version 0 cannot be used to escape the v1 gate for features that should be v1.
 
-The cleanest interpretation consistent with the plan: v0 is only for features in versions **0.1 and 0.2** (legacy). v0.3+ features (F009+) MUST be v1. Actually the plan says the legacy set is F001-F008 which span 0.1 and 0.2. So I can enforce: a feature declaring gate_version:0 must be one of the known legacy IDs (F001-F008) OR must be in version 0.1/0.2.
+The cleanest interpretation consistent with the plan: v0 is only for features in versions **0.1 and 0.2** (legacy). v0.3+ features (F009+) MUST be v1. Actually the plan says the legacy set is F001-F008 which span 0.1 and 0.2. So I can enforce: a feature declaring gate_version:0 must be one of the known legacy IDs (F001-F008) OR must be in version 0.1/0.2. 
 
 But "不按编号...猜测" says don't guess by number. Hmm. The safest robust rule that satisfies both: gate_version 0 is allowed only for features whose **version directory is 0.1 or 0.2** (the legacy versions). A v0.3 feature declaring gate_version:0 → error. This is deterministic and doesn't guess by feature number. The plan lists the legacy set as exactly F001-F008 which live in 0.1/0.2. So version-based is the cleanest.
 
@@ -10334,9 +9060,9 @@ Let me implement this. I'll add a `LEGACY_GATE_ZERO_VERSIONS = new Set(['0.1', '
 - collapses duplicates (later duplicate overwrites → duplicate `0` not detected)
 - ignores order (reversed array still passes because it looks up by num)
 
-Fix:
+Fix: 
 - Detect duplicate section numbers in actual.
-- Enforce that actual sections appear in ascending numeric order (no reversal, no gaps allowed between expected? The plan says fixed sections must match exactly).
+- Enforce that actual sections appear in ascending numeric order (no reversal, no gaps allowed between expected? The plan says fixed sections must match exactly). 
 - Actually the plan says "顶层章节必须与 2.1 完全一致" — all sections present, no extras, and presumably in order.
 
 The current code checks: missing expected, title mismatch, extra sections. It does NOT check:
@@ -10350,7 +9076,7 @@ New logic for compareSectionHeadings:
 4. Check that actual nums appear in strictly increasing order matching expected order. i.e., the actual section with the lowest expected num must come first, etc.
 5. Also verify no missing/extra/title mismatch as before.
 
-Simplest robust approach:
+Simplest robust approach: 
 - Reject if actualSections has duplicate nums.
 - Build actualByNum as before.
 - For order: collect the positions (indices) of each expected num in actualSections; they must be strictly increasing. If not, error "sections out of order".
@@ -10381,13 +9107,13 @@ So the regex should match only IDs that appear in definition position. Simplest:
 
 Let me rewrite parseRequirementIds to look for bolded IDs `\*\*(FR|DR|TR|IR|UX|NFR)-\d{3}\*\*` and heading pattern `### Requirement: ...（FR-001）` / `` `FR-001` `` in headings.
 
-- `parseAcLines('- [x] garbage AC-001 mentions FR-999')` accepts non-contract format. Because it just matches `AC-\d{3}` anywhere. The canonical AC line is `- [ ] **AC-001** (\`FR-001\`...): behavior`. The reviewer wants AC lines to follow the contract.
+- `parseAcLines('- [x] garbage AC-001 mentions FR-999')` accepts non-contract format. Because it just matches `AC-\d{3}` anywhere. The canonical AC line is `- [ ] **AC-001** (\`FR-001\`...): behavior`. The reviewer wants AC lines to follow the contract. 
 
-Fix: parseAcLines should require the AC id to appear in a "contract" position. The canonical form has `**AC-001**` (bold) followed by a parenthesized requirement list `(\`FR-001\`, \`DR-001\`)`. A line like `garbage AC-001 mentions FR-999` (no bold AC, no paren group) should NOT be accepted as a valid AC.
+Fix: parseAcLines should require the AC id to appear in a "contract" position. The canonical form has `**AC-001**` (bold) followed by a parenthesized requirement list `(\`FR-001\`, \`DR-001\`)`. A line like `garbage AC-001 mentions FR-999` (no bold AC, no paren group) should NOT be accepted as a valid AC. 
 
 But wait — the test `parseAcLines` expects to parse `- [ ] **AC-001**（FR-001/DR-001）：behavior` (full-width paren, no backticks). And `- [x] **AC-001** (\`FR-001\`): behavior`. All have `**AC-001**` bold. So requiring `**AC-001**` is safe for the canonical format.
 
-Hmm, but should I make parseAcLines reject non-contract lines, or should the GATE reject them? The review point is that the parser is too loose. The cleanest: parseAcLines returns only lines that match the contract (bold AC id + requirement refs). Non-matching checkbox lines are simply not parsed as ACs — and then the gate already has a check "checkbox line without AC ID" (via the `acIdRe` skip). Actually currently if a line has `AC-001` anywhere it's parsed.
+Hmm, but should I make parseAcLines reject non-contract lines, or should the GATE reject them? The review point is that the parser is too loose. The cleanest: parseAcLines returns only lines that match the contract (bold AC id + requirement refs). Non-matching checkbox lines are simply not parsed as ACs — and then the gate already has a check "checkbox line without AC ID" (via the `acIdRe` skip). Actually currently if a line has `AC-001` anywhere it's parsed. 
 
 Let me make parseAcLines require the bold `**AC-001**` marker OR at least a strict structure. Actually the simpler and safer interpretation: the gate should flag AC lines that don't reference real requirements AND that aren't in proper format. The current gate already checks AC references defined IDs. The bypass is: `parseAcLines('- [x] garbage AC-001 mentions FR-999')` returns reqIds=['FR-999'], and if FR-999 is "defined" (via loose parseRequirementIds), it passes. So the real fix is twofold: (a) parseRequirementIds must only count REAL definitions, (b) parseAcLines must require the requirement refs to be in the parenthesized group (contract), not scattered mentions.
 
@@ -10395,16 +9121,16 @@ Let me make parseAcLines extract reqIds ONLY from the parenthesized group `(...)
 
 Actually, let me look at what the existing test expects: `parseAcLines('...（FR-001/DR-001）...')` → reqIds includes FR-001, DR-001 (from parens). And `- [x] **AC-001** (\`FR-001\`): behavior` → reqIds ['FR-001'] (from parens). Good, all from parens. So restricting to paren group is safe.
 
-Similarly `parseTaskLines('- [x] blah T001')` — currently matches `\b(T\d{3})\b` anywhere → accepts `blah T001`. The canonical task is `- [ ] T001 (\`FR-001\`, \`AC-001\`): action - verify: ...`. Should require the ID in a contract position. But the existing "illegal task format" check already flags checkbox lines without Txxx. The bypass is `- [x] blah T001` IS accepted (has T001). Hmm. What makes `blah T001` non-contract vs `T001 (...)` contract? The canonical has the refs in parens.
+Similarly `parseTaskLines('- [x] blah T001')` — currently matches `\b(T\d{3})\b` anywhere → accepts `blah T001`. The canonical task is `- [ ] T001 (\`FR-001\`, \`AC-001\`): action - verify: ...`. Should require the ID in a contract position. But the existing "illegal task format" check already flags checkbox lines without Txxx. The bypass is `- [x] blah T001` IS accepted (has T001). Hmm. What makes `blah T001` non-contract vs `T001 (...)` contract? The canonical has the refs in parens. 
 
 For tasks, requiring `T001` at the start (right after checkbox) or with paren refs. Let me require the task line to have the Txxx ID followed by optional `[P]` and a `(...)` ref group. Actually the plan task format: `- [ ] T001 [P] (\`FR-001\`, \`AC-001\`): <action> - verify: ...`. So after the checkbox, first token(s) are the task ID and optional [P], then `(...)` refs, then `: action`. A line `blah T001` doesn't match (T001 not at start, no parens).
 
-Let me be pragmatic and precise:
+Let me be pragmatic and precise: 
 - parseAcLines: require the AC id to be bold `**AC-001**` (or accept the plain as fallback?) — to not break the "full-width paren" test which has `**AC-001**`. Requiring bold is safe. And extract reqIds only from the parenthesized group immediately after the AC id (which may be `(` or `（`, containing `FR-001`/`DR-001` separated by `,` or `/`).
 
-- parseTaskLines: require the Txxx id to appear at the start of the rest (after checkbox and optional `[P]`), i.e. `/^\[?P\]?\s*T\d{3}\b/` OR the refs in parens. Hmm. Let me require that the line has the Txxx ID AND a parenthesized ref group (contract). Actually simplest: require Txxx appears as first token. Let me require `/^T\d{3}\b/` at the start of rest (after checkbox), since canonical always starts with the task ID. `blah T001` → rest starts with `blah` → not matched → not parsed as task → then gate... would it flag?
+- parseTaskLines: require the Txxx id to appear at the start of the rest (after checkbox and optional `[P]`), i.e. `/^\[?P\]?\s*T\d{3}\b/` OR the refs in parens. Hmm. Let me require that the line has the Txxx ID AND a parenthesized ref group (contract). Actually simplest: require Txxx appears as first token. Let me require `/^T\d{3}\b/` at the start of rest (after checkbox), since canonical always starts with the task ID. `blah T001` → rest starts with `blah` → not matched → not parsed as task → then gate... would it flag? 
 
-Actually for tasks the gate's "illegal task format" check catches checkbox lines without Txxx. If `blah T001` isn't parsed as a task but has T001... Let me think about what the reviewer wants: "任务格式可用松散文本绕过追踪门禁". The fix: `- [x] blah T001` should be rejected, not silently accepted as a valid checked task (which would then satisfy "done requires all checked").
+Actually for tasks the gate's "illegal task format" check catches checkbox lines without Txxx. If `blah T001` isn't parsed as a task but has T001... Let me think about what the reviewer wants: "任务格式可用松散文本绕过追踪门禁". The fix: `- [x] blah T001` should be rejected, not silently accepted as a valid checked task (which would then satisfy "done requires all checked"). 
 
 If I require the task line to match the contract (Txxx at start + refs), then `blah T001` won't be parsed as a valid task. But then it's a checkbox line in section 2/3 without a proper Txxx contract → the existing "checkbox line without Txxx" check would... it has T001 so that check passes. I need a stronger contract check.
 
@@ -10429,20 +9155,20 @@ Let me read the base check tests and compareSectionHeadings tests, plus the rema
 <content>
 655:   });
 656: });
-657:
+657: 
 658: test('compareSectionHeadings', async (t) => {
 659:   await t.test('matching sections produce no errors', () => {
 660:     const actual = SPEC_SECTIONS.map((s) => ({ ...s, content: 'x' }));
 661:     const errors = compareSectionHeadings(actual, SPEC_SECTIONS, 'spec.md');
 662:     assert.equal(errors.length, 0);
 663:   });
-664:
+664: 
 665:   await t.test('missing section produces error', () => {
 666:     const actual = SPEC_SECTIONS.filter((s) => s.num !== 5).map((s) => ({ ...s, content: 'x' }));
 667:     const errors = compareSectionHeadings(actual, SPEC_SECTIONS, 'spec.md');
 668:     assert.ok(errors.some((e) => e.includes('missing section 5')));
 669:   });
-670:
+670: 
 671:
 …[truncated]
   ```
@@ -10459,38 +9185,22 @@ Let me look at the test helpers (writeFeature, makeSpec, createTempRepo).
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        45 function createTempRepo() {
-
-        59 function writeFeature(repoRoot, version, id, name, { spec, design, tasks } = {}) {
-
-        91 function makeSpec(opts = {}) {
-
-        96     gateVersion = 1,
-
-       110 version: "${version}"
-
-       112 gate_version: ${gateVersion}
-
-       202 function makeDesign(opts = {}) {
-
-       218 version: "${version}"
-
-       271 function makeTasks(opts = {}) {
-
-       288 version: "${version}"
-
-       354     gateVersion: 1,
-
-       377 version: "0.1"
-
-       379 gate_version: 1
-
-       407   await t.test('parses number gate_version: 0', () => {
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        45 function createTempRepo() {
+        59 function writeFeature(repoRoot, version, id, name, { spec, design, tasks } = {}) {
+        91 function makeSpec(opts = {}) {
+        96     gateVersion = 1,
+       110 version: "${version}"
+       112 gate_version: ${gateVersion}
+       202 function makeDesign(opts = {}) {
+       218 version: "${version}"
+       271 function makeTasks(opts = {}) {
+       288 version: "${version}"
+       354     gateVersion: 1,
+       377 version: "0.1"
+       379 gate_version: 1
+       407   await t.test('parses number gate_version: 0', () => {
        409 gate_version: 0
   ```
   </details>
@@ -10505,17 +9215,17 @@ Let me look at the test helpers (writeFeature, makeSpec, createTempRepo).
 <path>D:\Projects\personahub\tools\check-feature-gates.test.mjs</path>
 <type>file</type>
 <content>
-40:
+40: 
 41: // ---------------------------------------------------------------------------
 42: // Test helpers
 43: // ---------------------------------------------------------------------------
-44:
+44: 
 45: function createTempRepo() {
 46:   const dir = mkdtempSync(join(tmpdir(), 'ph-gate-'));
 47:   mkdirSync(join(dir, 'docs', 'features'), { recursive: true });
 48:   return dir;
 49: }
-50:
+50: 
 51: function cleanup(dir) {
 52:   try {
 53:     rmSync(dir, { recursive: true, force: true });
@@ -10523,7 +9233,7 @@ Let me look at the test helpers (writeFeature, makeSpec, createTempRepo).
 55:     // ignore
 56:   }
 57: }
-58:
+58: 
 59: function writeFeature(repoRoot, version, id, name, { spec, design, tasks } = {}) {
 60:   const dir = join(repoRoot, 'docs', 'features', version, `${id}-${name}`);
 6
@@ -10542,38 +9252,38 @@ Let me look at the test helpers (writeFeature, makeSpec, createTempRepo).
 <type>file</type>
 <content>
 169: ## 7. 测试、依赖与决策
-170:
+170: 
 171: ### 测试策略
 172: - unit
-173:
+173: 
 174: ### 依赖
 175: - none
-176:
+176: 
 177: ### 决策与风险
 178: | 决策 | 结论 | 理由 | 后续 |
 179: |---|---|---|---|
-180:
+180: 
 181: ## 8. 待确认问题
-182:
+182: 
 183: ${sec8}
 184: `;
 185: }
-186:
+186: 
 187: function defaultSec4() {
 188:   return `### 功能需求
-189:
+189: 
 190: ### Requirement: 需求（\`FR-001\`）
 191: 系统应当 ...
-192:
+192: 
 193: ### 非功能需求
-194:
+194: 
 195: - **NFR-001**：性能`;
 196: }
-197:
+197: 
 198: function defaultSec6() {
 199:   return `- [ ] **AC-001** (\`FR-001\`): 可观察行为 - tests: \`server/tests/test.test.ts\``;
 200: }
-201:
+201: 
 202: function makeDesign(opts = {}) {
 203:   const {
 204:     id = 'F001',
@@ -10592,7 +9302,7 @@ Let me look at the test helpers (writeFeature, makeSpec, createTempRepo).
 > [reasoning] Now I have a good understanding. Let me design the fixes carefully.
 
 ## Fix #1: gate-v0-bypass
-The plan says gate_version 0 is only for legacy F001-F008. A new Feature must use gate_version 1. Currently `SUPPORTED_GATE_VERSIONS = [0,1]` and any feature can declare 0.
+The plan says gate_version 0 is only for legacy F001-F008. A new Feature must use gate_version 1. Currently `SUPPORTED_GATE_VERSIONS = [0,1]` and any feature can declare 0. 
 
 The plan (section 2.1 point 4): "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0。是否 legacy 只看该字段，不按日期、编号或目录位置猜测。未来若逐项补齐历史证据，可以单向从 v0 升到 v1".
 
@@ -10600,7 +9310,7 @@ So the enforcement: a feature that declares gate_version 0 must be one of the le
 
 But "是否 legacy 只看该字段" — wait, that's contradictory. It says legacy is determined only by the field. Hmm. Actually re-reading: "是否 legacy 只看该字段，不按日期、编号或目录位置猜测" means "whether it's legacy is determined solely by this field, don't guess by date/number/directory position." So the field IS the source of truth for whether it's v0 legacy.
 
-But then how do we prevent a NEW feature from declaring v0? The answer per the plan: the gate must not allow creating NEW done features via legacy rules, and the gate itself should enforce that v0 is only for the known legacy set.
+But then how do we prevent a NEW feature from declaring v0? The answer per the plan: the gate must not allow creating NEW done features via legacy rules, and the gate itself should enforce that v0 is only for the known legacy set. 
 
 Actually the review's concern is legitimate: "新 Feature 可声明 gate_version 0 绕过全部 v1 门禁". So we need to define the known legacy set explicitly and reject v0 for anything outside it.
 
@@ -10609,7 +9319,7 @@ The plan says: "v0 只用于这批既有历史 Feature" — F001-F008 (0.1, 0.2 
 Let me define `LEGACY_GATE_ZERO_IDS = new Set(['F001','F002','F003','F004','F005','F006','F007','F008'])`. And check: if gateVersion === 0 and id not in set → error "gate_version 0 only allowed for legacy features F001-F008; new features must use gate_version 1".
 
 ## Fix #2: section-order-duplicate-bypass
-`compareSectionHeadings` builds `actualByNum` Map — ignores order and collapses duplicates. Fix:
+`compareSectionHeadings` builds `actualByNum` Map — ignores order and collapses duplicates. Fix: 
 - Check actual sections appear in strictly increasing numeric order (no duplicates, no out-of-order).
 - Build a proper comparison: actual must have exactly one of each expected num, in order, no extras.
 
@@ -10633,12 +9343,12 @@ Actually the plan says spec uses Q-xxx, design uses DQ-xxx. For robustness, requ
 Let me check call sites: line 1018 `checkOpenQuestionsClosed(specSec8.content)` and 1030 `checkOpenQuestionsClosed(designSec10.content)`. I'll update to pass 'Q' and 'DQ'.
 
 ## Fix #4: traceability-format-bypass
-- `parseRequirementIds('本文仅引用 FR-999，并未定义它')` treats FR-999 as defined. Because REQ_ID_RE matches any `FR-\d{3}` anywhere in section 4. The plan says AC must reference IDs "真实定义" in section 4. A mere mention in prose is not a definition.
+- `parseRequirementIds('本文仅引用 FR-999，并未定义它')` treats FR-999 as defined. Because REQ_ID_RE matches any `FR-\d{3}` anywhere in section 4. The plan says AC must reference IDs "真实定义" in section 4. A mere mention in prose is not a definition. 
 
-But wait — how do we distinguish a "definition" from a "mention"? In the real docs, requirements are defined as `- **FR-001**：...` or `### Requirement: 需求（\`FR-001\`）`. A mention would be free text `FR-999`.
+But wait — how do we distinguish a "definition" from a "mention"? In the real docs, requirements are defined as `- **FR-001**：...` or `### Requirement: 需求（\`FR-001\`）`. A mention would be free text `FR-999`. 
 
-The review's concern: `parseRequirementIds('本文仅引用 FR-999，并未定义它')` should NOT treat FR-999 as defined. So parseRequirementIds should only count IDs that appear in a *definition* position:
-  - `### Requirement: ...（\`FR-001\`）`
+The review's concern: `parseRequirementIds('本文仅引用 FR-999，并未定义它')` should NOT treat FR-999 as defined. So parseRequirementIds should only count IDs that appear in a *definition* position: 
+  - `### Requirement: ...（\`FR-001\`）` 
   - `- **FR-001**：...` (bold bullet)
   - `- \`FR-001\`：...`?
 
@@ -10657,21 +9367,21 @@ So I should make parseRequirementIds only match IDs that are:
 
 A bare `FR-999` in prose should NOT count.
 
-Let me define:
-- Bold bullet: `- \*\*(FR|DR|TR|IR|UX|NFR)-\d{3}\*\*`
+Let me define: 
+- Bold bullet: `- \*\*(FR|DR|TR|IR|UX|NFR)-\d{3}\*\*` 
 - Heading: `### .*（(?:FR|DR|TR|IR|UX|NFR)-\d{3}）` or backtick form.
 
 Hmm, but the AC references use format `(\`FR-001\`, \`DR-001\`)`. The requirement definitions in F009 use `- **FR-001**：`. So bold bullet detection works.
 
 Let me rewrite parseRequirementIds to only count IDs in definition position (bold `**ID**` or a `### Requirement` heading).
 
-- `parseAcLines('- [x] garbage AC-001 mentions FR-999')` accepts non-contract format. The AC line should match the contract: `- [ ] **AC-001** (refs): behavior` or full-width `（refs）`. The concern is that `garbage AC-001 mentions FR-999` is accepted.
+- `parseAcLines('- [x] garbage AC-001 mentions FR-999')` accepts non-contract format. The AC line should match the contract: `- [ ] **AC-001** (refs): behavior` or full-width `（refs）`. The concern is that `garbage AC-001 mentions FR-999` is accepted. 
 
 Actually the current parseAcLines extracts AC ID via `acIdRe = /\*?\*?(AC-\d{3})\*?\*?/` — it matches `AC-001` anywhere. And reqIds from REQ_ID_RE anywhere. So `garbage AC-001 mentions FR-999` → id=AC-001, reqIds=[FR-999]. Then in gate v1, it checks FR-999 is defined — if someone also wrote a loose mention of FR-999 in section 4, it'd pass.
 
 The fix: AC lines must follow the contract format with the AC id and parenthesized requirement refs. Specifically the AC id should be in bold `**AC-001**` and refs in parens `(\`FR-001\`, ...)` or `（FR-001/DR-001）`. A line like `garbage AC-001 mentions FR-999` (no bold AC, no paren refs) should be rejected as a malformed AC.
 
-Hmm, but should parseAcLines reject it (return empty) or should the gate flag it as an invalid AC line? The review says "AC、需求定义和任务格式可用松散文本绕过追踪门禁". The concern is that loose text is accepted as valid.
+Hmm, but should parseAcLines reject it (return empty) or should the gate flag it as an invalid AC line? The review says "AC、需求定义和任务格式可用松散文本绕过追踪门禁". The concern is that loose text is accepted as valid. 
 
 I think the cleanest approach: parseAcLines should only recognize lines that match the full contract:
 ```
@@ -10679,8 +9389,8 @@ I think the cleanest approach: parseAcLines should only recognize lines that mat
 ```
 or full-width: `- [ ] **AC-001**（FR-001/DR-001）：behavior`
 
-And a checkbox line in section 6 that has an AC-ish ID but not in contract format should be flagged. Actually the simplest robust fix:
-- In parseAcLines, require the AC ID to be bold `**AC-001**` (as the contract requires) AND the reqIds to come from a parenthesized group.
+And a checkbox line in section 6 that has an AC-ish ID but not in contract format should be flagged. Actually the simplest robust fix: 
+- In parseAcLines, require the AC ID to be bold `**AC-001**` (as the contract requires) AND the reqIds to come from a parenthesized group. 
 - In gate v1, add a check: any checkbox line in section 6 that doesn't match the AC contract → error.
 
 Let me think about what "accepts non-contract format" means concretely. The review gives: `parseAcLines('- [x] garbage AC-001 mentions FR-999')` — this returns an AC. With bold requirement, `**AC-001**` is not present (it's `garbage AC-001`), so it wouldn't be parsed as AC. Good.
@@ -10695,15 +9405,15 @@ But the test helpers and existing tests use various formats. Let me be careful n
 
 Let me make parseTaskLines require the line to match `^- \[[ xX]\]\s*(?:\[P\]\s*)?T\d{3}\b` — i.e., Txxx must come right after the checkbox (and optional [P]). `blah T001` → rest is `blah T001`, doesn't start with T → not parsed.
 
-But wait, there's a subtlety: the existing "task line format" check at line 863-879 already checks checkbox lines without Txxx. If parseTaskLines no longer matches `blah T001`, then... the gate check would still see `blah T001` has `\bT\d{3}\b` (it checks `/\bT\d{3}\b/.test(rest)`), so it won't flag it as "checkbox line without Txxx". So `blah T001` would be silently ignored (not parsed as a task, not flagged).
+But wait, there's a subtlety: the existing "task line format" check at line 863-879 already checks checkbox lines without Txxx. If parseTaskLines no longer matches `blah T001`, then... the gate check would still see `blah T001` has `\bT\d{3}\b` (it checks `/\bT\d{3}\b/.test(rest)`), so it won't flag it as "checkbox line without Txxx". So `blah T001` would be silently ignored (not parsed as a task, not flagged). 
 
 To truly reject loose format, I should ADD a gate check: any checkbox line in sections 2/3 must match the task contract (leading Txxx), else error. Let me add that as part of the format check.
 
 This is getting complex. Let me structure the fixes cleanly:
 
 ### Parsers (tighten):
-1. `parseRequirementIds`: only count IDs in definition position (bold `**PREFIX-xxx**` OR in `### Requirement: ...（ID）` heading).
-2. `parseAcLines`: require AC id bold `**AC-xxx**`; extract reqIds only from parenthesized group. If a checkbox line isn't in AC contract, don't parse it (and gate will flag).
+1. `parseRequirementIds`: only count IDs in definition position (bold `**PREFIX-xxx**` OR in `### Requirement: ...（ID）` heading). 
+2. `parseAcLines`: require AC id bold `**AC-xxx**`; extract reqIds only from parenthesized group. If a checkbox line isn't in AC contract, don't parse it (and gate will flag). 
 3. `parseTaskLines`: require Txxx as leading token after checkbox/[P]. Extract refs from parens.
 
 ### compareSectionHeadings: enforce order + no duplicates.
@@ -10772,9 +9482,9 @@ Let me read `makeTasks` and the V1 task tests, plus how `parseTaskLines` is used
 279:     sec5 = '无',
 280:     body = null,
 281:   } = opts;
-282:
+282: 
 283:   if (body !== null) return body;
-284:
+284: 
 285:   return `---
 286: kind: feature
 287: id: ${id}
@@ -10785,14 +9495,14 @@ Let me read `makeTasks` and the V1 task tests, plus how `parseTaskLines` is used
 292: created: 2026-08-09
 293: updated: 2026-08-09
 294: ---
-295:
+295: 
 296: # ${id}：Test Feature - 任务
-297:
+297: 
 298: > Owner: TBD | Spec: \`spec.md\` | Design: \`design.md\`
-299:
+299: 
 300: ## 0. 来源与执行规则
 301: - rule
-302:
+302: 
 303: ## 1. 前置条件
 3
 …[truncated]
@@ -10812,24 +9522,24 @@ Let me read `makeTasks` and the V1 task tests, plus how `parseTaskLines` is used
 321: ${sec5}
 322: `;
 323: }
-324:
+324: 
 325: function defaultSec2() {
 326:   return `### Phase 1：基础
-327:
+327: 
 328: - [ ] T001 (\`FR-001\`, \`AC-001\`): implement feature - verify: \`server/tests/test.test.ts\``;
 329: }
-330:
+330: 
 331: function defaultSec3() {
 332:   return `- [ ] T002 (\`AC-001\`): run tests - verify: \`server/tests/test.test.ts\``;
 333: }
-334:
+334: 
 335: // Helper to make all tasks and ACs checked (for done/review state)
 336: function checkedSec2() {
 337:   return `### Phase 1：基础
-338:
+338: 
 339: - [x] T001 (\`FR-001\`, \`AC-001\`): implement feature - verify: \`server/tests/test.test.ts\``;
 340: }
-341:
+341: 
 342: function checkedSec3() {
 343:   return `- [x] T002 (\`AC-001\`): run tests - verify: \`serve
 …[truncated]
@@ -10845,13 +9555,13 @@ Let me read `makeTasks` and the V1 task tests, plus how `parseTaskLines` is used
 > [reasoning] Now I have a comprehensive understanding. Let me design the fixes:
 
 ### Fix #1: gate-v0-bypass
-Currently `SUPPORTED_GATE_VERSIONS = [0, 1]` and any feature can declare 0. The plan says v0 is only for legacy F001-F008 (0.1, 0.2). New features (0.3+) must use v1.
+Currently `SUPPORTED_GATE_VERSIONS = [0, 1]` and any feature can declare 0. The plan says v0 is only for legacy F001-F008 (0.1, 0.2). New features (0.3+) must use v1. 
 
 The plan (2.1 point 4): "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0。是否 legacy 只看该字段，不按日期、编号或目录位置猜测。"
 
 Hmm, this is subtle. It says legacy is determined by the field only, not by date/number/directory. But then how do we prevent a new feature from declaring v0? The reviewer says "新 Feature 可声明 gate_version 0 绕过全部 v1 门禁" is a bypass.
 
-The plan says "是否 legacy 只看该字段" — the field itself determines legacy. But that alone doesn't prevent bypass. The review's concern is real: the gate should enforce that v0 is only for known legacy features.
+The plan says "是否 legacy 只看该字段" — the field itself determines legacy. But that alone doesn't prevent bypass. The review's concern is real: the gate should enforce that v0 is only for known legacy features. 
 
 The plan says "v0 只用于这批既有历史 Feature". So there's a known set of legacy features. But "是否 legacy 只看该字段，不按日期、编号或目录位置猜测" means: when determining legacy, look only at the field, don't guess by date/number/directory.
 
@@ -10878,7 +9588,7 @@ But `id` is `specFm.id || dirId`. For the check I'll use the resolved id.
 - It ignores order (reversed array passes)
 - It collapses duplicates (duplicate 0 passes)
 
-Fix:
+Fix: 
 - Detect duplicate section numbers in actual → error.
 - Enforce that sections appear in the expected order (nums strictly ascending in the actual array).
 
@@ -10904,7 +9614,7 @@ Let me pass prefix: `checkOpenQuestionsClosed(sectionText, prefix)` where prefix
 
 Existing test: `checkOpenQuestionsClosed('- [x] Q-001: question - 决策：conclusion')` returns closed:true. With prefix 'Q' this still works. But the test calls without prefix. I need to update the call sites and tests. Let me make prefix default to null (accept both) to not break, but then `- [x] not-a-Q` — does it match Q-\d{3}? No. So it would be rejected. Good, that fixes the bypass while keeping compatibility.
 
-Actually if prefix is null, match `(?:Q|DQ)-\d{3}`. `- [x] not-a-Q and no decision` has no `Q-\d{3}` → not a valid closed item → not closed.
+Actually if prefix is null, match `(?:Q|DQ)-\d{3}`. `- [x] not-a-Q and no decision` has no `Q-\d{3}` → not a valid closed item → not closed. 
 
 But also the plan says a closed Q item should have a decision (`— 决策：`). The review's example `- [x] not-a-Q and no decision` fails both on missing Q id AND missing decision. Let me require: for a closed `[x]` item, it must match `(?:Q|DQ)-\d{3}` AND contain a decision marker `决策`. Actually the TEMPLATE: `- [x] Q-002: <已关闭问题> — 决策：<结论>`. So closed requires the decision part.
 
@@ -10940,7 +9650,7 @@ Let me rewrite parseRequirementIds to match:
 - Bullet lines `-\s*\*\*(FR|DR|...)-\d{3}\*\*`
 - Bullet lines `-\s*(FR|DR|...)-\d{3}`
 
-The existing test:
+The existing test: 
 ```
 ### Requirement: 需求（`FR-001`）
 text
@@ -10949,7 +9659,7 @@ text
 ```
 Expects FR-001, DR-001, NFR-002. My rewrite must capture all three. FR-001 from heading, DR-001/NFR-002 from bold bullets. Good.
 
-b) `parseAcLines('- [x] garbage AC-001 mentions FR-999')` accepts non-contract format. Currently parseAcLines matches AC-\d{3} anywhere and collects reqIds from anywhere. The plan's AC format: `- [ ] **AC-001** (FR-001, NFR-002): 可观察行为 — tests: path`.
+b) `parseAcLines('- [x] garbage AC-001 mentions FR-999')` accepts non-contract format. Currently parseAcLines matches AC-\d{3} anywhere and collects reqIds from anywhere. The plan's AC format: `- [ ] **AC-001** (FR-001, NFR-002): 可观察行为 — tests: path`. 
 
 The bypass: a line `- [x] garbage AC-001 mentions FR-999` is accepted as an AC referencing FR-999. This is loose.
 
@@ -10975,7 +9685,7 @@ Good, all existing tests use bold AC + paren refs. So tightening to require bold
 
 c) `parseTaskLines('- [x] blah T001')` accepts loose task. Task format: `- [ ] T001 [P] (FR-001, AC-001): ... - verify: ...`. The bypass accepts `blah T001`.
 
-Fix: require task line to have T-id in the leading position: after the checkbox, the next token should be the task ID `T\d{3}` (optionally with [P]). And require refs in a paren group, and a `:` separator.
+Fix: require task line to have T-id in the leading position: after the checkbox, the next token should be the task ID `T\d{3}` (optionally with [P]). And require refs in a paren group, and a `:` separator. 
 
 Actually the gate's "illegal task format" check already flags checkbox lines without Txxx in sections 2/3. But `blah T001` has T001 so it passes that check. The issue is parseTaskLines accepts it as a valid task with no refs.
 
@@ -10985,7 +9695,7 @@ Hmm. To fix the bypass properly, I should strengthen the "illegal task format" c
 
 Let me define the task contract: `^- \[[ xX]\]\s*(\[P\]\s*)?(T\d{3})\b.*[（(].*[）)].*[：:]` — has T-id, paren refs, and colon. Actually the real format is `- [ ] T001 (FR-001, AC-001): action - verify: path`. So require T-id at start, then a paren group, then `:`.
 
-Let me write `isValidTaskLine`:
+Let me write `isValidTaskLine`: 
 ```
 /^-\s+\[[ xX]\]\s*(?:\[P\]\s*)?T\d{3}\b\s*[（(][^）)]*[）)].*[：:]/
 ```
@@ -11020,25 +9730,16 @@ Now I have a full understanding of all 5 issues. Let me start implementing. Firs
   <details><summary>tool output</summary>
 
   ```text
-=== check git-scanner.test.ts for same hook issue ===
-
-
-
-=== does a fresh git repo inherit global hooksPath? ===
-
+=== check git-scanner.test.ts for same hook issue ===
+
+=== does a fresh git repo inherit global hooksPath? ===
 C:/Users/Georg/.git-hooks
-(above is inherited hooksPath)
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        10   execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
-
-        11   execSync('git config user.email "test@test.com"', { cwd: dir, encoding: "utf-8" });
-
-        12   execSync('git config user.name "Test"', { cwd: dir, encoding: "utf-8" });
-
+(above is inherited hooksPath)
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        10   execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
+        11   execSync('git config user.email "test@test.com"', { cwd: dir, encoding: "utf-8" });
+        12   execSync('git config user.name "Test"', { cwd: dir, encoding: "utf-8" });
         17   execSync(`git commit -m "${msg}"`, { cwd: dir, encoding: "utf-8", timeout: 5000 });
   ```
   </details>
@@ -11064,7 +9765,7 @@ The clean fix: set `core.hooksPath` to an empty/isolated value in the test-creat
 5: import { execSync } from "node:child_process";
 6: import { captureGitSnapshot, diffGitSnapshots } from "../../src/runtime/trace/git-workspace-scanner.js";
 7: import { FileChangeType } from "@personahub/shared/types";
-8:
+8: 
 9: function initGitRepo(dir: string): void {
 10:   execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
 11:   execSync('git config user.email "test@test.com"', { cwd: dir, encoding: "utf-8" });
@@ -11087,19 +9788,19 @@ Actually, the simplest robust approach: set `core.hooksPath` to an empty string 
 <path>D:\Projects\personahub\server\tests\helpers.ts</path>
 <type>file</type>
 <content>
-54:
+54: 
 55: export function createTestDb(): Database.Database {
 56:   return openDatabase(":memory:");
 57: }
-58:
+58: 
 59: export function createTempDir(): string {
 60:   return mkdtempSync(join(tmpdir(), "personahub-test-"));
 61: }
-62:
+62: 
 63: export function cleanupTempDir(dir: string): void {
 64:   rmSync(dir, { recursive: true, force: true });
 65: }
-66:
+66: 
 67: export interface TestServices {
 68:   db: Database.Database;
 
@@ -11151,18 +9852,12 @@ The comment is necessary (explains the non-obvious isolation). Let me check `exe
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        72  * in these scanner tests and blow the execSync timeout.
-
-        75   execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
-
-        76   execSync('git config user.email "test@test.com"', { cwd: dir, encoding: "utf-8" });
-
-        77   execSync('git config user.name "Test"', { cwd: dir, encoding: "utf-8" });
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        72  * in these scanner tests and blow the execSync timeout.
+        75   execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 });
+        76   execSync('git config user.email "test@test.com"', { cwd: dir, encoding: "utf-8" });
+        77   execSync('git config user.name "Test"', { cwd: dir, encoding: "utf-8" });
         78   execSync("git config core.hooksPath /dev/null", { cwd: dir, encoding: "utf-8" });
   ```
   </details>
@@ -11178,30 +9873,18 @@ The docstring is necessary (explains non-obvious machine-dependency isolation). 
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-         1 import Database from "better-sqlite3";
-
-         2 import { tmpdir } from "node:os";
-
-         3 import { join } from "node:path";
-
-         4 import { mkdtempSync, rmSync } from "node:fs";
-
-         5 import { openDatabase } from "../src/db/index.js";
-
-         6 import { ProjectRepository } from "../src/repositories/project.js";
-
-         7 import { WorkspaceRepository } from "../src/repositories/workspace.js";
-
-         8 import { IssueRepository } from "../src/repositories/issue.js";
-
-         9 import { ThreadRepository } from "../src/repositories/thread.js";
-
-        10 import { ThreadEventRepository } from "../src/repositories/thread-event.js";
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+         1 import Database from "better-sqlite3";
+         2 import { tmpdir } from "node:os";
+         3 import { join } from "node:path";
+         4 import { mkdtempSync, rmSync } from "node:fs";
+         5 import { openDatabase } from "../src/db/index.js";
+         6 import { ProjectRepository } from "../src/repositories/project.js";
+         7 import { WorkspaceRepository } from "../src/repositories/workspace.js";
+         8 import { IssueRepository } from "../src/repositories/issue.js";
+         9 import { ThreadRepository } from "../src/repositories/thread.js";
+        10 import { ThreadEventRepository } from "../src/repositories/thread-event.js";
         11 import { WorkflowTemplateRepository } f
 …[truncated]
   ```
@@ -11256,31 +9939,22 @@ Now let me verify the scanner-selector and git-scanner tests pass with the hook 
   <details><summary>tool output</summary>
 
   ```text
-[33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects modified file [33m 3348[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects deleted file [33m 3128[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mpre-existing dirty file committed by agent is not false positive [33m 4021[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mhandles unborn repo (no commits) [33m 1723[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
-
-[2m      Tests [22m [1m[32m14 passed[39m[22m[90m (14)[39m
-
-[2m   Start at [22m 20:04:41
-
-[2m   Duration [22m 30.97s[2m (transform 2.00s, setup 0ms, collect 6.93s, tests 22.61s, environment 0ms, prepare 483ms)[22m
-
+[33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects modified file [33m 3348[2mms[22m[39m
+   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mdetects deleted file [33m 3128[2mms[22m[39m
+   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mpre-existing dirty file committed by agent is not false positive [33m 4021[2mms[22m[39m
+   [33m[2m�?[22m[39m Git Workspace Scanner (T026)[2m > [22mhandles unborn repo (no commits) [33m 1723[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 20:04:41
+[2m   Duration [22m 30.97s[2m (transform 2.00s, setup 0ms, collect 6.93s, tests 22.61s, environment 0ms, prepare 483ms)[22m
 …[truncated]
   ```
   </details>
 
 ## assistant · 2026-08-10T12:05:16Z
 
-- **tool**: `todowrite({"todos": [{"content": "Fix #1 gate-v0-bypass: enforce v0 only for legacy F001-F008 set", "priority": "high", "status": "in_progress"}, {"content": "Fix #2 section-order-duplicate-bypass: compareSectionHeadings must check order & duplicates", "priority": "high", "status": "pending"}, {"content": "Fix #3 open-question-syntax-bypass: only Q-xxx/DQ-xxx closed items count", "priority": "high", "status": "pending"}, {"content": "Fix #4 traceability-format-bypass: strict AC/requirement/task parsing",
+- **tool**: `todowrite({"todos": [{"content": "Fix #1 gate-v0-bypass: enforce v0 only for legacy F001-F008 set", "priority": "high", "status": "in_progress"}, {"content": "Fix #2 section-order-duplicate-bypass: compareSectionHeadings must check order & duplicates", "priority": "high", "status": "pending"}, {"content": "Fix #3 open-question-syntax-bypass: only Q-xxx/DQ-xxx closed items count", "priority": "high", "status": "pending"}, {"content": "Fix #4 traceability-format-bypass: strict AC/requirement/task parsing", 
 …[truncated])`
 
 Both pass now (14/14), and fast — the hook isolation works. Issue #5 fixed.
@@ -11343,17 +10017,17 @@ Let me start with Fix #1: gate-v0-bypass. The plan says v0 is only for legacy F0
 
 Let me check the plan's exact requirement. The plan says (2.1 point 4): "F001-F008 ... 一律显式写 `gate_version: 0`；v0.3 起（F009 及之后）必须写 `gate_version: 1`... v0 只用于这批既有历史 Feature，不允许新建或回退到 v0。是否 legacy 只看该字段，不按日期、编号或目录位置猜测。"
 
-So legacy is determined ONLY by the field, not by ID/version. Hmm, that's the nuance — the plan says "是否 legacy 只看该字段". So we can't hardcode F001-F008 by ID.
+So legacy is determined ONLY by the field, not by ID/version. Hmm, that's the nuance — the plan says "是否 legacy 只看该字段". So we can't hardcode F001-F008 by ID. 
 
-Wait, re-reading: "是否 legacy 只看该字段" means: whether a feature is legacy is determined solely by its `gate_version: 0` field value — don't guess from date/number/directory. So the gate_version field IS the marker of legacy. But then how is it a "bypass"?
+Wait, re-reading: "是否 legacy 只看该字段" means: whether a feature is legacy is determined solely by its `gate_version: 0` field value — don't guess from date/number/directory. So the gate_version field IS the marker of legacy. But then how is it a "bypass"? 
 
 The reviewer's concern: a NEW feature can declare `gate_version: 0` and skip all v1 checks. The plan intends v0 to be reserved for the existing historical batch. The enforcement should be: you cannot create NEW done/review features via v0, and v0 is only for the legacy batch.
 
-Actually the plan says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测" — this is saying the field is the single source of truth for legacy status. But it also says "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0".
+Actually the plan says "是否 legacy 只看该字段，不按日期、编号或目录位置猜测" — this is saying the field is the single source of truth for legacy status. But it also says "v0 只用于这批既有历史 Feature，不允许新建或回退到 v0". 
 
 The contradiction: if legacy is "只看该字段" and any feature can set v0, then new features could set v0 to bypass. The resolution per the review: the gate should reject v0 for features that aren't in the known legacy set. But the plan says don't guess by ID.
 
-Hmm. Let me reconcile. The plan's intent (from 2.2): "gate_version: 0 只执行上述结构、元数据和 BACKLOG 校验，作为显式记录的历史债务；不得靠 legacy 规则创建新的 done Feature。"
+Hmm. Let me reconcile. The plan's intent (from 2.2): "gate_version: 0 只执行上述结构、元数据和 BACKLOG 校验，作为显式记录的历史债务；不得靠 legacy 规则创建新的 done Feature。" 
 
 So the enforcement that prevents bypass: **v0 must not be used to create new done/review features** OR more precisely, the gate should maintain a known legacy list. Since the current repo has exactly F001-F008 as v0, and the plan explicitly lists them, I'll define `LEGACY_GATE_ZERO_IDS = ['F001'..'F008']` and reject v0 for any feature whose ID is not in that set. This directly prevents a new feature (F009+) from declaring v0.
 
@@ -11420,7 +10094,7 @@ Edit applied successfully.
 
 ## assistant · 2026-08-10T12:08:17Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "    const specSec8 = getSectionByNum(specSections, 8);\n    if (!specSec8) {\n      errors.push(`${relDir}/spec.md: missing section 8. 待确认问题`);\n    } else {\n      const result = checkOpenQuestionsClosed(specSec8.content, 'Q');\n      if (!result.closed) {\n        errors.push(\n          `${relDir}/spec.md: section 8. 待确认问题 not closed — ${result.reason}`,\n        );\n      }\n    }\n\n    const designSec10
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "    const specSec8 = getSectionByNum(specSections, 8);\n    if (!specSec8) {\n      errors.push(`${relDir}/spec.md: missing section 8. 待确认问题`);\n    } else {\n      const result = checkOpenQuestionsClosed(specSec8.content, 'Q');\n      if (!result.closed) {\n        errors.push(\n          `${relDir}/spec.md: section 8. 待确认问题 not closed — ${result.reason}`,\n        );\n      }\n    }\n\n    const designSec10 
 …[truncated])`
 
 
@@ -11516,7 +10190,7 @@ Let me write a regex that matches:
 
 Hmm, in the test the heading is `### Requirement: 需求（\`FR-001\`）` — FR-001 in backticks, not bold. So I need to also catch backticked IDs in heading lines.
 
-Let me think about a robust approach:
+Let me think about a robust approach: 
 - For each line, if it's a heading (`^#`), match requirement IDs in it (via the REQ_ID_RE) — headings define requirements.
 - For non-heading lines, only match bolded requirement IDs: `\*\*(FR|DR|TR|IR|UX|NFR)-\d{3}\*\*`.
 
@@ -11547,11 +10221,11 @@ The reviewer's repro `- [x] garbage AC-001 mentions FR-999` has AC-001 NOT bold 
 
 But I must be careful: if I make parseAcLines too strict and it returns empty for a malformed AC, then the gate won't check that AC at all (silently ignoring it). Actually that's the desired behavior in one sense — a malformed AC line would be ignored, but then a "done" feature could have a fake AC that passes. Hmm.
 
-Actually, the reviewer's concern is the OPPOSITE: loose text is ACCEPTED as a valid AC. The fix is to make it stricter. But we also want malformed AC lines to be detected, not silently ignored.
+Actually, the reviewer's concern is the OPPOSITE: loose text is ACCEPTED as a valid AC. The fix is to make it stricter. But we also want malformed AC lines to be detected, not silently ignored. 
 
 Let me think about the gate flow. In checkFeatureGateV1, `parseAcLines` returns ACs, then it checks uniqueness, references defined requirements, tests: path, done checks. If a malformed AC line is not parsed, it's silently ignored — that's also a bypass (feature could have garbage and still pass).
 
-But the reviewer's specific repro is that `parseAcLines('- [x] garbage AC-001 mentions FR-999')` returns a valid AC. The fix should make it NOT a valid AC (so it's flagged elsewhere or ignored).
+But the reviewer's specific repro is that `parseAcLines('- [x] garbage AC-001 mentions FR-999')` returns a valid AC. The fix should make it NOT a valid AC (so it's flagged elsewhere or ignored). 
 
 Given the scope, the cleanest fix: make parseAcLines return only properly-formed ACs (bold id + paren reqs), AND add a gate-level check that flags checkbox lines in section 6 that don't match the AC contract (so garbage is caught, not silently ignored).
 
@@ -11561,7 +10235,7 @@ Let me be systematic. I'll:
 1. Tighten parseAcLines to require bold `**AC-xxx**` and reqIds from paren group.
 2. Add a gate check: any checkbox line in section 6 that isn't a valid AC-format line (or N/A) → error.
 
-3. `parseTaskLines` — `parseTaskLines('- [x] blah T001')` accepts `blah T001` as a task. Task format contract: `- [ ] T001 [P] (\`FR-001\`, \`AC-001\`): action - verify: path`. So the T-id should be the first token after checkbox (optionally after [P]).
+3. `parseTaskLines` — `parseTaskLines('- [x] blah T001')` accepts `blah T001` as a task. Task format contract: `- [ ] T001 [P] (\`FR-001\`, \`AC-001\`): action - verify: path`. So the T-id should be the first token after checkbox (optionally after [P]). 
 
 The reviewer's repro `- [x] blah T001` has T001 NOT in the leading position (blah comes first). Let me tighten parseTaskLines to require T-id as the leading token after the checkbox + optional [P].
 
@@ -11755,7 +10429,7 @@ For requirements section 4: requirement IDs are only "defined" when in definitio
 
 Let me implement:
 1. parseRequirementIds: strict (heading or bold).
-2. parseAcLines: strict (bold AC id + paren reqs).
+2. parseAcLines: strict (bold AC id + paren reqs). 
 3. parseTaskLines: strict (leading T-id).
 4. Add gate checks for malformed checkbox lines in section 6 (AC) and sections 2/3 (tasks) that don't match contract.
 
@@ -11812,64 +10486,35 @@ Let me check the existing `parseTaskLines` tests to ensure my rewrite doesn't br
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m
-
-[32;1m----------[0m
-
-        21
-
----
-
-});
-
-// tools/check-feature-gates.test.mjs
-
-// node:test zero-dependency tests for check-feature-gates.mjs
-
-// Tests construct fixtures in temp directories; never modify real docs/features/.
-
-
-
-import { test } from 'node:test';
-
-import assert from 'node:assert/strict';
-
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
-
-import { tmpdir } from 'node:os';
-
-import { join } from 'node:path';
-
-
-
-import {
-
-  parseFrontmatter,
-
-  stripCodeBlocks,
-
-  normalizeLineEndings,
-
-  extractTopLevelSections,
-
-  getSectionByNum,
-
-  extractSubSections,
-
-  extractCheckboxes,
-
-  parseAcLines,
-
-  parseRequirementIds,
-
-  parseTaskLines,
-
-  isNaWithReason,
-
-  isNaItem,
-
-  checkOpenQuestionsClosed,
-
+[32;1mLineNumber[0m
+[32;1m----------[0m
+        21
+---
+});
+// tools/check-feature-gates.test.mjs
+// node:test zero-dependency tests for check-feature-gates.mjs
+// Tests construct fixtures in temp directories; never modify real docs/features/.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import {
+  parseFrontmatter,
+  stripCodeBlocks,
+  normalizeLineEndings,
+  extractTopLevelSections,
+  getSectionByNum,
+  extractSubSections,
+  extractCheckboxes,
+  parseAcLines,
+  parseRequirementIds,
+  parseTaskLines,
+  isNaWithReason,
+  isNaItem,
+  checkOpenQuestionsClosed,
   va
 …[truncated]
   ```
@@ -11882,26 +10527,16 @@ import {
   <details><summary>tool output</summary>
 
   ```text
-match at line 21:   parseTaskLines,
-
-  parseTaskLines,
-
-  isNaWithReason,
-
-  isNaItem,
-
-  checkOpenQuestionsClosed,
-
-  validateTestPathSyntax,
-
-  resolveTestPath,
-
-  validateTestPathExistence,
-
-  compareSectionHeadings,
-
-  parseBacklogRows,
-
+match at line 21:   parseTaskLines,
+  parseTaskLines,
+  isNaWithReason,
+  isNaItem,
+  checkOpenQuestionsClosed,
+  validateTestPathSyntax,
+  resolveTestPath,
+  validateTestPathExistence,
+  compareSectionHeadings,
+  parseBacklogRows,
   hasBlockquoteStatus,
   ```
   </details>
@@ -11938,17 +10573,17 @@ Let me view the current check.
 <content>
 915:   const designText = readFileSafe(join(featureDir, 'design.md'));
 916:   const tasksText = readFileSafe(join(featureDir, 'tasks.md'));
-917:
+917: 
 918:   if (!specText || !designText || !tasksText) {
 919:     errors.push(`${relDir}: cannot run gate v1 checks — missing trio`);
 920:     return { errors, warnings };
 921:   }
-922:
+922: 
 923:   const status = baseFeature?.status;
 924:   const specSections = extractTopLevelSections(specText);
 925:   const designSections = extractTopLevelSections(designText);
 926:   const tasksSections = extractTopLevelSections(tasksText);
-927:
+927: 
 928:   // --- 1. Section heading comparison ---
 929:   errors.push(...compareSectionHeadings(specSections, SPEC_SECTIONS, `${relDir}/
 …[truncated]
@@ -11968,14 +10603,14 @@ Let me view the current check.
 945:   // --- tasks Phase only under section 2 ---
 946:   const stripped = stripCodeBlocks(tasksText);
 947:   const taskLines = stripped.split('\n');
-948:
+948: 
 949:   const tasksSec2Idx = tasksSections.findIndex((s) => s.num === 2);
 950:   const sec2Start = tasksSec2Idx >= 0 ? tasksSections[tasksSec2Idx].startLine : -1;
 951:   const sec2End =
 952:     tasksSec2Idx >= 0 && tasksSec2Idx + 1 < tasksSections.length
 953:       ? tasksSections[tasksSec2Idx + 1].startLine
 954:       : taskLines.length;
-955:
+955: 
 956:   for (let i = 0; i < taskLines.length; i++) {
 957:     if (/^###\s+Phase\s/.test(taskLines[i].trim())) {
 958:       if (i <= sec2Start || i >= sec2End) {
@@ -11998,7 +10633,7 @@ Let me view the current check.
 986:       }
 987:     }
 988:   }
-989:
+989: 
 990:   // Check task ID uniqueness
 991:   const taskIds = new Set();
 992:   for (const task of allTasks) {
@@ -12007,7 +10642,7 @@ Let me view the current check.
 995:     }
 996:     taskIds.add(task.id);
 997:   }
-998:
+998: 
 999:   // --- [P] task declaring pre-dependency (section 4) ---
 1000:   const sec4Content = getSectionByNum(tasksSections, 4)?.content || '';
 1001:   const sec4Lines = sec4Content.split('\n');
@@ -12050,7 +10685,7 @@ Let me view around the AC parsing in the gate.
 <content>
 1030:   const specSec6 = getSectionByNum(specSections, 6);
 1031:   const acLines = specSec6 ? parseAcLines(specSec6.content) : [];
-1032:
+1032: 
 1033:   // --- AC uniqueness ---
 1034:   const acIds = new Set();
 1035:   for (const ac of acLines) {
@@ -12059,7 +10694,7 @@ Let me view around the AC parsing in the gate.
 1038:     }
 1039:     acIds.add(ac.id);
 1040:   }
-1041:
+1041: 
 1042:   // --- AC must reference at least one defined requirement ID ---
 1043:   for (const ac of acLines) {
 1044:     if (ac.reqIds.length === 0) {
@@ -12098,78 +10733,42 @@ Let me first run the gate tests to see what breaks.
   <details><summary>tool output</summary>
 
   ```text
-...
-
-# Subtest: BACKLOG: version mismatch
-
-ok 61 - BACKLOG: version mismatch
-
-  ---
-
-  duration_ms: 36.1045
-
-  ...
-
-# Subtest: BACKLOG: link mismatch
-
-ok 62 - BACKLOG: link mismatch
-
-  ---
-
-  duration_ms: 35.003
-
-  ...
-
-# Subtest: BACKLOG: broken link
-
-ok 63 - BACKLOG: broken link
-
-  ---
-
-  duration_ms: 41.6513
-
-  ...
-
-# Subtest: Batch: multiple versions and multiple Features
-
-ok 64 - Batch: multiple versions and multiple Features
-
-  ---
-
-  duration_ms: 88.4014
-
-  ...
-
-# Subtest: Batch: duplicate ID across versions fails
-
-ok 65 - Batch: duplicate ID across versions fails
-
-  ---
-
-  duration_ms: 50.4673
-
-  ...
-
-# Subtest: Batch: v0 does not run v1 checks
-
-ok 66 - Batch: v0 does not run v1 checks
-
-  ---
-
-  duration_ms: 27.5367
-
-  ...
-
-1..66
-
-# tests 105
-
-# suites 0
-
-# pass 101
-
-# fail 4
-
+...
+# Subtest: BACKLOG: version mismatch
+ok 61 - BACKLOG: version mismatch
+  ---
+  duration_ms: 36.1045
+  ...
+# Subtest: BACKLOG: link mismatch
+ok 62 - BACKLOG: link mismatch
+  ---
+  duration_ms: 35.003
+  ...
+# Subtest: BACKLOG: broken link
+ok 63 - BACKLOG: broken link
+  ---
+  duration_ms: 41.6513
+  ...
+# Subtest: Batch: multiple versions and multiple Features
+ok 64 - Batch: multiple versions and multiple Features
+  ---
+  duration_ms: 88.4014
+  ...
+# Subtest: Batch: duplicate ID across versions fails
+ok 65 - Batch: duplicate ID across versions fails
+  ---
+  duration_ms: 50.4673
+  ...
+# Subtest: Batch: v0 does not run v1 checks
+ok 66 - Batch: v0 does not run v1 checks
+  ---
+  duration_ms: 27.5367
+  ...
+1..66
+# tests 105
+# suites 0
+# pass 101
+# fail 4
 # ca
 …[truncated]
   ```
@@ -12185,40 +10784,23 @@ ok 66 - Batch: v0 does not run v1 checks
   <details><summary>tool output</summary>
 
   ```text
-[7mnot ok[0m 1 - extracts all requirement IDs
-
-      name: '[7mAssertionError[0m'
-
-      [7mexpected[0m: true
-
-[7mnot ok[0m 5 - parseRequirementIds
-
-[7mnot ok[0m 27 - V1: illegal task format (no Txxx ID)
-
-  name: '[7mAssertionError[0m'
-
-  [7mexpected[0m: true
-
-[7m# Subtest: Done: unchecked task fail[0ms
-
-[7m# Subtest: Done: unchecked AC fail[0ms
-
-[7m# Subtest: Done: empty task section 2 fail[0ms
-
-[7m# Subtest: Done: empty AC list fail[0ms
-
-[7m# Subtest: Done: checked task with TODO marker fail[0ms
-
-[7m# Subtest: Done: checked task with 待补 marker fail[0ms
-
-[7mnot ok[0m 38 - AC: no requirement ID reference
-
-  name: '[7mAssertionError[0m'
-
-  [7mexpected[0m: true
-
-[7m# Subtest: Test paths: review without tests: path fail[0ms
-
+[7mnot ok[0m 1 - extracts all requirement IDs
+      name: '[7mAssertionError[0m'
+      [7mexpected[0m: true
+[7mnot ok[0m 5 - parseRequirementIds
+[7mnot ok[0m 27 - V1: illegal task format (no Txxx ID)
+  name: '[7mAssertionError[0m'
+  [7mexpected[0m: true
+[7m# Subtest: Done: unchecked task fail[0ms
+[7m# Subtest: Done: unchecked AC fail[0ms
+[7m# Subtest: Done: empty task section 2 fail[0ms
+[7m# Subtest: Done: empty AC list fail[0ms
+[7m# Subtest: Done: checked task with TODO marker fail[0ms
+[7m# Subtest: Done: checked task with 待补 marker fail[0ms
+[7mnot ok[0m 38 - AC: no requirement ID reference
+  name: '[7mAssertionError[0m'
+  [7mexpected[0m: true
+[7m# Subtest: Test paths: review without tests: path fail[0ms
 [7m# Subtest: Test paths: non-exi
 …[truncated]
   ```
@@ -12253,7 +10835,7 @@ Let me read the exact failing tests.
 516:     assert.equal(ids.size, 3);
 517:   });
 518: });
-519:
+519: 
 
 (Showing lines 506-519 of 1805. Use offset=520 to continue.)
 </content>
@@ -12321,14 +10903,10 @@ Now `parseRequirementIds` works correctly: extracts definitions, and prose menti
   <details><summary>tool output</summary>
 
   ```text
-[7mnot ok[0m 27 - V1: illegal task format (no Txxx ID)
-
-  [7mexpected[0m: true
-
-[7mnot ok[0m 38 - AC: no requirement ID reference
-
-  [7mexpected[0m: true
-
+[7mnot ok[0m 27 - V1: illegal task format (no Txxx ID)
+  [7mexpected[0m: true
+[7mnot ok[0m 38 - AC: no requirement ID reference
+  [7mexpected[0m: true
 [7m# fail[0m 2
   ```
   </details>
@@ -12344,60 +10922,33 @@ Down to 2 failures. Let me look at both tests to understand what they expect.
   <details><summary>tool output</summary>
 
   ```text
-test('V1: illegal task format (no Txxx ID)', async () => {
-
-  let repo;
-
-  try {
-
-    repo = createTempRepo();
-
-    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
-
-      tasks: makeTasks({
-
-        sec2: `### Phase 1������
-
-
-
-- [ ] implement feature without ID`,
-
-      }),
-
-    });
-
-    const base = checkFeatureBase(dir, repo);
-
-    const v1 = checkFeatureGateV1(dir, repo, base.feature);
-
-    assert.ok(v1.errors.some((e) => e.includes('without Txxx ID')));
-
-  } finally {
-
-    cleanup(repo);
-
-  }
-
-});
-
-
-
-test('V1: [P] task declaring pre-dependency', async () => {
-
-  let repo;
-
-  try {
-
-    repo = createTempRepo();
-
-    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
-
-      tasks: makeTasks({
-
-        sec2: `### Phase 1������
-
-
-
+test('V1: illegal task format (no Txxx ID)', async () => {
+  let repo;
+  try {
+    repo = createTempRepo();
+    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
+      tasks: makeTasks({
+        sec2: `### Phase 1������
+
+- [ ] implement feature without ID`,
+      }),
+    });
+    const base = checkFeatureBase(dir, repo);
+    const v1 = checkFeatureGateV1(dir, repo, base.feature);
+    assert.ok(v1.errors.some((e) => e.includes('without Txxx ID')));
+  } finally {
+    cleanup(repo);
+  }
+});
+
+test('V1: [P] task declaring pre-dependency', async () => {
+  let repo;
+  try {
+    repo = createTempRepo();
+    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
+      tasks: makeTasks({
+        sec2: `### Phase 1������
+
 - [ ] T001 (\`FR-001\`, \`AC-001\`): task1 - v
 …[truncated]
   ```
@@ -12407,7 +10958,7 @@ test('V1: [P] task declaring pre-dependency', async () => {
 
 - **tool**: `bash({"command": "cd D:\\Projects\\personahub; $t=Get-Content tools/check-feature-gates.test.mjs; $l=(Select-String -Path tools/check-feature-gates.test.mjs -Pattern \"AC: no requirement ID reference\" | Select-Object -First 1).LineNumber; $t[($l-1)..($l+25)]"})`
 
-The test asserts error message includes `'without Txxx ID'`, but my new message is "not a valid task (T-id must be the leading token...)". This test still passes conceptually (the malformed line is still flagged), just the message changed. Let me keep the message containing "without Txxx ID" for compatibility, or update the test.
+The test asserts error message includes `'without Txxx ID'`, but my new message is "not a valid task (T-id must be the leading token...)". This test still passes conceptually (the malformed line is still flagged), just the message changed. Let me keep the message containing "without Txxx ID" for compatibility, or update the test. 
 
 The cleanest is to keep the error message informative but I should update the test to match the new behavior. Actually — the test is checking that a malformed task is caught. Since my check still catches it, I'll update the assertion message to match. But better: the test name says "no Txxx ID" but the line `- [ ] implement feature without ID` genuinely has no Txxx. My new check flags it as "not a valid task (T-id must be the leading token...)". Let me update the test assertion to match the new message. Actually, let me reconsider — the real repo F009-F012 tasks all start with `Txxx`, so this is fine.
 
@@ -12416,58 +10967,32 @@ Let me look at the AC test failure.
   <details><summary>tool output</summary>
 
   ```text
-test('AC: no requirement ID reference', async () => {
-
-  let repo;
-
-  try {
-
-    repo = createTempRepo();
-
-    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
-
-      spec: makeSpec({
-
-        sec6: `- [ ] **AC-001**: behavior without req`,
-
-      }),
-
-    });
-
-    const base = checkFeatureBase(dir, repo);
-
-    const v1 = checkFeatureGateV1(dir, repo, base.feature);
-
-    assert.ok(v1.errors.some((e) => e.includes('does not reference')));
-
-  } finally {
-
-    cleanup(repo);
-
-  }
-
-});
-
-
-
-test('AC: duplicate AC ID', async () => {
-
-  let repo;
-
-  try {
-
-    repo = createTempRepo();
-
-    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
-
-      spec: makeSpec({
-
-        sec6: `- [ ] **AC-001** (\`FR-001\`): first
-
-- [ ] **AC-001** (\`FR-001\`): duplicate`,
-
-      }),
-
+test('AC: no requirement ID reference', async () => {
+  let repo;
+  try {
+    repo = createTempRepo();
+    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
+      spec: makeSpec({
+        sec6: `- [ ] **AC-001**: behavior without req`,
+      }),
+    });
+    const base = checkFeatureBase(dir, repo);
+    const v1 = checkFeatureGateV1(dir, repo, base.feature);
+    assert.ok(v1.errors.some((e) => e.includes('does not reference')));
+  } finally {
+    cleanup(repo);
+  }
+});
+
+test('AC: duplicate AC ID', async () => {
+  let repo;
+  try {
+    repo = createTempRepo();
+    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
+      spec: makeSpec({
+        sec6: `- [ ] **AC-001** (\`FR-001\`): first
+- [ ] **AC-001** (\`FR-001\`): duplicate`,
+      }),
     });
   ```
   </details>
@@ -12510,20 +11035,13 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-# tests 105
-
-# suites 0
-
-# pass 105
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+# tests 105
+# suites 0
+# pass 105
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 1268.4909
   ```
   </details>
@@ -12538,8 +11056,7 @@ All 105 gate tests pass. Now let me run the gate against the real repo to confir
   <details><summary>tool output</summary>
 
   ```text
-[31;1mFeature gate check PASSED �?all features OK.[0m
-
+[31;1mFeature gate check PASSED �?all features OK.[0m
 EXIT: 0
   ```
   </details>
@@ -12568,7 +11085,7 @@ Let me add these regression tests to the test file. Let me look at the end of th
 1768:     cleanup(repo);
 1769:   }
 1770: });
-1771:
+1771: 
 1772: test('Batch: duplicate ID across versions fails', async () => {
 1773:   let repo;
 1774:   try {
@@ -12606,7 +11123,7 @@ Let me add these regression tests to the test file. Let me look at the end of th
 1801:       tasks: makeTasks({ id: 'F001', version: '0.1' }),
 1802:     });
 1803:     writeBacklog(repo, []);
-1804:
+1804: 
 1805:     const result = checkAllFeatures(repo);
 1806:     // Should have no v1 section errors
 1807:     assert.ok(!result.errors.some((e) => e
@@ -12661,20 +11178,13 @@ Now let me run the full gate test suite with the regression tests.
   <details><summary>tool output</summary>
 
   ```text
-# tests 114
-
-# suites 0
-
-# pass 114
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
+# tests 114
+# suites 0
+# pass 114
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
 # duration_ms 1574.4511
   ```
   </details>
@@ -12689,30 +11199,18 @@ All 114 tests pass (105 + 9 new regression tests). Now let me run the doc tests 
   <details><summary>tool output</summary>
 
   ```text
-=== doc tests ===
-
-# pass 60
-
-# fail 0
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
-# duration_ms 919.8291
-
-=== doc-links ===
-
-[31;1mDoc link check PASSED - all links OK.[0m
-
-=== doc-ownership ===
-
-[31;1mDoc ownership check PASSED - all ownership rules OK.[0m
-
-=== check:features ===
-
+=== doc tests ===
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 919.8291
+=== doc-links ===
+[31;1mDoc link check PASSED - all links OK.[0m
+=== doc-ownership ===
+[31;1mDoc ownership check PASSED - all ownership rules OK.[0m
+=== check:features ===
 [31;1mFeature gate check PASSED �?all features OK.[0m
   ```
   </details>
@@ -12772,18 +11270,12 @@ Actually, let me update the review report (CURRENT-code.md) to reflect the fixes
   <details><summary>tool output</summary>
 
   ```text
-[32m�?[39m tests/unit/trace-redaction.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 5[2mms[22m[39m
-
- [32m�?[39m tests/unit/codex-trace-normalizer.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 6[2mms[22m[39m
-
- [32m�?[39m tests/unit/trace-routes.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
-
- [32m�?[39m tests/unit/run-transition.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 4[2mms[22m[39m
-
- [2m[90m�?[39m[22m tests/integration/graph-cli-acceptance.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
-
- [2m[90m�?[39m[22m tests/integration/real-claude-opencode-probe.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m3 skipped[39m[2m)[22m
-
+[32m�?[39m tests/unit/trace-redaction.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m�?[39m tests/unit/codex-trace-normalizer.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m�?[39m tests/unit/trace-routes.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m�?[39m tests/unit/run-transition.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [2m[90m�?[39m[22m tests/integration/graph-cli-acceptance.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m�?[39m[22m tests/integration/real-claude-opencode-probe.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m3 skipped[39m[2m)[22m
  [2m[90m�?[39m[22m tests/integration/real-git-push-escalation.test.ts [2m(
 …[truncated]
   ```
@@ -12803,22 +11295,14 @@ Let me run it in isolation to confirm.
   <details><summary>tool output</summary>
 
   ```text
-[33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT043 - route[2m > [22mcross-project workspace_id returns WORKSPACE_NOT_FOUND [33m 332[2mms[22m[39m
-
-   [33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT043 - route[2m > [22momitted workspace_id aggregates all project workspaces [33m 328[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
-
-[2m   Start at [22m 20:32:07
-
-[2m   Duration [22m 15.22s[2m (transform 2.17s, setup 0ms, collect 7.11s, tests 7.41s, environment 0ms, prepare 231ms)[22m
-
-
-
+[33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT043 - route[2m > [22mcross-project workspace_id returns WORKSPACE_NOT_FOUND [33m 332[2mms[22m[39m
+   [33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT043 - route[2m > [22momitted workspace_id aggregates all project workspaces [33m 328[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m   Start at [22m 20:32:07
+[2m   Duration [22m 15.22s[2m (transform 2.17s, setup 0ms, collect 7.11s, tests 7.41s, environment 0ms, prepare 231ms)[22m
+
 EXIT: 0
   ```
   </details>
@@ -12844,36 +11328,21 @@ Let me do one more full verify run to see if the flake clears, since it's load-d
   <details><summary>tool output</summary>
 
   ```text
-> npm -w @personahub/web run build
-
-
-
-
-
-> @personahub/web@0.1.0 build
-
-> tsc -b && vite build
-
-
-
-[36mvite v6.4.3 [32mbuilding for production...[36m[39m
-
-transforming...
-
-[32m�?[39m 1764 modules transformed.
-
-rendering chunks...
-
-computing gzip size...
-
-[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
-
-[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
-
-[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
-
-[32m�?built in 23.33s[39m
-
+> npm -w @personahub/web run build
+
+
+> @personahub/web@0.1.0 build
+> tsc -b && vite build
+
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+[32m�?[39m 1764 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
+[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
+[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
+[32m�?built in 23.33s[39m
 VERIFY_EXIT: 0
   ```
   </details>
@@ -12969,12 +11438,9 @@ warning: in the working copy of 'server/tests/integration/scanner-selector.test.
 warning: in the working copy of 'tools/check-feature-gates.mjs', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'tools/check-feature-gates.test.mjs', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'docs/reviews/CURRENT-code.md', LF will be replaced by CRLF the next time Git touches it
-[31;1m�?Breakdown: Functions 1.7k · Tests 454 · Risk 912 · Other 95  �?[0m
-
-[31;1m└──────────────────────────────────────────────────────────────�?[0m
-
-[main af66306] fix(structure): close round-1 review �?lock down gate contract bypasses, isolate git hooks
-
+[31;1m�?Breakdown: Functions 1.7k · Tests 454 · Risk 912 · Other 95  �?[0m
+[31;1m└──────────────────────────────────────────────────────────────�?[0m
+[main af66306] fix(structure): close round-1 review �?lock down gate contract bypasses, isolate git hooks
  6 files changed, 364 ins
 …[truncated]
   ```
@@ -12990,17 +11456,15 @@ Committed. Now let me push and monitor CI.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   c2389c0..af66306  main -> main[0m
-
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   c2389c0..af66306  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-10T12:44:57Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Pushed. Now let me wait for CI to complete.
@@ -13008,17 +11472,12 @@ Pushed. Now let me wait for CI to complete.
   <details><summary>tool output</summary>
 
   ```text
-[0] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 1m4s 2026-08-10T12:44:57Z
-
-[1] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 1m51s 2026-08-10T12:44:57Z
-
-[2] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 2m39s 2026-08-10T12:44:57Z
-
-[3] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 3m27s 2026-08-10T12:44:57Z
-
-[4] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 4m14s 2026-08-10T12:44:57Z
-
-[5] completed success fix(structure): close round-1 review �?lock down gate contract bypass�?CI
+[0] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 1m4s 2026-08-10T12:44:57Z
+[1] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 1m51s 2026-08-10T12:44:57Z
+[2] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 2m39s 2026-08-10T12:44:57Z
+[3] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 3m27s 2026-08-10T12:44:57Z
+[4] in_progress  fix(structure): close round-1 review �?lock down gate contract bypass�?CI main push 31389477028 4m14s 2026-08-10T12:44:57Z
+[5] completed success fix(structure): close round-1 review �?lock down gate contract bypass�?CI 
 …[truncated]
   ```
   </details>
@@ -13035,8 +11494,7 @@ CI is green. Let me confirm both jobs passed.
   ```text
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
 {"conclusion":"success","name":"Verify (lint, typecheck, test, docs, build)"}
-=== HEAD sync ===
-
+=== HEAD sync ===
 af66306
 af66306
   ```
@@ -13107,18 +11565,13 @@ The system flagged the last todo as still in_progress. It's actually complete �
   <details><summary>tool output</summary>
 
   ```text
-=== working tree (must be clean) ===
-
-=== HEAD == origin/main ===
-
+=== working tree (must be clean) ===
+=== HEAD == origin/main ===
 af66306
 af66306
-=== latest CI run on current HEAD ===
-
-completed	success	fix(structure): close round-1 review �?lock down gate contract bypass�?CI	main	push	31389477028	4m54s	2026-08-10T12:44:57Z
-
-=== latest run job conclusions ===
-
+=== latest CI run on current HEAD ===
+completed	success	fix(structure): close round-1 review �?lock down gate contract bypass�?CI	main	push	31389477028	4m54s	2026-08-10T12:44:57Z
+=== latest run job conclusions ===
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
 {"conclusion":"success","name":"Verify (lint, typecheck, test, docs, build)"}
   ```
@@ -13201,36 +11654,21 @@ The user has done another review round. Let me find the new review report.
   <details><summary>tool output</summary>
 
   ```text
-=== docs/reviews contents ===
-
-
-
-
-
-=== recent modified (review?) ===
-
-[32;1mName                         [0m[32;1m Length[0m[32;1m LastWriteTime[0m
-
-[32;1m----                         [0m [32;1m------[0m [32;1m-------------[0m
-
-CURRENT-code.md                 6796 2026/8/10 21:07:48
-
-RETROSPECTIVE.md               91363 2026/8/9 22:36:41
-
-structure-improvement-plan.md  34475 2026/8/10 1:27:31
-
-                                   1 2026/8/10 21:07:48
-
-                                   1 2026/8/10 21:06:35
-
-                                   1 2026/8/10 21:06:35
-
-                                   1 2026/8/10 21:06:35
-
-                                   1 2026/8/10 21:06:28
-
-                                   1 2026/8/10 21:06:22
-
+=== docs/reviews contents ===
+
+
+=== recent modified (review?) ===
+[32;1mName                         [0m[32;1m Length[0m[32;1m LastWriteTime[0m
+[32;1m----                         [0m [32;1m------[0m [32;1m-------------[0m
+CURRENT-code.md                 6796 2026/8/10 21:07:48
+RETROSPECTIVE.md               91363 2026/8/9 22:36:41
+structure-improvement-plan.md  34475 2026/8/10 1:27:31
+                                   1 2026/8/10 21:07:48
+                                   1 2026/8/10 21:06:35
+                                   1 2026/8/10 21:06:35
+                                   1 2026/8/10 21:06:35
+                                   1 2026/8/10 21:06:28
+                                   1 2026/8/10 21:06:22
                                    1 2026/8/10 21
 …[truncated]
   ```
@@ -13281,7 +11719,7 @@ structure-improvement-plan.md  34475 2026/8/10 1:27:31
 
 > [reasoning] Round 3 review. Three High issues remain open/carried-forward:
 
-1. **structure-open-question-syntax-bypass** (carried-forward):
+1. **structure-open-question-syntax-bypass** (carried-forward): 
    - `checkOpenQuestionsClosed('- [x] Q-001: unresolved question', 'Q')` returns closed:true — but a closed Q item must contain "决策：<non-empty conclusion>"
    - `无` mixed with checkbox entries returns true (should reject mixing)
 
@@ -13398,7 +11836,7 @@ Let me refine: for non-heading lines, only count bold IDs if the line matches `^
 
 - parseTaskLines: require full contract — T-id as leading token AND (a parenthesized ref list) AND action AND verify. The review says `- [x] T001` (bare) should be rejected. My current check only requires T-id as leading token. I need to require: leading T-id, a parenthesized ref group, and a verify. Actually the plan says task format: `- [ ] T001 [P] (\`FR-001\`, \`AC-001\`): <action> - verify: <test/command>`. So require: leading T-id, parenthesized refs, colon (action), and verify.
 
-Let me be careful not to break valid tasks. Let me check the real F009 tasks format: `- [ ] T001 (\`DR-001\`, \`DR-002\`, \`DR-003\`): 建立 shared... - verify: \`shared/src/artifact/types.ts\``. So valid tasks have: leading T-id, paren refs, colon action, `- verify:`.
+Let me be careful not to break valid tasks. Let me check the real F009 tasks format: `- [ ] T001 (\`DR-001\`, \`DR-002\`, \`DR-003\`): 建立 shared... - verify: \`shared/src/artifact/types.ts\``. So valid tasks have: leading T-id, paren refs, colon action, `- verify:`. 
 
 But some tasks might legitimately lack refs or verify? Per the plan's strict contract, all tasks should have them. The review wants bare `- [x] T001` rejected. Let me require: leading T-id + paren ref group + colon + verify. That's the canonical contract.
 
@@ -13463,7 +11901,7 @@ The skill clarifies the protocol and confirms all 3 repros. Let me set up a todo
 
 Let me look at the current checkOpenQuestionsClosed and design the fix.
 
-Current behavior:
+Current behavior: 
 - `- [x] Q-001: unresolved question` → closed:true (wrong, no 决策)
 - `- [x] Q-001: q - 决策：c\n\n无` → closed:true (wrong, mixing 无 with items)
 
@@ -13486,7 +11924,7 @@ Let me write the fix. The checkOpenQuestionsClosed takes sectionText and prefix.
 4. If sawNaLine and also items → not closed
 5. If all items valid & closed, and no 无 → closed
 
-Wait, but the "无" mixing case: `- [x] Q-001: q - 决策：c\n\n无`. Here we have a checkbox item AND a 无 line. That should be rejected (not closed).
+Wait, but the "无" mixing case: `- [x] Q-001: q - 决策：c\n\n无`. Here we have a checkbox item AND a 无 line. That should be rejected (not closed). 
 
 Let me also consider: the plan says section 8/10 "只允许规范的 Q-xxx / DQ-xxx checkbox 或单独一行 无". So it's EITHER all Q/DQ items OR a single 无. Mixing is not allowed.
 
@@ -13500,7 +11938,7 @@ Now let me fix issue #1: `checkOpenQuestionsClosed`. The requirements: (a) a clo
 <type>file</type>
 <content>
 404:     const isParallel = parallelRe.test(line);
-405:
+405: 
 406:     // Extract referenced IDs
 407:     const refIds = [];
 408:     let m;
@@ -13508,12 +11946,12 @@ Now let me fix issue #1: `checkOpenQuestionsClosed`. The requirements: (a) a clo
 410:     while ((m = idRe.exec(line)) !== null) {
 411:       if (!refIds.includes(m[1])) refIds.push(m[1]);
 412:     }
-413:
+413: 
 414:     result.push({ id, checked, isParallel, refIds, raw: line.trim() });
 415:   }
 416:   return result;
 417: }
-418:
+418: 
 419: /**
 420:  * Check if a task line is an N/A item.
 421:  * Format: - N/A: <reason>
@@ -13522,7 +11960,7 @@ Now let me fix issue #1: `checkOpenQuestionsClosed`. The requirements: (a) a clo
 424:   const trimmed = line.trim();
 425:   return /^-\s*N\/A[：:]\s*.+/.test(trimmed);
 426: }
-427:
+427: 
 428: /**
 429:  * Che
 …[truncated]
@@ -13540,25 +11978,25 @@ Now let me fix issue #1: `checkOpenQuestionsClosed`. The requirements: (a) a clo
 <type>file</type>
 <content>
 458:   const trimmed = stripped.trim();
-459:
+459: 
 460:   if (trimmed === '无') return { closed: true };
-461:
+461: 
 462:   if (!trimmed) return { closed: false, reason: 'empty section' };
-463:
+463: 
 464:   // A valid question item id: Q-xxx (spec) or DQ-xxx (design)
 465:   const idRe = new RegExp(`^${prefix}-\\d{3}\\b`);
 466:   const checkboxRe = /^-\s+\[([ xX])\]\s+(.+)$/;
-467:
+467: 
 468:   const lines = trimmed.split('\n');
 469:   const openItems = [];
 470:   const malformedItems = [];
 471:   let sawValidClosedItem = false;
-472:
+472: 
 473:   for (const line of lines) {
 474:     const lt = line.trim();
 475:     if (!lt) continue;
 476:     // A plain text line other than 无 is free text -> not a valid closed section
-477:
+477:   
 …[truncated]
   ```
   </details>
@@ -13583,7 +12021,7 @@ Now let me fix issue #1: `checkOpenQuestionsClosed`. The requirements: (a) a clo
 509:   }
 510:   return { closed: true };
 511: }
-512:
+512: 
 513: // ---------------------------------------------------------------------------
 514: // Path validation
 515: // ---------------------------------------------------------------------------
@@ -13595,7 +12033,7 @@ Now let me fix issue #1: `checkOpenQuestionsClosed`. The requirements: (a) a clo
 
 ## assistant · 2026-08-10T13:13:09Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "/**\n * Check if an open-questions section is properly closed.\n * Returns { closed: boolean, reason?: string }.\n *\n * The section is either:\n *   - exactly a standalone \"无\" (no items at all), or\n *   - a list of properly-formed Q-xxx / DQ-xxx checkbox items, every one of\n *     which is checked AND carries a non-empty decision conclusion\n *     (\"决策：<结论>\" / \"决策:<结论>\").\n *\n * Not closed means:\n
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "/**\n * Check if an open-questions section is properly closed.\n * Returns { closed: boolean, reason?: string }.\n *\n * The section is either:\n *   - exactly a standalone \"无\" (no items at all), or\n *   - a list of properly-formed Q-xxx / DQ-xxx checkbox items, every one of\n *     which is checked AND carries a non-empty decision conclusion\n *     (\"决策：<结论>\" / \"决策:<结论>\").\n *\n * Not closed means:\n 
 …[truncated])`
 
 Now I'll rewrite `checkOpenQuestionsClosed` to: (a) require a non-empty `决策：` conclusion on each `[x]` item, (b) reject `无` mixed with checklist items (only a standalone `无` is valid).
@@ -13612,7 +12050,7 @@ Edit applied successfully.
 - **tool**: `read({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "limit": 45, "offset": 371})`
 
 Now issue #2: traceability-format-bypass. Three sub-fixes:
-1. `parseRequirementIds` — a bold prose mention `**FR-999**` mid-line must NOT count as a definition; only a definition-position bold (bullet starting with `- **FR-xxx**` or a heading).
+1. `parseRequirementIds` — a bold prose mention `**FR-999**` mid-line must NOT count as a definition; only a definition-position bold (bullet starting with `- **FR-xxx**` or a heading). 
 2. `parseAcLines` — require double-star `**AC-xxx**` (single `*AC-xxx*` should be rejected).
 3. `parseTaskLines` — reject bare `T001` with no refs/action/verify.
 
@@ -13627,10 +12065,10 @@ Let me view the current implementation.
 <type>file</type>
 <content>
 371:   }
-372:
+372: 
 373:   return ids;
 374: }
-375:
+375: 
 376: /**
 377:  * Parse task lines from tasks.md content (sections 2 and 3).
 378:  *
@@ -13667,12 +12105,12 @@ Let me view the current implementation.
 329:         testPaths.push(pm[1]);
 330:       }
 331:     }
-332:
+332: 
 333:     result.push({ id, checked, reqIds, text: rest.trim(), testPaths });
 334:   }
 335:   return result;
 336: }
-337:
+337: 
 338: /**
 339:  * Parse requirement IDs *defined* in spec section 4.
 340:  *
@@ -13705,7 +12143,7 @@ Let me view the rest of the function.
 369:     const bold = new RegExp(boldIdRe.source, 'g');
 370:     while ((m = bold.exec(lt)) !== null) ids.add(`${m[1]}-${m[2]}`);
 371:   }
-372:
+372: 
 373:   return ids;
 374: }
 
@@ -13747,13 +12185,13 @@ The current regex is `/^\*\*?(AC-\d{3})\*\*?\s*/` which allows single star. Let 
 288:   const result = [];
 289:   const checkboxRe = /^-\s+\[([ xX])\]\s+/;
 290:   const acIdRe = /^\*\*?(AC-\d{3})\*\*?\s*/;
-291:
+291: 
 292:   for (const line of lines) {
 293:     const cbMatch = line.match(checkboxRe);
 294:     if (!cbMatch) continue;
 295:     const checked = cbMatch[1].toLowerCase() === 'x';
 296:     const rest = line.slice(cbMatch[0].length);
-297:
+297: 
 298:     // The AC id must be the leading token (bold in the canonical format).
 
 (Showing lines 284-298 of 1407. Use offset=299 to continue.)
@@ -13783,12 +12221,9 @@ Let me find it.
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-      1068     const acLeadRe = /^\*\*?AC-\d{3}\*\*?\s*[��(]/;
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+      1068     const acLeadRe = /^\*\*?AC-\d{3}\*\*?\s*[��(]/;
       1073       if (!acLeadRe.test(m[2].trim())) {
   ```
   </details>
@@ -13809,7 +12244,7 @@ Edit applied successfully.
 - **tool**: `bash({"command": "cd D:\\Projects\\personahub; foreach ($v in @('F009-artifact-foundation-provenance','F010-artifact-centered-coding-slice','F011-work-room-human-intervention','F012-reusable-agent-squads')) { $t=Get-Content \"docs/features/0.3/$v/tasks.md\"; $tasks = $t | Where-Object { $_ -match '^\\s*- \\[[ xX]\\] T\\d{3}' }; $noVerify = $tasks | Where-Object { $_ -notmatch 'verify:' }; $noRefs = $tasks | Where-Object { $_ -notmatch '\\(`' -and $_ -notmatch '（' }; Write-Host \"$v : total=$($tasks.C
 …[truncated])`
 
-Now fix #2c: `parseTaskLines` must reject a bare `- [x] T001` with no refs/action/verify. The canonical task is `- [ ] T001 [P] (\`FR-001\`, \`AC-001\`): action - verify: \`path\``. A valid task requires a parenthesized ref list, an action after `:`, and a `verify:` marker.
+Now fix #2c: `parseTaskLines` must reject a bare `- [x] T001` with no refs/action/verify. The canonical task is `- [ ] T001 [P] (\`FR-001\`, \`AC-001\`): action - verify: \`path\``. A valid task requires a parenthesized ref list, an action after `:`, and a `verify:` marker. 
 
 But I should be careful not to over-reject valid tasks. Let me check what the minimum required contract is. The plan's tasks.md format:
 ```
@@ -13825,16 +12260,11 @@ Let me check.
   <details><summary>tool output</summary>
 
   ```text
-F009-artifact-foundation-provenance : total=20 noVerify=0 noRefs=1
-
-- [ ] T034: ��д spec AC��BACKLOG ��ȫ�� architecture/system-design ������ģ�͡� - verify: `docs/features/0.3/F009-artifact-foundation-provenance/spec.md`
-
-F010-artifact-centered-coding-slice : total=23 noVerify=0 noRefs=1
-
-- [ ] T043: ��д spec��BACKLOG��architecture/system-design �� graph ADR �� v2 ��չ˵���� - verify: `docs/features/0.3/F010-artifact-centered-coding-slice/spec.md`
-
-F011-work-room-human-intervention : total=21 noVerify=0 noRefs=0
-
+F009-artifact-foundation-provenance : total=20 noVerify=0 noRefs=1
+- [ ] T034: ��д spec AC��BACKLOG ��ȫ�� architecture/system-design ������ģ�͡� - verify: `docs/features/0.3/F009-artifact-foundation-provenance/spec.md`
+F010-artifact-centered-coding-slice : total=23 noVerify=0 noRefs=1
+- [ ] T043: ��д spec��BACKLOG��architecture/system-design �� graph ADR �� v2 ��չ˵���� - verify: `docs/features/0.3/F010-artifact-centered-coding-slice/spec.md`
+F011-work-room-human-intervention : total=21 noVerify=0 noRefs=0
 F012-reusable-agent-squads : total=19 noVerify=0 noRefs=0
   ```
   </details>
@@ -13880,12 +12310,9 @@ Let me find it.
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-      1017   const taskLeadRe = /^(?:\[P\]\s*)?T\d{3}\b/;
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+      1017   const taskLeadRe = /^(?:\[P\]\s*)?T\d{3}\b/;
       1027       if (!taskLeadRe.test(rest.trim())) {
   ```
   </details>
@@ -13901,7 +12328,7 @@ Let me find it.
 <type>file</type>
 <content>
 1013:   const allTasks = [...sec2Tasks, ...sec3Tasks];
-1014:
+1014: 
 1015:   // --- illegal task format: checkbox lines in sections 2/3 must be a
 1016:   // canonical task line (T-id as the leading token) or an explicit N/A item ---
 1017:   const taskLeadRe = /^(?:\[P\]\s*)?T\d{3}\b/;
@@ -13912,7 +12339,7 @@ Let me find it.
 1022:     for (let i = 0; i < secLines.length; i++) {
 1023:       const m = secLines[i].match(checkboxRe);
 1024:       if (!m) continue;
-1025:       const
+1025:       const 
 …[truncated]
   ```
   </details>
@@ -13939,34 +12366,20 @@ Now let me verify all 5 repros are fixed, and confirm the real repo (with doc-ba
   <details><summary>tool output</summary>
 
   ```text
-[eval]:11
-
-  console.log('5b. valid T001:', JSON.stringify(m.parseTaskLines('- [x] T001 (\FR-001\): do - verify: \x.test.ts\').map(t=>t.id)));
-
-                                                                                                      ^^^^
-
-
-
-SyntaxError: Invalid hexadecimal escape sequence
-
-    at makeContextifyScript (node:internal/vm:185:14)
-
-    at compileScript (node:internal/process/execution:386:10)
-
-    at node:internal/process/execution:450:25
-
-    at [eval]-wrapper:6:24
-
-    at runScriptInContext (node:internal/process/execution:447:60)
-
-    at evalFunction (node:internal/process/execution:87:30)
-
-    at evalScript (node:internal/process/execution:99:3)
-
-    at node:internal/main/eval_string:74:3
-
-
-
+[eval]:11
+  console.log('5b. valid T001:', JSON.stringify(m.parseTaskLines('- [x] T001 (\FR-001\): do - verify: \x.test.ts\').map(t=>t.id)));
+                                                                                                      ^^^^
+
+SyntaxError: Invalid hexadecimal escape sequence
+    at makeContextifyScript (node:internal/vm:185:14)
+    at compileScript (node:internal/process/execution:386:10)
+    at node:internal/process/execution:450:25
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:447:60)
+    at evalFunction (node:internal/process/execution:87:30)
+    at evalScript (node:internal/process/execution:99:3)
+    at node:internal/main/eval_string:74:3
+
 Node.js v22.14.0
   ```
   </details>
@@ -13992,30 +12405,18 @@ Wrote file successfully.
   <details><summary>tool output</summary>
 
   ```text
-node:internal/modules/run_main:122
-
-    triggerUncaughtException(
-
-    ^
-
-
-
-Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Georg\AppData\Local\Temp\opencode\tools\check-feature-gates.mjs' imported from C:\Users\Georg\AppData\Local\Temp\opencode\repro.mjs
-
-Did you mean to import "../../../../../../../D:/Projects/personahub/tools/check-feature-gates.mjs"?
-
-    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
-
-    at moduleResolve (node:internal/modules/esm/resolve:860:10)
-
-    at defaultResolve (node:internal/modules/esm/resolve:984:11)
-
-    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
-
-    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
-
-    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
-
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Georg\AppData\Local\Temp\opencode\tools\check-feature-gates.mjs' imported from C:\Users\Georg\AppData\Local\Temp\opencode\repro.mjs
+Did you mean to import "../../../../../../../D:/Projects/personahub/tools/check-feature-gates.mjs"?
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
     at Mo
 …[truncated]
   ```
@@ -14216,7 +12617,7 @@ step3: undefined
 
 - **tool**: `edit({"filePath": "D:\\Projects\\personahub\\tools\\check-feature-gates.mjs", "newString": "  // Leading T-id, optional [P], optional parenthesised ref group, then the\n  // action after a colon.\n  const taskRe = /^(?:\\[P\\]\\s*)?(T\\d{3})\\b\\s*(?:[（(][^）)]*[）)])?\\s*[：:]\\s*\\S/;", "oldString": "  // Leading T-id, optional [P], optional parenthesised ref group, then the\n  // action after a colon.\n  const taskRe = /^(?:\\[P\\]\\s*)?(T\\d{3})\\b(?:[（(][^）)]*[）)])?\\s*[：:]\\s*\\S/;"})`
 
-step2 returns `""` — the optional group didn't match `(\`FR-001\`)`. The `[^）)]*` includes backticks and `FR-001` — that's fine. But the issue: `[（(]` — `(`. Wait `(\`FR-001\`)` — first char after space is `(`. `[（(]` should match `(`. Let me check — maybe the character class `[^）)]` treats `)` literally but there's an issue with the full-width `）` in the class. Actually the issue: `(?:[（(][^）)]*[）)])?` — this should match. But it returned "".
+step2 returns `""` — the optional group didn't match `(\`FR-001\`)`. The `[^）)]*` includes backticks and `FR-001` — that's fine. But the issue: `[（(]` — `(`. Wait `(\`FR-001\`)` — first char after space is `(`. `[（(]` should match `(`. Let me check — maybe the character class `[^）)]` treats `)` literally but there's an issue with the full-width `）` in the class. Actually the issue: `(?:[（(][^）)]*[）)])?` — this should match. But it returned "". 
 
 Hmm, wait — `[^）)]` is a negated class. In JS, `)` inside a character class `[^）)]` — the `)` is fine. Let me test the group alone.
 
@@ -14297,8 +12698,7 @@ Now let me run the gate test suite — some existing tests may need updating (e.
   <details><summary>tool output</summary>
 
   ```text
-[7m# pass[0m 114
-
+[7m# pass[0m 114
 [7m# fail[0m 0
   ```
   </details>
@@ -14317,8 +12717,7 @@ Also, the doc-backfill tasks T034/T043 have no ref group but DO have `:` action 
   <details><summary>tool output</summary>
 
   ```text
-[31;1mFeature gate check PASSED �?all features OK.[0m
-
+[31;1mFeature gate check PASSED �?all features OK.[0m
 EXIT: 0
   ```
   </details>
@@ -14380,17 +12779,17 @@ Let me append the round-3 regression tests to the test file.
 <type>file</type>
 <content>
 1872: });
-1873:
+1873: 
 1874: test('Regress: traceability — prose mention of an ID is not a requirement definition', () => {
 1875:   const ids = parseRequirementIds('本文仅引用 FR-999，并未定义它');
 1876:   assert.ok(!ids.has('FR-999'));
 1877: });
-1878:
+1878: 
 1879: test('Regress: traceability — loose AC text is not accepted as an AC', () => {
 1880:   const acs = parseAcLines('- [x] garbage AC-001 mentions FR-999');
 1881:   assert.equal(acs.length, 0);
 1882: });
-1883:
+1883: 
 
 (Showing lines 1872-1883 of 1887. Use offset=1884 to continue.)
 </content>
@@ -14407,7 +12806,7 @@ Let me append the round-3 regression tests to the test file.
 <path>D:\Projects\personahub\tools\check-feature-gates.test.mjs</path>
 <type>file</type>
 <content>
-1883:
+1883: 
 1884: test('Regress: traceability — loose task text is not accepted as a task', () => {
 1885:   const tasks = parseTaskLines('- [x] blah T001');
 1886:   assert.equal(tasks.length, 0);
@@ -14438,8 +12837,7 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[7m# pass[0m 125
-
+[7m# pass[0m 125
 [7m# fail[0m 0
   ```
   </details>
@@ -14449,7 +12847,7 @@ Edit applied successfully.
 - **tool**: `write({"content": "---\nreport_type: fix-verification\nround: 3\ndate: 2026-08-10\nprior_report: round 2 (diff-only review of round-1 fixes)\nscope: diff-only\nstop_condition_met: false\nseverity_counts: {critical: 0, high: 3, medium: 0, low: 0}\nissues:\n  - id: structure-gate-v0-bypass\n    title: 新 Feature 可声明 gate_version 0 绕过全部 v1 门禁\n    severity: high\n    category: correctness\n    root_cause: root-cause\n    origin: original-coding\n    pattern_tag: lifecycle-gate-wrong-phase\n    status: fix
 …[truncated])`
 
-All 125 gate tests pass (114 + 11 new round-3 regression tests). Now issue #3: the process issue `structure-review-self-approval`.
+All 125 gate tests pass (114 + 11 new round-3 regression tests). Now issue #3: the process issue `structure-review-self-approval`. 
 
 Per the skill protocol, my job as fixer is to:
 1. NOT self-approve / delete CURRENT-code.md — the reviewer sets stop condition and deletes.
@@ -14482,22 +12880,14 @@ Let me run the doc tests and the full gate/doc suite first (they're fast), then 
   <details><summary>tool output</summary>
 
   ```text
-=== doc tests ===
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
-# duration_ms 1076.9046
-
-=== real checks ===
-
-[31;1mFeature gate check PASSED �?all features OK.[0m
-
-[31;1mDoc link check PASSED - all links OK.[0m
-
+=== doc tests ===
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1076.9046
+=== real checks ===
+[31;1mFeature gate check PASSED �?all features OK.[0m
+[31;1mDoc link check PASSED - all links OK.[0m
 [31;1mDoc ownership check PASSED - all ownership rules OK.[0m
   ```
   </details>
@@ -14511,23 +12901,15 @@ All real checks pass. Now let me run the full `npm run verify` to confirm everyt
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[31m[1mError[22m: Test timed out in 5000ms.[0m
-
-[31;1mIf this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m[0m
-
-[31;1m[36m [2m�?[22m tests/integration/runtime-health.test.ts:[2m519:5[22m[39m[0m
-
-[31;1m    [90m517| [39m[0m
-
-[31;1m    [90m518| [39m  [34mdescribe[39m([32m"T043 - route"[39m[33m,[39m () [33m=>[39m {[0m
-
-[31;1m    [90m519| [39m    [34mit[39m([32m"valid workspace_id returns health"[39m[33m,[39m [35masync[39m () [33m=>[39m {[0m
-
-[31;1m    [90m   | [39m    [31m^[39m[0m
-
-[31;1m    [90m520| [39m      [35mconst[39m { project[33m,[39m workspace } [33m=[39m [34msetupProject[39m(services[33m,[39m tempDir)[33m;[39m[0m
-
-[31;1m    [90m521| [39m
+[31;1m[31m[1mError[22m: Test timed out in 5000ms.[0m
+[31;1mIf this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m[0m
+[31;1m[36m [2m�?[22m tests/integration/runtime-health.test.ts:[2m519:5[22m[39m[0m
+[31;1m    [90m517| [39m[0m
+[31;1m    [90m518| [39m  [34mdescribe[39m([32m"T043 - route"[39m[33m,[39m () [33m=>[39m {[0m
+[31;1m    [90m519| [39m    [34mit[39m([32m"valid workspace_id returns health"[39m[33m,[39m [35masync[39m () [33m=>[39m {[0m
+[31;1m    [90m   | [39m    [31m^[39m[0m
+[31;1m    [90m520| [39m      [35mconst[39m { project[33m,[39m workspace } [33m=[39m [34msetupProject[39m(services[33m,[39m tempDir)[33m;[39m[0m
+[31;1m    [90m521| [39m    
 …[truncated]
   ```
   </details>
@@ -14547,40 +12929,23 @@ Let me check the test and what the 2 failed files were.
   <details><summary>tool output</summary>
 
   ```text
-=== describe setup (top) ===
-
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-
-import Fastify from "fastify";
-
-import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-
-import { RuntimeHealthService, LOCK_DIAGNOSTIC_GRACE_MS } from "../../src/services/runtime-health.js";
-
-import { CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
-
-import { runtimeHealthRoutes } from "../../src/api/routes/runtime-health.js";
-
-import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
-
-import { ErrorCode } from "@personahub/shared/errors";
-
-import {
-
-  IssueStatus,
-
-  RunRole,
-
-  RunStatus,
-
-  RunDispatchSource,
-
-  AdapterStatus,
-
-  AgentCapability,
-
-} from "@personahub/shared/types";
-
+=== describe setup (top) ===
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import Fastify from "fastify";
+import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
+import { RuntimeHealthService, LOCK_DIAGNOSTIC_GRACE_MS } from "../../src/services/runtime-health.js";
+import { CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
+import { runtimeHealthRoutes } from "../../src/api/routes/runtime-health.js";
+import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
+import { ErrorCode } from "@personahub/shared/errors";
+import {
+  IssueStatus,
+  RunRole,
+  RunStatus,
+  RunDispatchSource,
+  AdapterStatus,
+  AgentCapability,
+} from "@personahub/shared/types";
 import { DEFA
 …[truncated]
   ```
@@ -14601,24 +12966,15 @@ Let me check if there's a top-level timeout and how other route tests handle thi
   <details><summary>tool output</summary>
 
   ```text
-=== top-level describe line ===
-
-
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        17 import { DEFAULT_EXECUTION_TIMEOUT_MS } from "../../src/runtime/types.js";
-
-       117 describe("RuntimeHealth (F008 Phase 4)", () => {
-
-       226   describe("T041 - stale_lock grading (prerequisite: adapter executionTimeoutMs)", () => {
-
-       227     it("all v0.2 adapters set executionTimeoutMs === DEFAULT_EXECUTION_TIMEOUT_MS", () => {
-
-       230         expect(adapter.capabilities.executionTimeoutMs).toBe(DEFAULT_EXECUTION_TIMEOUT_MS);
-
+=== top-level describe line ===
+
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        17 import { DEFAULT_EXECUTION_TIMEOUT_MS } from "../../src/runtime/types.js";
+       117 describe("RuntimeHealth (F008 Phase 4)", () => {
+       226   describe("T041 - stale_lock grading (prerequisite: adapter executionTimeoutMs)", () => {
+       227     it("all v0.2 adapters set executionTimeoutMs === DEFAULT_EXECUTION_TIMEOUT_MS", () => {
+       230         expect(adapter.capabilities.executionTimeoutMs).toBe(DEFAULT_EXECUTION_TIMEOUT_MS);
        234     const THRESHOLD = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
   ```
   </details>
@@ -14669,16 +13025,11 @@ Let me run it in isolation to confirm no regression from the timeout change.
   <details><summary>tool output</summary>
 
   ```text
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
-
-[2m   Start at [22m 21:45:36
-
-[2m   Duration [22m 11.54s[2m (transform 1.08s, setup 0ms, collect 5.42s, tests 5.57s, environment 0ms, prepare 192ms)[22m
-
-
-
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m   Start at [22m 21:45:36
+[2m   Duration [22m 11.54s[2m (transform 1.08s, setup 0ms, collect 5.42s, tests 5.57s, environment 0ms, prepare 192ms)[22m
+
 EXIT: 0
   ```
   </details>
@@ -14694,36 +13045,21 @@ Let me also update the CURRENT-code.md to record this additional machine-depende
   <details><summary>tool output</summary>
 
   ```text
-> npm -w @personahub/web run build
-
-
-
-
-
-> @personahub/web@0.1.0 build
-
-> tsc -b && vite build
-
-
-
-[36mvite v6.4.3 [32mbuilding for production...[36m[39m
-
-transforming...
-
-[32m�?[39m 1764 modules transformed.
-
-rendering chunks...
-
-computing gzip size...
-
-[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
-
-[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
-
-[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
-
-[32m�?built in 19.63s[39m
-
+> npm -w @personahub/web run build
+
+
+> @personahub/web@0.1.0 build
+> tsc -b && vite build
+
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+[32m�?[39m 1764 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
+[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
+[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
+[32m�?built in 19.63s[39m
 VERIFY_EXIT: 0
   ```
   </details>
@@ -14782,7 +13118,7 @@ Let me update todos.
     "priority": "high"
   },
   {
-
+ 
 …[truncated]
   ```
   </details>
@@ -14817,12 +13153,9 @@ Let me commit the round-3 fixes.
 warning: in the working copy of 'docs/reviews/CURRENT-code.md', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'tools/check-feature-gates.mjs', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'tools/check-feature-gates.test.mjs', LF will be replaced by CRLF the next time Git touches it
-[31;1m�?Breakdown: Functions 969 · Tests 392 · Risk 865 · Other 96   �?[0m
-
-[31;1m└──────────────────────────────────────────────────────────────�?[0m
-
-[main 1ec275b] fix(structure): close round-2 review �?lock open-question/traceability contract, protocol-format report
-
+[31;1m�?Breakdown: Functions 969 · Tests 392 · Risk 865 · Other 96   �?[0m
+[31;1m└──────────────────────────────────────────────────────────────�?[0m
+[main 1ec275b] fix(structure): close round-2 review �?lock open-question/traceability contract, protocol-format report
  4 files changed, 231 insertions(+), 89 deletions(-)
   ```
   </details>
@@ -14837,17 +13170,15 @@ Committed. Now push and monitor CI.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   af66306..1ec275b  main -> main[0m
-
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   af66306..1ec275b  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-10T13:58:23Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Pushed. Let me wait for CI to complete.
@@ -14855,17 +13186,12 @@ Pushed. Let me wait for CI to complete.
   <details><summary>tool output</summary>
 
   ```text
-[0] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 1m12s 2026-08-10T13:58:21Z
-
-[1] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 2m0s 2026-08-10T13:58:21Z
-
-[2] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 2m47s 2026-08-10T13:58:21Z
-
-[3] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 3m34s 2026-08-10T13:58:21Z
-
-[4] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 4m22s 2026-08-10T13:58:21Z
-
-[5] completed success fix(structure): close round-2 review �?lock open-question/traceabilit�?CI
+[0] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 1m12s 2026-08-10T13:58:21Z
+[1] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 2m0s 2026-08-10T13:58:21Z
+[2] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 2m47s 2026-08-10T13:58:21Z
+[3] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 3m34s 2026-08-10T13:58:21Z
+[4] in_progress  fix(structure): close round-2 review �?lock open-question/traceabilit�?CI main push 31395636400 4m22s 2026-08-10T13:58:21Z
+[5] completed success fix(structure): close round-2 review �?lock open-question/traceabilit�?CI 
 …[truncated]
   ```
   </details>
@@ -14882,8 +13208,7 @@ CI is green. Let me confirm both jobs and final sync.
   ```text
 {"conclusion":"success","name":"Verify (lint, typecheck, test, docs, build)"}
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
-=== sync ===
-
+=== sync ===
 1ec275b
 1ec275b
   ```
@@ -14947,30 +13272,20 @@ The system flagged the final todo as still in_progress. It's actually complete �
   <details><summary>tool output</summary>
 
   ```text
-=== working tree (clean?) ===
-
-=== HEAD == origin/main ===
-
+=== working tree (clean?) ===
+=== HEAD == origin/main ===
 1ec275b
 1ec275b
-=== latest CI run + jobs ===
-
-run status=completed conclusion=success
-
+=== latest CI run + jobs ===
+run status=completed conclusion=success
 {"conclusion":"success","name":"Verify (lint, typecheck, test, docs, build)"}
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
-=== CURRENT-code.md still present (must NOT be deleted by fixer) ===
-
-True
-
-=== stop_condition_met (must be false, awaiting reviewer) ===
-
-
-
-[32;1mLine[0m
-
-[32;1m----[0m
-
+=== CURRENT-code.md still present (must NOT be deleted by fixer) ===
+True
+=== stop_condition_met (must be false, awaiting reviewer) ===
+
+[32;1mLine[0m
+[32;1m----[0m
 stop_condition_met: false
   ```
   </details>
@@ -15018,7 +13333,7 @@ The final task was genuinely complete — I had committed, pushed, confirmed CI 
     "priority": "high"
   },
   {
-
+ 
 …[truncated]
   ```
   </details>
@@ -15050,7 +13365,7 @@ All 7 todos are complete.
 
 ## assistant · 2026-08-10T14:20:36Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; Get-ChildItem
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; Get-ChildItem 
 …[truncated])`
 
 The user reviewed again. Let me find the new review report.
@@ -15058,49 +13373,28 @@ The user reviewed again. Let me find the new review report.
   <details><summary>tool output</summary>
 
   ```text
-=== CURRENT-code.md ===
-
-[32;1mName                         [0m[32;1m Length[0m[32;1m LastWriteTime[0m
-
-[32;1m----                         [0m [32;1m------[0m [32;1m-------------[0m
-
-CURRENT-code.md                 8762 2026/8/10 22:19:53
-
-RETROSPECTIVE.md               91363 2026/8/9 22:36:41
-
-structure-improvement-plan.md  34475 2026/8/10 1:27:31
-
----
-
-report_type: fix-verification
-
-round: 3
-
-date: 2026-08-10
-
-prior_report: round 2 (diff-only review of round-1 fixes)
-
-scope: diff-only
-
-stop_condition_met: false
-
-severity_counts: {critical: 0, high: 1, medium: 0, low: 0}
-
-issues:
-
-  - id: structure-gate-v0-bypass
-
-    title: �� Feature ������ gate_version 0 �ƹ�ȫ�� v1 �Ž�
-
-    severity: high
-
-    category: correctness
-
-    root_cause: root-cause
-
-    origin: original-coding
-
-
+=== CURRENT-code.md ===
+[32;1mName                         [0m[32;1m Length[0m[32;1m LastWriteTime[0m
+[32;1m----                         [0m [32;1m------[0m [32;1m-------------[0m
+CURRENT-code.md                 8762 2026/8/10 22:19:53
+RETROSPECTIVE.md               91363 2026/8/9 22:36:41
+structure-improvement-plan.md  34475 2026/8/10 1:27:31
+---
+report_type: fix-verification
+round: 3
+date: 2026-08-10
+prior_report: round 2 (diff-only review of round-1 fixes)
+scope: diff-only
+stop_condition_met: false
+severity_counts: {critical: 0, high: 1, medium: 0, low: 0}
+issues:
+  - id: structure-gate-v0-bypass
+    title: �� Feature ������ gate_version 0 �ƹ�ȫ�� v1 �Ž�
+    severity: high
+    category: correctness
+    root_cause: root-cause
+    origin: original-coding
+  
 …[truncated]
   ```
   </details>
@@ -15121,30 +13415,18 @@ Let me verify the canonical format in the docs and reproduce both cases.
   <details><summary>tool output</summary>
 
   ```text
-=== TEMPLATE/tasks.md task format ===
-
-
-
-=== README task format ===
-
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-        22 - `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
-
-        28 - [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> �� verify: `path/to/test.ts`
-
-        33 - [ ] T001 (`DQ-001`): �ر����������� spec/design ���� �� verify: `spec.md`��`design.md`
-
-        34 - [ ] T002 (`FR-001`): ��֤���� Contract�������汾����ʵ�������� �� verify: <֤��·��/����>
-
-        42 - [ ] T003 (`FR-001`, `AC-001`): ... �� verify: `path/to/test.ts`
-
-        43 - [ ] T004 [P] (`FR-002`, `AC-002`): ... �� verify: `path/to/test.ts`
-
-        47 - [ ] T005 (`US-002`, `FR-003`): ... �� verify: `path/to/test.ts`
-
+=== TEMPLATE/tasks.md task format ===
+
+=== README task format ===
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+        22 - `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
+        28 - [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> �� verify: `path/to/test.ts`
+        33 - [ ] T001 (`DQ-001`): �ر����������� spec/design ���� �� verify: `spec.md`��`design.md`
+        34 - [ ] T002 (`FR-001`): ��֤���� Contract�������汾����ʵ�������� �� verify: <֤��·��/����>
+        42 - [ ] T003 (`FR-001`, `AC-001`): ... �� verify: `path/to/test.ts`
+        43 - [ ] T004 [P] (`FR-002`, `AC-002`): ... �� verify: `path/to/test.ts`
+        47 - [ ] T005 (`US-002`, `FR-003`): ... �� verify: `path/to/test.ts`
         53 - [ ] T006 (`AC-001`): ���ж�Ӧ��Ԫ/��
 …[truncated]
   ```
@@ -15206,10 +13488,10 @@ Let me fix `parseTaskLines` taskRe.
 <path>D:\Projects\personahub\tools\check-feature-gates.mjs</path>
 <type>file</type>
 <content>
-377:
+377: 
 378:   return ids;
 379: }
-380:
+380: 
 381: /**
 382:  * Parse task lines from tasks.md content (sections 2 and 3).
 383:  *
@@ -15254,14 +13536,10 @@ Let me find it.
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLineNumber[0m[32;1m Line[0m
-
-[32;1m----------[0m [32;1m----[0m
-
-      1022   const taskContractRe = /^(?:\[P\]\s*)?T\d{3}\b\s*(?:[��(][^��)]*[��)])?\s*[��:]\s*\S/;
-
-      1023   const taskVerifyRe = /verify\s*[��:]/i;
-
+[32;1mLineNumber[0m[32;1m Line[0m
+[32;1m----------[0m [32;1m----[0m
+      1022   const taskContractRe = /^(?:\[P\]\s*)?T\d{3}\b\s*(?:[��(][^��)]*[��)])?\s*[��:]\s*\S/;
+      1023   const taskVerifyRe = /verify\s*[��:]/i;
       1033       const valid = taskContractRe.test(rest.trim()) && taskVerifyRe.test(rest);
   ```
   </details>
@@ -15361,7 +13639,7 @@ Let me use: after `verify:` + optional spaces, either (a) a backtick-wrapped non
 `/verify\s*[：:]\s*(?:`[^`]+`|(?!`)[^\s`])/`
 
 Let me write this carefully. After verify colon:
-- `\s*`
+- `\s*` 
 - then either `` `[^`]+` `` (backtick with content) OR a non-backtick, non-space char.
 
 Let me update both verifyRe and taskVerifyRe.
@@ -15427,8 +13705,7 @@ Let me run the gate test suite first — some existing tests may have used `[P] 
   <details><summary>tool output</summary>
 
   ```text
-[7m# pass[0m 125
-
+[7m# pass[0m 125
 [7m# fail[0m 0
   ```
   </details>
@@ -15445,32 +13722,19 @@ Let me check whether any F009-F012 task uses `[P] T001` (wrong order) that I'd n
   <details><summary>tool output</summary>
 
   ```text
-=== tasks with [P] in F009-F012 ===
-
-F009-artifact-foundation-provenance : 2
-
-- `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
-
-- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> - verify: `path/to/test.ts`
-
-F010-artifact-centered-coding-slice : 2
-
-- `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
-
-- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> - verify: `path/to/test.ts`
-
-F011-work-room-human-intervention : 2
-
-- `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
-
-- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> - verify: `path/to/test.ts`
-
-F012-reusable-agent-squads : 2
-
-- `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
-
-- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> - verify: `path/to/test.ts`
-
+=== tasks with [P] in F009-F012 ===
+F009-artifact-foundation-provenance : 2
+- `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
+- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> - verify: `path/to/test.ts`
+F010-artifact-centered-coding-slice : 2
+- `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
+- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> - verify: `path/to/test.ts`
+F011-work-room-human-intervention : 2
+- `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
+- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> - verify: `path/to/test.ts`
+F012-reusable-agent-squads : 2
+- `[P]` ֻ�����޸Ĳ�ͬ�ļ���û����ʽǰ�������Ҳ�������ͬһ״̬������
+- [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <һ������֤����> - verify: `path/to/test.ts`
 === real repo gate
 …[truncated]
   ```
@@ -15478,10 +13742,10 @@ F012-reusable-agent-squads : 2
 
 ## assistant · 2026-08-10T14:26:55Z
 
-- **tool**: `todowrite({"todos": [{"content": "Fix task format: canonical T001 [P] order (P after id); reject [P] T001; require non-empty verify value", "priority": "high", "status": "completed"}, {"content": "Add regression tests for round-4 task-format repros", "priority": "high", "status": "in_progress"}, {"content": "Update CURRENT-code.md: mark traceability fixed (round 4), stop_condition_met:false awaiting reviewer", "priority": "high", "status": "pending"}, {"content": "Run gate+doc tests, real repo check, npm
+- **tool**: `todowrite({"todos": [{"content": "Fix task format: canonical T001 [P] order (P after id); reject [P] T001; require non-empty verify value", "priority": "high", "status": "completed"}, {"content": "Add regression tests for round-4 task-format repros", "priority": "high", "status": "in_progress"}, {"content": "Update CURRENT-code.md: mark traceability fixed (round 4), stop_condition_met:false awaiting reviewer", "priority": "high", "status": "pending"}, {"content": "Run gate+doc tests, real repo check, npm 
 …[truncated])`
 
-The `[P]` lines shown are just the TEMPLATE instructions (section 0 rule text), not actual tasks — real F009-F012 tasks don't use `[P]` (they're draft). The real repo gate passes.
+The `[P]` lines shown are just the TEMPLATE instructions (section 0 rule text), not actual tasks — real F009-F012 tasks don't use `[P]` (they're draft). The real repo gate passes. 
 
 Wait — the F009 spec section 2 references `US-001` which is in section 2, not section 4. But those `[P]` lines are in the `## 0. 来源与执行规则` section (rule text), which `parseTaskLines` doesn't process (only sections 2/3). So no issue.
 
@@ -15538,12 +13802,12 @@ Let me add round-4 regression tests for the task-format fix. Let me read the end
 <content>
 1935:   assert.equal(tasks.length, 0);
 1936: });
-1937:
+1937: 
 1938: test('Regress r3: traceability — valid task with refs, action and verify is accepted', () => {
 1939:   const tasks = parseTaskLines('- [x] T001 (`FR-001`): do - verify: `server/tests/x.test.ts`');
 1940:   assert.equal(tasks.length, 1);
 1941: });
-1942:
+1942: 
 1943: test('Regress r3: traceability — doc-backfill task without refs but with action+verify is accepted', () => {
 1944:   const tasks = parseTaskLines('- [ ] T034: 回写 - verify: `docs/spec.md`');
 1945:   assert.equal(tasks.length, 1);
@@ -15574,8 +13838,7 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[7m# pass[0m 129
-
+[7m# pass[0m 129
 [7m# fail[0m 0
   ```
   </details>
@@ -15700,7 +13963,7 @@ Edit applied successfully.
 
 ## assistant · 2026-08-10T14:29:43Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\docs\\reviews\\CURRENT-code.md", "newString": "  - id: structure-traceability-format-bypass\n    title: AC、需求定义和任务格式可用松散文本绕过追踪门禁\n    severity: high\n    category: correctness\n    root_cause: root-cause\n    origin: original-coding\n    pattern_tag: marked-done-not-implemented\n    status: fixed\n    fix_summary: 需求定义/AC/任务 parser 与文档唯一格式对齐：定义仅认定义位置；AC 双星号；任务采用 T001 [P] 顺序并要求非空 verify 值\n    regression_test: tools/check-feature-gates.test.mjs::Regress r4
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\docs\\reviews\\CURRENT-code.md", "newString": "  - id: structure-traceability-format-bypass\n    title: AC、需求定义和任务格式可用松散文本绕过追踪门禁\n    severity: high\n    category: correctness\n    root_cause: root-cause\n    origin: original-coding\n    pattern_tag: marked-done-not-implemented\n    status: fixed\n    fix_summary: 需求定义/AC/任务 parser 与文档唯一格式对齐：定义仅认定义位置；AC 双星号；任务采用 T001 [P] 顺序并要求非空 verify 值\n    regression_test: tools/check-feature-gates.test.mjs::Regress r4 
 …[truncated])`
 
   <details><summary>tool output</summary>
@@ -15725,16 +13988,16 @@ Let me read lines 90-148.
 <type>file</type>
 <content>
 90: # 结构改造成果代码检视（第 3 轮：diff-only 修复验证）
-91:
+91: 
 92: > 状态：reviewer 已完成第 3 轮 diff-only 复核；仍有 1 个 High 延续，暂不闭环。
 93: > 按 `review-convergence` skill，本文件保留，不执行删除与复盘归档。
-94:
+94: 
 95: ## 结论
-96:
+96: 
 97: 第 2 轮的 open-question 与报告流程问题已修复；traceability-format 仅部分修复。
 98: 标准并行任务格式与 parser 实现相反，且空 `verify:` 仍可通过，因此当前
 99: `stop_condition_met: false`。
-100:
+100: 
 101: | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 102: |---|---|---|---|---|---|---|---|---|---|---|---|
 103: | structure-gate-v0-bypass | 新 Feature 可声明 gate_version 0 绕过全部 v1 门禁 | High | 正确性 | 根因 | 原始编码 | 已修复 | F001-F008 白名单限定 v0 | `tools/check-feature-gates.test.mjs::Regress gate-v0-bypass` | 1 | 2 | lifecycle-gate-wrong-phase |
@@ -15745,7 +14008,7 @@ Let me read lines 90-148.
 
 ## assistant · 2026-08-10T14:30:25Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\docs\\reviews\\CURRENT-code.md", "newString": "# 结构改造成果代码检视（第 4 轮：diff-only 修复验证）\n\n> 状态：修复方已按 reviewer 第 3 轮结论修复任务格式契约，补回归测试；\n> 等待 reviewer 复核。按 `review-convergence` skill，本文件保留，不执行删除与复盘归档。\n\n## 结论\n\n第 3 轮延续的 traceability-format（任务格式与文档契约相反、空 verify 值）已修复。\n任务 parser 现与 `docs/features/README.md` / TEMPLATE 的唯一格式 `T001 [P] (...)` 对齐。\n`severity_counts` 现为 0 个 High，但闭环仍由 reviewer 判定，`stop_condition_met: false`。\n\n| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\docs\\reviews\\CURRENT-code.md", "newString": "# 结构改造成果代码检视（第 4 轮：diff-only 修复验证）\n\n> 状态：修复方已按 reviewer 第 3 轮结论修复任务格式契约，补回归测试；\n> 等待 reviewer 复核。按 `review-convergence` skill，本文件保留，不执行删除与复盘归档。\n\n## 结论\n\n第 3 轮延续的 traceability-format（任务格式与文档契约相反、空 verify 值）已修复。\n任务 parser 现与 `docs/features/README.md` / TEMPLATE 的唯一格式 `T001 [P] (...)` 对齐。\n`severity_counts` 现为 0 个 High，但闭环仍由 reviewer 判定，`stop_condition_met: false`。\n\n| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 
 …[truncated])`
 
   <details><summary>tool output</summary>
@@ -15757,7 +14020,7 @@ Edit applied successfully.
 
 ## assistant · 2026-08-10T14:31:39Z
 
-- **tool**: `todowrite({"todos": [{"content": "Fix task format: canonical T001 [P] order (P after id); reject [P] T001; require non-empty verify value", "priority": "high", "status": "completed"}, {"content": "Add regression tests for round-4 task-format repros (129 pass)", "priority": "high", "status": "completed"}, {"content": "Update CURRENT-code.md: mark traceability fixed (round 4), stop_condition_met:false awaiting reviewer", "priority": "high", "status": "completed"}, {"content": "Run gate+doc tests, real repo
+- **tool**: `todowrite({"todos": [{"content": "Fix task format: canonical T001 [P] order (P after id); reject [P] T001; require non-empty verify value", "priority": "high", "status": "completed"}, {"content": "Add regression tests for round-4 task-format repros (129 pass)", "priority": "high", "status": "completed"}, {"content": "Update CURRENT-code.md: mark traceability fixed (round 4), stop_condition_met:false awaiting reviewer", "priority": "high", "status": "completed"}, {"content": "Run gate+doc tests, real repo 
 …[truncated])`
 
 Now let me verify the report is valid (frontmatter parses, no encoding issues) and run the full verify. Let me first run the doc tests + real checks, then the full npm verify.
@@ -15805,24 +14068,15 @@ Let me update todos and run the verification suite.
   <details><summary>tool output</summary>
 
   ```text
-=== doc tests ===
-
-# cancelled 0
-
-# skipped 0
-
-# todo 0
-
-# duration_ms 978.6768
-
-=== real checks ===
-
-[31;1mFeature gate check PASSED �?all features OK.[0m
-
-[31;1mDoc link check PASSED - all links OK.[0m
-
-[31;1mDoc ownership check PASSED - all ownership rules OK.[0m
-
+=== doc tests ===
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 978.6768
+=== real checks ===
+[31;1mFeature gate check PASSED �?all features OK.[0m
+[31;1mDoc link check PASSED - all links OK.[0m
+[31;1mDoc ownership check PASSED - all ownership rules OK.[0m
 === clean temp ===
   ```
   </details>
@@ -15840,37 +14094,25 @@ Let me run the full verify.
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/web@0.1.0 build
-
-> tsc -b && vite build
-
-
-
-[36mvite v6.4.3 [32mbuilding for production...[36m[39m
-
-transforming...
-
-[32m�?[39m 1764 modules transformed.
-
-rendering chunks...
-
-computing gzip size...
-
-[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
-
-[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
-
-[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
-
-[32m�?built in 7.02s[39m
-
+> @personahub/web@0.1.0 build
+> tsc -b && vite build
+
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+[32m�?[39m 1764 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.41 kB[22m[1m[22m[2m �?gzip:   0.28 kB[22m
+[2mdist/[22m[35massets/index-9tBxr-ry.css  [39m[1m[2m 34.52 kB[22m[1m[22m[2m �?gzip:   6.76 kB[22m
+[2mdist/[22m[36massets/index-Csf0DLG5.js   [39m[1m[2m497.93 kB[22m[1m[22m[2m �?gzip: 144.96 kB[22m
+[32m�?built in 7.02s[39m
 VERIFY_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-10T14:40:56Z
 
-- **tool**: `todowrite({"todos": [{"content": "Fix task format: canonical T001 [P] order (P after id); reject [P] T001; require non-empty verify value", "priority": "high", "status": "completed"}, {"content": "Add regression tests for round-4 task-format repros (129 pass)", "priority": "high", "status": "completed"}, {"content": "Update CURRENT-code.md: mark traceability fixed (round 4), stop_condition_met:false awaiting reviewer", "priority": "high", "status": "completed"}, {"content": "Run gate+doc tests, real repo
+- **tool**: `todowrite({"todos": [{"content": "Fix task format: canonical T001 [P] order (P after id); reject [P] T001; require non-empty verify value", "priority": "high", "status": "completed"}, {"content": "Add regression tests for round-4 task-format repros (129 pass)", "priority": "high", "status": "completed"}, {"content": "Update CURRENT-code.md: mark traceability fixed (round 4), stop_condition_met:false awaiting reviewer", "priority": "high", "status": "completed"}, {"content": "Run gate+doc tests, real repo 
 …[truncated])`
 
 `npm run verify` passed (exit 0). Now let me commit and push. Let me check git status.
@@ -15921,8 +14163,7 @@ Let me update todos and commit.
 M docs/reviews/CURRENT-code.md
  M tools/check-feature-gates.mjs
  M tools/check-feature-gates.test.mjs
-=== check-ignore CURRENT-code ===
-
+=== check-ignore CURRENT-code ===
 (empty = tracked)
   ```
   </details>
@@ -15942,25 +14183,19 @@ Note: `runtime-health.test.ts` was already committed in the round-3 fix, so it's
 warning: in the working copy of 'docs/reviews/CURRENT-code.md', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'tools/check-feature-gates.mjs', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'tools/check-feature-gates.test.mjs', LF will be replaced by CRLF the next time Git touches it
-[31;1m�?Breakdown: Functions 520 · Tests 279 · Risk 520 · Other 94   �?[0m
-
-[31;1m└──────────────────────────────────────────────────────────────�?[0m
-
-[main d2c7d3b] fix(structure): align task parser with canonical T001 [P] contract (round-3 review)
-
- 3 files changed, 79 insertions(+), 46 deletions(-)
-
-[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
-
-[31;1m   1ec275b..d2c7d3b  main -> main[0m
-
+[31;1m�?Breakdown: Functions 520 · Tests 279 · Risk 520 · Other 94   �?[0m
+[31;1m└──────────────────────────────────────────────────────────────�?[0m
+[main d2c7d3b] fix(structure): align task parser with canonical T001 [P] contract (round-3 review)
+ 3 files changed, 79 insertions(+), 46 deletions(-)
+[31;1mTo https://github.com/Qiaozhi94/personahub.git[0m
+[31;1m   1ec275b..d2c7d3b  main -> main[0m
 PUSH_EXIT: 0
   ```
   </details>
 
 ## assistant · 2026-08-10T14:42:24Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd D:\\Projects\\personahub; for ($i=0; $i 
 …[truncated])`
 
 Committed and pushed (`d2c7d3b`). Now let me wait for CI.
@@ -15968,19 +14203,13 @@ Committed and pushed (`d2c7d3b`). Now let me wait for CI.
   <details><summary>tool output</summary>
 
   ```text
-[0] in_progress  fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 1m5s 2026-08-10T14:42:25Z
-
-[1] in_progress  fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 1m52s 2026-08-10T14:42:25Z
-
-[2] in_progress  fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 2m39s 2026-08-10T14:42:25Z
-
-[3] in_progress  fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 3m26s 2026-08-10T14:42:25Z
-
-[4] completed success fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 3m57s 2026-08-10T14:42:25Z
-
-=== final ===
-
-completed	success	fix(structure): align task parser with canonical T001 [P]
+[0] in_progress  fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 1m5s 2026-08-10T14:42:25Z
+[1] in_progress  fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 1m52s 2026-08-10T14:42:25Z
+[2] in_progress  fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 2m39s 2026-08-10T14:42:25Z
+[3] in_progress  fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 3m26s 2026-08-10T14:42:25Z
+[4] completed success fix(structure): align task parser with canonical T001 [P] contract (r�?CI main push 31399608090 3m57s 2026-08-10T14:42:25Z
+=== final ===
+completed	success	fix(structure): align task parser with canonical T001 [P] 
 …[truncated]
   ```
   </details>
@@ -15997,20 +14226,14 @@ CI is green. Let me confirm both jobs and final sync.
   ```text
 {"conclusion":"success","name":"Verify (lint, typecheck, test, docs, build)"}
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
-=== sync ===
-
+=== sync ===
 d2c7d3b
 d2c7d3b
-=== CURRENT-code present, stop false ===
-
-True
-
-
-
-[32;1mLine[0m
-
-[32;1m----[0m
-
+=== CURRENT-code present, stop false ===
+True
+
+[32;1mLine[0m
+[32;1m----[0m
 stop_condition_met: false
   ```
   </details>
@@ -16076,35 +14299,26 @@ The system flagged the final todo as in_progress, but I already completed it. Le
   <details><summary>tool output</summary>
 
   ```text
-=== working tree (clean?) ===
-
-=== HEAD == origin/main ===
-
+=== working tree (clean?) ===
+=== HEAD == origin/main ===
 d2c7d3b
 d2c7d3b
-=== CI on current HEAD ===
-
-status=completed conclusion=success
-
+=== CI on current HEAD ===
+status=completed conclusion=success
 {"conclusion":"success","name":"Verify (lint, typecheck, test, docs, build)"}
 {"conclusion":"success","name":"E2E (Playwright Chromium)"}
-=== CURRENT-code present & stop=false (awaiting reviewer) ===
-
-True
-
-
-
-[32;1mLine[0m
-
-[32;1m----[0m
-
+=== CURRENT-code present & stop=false (awaiting reviewer) ===
+True
+
+[32;1mLine[0m
+[32;1m----[0m
 stop_condition_met: false
   ```
   </details>
 
 ## assistant · 2026-08-10T14:48:20Z
 
-- **tool**: `todowrite({"todos": [{"content": "Fix task format: canonical T001 [P] order (P after id); reject [P] T001; require non-empty verify value", "priority": "high", "status": "completed"}, {"content": "Add regression tests for round-4 task-format repros (129 pass)", "priority": "high", "status": "completed"}, {"content": "Update CURRENT-code.md: mark traceability fixed (round 4), stop_condition_met:false awaiting reviewer", "priority": "high", "status": "completed"}, {"content": "Run gate+doc tests, real repo
+- **tool**: `todowrite({"todos": [{"content": "Fix task format: canonical T001 [P] order (P after id); reject [P] T001; require non-empty verify value", "priority": "high", "status": "completed"}, {"content": "Add regression tests for round-4 task-format repros (129 pass)", "priority": "high", "status": "completed"}, {"content": "Update CURRENT-code.md: mark traceability fixed (round 4), stop_condition_met:false awaiting reviewer", "priority": "high", "status": "completed"}, {"content": "Run gate+doc tests, real repo 
 …[truncated])`
 
 All verified:

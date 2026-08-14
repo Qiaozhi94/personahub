@@ -31,12 +31,12 @@ Read fully. The design doc's "初稿漏洞已修正" notes are the crux of corre
 - `server/src/db/schema-v10.ts`/`migrations.ts` done (v10).
 
 ## KEY EXISTING CODE CONTEXT
-- `server/src/runtime/types.ts` line ~124: `export const DEFAULT_EXECUTION_TIMEOUT_MS = 30*60*1000`.
+- `server/src/runtime/types.ts` line ~124: `export const DEFAULT_EXECUTION_TIMEOUT_MS = 30*60*1000`. 
 - `server/src/services/run-dispatch.ts`: `RunDispatchService.startNextQueuedRun(workspaceId)` (lines ~310-397) is a PRIVATE method with the queued-run classification logic (Blocked/Done/role-status gates/round matching) interleaved with side effects. THIS is the code you must EXTRACT.
 - `server/src/services/adapter-config.ts`: `AdapterConfigService` has private `pendingAvailabilityProbes = new Set<Promise<void>>()`. Add a read-only snapshot accessor.
 - `server/src/services/adapter-failure-reprobe.ts`: `AdapterFailureReprobe` (RunDispatchService's private field `failureReprobe`) has private `pending = new Set<Promise<void>>()`. Add a read-only snapshot accessor. Do NOT expose the Set reference.
 - `server/src/services/stale-recovery.ts`: `cleanupStaleLocks()` (lines 95-114) is the ground truth for stale-lock semantics: lock released if holder missing or terminal, IGNORING duration. `isTerminalStatus` = Completed/Failed/Interrupted/Cancelled.
-- `server/src/repositories/run.ts`: `listQueuedByWorkspace(workspaceId)`, `listRunning()`, `getById`. `server/src/repositories/workspace.ts`: `listLockedWorkspaces()`, `listAll()`. `server/src/repositories/issue.ts`: `getById`.
+- `server/src/repositories/run.ts`: `listQueuedByWorkspace(workspaceId)`, `listRunning()`, `getById`. `server/src/repositories/workspace.ts`: `listLockedWorkspaces()`, `listAll()`. `server/src/repositories/issue.ts`: `getById`. 
 - `server/src/services/adapter-availability.ts`: `effectiveAdapterStatus(record, override): AdapterStatus`. `server/src/repositories/adapter-workspace-status.ts`: `listForWorkspace(workspaceId)` returns override rows. `server/src/repositories/agent-config.ts`: `listByProject(projectId)`. `server/src/repositories/agent-config-dto.ts`: `toPublicAdapter`.
 - `server/src/services/validation/validator-slot-claimer.ts` (~207-225): validator Run created as Queued and validation_dispatch_due_at cleared in same txn when claimed. `server/src/services/validation-dispatch-scheduler.ts`: defaults to 1s tick; claims due Issues.
 - `server/src/api/routes/*.ts` + `server/src/api/errors.ts` (`parseRequestBody`, `AppError`, `ErrorCode`): follow the route style (see adapters.ts).
@@ -154,13 +154,13 @@ I'll start by reading the mandatory documentation files in order, then explore t
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Target: v0.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 16: - **PRD 来源**：`docs/personahub-prd.md` 第 15 节 v0.2 范围中的 "Workflow Template 管理 UI 初版" 与 "Runtime health check"。
 17: - **相关**：F004 的 validation 依赖 `steps_json`；F007 的推荐依赖模板的 active 版本。
 18: - **功能类型**：user-facing / admin / observability。
@@ -193,20 +193,20 @@ Now reading the design document:
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 设计
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
-15:
+15: 
 16: 两块互相独立的能力放在同一个 feature，因为它们共享同一条主线：把系统已经拥有但用户看不到的状态呈现出来。
-17:
+17: 
 18: - **模板管理**：给 `WorkflowTemplateRepository` 补写方法，编辑一律走"新增版本"，既有行不可变。
 19: - **Runtime health**：新增一个纯只读聚合服务，全部数据来自既有仓储查询，不新增表、不触发任何副作用。
-20:
+20: 
 21: ## 2. 影响面
-22:
+22: 
 23: - **存储**：`workflow_templates` 本身无变更（`version` / `status` 列已具备
 …[truncated]
   ```
@@ -234,13 +234,13 @@ Now reading the tasks document:
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 任务
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：模板读取与派生投影（FR-001）
-15:
+15: 
 16: - [ ] T009：新建 `server/src/db/schema-v10.ts`——`admin_audit_events` 表 + `idx_workflow_templates_issue_type_version` / `idx_workflow_templates_one_active` 两个唯一索引 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**（`design.md` 第 4、7 节）。
 17: - [ ] T01
 …[truncated]
@@ -249,7 +249,7 @@ Now reading the tasks document:
 
 ## assistant · 2026-08-09T10:29:03Z
 
-- **tool**: `todowrite({"todos": [{"content": "Read all key existing code files (shared types, errors, run-dispatch, adapter-config, adapter-failure-reprobe, stale-recovery, runtime/types, repos, routes, errors, migrations)", "priority": "high", "status": "in_progress"}, {"content": "Extract queue-classifier.ts pure function from startNextQueuedRun (T041b)", "priority": "high", "status": "pending"}, {"content": "Refactor startNextQueuedRun to use shared classifier (behavior-preserving)", "priority": "high", "status":
+- **tool**: `todowrite({"todos": [{"content": "Read all key existing code files (shared types, errors, run-dispatch, adapter-config, adapter-failure-reprobe, stale-recovery, runtime/types, repos, routes, errors, migrations)", "priority": "high", "status": "in_progress"}, {"content": "Extract queue-classifier.ts pure function from startNextQueuedRun (T041b)", "priority": "high", "status": "pending"}, {"content": "Refactor startNextQueuedRun to use shared classifier (behavior-preserving)", "priority": "high", "status": 
 …[truncated])`
 
 
@@ -316,7 +316,7 @@ Reading the critical foundation files in parallel:
 <type>file</type>
 <content>
 1: import type { AdapterStatus, IssueType } from "./index.js";
-2:
+2: 
 3: export interface WorkflowTemplateVersionSummary {
 4:   id: string;
 5:   name: string;
@@ -327,12 +327,12 @@ Reading the critical foundation files in parallel:
 10:   created_at: string;
 11:   updated_at: string;
 12: }
-13:
+13: 
 14: export interface WorkflowTemplateStep {
 15:   id: string;
 16:   role: string;
 17: }
-18:
+18: 
 19: export interface WorkflowTemplateDetail {
 20:   id: string;
 21:   name: string;
@@ -384,7 +384,7 @@ Reading the critical foundation files in parallel:
 > [reasoning] Now I understand the startNextQueuedRun logic. Let me analyze the classification:
 
 1. `if (!issue) continue;` → issue null → skip (classify as invalid_queued_run for health)
-2. `if (issue.status === IS.Blocked)`:
+2. `if (issue.status === IS.Blocked)`: 
    - if `run.role === RunRole.GraphNode` → `continue` (skip, keep queued) → waiting_for_recovery
    - else → `cancelQueued` → invalid_queued_run
 3. `if (issue.status === IS.Done)` → `cancelQueued` → invalid_queued_run
@@ -459,7 +459,7 @@ Now let me read the other key files in parallel.
 7: import type { DevelopmentTraceService } from "./development-trace.js";
 8: import type { RunTraceRepository } from "../repositories/run-trace.js";
 9: import { SCAN_REASON_CODES } from "../runtime/trace/constants.js";
-10:
+10: 
 11: export class StaleRecove
 …[truncated]
   ```
@@ -480,14 +480,14 @@ Now let me read the other key files in parallel.
 <content>
 1: import type { AdapterConfig, RunStatus, FailureReason, AdapterAuthType } from "@personahub/shared/types";
 2: import type { RunTraceSignal } from "@personahub/shared/types";
-3:
+3: 
 4: export interface WorkspaceContext {
 5:   workspaceId: string;
 6:   localPath: string;
 7:   gitBranch: string | null;
 8:   pushCredentialsEnabled: boolean;
 9: }
-10:
+10: 
 11: export interface AgentRunInput {
 12:   runId: string;
 13:   issueId: string;
@@ -498,7 +498,7 @@ Now let me read the other key files in parallel.
 18:   /**
 19:    * model_provider/default_model/auth_type/api_key are only meaningful for
 20:    * OpenCode (design §6.4: `-m provider/model` is mandatory on every
-21:
+21:  
 …[truncated]
   ```
   </details>
@@ -520,7 +520,7 @@ Now reading the repositories, errors, routes, and migrations in parallel:
 3: import { RunRole as RR, RunDispatchSource as RDS, RunPurpose } from "@personahub/shared/types";
 4: import { generateRunId } from "../id.js";
 5: import { isActiveGraphAttemptConflict, GraphConstraintError } from "../db/sqlite-errors.js";
-6:
+6: 
 7: export interface RunCreateInput {
 8:   /** Pre-generated id — lets a caller build content that must reference the Run's own id (e.g. validator context) before the row exists, so the row can be created once with final content instead of insert-the
 …[truncated]
@@ -540,7 +540,7 @@ Now reading the repositories, errors, routes, and migrations in parallel:
 1: import type Database from "better-sqlite3";
 2: import type { Workspace, WorkspaceLockState } from "@personahub/shared/types";
 3: import { generateWorkspaceId } from "../id.js";
-4:
+4: 
 5: export interface WorkspaceCreateInput {
 6:   project_id: string;
 7:   local_path: string;
@@ -548,12 +548,12 @@ Now reading the repositories, errors, routes, and migrations in parallel:
 9:   git_branch: string | null;
 10:   lock_state: WorkspaceLockState;
 11: }
-12:
+12: 
 13: export interface WorkspaceUpdateInput {
 14:   git_branch: string | null;
 15:   updated_at: string;
 16: }
-17:
+17: 
 18: interface WorkspaceRow {
 19:   id: string;
 20:   project_id: string;
@@ -581,12 +581,12 @@ Now reading the repositories, errors, routes, and migrations in parallel:
 1: import type Database from "better-sqlite3";
 2: import type { Issue, IssueType, IssueStatus, IssuePriority } from "@personahub/shared/types";
 3: import { generateIssueId } from "../id.js";
-4:
+4: 
 5: export interface IssueUpdateStatusInput {
 6:   status: IssueStatus;
 7:   updatedAt: string;
 8: }
-9:
+9: 
 10: export interface IssueCreateInput {
 11:   project_id: string;
 12:   workspace_id: string;
@@ -599,7 +599,7 @@ Now reading the repositories, errors, routes, and migrations in parallel:
 19:   priority: IssuePriority;
 20:   labels: string[];
 21: }
-22:
+22: 
 23: export interface IssueCompareAndSetPatch {
 24:   validation_roun
 …[truncated]
@@ -611,13 +611,13 @@ Now reading the repositories, errors, routes, and migrations in parallel:
 - **tool**: `read({"filePath": "D:\\Projects\\personahub\\server\\src\\api\\routes\\adapters.ts"})`
 
 
-> [reasoning] I need a method to list Validating issues with `validation_dispatch_due_at IS NOT NULL` (regardless of whether due). Let me check - there's `listValidatingWithDueBefore` which is for the scheduler. For health, I need ALL validating issues with due_at not null. I can query directly via db, or I may need to add a repository method. Let me see the design - it says "直接查询 `issues` 表". I can query directly via db in the service. Actually, looking at the design more carefully, it says I should query `SELECT * FROM issues WHERE status = 'Validating' AND validation_dispatch_due_at IS NOT NULL`.
+> [reasoning] I need a method to list Validating issues with `validation_dispatch_due_at IS NOT NULL` (regardless of whether due). Let me check - there's `listValidatingWithDueBefore` which is for the scheduler. For health, I need ALL validating issues with due_at not null. I can query directly via db, or I may need to add a repository method. Let me see the design - it says "直接查询 `issues` 表". I can query directly via db in the service. Actually, looking at the design more carefully, it says I should query `SELECT * FROM issues WHERE status = 'Validating' AND validation_dispatch_due_at IS NOT NULL`. 
 
 I have two options:
 1. Add a new method to IssueRepository
 2. Query directly via db in the RuntimeHealthService
 
-The design says "直接查询 issues 表" - I think adding a repo method is cleaner and matches conventions. But the task says I can create new runtime-health files. Let me check if I can add a method to issue.ts - the instructions say "You MAY edit run-dispatch.ts, adapter-config.ts, adapter-failure-reprobe.ts, and create new runtime-health files."
+The design says "直接查询 issues 表" - I think adding a repo method is cleaner and matches conventions. But the task says I can create new runtime-health files. Let me check if I can add a method to issue.ts - the instructions say "You MAY edit run-dispatch.ts, adapter-config.ts, adapter-failure-reprobe.ts, and create new runtime-health files." 
 
 Hmm, issue.ts isn't in the allowed list. But adding a read-only query method to IssueRepository seems reasonable and necessary. Let me re-read the constraints.
 
@@ -629,7 +629,7 @@ This is a constraint on what I can edit. The issue.ts repository is not explicit
 
 Option 2 is cleaner - `listByStatus` already exists and returns Issues with all fields including `validation_dispatch_due_at`. I can filter in the service. This avoids touching issue.ts and reuses existing repo methods. Let me go with option 2.
 
-Wait, but `listByStatus` returns ALL validating issues globally, not scoped to a project. The design says I should query issues and group by workspace_id. For health scoped to a project, I need to filter by project. Let me check - `issueRepo.list(projectId)` returns all issues for a project. But that's not filtered by status.
+Wait, but `listByStatus` returns ALL validating issues globally, not scoped to a project. The design says I should query issues and group by workspace_id. For health scoped to a project, I need to filter by project. Let me check - `issueRepo.list(projectId)` returns all issues for a project. But that's not filtered by status. 
 
 Actually, for the health service, I need: issues WHERE status='Validating' AND validation_dispatch_due_at IS NOT NULL, scoped to the project (or workspace). I can:
 - Use `issueRepo.list(projectId)` to get all project issues, then filter for status=Validating && validation_dispatch_due_at != null in memory. This is a read-only approach using existing repo methods.
@@ -653,15 +653,15 @@ Reading more key files in parallel:
 4: import { AdapterAuthType, AgentCapability } from "@personahub/shared/types";
 5: import { getProviderMetadata } from "../../runtime/provider-metadata.js";
 6: import { parseRequestBody } from "../errors.js";
-7:
+7: 
 8: export interface AdapterRoutesOptions {
 9:   adapterConfigService: AdapterConfigService;
 10: }
-11:
+11: 
 12: /**
 13:  * Route-boundary schemas (docs/decisions/0005: "只做参数校验（zod）") — the
 14:  * service layer trusts these types once past this point. Every field a
-15:  * malformed body could send with the wrong JS type (a number
+15:  * malformed body could send with the wrong JS type (a number 
 …[truncated]
   ```
   </details>
@@ -679,7 +679,7 @@ Reading more key files in parallel:
 1: import type { ZodType } from "zod";
 2: import { ErrorCode } from "@personahub/shared/errors";
 3: import type { ApiError as ApiErrorInterface } from "@personahub/shared/errors";
-4:
+4: 
 5: export class AppError extends Error implements ApiErrorInterface {
 6:   constructor(
 7:     public code: ErrorCode,
@@ -691,11 +691,11 @@ Reading more key files in parallel:
 13:     this.name = "AppError";
 14:   }
 15: }
-16:
+16: 
 17: /**
 18:  * design docs/decisions/0005 §route handler contract ("只做参数校验（zod）"):
 19:  * TypeScript `as` casts on `request.body` have zero runtime effect — a
-20:  * wrong-typed field (a number where a string is
+20:  * wrong-typed field (a number where a string is 
 …[truncated]
   ```
   </details>
@@ -712,7 +712,7 @@ Reading more key files in parallel:
 <content>
 1: import type Database from "better-sqlite3";
 2: import type { AdapterStatus } from "@personahub/shared/types";
-3:
+3: 
 4: /**
 5:  * Workspace-aware adapter availability override (schema v7). Deliberately
 6:  * NOT the single source of truth for adapter status — `agent_configs.status`
@@ -740,7 +740,7 @@ Reading more key files in parallel:
 2: import type { AdapterStatus, AgentCapability } from "@personahub/shared/types";
 3: import { AdapterStatus as AS, AdapterAuthType, AgentCapability as AC } from "@personahub/shared/types";
 4: import { generateAdapterConfigId } from "../id.js";
-5:
+5: 
 6: /**
 7:  * Pure capability check, shared by manual routing (Phase 7) and the automatic
 8:  * ValidatorSelector (T028) — one true-source function, not two independently
@@ -766,7 +766,7 @@ Reading more key files in parallel:
 2: import type { AgentConfigRecord } from "../repositories/agent-config.js";
 3: import { hasCapability } from "../repositories/agent-config.js";
 4: import type { AdapterWorkspaceStatusRecord } from "../repositories/adapter-workspace-status.js";
-5:
+5: 
 6: /**
 7:  * Single place that merges the Project-global baseline with a workspace
 8:  * override (schema v7) — every availability check (resolver, validator
@@ -789,7 +789,7 @@ Reading more key files in parallel:
 <content>
 1: import type { AdapterConfig } from "@personahub/shared/types";
 2: import type { AgentConfigRecord } from "./agent-config.js";
-3:
+3: 
 4: /**
 5:  * T020: explicit secret-safe DTO builder. Every field is listed by name —
 6:  * deliberately NOT `{...record, api_key: undefined}` (design §4.2 forbids that
@@ -828,11 +828,11 @@ Now reading migrations, project repo, and an existing integration test for patte
 9: import { SCHEMA_V8 } from "./schema-v8.js";
 10: import { SCHEMA_V9 } from "./schema-v9.js";
 11: import { SCHEMA_V10 } from "./schema-v10.js";
-12:
+12: 
 13: export function applyMigrations(db: Database.Database): void {
 14:   db.exec(`CREATE TABLE IF NOT EXISTS schema_version (
 15:     version INTEGER PRIMARY KEY,
-16:     applied_at
+16:     applied_at 
 …[truncated]
   ```
   </details>
@@ -850,14 +850,14 @@ Now reading migrations, project repo, and an existing integration test for patte
 1: import type Database from "better-sqlite3";
 2: import type { Project } from "@personahub/shared/types";
 3: import { generateProjectId } from "../id.js";
-4:
+4: 
 5: export type SetDefaultAdapterResult =
 6:   | { success: true }
 7:   | { success: false; reason: "adapter_not_found" | "cross_project" | "unavailable" };
-8:
+8: 
 9: export class ProjectRepository {
 10:   constructor(private db: Database.Database) {}
-11:
+11: 
 12:   create(name: string, description: string | null): Project {
 13:     const id = generateProjectId();
 14:     const now = new Date().toISOString();
@@ -912,7 +912,7 @@ Let me read the queue-drain-eligibility test (the regression test) and an adapte
 1: import { describe, it, expect, beforeEach, afterEach } from "vitest";
 2: import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
 3: import { IssueStatus, RunRole, RunDispatchSource, RunStatus, AdapterStatus, AgentCapability } from "@personahub/shared/types";
-4:
+4: 
 5: function setupFixture(services: TestServices, tempDir: string) {
 6:   const project = services.projectService.create("Test");
 7:   services.workspaceService.bind(project.id, tempDir);
@@ -1030,10 +1030,10 @@ Let me read the adapter registry and the shared types index to understand Run/Is
 <type>file</type>
 <content>
 1: import type { AgentAdapter } from "./types.js";
-2:
+2: 
 3: export class AgentAdapterRegistry {
 4:   private adapters = new Map<string, AgentAdapter>();
-5:
+5: 
 6:   /**
 7:    * Replaces any existing registration for the same provider. This is the
 8:    * long-standing behavior the test suite already depends on pervasively:
@@ -1068,7 +1068,7 @@ Let me read the adapter registry and the shared types index to understand Run/Is
 10: import graphRoutes from "./routes/graph.js";
 11: import intakeRoutes from "./routes/intake.js";
 12: import type { GraphRuntimeService } from "../services/graph-runtime.js";
-13: import type { GraphRunRepository
+13: import type { GraphRunRepository 
 …[truncated]
   ```
   </details>
@@ -1160,7 +1160,7 @@ D:\Projects\personahub\
 101:   created_at: string;
 102:   updated_at: string;
 103: }
-104:
+104: 
 105: export enum IssueStatus {
 106:   Inbox = "Inbox",
 107:   Ready = "Ready",
@@ -1169,24 +1169,24 @@ D:\Projects\personahub\
 110:   Done = "Done",
 111:   Blocked = "Blocked",
 112: }
-113:
+113: 
 114: export enum IssueType {
 115:   Coding = "coding",
 116: }
-117:
+117: 
 118: export enum IssuePriority {
 119:   Low = "low",
 120:   Normal = "normal",
 121:   High = "high",
 122: }
-123:
+123: 
 124: export enum ThreadType {
 125:   Primary = "primary",
 126:   Room = "room",
 127:   Incident = "incident",
 128:   Council = "council",
 129: }
-130:
+130: 
 131: export enum ThreadEventType {
 132:   IssueCreated = "issue.created",
 133:   R
@@ -1208,7 +1208,7 @@ D:\Projects\personahub\
 201:   thread_type: ThreadType;
 202:   title: string;
 203: }
-204:
+204: 
 205: export enum RunStatus {
 206:   Queued = "queued",
 207:   Running = "running",
@@ -1217,7 +1217,7 @@ D:\Projects\personahub\
 210:   Interrupted = "interrupted",
 211:   Cancelled = "cancelled",
 212: }
-213:
+213: 
 214: export enum FailureReason {
 215:   AdapterExitNonzero = "adapter_exit_nonzero",
 216:   SpawnFailed = "spawn_failed",
@@ -1242,7 +1242,7 @@ D:\Projects\personahub\
 <content>
 1: import type { ValidationFindingSeverity, VerificationKind } from "./trace.js";
 2: import type { IssueStatus, RunSummary, Issue, Run } from "./index.js";
-3:
+3: 
 4: // Extended by F005: adds a persisted, non-null Consult value for ad-hoc
 5: // Runs that don't drive the Issue state machine. Never write null/implementation
 6: // as a stand-in for consult — see design.md §4.1.
@@ -1284,7 +1284,7 @@ Let me read the fake adapter and check server/src/index.ts for wiring patterns:
 9: } from "../types.js";
 10: import { DEFAULT_EXECUTION_TIMEOUT_MS } from "../types.js";
 11: import type { RunTraceSignal } from "@personahub/shared/types";
-12:
+12: 
 13: export interface FakeAdapterOptions {
 14:   outputDelayMs?: number;
 15:   outputChunks?: string[];
@@ -1378,9 +1378,9 @@ task(
 6: import { ErrorCode } from "@personahub/shared/errors";
 7: import { AdapterAuthType, AgentCapability, AdapterStatus, CliProvider } from "@personahub/shared/types";
 8: import type { AgentAdapter, AdapterValidationResult } from "../../src/runtime/types.js";
-9:
+9: 
 10: /**
-11:  * T073/T074/T075/T076/T080: HTTP-level tests
+11:  * T073/T074/T075/T076/T080: HTTP-level tests 
 …[truncated]
   ```
   </details>
@@ -1427,9 +1427,9 @@ D:\Projects\personahub\server\tests\unit\opencode-protocol-o
 1: import { describe, it, expect } from "vitest";
 2: import { classifyRunRequest } from "../../src/services/run-routing-classifier.js";
 3: import { IssueStatus, RunPurpose, RunRole, AgentCapability } from "@personahub/shared/types";
-4:
+4: 
 5: // T051: design §7.2 matrix — pure classifier, no CLI/repo needed.
-6:
+6: 
 7: describe("classifyRunRequest (T051/T052) - expected role / purpose matrix", () => {
 8:   describe("terminal statuses reject all Runs", () => {
 9:     it("rejects Done regardless of purpose/capability", () => {
@@ -1495,18 +1495,18 @@ private async startNextQueuedRun(workspaceId: string): Promise<void> {
     for (const run of queuedRuns) {
       const issue = this.issueRepo.getById(run.issue_id);
       if (!issue) continue;  // -> invalid_queued_run (skip/silently drop)
-
+      
       if (issue.status === IS.Blocked) {
         if (run.role === RunRole.GraphNode) continue;  // -> waiting_for_recovery (F006 deliberately keeps blocked graph nodes queued)
         this.runService.cancelQueued(run.id, "issue_blocked_before_start");  // -> invalid_queued_run
         continue;
       }
-
+      
       if (issue.status === IS.Done) {
         this.runService.cancelQueued(run.id, "issue_state_changed_before_start");  // -> invalid_queued_run
         continue;
       }
-
+      
       if (
         run.role === RunRole.Implementation &&
         issue.status !== IS.Inbox &&
@@ -1516,7 +1516,7 @@ private async startNextQueuedRun(workspaceId: string): Promise<void> {
         this.runService.cancelQueued(run.id, "issue_state_changed_before_start");  // -> invalid_queued_run
         continue;
       }
-
+      
       if (run.role === RunRole.Validator) {
         if (issue.status !== IS.Validating) {
           this.runService.cancelQueued(run.id, "issue_state_changed_before_start");  // -> invalid_queued_run
@@ -1529,7 +1529,7 @@ private async startNextQueuedRun(workspaceId: string): Promise<void> {
         }
       }
       // consult: eligible on Inbox/Ready/Running/Validating (Done/Blocked already handled above)
-
+      
       // At this point, the run is eligible -> eligible_but_not_running
       const lockAcquired = this.workspaceLockService.acquire(workspaceId, run.id);
       if (!lockAcquired) return;
@@ -1546,16 +1546,16 @@ export type QueuedRunClassification = "eligible_but_not_running" | "waiting_for_
 export function classifyQueuedRun(run: Run, issue: Issue | null): QueuedRunClassification {
   // issue null -> invalid (startNextQueuedRun does `if (!issue) continue` = skip)
   if (!issue) return "invalid_queued_run";
-
+  
   // issue.status Blocked
   if (issue.status === IssueStatus.Blocked) {
     if (run.role === RunRole.GraphNode) return "waiting_for_recovery"; // F006 deliberately keeps blocked graph nodes queued
     return "invalid_queued_run"; // they'd be cancelled
   }
-
+  
   // issue.status Done
   if (issue.status === IssueStatus.Done) return "invalid_queued_run";
-
+  
   // role Implementation and status not in (Inbox, Ready, Running)
   if (
     run.role === RunRole.Implementation &&
@@ -1565,14 +1565,14 @@ export function classifyQueuedRun(run: Run, issue: Issue | null): QueuedRunClass
   ) {
     return "invalid_queued_run";
   }
-
+  
   // role Validator
   if (run.role === RunRole.Validator) {
     if (issue.status !== IssueStatus.Validating) return "invalid_queued_run";
     const expectedRound = issue.validation_round_count + 1;
     if (run.validation_round !== expectedRound) return "invalid_queued_run";
   }
-
+  
   // consult: eligible on Inbox/Ready/Running/Validating (Done/Blocked already handled above)
   // otherwise -> eligible
   return "eligible_but_not_running";
@@ -1598,7 +1598,7 @@ private async startNextQueuedRun(workspaceId: string): Promise<void> {
     for (const run of queuedRuns) {
       const issue = this.issueRepo.getById(run.issue_id);
       const classification = classifyQueuedRun(run, issue);
-
+      
       if (classification === "invalid_queued_run") {
         // issue null: startNextQueuedRun does `if (!issue) continue` = skip silently (no cancel)
         if (!issue) continue;
@@ -1610,12 +1610,12 @@ private async startNextQueuedRun(workspaceId: string): Promise<void> {
         }
         continue;
       }
-
+      
       if (classification === "waiting_for_recovery") {
         // F006 deliberately keeps blocked graph nodes queued - skip without cancelling
         continue;
       }
-
+      
       // classification === "eligible_but_not_running"
       const lockAcquired = this.workspaceLockService.acquire(workspaceId, run.id);
       if (!lockAcquired) return;
@@ -1735,7 +1735,7 @@ Now let me think about the cancel reason. The original uses string literals. In 
 
 This is correct because:
 - issue null -> no cancel (just continue)
-- Blocked + non-GraphNode -> "issue_blocked_before_start"
+- Blocked + non-GraphNode -> "issue_blocked_before_start"  
 - Done -> "issue_state_changed_before_start"
 - Implementation + wrong status (Done already handled, so status is Validating) -> "issue_state_changed_before_start"
 - Validator + wrong status (Done/Blocked already handled, so status is Inbox/Ready/Running) -> "issue_state_changed_before_start"
@@ -2002,7 +2002,7 @@ export class RuntimeHealthService {
       const dueAt = issue.validation_dispatch_due_at!;
       const dueTime = Date.parse(dueAt);
       const remainingMs = dueTime - now; // positive if not yet due
-
+      
       if (dueTime > now - VALIDATION_DISPATCH_GRACE_MS) {
         // waiting_for_validation_due (normal; not yet due or within grace)
         diagnostics.push({
@@ -2047,7 +2047,7 @@ export class RuntimeHealthService {
 }
 ```
 
-Hmm, but using `any[]` and a manual `mapIssueRow` is ugly and duplicates the Issue mapping logic. Let me reconsider. The design says "直接查询 `issues` 表" but I should reuse existing repo methods where possible.
+Hmm, but using `any[]` and a manual `mapIssueRow` is ugly and duplicates the Issue mapping logic. Let me reconsider. The design says "直接查询 `issues` 表" but I should reuse existing repo methods where possible. 
 
 Actually, I can use `issueRepo.listByStatus(IssueStatus.Validating)` which returns all Validating issues globally, then filter in the service for `validation_dispatch_due_at !== null` and project/workspace scope. This avoids `any` and duplicates no mapping logic. The only downside is it fetches all Validating issues globally, but for v0.2 this is fine.
 
@@ -2065,7 +2065,7 @@ const scopedValidating = allValidating.filter(
 );
 ```
 
-This is clean, reuses existing repo methods, and avoids `any`.
+This is clean, reuses existing repo methods, and avoids `any`. 
 
 Now let me also think about the `held_ms` computation. The design says:
 - `held_ms (now - locked_at, null if not locked/illegal)`
@@ -2157,7 +2157,7 @@ Actually, looking more carefully at the design's stale_lock table:
 3. holder running, duration > threshold -> stale_lock_suspected
 4. holder running, locked_at invalid -> lock_timestamp_invalid
 
-The only states are: missing, terminal, or running. A queued holder is an edge case not covered. I'll treat it the same as "running" for the purpose of duration checking (since it's non-terminal). Actually no - let me think about this differently. The design says "持有者仍 running" for cases 3 and 4. A queued run is not running. But it's also not terminal, so cleanupStaleLocks() wouldn't release it.
+The only states are: missing, terminal, or running. A queued holder is an edge case not covered. I'll treat it the same as "running" for the purpose of duration checking (since it's non-terminal). Actually no - let me think about this differently. The design says "持有者仍 running" for cases 3 and 4. A queued run is not running. But it's also not terminal, so cleanupStaleLocks() wouldn't release it. 
 
 I think the safest approach is: if holder is non-terminal (including queued), treat it the same as running for the duration check. This is because the design's intent is "the holder is still active" vs "the holder is gone/terminal". Let me adjust:
 
@@ -2393,29 +2393,29 @@ I now have a thorough understanding of all the code. Let me check the RunService
 <path>D:\Projects\personahub\server\src\services\run.ts</path>
 <type>file</type>
 <content>
-150:
+150: 
 151:     return result.run;
 152:   }
-153:
+153: 
 154:   cancelQueued(runId: string, reason: string): Run | null {
 155:     const run = this.runRepo.getById(runId);
 156:     if (!run) {
 157:       throw new AppError(ErrorCode.RUN_NOT_FOUND, "Run not found.");
 158:     }
-159:
+159: 
 160:     if (isTerminalStatus(run.status)) {
 161:       return run;
 162:     }
-163:
+163: 
 164:     if (run.status !== RS.Queued) {
 165:       return null;
 166:     }
-167:
+167: 
 168:     const result = this.runRepo.transitionStatus(runId, RS.Queued, RS.Cancelled, {});
 169:     if (!result.success || !result.run) {
 170:       return null;
 171:     }
-172:
+172: 
 173:     this.threadEventService.writeAndBroadcast(
 174:       result.run.thread_id,
 17
@@ -2587,7 +2587,7 @@ Now adding `healthSnapshot()` to `AdapterConfigService`:
 59:     const timeout = new Promise<void>((resolve) => setTimeout(resolve, timeoutMs));
 60:     await Promise.race([pending, timeout]);
 61:   }
-62:
+62: 
 63:   /** Probe first; assign the deferred default only if the original snapshot is still current. */
 64:   private async autoValidateAfterCreate(
 65:     adapterId: string,
@@ -2699,7 +2699,7 @@ Wrote file successfully.
 …[truncated])`
 
 
-> [reasoning] Wait, I used a `_queuedRuns` field on the workspace snapshot object which is a hack. The RuntimeHealthSnapshot type doesn't have this field. I need to rethink this approach.
+> [reasoning] Wait, I used a `_queuedRuns` field on the workspace snapshot object which is a hack. The RuntimeHealthSnapshot type doesn't have this field. I need to rethink this approach. 
 
 The issue is that `collectWorkspaces` returns the public snapshot, but `collectWorkspaceDiagnostics` needs access to the queued runs. I shouldn't mutate the public snapshot type.
 
@@ -3020,8 +3020,8 @@ Actually, for the integration test, I'll use the test helpers directly. Let me l
 Let me also think about the adapter creation. The queue-drain-eligibility test does:
 ```typescript
 const implAdapter = services.agentConfigRepo.create({
-  project_id: project.id, name: "Impl", role: "implementation",
-  cli_provider: "fake", command: "echo", args: [],
+  project_id: project.id, name: "Impl", role: "implementation", 
+  cli_provider: "fake", command: "echo", args: [], 
   capability_tags: [], default_model: null, status: AdapterStatus.Available
 });
 ```
@@ -3193,8 +3193,7 @@ All diagnostics clean. Now running the tests. First the unit classifier test and
   <details><summary>tool output</summary>
 
   ```text
-[31;1mhead: [31;1mThe term 'head' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
-
+[31;1mhead: [31;1mThe term 'head' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
 [31;1m[31;1mCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.[0m
   ```
   </details>
@@ -3206,16 +3205,11 @@ All diagnostics clean. Now running the tests. First the unit classifier test and
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/unit/queue-classifier.test.ts[2m > [22mclassifyQueuedRun (T041b)[2m > [22missue null[2m > [22mreturns invalid_queued_run when issue is null[32m 2[2mms[22m[39m
-
- [32m�?[39m server/tests/unit/queue-classifier.test.ts[2m > [22mclassifyQueuedRun (T041b)[2m > [22missue Blocked[2m > [22mreturns waiting_for_recovery for GraphNode role[32m 0[2mms[22m[39m
-
- [32m�?[39m server/tests/unit/queue-classifier.test.ts[2m > [22mclassifyQueuedRun (T041b)[2m > [22missue Blocked[2m > [22mreturns invalid_queued_run for Implementation role[32m 0[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/unit/queue-classifier.test.ts[2m > [22mclassifyQueuedRun (T041b)[2m > [22missue null[2m > [22mreturns invalid_queued_run when issue is null[32m 2[2mms[22m[39m
+ [32m�?[39m server/tests/unit/queue-classifier.test.ts[2m > [22mclassifyQueuedRun (T041b)[2m > [22missue Blocked[2m > [22mreturns waiting_for_recovery for GraphNode role[32m 0[2mms[22m[39m
+ [32m�?[39m server/tests/unit/queue-classifier.test.ts[2m > [22mclassifyQueuedRun (T041b)[2m > [22missue Blocked[2m > [22mreturns invalid_queued_run for Implementation role[32m 0[2mms[22m[39m
  [32m�?[39m server/tests/unit/queue-classifier.test.ts[2m > [22mclassifyQueuedRun (T041b)[2m > [22missue Blocked[2m
 …[truncated]
   ```
@@ -3234,16 +3228,11 @@ All 43 tests pass (unit classifier + drain regression). Now running the runtime-
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040 - five categories collected[2m > [22mcollects schema, background, workspaces (with adapters under workspace), and queue[32m 279[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports behind when expected > actual[32m 220[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports ahead when actual > expected[32m 208[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040 - five categories collected[2m > [22mcollects schema, background, workspaces (with adapters under workspace), and queue[32m 279[2mms[22m[39m
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports behind when expected > actual[32m 220[2mms[22m[39m
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports ahead when actual > expected[32m 208[2mms[22m[39m
  [32m�?[39m server/
 …[truncated]
   ```
@@ -3508,7 +3497,7 @@ Let me rewrite the test file's helper functions and the affected test cases.
 Actually, let me just update the specific parts that need fixing. Let me do a comprehensive fix:
 
 1. Update `setupProject` to return `threadId`
-2. Update `createQueuedRun` to accept `threadId`
+2. Update `createQueuedRun` to accept `threadId` 
 3. Update `setupLockedWorkspace` to use real adapter ID
 4. Update T042 test to use real adapter ID
 5. Update all callers of `createQueuedRun` to pass `threadId`
@@ -3543,9 +3532,9 @@ Now fixing the `setupLockedWorkspace` function and all `createQueuedRun` callers
 <content>
 225:       }
 226:     });
-227:
+227: 
 228:     const THRESHOLD = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
-229:
+229: 
 230:     function setupLockedWorkspace(holderStatus: RunStatus, lockedAtOffsetMs: number | null) {
 231:       const { project, workspace, issue } = setupProject(services, tempDir);
 232:       createAdapter(services, project.id, "Adapter");
@@ -3557,7 +3546,7 @@ Now fixing the `setupLockedWorkspace` function and all `createQueuedRun` callers
 238:         instructions: "",
 239:         status: holderStatus,
 240:         role: RunRole.Implementation,
-241:
+241:   
 …[truncated]
   ```
   </details>
@@ -3675,7 +3664,7 @@ D:\Projects\personahub\server\tests\integration\runtime-health.test.ts
   310: const { project, workspace, issue } = setupProject(services, tempDir);
   333: const { project, workspace, issue } = setupProject(services, tempDir);
   354: const { project, workspace, issue } = setupProject(services, tempDir);
-  365: const { project, workspace, issue } =
+  365: const { project, workspace, issue } = 
 …[truncated]
   ```
   </details>
@@ -3774,7 +3763,7 @@ Now fixing the T042 test's fake adapter ID:
 475:       const { project, workspace, issue, threadId } = setupProject(services, tempDir);
 476:       createAdapter(services, project.id, "Adapter");
 477:       createQueuedRun(services, issue.id, workspace.id, "ac_any");
-478:
+478: 
 479:       const probeCountBefore = services.adapterConfigService.healthSnapshot().pendingProbeCount;
 480:       const reprobeCountBefore = services.runDispatchService.healthSnapshot().pendingReprobeCount;
 481:       const wsBefore = services.db.prepare("SELECT lock_state, locked_by_run_id, locked_at FROM workspac
@@ -3817,16 +3806,11 @@ Now let me re-run the integration test:
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040 - five categories collected[2m > [22mcollects schema, background, workspaces (with adapters under workspace), and queue[32m 152[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports behind when expected > actual[32m 111[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports ahead when actual > expected[32m 113[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040 - five categories collected[2m > [22mcollects schema, background, workspaces (with adapters under workspace), and queue[32m 152[2mms[22m[39m
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports behind when expected > actual[32m 111[2mms[22m[39m
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports ahead when actual > expected[32m 113[2mms[22m[39m
  [32m�?[39m server/
 …[truncated]
   ```
@@ -3839,9 +3823,9 @@ Now let me re-run the integration test:
 
 > [reasoning] Good progress! Down to 3 failures:
 
-1. **"locked_at illegal + holder running: lock_timestamp_invalid (no release suggestion)"** - The test asserts `not.toMatch(/release/i)` but the suggested_action contains "do not release the lock". The word "release" appears in the negative context "do not release". The test is checking that the suggested_action doesn't contain the word "release" (case-insensitive). But my suggested_action says "do not release the lock while the holder is still running." which does contain "release".
+1. **"locked_at illegal + holder running: lock_timestamp_invalid (no release suggestion)"** - The test asserts `not.toMatch(/release/i)` but the suggested_action contains "do not release the lock". The word "release" appears in the negative context "do not release". The test is checking that the suggested_action doesn't contain the word "release" (case-insensitive). But my suggested_action says "do not release the lock while the holder is still running." which does contain "release". 
 
-   The design says: "不给出释放类建议" (don't give release-type suggestions). The intent is that the action shouldn't suggest releasing the lock. My current text says "do not release" which is actually telling the user NOT to release - it's the correct intent but contains the word "release".
+   The design says: "不给出释放类建议" (don't give release-type suggestions). The intent is that the action shouldn't suggest releasing the lock. My current text says "do not release" which is actually telling the user NOT to release - it's the correct intent but contains the word "release". 
 
    I should rephrase to avoid the word "release" entirely. Something like: "Investigate the run and lock record manually; the holder is still running and the workspace mutex must not be removed."
 
@@ -3857,7 +3841,7 @@ Now let me re-run the integration test:
      throw new Error("Invariant violation: GraphNode runs require node_run_id, and only GraphNode runs may set it.");
    }
    ```
-
+   
    So GraphNode runs MUST have a `node_run_id`. And the `runs` table has a FK constraint on `node_run_id` referencing `node_runs(id)`. So I need to create a real node_run first.
 
    Let me look at how the queue-drain-eligibility test handles graph nodes. Actually, looking at that test, it doesn't create graph node runs. Let me look at the graph tests for how to create a node_run.
@@ -3879,7 +3863,7 @@ Down to 3 failures. Let me fix them: 1) rephrase suggested_action to avoid "rele
 <content>
 305:     });
 306:   });
-307:
+307: 
 308:   describe("T041b/T041c - queue classifier in health", () => {
 309:     it("Blocked graph node queued: NOT reported as queue_starved, reported as waiting_for_recovery", () => {
 310:       const { project, workspace, issue, threadId } = setupProject(services, tempDir);
@@ -3911,7 +3895,7 @@ Let me fix all the `thread_id: "thread_test"` occurrences in direct `runRepo.cre
 
 For the GraphNode run, I need to create a real node_run. Let me check the NodeRunRepository to see how to create one.
 
-Actually, looking at the test more carefully, the GraphNode test creates a graph run with `node_run_id: "nr_test"`. The `runs` table has `node_run_id TEXT REFERENCES node_runs(id)`. So I need a real node_run.
+Actually, looking at the test more carefully, the GraphNode test creates a graph run with `node_run_id: "nr_test"`. The `runs` table has `node_run_id TEXT REFERENCES node_runs(id)`. So I need a real node_run. 
 
 Let me look at the NodeRunRepository to see how to create a node_run. But actually, creating a full graph run + node_run is complex. Let me check if there's a simpler way.
 
@@ -4084,16 +4068,11 @@ Now re-running the tests:
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040 - five categories collected[2m > [22mcollects schema, background, workspaces (with adapters under workspace), and queue[32m 136[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports behind when expected > actual[32m 115[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports ahead when actual > expected[32m 145[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040 - five categories collected[2m > [22mcollects schema, background, workspaces (with adapters under workspace), and queue[32m 136[2mms[22m[39m
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports behind when expected > actual[32m 115[2mms[22m[39m
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT040d - schema_version_mismatch[2m > [22mreports ahead when actual > expected[32m 145[2mms[22m[39m
  [32m�?[39m server/
 …[truncated]
   ```
@@ -4112,8 +4091,7 @@ All 33 tests pass. Now running typecheck and final LSP diagnostics:
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/server@0.1.0 typecheck
-
+> @personahub/server@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -4129,12 +4107,9 @@ Typecheck passes clean. Let me run all related tests one final time to confirm e
   <details><summary>tool output</summary>
 
   ```text
-[32m�?[39m server/tests/integration/queue-drain-eligibility.test.ts[2m > [22mQueue drain eligibility (T062)[2m > [22mordering[2m > [22mcontinues scanning after cancelling an ineligible queued run[32m 262[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT041 - stale_lock grading (prerequisite: adapter executionTimeoutMs)[2m > [22mover threshold: stale_lock_suspected[32m 137[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT041 - stale_lock grading (prerequisite: adapter executionTimeoutMs)[2m > [22mlocked_at illegal + holder missing: stale_lock_confirmed[32m 120[2mms[22m[39m
-
+[32m�?[39m server/tests/integration/queue-drain-eligibility.test.ts[2m > [22mQueue drain eligibility (T062)[2m > [22mordering[2m > [22mcontinues scanning after cancelling an ineligible queued run[32m 262[2mms[22m[39m
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT041 - stale_lock grading (prerequisite: adapter executionTimeoutMs)[2m > [22mover threshold: stale_lock_suspected[32m 137[2mms[22m[39m
+ [32m�?[39m server/tests/integration/runtime-health.test.ts[2m > [22mRuntimeHealth (F008 Phase 4)[2m > [22mT041 - stale_lock grading (prerequisite: adapter executionTimeoutMs)[2m > [22mlocked_at illegal + holder missing: stale_lock_confirmed[32m 120[2mms[22m[39m
  [32m�?[39m server/tests/integration/run
 …[truncated]
   ```
@@ -4304,20 +4279,13 @@ No diagnostics found
   <details><summary>tool output</summary>
 
   ```text
-[32m�?[39m server/tests/integration/runtime-health.test.ts [2m([22m[2m33 tests[22m[2m)[22m[33m 4585[2mms[22m[39m
-
-   [33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT040e - same adapter differs across workspaces[2m > [22mpresents adapter separately per workspace, not merged [33m 333[2mms[22m[39m
-
-   [33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT043 - route[2m > [22mvalid workspace_id returns health [33m 435[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
-
-[2m   Start at [22m 18:51:24
-
+[32m�?[39m server/tests/integration/runtime-health.test.ts [2m([22m[2m33 tests[22m[2m)[22m[33m 4585[2mms[22m[39m
+   [33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT040e - same adapter differs across workspaces[2m > [22mpresents adapter separately per workspace, not merged [33m 333[2mms[22m[39m
+   [33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT043 - route[2m > [22mvalid workspace_id returns health [33m 435[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m   Start at [22m 18:51:24
 [2m   Duration [22m 12.31s[2m (transform 1.38s, setup 0ms, collect 5.25s, tests 4.58s, environment 0ms, prepare 415ms)[22m
   ```
   </details>

@@ -1,22 +1,19 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 159
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 174
 
 ## 工具统计
 
 | 工具 | 会话数 |
 |---|---|
 
-| OpenCode | 91 |
-| Claude Code | 25 |
-| Codex CLI | 43 |
+| OpenCode | 93 |
+| Claude Code | 26 |
+| Codex CLI | 55 |
 
 ## 会话血缘树
 
-- **94595b09-befc-40b8-851e-82f1670ce165** (`claude` · 2026-07-11T14:27:58Z)
-- **1e9602d9-c067-4756-965d-c1f606ba3b57** (`claude` · 2026-07-12T03:04:57Z)
 - **personahub 初始 commit 推送至 GitHub** (`opencode` · 2026-07-12T10:31:19Z)
-- **91430198-ecd7-4460-b790-76106336c088** (`claude` · 2026-07-12T14:39:27Z)
 - **personahub 项目 F001 开发** (`opencode` · 2026-07-12T15:00:10Z)
   - Explore project structure and conventions (@explore subagent) (`opencode` · 2026-07-12T15:00:27Z)
   - Find F001 design document specifically (@explore subagent) (`opencode` · 2026-07-12T15:00:31Z)
@@ -25,7 +22,6 @@
   - Implement F001 backend: DB, repos, services, API (@Sisyphus-Junior subagent) (`opencode` · 2026-07-12T15:18:27Z)
   - Implement F001 frontend: UI components, hooks, API client (@Sisyphus-Junior subagent) (`opencode` · 2026-07-12T15:19:13Z)
   - look_at: Describe the UI layout, visual design, and whether (`opencode` · 2026-07-12T16:02:52Z)
-- **b8728fcd-913a-43b9-a220-8cf12ff55d09** (`claude` · 2026-07-14T15:23:58Z)
 - **psersonahub f002需求开发启动** (`opencode` · 2026-07-14T15:34:24Z)
   - Explore server backend structure (@explore subagent) (`opencode` · 2026-07-14T15:35:36Z)
   - Explore shared types and web frontend (@explore subagent) (`opencode` · 2026-07-14T15:35:41Z)
@@ -129,18 +125,22 @@
 - **项目结构改造方案执行** (`opencode` · 2026-08-09T15:31:04Z)
   - Implement feature-gate & doc-check scripts (@Sisyphus-Junior subagent) (`opencode` · 2026-08-09T15:37:25Z)
   - Normalize feature docs to new template (@Sisyphus-Junior subagent) (`opencode` · 2026-08-09T15:41:20Z)
+- **36ff3739-27e3-445b-b12d-1f189117baa1** (`claude` · 2026-08-10T15:38:23Z)
+- **启动项目并运行真实场景任务** (`opencode` · 2026-08-11T13:57:04Z)
+- **Agent Adapters仅能创建一个？缺少新增按钮** (`opencode` · 2026-08-11T14:07:55Z)
+- **4c330174-c9d0-41e4-86f3-8522db27f0c3** (`claude` · 2026-08-11T16:18:58Z)
+- **b423aec9-ef49-4ab7-9c82-84a1aa4bcadc** (`claude` · 2026-08-12T11:43:46Z)
+- **e33db601-0d61-45ea-9986-100fb6113347** (`claude` · 2026-08-13T13:48:24Z)
+- **3758d65f-a9cb-49fb-86a6-89f96e1c4125** (`claude` · 2026-08-13T14:38:38Z)
 
 ## 原始会话清单
 
 | 时间 | 工具 | 标题 | 模型 | 文件 |
 |---|---|---|---|---|
 | 2026-07-11T13:47:24Z | Codex CLI | rollout-2026-07-11T21-45-50-019f516d-5fe5-7680-abcb-48f330084101 | openai | `codex/rollout-2026-07-11T21-45-50-019f516d-5fe5-7680-abcb-48f330084101.md` |
-| 2026-07-11T14:27:58Z | Claude Code | 94595b09-befc-40b8-851e-82f1670ce165 | claude-sonnet-5 | `claude/94595b09-befc-40b8-851e-82f1670ce165.md` |
-| 2026-07-12T03:04:57Z | Claude Code | 1e9602d9-c067-4756-965d-c1f606ba3b57 | claude-sonnet-5 | `claude/1e9602d9-c067-4756-965d-c1f606ba3b57.md` |
 | 2026-07-12T06:37:43Z | Codex CLI | rollout-2026-07-12T14-37-20-019f550b-5a49-7fd0-b06e-3d508bb8ad41 | openai | `codex/rollout-2026-07-12T14-37-20-019f550b-5a49-7fd0-b06e-3d508bb8ad41.md` |
 | 2026-07-12T10:31:19Z | OpenCode | personahub 初始 commit 推送至 GitHub | glm-5-2-260617 | `opencode/ses_0aa1e59a1ffeaXnnfCgU23d2a8.md` |
 | 2026-07-12T10:38:14Z | Codex CLI | rollout-2026-07-12T18-34-58-019f55e4-e9fd-7420-ade1-17cdeb3bf27f | openai | `codex/rollout-2026-07-12T18-34-58-019f55e4-e9fd-7420-ade1-17cdeb3bf27f.md` |
-| 2026-07-12T14:39:27Z | Claude Code | 91430198-ecd7-4460-b790-76106336c088 | claude-sonnet-5 | `claude/91430198-ecd7-4460-b790-76106336c088.md` |
 | 2026-07-12T15:00:10Z | OpenCode | personahub 项目 F001 开发 | glm-5-2-260617 | `opencode/ses_0a92834ffffe5LOmI3ejZH0mQO.md` |
 | 2026-07-12T15:00:27Z | OpenCode | Explore project structure and conventions (@explore subagent) | deepseek-v4-flash | `opencode/ses_0a927f264ffe9JBNixK1zT7LnU.md` |
 | 2026-07-12T15:00:31Z | OpenCode | Find F001 design document specifically (@explore subagent) | deepseek-v4-flash | `opencode/ses_0a927e36dffeJB5NQr1PCHiu71.md` |
@@ -150,7 +150,6 @@
 | 2026-07-12T15:19:13Z | OpenCode | Implement F001 frontend: UI components, hooks, API client (@Sisyphus-Junior subagent) | claude-sonnet-5 | `opencode/ses_0a916c553ffeBCx7TiOR5VqTPU.md` |
 | 2026-07-12T16:02:52Z | OpenCode | look_at: Describe the UI layout, visual design, and whether | claude-haiku-4-5-20251001 | `opencode/ses_0a8eecd44ffeFrMg1E2oO6asdz.md` |
 | 2026-07-12T16:38:42Z | Codex CLI | rollout-2026-07-13T00-37-07-019f5730-7892-7783-8706-7b20f64a16e7 | openai | `codex/rollout-2026-07-13T00-37-07-019f5730-7892-7783-8706-7b20f64a16e7.md` |
-| 2026-07-14T15:23:58Z | Claude Code | b8728fcd-913a-43b9-a220-8cf12ff55d09 | claude-opus-4-8 | `claude/b8728fcd-913a-43b9-a220-8cf12ff55d09.md` |
 | 2026-07-14T15:34:24Z | OpenCode | psersonahub f002需求开发启动 | glm-5-2-260617 | `opencode/ses_09ebc25a8ffe7RrQUtTRsL8v77.md` |
 | 2026-07-14T15:35:36Z | OpenCode | Explore server backend structure (@explore subagent) | deepseek-v4-flash | `opencode/ses_09ebb0b66fferXVnSFgfkOfEjF.md` |
 | 2026-07-14T15:35:41Z | OpenCode | Explore shared types and web frontend (@explore subagent) | deepseek-v4-flash | `opencode/ses_09ebaf7f9ffe8m2kppN4RaMJIA.md` |
@@ -293,3 +292,22 @@
 | 2026-08-10T11:25:17Z | Codex CLI | rollout-2026-08-10T19-24-52-019feb6b-1791-7c63-8bb9-f3f2d989d266 | openai | `codex/rollout-2026-08-10T19-24-52-019feb6b-1791-7c63-8bb9-f3f2d989d266.md` |
 | 2026-08-10T11:26:54Z | Codex CLI | rollout-2026-08-10T19-26-29-019feb6c-942f-7c50-82ed-318f92b90984 | openai | `codex/rollout-2026-08-10T19-26-29-019feb6c-942f-7c50-82ed-318f92b90984.md` |
 | 2026-08-10T12:56:41Z | Codex CLI | rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d | openai | `codex/rollout-2026-08-10T20-56-34-019febbf-0e27-78b1-8d50-450324dbc68d.md` |
+| 2026-08-10T15:33:50Z | Codex CLI | rollout-2026-08-10T23-33-12-019fec4e-721e-79a0-b5b8-3f04d3297ead | openai | `codex/rollout-2026-08-10T23-33-12-019fec4e-721e-79a0-b5b8-3f04d3297ead.md` |
+| 2026-08-10T15:38:23Z | Claude Code | 36ff3739-27e3-445b-b12d-1f189117baa1 | claude-sonnet-5 | `claude/36ff3739-27e3-445b-b12d-1f189117baa1.md` |
+| 2026-08-10T16:47:03Z | Codex CLI | rollout-2026-08-11T00-46-59-019fec92-006f-70b1-bd18-0ff2aff57203 | openai | `codex/rollout-2026-08-11T00-46-59-019fec92-006f-70b1-bd18-0ff2aff57203.md` |
+| 2026-08-11T13:57:04Z | OpenCode | 启动项目并运行真实场景任务 | deepseek-v4-flash | `opencode/ses_00ee333baffede6uydFUJlM47Y.md` |
+| 2026-08-11T14:07:55Z | OpenCode | Agent Adapters仅能创建一个？缺少新增按钮 | deepseek-v4-flash | `opencode/ses_00ed94327ffeHdCxz1QepviVdj.md` |
+| 2026-08-11T15:29:10Z | Codex CLI | rollout-2026-08-11T23-29-04-019ff171-07cc-7333-9c09-118b16397eeb | openai | `codex/rollout-2026-08-11T23-29-04-019ff171-07cc-7333-9c09-118b16397eeb.md` |
+| 2026-08-11T16:13:35Z | Codex CLI | rollout-2026-08-12T00-13-01-019ff199-42e7-70c0-bee6-851e51881e42 | openai | `codex/rollout-2026-08-12T00-13-01-019ff199-42e7-70c0-bee6-851e51881e42.md` |
+| 2026-08-11T16:15:51Z | Codex CLI | rollout-2026-08-12T00-13-03-019ff199-475e-7852-b7d7-9db64d0e8058 | openai | `codex/rollout-2026-08-12T00-13-03-019ff199-475e-7852-b7d7-9db64d0e8058.md` |
+| 2026-08-11T16:18:58Z | Claude Code | 4c330174-c9d0-41e4-86f3-8522db27f0c3 | claude-sonnet-5 | `claude/4c330174-c9d0-41e4-86f3-8522db27f0c3.md` |
+| 2026-08-11T16:26:37Z | Codex CLI | rollout-2026-08-12T00-23-08-019ff1a2-855b-7261-9784-55c65b5f81c7 | openai | `codex/rollout-2026-08-12T00-23-08-019ff1a2-855b-7261-9784-55c65b5f81c7.md` |
+| 2026-08-12T11:17:00Z | Codex CLI | rollout-2026-08-12T19-14-43-019ff5ae-838a-75d0-bacf-f09186a6c9bb | openai | `codex/rollout-2026-08-12T19-14-43-019ff5ae-838a-75d0-bacf-f09186a6c9bb.md` |
+| 2026-08-12T11:36:39Z | Codex CLI | rollout-2026-08-12T19-15-22-019ff5af-1c13-7db0-9807-3d31a24b1d6b | openai | `codex/rollout-2026-08-12T19-15-22-019ff5af-1c13-7db0-9807-3d31a24b1d6b.md` |
+| 2026-08-12T11:43:46Z | Claude Code | b423aec9-ef49-4ab7-9c82-84a1aa4bcadc | claude-sonnet-5 | `claude/b423aec9-ef49-4ab7-9c82-84a1aa4bcadc.md` |
+| 2026-08-12T12:32:45Z | Codex CLI | rollout-2026-08-12T20-32-32-019ff5f5-c413-7a03-a3e4-b35d7b0a60fa | openai | `codex/rollout-2026-08-12T20-32-32-019ff5f5-c413-7a03-a3e4-b35d7b0a60fa.md` |
+| 2026-08-12T12:34:22Z | Codex CLI | rollout-2026-08-12T20-34-18-019ff5f7-6261-73e0-8600-ba58f8dc2ae8 | openai | `codex/rollout-2026-08-12T20-34-18-019ff5f7-6261-73e0-8600-ba58f8dc2ae8.md` |
+| 2026-08-13T13:48:24Z | Claude Code | e33db601-0d61-45ea-9986-100fb6113347 | claude-opus-5 | `claude/e33db601-0d61-45ea-9986-100fb6113347.md` |
+| 2026-08-13T14:38:38Z | Claude Code | 3758d65f-a9cb-49fb-86a6-89f96e1c4125 | claude-opus-5 | `claude/3758d65f-a9cb-49fb-86a6-89f96e1c4125.md` |
+| 2026-08-14T12:31:02Z | Codex CLI | rollout-2026-08-14T20-30-02-01a00040-2e9c-79f1-a85d-cd729d7ab195 | openai | `codex/rollout-2026-08-14T20-30-02-01a00040-2e9c-79f1-a85d-cd729d7ab195.md` |
+| 2026-08-14T12:33:33Z | Codex CLI | rollout-2026-08-14T20-33-28-01a00043-58ac-7a93-99f2-7c8c289a7013 | openai | `codex/rollout-2026-08-14T20-33-28-01a00043-58ac-7a93-99f2-7c8c289a7013.md` |

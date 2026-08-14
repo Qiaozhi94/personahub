@@ -750,3 +750,32 @@ Critical/High。
 第 1 轮到第 3 轮关闭，存活 2 轮；它们共同表明 locator 命名和验收任务必须同步覆盖生产者
 与消费者边界。最终定向复核确认 inline 只写 DB、local file 独占文件协议，且 F010 对
 archived ref 的消费限制与 F009 契约一致。
+
+---
+
+## 循环 15: 用户旅程文档检视（3轮）
+
+- **report_type**: doc-review
+- **周期**: 2026-08-14，3轮 · **状态**: 已闭环
+- **背景**: 检视 PersonaHub 产品级用户旅程，并按“P0 先交付完全手动阶段指派；自动
+  handoff 与自动验证失败修复后移”的决策统一 PRD、旅程与产品体验重置计划。提交
+  `a436481` 对应 GitHub Actions run `31802844754` 全绿，用户明确回复“旅程批准”。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| JRN-DOC-004 | P0 手动指派与 PRD 自动 handoff 冲突 | High | 正确性 | 根因 | 契约漂移 | fixed | 当前真相源统一为手动阶段指派，保留自动生成交接包 | `docs/personahub-prd.md::manual-stage-state-machine` | 1 | 2 | cross-feature-contract-drift |
+| JRN-DOC-005 | 验证失败同时被写成自动修复和等待指派 | High | 正确性 | 根因 | 初稿 | fixed | fail 回 Ready/等待指派，P0 不自动创建修复 Run | `docs/personahub-user-journeys.md::J3.4` | 1 | 2 | contradictory-state-transition |
+| JRN-DOC-006 | 首次配置同时要求两个 adapter 又声明只需一个 | Medium | 质量 | 根因 | 初稿 | fixed | 一个 AI 成员即可开始，第二个仅为独立验证建议 | `docs/personahub-user-journeys.md::J1.4-J1.5` | 1 | 2 | contradictory-onboarding-gate |
+| JRN-DOC-007 | 手动流程缺少重新进入后的注意力优先级 | Medium | 质量 | 根因 | 初稿 | fixed | 增加需用户优先排序、应用内提示和五任务计时验收 | `docs/personahub-user-journeys.md::observable-acceptance-metric-9` | 1 | 2 | missing-attention-routing |
+| JRN-DOC-008 | 完成旅程提出“然后呢”但没有 P0 后续动作 | Medium | 质量 | 根因 | 初稿 | fixed | Done 保持不可变，复用现有创建入口承接后续工作 | `docs/personahub-user-journeys.md::J4.4` | 1 | 2 | incomplete-journey-endpoint |
+| JRN-DOC-009 | 当前 M3 任务措辞与进度落后于四旅程草稿 | Medium | 质量 | 根因 | 流程缺口 | fixed | 当前任务改为四旅程并回写 M3-T01 至 T06 进度；历史三旅程记录保持原样 | `docs/reviews/product-experience-reset-plan.md::M3-progress` | 1 | 2 | marked-done-not-recorded |
+| JRN-DOC-010 | 第 2 轮修复把历史三旅程记录改写成四旅程 | Medium | 质量 | 根因 | 修复引入 | fixed | 恢复当时三旅程事实，另记后续扩展为四旅程 | `docs/reviews/product-experience-reset-plan.md::M1-decision-record` | 2 | 3 | historical-record-rewrite |
+| JRN-DOC-011 | 未定版本的自动模式与旧 P1—版本映射冲突 | Medium | 正确性 | 根因 | 修复引入 | fixed | 重置期优先级不再与历史版本机械绑定，自动模式保持未分配版本 | `docs/personahub-prd.md::priority-to-version-boundary` | 2 | 3 | cross-feature-contract-drift |
+| JRN-DOC-012 | Done 后续动作修复暗含新增 P0 任务关系模型 | Medium | 质量 | 根因 | 修复引入 | fixed | 复用现有创建入口并自动带摘要，明确不新增关系模型 | `docs/personahub-user-journeys.md::J4.4` | 2 | 3 | fix-expands-scope |
+
+**模式性教训**: 9 条问题中 4 条来自初稿、3 条来自修复回归、1 条来自契约漂移、
+1 条来自流程缺口。`cross-feature-contract-drift` 出现 2 次，说明“自动生成交接包”与
+“自动派发下一成员”必须作为两个独立能力维护，不能因共享 handoff 名称而合并产品语义。
+历史决策记录不能随当前方案改写；未定版本候选也不应被旧优先级映射强行纳入版本。
+所有问题均在下一轮关闭，最长存活 1 轮；P0 后续动作优先复用现有创建任务能力，避免修复
+体验缺口时顺手扩张数据模型。

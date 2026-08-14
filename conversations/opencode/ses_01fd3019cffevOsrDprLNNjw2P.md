@@ -103,7 +103,7 @@ Report back: the files you created/modified, the exact test command output (pass
 
 ## assistant · 2026-08-08T07:01:13Z
 
-- **tool**: `todowrite({"todos": [{"content": "Read shared/src/types/intake.ts and existing web patterns", "status": "in_progress", "priority": "high"}, {"content": "Add intake namespace to api-client.ts", "status": "pending", "priority": "high"}, {"content": "Create IntakeDialog component with state machine and panels", "status": "pending", "priority": "high"}, {"content": "Wire Intake button and dialog in App.tsx", "status": "pending", "priority": "high"}, {"content": "Extend api-client-mock.ts for intake methods",
+- **tool**: `todowrite({"todos": [{"content": "Read shared/src/types/intake.ts and existing web patterns", "status": "in_progress", "priority": "high"}, {"content": "Add intake namespace to api-client.ts", "status": "pending", "priority": "high"}, {"content": "Create IntakeDialog component with state machine and panels", "status": "pending", "priority": "high"}, {"content": "Wire Intake button and dialog in App.tsx", "status": "pending", "priority": "high"}, {"content": "Extend api-client-mock.ts for intake methods", 
 …[truncated])`
 
 
@@ -172,9 +172,9 @@ Report back: the files you created/modified, the exact test command output (pass
 3: // service (server) and the Intake UI (web). Signatures live in design.md §1,
 4: // §3, §5, §9. The recommendation phase is strictly read-only; persistence
 5: // happens only on confirm, and the only durable token identity is `nonce`.
-6:
+6: 
 7: import type { AdapterStatus, AgentCapability, IssueType, IssuePriority } from "./index.js";
-8:
+8: 
 9: /** 统一推荐形状 (design §3). Every dimension is returned with the rule that
 10:  *  produced its value, the full candidate set, and the excluded items + reasons. */
 11: export interface Recommendation<T> {
@@ -259,7 +259,7 @@ Report back: the files you created/modified, the exact test command output (pass
 13: import { Label } from "@/components/ui/label";
 14: import { Textarea } from "@/components/ui/textarea";
 15: import { cn } from "@/lib/utils";
-16:
+16: 
 17: interface CreateIssueDialogProps {
 18:   projectId: string;
 19:   open: boolean;
@@ -276,7 +276,7 @@ Report back: the files you created/modified, the exact test command output (pass
 <content>
 1: import { ErrorCode } from "@personahub/shared";
 2: import { vi } from "vitest";
-3:
+3: 
 4: export const apiClient = {
 5:   projects: {
 6:     create: vi.fn(),
@@ -349,12 +349,12 @@ D
 2: import * as DialogPrimitive from "@radix-ui/react-dialog";
 3: import { X } from "lucide-react";
 4: import { cn } from "@/lib/utils";
-5:
+5: 
 6: const Dialog = DialogPrimitive.Root;
 7: const DialogTrigger = DialogPrimitive.Trigger;
 8: const DialogPortal = DialogPrimitive.Portal;
 9: const DialogClose = DialogPrimitive.Close;
-10:
+10: 
 11: const DialogOverlay = React.forwardRef<
 12:   React.ComponentRef<typeof DialogPrimitive.Overlay>,
 13:   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -377,7 +377,7 @@ D
 2: import { Slot } from "@radix-ui/react-slot";
 3: import { cva, type VariantProps } from "class-variance-authority";
 4: import { cn } from "@/lib/utils";
-5:
+5: 
 6: const buttonVariants = cva(
 7:   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 8:   {
@@ -399,11 +399,11 @@ D
 2: import * as LabelPrimitive from "@radix-ui/react-label";
 3: import { cva, type VariantProps } from "class-variance-authority";
 4: import { cn } from "@/lib/utils";
-5:
+5: 
 6: const labelVariants = cva(
 7:   "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
 8: );
-9:
+9: 
 10: const Label = React.forwardRef<
 11:   React.ComponentRef<typeof LabelPrimitive.Root>,
 12:   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & VariantProps<typeof labelVariants>
@@ -423,7 +423,7 @@ D
 <content>
 1: import * as React from "react";
 2: import { cn } from "@/lib/utils";
-3:
+3: 
 4: const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
 5:   ({ className, ...props }, ref) => {
 6:     return (
@@ -462,11 +462,11 @@ D
 3: import type { ReactNode } from "react";
 4: import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 5: import { ResetRoundsDialog } from "@/components/inspector/ResetRoundsDialog";
-6:
+6: 
 7: vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
-8:
+8: 
 9: import { apiClient } from "@/lib/api-client";
-10:
+10: 
 11: function Wrapper({ children }: { children: ReactNode }) {
 12:   const queryClient = new QueryClient({
 13:     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -487,15 +487,15 @@ D
 3: import { AgentCapability, IssueStatus } from "@personahub/shared";
 4: import { ThreadView } from "@/components/thread/ThreadView";
 5: import { createAdapter, renderWithQuery } from "@/test/ui-flow-helpers";
-6:
+6: 
 7: vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
-8:
+8: 
 9: import { apiClient } from "@/lib/api-client";
-10:
+10: 
 11: function mockAdapters(...adapters: ReturnType<typeof createAdapter>[]) {
 12:   vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters });
 13: }
-14:
+14: 
 15: describe("T091/T092: composer routing pr
 …[truncated]
   ```
@@ -536,14 +536,14 @@ Need examine test helpers ui-flow-helpers.
 17:   type Run,
 18:   type Workspace,
 19: } from "@personahub/shared";
-20:
+20: 
 21: const TIMESTAMP = "2026-07-16T00:00:00.000Z";
-22:
+22: 
 23: export function createTestQueryClient() {
 24:   return new QueryClient({
 25:     defaultOptions: {
 26:       queries: { retry: false },
-27:       mutations: {
+27:       mutations: { 
 …[truncated]
   ```
   </details>
@@ -559,11 +559,11 @@ Need examine test helpers ui-flow-helpers.
 3: import type { ReactNode } from "react";
 4: import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 5: import { UnblockDialog } from "@/components/inspector/UnblockDialog";
-6:
+6: 
 7: vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
-8:
+8: 
 9: import { apiClient } from "@/lib/api-client";
-10:
+10: 
 11: function Wrapper({ children }: { children: ReactNode }) {
 12:   const queryClient = new QueryClient({
 13:     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -588,7 +588,7 @@ Need examine test helpers ui-flow-helpers.
 <content>
 1: import type { RunRole, RunDispatchSource, AdapterIdentitySnapshot, ValidationBlockReason } from "./validation.js";
 2: import type { AdapterAuthType, AgentCapability, RunPurpose } from "./adapter.js";
-3:
+3: 
 4: export interface Project {
 5:   id: string;
 6:   name: string;
@@ -600,7 +600,7 @@ Need examine test helpers ui-flow-helpers.
 12:   created_at: string;
 13:   updated_at: string;
 14: }
-15:
+15: 
 16: export interface Workspace {
 17:   id: string;
 18:   project_id: string;
@@ -676,14 +676,14 @@ task(subagent_type="librarian", load_skills=[], prompt="Lookup documentation for
 13:   AdapterAuthType,
 14:   AgentCapability,
 15: } from "../types/index.js";
-16:
+16: 
 17: export {
 18:   type IssueValidationResponse,
 19:   type EvidenceSummaryResponse,
 20:   type UnblockInput,
 21:   type UnblockResponse,
 22: } from "../types/validation.js";
-23:
+23: 
 24: export enum ErrorCode {
 25:   PROJECT_NAME_REQUIRED = "PROJECT_NAME_REQUIRED",
 26:   PROJECT_NOT_FOUND = "PROJECT_NOT_FOUND",
@@ -1036,7 +1036,7 @@ Need maybe Separator between dimensions. Use existing separator component. Read 
 1: import * as React from "react";
 2: import * as SeparatorPrimitive from "@radix-ui/react-separator";
 3: import { cn } from "@/lib/utils";
-4:
+4: 
 5: const Separator = React.forwardRef<
 6:   React.ComponentRef<typeof SeparatorPrimitive.Root>,
 7:   React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>
@@ -1051,7 +1051,7 @@ Need maybe Separator between dimensions. Use existing separator component. Read 
 16:       className,
 17:     )}
 18:     {...props}
-19:
+19:   
 …[truncated]
   ```
   </details>
@@ -1106,7 +1106,7 @@ Need maybe use `Badge` to display rule? Existing Badge component. Read badge?
 1: import * as React from "react";
 2: import { cva, type VariantProps } from "class-variance-authority";
 3: import { cn } from "@/lib/utils";
-4:
+4: 
 5: const badgeVariants = cva(
 6:   "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
 7:   {
@@ -1190,7 +1190,7 @@ Edit applied successfully.
 
 ## assistant · 2026-08-08T07:05:38Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\lib\\api-client.ts", "oldString": "    triggerValidation: (issueId: string) =>\n      apiFetch<TriggerValidationResponse>(`/issues/${issueId}/validation`, {\n        method: \"POST\",\n      }),\n  },\n};", "newString": "    triggerValidation: (issueId: string) =>\n      apiFetch<TriggerValidationResponse>(`/issues/${issueId}/validation`, {\n        method: \"POST\",\n      }),\n  },\n  intake: {\n    recommend: (projectId: string, goal: string)
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\lib\\api-client.ts", "oldString": "    triggerValidation: (issueId: string) =>\n      apiFetch<TriggerValidationResponse>(`/issues/${issueId}/validation`, {\n        method: \"POST\",\n      }),\n  },\n};", "newString": "    triggerValidation: (issueId: string) =>\n      apiFetch<TriggerValidationResponse>(`/issues/${issueId}/validation`, {\n        method: \"POST\",\n      }),\n  },\n  intake: {\n    recommend: (projectId: string, goal: string) 
 …[truncated])`
 
 
@@ -1557,7 +1557,7 @@ Let's write IntakeDialog.tsx.
 
 ## assistant · 2026-08-08T07:07:26Z
 
-- **tool**: `write({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\intake\\IntakeDialog.tsx", "content": "import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from \"react\";\nimport {\n  ErrorCode,\n  IssueType,\n  type AgentRosterRecommendation,\n  type ApiError,\n  type ChosenPlan,\n  type ConfirmResponse,\n  type RecommendResponse,\n  type TopologyRecommendationValue,\n} from \"@personahub/shared\";\nimport { apiClient, toApiError } from \"@/lib/api-client\";\nimport { Badge }
+- **tool**: `write({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\intake\\IntakeDialog.tsx", "content": "import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from \"react\";\nimport {\n  ErrorCode,\n  IssueType,\n  type AgentRosterRecommendation,\n  type ApiError,\n  type ChosenPlan,\n  type ConfirmResponse,\n  type RecommendResponse,\n  type TopologyRecommendationValue,\n} from \"@personahub/shared\";\nimport { apiClient, toApiError } from \"@/lib/api-client\";\nimport { Badge } 
 …[truncated])`
 
 
@@ -1692,14 +1692,14 @@ Edit applied successfully.
 19:   DialogTitle,
 20: } from "@/components/ui/dialog";
 21: import { Label } from "@/components/ui/label";
-22: import
+22: import 
 …[truncated]
   ```
   </details>
 
 ## assistant · 2026-08-08T07:10:36Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\intake\\IntakeDialog.tsx", "oldString": "import {\n  ErrorCode,\n  IssueType,\n  type AgentRosterRecommendation,\n  type ApiError,\n  type ChosenPlan,\n  type ConfirmResponse,\n  type RecommendResponse,\n  type TopologyRecommendationValue,\n} from \"@personahub/shared\";", "newString": "import {\n  ErrorCode,\n  type AgentRosterRecommendation,\n  type ApiError,\n  type ChosenPlan,\n  type ConfirmResponse,\n  type RecommendResponse,\n
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\intake\\IntakeDialog.tsx", "oldString": "import {\n  ErrorCode,\n  IssueType,\n  type AgentRosterRecommendation,\n  type ApiError,\n  type ChosenPlan,\n  type ConfirmResponse,\n  type RecommendResponse,\n  type TopologyRecommendationValue,\n} from \"@personahub/shared\";", "newString": "import {\n  ErrorCode,\n  type AgentRosterRecommendation,\n  type ApiError,\n  type ChosenPlan,\n  type ConfirmResponse,\n  type RecommendResponse,\n 
 …[truncated])`
 
 
@@ -1762,7 +1762,7 @@ Let's edit.
   },
   {
     "content": "Run typecheck and tests, fix issues",
-
+   
 …[truncated]
   ```
   </details>
@@ -1784,7 +1784,7 @@ Edit applied successfully.
 
 ## assistant · 2026-08-08T07:11:32Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\App.tsx", "oldString": "            <Button\n              variant=\"outline\"\n              className=\"w-full justify-start gap-2 border-dashed border-border-strong text-secondary-foreground\"\n              disabled={!workspace}\n              onClick={() => setCreateIssueOpen(true)}\n            >\n              <Plus className=\"h-3.5 w-3.5\" />\n              New coding issue\n            </Button>\n\n            <section className=\"grid
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\App.tsx", "oldString": "            <Button\n              variant=\"outline\"\n              className=\"w-full justify-start gap-2 border-dashed border-border-strong text-secondary-foreground\"\n              disabled={!workspace}\n              onClick={() => setCreateIssueOpen(true)}\n            >\n              <Plus className=\"h-3.5 w-3.5\" />\n              New coding issue\n            </Button>\n\n            <section className=\"grid 
 …[truncated])`
 
 
@@ -1856,7 +1856,7 @@ Edit applied successfully.
   },
   {
     "content": "Run typecheck and tests, fix issues",
-
+ 
 …[truncated]
   ```
   </details>
@@ -2106,7 +2106,7 @@ Edit applied successfully.
   },
   {
     "content": "Run typecheck and tests, fix issues",
-
+ 
 …[truncated]
   ```
   </details>
@@ -2493,7 +2493,7 @@ The difference might be that `console.log` slows down the microtask enough for t
    [32m✓[39m IntakeDialog[2m > [22mshows the suggested action when recommend is blocked[32m 124[2mms[22m[39m
    [32m✓[39m IntakeDialog[2m > [22mrenders topology and roster as editable, and the rest as read-only[32m 167[2mms[22m[39m
    [32m✓[39m IntakeDialog[2m > [22mconfirms a sequential plan with the chosen adapter and calls onCreated[32m 182[2mms[22m[39m
-
+ 
 …[truncated]
   ```
   </details>
@@ -2639,7 +2639,7 @@ Edit applied successfully.
    [32m✓[39m IntakeDialog[2m > [22mshows the suggested action when recommend is blocked[32m 163[2mms[22m[39m
    [32m✓[39m IntakeDialog[2m > [22mrenders topology and roster as editable, and the rest as read-only[32m 155[2mms[22m[39m
    [32m✓[39m IntakeDialog[2m > [22mconfirms a sequential plan with the chosen adapter and calls onCreated[32m 179[2mms[22m[39m
-
+ 
 …[truncated]
   ```
   </details>
@@ -2841,8 +2841,7 @@ Let's run typecheck.
 > @personahub/web@0.1.0 typecheck
 > tsc --noEmit
 
-src/components/intake/IntakeDialog.tsx(7,8): error TS6133: 'ConfirmResponse' is declared but its value is never read.
-
+src/components/intake/IntakeDialog.tsx(7,8): error TS6133: 'ConfirmResponse' is declared but its value is never read.
 npm error Lifecycle script `typecheck` failed with error:
 npm error code 2
 npm error path D:\Projects\personahub\web
@@ -2927,7 +2926,7 @@ Edit applied successfully.
   },
   {
     "content": "Run typecheck and tests, fix issues",
-
+ 
 …[truncated]
   ```
   </details>
@@ -3026,7 +3025,7 @@ Need mark todo completed.
   },
   {
     "content": "Run typecheck and tests, fix issues",
-
+ 
 …[truncated]
   ```
   </details>

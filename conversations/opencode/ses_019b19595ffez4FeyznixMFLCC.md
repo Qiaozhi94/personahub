@@ -181,13 +181,13 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Target: v0.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 16: - **PRD 来源**：`docs/personahub-prd.md` 第 15 节 v0.2 范围中的 "Workflow Template 管理 UI 初版" 与 "Runtime health check"。
 17: - **相关**：F004 的 validation 依赖 `steps_json`；F007 的推荐依赖模板的 active 版本。
 18: - **功能类型**：user-facing / admin / observability。
@@ -212,20 +212,20 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 设计
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
-15:
+15: 
 16: 两块互相独立的能力放在同一个 feature，因为它们共享同一条主线：把系统已经拥有但用户看不到的状态呈现出来。
-17:
+17: 
 18: - **模板管理**：给 `WorkflowTemplateRepository` 补写方法，编辑一律走"新增版本"，既有行不可变。
 19: - **Runtime health**：新增一个纯只读聚合服务，全部数据来自既有仓储查询，不新增表、不触发任何副作用。
-20:
+20: 
 21: ## 2. 影响面
-22:
+22: 
 23: - **存储**：`workflow_templates` 本身无变更（`version` / `status` 列已具备
 …[truncated]
   ```
@@ -245,13 +245,13 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 任务
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：模板读取与派生投影（FR-001）
-15:
+15: 
 16: - [ ] T009：新建 `server/src/db/schema-v10.ts`——`admin_audit_events` 表 + `idx_workflow_templates_issue_type_version` / `idx_workflow_templates_one_active` 两个唯一索引 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**（`design.md` 第 4、7 节）。
 17: - [ ] T01
 …[truncated]
@@ -265,7 +265,7 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 <type>file</type>
 <content>
 1: import type { AdapterStatus, IssueType } from "./index.js";
-2:
+2: 
 3: export interface WorkflowTemplateVersionSummary {
 4:   id: string;
 5:   name: string;
@@ -276,12 +276,12 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 10:   created_at: string;
 11:   updated_at: string;
 12: }
-13:
+13: 
 14: export interface WorkflowTemplateStep {
 15:   id: string;
 16:   role: string;
 17: }
-18:
+18: 
 19: export interface WorkflowTemplateDetail {
 20:   id: string;
 21:   name: string;
@@ -341,11 +341,11 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 7: import { AdapterDialog } from "@/components/adapter/AdapterDialog";
 8: import { AdapterRow } from "@/components/adapter/AdapterRow";
 9: import { effectiveStatusOf } from "@/components/adapter/adapter-status";
-10:
+10: 
 11: interface AdapterSettingsProps {
 12:   projectId: string;
 13: }
-14:
+14: 
 15: export function AdapterSettings({ projectId }: Adapte
 …[truncated]
   ```
@@ -360,7 +360,7 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 1: import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 2: import type { AdapterConfigCreateInput, AdapterConfigUpdateInput } from "@personahub/shared";
 3: import { apiClient } from "@/lib/api-client";
-4:
+4: 
 5: /**
 6:  * `workspaceId` (F005 workspace-aware availability closure): when provided,
 7:  * each returned adapter also carries `effective_status`/
@@ -368,7 +368,7 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 9:  * `has_workspace_override` — the workspace-effective view
 10:  * (`effectiveAdapterStatus()` server-side), which is what actually
 11:  * determines routability/validator-selection for THIS workspace and can
-12:  * differ from the Project-global `status`.
+12:  * differ from the Project-global `status`. 
 …[truncated]
   ```
   </details>
@@ -423,7 +423,7 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 <content>
 1: import { ErrorCode } from "@personahub/shared";
 2: import { vi } from "vitest";
-3:
+3: 
 4: export const apiClient = {
 5:   projects: {
 6:     create: vi.fn(),
@@ -459,23 +459,23 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 <type>file</type>
 <content>
 1: import { AdapterStatus, type AdapterConfig } from "@personahub/shared";
-2:
+2: 
 3: export const STATUS_VARIANT: Record<AdapterStatus, "success" | "destructive" | "secondary"> = {
 4:   [AdapterStatus.Available]: "success",
 5:   [AdapterStatus.Unavailable]: "destructive",
 6:   [AdapterStatus.Unknown]: "secondary",
 7: };
-8:
+8: 
 9: export const STATUS_LABEL: Record<AdapterStatus, string> = {
 10:   [AdapterStatus.Available]: "available",
 11:   [AdapterStatus.Unavailable]: "unavailable",
 12:   [AdapterStatus.Unknown]: "unknown",
 13: };
-14:
+14: 
 15: export function effectiveStatusOf(adapter: AdapterConfig): AdapterStatus {
 16:   return adapter.effective_status ?? adapter.status;
 17: }
-18:
+18: 
 19: exp
 …[truncated]
   ```
@@ -492,11 +492,11 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 3: import { AdapterAuthType, AgentCapability, CliProvider, AdapterStatus } from "@personahub/shared";
 4: import { AdapterSettings } from "@/components/adapter/AdapterSettings";
 5: import { createAdapter, renderWithQuery } from "@/test/ui-flow-helpers";
-6:
+6: 
 7: vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
-8:
+8: 
 9: import { apiClient } from "@/lib/api-client";
-10:
+10: 
 11: const PROVIDERS = [
 12:   { cli_provider: CliProvider.Codex, supported_auth_types: [AdapterAuthType.OAuth], default_command: "codex", capability_description: "I
 …[truncated]
@@ -512,7 +512,7 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 1: import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 2: import { apiClient } from "@/lib/api-client";
 3: import { ErrorCode } from "@personahub/shared";
-4:
+4: 
 5: /**
 6:  * Final-comprehensive-report regression: every other test file mocks the
 7:  * whole `@/lib/api-client` module (`vi.mock("@/lib/api-client", ...)`), so
@@ -560,14 +560,14 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 17:   type Run,
 18:   type Workspace,
 19: } from "@personahub/shared";
-20:
+20: 
 21: const TIMESTAMP = "2026-07-16T00:00:00.000Z";
-22:
+22: 
 23: export function createTestQueryClient() {
 24:   return new QueryClient({
 25:     defaultOptions: {
 26:       queries: { retry: false },
-27:       mutations: {
+27:       mutations: { 
 …[truncated]
   ```
   </details>
@@ -618,12 +618,12 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 2: import * as DialogPrimitive from "@radix-ui/react-dialog";
 3: import { X } from "lucide-react";
 4: import { cn } from "@/lib/utils";
-5:
+5: 
 6: const Dialog = DialogPrimitive.Root;
 7: const DialogTrigger = DialogPrimitive.Trigger;
 8: const DialogPortal = DialogPrimitive.Portal;
 9: const DialogClose = DialogPrimitive.Close;
-10:
+10: 
 11: const DialogOverlay = React.forwardRef<
 12:   React.ComponentRef<typeof DialogPrimitive.Overlay>,
 13:   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -646,7 +646,7 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 2: import { Slot } from "@radix-ui/react-slot";
 3: import { cva, type VariantProps } from "class-variance-authority";
 4: import { cn } from "@/lib/utils";
-5:
+5: 
 6: const buttonVariants = cva(
 7:   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 8:   {
@@ -676,7 +676,7 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 <content>
 1: import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 2: import { apiClient } from "@/lib/api-client";
-3:
+3: 
 4: export function useWorkspace(projectId: string | null) {
 5:   return useQuery({
 6:     queryKey: ["workspace", projectId],
@@ -684,7 +684,7 @@ I need to start by reading the mandatory docs and existing patterns. This is mul
 8:     enabled: projectId !== null,
 9:   });
 10: }
-11:
+11: 
 12: export function useBindWorkspace(projectId: string | null) {
 13:   const qc = useQueryClient();
 14:   return useMutation({
@@ -732,7 +732,7 @@ task(subagent_type="explore",
 1: import * as React from "react";
 2: import { cva, type VariantProps } from "class-variance-authority";
 3: import { cn } from "@/lib/utils";
-4:
+4: 
 5: const badgeVariants = cva(
 6:   "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
 7:   {
@@ -753,7 +753,7 @@ task(subagent_type="explore",
 <content>
 1: import * as React from "react";
 2: import { cn } from "@/lib/utils";
-3:
+3: 
 4: const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
 5:   ({ className, ...props }, ref) => (
 6:     <div
@@ -764,7 +764,7 @@ task(subagent_type="explore",
 11:   ),
 12: );
 13: Card.displayName = "Card";
-14:
+14: 
 15: const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
 16:   ({ className, ...props }, ref) => (
 17:     <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
@@ -824,7 +824,7 @@ WHY:
 <content>
 1: import * as React from "react";
 2: import { cn } from "@/lib/utils";
-3:
+3: 
 4: const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
 5:   ({ className, type, ...props }, ref) => {
 6:     return (
@@ -834,7 +834,7 @@ WHY:
 10:           "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
 11:           className,
 12:         )}
-13:
+13:         
 …[truncated]
   ```
   </details>
@@ -849,11 +849,11 @@ WHY:
 2: import * as LabelPrimitive from "@radix-ui/react-label";
 3: import { cva, type VariantProps } from "class-variance-authority";
 4: import { cn } from "@/lib/utils";
-5:
+5: 
 6: const labelVariants = cva(
 7:   "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
 8: );
-9:
+9: 
 10: const Label = React.forwardRef<
 11:   React.ComponentRef<typeof LabelPrimitive.Root>,
 12:   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & VariantProps<typeof labelVariants>
@@ -873,7 +873,7 @@ WHY:
 <content>
 1: import * as React from "react";
 2: import { cn } from "@/lib/utils";
-3:
+3: 
 4: const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
 5:   ({ className, ...props }, ref) => {
 6:     return (
@@ -910,9 +910,9 @@ WHY:
 <content>
 1: @import "tailwindcss";
 2: @import "tw-animate-css";
-3:
+3: 
 4: @custom-variant dark (&:is(.dark *));
-5:
+5: 
 6: @theme inline {
 7:   --color-background: var(--background);
 8:   --color-foreground: var(--foreground);
@@ -945,13 +945,13 @@ WHY:
 6: } from "@personahub/shared";
 7: import { GraphRunCard, StartGraphDialog } from "@/components/thread/ThreadView";
 8: import { renderWithQuery } from "@/test/ui-flow-helpers";
-9:
+9: 
 10: vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
-11:
+11: 
 12: import { apiClient } from "@/lib/api-client";
-13:
+13: 
 14: const TIMESTAMP = "2026-08-07T00:00:00.000Z";
-15:
+15: 
 16: function graphRun(
 …[truncated]
   ```
@@ -969,11 +969,11 @@ WHY:
 4: import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 5: import { ErrorCode, IssuePriority, IssueType, type ConfirmResponse, type RecommendResponse } from "@personahub/shared";
 6: import { IntakeDialog } from "@/components/intake/IntakeDialog";
-7:
+7: 
 8: vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
-9:
+9: 
 10: import { apiClient } from "@/lib/api-client";
-11:
+11: 
 12: function Wrapper({ children }: { children: ReactNode }) {
 13:   const queryClient = new QueryClient
 …[truncated]
@@ -996,7 +996,7 @@ WHY:
 <content>
 1: import type { RunRole, RunDispatchSource, AdapterIdentitySnapshot, ValidationBlockReason } from "./validation.js";
 2: import type { AdapterAuthType, AgentCapability, RunPurpose } from "./adapter.js";
-3:
+3: 
 4: export interface Project {
 5:   id: string;
 6:   name: string;
@@ -1008,7 +1008,7 @@ WHY:
 12:   created_at: string;
 13:   updated_at: string;
 14: }
-15:
+15: 
 16: export interface Workspace {
 17:   id: string;
 18:   project_id: string;
@@ -1077,7 +1077,7 @@ RECOMMENDED: Use task with explore/librarian agents for better results:
 ```
 // Parallel exploration - fire multiple agents simultaneously
 task(subagent_type="explore", load_skills=[], prompt="Find all files matching pattern X")
-task(subagent_type="explore", load_skills=[], prompt="Search
+task(subagent_type="explore", load_skills=[], prompt="Search 
 …[truncated]
   ```
   </details>
@@ -1091,7 +1091,7 @@ task(subagent_type="explore", load_skills=[], prompt="Search
 - **tool**: `glob({"pattern": "web/src/hooks/*health*"})`
 
 
-> [reasoning] Good. I have enough context now. Let me update the todo and start implementing.
+> [reasoning] Good. I have enough context now. Let me update the todo and start implementing. 
 
 Plan:
 1. Add apiClient methods (workflowTemplates, runtimeHealth)
@@ -1248,7 +1248,7 @@ Edit applied successfully.
 
 ## assistant · 2026-08-09T11:37:45Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\lib\\api-client.ts", "oldString": "  intake: {\n    recommend: (projectId: string, goal: string) =>\n      apiFetch<RecommendResponse>(`/projects/${projectId}/intake/recommend`, {\n        method: \"POST\",\n        body: JSON.stringify({ goal }),\n      }),\n    confirm: (projectId: string, token: ConfirmationToken, chosen: ChosenPlan) =>\n      apiFetch<ConfirmResponse>(`/projects/${projectId}/intake/confirm`, {\n        method: \"POST\",\n
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\lib\\api-client.ts", "oldString": "  intake: {\n    recommend: (projectId: string, goal: string) =>\n      apiFetch<RecommendResponse>(`/projects/${projectId}/intake/recommend`, {\n        method: \"POST\",\n        body: JSON.stringify({ goal }),\n      }),\n    confirm: (projectId: string, token: ConfirmationToken, chosen: ChosenPlan) =>\n      apiFetch<ConfirmResponse>(`/projects/${projectId}/intake/confirm`, {\n        method: \"POST\",\n    
 …[truncated])`
 
 

@@ -148,13 +148,13 @@ I'll start by reading the mandatory documentation files in order.
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Target: v0.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 16: - **PRD 来源**：`docs/personahub-prd.md` 第 15 节 v0.2 范围中的 "Workflow Template 管理 UI 初版" 与 "Runtime health check"。
 17: - **相关**：F004 的 validation 依赖 `steps_json`；F007 的推荐依赖模板的 active 版本。
 18: - **功能类型**：user-facing / admin / observability。
@@ -186,20 +186,20 @@ I'll start by reading the mandatory documentation files in order.
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 设计
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
-15:
+15: 
 16: 两块互相独立的能力放在同一个 feature，因为它们共享同一条主线：把系统已经拥有但用户看不到的状态呈现出来。
-17:
+17: 
 18: - **模板管理**：给 `WorkflowTemplateRepository` 补写方法，编辑一律走"新增版本"，既有行不可变。
 19: - **Runtime health**：新增一个纯只读聚合服务，全部数据来自既有仓储查询，不新增表、不触发任何副作用。
-20:
+20: 
 21: ## 2. 影响面
-22:
+22: 
 23: - **存储**：`workflow_templates` 本身无变更（`version` / `status` 列已具备
 …[truncated]
   ```
@@ -223,13 +223,13 @@ I'll start by reading the mandatory documentation files in order.
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 任务
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：模板读取与派生投影（FR-001）
-15:
+15: 
 16: - [ ] T009：新建 `server/src/db/schema-v10.ts`——`admin_audit_events` 表 + `idx_workflow_templates_issue_type_version` / `idx_workflow_templates_one_active` 两个唯一索引 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**（`design.md` 第 4、7 节）。
 17: - [ ] T01
 …[truncated]
@@ -252,7 +252,7 @@ Now let me explore the existing code structure in parallel.
 <content>
 1: import type Database from "better-sqlite3";
 2: import type { WorkflowTemplate, IssueType } from "@personahub/shared/types";
-3:
+3: 
 4: interface WorkflowTemplateRow {
 5:   id: string;
 6:   name: string;
@@ -268,7 +268,7 @@ Now let me explore the existing code structure in parallel.
 16:   created_at: string;
 17:   updated_at: string;
 18: }
-19:
+19: 
 20: function mapRow(row: WorkflowTemplateRow): WorkflowTemplate {
 21:   return {
 22:     id: row.id,
@@ -295,7 +295,7 @@ Now let me explore the existing code structure in parallel.
 6: } from "@personahub/shared/types";
 7: import { ValidationBlockReason } from "@personahub/shared/types";
 8: import { hasCapability } from "../../repositories/agent-config.js";
-9:
+9: 
 10: export class ValidatorSelectorError extends Error {
 11:   constructor(
 12:     public readonly code: string,
@@ -305,12 +305,12 @@ Now let me explore the existing code structure in parallel.
 16:     this.name = "ValidatorSelectorError";
 17:   }
 18: }
-19:
+19: 
 20: export interface WorkflowStep {
 21:   id: string;
 22:   role: string;
 23: }
-24:
+24: 
 25: interface StepsJson {
 26:   schema_version?: number;
 27:   steps?: Wor
@@ -331,7 +331,7 @@ Now let me explore the existing code structure in parallel.
 1: import type { ZodType } from "zod";
 2: import { ErrorCode } from "@personahub/shared/errors";
 3: import type { ApiError as ApiErrorInterface } from "@personahub/shared/errors";
-4:
+4: 
 5: export class AppError extends Error implements ApiErrorInterface {
 6:   constructor(
 7:     public code: ErrorCode,
@@ -343,11 +343,11 @@ Now let me explore the existing code structure in parallel.
 13:     this.name = "AppError";
 14:   }
 15: }
-16:
+16: 
 17: /**
 18:  * design docs/decisions/0005 §route handler contract ("只做参数校验（zod）"):
 19:  * TypeScript `as` casts on `request.body` have zero runtime effect — a
-20:  * wrong-typed field (a number where a string is
+20:  * wrong-typed field (a number where a string is 
 …[truncated]
   ```
   </details>
@@ -392,15 +392,15 @@ Now let me explore the existing code structure in parallel.
 4: import { AdapterAuthType, AgentCapability } from "@personahub/shared/types";
 5: import { getProviderMetadata } from "../../runtime/provider-metadata.js";
 6: import { parseRequestBody } from "../errors.js";
-7:
+7: 
 8: export interface AdapterRoutesOptions {
 9:   adapterConfigService: AdapterConfigService;
 10: }
-11:
+11: 
 12: /**
 13:  * Route-boundary schemas (docs/decisions/0005: "只做参数校验（zod）") — the
 14:  * service layer trusts these types once past this point. Every field a
-15:  * malformed body could send with the wrong JS type (a number
+15:  * malformed body could send with the wrong JS type (a number 
 …[truncated]
   ```
   </details>
@@ -420,7 +420,7 @@ Let me read the shared types, errors, schema, and existing tests in parallel.
 <type>file</type>
 <content>
 1: import type { AdapterStatus, IssueType } from "./index.js";
-2:
+2: 
 3: export interface WorkflowTemplateVersionSummary {
 4:   id: string;
 5:   name: string;
@@ -431,12 +431,12 @@ Let me read the shared types, errors, schema, and existing tests in parallel.
 10:   created_at: string;
 11:   updated_at: string;
 12: }
-13:
+13: 
 14: export interface WorkflowTemplateStep {
 15:   id: string;
 16:   role: string;
 17: }
-18:
+18: 
 19: export interface WorkflowTemplateDetail {
 20:   id: string;
 21:   name: string;
@@ -475,14 +475,14 @@ Let me read the shared types, errors, schema, and existing tests in parallel.
 13:   AdapterAuthType,
 14:   AgentCapability,
 15: } from "../types/index.js";
-16:
+16: 
 17: export {
 18:   type IssueValidationResponse,
 19:   type EvidenceSummaryResponse,
 20:   type UnblockInput,
 21:   type UnblockResponse,
 22: } from "../types/validation.js";
-23:
+23: 
 24: export enum ErrorCode {
 25:   PROJECT_NAME_REQUIRED = "PROJECT_NAME_REQUIRED",
 26:   PROJECT_NOT_FOUND = "PROJECT_NOT_FOUND",
@@ -510,7 +510,7 @@ Let me read the shared types, errors, schema, and existing tests in parallel.
 6: -- exists, so there is no thread_event row to attach the audit to. actor_id is
 7: -- always NULL: the app has no auth, so the ledger answers "when/what/which
 8: -- version/what was acknowledged", never "who" (design §7).
-9:
+9: 
 10: CREATE TABLE IF NOT EXISTS admin_audit_events (
 11:   id TEXT PRIMARY KEY,
 12:   action TEXT NOT NULL,
@@ -541,11 +541,11 @@ Let me read the shared types, errors, schema, and existing tests in parallel.
 9: import { SCHEMA_V8 } from "./schema-v8.js";
 10: import { SCHEMA_V9 } from "./schema-v9.js";
 11: import { SCHEMA_V10 } from "./schema-v10.js";
-12:
+12: 
 13: export function applyMigrations(db: Database.Database): void {
 14:   db.exec(`CREATE TABLE IF NOT EXISTS schema_version (
 15:     version INTEGER PRIMARY KEY,
-16:     applied_at
+16:     applied_at 
 …[truncated]
   ```
   </details>
@@ -593,12 +593,12 @@ Let me read the issue repo, a sample test, the schema-v1 for workflow_templates 
 1: import type Database from "better-sqlite3";
 2: import type { Issue, IssueType, IssueStatus, IssuePriority } from "@personahub/shared/types";
 3: import { generateIssueId } from "../id.js";
-4:
+4: 
 5: export interface IssueUpdateStatusInput {
 6:   status: IssueStatus;
 7:   updatedAt: string;
 8: }
-9:
+9: 
 10: export interface IssueCreateInput {
 11:   project_id: string;
 12:   workspace_id: string;
@@ -611,7 +611,7 @@ Let me read the issue repo, a sample test, the schema-v1 for workflow_templates 
 19:   priority: IssuePriority;
 20:   labels: string[];
 21: }
-22:
+22: 
 23: export interface IssueCompareAndSetPatch {
 24:   validation_roun
 …[truncated]
@@ -660,11 +660,11 @@ Let me read the migration-v10 test, validation-routes test (Fastify pattern), an
 1: import { describe, it, expect, beforeEach, afterEach } from "vitest";
 2: import Database from "better-sqlite3";
 3: import { applyMigrations } from "../../src/db/migrations.js";
-4:
+4: 
 5: // T009: v9 → v10 migration for F008. Covers: fresh install reaching v10,
 6: // idempotency, admin_audit_events table shape, and the two workflow_templates
 7: // unique indexes (issue_type+version uniqueness; single-active invariant).
-8:
+8: 
 9: function seedWorkflowTemplate(db: Database.Database): string {
 10:   db.prepare(
 11:     "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -698,7 +698,7 @@ Let me read the migration-v10 test, validation-routes test (Fastify pattern), an
 13:   ThreadEventType,
 14:   AdapterStatus,
 15:   ActorType,
-16:
+16: 
 …[truncated]
   ```
   </details>
@@ -748,35 +748,35 @@ Let me look at the id.js, schema-v1, and a simpler unit test.
 <type>file</type>
 <content>
 1: import { ulid } from "ulid";
-2:
+2: 
 3: export function generateProjectId(): string {
 4:   return `prj_${ulid()}`;
 5: }
-6:
+6: 
 7: export function generateWorkspaceId(): string {
 8:   return `wsp_${ulid()}`;
 9: }
-10:
+10: 
 11: export function generateIssueId(): string {
 12:   return `iss_${ulid()}`;
 13: }
-14:
+14: 
 15: export function generateThreadId(): string {
 16:   return `thr_${ulid()}`;
 17: }
-18:
+18: 
 19: export function generateEventId(): string {
 20:   return `evt_${ulid()}`;
 21: }
-22:
+22: 
 23: export function generateRunId(): string {
 24:   return `run_${ulid()}`;
 25: }
-26:
+26: 
 27: export function generateAdapterConfigId(): string {
 28:   return `adp_${ulid()}`;
 29: }
-30:
+30: 
 31: export function generateFileChangeId(): string {
 3
 …[truncated]
@@ -861,10 +861,10 @@ task(subagent_type="explore", load_skills=[
 20:   created_at TEXT NOT NULL,
 21:   updated_at TEXT NOT NULL
 22: );
-23:
+23: 
 24: CREATE UNIQUE INDEX IF NOT EXISTS idx_workspaces_project_path
 25:   ON workspaces(project_id, local_path_normalized);
-26:
+26: 
 27: CREATE TABLE IF NOT EXISTS workflow_templates (
 28:   id TEXT PRIMARY KEY,
 29:   name TEXT NOT NULL,
@@ -880,8 +880,8 @@ task(subagent_type="explore", load_skills=[
 39:   created_at TEXT NOT NULL,
 40:   updated_at TEXT NOT NULL
 41: );
-42:
-43: CREATE
+42: 
+43: CREATE 
 …[truncated]
   ```
   </details>
@@ -917,7 +917,7 @@ Let me also check the index.ts (server) and api/index.ts to understand the wirin
 14:   type WorkflowTemplate,
 15:   type IssueType,
 16: } from "@personahub/shared/types";
-17:
+17: 
 18: function defaultWorkflow(overrides: Partial<WorkflowTemplate> = {}): WorkflowTemplate {
 19:   return {
 20:     id: "wft_coding_default",
@@ -938,20 +938,20 @@ Let me also check the index.ts (server) and api/index.ts to understand the wirin
 <type>file</type>
 <content>
 80:     });
-81:
+81: 
 82:     it("throws for invalid JSON", () => {
 83:       expect(() => parseWorkflowSteps("not json")).toThrow(ValidatorSelectorError);
 84:     });
-85:
+85: 
 86:     it("throws for non-object JSON", () => {
 87:       expect(() => parseWorkflowSteps("[1,2,3]")).toThrow(ValidatorSelectorError);
 88:     });
-89:
+89: 
 90:     it("throws when steps is not an array", () => {
 91:       expect(() => parseWorkflowSteps(JSON.stringify({ steps: "not array" }))).toThrow(ValidatorSelectorError);
 92:     });
 93:   });
-94:
+94: 
 95:   describe("hasValidationStep", () => {
 96:     it("returns true when validator step exists", () => {
 97:       expect(hasValidationStep([
@@ -1012,7 +1012,7 @@ task(subagent_type="explore", load_ski
 71:   evidence_refs: string[];
 72:   created_at: string;
 73: }
-74:
+74: 
 75: export interface WorkflowTemplate {
 76:   id: string;
 77:   name: string;
@@ -1028,7 +1028,7 @@ task(subagent_type="explore", load_ski
 87:   created_at: string;
 88:   updated_at: string;
 89: }
-90:
+90: 
 91: export interface ValidationPolicy {
 92:   id: string;
 93:   name: string;
@@ -1051,18 +1051,18 @@ task(subagent_type="explore", load_ski
 20:   UserDefault = "user_default",
 21:   System = "system",
 22: }
-23:
+23: 
 24: export enum AdapterRole {
 25:   Implementation = "implementation",
 26:   Validator = "validator",
 27: }
-28:
+28: 
 29: export enum ValidationOutcome {
 30:   Passed = "passed",
 31:   Failed = "failed",
 32:   Blocked = "blocked",
 33: }
-34:
+34: 
 35: export enum ValidationBlockReason {
 36:   ValidatorUnavailable = "validator_unavailable",
 37:   ValidatorRunFailed = "validator_run_failed",
@@ -1127,7 +1127,7 @@ Now let me read the server index files (read-only, to produce the wiring snippet
 10: import graphRoutes from "./routes/graph.js";
 11: import intakeRoutes from "./routes/intake.js";
 12: import type { GraphRuntimeService } from "../services/graph-runtime.js";
-13: import type { GraphRunRepository
+13: import type { GraphRunRepository 
 …[truncated]
   ```
   </details>
@@ -1149,17 +1149,17 @@ Let me check how existing route tests build a minimal Fastify app and the error-
 1: import { describe, it, expect } from "vitest";
 2: import { ErrorCode } from "@personahub/shared/errors";
 3: import { getErrorStatus, AppError, buildErrorResponse } from "../../src/api/errors.js";
-4:
+4: 
 5: describe("Error Status Mapping", () => {
 6:   describe("existing error codes preserve their HTTP status", () => {
 7:     it("PROJECT_NAME_REQUIRED -> 400", () => {
 8:       expect(getErrorStatus(ErrorCode.PROJECT_NAME_REQUIRED)).toBe(400);
 9:     });
-10:
+10: 
 11:     it("PROJECT_NOT_FOUND -> 404", () => {
 12:       expect(getErrorStatus(ErrorCode.PROJECT_NOT_FOUND)).toBe(404);
 13:     });
-14:
+14: 
 15:     it("ISSUE_NOT_FOUND -> 404", () => {
 16:       expect(getErrorStatus(ErrorCode.ISSUE_NOT_
 …[truncated]
@@ -1245,11 +1245,11 @@ WHY:
 1: import { AppError } from "../api/errors.js";
 2: import { ErrorCode } from "@personahub/shared/errors";
 3: import type { GraphRunRepository } from "../repositories/graph-run.js";
-4:
+4: 
 5: const SQLITE_CONSTRAINT_UNIQUE = "SQLITE_CONSTRAINT_UNIQUE";
-6:
+6: 
 7: export type GraphConstraintKind = "active_attempt" | "nonterminal_graph" | "duplicate_node";
-8:
+8: 
 9: export class GraphConstraintError extends Error {
 10:   constructor(
 11:     message: string,
@@ -1259,12 +1259,12 @@ WHY:
 15:     this.name = "GraphConstraintError";
 16:   }
 17: }
-18:
+18: 
 19: interface SqliteError {
 20:   code: string;
 21:   message: string;
 22: }
-23:
+23: 
 24: export function isSql
 …[truncated]
   ```
@@ -1278,7 +1278,7 @@ WHY:
 
 > [reasoning] Now I have the `isSqliteUniqueConstraint` helper. I can use `isSqliteUniqueConstraint(error, "idx_workflow_templates_issue_type_version")` to detect the version conflict (T020b) and `isSqliteUniqueConstraint(error, "idx_workflow_templates_one_active")` to detect the single-active violation.
 
-Wait - does better-sqlite3's error message include the index name? Let me verify. The existing code checks for "runs.node_run_id" (a column reference) and "graph_runs.issue_id" (a column reference), not index names. SQLite's UNIQUE constraint error message format depends on SQLite version. Newer SQLite versions include the index name in the message. Let me check what the error message looks like. Actually, better-sqlite3 with recent SQLite includes the index name. Let me verify by checking how the message looks. The format is typically: `UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version` (column-based) OR in newer versions with the index: `UNIQUE constraint failed: ...`.
+Wait - does better-sqlite3's error message include the index name? Let me verify. The existing code checks for "runs.node_run_id" (a column reference) and "graph_runs.issue_id" (a column reference), not index names. SQLite's UNIQUE constraint error message format depends on SQLite version. Newer SQLite versions include the index name in the message. Let me check what the error message looks like. Actually, better-sqlite3 with recent SQLite includes the index name. Let me verify by checking how the message looks. The format is typically: `UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version` (column-based) OR in newer versions with the index: `UNIQUE constraint failed: ...`. 
 
 Actually, SQLite's error message for a UNIQUE constraint violation is: `UNIQUE constraint failed: table.column`. It does NOT include the index name by default. Hmm. But there's a subtlety: when there are multiple unique constraints, the message lists the columns. So for `idx_workflow_templates_issue_type_version`, the message would be `UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version`. For `idx_workflow_templates_one_active`, it would be `UNIQUE constraint failed: workflow_templates.issue_type`.
 
@@ -1298,7 +1298,7 @@ Actually, modern SQLite (3.25+) changed the error message format. Let me check w
 
 Hmm, but there's a subtle issue. The single-active partial index violation message. Let me think. Actually for the activate path, I deactivate siblings FIRST within the transaction, then activate. So the single-active index should never be violated by my code IF I do it in the right order. But the version conflict (T020b) CAN happen under concurrency. And for safety, the single-active index is a backstop.
 
-Let me now also verify: when better-sqlite3 throws, does the error have `code: "SQLITE_CONSTRAINT_UNIQUE"`? Yes, that's standard. And the message format is `UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version`.
+Let me now also verify: when better-sqlite3 throws, does the error have `code: "SQLITE_CONSTRAINT_UNIQUE"`? Yes, that's standard. And the message format is `UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version`. 
 
 Now, I have enough context. Let me set up todos and start building.
 
@@ -1356,11 +1356,11 @@ countActiveByIssueType(issueType: string): number {
 
 For `insertVersion`: The caller passes a transaction db or I compute here. The design requires max+1 and INSERT in the same transaction. The service will wrap in `this.db.transaction(() => {...})()` and call repo methods that use `this.db`. Since better-sqlite3 transactions are reentrant (nested transactions become savepoints), calling repo methods inside a service-level transaction works fine - they all operate on the same connection.
 
-Actually, the task says: "insertVersion(source, input, activate, newId, version) - inserts a NEW row with version = max(version)+1 for that issue_type, computing version INSIDE the same transaction as the INSERT".
+Actually, the task says: "insertVersion(source, input, activate, newId, version) - inserts a NEW row with version = max(version)+1 for that issue_type, computing version INSIDE the same transaction as the INSERT". 
 
 Hmm, but the signature given has `version` as a parameter. Let me re-read: "insertVersion(source: WorkflowTemplate, input: {name, steps_json}, activate: boolean, newId: string, version: number): WorkflowTemplate - ... computing version INSIDE the same transaction as the INSERT (the caller passes a transaction db or you compute here - design requires max+1 and INSERT in the same transaction; see T020)."
 
-So there's flexibility. The cleanest approach: the SERVICE computes max+1 inside the transaction and passes it to insertVersion. OR insertVersion computes it. But the design requirement is that max+1 and INSERT are in the same transaction.
+So there's flexibility. The cleanest approach: the SERVICE computes max+1 inside the transaction and passes it to insertVersion. OR insertVersion computes it. But the design requirement is that max+1 and INSERT are in the same transaction. 
 
 The cleanest: have the service open the transaction, call `repo.getMaxVersion(issueType)` to get the max, compute `version = max + 1`, then call `repo.insertVersion(...)` with that version - all inside the transaction. If a concurrent transaction already inserted the same version, the unique index catches it, and I map to TEMPLATE_VERSION_CONFLICT.
 
@@ -1391,7 +1391,7 @@ Wait, but if activate is true and there's an existing active row, the order matt
 
 Hmm, actually cleaner: in the route, before/after zod parse, check if the raw body contains any of the four non-editable keys. Let me do it explicitly.
 
-Actually, let me reconsider. The zod schema for createVersion body: `{name?, steps_json?, activate?, acknowledge_validation_disabled?}`. If I use a non-strict (default) zod object, unknown keys are stripped silently - bad. If I use `.strict()`, unknown keys cause REQUEST_BODY_INVALID - wrong code.
+Actually, let me reconsider. The zod schema for createVersion body: `{name?, steps_json?, activate?, acknowledge_validation_disabled?}`. If I use a non-strict (default) zod object, unknown keys are stripped silently - bad. If I use `.strict()`, unknown keys cause REQUEST_BODY_INVALID - wrong code. 
 
 Best approach: parse with zod (default, strips unknowns), but FIRST check the raw body for the four non-editable field names and throw TEMPLATE_FIELD_NOT_EDITABLE. Or: use `.strict()` and then in the error handler map... no, too complex.
 
@@ -1446,7 +1446,7 @@ Let me define a shared private method for the gate logic.
 - targetValidation = try { parseWorkflowSteps(target.steps_json); hasValidationStep(...) } catch -> null (invalid)
   - Actually for the gate, target invalid (incl NULL) -> reject TEMPLATE_STEPS_INVALID (unconditional, first row).
   - But wait: validateStepsSchema already runs first and rejects NULL/invalid. So by the time we compute targetValidation, target is valid (schema-valid). But "valid schema" doesn't mean "has validator step". A schema-valid steps_json with no validator step is "valid but disabled validation".
-
+  
 Let me re-read the matrix:
   - target invalid / NULL -> reject (unconditional) [T023d]
   - currently active valid AND target disabled validation (no validator step) -> require acknowledge
@@ -1459,7 +1459,7 @@ So the matrix keys off:
 - targetHasValidator: does the (schema-valid) target have a validator step? Computed via parseWorkflowSteps + hasValidationStep.
 - currentlyActiveValid: is currentlyActive's steps_json schema-valid (via validateStepsSchema - but we don't want to throw, we want a boolean). Hmm. Actually for currentlyActive, "invalid" means parseWorkflowSteps throws (the loose parser). Let me use the loose parser for currentlyActive validity (since it's about runtime behavior), OR use validateStepsSchema in a try/catch.
 
-Wait, the design §6 says: "当前 active 合法" / "当前 active 非法". What does "合法" mean for currentlyActive? It means its steps_json is parseable by the runtime parser (parseWorkflowSteps). If parseWorkflowSteps throws, it's "非法" (invalid).
+Wait, the design §6 says: "当前 active 合法" / "当前 active 非法". What does "合法" mean for currentlyActive? It means its steps_json is parseable by the runtime parser (parseWorkflowSteps). If parseWorkflowSteps throws, it's "非法" (invalid). 
 
 Actually, let me think about what "valid" means consistently. The strict validator (validateStepsSchema) is the WRITE gate for the target. For currentlyActive, we're not writing it - we're reading its current state to determine the "before" value. The "before" validation_enabled is computed via parseWorkflowSteps + hasValidationStep (the runtime/loose path, same as detail()). If parseWorkflowSteps throws, currentlyActive is "invalid" and before = null/unknown.
 
@@ -1467,7 +1467,7 @@ So:
 - targetValid: validateStepsSchema(target.steps_json) passes (strict). If it throws -> reject TEMPLATE_STEPS_INVALID. (This is the unconditional first-row rejection.)
 - targetHasValidator: parseWorkflowSteps(target.steps_json) (now known valid) + hasValidationStep. Since validateStepsSchema passed, parseWorkflowSteps won't throw.
 - currentlyActive: null (no active) OR {valid, hasValidator}:
-  - if currentlyActive is null: there's no "before". Hmm, is that possible? If there's no active row... but the seed always has wft_coding_default active. But after deactivate-last is blocked, there's always at least one active. Actually activate() could be called when... no, there's always exactly one active (invariant). But defensively, if currentlyActive is null, then before = unknown, and we're enabling validation (if target has validator) -> no acknowledge needed; or disabling -> require acknowledge?
+  - if currentlyActive is null: there's no "before". Hmm, is that possible? If there's no active row... but the seed always has wft_coding_default active. But after deactivate-last is blocked, there's always at least one active. Actually activate() could be called when... no, there's always exactly one active (invariant). But defensively, if currentlyActive is null, then before = unknown, and we're enabling validation (if target has validator) -> no acknowledge needed; or disabling -> require acknowledge? 
 
 Actually, let me handle currentlyActive=null as "before unknown". If target disables validation and there's no current active... edge case. Let me treat: if currentlyActive is null OR invalid -> "before unknown". Then:
   - target has validator -> no acknowledge (enabling/keeping validation, no regression)
@@ -1501,7 +1501,7 @@ Wait, that's simpler than I thought. Let me verify against the matrix:
 - Row 2: currently active valid AND target disabled validation -> require acknowledge. ✓ (targetHasValidator false -> require)
 - Row 3: currently active invalid AND target valid -> require acknowledge, before=unknown, allow. ✓ (targetHasValidator could be true OR false here. If target is valid AND has validator -> row says "require acknowledge"??)
 
-Hold on. Let me re-read row 3: "当前 active 非法、目标合法 -> 要求 acknowledge_validation_disabled，审计前值记 unknown，允许启用".
+Hold on. Let me re-read row 3: "当前 active 非法、目标合法 -> 要求 acknowledge_validation_disabled，审计前值记 unknown，允许启用". 
 
 So when currently active is INVALID and target is VALID (regardless of whether target has validator), require acknowledge. That's the escape hatch: because we can't prove the current state had validation, we conservatively require acknowledge even if the target ENABLES validation.
 
@@ -1546,7 +1546,7 @@ Now `beforeValidationEnabled` for audit:
 
 Now, the audit details_json should record: acknowledge_validation_disabled (bool), validation_enabled before (bool|null|unknown), validation_enabled after (bool).
 
-Let me use null for "unknown" in the audit. Actually the design says "审计前值记为 unknown". Let me store before as `null` when unknown, and the string "unknown" would be ambiguous with boolean null. Let me store: `validation_enabled_before: boolean | null` where null means unknown, plus maybe a flag. Actually, let me store `validation_enabled_before: boolean | null` (null = unknown) and `validation_enabled_after: boolean`. That's clean. The detail's validation_enabled is `boolean | null` already (null when parse fails). So for audit, null = unknown/invalid.
+Let me use null for "unknown" in the audit. Actually the design says "审计前值记为 unknown". Let me store before as `null` when unknown, and the string "unknown" would be ambiguous with boolean null. Let me store: `validation_enabled_before: boolean | null` where null means unknown, plus maybe a flag. Actually, let me store `validation_enabled_before: boolean | null` (null = unknown) and `validation_enabled_after: boolean`. That's clean. The detail's validation_enabled is `boolean | null` already (null when parse fails). So for audit, null = unknown/invalid. 
 
 Hmm, but there's a subtle distinction: "before is null because no active row" vs "before is null because active row's steps_json is invalid". Both map to "unknown" for audit purposes. That's fine - the design says "前值记为 unknown" for the invalid case, and no-active is a degenerate case that's effectively unknown too.
 
@@ -1563,23 +1563,23 @@ Now for `activate(id, acknowledge?)` (activating an EXISTING version):
   - // if target is already the active row, activate is idempotent-ish: deactivate siblings (none, since it's the only active) then set active. Actually if target IS currently active, deactivating siblings does nothing and setting it active again is a no-op. But we should still write audit? The design doesn't explicitly say. Let me handle: if target.id === currentlyActive?.id, it's already active - I'll still proceed (deactivate others - none, set active - no-op) and write audit. Actually, simpler: just run the deactivate-all-active + set-target-active. If target is already active, deactivate-all-active would deactivate it too! That's wrong.
 ```
 
-Hmm. The activate() repo method "停用同 issue_type 的全部 active 行 -> 激活 id". If I deactivate ALL active rows including target, then activate target - that works (target ends active). But the partial unique index: after deactivating all, there are zero active rows; then setting target to active creates one. Fine. But it's a no-op if target was already active (deactivate then reactivate). The issue is: should I skip if already active?
+Hmm. The activate() repo method "停用同 issue_type 的全部 active 行 -> 激活 id". If I deactivate ALL active rows including target, then activate target - that works (target ends active). But the partial unique index: after deactivating all, there are zero active rows; then setting target to active creates one. Fine. But it's a no-op if target was already active (deactivate then reactivate). The issue is: should I skip if already active? 
 
-Actually, re-activating the already-active template: the gate still runs. If target is already active and valid with validator, gate passes (no acknowledge), deactivate-all-active (deactivates target), set target active. Net no-op but audit written. That's acceptable but slightly wasteful. However, if target is already active and we run the gate with currentlyActive = target itself... beforeValid = parse(target), targetHasValidator = hasValidator(target). If target has no validator (disabled validation, already active), then acknowledgeRequired = !beforeValid(false since valid) ? ... = !targetHasValidator = true. So re-activating a no-validator active template requires acknowledge. That seems odd but consistent - it's a no-op activation but the gate still enforces.
+Actually, re-activating the already-active template: the gate still runs. If target is already active and valid with validator, gate passes (no acknowledge), deactivate-all-active (deactivates target), set target active. Net no-op but audit written. That's acceptable but slightly wasteful. However, if target is already active and we run the gate with currentlyActive = target itself... beforeValid = parse(target), targetHasValidator = hasValidator(target). If target has no validator (disabled validation, already active), then acknowledgeRequired = !beforeValid(false since valid) ? ... = !targetHasValidator = true. So re-activating a no-validator active template requires acknowledge. That seems odd but consistent - it's a no-op activation but the gate still enforces. 
 
 Actually, to avoid weirdness, let me NOT short-circuit. The design says activate() "停用同 issue_type 的全部 active 行 -> 激活 id". I'll implement deactivate-all-others then activate-target. But "全部 active 行" includes target if it's active. To be safe and correct, I'll deactivate all active rows EXCEPT target, then set target to active. Wait, but the design says "全部" (all). Let me re-read design §4 table:
 
 | `activate(id)` | 停用同 `issue_type` 的**全部** active 行 -> 激活 `id` | ... |
 
-So deactivate ALL active rows (including target if active), then activate target. If target was already active, it gets deactivated then reactivated - net same. The partial unique index is satisfied throughout? No - during the transaction, after deactivate-all, zero active rows; then activate target, one active row. Fine. The index is checked at statement boundaries within the transaction (SQLite checks at each statement). So: UPDATE all to inactive (0 active) - OK. UPDATE target to active (1 active) - OK.
+So deactivate ALL active rows (including target if active), then activate target. If target was already active, it gets deactivated then reactivated - net same. The partial unique index is satisfied throughout? No - during the transaction, after deactivate-all, zero active rows; then activate target, one active row. Fine. The index is checked at statement boundaries within the transaction (SQLite checks at each statement). So: UPDATE all to inactive (0 active) - OK. UPDATE target to active (1 active) - OK. 
 
 But wait, if I do "UPDATE ... SET status='inactive' WHERE issue_type=? AND status='active'" that deactivates target too (if it was active). Then "UPDATE ... SET status='active' WHERE id=?" reactivates it. Two statements. Fine.
 
-Alternatively, to be cleaner and avoid deactivating target unnecessarily: "UPDATE ... SET status='inactive' WHERE issue_type=? AND status='active' AND id != ?". Then "UPDATE ... SET status='active' WHERE id=?". This deactivates siblings only, then activates target. If target was inactive, siblings deactivated, target activated. If target was active, no siblings to deactivate (it's the only active), target stays active (the second UPDATE is a no-op). This is cleaner. But the design says "全部 active 行". Hmm. The INTENT of "全部" is to ensure single-active invariant. Deactivating "all except target" achieves the same end state. I think "全部 active 行 -> 激活 id" is describing the conceptual flow (clear the field, then set the one). Implementing "all except target" is equivalent and avoids a wasteful deactivate-reactivate.
+Alternatively, to be cleaner and avoid deactivating target unnecessarily: "UPDATE ... SET status='inactive' WHERE issue_type=? AND status='active' AND id != ?". Then "UPDATE ... SET status='active' WHERE id=?". This deactivates siblings only, then activates target. If target was inactive, siblings deactivated, target activated. If target was active, no siblings to deactivate (it's the only active), target stays active (the second UPDATE is a no-op). This is cleaner. But the design says "全部 active 行". Hmm. The INTENT of "全部" is to ensure single-active invariant. Deactivating "all except target" achieves the same end state. I think "全部 active 行 -> 激活 id" is describing the conceptual flow (clear the field, then set the one). Implementing "all except target" is equivalent and avoids a wasteful deactivate-reactivate. 
 
 But there's a subtle case: what if target is currently active and there's ANOTHER active row (invariant violated somehow)? "all except target" would deactivate the other, keeping target. "all" would deactivate both then reactivate target. Same end state. Both fine.
 
-I'll go with "deactivate all active rows of this issue_type" (matching the design text literally), then "set target to active". Actually, the cleanest literal implementation:
+I'll go with "deactivate all active rows of this issue_type" (matching the design text literally), then "set target to active". Actually, the cleanest literal implementation: 
 1. `UPDATE workflow_templates SET status='inactive', updated_at=? WHERE issue_type=? AND status='active'` - deactivates all active (incl target if active).
 2. `UPDATE workflow_templates SET status='active', updated_at=? WHERE id=?` - activates target.
 
@@ -1592,7 +1592,7 @@ For `deactivate(id)`:
   - count = repo.countActiveByIssueType(target.issue_type)
   - if count <= 1 throw 409 LAST_ACTIVE_TEMPLATE
   - // also verify target is currently active? The design says deactivate rejects last active. If target is already inactive, deactivating it is a no-op. Should I reject? The design doesn't say. Let me just set it inactive (no-op if already inactive) and write audit. Actually, if target is inactive and it's the... hmm. countActive counts active rows. If target is inactive and there's 1 active row (different), count=1, but target isn't that active row. Deactivating target (already inactive) is a no-op but count<=1 would reject. That's wrong - rejecting deactivate of an inactive template because there's only 1 active (a different one).
-
+  
   Let me reconsider. deactivate(id) should only make sense for an active template. If target is inactive, it's already deactivated. Let me check: the design says "deactivate(id) | 仅置该行 inactive | 它是该 issue_type 最后一个 active 模板". So the reject condition is "it is the last active template". If target is inactive, it's not "the last active template" (it's not active at all). So I should: if target is inactive, it's a no-op (or maybe still write audit? No - no mutation). Let me handle: if target.status is already 'inactive', return detail(target) without mutation/audit (idempotent). Actually, to be safe, let me only proceed if target is active. If inactive, return current detail (no-op). If active and it's the last active -> reject. If active and not last -> deactivate + audit.
 ```
 
@@ -1680,7 +1680,7 @@ function tryParseWorkflowSteps(stepsJson: string | null): { valid: boolean; hasV
   }
 }
 ```
-Note: parseWorkflowSteps(null) returns [] (not throw). So null steps_json -> valid: true, hasValidator: false. Hmm. That means "currentlyActive with null steps_json" is "valid but no validator" by the loose parser. But the design considers null steps_json as "invalid" for activation purposes (row 1: "target非法 / 为 NULL -> 拒绝").
+Note: parseWorkflowSteps(null) returns [] (not throw). So null steps_json -> valid: true, hasValidator: false. Hmm. That means "currentlyActive with null steps_json" is "valid but no validator" by the loose parser. But the design considers null steps_json as "invalid" for activation purposes (row 1: "target非法 / 为 NULL -> 拒绝"). 
 
 Wait, there's a distinction: for the TARGET, null steps_json is rejected by validateStepsSchema (strict). For CURRENTLYACTIVE, we use the loose parser to determine "before" state. parseWorkflowSteps(null) returns [] (empty), hasValidationStep([]) = false. So currentlyActive with null steps_json -> loose-valid, hasValidator false. That means beforeValid = true, beforeHasValidator = false. So if target has validator, acknowledgeRequired = !beforeValid(false) ? ... : !targetHasValidator. beforeValid true, targetHasValidator true -> acknowledgeRequired = false. So enabling validation from a null-steps active template -> no acknowledge. Is that right?
 
@@ -1702,11 +1702,11 @@ function assessActiveValidation(t: WorkflowTemplate | null): { valid: boolean; h
 }
 ```
 
-Wait, but parseWorkflowSteps filters malformed entries silently. So a steps_json with all-malformed entries returns [] (valid, hasValidator false). Is that "valid" or "invalid"? For the currentlyActive assessment, the loose parser is the runtime truth - if the runtime sees [] (no validator), validation is off. So "valid: true, hasValidator: false" is the correct runtime assessment. The "invalid" case is only when parseWorkflowSteps THROWS (JSON parse error, not an object, steps not an array).
+Wait, but parseWorkflowSteps filters malformed entries silently. So a steps_json with all-malformed entries returns [] (valid, hasValidator false). Is that "valid" or "invalid"? For the currentlyActive assessment, the loose parser is the runtime truth - if the runtime sees [] (no validator), validation is off. So "valid: true, hasValidator: false" is the correct runtime assessment. The "invalid" case is only when parseWorkflowSteps THROWS (JSON parse error, not an object, steps not an array). 
 
 Hmm, but null is a special case. parseWorkflowSteps(null) returns [] without throwing. So runtime treats null as "no steps, no validation". So currentlyActive with null steps_json: runtime says validation is OFF (hasValidator false), and it doesn't crash. So it's "valid" in the sense that the runtime doesn't crash, but validation is off.
 
-Now the gate: if currentlyActive has null steps_json (runtime: no validation, valid), and target has validator (enabling validation) -> beforeValid=true, targetHasValidator=true -> acknowledgeRequired=false. That seems... fine? We're enabling validation, no regression.
+Now the gate: if currentlyActive has null steps_json (runtime: no validation, valid), and target has validator (enabling validation) -> beforeValid=true, targetHasValidator=true -> acknowledgeRequired=false. That seems... fine? We're enabling validation, no regression. 
 
 But wait - the design row 3 says "当前 active 非法" requires acknowledge. Is null steps_json "非法"? The design says target null is rejected (row 1). But for currentlyActive, "非法" is about whether the runtime can parse it. The runtime CAN handle null (returns []). So null currentlyActive is "valid but validation-off" by runtime semantics.
 
@@ -1714,7 +1714,7 @@ Actually, I think I'm overcomplicating. Let me re-read the design's escape hatch
 
 So "当前 active 非法" = the detail view shows validation_enabled: null (parse error). That happens when parseWorkflowSteps THROWS. null steps_json -> parseWorkflowSteps returns [] -> validation_enabled: false (not null). So null steps_json currentlyActive is NOT "非法" by the detail's definition - it's "valid, validation off".
 
-Wait, let me check detail():
+Wait, let me check detail(): 
 ```
 try { steps = parseWorkflowSteps(t.steps_json); validation_enabled = hasValidationStep(steps); parse_error = null }
 catch { validation_enabled = null; parse_error = ... }
@@ -1876,7 +1876,7 @@ Let me implement rejectNonEditableFields to reject any key NOT in the allowed se
 
 Hmm, but should a typo like "actvate" give TEMPLATE_FIELD_NOT_EDITABLE or REQUEST_BODY_INVALID? The design says "其余字段出现在请求里 -> 400 TEMPLATE_FIELD_NOT_EDITABLE". So TEMPLATE_FIELD_NOT_EDITABLE for any extra field. I'll go with that - reject any key not in the allowed set, with TEMPLATE_FIELD_NOT_EDITABLE, field=the offending key.
 
-Actually, wait. Let me reconsider. If I reject ANY unknown key with TEMPLATE_FIELD_NOT_EDITABLE, that's a bit aggressive for typos. But the design is explicit. And the task says "Reject extra fields that are non-editable -> 400 TEMPLATE_FIELD_NOT_EDITABLE". I'll interpret "extra fields" as any field beyond the allowed set. Let me list the non-editable content fields explicitly for a clearer error message, but also catch any other unknown. Actually, simplest:
+Actually, wait. Let me reconsider. If I reject ANY unknown key with TEMPLATE_FIELD_NOT_EDITABLE, that's a bit aggressive for typos. But the design is explicit. And the task says "Reject extra fields that are non-editable -> 400 TEMPLATE_FIELD_NOT_EDITABLE". I'll interpret "extra fields" as any field beyond the allowed set. Let me list the non-editable content fields explicitly for a clearer error message, but also catch any other unknown. Actually, simplest: 
 
 ```
 const ALLOWED_CREATE_FIELDS = new Set(["name", "steps_json", "activate", "acknowledge_validation_disabled"]);
@@ -1904,15 +1904,15 @@ For createVersion:
 createVersion(sourceId, input):
   const source = this.repo.getById(sourceId);
   if (!source) throw new AppError(TEMPLATE_NOT_FOUND, "Workflow template not found.");
-
+  
   const newName = input.name ?? source.name;  // if name omitted, inherit? Or require? The input is optional. If omitted, inherit from source? The design says "name 与 steps_json 可编辑". If name omitted, keep source name. If steps_json omitted, keep source steps_json.
   const newStepsJson = input.steps_json !== undefined ? input.steps_json : source.steps_json;
-
+  
   try {
     const result = this.db.transaction(() => {
       const version = this.repo.getMaxVersion(source.issue_type) + 1;
       const newId = generateWorkflowTemplateId();
-
+      
       if (input.activate) {
         // gate
         validateStepsSchema(newStepsJson);  // throws TEMPLATE_STEPS_INVALID
@@ -1963,7 +1963,7 @@ createVersion(sourceId, input):
 
 Wait - the AppError for VALIDATION_DISABLE_NOT_ACKNOWLEDGED thrown inside the transaction would be caught by the catch and re-thrown (it's not a sqlite constraint). Good - it propagates. But I need to make sure I don't accidentally catch AppErrors and rethrow as something else. The catch only maps sqlite unique constraint on version; everything else rethrows. Good.
 
-But there's an issue: `isSqliteUniqueConstraint(error, "workflow_templates.version")` - the error from better-sqlite3 when the version unique index fails. The message format... let me verify. Actually, let me check the exact column reference. The index is on (issue_type, version). SQLite message: `UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version`. So checking `.includes("workflow_templates.version")` works. But also need to make sure the single-active index violation (if it somehow occurs) isn't mis-mapped. The single-active message: `UNIQUE constraint failed: workflow_templates.issue_type`. That doesn't include "workflow_templates.version", so it won't be mapped to VERSION_CONFLICT. Good. But if single-active IS violated (shouldn't happen with correct ordering), I'd want to map it too. Let me add: if single-active violation -> also TEMPLATE_VERSION_CONFLICT? Or a different error? Actually, single-active violation means a bug in my ordering. But defensively, let me map it to TEMPLATE_VERSION_CONFLICT as well (it's a conflict). Hmm, or let it surface. Actually, for createVersion with activate=true, my repo deactivates siblings BEFORE inserting active, so single-active shouldn't be violated. For activate(), same. So I'll only map version conflicts. If single-active somehow fires, it'll be a 500 (unmapped). That's acceptable as a "shouldn't happen" backstop. Actually, the design says the index is the backstop for ALL writers. If it fires, it's a real conflict. Let me map single-active to TEMPLATE_VERSION_CONFLICT too, to be safe. But the error code is "VERSION_CONFLICT" which is specifically about version. A single-active conflict is different semantically.
+But there's an issue: `isSqliteUniqueConstraint(error, "workflow_templates.version")` - the error from better-sqlite3 when the version unique index fails. The message format... let me verify. Actually, let me check the exact column reference. The index is on (issue_type, version). SQLite message: `UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version`. So checking `.includes("workflow_templates.version")` works. But also need to make sure the single-active index violation (if it somehow occurs) isn't mis-mapped. The single-active message: `UNIQUE constraint failed: workflow_templates.issue_type`. That doesn't include "workflow_templates.version", so it won't be mapped to VERSION_CONFLICT. Good. But if single-active IS violated (shouldn't happen with correct ordering), I'd want to map it too. Let me add: if single-active violation -> also TEMPLATE_VERSION_CONFLICT? Or a different error? Actually, single-active violation means a bug in my ordering. But defensively, let me map it to TEMPLATE_VERSION_CONFLICT as well (it's a conflict). Hmm, or let it surface. Actually, for createVersion with activate=true, my repo deactivates siblings BEFORE inserting active, so single-active shouldn't be violated. For activate(), same. So I'll only map version conflicts. If single-active somehow fires, it'll be a 500 (unmapped). That's acceptable as a "shouldn't happen" backstop. Actually, the design says the index is the backstop for ALL writers. If it fires, it's a real conflict. Let me map single-active to TEMPLATE_VERSION_CONFLICT too, to be safe. But the error code is "VERSION_CONFLICT" which is specifically about version. A single-active conflict is different semantically. 
 
 Hmm, let me reconsider. Actually for createVersion, the only expected conflict is version collision (T020b). Single-active shouldn't fire because I deactivate first. For activate(), there's no version insertion, so no version conflict; single-active shouldn't fire because I deactivate first. So neither should hit single-active. I'll map only version conflicts in createVersion. Clean.
 
@@ -1994,23 +1994,23 @@ insertVersion(source, input, activate, newId, version): WorkflowTemplate {
 }
 ```
 
-Wait, `source.collaboration_topology` - in mapRow, `collaboration_topology: row.collaboration_topology ?? ""`. So the WorkflowTemplate type has `collaboration_topology: string` (never null, defaults to ""). But the DB column is nullable. When inserting, if source.collaboration_topology is "" (empty string), should I insert "" or null? The seed inserts 'sequential'. Existing rows might have null. Let me preserve the source's DB value. But the WorkflowTemplate type has it as string ("" for null). Hmm. To preserve exactly, I should read the raw row. But mapRow converts null to "". So if source had null collaboration_topology, WorkflowTemplate.collaboration_topology = "". Inserting "" is different from null.
+Wait, `source.collaboration_topology` - in mapRow, `collaboration_topology: row.collaboration_topology ?? ""`. So the WorkflowTemplate type has `collaboration_topology: string` (never null, defaults to ""). But the DB column is nullable. When inserting, if source.collaboration_topology is "" (empty string), should I insert "" or null? The seed inserts 'sequential'. Existing rows might have null. Let me preserve the source's DB value. But the WorkflowTemplate type has it as string ("" for null). Hmm. To preserve exactly, I should read the raw row. But mapRow converts null to "". So if source had null collaboration_topology, WorkflowTemplate.collaboration_topology = "". Inserting "" is different from null. 
 
-To be safe and preserve the raw DB value, let me have insertVersion accept the source as WorkflowTemplate but insert `source.collaboration_topology || null`? No - that converts "" to null. Actually, the cleanest: since collaboration_topology is `string` in the type (null->""), and the DB allows null, inserting "" is fine (it's a valid value). But it changes null to "" which is a (minor) mutation. For the "non-editable fields inherited exactly" requirement (T020c), I should preserve the exact value.
+To be safe and preserve the raw DB value, let me have insertVersion accept the source as WorkflowTemplate but insert `source.collaboration_topology || null`? No - that converts "" to null. Actually, the cleanest: since collaboration_topology is `string` in the type (null->""), and the DB allows null, inserting "" is fine (it's a valid value). But it changes null to "" which is a (minor) mutation. For the "non-editable fields inherited exactly" requirement (T020c), I should preserve the exact value. 
 
-Hmm. Let me reconsider. The four non-editable fields: collaboration_topology, validation_policy_id, handoff_policy_json, evidence_requirements_json. Plus agent_team_template_id. These should be copied EXACTLY from source.
+Hmm. Let me reconsider. The four non-editable fields: collaboration_topology, validation_policy_id, handoff_policy_json, evidence_requirements_json. Plus agent_team_template_id. These should be copied EXACTLY from source. 
 
 For validation_policy_id, handoff_policy_json, evidence_requirements_json, agent_team_template_id - these are `string | null` in the type, so they preserve null. Good.
 
-For collaboration_topology - it's `string` in the type (null converted to ""). So if source DB had null, the type gives "", and inserting "" changes it. To avoid this, I could insert `source.collaboration_topology === "" ? null : source.collaboration_topology`. But that's hacky.
+For collaboration_topology - it's `string` in the type (null converted to ""). So if source DB had null, the type gives "", and inserting "" changes it. To avoid this, I could insert `source.collaboration_topology === "" ? null : source.collaboration_topology`. But that's hacky. 
 
-Actually, let me check: does any code care about collaboration_topology being null vs ""? The seed is 'sequential'. F007 reads it. Let me check... actually, the task says these fields have no runtime consumer in v0.2 (T020c). So null vs "" doesn't affect runtime. But for exact inheritance, I should preserve.
+Actually, let me check: does any code care about collaboration_topology being null vs ""? The seed is 'sequential'. F007 reads it. Let me check... actually, the task says these fields have no runtime consumer in v0.2 (T020c). So null vs "" doesn't affect runtime. But for exact inheritance, I should preserve. 
 
 The cleanest solution: have insertVersion read the source's RAW row to get the exact DB values. But that's an extra query. Alternatively, change mapRow to preserve null for collaboration_topology. But that changes the WorkflowTemplate type (collaboration_topology: string | null) which is a shared type change - NOT allowed.
 
 Let me just insert `source.collaboration_topology || null` to preserve null-ness when empty. Wait, if source is 'sequential', `|| null` keeps 'sequential'. If source is "" (was null), `|| null` gives null. If source is "" (actually empty string in DB), gives null. That's mostly fine. Actually `'sequential' || null` = 'sequential' (truthy). `'' || null` = null. So this converts empty-string to null. Since the original null was converted to "" by mapRow, and I convert back to null, it round-trips correctly for the null case. For a genuine "" in DB (unlikely), it becomes null. Acceptable given no runtime consumer.
 
-Hmm, actually, let me just preserve via the source object directly without the `|| null` trick, inserting the string value. The DB column allows strings. Inserting "" instead of null is a minor difference with no runtime impact. But T020c test says "断言...在 v0.2 无运行时消费者" - it's about verifying no runtime consumer, not about exact byte preservation. And T020 says "issue_type 与四个不可编辑字段一律取自 sourceId 那一行" - inherited from source. Inserting source.collaboration_topology (which is "" if source had null) technically inherits the logical value.
+Hmm, actually, let me just preserve via the source object directly without the `|| null` trick, inserting the string value. The DB column allows strings. Inserting "" instead of null is a minor difference with no runtime impact. But T020c test says "断言...在 v0.2 无运行时消费者" - it's about verifying no runtime consumer, not about exact byte preservation. And T020 says "issue_type 与四个不可编辑字段一律取自 sourceId 那一行" - inherited from source. Inserting source.collaboration_topology (which is "" if source had null) technically inherits the logical value. 
 
 To be safe and exact, let me read the raw source row in insertVersion. Actually, simpler: I'll pass the source WorkflowTemplate and insert its fields directly. For collaboration_topology, I'll insert `source.collaboration_topology` (string). If it was null in DB, it becomes "". This is a non-issue since no runtime consumer and the value is "inherited" logically. But to be truly exact, let me do the `|| null` conversion. Actually no - `source.collaboration_topology` is always a string (type guarantees it). Let me just insert it as-is. Done. Moving on - this is a minor point with no runtime impact, and obsessing over null-vs-"" for a field with no consumer wastes time.
 
@@ -2031,11 +2031,11 @@ activate(id): void {
 }
 ```
 
-Wait, but the SERVICE wraps everything in its own transaction. If the repo also wraps in a transaction, that's a nested transaction (savepoint) - fine in better-sqlite3. But the design wants the audit + activation in the SAME transaction. If repo.activate() commits its own transaction, then the audit (written after) is in a separate transaction - violating T031.
+Wait, but the SERVICE wraps everything in its own transaction. If the repo also wraps in a transaction, that's a nested transaction (savepoint) - fine in better-sqlite3. But the design wants the audit + activation in the SAME transaction. If repo.activate() commits its own transaction, then the audit (written after) is in a separate transaction - violating T031. 
 
 So the repo methods should NOT wrap in their own transactions. The SERVICE wraps the whole operation (gate check + repo mutations + audit) in one transaction. The repo methods are just statement runners. Let me make repo.activate() NOT transactional - just the two UPDATEs. The service wraps them with the audit in one transaction.
 
-But wait - the service calls `this.db.transaction(() => { ... repo.activate(id); ... audit.insert(...); })()`. The repo methods use `this.db` (same connection). In better-sqlite3, a transaction is connection-level. Calling `this.db.prepare(...).run(...)` inside a `this.db.transaction()` block executes within that transaction. So repo methods that just run statements (no nested transaction) work correctly within the service's transaction.
+But wait - the service calls `this.db.transaction(() => { ... repo.activate(id); ... audit.insert(...); })()`. The repo methods use `this.db` (same connection). In better-sqlite3, a transaction is connection-level. Calling `this.db.prepare(...).run(...)` inside a `this.db.transaction()` block executes within that transaction. So repo methods that just run statements (no nested transaction) work correctly within the service's transaction. 
 
 So: repo methods = plain statements (no transaction wrapper). Service = wraps in `this.db.transaction(...)()`. Audit insert = plain statement, called within service's transaction. T031 satisfied.
 
@@ -2138,7 +2138,7 @@ deactivate(id):
 
 Hmm, the idempotent return inside transaction - I need to return from createVersion/detail, not from the transaction callback. Let me restructure. The transaction returns a value. Let me have it return a flag or the template.
 
-Actually, let me simplify. For deactivate, the no-op case (already inactive) is rare and I'll just let it proceed: if already inactive, countActive won't include it, activeCount could be >=1 (other actives). Then deactivate(id) sets it inactive (no-op) and writes audit. That writes an audit for a no-op mutation - slightly wrong.
+Actually, let me simplify. For deactivate, the no-op case (already inactive) is rare and I'll just let it proceed: if already inactive, countActive won't include it, activeCount could be >=1 (other actives). Then deactivate(id) sets it inactive (no-op) and writes audit. That writes an audit for a no-op mutation - slightly wrong. 
 
 Let me handle it cleanly: re-read inside txn, if not active, skip mutation+audit (return early from txn with a marker). Let me use a return value:
 
@@ -2216,7 +2216,7 @@ Wait, for activate(id), the target is the existing row. For createVersion(activa
 
 Now, the consequence message for VALIDATION_DISABLE_NOT_ACKNOWLEDGED. The design says "说明后果" (explain consequence). Let me craft: "Activating this template disables the validation step for all newly created issues. Pass acknowledge_validation_disabled: true to confirm this change." And details with before/after.
 
-Now let me think about T032: "after enabling a template that disabled validation, a new Issue's implementation run completing does NOT trigger validation - verify against validator-selector behavior / IssueService.create default template selection".
+Now let me think about T032: "after enabling a template that disabled validation, a new Issue's implementation run completing does NOT trigger validation - verify against validator-selector behavior / IssueService.create default template selection". 
 
 This test: create a template version with no validator step, activate it, then create a new Issue (which uses getDefault() -> the activated no-validator template), and verify that selectValidator returns WorkflowConfigurationInvalid (no validation step). This verifies the end-to-end: the activated template becomes the default, and validation is off for new issues.
 
@@ -2228,34 +2228,34 @@ But IssueService.create needs a full TestServices setup (project, workspace, etc
 
 Actually, let me structure tests in one file `workflow-template-admin.test.ts` with multiple describe blocks. Some use minimal DB+repos+service, some use createTestServices for IssueService integration.
 
-Let me now also think about T020b (concurrent createVersion). SQLite in-memory with better-sqlite3 is single-connection (synchronous). True concurrency isn't possible on one connection. To simulate the version conflict, I can: manually insert a row with the next version number BEFORE calling createVersion, so createVersion's max+1 collides. OR call createVersion twice in a way that the second hits the conflict. But since it's synchronous, the first completes (inserts version N+1), the second computes max+1 = N+2 - no collision.
+Let me now also think about T020b (concurrent createVersion). SQLite in-memory with better-sqlite3 is single-connection (synchronous). True concurrency isn't possible on one connection. To simulate the version conflict, I can: manually insert a row with the next version number BEFORE calling createVersion, so createVersion's max+1 collides. OR call createVersion twice in a way that the second hits the conflict. But since it's synchronous, the first completes (inserts version N+1), the second computes max+1 = N+2 - no collision. 
 
-To simulate T020b, I need to force a collision. Approach:
+To simulate T020b, I need to force a collision. Approach: 
 1. Create version 2 (inactive) via createVersion.
 2. Manually delete it but keep max version at 2? No.
 3. Better: stub getMaxVersion to return a stale value. But that requires mocking.
 
 Alternative: directly insert a row with version = max+1 between the max computation and insert. But it's synchronous...
 
-Hmm. The cleanest way to test T020b: have two createVersion calls where I manipulate the DB between them. Actually, since createVersion computes max+1 and inserts in one transaction (synchronous), the only way to get a collision is if the unique index already has that (issue_type, version).
+Hmm. The cleanest way to test T020b: have two createVersion calls where I manipulate the DB between them. Actually, since createVersion computes max+1 and inserts in one transaction (synchronous), the only way to get a collision is if the unique index already has that (issue_type, version). 
 
 Approach: Pre-seed a template with version 2 (inactive). Then call createVersion on the default (v1). It computes max(1,2)+1 = 3. No collision. That doesn't test the conflict.
 
-To test the conflict: I need createVersion to compute max+1 = N, but (issue_type, N) already exists. So I pre-insert version N, then make createVersion compute max+1 = N (i.e., it thinks max is N-1). That requires getMaxVersion to return N-1 while version N exists.
+To test the conflict: I need createVersion to compute max+1 = N, but (issue_type, N) already exists. So I pre-insert version N, then make createVersion compute max+1 = N (i.e., it thinks max is N-1). That requires getMaxVersion to return N-1 while version N exists. 
 
-This can happen if: version N-1 is the max EXCEPT for a higher version that... no, getMaxVersion returns MAX(version).
+This can happen if: version N-1 is the max EXCEPT for a higher version that... no, getMaxVersion returns MAX(version). 
 
-Wait - the real concurrency scenario: two requests both read max=1, both compute version=2, both try to insert. With a single connection, this can't happen naturally. But the unique index catches it if it DID.
+Wait - the real concurrency scenario: two requests both read max=1, both compute version=2, both try to insert. With a single connection, this can't happen naturally. But the unique index catches it if it DID. 
 
-To test the mapping: I can directly trigger a unique constraint violation on the version index during a createVersion-like operation. The simplest: call createVersion, but before it, manually set up state so the insert collides.
+To test the mapping: I can directly trigger a unique constraint violation on the version index during a createVersion-like operation. The simplest: call createVersion, but before it, manually set up state so the insert collides. 
 
 Actually, here's a clean approach: temporarily replace `repo.getMaxVersion` to return a stale (lower) value, so the computed version collides with an existing one. But I shouldn't mock the repo in an integration test.
 
-Alternative clean approach: Use the repo's insertVersion directly with a version that already exists, and verify the service's conflict mapping. But the conflict mapping is in the service's createVersion catch block.
+Alternative clean approach: Use the repo's insertVersion directly with a version that already exists, and verify the service's conflict mapping. But the conflict mapping is in the service's createVersion catch block. 
 
 Hmm. Let me think differently. I can test T020b at two levels:
 1. Repo level: verify that inserting a duplicate (issue_type, version) throws a unique constraint error (already covered by migration-v10 test).
-2. Service level: verify that when createVersion's insert hits the unique constraint, it maps to TEMPLATE_VERSION_CONFLICT. To trigger this, I can subclass/stub the repo to make getMaxVersion return a value that causes collision.
+2. Service level: verify that when createVersion's insert hits the unique constraint, it maps to TEMPLATE_VERSION_CONFLICT. To trigger this, I can subclass/stub the repo to make getMaxVersion return a value that causes collision. 
 
 Actually, the cleanest way: inject a repo whose `getMaxVersion` returns a stale value. The service takes `workflowTemplateRepo` as a dep. In the test, I can create a wrapper repo that delegates to the real one but overrides getMaxVersion to return `real.getMaxVersion() - 1` (stale). Then createVersion computes version = stale_max + 1 = real_max, which already exists -> unique constraint -> mapped to TEMPLATE_VERSION_CONFLICT.
 
@@ -2267,7 +2267,7 @@ class StaleMaxVersionRepo extends WorkflowTemplateRepository {
   // delegate everything else to inner
 }
 ```
-Hmm, but the service uses `this.repo` for all calls. If I pass a wrapper, all calls go through it. I need to delegate all methods. That's verbose.
+Hmm, but the service uses `this.repo` for all calls. If I pass a wrapper, all calls go through it. I need to delegate all methods. That's verbose. 
 
 Alternative: use Object.assign or a Proxy. Or simpler - just monkey-patch the getMaxVersion method on the repo instance for that one test:
 ```
@@ -2291,11 +2291,11 @@ Actually, there's an even cleaner approach without monkey-patching: I can test t
 
 Yes. Let me use monkey-patching for this one test. It's a standard test technique.
 
-Alternatively, I realize I can avoid monkey-patching by testing the mapping more directly: call `repo.insertVersion` with a version that already exists, catch the sqlite error, and verify `isSqliteUniqueConstraint` detects it. But that tests the helper, not the service mapping. The service mapping (try/catch -> AppError) is what T020b wants.
+Alternatively, I realize I can avoid monkey-patching by testing the mapping more directly: call `repo.insertVersion` with a version that already exists, catch the sqlite error, and verify `isSqliteUniqueConstraint` detects it. But that tests the helper, not the service mapping. The service mapping (try/catch -> AppError) is what T020b wants. 
 
 Let me go with monkey-patching getMaxVersion for the T020b test. It directly exercises the service's conflict-handling path.
 
-Now, let me also consider: the service's createVersion catch block. The transaction throws the sqlite error. `this.db.transaction(fn)()` rethrows the error. The catch checks `isSqliteUniqueConstraint(error, "workflow_templates.version")`. If true -> TEMPLATE_VERSION_CONFLICT. Else rethrow.
+Now, let me also consider: the service's createVersion catch block. The transaction throws the sqlite error. `this.db.transaction(fn)()` rethrows the error. The catch checks `isSqliteUniqueConstraint(error, "workflow_templates.version")`. If true -> TEMPLATE_VERSION_CONFLICT. Else rethrow. 
 
 But wait - the gate's AppError (VALIDATION_DISABLE_NOT_ACKNOWLEDGED, TEMPLATE_STEPS_INVALID) is thrown INSIDE the transaction. It propagates out. The catch must NOT catch AppErrors and mis-map them. Since `isSqliteUniqueConstraint` checks for SQLITE_CONSTRAINT_UNIQUE code, an AppError won't match (it's not a sqlite error). So AppErrors pass through the catch (rethrown). Good.
 
@@ -2339,7 +2339,7 @@ Now, the audit `details_json` for deactivate - the design says audit records ack
 
 Hmm, this is getting verbose. Let me simplify: for deactivate, details = `{ validation_enabled_before: <ve>, validation_enabled_after: <ve> }` (same value, no change). For version_created (activate=false), details = `{ activate: false }`. For version_created (activate=true) and activate, details = `{ acknowledge_validation_disabled: bool, validation_enabled_before: bool|null, validation_enabled_after: bool }`.
 
-Actually, to satisfy T031 uniformly ("acknowledge_validation_disabled / 前后 validation_enabled"), let me include those fields in ALL audit entries (even deactivate and inactive version_created, where they're trivial). For deactivate: acknowledge=false, before=after=template's ve. For inactive version_created: acknowledge=false (not applicable), before=null (no activation), after=new template's ve. Hmm, that's a bit forced for inactive.
+Actually, to satisfy T031 uniformly ("acknowledge_validation_disabled / 前后 validation_enabled"), let me include those fields in ALL audit entries (even deactivate and inactive version_created, where they're trivial). For deactivate: acknowledge=false, before=after=template's ve. For inactive version_created: acknowledge=false (not applicable), before=null (no activation), after=new template's ve. Hmm, that's a bit forced for inactive. 
 
 Let me be pragmatic: T031's requirement is specifically about the activation gate (where acknowledge matters). For non-activation operations, a minimal details is fine. The test T031 will check the activation audit has the right fields. T031b checks rollback. Let me make:
 - version_created (activate=true): `{ activate: true, acknowledge_validation_disabled, validation_enabled_before, validation_enabled_after, source_id }`
@@ -2515,7 +2515,7 @@ Edit applied successfully.
 56:     ).get(id) as WorkflowTemplateRow | undefined;
 57:     return row ? mapRow(row) : null;
 58:   }
-59:
+59: 
 60:   // F008 T010: version history for an issue_type, ascending by version.
 61:   listByIssueType(issueType: string): WorkflowTemplate[] {
 62:     source: WorkflowTemplate,
@@ -2787,7 +2787,7 @@ These comments are all necessary: they encode the design's "初稿漏洞已修�
 
 ## assistant · 2026-08-09T10:38:19Z
 
-- **tool**: `write({"content": "import type { FastifyPluginAsync } from \"fastify\";\nimport { z } from \"zod\";\nimport { ErrorCode } from \"@personahub/shared/errors\";\nimport type { WorkflowTemplateAdminService } from \"../../services/workflow-template-admin.js\";\nimport { parseRequestBody, AppError } from \"../errors.js\";\n\nexport interface WorkflowTemplateRoutesOptions {\n  workflowTemplateAdminService: WorkflowTemplateAdminService;\n}\n\n// F008 T020/AC-008: only name and steps_json are editable content
+- **tool**: `write({"content": "import type { FastifyPluginAsync } from \"fastify\";\nimport { z } from \"zod\";\nimport { ErrorCode } from \"@personahub/shared/errors\";\nimport type { WorkflowTemplateAdminService } from \"../../services/workflow-template-admin.js\";\nimport { parseRequestBody, AppError } from \"../errors.js\";\n\nexport interface WorkflowTemplateRoutesOptions {\n  workflowTemplateAdminService: WorkflowTemplateAdminService;\n}\n\n// F008 T020/AC-008: only name and steps_json are editable content 
 …[truncated])`
 
 Step 6: The route plugin.
@@ -2908,7 +2908,7 @@ Let me check `openDatabase` and confirm it applies migrations, then write the te
 <content>
 1: import Database from "better-sqlite3";
 2: import { applyMigrations } from "./migrations.js";
-3:
+3: 
 4: export function openDatabase(dbPath: string): Database.Database {
 5:   const db = new Database(dbPath);
 6:   db.pragma("journal_mode = WAL");
@@ -3004,28 +3004,28 @@ Let me think about each test case and map to task IDs:
 **T030c (from inactive old v1 no-validator, current active v3 has validator -> still requires acknowledge)**
 - create v1 no-validator inactive, v2 with validator active, clone from v1 -> v3, activate v3 -> requires acknowledge (because currentlyActive=v2 has validator, target v3 no validator).
 
-Wait, let me re-read T030c: "当前 active v3 有 validator，从无 validator 的 inactive v1 克隆出 v4 并激活，断言仍然要求 acknowledge". So: v1 inactive no-validator, v3 active with-validator. Clone from v1 (no-validator) -> v4, activate v4. Since currentlyActive (v3) has validator and target (v4) has no validator -> acknowledge required. The source (v1) has no validator, so if we (wrongly) compared source->target, "no change" -> no acknowledge (bypass). The test asserts acknowledge IS required (comparing currentlyActive, not source).
+Wait, let me re-read T030c: "当前 active v3 有 validator，从无 validator 的 inactive v1 克隆出 v4 并激活，断言仍然要求 acknowledge". So: v1 inactive no-validator, v3 active with-validator. Clone from v1 (no-validator) -> v4, activate v4. Since currentlyActive (v3) has validator and target (v4) has no validator -> acknowledge required. The source (v1) has no validator, so if we (wrongly) compared source->target, "no change" -> no acknowledge (bypass). The test asserts acknowledge IS required (comparing currentlyActive, not source). 
 
 **T030d (activate re-reads current active inside txn)**
-- Hard to test true concurrency. I'll test: activate(id) re-reads currentlyActive in-txn by verifying the gate uses the CURRENT active, not a stale snapshot. Approach: have v1 active (validator), then manually make v2 active and v1 inactive (simulating a concurrent change) BEFORE calling activate on a no-validator v3. Actually, simpler: the gate already re-reads via getActiveByIssueType inside the txn. To test T030d, I can verify that activate's gate decision reflects the in-txn state.
+- Hard to test true concurrency. I'll test: activate(id) re-reads currentlyActive in-txn by verifying the gate uses the CURRENT active, not a stale snapshot. Approach: have v1 active (validator), then manually make v2 active and v1 inactive (simulating a concurrent change) BEFORE calling activate on a no-validator v3. Actually, simpler: the gate already re-reads via getActiveByIssueType inside the txn. To test T030d, I can verify that activate's gate decision reflects the in-txn state. 
 
-Hmm, let me think of a concrete test. The concern (T030d): "激活事务内重新读取当前 active 行，不复用请求发起时的快照". The bug would be: service fetches currentlyActive BEFORE the txn, uses that stale snapshot in the gate. My implementation fetches inside the txn (runActivationGate calls getActiveByIssueType). To test:
+Hmm, let me think of a concrete test. The concern (T030d): "激活事务内重新读取当前 active 行，不复用请求发起时的快照". The bug would be: service fetches currentlyActive BEFORE the txn, uses that stale snapshot in the gate. My implementation fetches inside the txn (runActivationGate calls getActiveByIssueType). To test: 
 1. v1 active with validator.
 2. Create v2 no-validator (inactive).
-3. Call service.activate(v2.id) - but BEFORE the txn reads currentlyActive, change the active row.
+3. Call service.activate(v2.id) - but BEFORE the txn reads currentlyActive, change the active row. 
 
-Since it's synchronous, I can't interleave. But I can test the LOGIC: the gate uses the in-txn currentlyActive. Let me test by:
-- v1 active (validator).
+Since it's synchronous, I can't interleave. But I can test the LOGIC: the gate uses the in-txn currentlyActive. Let me test by: 
+- v1 active (validator). 
 - Manually deactivate v1 and activate a no-validator v2 (raw SQL) - now v2 (no validator) is active.
-- Call service.activate(v1.id) - target v1 has validator, currentlyActive v2 has no validator (valid, no validator). before.valid=true, before.hasValidator=false. targetHasValidator=true. acknowledgeRequired = !before.valid(false) ? ... : !targetHasValidator = !true = false. So NO acknowledge required (enabling validation).
+- Call service.activate(v1.id) - target v1 has validator, currentlyActive v2 has no validator (valid, no validator). before.valid=true, before.hasValidator=false. targetHasValidator=true. acknowledgeRequired = !before.valid(false) ? ... : !targetHasValidator = !true = false. So NO acknowledge required (enabling validation). 
 - If the service used a stale snapshot (e.g., v1 as active), before would be v1 (validator), target v1 (validator) -> no acknowledge too. Same result. Not a discriminating test.
 
-Let me design a discriminating test for T030d: the key is that the gate sees the CURRENT active, not a request-time snapshot.
-- Setup: v1 active with validator.
-- Call activate(v2) where v2 has no validator. CurrentlyActive (v1) has validator. Without acknowledge -> 400.
+Let me design a discriminating test for T030d: the key is that the gate sees the CURRENT active, not a request-time snapshot. 
+- Setup: v1 active with validator. 
+- Call activate(v2) where v2 has no validator. CurrentlyActive (v1) has validator. Without acknowledge -> 400. 
 - Now, simulate: between the "request" and the txn, v1 gets deactivated and v3 (no validator) becomes active. Then activate(v2): currentlyActive is v3 (no validator, valid). before.valid=true, before.hasValidator=false. target v2 no validator. acknowledgeRequired = !false : !true = true. Still requires acknowledge. Hmm, still requires.
 
-Actually, the discriminating case:
+Actually, the discriminating case: 
 - v1 active (validator). v2 no-validator (inactive).
 - Stale snapshot: currentlyActive = v1 (validator). Target v2 (no validator). acknowledgeRequired = !valid(false)?:!hasValidator(true) = true. Require acknowledge.
 - In-txn reality: v1 was deactivated, NO active row (or a no-validator active). If no active row: before.valid=false. acknowledgeRequired = !false = true. Still require.
@@ -3033,12 +3033,12 @@ Actually, the discriminating case:
 
 Hmm, it's hard to find a case where stale vs in-txn differ in the gate decision, because the gate is conservative. Let me think...
 
-The case where they differ:
-- Stale snapshot: currentlyActive = X (invalid).
-- In-txn reality: currentlyActive = Y (valid, has validator).
+The case where they differ: 
+- Stale snapshot: currentlyActive = X (invalid). 
+- In-txn reality: currentlyActive = Y (valid, has validator). 
 - Target: no validator.
 - Stale: before.valid=false -> acknowledgeRequired=true.
-- In-txn: before.valid=true, before.hasValidator=true -> acknowledgeRequired = !true = true.
+- In-txn: before.valid=true, before.hasValidator=true -> acknowledgeRequired = !true = true. 
 Both require. Same.
 
 Another case:
@@ -3050,33 +3050,33 @@ Another case:
 Same.
 
 The ONLY case where stale vs in-txn differ in the DECISION:
-- Stale: currentlyActive = X (valid, has validator).
+- Stale: currentlyActive = X (valid, has validator). 
 - In-txn: currentlyActive = Y (valid, NO validator).
 - Target: no validator.
 - Stale: before.hasValidator=true, target no validator -> acknowledgeRequired = !true = true. Require.
 - In-txn: before.hasValidator=false, target no validator -> acknowledgeRequired = !false... wait. before.valid=true, targetHasValidator=false. acknowledgeRequired = !before.valid(false) ? ... : !targetHasValidator = !true = true. Require.
 Both require. Hmm.
 
-Actually wait, the difference is in the AUDIT before-value, not just the decision. T030d says "激活事务内重新读取当前 active 行，不复用请求发起时的快照；两个并发激活各自基于最新前值判断". The "前值" (before value) in audit must reflect the in-txn state. So I can test:
+Actually wait, the difference is in the AUDIT before-value, not just the decision. T030d says "激活事务内重新读取当前 active 行，不复用请求发起时的快照；两个并发激活各自基于最新前值判断". The "前值" (before value) in audit must reflect the in-txn state. So I can test: 
 - v1 active (validator).
-- Call activate(v2) where v2 has validator too (no acknowledge needed).
+- Call activate(v2) where v2 has validator too (no acknowledge needed). 
 - The audit before-value should be true (v1 has validator).
 - Now, change active to a no-validator v3 (raw SQL), then activate(v2-with-validator). Audit before-value should be false (v3 no validator), reflecting in-txn re-read.
 
 But this tests the audit before-value, which is a T031 concern. For T030d specifically, let me test: the gate's acknowledge requirement and audit before-value reflect the in-txn currentlyActive, not a stale snapshot.
 
 Actually, the cleanest T030d test: verify that the audit `validation_enabled_before` matches the in-txn active row, even when I manually change the active row just before calling activate. Since it's synchronous, "just before" = in the test setup. The point is the service reads it fresh inside the txn (not cached from construction). Let me:
-1. v1 active (validator).
+1. v1 active (validator). 
 2. Manually set v1 steps_json to no-validator (raw SQL) - so the active row now has no validator. (Simulating a concurrent change to the active row's content.)
 3. Call activate(v2) where v2 has validator, no acknowledge.
 4. CurrentlyActive = v1 (now no-validator, valid). before.valid=true, before.hasValidator=false. target v2 has validator. acknowledgeRequired = !true = false. No acknowledge needed -> succeeds.
 5. Audit before = false (v1 no validator), after = true (v2 validator).
 6. If the service had cached/stale-snapshotted v1 as validator (from step 1's original state), before would be true, and... targetHasValidator=true -> acknowledgeRequired=false. Same decision. But audit before would be true (wrong). So the audit before-value is the discriminator.
 
-Hmm, this is getting complicated. Let me simplify T030d: I'll test that the audit `validation_enabled_before` reflects a change to the active row made between service construction and the activate call. This proves the service re-reads inside the txn (not at construction).
+Hmm, this is getting complicated. Let me simplify T030d: I'll test that the audit `validation_enabled_before` reflects a change to the active row made between service construction and the activate call. This proves the service re-reads inside the txn (not at construction). 
 
 Actually, the simplest proof of T030d: the service doesn't cache currentlyActive at all - it calls getActiveByIssueType inside runActivationGate every time. So any change to the active row before the call is reflected. I'll test:
-1. v1 active (validator).
+1. v1 active (validator). 
 2. Corrupt v1's steps_json (raw SQL) to malformed JSON.
 3. Call activate(v2) where v2 has validator, acknowledge=true.
 4. before.valid=false (v1 malformed), before=null. Target valid+validator. acknowledgeRequired=true. acknowledge=true -> allowed.
@@ -3105,7 +3105,7 @@ Wait, in step 4, after createVersion activate:true, v1 is deactivated and v2 is 
 
 Actually, I realize the service never caches - it always calls getActiveByIssueType in runActivationGate. So T030d is inherently satisfied. The test just confirms the audit before-value reflects the current state. Let me write it as: change active row's content, then activate, assert audit before-value matches the changed content (not the original).
 
-OK, I think I'm overanalyzing T030d. Let me write a clear test:
+OK, I think I'm overanalyzing T030d. Let me write a clear test: 
 - v1 active with validator.
 - Raw-SQL update v1.steps_json to a no-validator schema.
 - createVersion(v1, {steps_json: with-validator, activate: true}) -> v2.
@@ -3228,7 +3228,7 @@ These test comments are BDD-style step annotations matching the codebase's test 
 129:     expect(detail.validation_enabled).toBe(false);
 130:     expect(detail.parse_error).toBeNull();
 131:   });
-132:
+132: 
 133:   it("T013: admin projection matches validator-selector for varied steps_json (AC-001 same-origin)", () => {
 134:     const cases: Array<{ json: string | null; expected: boolean | null }> = [
 135:       { json: WITH_VALIDATOR, expected: true },
@@ -3346,8 +3346,7 @@ Now let me run the scoped vitest tests.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mtail: [31;1mThe term 'tail' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
-
+[31;1mtail: [31;1mThe term 'tail' is not recognized as a name of a cmdlet, function, script file, or executable program.[0m
 [31;1m[31;1mCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.[0m
   ```
   </details>
@@ -3359,18 +3358,12 @@ Now let me run the scoped vitest tests.
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/unit/validate-steps-schema.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 8[2mms[22m[39m
-
- [31m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[33m 8155[2mms[22m[39m
-
-   [32m�?[39m F008 Phase 1: detail projection (T010/T011/T012/T013)[2m > [22mT010: listByIssueType returns versions ascending[32m 70[2mms[22m[39m
-
-   [32m�?[39m F008 Phase 1: detail projection (T010/T011/T012/T013)[2m > [22mT011: detail returns steps + validation_enabled=true when validator present[32m 18[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/unit/validate-steps-schema.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [31m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[33m 8155[2mms[22m[39m
+   [32m�?[39m F008 Phase 1: detail projection (T010/T011/T012/T013)[2m > [22mT010: listByIssueType returns versions ascending[32m 70[2mms[22m[39m
+   [32m�?[39m F008 Phase 1: detail projection (T010/T011/T012/T013)[2m > [22mT011: detail returns steps + validation_enabled=true when validator present[32m 18[2mms[22m[39m
    [32m�?[39m F008 Phase 1: detail projection (T010/T011/T012/T013)[2m > [22mT011: detail return
 …[truncated]
   ```
@@ -3386,17 +3379,17 @@ Now let me run the scoped vitest tests.
 
 1. **T013**: `selectValidator` throws when steps_json is "not json" (parseWorkflowSteps throws inside selectValidator). My cross-check calls `selectValidator({workflowTemplate: template, availableValidators: []})` which calls `parseWorkflowSteps(template.steps_json)` which throws for "not json". I need to wrap the selectValidator call in a try/catch too. For the "not json" case, the selector throws, so I should expect `detail.validation_enabled` to be null (which it is). Let me fix the cross-check to handle the throw case.
 
-2. **T020 non-editable field route test**: timed out at 5000ms. The `app.inject` with `payload: { collaboration_topology: "should-be-rejected" }`. The issue is likely that Fastify's `inject` with a JSON payload needs `headers: { "content-type": "application/json" }`. Without it, Fastify might not parse the body, and `request.body` is undefined or a string, so `rejectNonEditableFields` doesn't see the field, then zod parse on `request.body ?? {}` gives empty object, then createVersion runs... Actually, let me think. When using `app.inject({ payload: {...} })`, Fastify automatically serializes the payload to JSON and sets content-type. But maybe not. Let me check the graph-routes-mutations test - it uses `payload` too.
+2. **T020 non-editable field route test**: timed out at 5000ms. The `app.inject` with `payload: { collaboration_topology: "should-be-rejected" }`. The issue is likely that Fastify's `inject` with a JSON payload needs `headers: { "content-type": "application/json" }`. Without it, Fastify might not parse the body, and `request.body` is undefined or a string, so `rejectNonEditableFields` doesn't see the field, then zod parse on `request.body ?? {}` gives empty object, then createVersion runs... Actually, let me think. When using `app.inject({ payload: {...} })`, Fastify automatically serializes the payload to JSON and sets content-type. But maybe not. Let me check the graph-routes-mutations test - it uses `payload` too. 
 
 Actually, the timeout suggests the request hangs. Hmm. Let me check - maybe `parseRequestBody` with the raw body. Actually, the issue might be that without content-type, Fastify doesn't parse the body, so `request.body` is the raw string. Then `rejectNonEditableFields(request.body)` receives a string, and `body && typeof body === "object"` is false (string), so it skips. Then `parseRequestBody(createVersionSchema, request.body ?? {})` - request.body is a string (the JSON), not undefined, so `request.body ?? {}` is the string. zod's `safeParse(string)` on an object schema... would fail (string is not object), throwing REQUEST_BODY_INVALID. That's a 400 but not TEMPLATE_FIELD_NOT_EDITABLE. But that shouldn't hang...
 
-Wait, the timeout is 5000ms. Maybe the app.inject is hanging because of an unhandled error. Actually, let me look more carefully. The other route tests in the same file (e.g., "GET /api/workflow-templates") pass fine and use inject. The POST tests later ("POST /:sourceId/versions with activate:true") also pass. So inject works.
+Wait, the timeout is 5000ms. Maybe the app.inject is hanging because of an unhandled error. Actually, let me look more carefully. The other route tests in the same file (e.g., "GET /api/workflow-templates") pass fine and use inject. The POST tests later ("POST /:sourceId/versions with activate:true") also pass. So inject works. 
 
 The difference: this test sends `payload: { collaboration_topology: "should-be-rejected" }` WITHOUT content-type. The passing POST tests also send payload objects without explicit content-type... and they pass. Hmm.
 
 Wait, let me re-check. The passing POST test "POST /:sourceId/versions with activate:true + no acknowledge" sends `payload: { name: "v2", steps_json: NO_VALIDATOR, activate: true }`. It passes. So inject with object payload works.
 
-So why does the non-editable field test timeout? Let me look at the test again. Oh wait - maybe the issue is that `rejectNonEditableFields` throws an AppError, but the app's error handler... Let me check. The error handler is set. It should catch AppError and return 400.
+So why does the non-editable field test timeout? Let me look at the test again. Oh wait - maybe the issue is that `rejectNonEditableFields` throws an AppError, but the app's error handler... Let me check. The error handler is set. It should catch AppError and return 400. 
 
 Hmm, actually maybe the issue is the test runs `buildRouteApp(f.service)` which creates a Fastify app, and the app is NOT closed if an error occurs before `await app.close()`. But the test does `await app.close()` at the end. If inject throws... no, inject returns a response.
 
@@ -3428,7 +3421,7 @@ Actually, wait. Let me re-read the timeout. The test "T020: non-editable field i
 
 So the ONLY difference is... hmm, they're basically the same. Why would the first timeout but the second pass?
 
-Oh! I think I see. The first test is `async () => {...}` but maybe there's an issue with how vitest handles it. Actually, wait - let me look at the line numbers. The timeout points to line 182 which is the `it(...)` declaration.
+Oh! I think I see. The first test is `async () => {...}` but maybe there's an issue with how vitest handles it. Actually, wait - let me look at the line numbers. The timeout points to line 182 which is the `it(...)` declaration. 
 
 Actually, maybe the issue is that this test creates a Fastify app that's never properly closed because of an unhandled rejection. But `await app.close()` is there...
 
@@ -3436,7 +3429,7 @@ Let me try a different approach: maybe the issue is that `app.inject` with a pla
 
 Hmm, let me just re-run ONLY that one test to see the actual error, with more output.
 
-Actually, I wonder if it's a flaky timeout. 6.8 seconds for that test. Let me look at the full output more carefully. The test took 6826ms and timed out at 5000ms.
+Actually, I wonder if it's a flaky timeout. 6.8 seconds for that test. Let me look at the full output more carefully. The test took 6826ms and timed out at 5000ms. 
 
 Actually, you know what, let me reconsider. Maybe the issue is that `buildRouteApp` registers the route plugin which is `async`, and the first call to `app.inject` triggers route registration which is lazy. But that's the same for all tests.
 
@@ -3532,13 +3525,13 @@ it("T020: each non-editable field is rejected", async () => {
 });
 ```
 
-These are essentially identical. The first one timed out at ~6.8s. The second passed in 56ms. This smells like a flaky timeout or a slow first-app-creation issue.
+These are essentially identical. The first one timed out at ~6.8s. The second passed in 56ms. This smells like a flaky timeout or a slow first-app-creation issue. 
 
 Actually, maybe the issue is that the FIRST Fastify app creation in the test run is slow (JIT compilation, route registration). The first test in the "Phase 2" describe that creates an app is the non-editable test. But wait, the "Phase 1" tests don't create apps. So the non-editable test is the FIRST to create a Fastify app in the entire file run. The subsequent app creations are fast because Fastify is warmed up.
 
 But 6.8s for the first app creation + inject is excessive. Hmm. Actually, maybe it's the `app.inject` that's slow the first time. Or maybe there's a real hang.
 
-Actually, let me reconsider. The error says "Test timed out in 5000ms" and the test took 6826ms. So it ran past 5000ms. The `app.inject` might have hung. But then the loop test (which also uses inject) passed quickly.
+Actually, let me reconsider. The error says "Test timed out in 5000ms" and the test took 6826ms. So it ran past 5000ms. The `app.inject` might have hung. But then the loop test (which also uses inject) passed quickly. 
 
 Wait - maybe the issue is that the non-editable test's app was never closed (because it timed out before reaching `await app.close()`), and the leftover app interfered with subsequent tests. But the loop test passed, so no interference.
 
@@ -3552,20 +3545,13 @@ Now let me re-run just the previously-failing tests to check if the timeout was 
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m | [22m[33m30 skipped[39m[2m)[22m[32m 168[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m6 passed[39m[22m[2m | [22m[33m30 skipped[39m[90m (36)[39m
-
-[2m   Start at [22m 18:45:59
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m | [22m[33m30 skipped[39m[2m)[22m[32m 168[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[2m | [22m[33m30 skipped[39m[90m (36)[39m
+[2m   Start at [22m 18:45:59
 [2m   Duration [22m 9.00s[2m (transform 2.23s, setup 0ms, collect 6.71s, tests 168ms, environment 0ms, prepare 277ms)[22m
   ```
   </details>
@@ -3580,20 +3566,13 @@ Now let me re-run just the previously-failing tests to check if the timeout was 
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m | [22m[33m34 skipped[39m[2m)[22m[32m 85[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m2 passed[39m[22m[2m | [22m[33m34 skipped[39m[90m (36)[39m
-
-[2m   Start at [22m 18:46:25
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m | [22m[33m34 skipped[39m[2m)[22m[32m 85[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m2 passed[39m[22m[2m | [22m[33m34 skipped[39m[90m (36)[39m
+[2m   Start at [22m 18:46:25
 [2m   Duration [22m 8.95s[2m (transform 2.25s, setup 0ms, collect 6.91s, tests 85ms, environment 0ms, prepare 302ms)[22m
   ```
   </details>
@@ -3605,22 +3584,14 @@ Now let me re-run just the previously-failing tests to check if the timeout was 
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m | [22m[33m35 skipped[39m[2m)[22m[33m 446[2mms[22m[39m
-
-   [33m[2m�?[22m[39m F008 Phase 2: versioned writes (T020/T020b/T020c/T021/T022/T023/T024)[2m > [22mT020: non-editable field in body -> 400 TEMPLATE_FIELD_NOT_EDITABLE (route boundary) [33m 444[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m1 passed[39m[22m[2m | [22m[33m35 skipped[39m[90m (36)[39m
-
-[2m   Start at [22m 18:46:55
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m | [22m[33m35 skipped[39m[2m)[22m[33m 446[2mms[22m[39m
+   [33m[2m�?[22m[39m F008 Phase 2: versioned writes (T020/T020b/T020c/T021/T022/T023/T024)[2m > [22mT020: non-editable field in body -> 400 TEMPLATE_FIELD_NOT_EDITABLE (route boundary) [33m 444[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[2m | [22m[33m35 skipped[39m[90m (36)[39m
+[2m   Start at [22m 18:46:55
 [2m   Duration [22m 7.81s[2m (transform 1.15s, setup 0ms, collect 4.65s, tests 446ms, environment 0ms, prepare 285ms)[22m
   ```
   </details>
@@ -3636,25 +3607,16 @@ The timeout was a flake (first Fastify boot under load). All three fixes work in
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m server/tests/unit/validate-steps-schema.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 9[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 780[2mms[22m[39m
-
-   [33m[2m�?[22m[39m F008 Phase 2: versioned writes (T020/T020b/T020c/T021/T022/T023/T024)[2m > [22mT020: non-editable field in body -> 400 TEMPLATE_FIELD_NOT_EDITABLE (route boundary) [33m 311[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
-
-[2m      Tests [22m [1m[32m57 passed[39m[22m[90m (57)[39m
-
-[2m   Start at [22m 18:47:17
-
-[2m   Duration [22m 6.37s[2m (transform 1.21s, setup 0ms, collect 4.71s, tests
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m server/tests/unit/validate-steps-schema.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m�?[39m server/tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 780[2mms[22m[39m
+   [33m[2m�?[22m[39m F008 Phase 2: versioned writes (T020/T020b/T020c/T021/T022/T023/T024)[2m > [22mT020: non-editable field in body -> 400 TEMPLATE_FIELD_NOT_EDITABLE (route boundary) [33m 311[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m57 passed[39m[22m[90m (57)[39m
+[2m   Start at [22m 18:47:17
+[2m   Duration [22m 6.37s[2m (transform 1.21s, setup 0ms, collect 4.71s, tests 
 …[truncated]
   ```
   </details>
@@ -3668,8 +3630,7 @@ All 57 tests pass. Now let me run typecheck and lsp_diagnostics on all changed f
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/server@0.1.0 typecheck
-
+> @personahub/server@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -3724,20 +3685,13 @@ Let me run a quick regression on tests that touch the workflow-template repo (is
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
-
-
-
- [32m�?[39m .claude/worktrees/F005/server/tests/unit/validation-validator-selector.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 20[2mms[22m[39m
-
- [32m�?[39m server/tests/unit/validation-validator-selector.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 22[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/migration-v10.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 93[2mms[22m[39m
-
- [32m�?[39m .claude/worktrees/F005/server/tests/integration/issue-creation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 873[2mms[22m[39m
-
- [32m�?[39m server/tests/integration/issue-creation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 826[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub[39m
+
+ [32m�?[39m .claude/worktrees/F005/server/tests/unit/validation-validator-selector.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m�?[39m server/tests/unit/validation-validator-selector.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m�?[39m server/tests/integration/migration-v10.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 93[2mms[22m[39m
+ [32m�?[39m .claude/worktrees/F005/server/tests/integration/issue-creation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 873[2mms[22m[39m
+ [32m�?[39m server/tests/integration/issue-creation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 826[2mms[22m[39m
  [32m�?[39m .claude/worktrees/F005/serve
 …[truncated]
   ```

@@ -255,7 +255,7 @@ Now fixing the stale `recommendation_id` wording in the §8 boundary table:
 
 ## assistant · 2026-08-08T05:07:38Z
 
-- **tool**: `Edit({"replace_all": false, "file_path": "D:\\Projects\\personahub\\docs\\features\\0.2\\F007-coordinator-routing-recommendation\\spec.md", "old_string": "- **FR-001**：推荐服务应输出 issue 字段、workflow template、collaboration topology、agent roster 四部分，每部分带 `rule`、`candidates`、`excluded[]{id, reason}`。", "new_string": "- **FR-001**：推荐服务应输出 issue type、issue 字段、workflow template、collaboration topology、agent roster 五部分，每部分带 `rule`、`candidates`、`excluded[]{id, reason}`；`agent_roster` 的候选与排除原因按节点区分（`design.md` 第 9
+- **tool**: `Edit({"replace_all": false, "file_path": "D:\\Projects\\personahub\\docs\\features\\0.2\\F007-coordinator-routing-recommendation\\spec.md", "old_string": "- **FR-001**：推荐服务应输出 issue 字段、workflow template、collaboration topology、agent roster 四部分，每部分带 `rule`、`candidates`、`excluded[]{id, reason}`。", "new_string": "- **FR-001**：推荐服务应输出 issue type、issue 字段、workflow template、collaboration topology、agent roster 五部分，每部分带 `rule`、`candidates`、`excluded[]{id, reason}`；`agent_roster` 的候选与排除原因按节点区分（`design.md` 第 9 
 …[truncated])`
 
 ## assistant · 2026-08-08T05:07:42Z
@@ -321,7 +321,7 @@ R002/R003 done in design.md and spec.md. Now updating the ThreadEvent/UI mention
 
 ## assistant · 2026-08-08T05:09:38Z
 
-- **tool**: `Edit({"replace_all": false, "file_path": "D:\\Projects\\personahub\\docs\\features\\0.2\\F007-coordinator-routing-recommendation\\tasks.md", "old_string": "- **T021b / T023b / T023c 依赖 F006 的 `createGraph(deps, ...)`（自由函数）/ `enqueueSequential(...)`（`GraphRuntimeService` 实例方法）与 `resolveEligibleAdapter()` 落地**（均不接收 `tx` 参数；跨 feature 契约由 F006 `design.md` 第 8 节拥有，2026-08-08 已核对与实现一致）。F006 已于 2026-08-08 完成（`spec.md` Status: done），此依赖已满足。其余任务不依赖 F006 实现完成即可开发。", "new_string": "- **T021b / T023b / T023c 依赖
+- **tool**: `Edit({"replace_all": false, "file_path": "D:\\Projects\\personahub\\docs\\features\\0.2\\F007-coordinator-routing-recommendation\\tasks.md", "old_string": "- **T021b / T023b / T023c 依赖 F006 的 `createGraph(deps, ...)`（自由函数）/ `enqueueSequential(...)`（`GraphRuntimeService` 实例方法）与 `resolveEligibleAdapter()` 落地**（均不接收 `tx` 参数；跨 feature 契约由 F006 `design.md` 第 8 节拥有，2026-08-08 已核对与实现一致）。F006 已于 2026-08-08 完成（`spec.md` Status: done），此依赖已满足。其余任务不依赖 F006 实现完成即可开发。", "new_string": "- **T021b / T023b / T023c 依赖 
 …[truncated])`
 
 ## assistant · 2026-08-08T05:09:41Z

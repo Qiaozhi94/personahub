@@ -171,13 +171,13 @@ I'll start by reading the authoritative TEMPLATE files and the README to underst
 10: created: YYYY-MM-DD
 11: updated: YYYY-MM-DD
 12: ---
-13:
+13: 
 14: # Fxxx：功能名称
-15:
+15: 
 16: > Owner: TBD | Target: v0.x.y
-17:
+17: 
 18: ## 0. 来源与意图
-19:
+19: 
 20: - **PRD 来源**：`docs/<project>-prd.md` 相关章节：...
 21: - **架构来源**：`docs/<project>-architecture.md` 相关章节：...
 22: - **系统设计 / Research / Contract 来源**：`docs/...` 相关实体/章节：...
@@ -186,7 +186,7 @@ I'll start by reading the authoritative TEMPLATE files and the README to underst
 25: - **规格模式**：lite / full
 26: - **变更类型**：ADDED / MODIFIED / REMOVED / MIXED
 27: - **一句话意图**：...
-28:
+28: 
 29: ## 1. 问题、目标与非目
 …[truncated]
   ```
@@ -208,35 +208,35 @@ I'll start by reading the authoritative TEMPLATE files and the README to underst
 8: created: YYYY-MM-DD
 9: updated: YYYY-MM-DD
 10: ---
-11:
+11: 
 12: # Fxxx：功能名称 - 设计
-13:
+13: 
 14: > Owner: TBD | Spec: `spec.md` | Tasks: `tasks.md`
-15:
+15: 
 16: ## 0. 输入与约束
-17:
+17: 
 18: - **行为契约**：`spec.md`
 19: - **PRD / Architecture / System Design**：...
 20: - **ADR / 上游 Contract**：...
 21: - **实现约束**：...
-22:
+22: 
 23: ## 1. 技术概要与影响面
-24:
+24: 
 25: 用一段话概述实现方案，并列出受影响区域：
-26:
+26: 
 27: - 前端：...
 28: - 后端 / API：...
 29: - 存储 / Migration：...
 30: - Runtime / Agent Adapter：...
 31: - Event / Evidence：...
 32: - 文档 / 配置：...
-33:
+33: 
 34: ## 2. 架构与模块边界
-35:
+35: 
 36: 说明模块职责、依赖方向、事务边界和唯一真相源。必要时使用简短流程图。
-37:
+37: 
 38: ## 3. 数据模型与 Migration
-39:
+39: 
 40
 …[truncated]
   ```
@@ -258,29 +258,29 @@ I'll start by reading the authoritative TEMPLATE files and the README to underst
 8: created: YYYY-MM-DD
 9: updated: YYYY-MM-DD
 10: ---
-11:
+11: 
 12: # Fxxx：功能名称 - 任务
-13:
+13: 
 14: > Owner: TBD | Spec: `spec.md` | Design: `design.md`
-15:
+15: 
 16: ## 0. 来源与执行规则
-17:
+17: 
 18: - 行为与验收真相源：`spec.md`。
 19: - 技术方案与边界：`design.md`。
 20: - 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
 21: - 完成且验证后立即把 `[ ]` 改为 `[x]`，不得最后统一补勾。
 22: - `[P]` 只用于修改不同文件、没有显式前置依赖且不会争用同一状态的任务。
 23: - 实现中若任务顺序或契约失效，先修订三件套，再继续编码。
-24:
+24: 
 25: 统一任务格式：
-26:
+26: 
 27: ```markdown
 28: - [ ] T001 [P] (`US-001`, `FR-001`, `AC-001`): <一个可验证动作> — verify: `path/to/test.ts`
 29: ```
-30:
+30: 
 31: ## 1. 前置条件
-32:
-33: - [ ] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题
+32: 
+33: - [ ] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题 
 …[truncated]
   ```
   </details>
@@ -297,13 +297,13 @@ I'll start by reading the authoritative TEMPLATE files and the README to underst
 4: created: 2026-07-12
 5: updated: 2026-08-09
 6: ---
-7:
+7: 
 8: # Feature Specs Guide
-9:
+9: 
 10: 本目录用于记录 PersonaHub 的 feature-level SDD artifacts。后续所有需求都按"一 feature 一文件夹"的结构输出，不再使用 `Fxxx-feature-name.md` 单文件格式；feature 文件夹按 PRD 第 15 节的大版本（`0.1`、`0.2`…）分层存放。
-11:
+11: 
 12: ## Directory Shape
-13:
+13: 
 14: ```text
 15: docs/features/
 16:   0.1/
@@ -319,7 +319,7 @@ I'll start by reading the authoritative TEMPLATE files and the README to underst
 26:   0.3/
 27:     Fxxx-feature-name/
 28:       ...
-29:
+29:  
 …[truncated]
   ```
   </details>
@@ -450,7 +450,7 @@ I'll read the plan sections 2.1/2.2 and all F009-F012 trio docs in parallel. The
 <type>file</type>
 <content>
 1: # PersonaHub 目录结构改造方案
-2:
+2: 
 3: > 状态：**Candidate v3（待确认，尚未实施）**
 4: > 创建：2026-08-09
 5: > 修订：2026-08-09（完成方案审查并把全部风险处置正式并入正文）
@@ -461,11 +461,11 @@ I'll read the plan sections 2.1/2.2 and all F009-F012 trio docs in parallel. The
 10: > 原则：**只补缺口，不动已经有效的东西**。feature 三件套 + TEMPLATE、Fxxx 跨版本
 11: > 编号、ADR、SOP.md 真实环境纪律、Review Checklist、BACKLOG 单一入口都是标杆级
 12: > 实践，不在改造范围内。
-13:
+13: 
 14: ## 0. 现状结论（复核后）
-15:
+15: 
 16: 对照 market-game-sim 与 OpenSpec 循环并复核当前仓库后，剩余缺口收敛为六类：
-17:
+17: 
 18: 1. **TEMPLATE 已经和实际写法脱节**：`docs/features/TEMPLATE/spec.md` 还是旧的
 19:    15 节结构（含独立的「13. 可追踪性」表格章节）；但从 F006 起，
 …[truncated]
@@ -486,20 +486,20 @@ I'll read the plan sections 2.1/2.2 and all F009-F012 trio docs in parallel. The
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F009：Artifact Foundation & Provenance
-11:
+11: 
 12: > Status: draft | Owner: TBD | Target: v0.3
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 16: - **PRD 来源**：`docs/personahub-prd.md` 第 5 节 Artifact、Handoff Packet，第 15 节 v0.3。
 17: - **架构来源**：`docs/personahub-architecture.md` 第 7 节。
 18: - **系统设计来源**：`docs/personahub-system-design.md` Artifact 草案。
 19: - **一句话意图**：让阶段成果成为有稳定版本、明确来源、可被统一引用和验证的一级实体。
-20:
+20: 
 21: ## 1. 问题与目标
-22:
+22: 
 23: 当前协作结果主要存在 ThreadEvent payload、Run final message 和聊天文
 …[truncated]
   ```
@@ -519,15 +519,15 @@ I'll read the plan sections 2.1/2.2 and all F009-F012 trio docs in parallel. The
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F009：Artifact Foundation & Provenance - 设计
-11:
+11: 
 12: > Status: draft | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要与影响面
-15:
+15: 
 16: 新增 `ArtifactRepository` + `ArtifactService`，内容版本单独持久化；`EvidenceService` 扩展 artifact ref 解析，但不把 artifact 事件加入 trusted payload 旁路。前端在既有 Inspector 增加 Artifact 面板。
-17:
+17: 
 18: - shared：Artifact DTO、枚举、ref result/error discriminated unions、ThreadEventType。
 19: - server：schema、repository/service、path guard、API、Evidence resolver 扩展。
 2
@@ -549,13 +549,13 @@ I'll read the plan sections 2.1/2.2 and all F009-F012 trio docs in parallel. The
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F009：Artifact Foundation & Provenance - 任务
-11:
+11: 
 12: > Status: draft | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：Contract 与 migration
-15:
+15: 
 16: - [ ] T001（DR-001~003）：新增 shared Artifact 类型、状态、storage、resolution DTO 与事件枚举。
 17: - [ ] T002（DR-001~003）：新增 schema v11 migration、索引/CHECK、migration 注册与升级测试；F008=v10、F010=v12、F011=v13、F012=v14，已应用版本不得修改或追加。
 18: - [ ] T003（FR-003）：扩展 typed ref parser，区分 pinned execution ref 与 floating UI re
@@ -632,7 +632,7 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
   {
     "content": "Rewrite F009 spec/design/tasks to fixed structure",
     "status": "pending",
-
+  
 …[truncated]
   ```
   </details>
@@ -651,19 +651,19 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F010：Artifact-Centered Coding Slice
-11:
+11: 
 12: > Status: draft | Owner: TBD | Target: v0.3
-13:
+13: 
 14: ## 0. 元信息与意图
-15:
+15: 
 16: - **PRD 来源**：第 15 节 v0.3 完成判据。
 17: - **上游**：F006 executable graph、F007 intake、F009 artifact contract、F004 validation。
 18: - **一句话意图**：让真实复杂 coding Issue 用 pinned artifact refs 完成研究、综合、实现和验证交接。
-19:
+19: 
 20: ## 1. 问题、目标与非目标
-21:
+21: 
 22: F009 只有管理能力仍可能成为“附件 CRUD”。本 Feature 把 artifacts 接入唯一真实工作流：agent 输出经契约校验后成为阶段 artifact，下游 Run 的输入记
 …[truncated]
   ```
@@ -683,17 +683,17 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F010：Artifact-Centered Coding Slice - 设计
-11:
+11: 
 12: > Status: draft | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
-15:
+15: 
 16: 增加 `ArtifactProductionService` 与 `ArtifactContextAssembler`，把 F009 接到三个已有完成边界：Graph node result processor、implementation finalize、validation result processor。F006 definition v1 原样保留；新增 `artifact_coding_v1` definition version 1（独立 id）以 pinned refs 为边输入。
-17:
+17: 
 18: ## 2. 数据模型
-19:
+19: 
 20: F010 固定使用 schema v12（F008=v10、F009=v11
 …[truncated]
   ```
@@ -713,13 +713,13 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F010：Artifact-Centered Coding Slice - 任务
-11:
+11: 
 12: > Status: draft | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：Link 与 definition contract
-15:
+15: 
 16: - [ ] T001（FR-007/NFR-003）：新增 schema v12 `artifact_run_links` migration、repository、唯一/归属/方向测试；produced 唯一索引固定为 `(run_id, producer_slot)`，断言改变 `purpose` 不能绕过幂等。
 17: - [ ] T002（FR-001/002）：扩展 Graph definition 类型但保持旧字段兼容；新增独立 `artifact_coding_v1` definition。
 18: - [ ] T003（FR
@@ -741,20 +741,20 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F011：Work Room & Human Intervention
-11:
+11: 
 12: > Status: draft | Owner: TBD | Target: v0.3
-13:
+13: 
 14: ## 0. 元信息与意图
-15:
+15: 
 16: - **PRD 来源**：第 5 节 Room、第 15 节 v0.3。
 17: - **一句话意图**：让用户看见并安全介入一个多节点协作现场，而不新建第二套执行引擎。
-18:
+18: 
 19: ## 1. 问题、目标与非目标
-20:
+20: 
 21: Graph 已能执行多节点，但用户看到的是运行卡片，无法把目标、分工、阶段产物和人工纠偏作为一个临时协作现场管理。Room 提供观察与控制边界；执行状态仍由 Graph/NodeRun/Run 和 workspace FIFO 决定。
-22:
+22: 
 23: 不做：自由群聊、Room 自有调度器、运行中热换 agent、跨 Issue Room、多人权限、跨 workspace 并发、语音视频
 …[truncated]
   ```
@@ -774,17 +774,17 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F011：Work Room & Human Intervention - 设计
-11:
+11: 
 12: > Status: draft | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
-15:
+15: 
 16: F011 固定使用 schema v13（F008=v10、F009=v11、F010=v12）。新增 DB-only `createRoom(tx, ...)`、`RoomControlService`、`RoomProjectionService`、`RoomContextAssembler`。Room 绑定一个 GraphRun 和专属 Thread；Graph/Run 继续执行，Room 只提供该 Graph 阶段的 policy gate、成员/约束历史与聚合 UI。若 migration 落地前实施顺序改变，整体重新编号；已应用版本永不修改或追加。
-17:
+17: 
 18: ## 2. Migration
-19:
+19: 
 20: ```sql
 2
 …[truncated]
@@ -805,13 +805,13 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F011：Work Room & Human Intervention - 任务
-11:
+11: 
 12: > Status: draft | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：模型与创建
-15:
+15: 
 16: - [ ] T001（FR-001）：新增 Room/member/control DTO、状态与事件类型。
 17: - [ ] T002（FR-001/NFR-002）：schema v13 migration 建 work_rooms/room_members/control command 幂等表与 `idx_threads_one_room_thread`；覆盖 v12→v13、已应用版本不可变和双向 Thread/Room 不变量测试。
 18: - [ ] T003（FR-002/NFR-001）：实现 DB-only createRoom；同一事务预生成 room/thread i
@@ -833,21 +833,21 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F012：Reusable Agent Squads
-11:
+11: 
 12: > Status: draft | Owner: TBD | Target: v0.3
-13:
+13: 
 14: ## 0. 意图与范围
-15:
+15: 
 16: **一句话意图**：保存 Project 内经常一起使用的 adapter 集合，在 intake/Room 中复用，同时每次执行仍按节点能力重新校验。
-17:
+17: 
 18: 范围：创建、编辑、归档 Squad；有序成员与身份快照；intake/Room 选择与一次性覆盖；运行前 eligibility；历史来源追溯。
-19:
+19: 
 20: 不做：组织权限、跨 Project 共享、固定 role 真相源、自动评估/学习最佳 Squad、与 Workflow Template 强绑定。
-21:
+21: 
 22: ## 1. 用户场景
-23:
+23: 
 24: - **US1（P1）管理 Squad**：用户创建命名 Squad，选择至少一个 adapter，查看成员 availability/capabilities。
 25: - **US2（P1）用
 …[truncated]
@@ -868,15 +868,15 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F012：Reusable Agent Squads - 设计
-11:
+11: 
 12: > Status: draft | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要与数据模型
-15:
+15: 
 16: F012 固定使用 schema v14（F008=v10、F009=v11、F010=v12、F011=v13）。新增 `AgentSquadRepository/Service` 与纯函数 `mapSquadToGraphRoster()`；F007/F011 只调用映射与 DB-only snapshot primitive，不把 Squad 变成新执行入口。若 migration 落地前实施顺序改变，整体重新编号；已应用版本永不修改或追加。
-17:
+17: 
 18: ```sql
 19: CREATE TABLE agent_squads (
 20:   id TEXT PRIMARY KEY,
@@ -900,13 +900,13 @@ Plan and F009 read. Marking those todos done; reading F010, F011, F012 trio docs
 6: created: 2026-08-09
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F012：Reusable Agent Squads - 任务
-11:
+11: 
 12: > Status: draft | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：Persistence 与管理
-15:
+15: 
 16: - [ ] T001（FR-001/002）：新增 Squad DTO、事件、zod 与 name normalization。
 17: - [ ] T002（FR-001/002）：schema v14 migration 建 squads/members/index/FK，覆盖 v13→v14 升级与约束；已应用 migration 不得追加。
 18: - [ ] T003（FR-001/003）：Repository/Service create/list/detail/CAS edit/archive。
@@ -989,7 +989,7 @@ Target 6 sections:
 - 5. 成功与验收 (AC-001~006, no FR refs in AC!)
 - 6. 测试、依赖与风险
 
-Note: F010's ACs don't reference FR IDs. The task says "each AC MUST have a unique AC-xxx and reference at least one real FR/DR/TR/IR/UX/NFR ID from section 4." I need to ADD requirement references to F010's ACs based on the semantics. Wait, the constraint says "do NOT invent new requirements or change IDs" but "Only re-arrange into the fixed section skeleton".
+Note: F010's ACs don't reference FR IDs. The task says "each AC MUST have a unique AC-xxx and reference at least one real FR/DR/TR/IR/UX/NFR ID from section 4." I need to ADD requirement references to F010's ACs based on the semantics. Wait, the constraint says "do NOT invent new requirements or change IDs" but "Only re-arrange into the fixed section skeleton". 
 
 Hmm, but the AC format requires referencing requirement IDs. The current F010 ACs don't have them. This is a semantic-preservation concern. Let me think. The task says: "each AC MUST have a unique AC-xxx and reference at least one real FR/DR/TR/IR/UX/NFR ID from section 4."
 
@@ -1024,15 +1024,15 @@ Actually F010's section 1 non-goals: "自然语言 Graph 编译、Graph Canvas�
 
 Hmm, but I shouldn't pull in content from README that isn't in the spec. Actually the v0.3 README has detailed scope for F010. But the task says preserve semantics of the trio docs. Let me be conservative: derive 范围与边界 from the existing spec content (section 1 non-goals become part of 范围外, and I can state 范围内 from the requirements/intent). Actually, to avoid inventing, I'll keep 范围外 closely tied to the existing non-goals and put 范围内 as a brief restatement of what the requirements cover. The README's F010 scope is essentially the same as what's in the spec.
 
-Wait — the constraint says "do NOT invent new requirements". Scope statements aren't requirements (FR/DR/etc). But to be safe and faithful, I'll derive 范围与边界 strictly from existing spec content. For F010, the existing "1. 问题、目标与非目标" has the non-goals. I'll split: keep 非目标 in section 1 (product-level) and create 范围与边界 section 3 with 范围内 (from intent + requirements) / 范围外 (the same non-goals restated as slice boundary? No—the README says 非目标 is product-level, 范围外 is slice boundary, and they "不得复制同一段文字").
+Wait — the constraint says "do NOT invent new requirements". Scope statements aren't requirements (FR/DR/etc). But to be safe and faithful, I'll derive 范围与边界 strictly from existing spec content. For F010, the existing "1. 问题、目标与非目标" has the non-goals. I'll split: keep 非目标 in section 1 (product-level) and create 范围与边界 section 3 with 范围内 (from intent + requirements) / 范围外 (the same non-goals restated as slice boundary? No—the README says 非目标 is product-level, 范围外 is slice boundary, and they "不得复制同一段文字"). 
 
-This is tricky for F010 because the only "exclusion" content is the non-goals. Let me look: F010 non-goals = "自然语言 Graph 编译、Graph Canvas、非 coding workflow、写 workspace 的物理并行、Room/Squad UI、自动 Memory/Skill."
+This is tricky for F010 because the only "exclusion" content is the non-goals. Let me look: F010 non-goals = "自然语言 Graph 编译、Graph Canvas、非 coding workflow、写 workspace 的物理并行、Room/Squad UI、自动 Memory/Skill." 
 
 For F010, these are arguably slice-boundary (本次交付切片不做的). The product-level non-goals would be... hmm. Actually these read as both. To avoid inventing, I'll put these in 范围与边界 → 范围外 (slice boundary), and for section 1 非目标 I'll state the product-level intent exclusion concisely (e.g., 本 Feature 不把 artifact 体系扩展到非 coding workflow；Room/Squad 交互留给 F011/F012). That's a reasonable split that doesn't invent — it's derived from the dependency structure already stated (F011 Room, F012 Squad).
 
 Actually, I think the safest approach that respects "don't invent" is: for F010, put the existing non-goals list into 范围与边界 → 范围外 (since they're about this slice's boundary), and in section 1 非目标 write a brief product-level statement derived from the intent (artifact-first coding slice; not generalizing to all workflows). Let me keep section 1 非目标 short and clearly product-intent, and 范围外 as the concrete exclusions. This matches the README guidance.
 
-Let me also handle F010's missing SC (成功标准). F010 section 5 only has ACs, no SC. The template requires `### 成功标准 (SC-xxx)` and `### 验收清单`. F010 has no SC. I should not invent SCs... but the template requires the subsection. Hmm. The template shows SC-001 etc. But the README says "spec 写行为" and SC is "能证明该 feature 完成且有用的可衡量结果".
+Let me also handle F010's missing SC (成功标准). F010 section 5 only has ACs, no SC. The template requires `### 成功标准 (SC-xxx)` and `### 验收清单`. F010 has no SC. I should not invent SCs... but the template requires the subsection. Hmm. The template shows SC-001 etc. But the README says "spec 写行为" and SC is "能证明该 feature 完成且有用的可衡量结果". 
 
 Looking at F009, it has SC-001/002/003. F010 has none. To not invent, I could write 成功标准 referencing the intent: e.g., "SC-001：真实复杂 coding Issue 能以 pinned artifact refs 完成研究→综合→实现→验证交接，下游不依赖复制聊天历史。" This is derived directly from F010's 一句话意图 and AC-006. That's not inventing a new requirement; it's a success criterion restating the intent. I think this is acceptable as it's derived from existing finalized semantics. I'll add minimal SCs derived from the intent/existing ACs, and note this as a concern.
 
@@ -1147,13 +1147,13 @@ Now reading F001-F008 frontmatter (specs first, then design/tasks) to plan mecha
 6: created: 2026-07-12
 7: updated: 2026-07-16
 8: ---
-9:
+9: 
 10: # F001：Workspace & Issue Foundation
-11:
+11: 
 12: > Status: done | Owner: TBD | Target: v0.1.0
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 
 (Showing lines 1-15 of 505. Use offset=16 to continue.)
 </content>
@@ -1189,13 +1189,13 @@ updated: 2026-08-09
 6: created: 2026-07-12
 7: updated: 2026-07-16
 8: ---
-9:
+9: 
 10: # F002：Agent Command Center
-11:
+11: 
 12: > Status: done | Owner: TBD | Target: v0.1.1
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 
 (Showing lines 1-15 of 641. Use offset=16 to continue.)
 </content>
@@ -1216,13 +1216,13 @@ updated: 2026-08-09
 6: created: 2026-07-12
 7: updated: 2026-07-17
 8: ---
-9:
+9: 
 10: # F003：Development Trace
-11:
+11: 
 12: > Status: done | Owner: Sisyphus | Target: v0.1.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 
 (Showing lines 1-15 of 487. Use offset=16 to continue.)
 </content>
@@ -1243,13 +1243,13 @@ updated: 2026-08-09
 6: created: 2026-07-12
 7: updated: 2026-07-19
 8: ---
-9:
+9: 
 10: # F004：Autonomous Validation
-11:
+11: 
 12: > Status: done | Owner: Sisyphus | Target: v0.1.3
-13:
+13: 
 14: > 2026-07-19 final review reopened implementation work: production context wiring, validator-declared blocked handling, complete Evidence Summary projection/export, current-round validator uniqueness, explicit round reset, and real-environment verification remain before `done`.
-15:
+15: 
 
 (Showing lines 1-15 of 562. Use o
 …[truncated]
@@ -1270,13 +1270,13 @@ updated: 2026-08-09
 6: created: 2026-07-12
 7: updated: 2026-07-28
 8: ---
-9:
+9: 
 10: # F005：Manual Multi-Agent Routing（手动多 Agent 路由）
-11:
+11: 
 12: > Status: done | Owner: TBD | Target: v0.1.4
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 
 (Showing lines 1-15 of 511. Use offset=16 to continue.)
 </content>
@@ -1297,13 +1297,13 @@ updated: 2026-08-09
 6: created: 2026-08-01
 7: updated: 2026-08-02
 8: ---
-9:
+9: 
 10: # F006：Orchestrated Coding Graph Slice
-11:
+11: 
 12: > Status: done (全部 AC-001~009 验收通过：后端 1460+ 测试 + 真实 CLI 验收 + Web UI 展示/取消/resolve-executors 入口) | Owner: TBD | Target: v0.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 
 (Showing lines 1-15 of 131. Use offset=16 to continue.)
 </content>
@@ -1335,13 +1335,13 @@ updated: 2026-08-09
 6: created: 2026-08-01
 7: updated: 2026-08-08
 8: ---
-9:
+9: 
 10: # F007：Coordinator Agent & Routing Recommendation
-11:
+11: 
 12: > Status: done | Owner: TBD | Target: v0.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 
 (Showing lines 1-15 of 138. Use offset=16 to continue.)
 </content>
@@ -1362,13 +1362,13 @@ updated: 2026-08-09
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health
-11:
+11: 
 12: > Status: done | Owner: TBD | Target: v0.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 
 (Showing lines 1-15 of 130. Use offset=16 to continue.)
 </content>
@@ -1426,11 +1426,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-12
 7: updated: 2026-07-16
 8: ---
-9:
+9: 
 10: # F001：Workspace & Issue Foundation - 设计
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
 
 (Showing lines 1-14 of 857. Use offset=15 to continue.)
@@ -1452,11 +1452,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-12
 7: updated: 2026-07-16
 8: ---
-9:
+9: 
 10: # F001：Workspace & Issue Foundation - 任务
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## 规则
 
 (Showing lines 1-14 of 94. Use offset=15 to continue.)
@@ -1478,11 +1478,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-12
 7: updated: 2026-07-16
 8: ---
-9:
+9: 
 10: # F002：Agent Command Center - 设计
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
 
 (Showing lines 1-14 of 952. Use offset=15 to continue.)
@@ -1504,11 +1504,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-12
 7: updated: 2026-07-16
 8: ---
-9:
+9: 
 10: # F002：Agent Command Center - 任务
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## 规则
 
 (Showing lines 1-14 of 133. Use offset=15 to continue.)
@@ -1530,11 +1530,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-15
 7: updated: 2026-07-17
 8: ---
-9:
+9: 
 10: # F003：Development Trace - 设计
-11:
+11: 
 12: > Status: done | Owner: Sisyphus | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
 
 (Showing lines 1-14 of 978. Use offset=15 to continue.)
@@ -1556,11 +1556,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-15
 7: updated: 2026-07-19
 8: ---
-9:
+9: 
 10: # F003：Development Trace - 任务
-11:
+11: 
 12: > Status: done | Owner: Sisyphus | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## 规则
 
 (Showing lines 1-14 of 232. Use offset=15 to continue.)
@@ -1582,11 +1582,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-16
 7: updated: 2026-07-19
 8: ---
-9:
+9: 
 10: # F004：Autonomous Validation - 设计
-11:
+11: 
 12: > Status: done | Owner: Sisyphus | Spec: `spec.md`
-13:
+13: 
 14: > 2026-07-19 final review reopened T090-T095. The architecture remains accepted, but production context wiring, blocked outcome submission, complete summary/export, per-round validator uniqueness, explicit round reset, and schema invariants must land before final verification.
 
 (Showing lines 1-14 of 803. Use offset
@@ -1608,12 +1608,12 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-16
 7: updated: 2026-07-19
 8: ---
-9:
+9: 
 10: # F004：Autonomous Validation - 任务
 11: > Status: done | Owner: Sisyphus | Spec: `spec.md` | Design: `design.md`
-12:
+12: 
 13: ## 规则
-14:
+14: 
 
 (Showing lines 1-14 of 259. Use offset=15 to continue.)
 </content>
@@ -1634,11 +1634,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-16
 7: updated: 2026-07-28
 8: ---
-9:
+9: 
 10: # F005：Manual Multi-Agent Routing（手动多 Agent 路由）- 设计
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
 
 (Showing lines 1-14 of 813. Use offset=15 to continue.)
@@ -1660,11 +1660,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-07-16
 7: updated: 2026-07-28
 8: ---
-9:
+9: 
 10: # F005：Manual Multi-Agent Routing（手动多 Agent 路由）- 任务
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## 规则
 
 (Showing lines 1-14 of 482. Use offset=15 to continue.)
@@ -1686,11 +1686,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-08-01
 7: updated: 2026-08-02
 8: ---
-9:
+9: 
 10: # F006：Orchestrated Coding Graph Slice - 设计
-11:
+11: 
 12: > Status: done（`spec.md` 全部 AC 验收通过；见 `spec.md` Status 行） | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
 
 (Showing lines 1-14 of 920. Use offset=15 to continue.)
@@ -1712,11 +1712,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-08-01
 7: updated: 2026-08-03
 8: ---
-9:
+9: 
 10: # F006：Orchestrated Coding Graph Slice - 任务
-11:
+11: 
 12: > Status: complete (97/97 ✅；含 Web 发起图入口；T054b 的 kill 时序三项 UI 测试仍未补，见该条注记) | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 0：设计收敛（已完成）
 
 (Showing lines 1-14 of 142. Use offset=15 to continue.)
@@ -1738,11 +1738,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-08-01
 7: updated: 2026-08-08
 8: ---
-9:
+9: 
 10: # F007：Coordinator Agent & Routing Recommendation - 设计
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
 
 (Showing lines 1-14 of 502. Use offset=15 to continue.)
@@ -1764,14 +1764,14 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-08-01
 7: updated: 2026-08-08
 8: ---
-9:
+9: 
 10: # F007：Coordinator Agent & Routing Recommendation - 任务
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: > **实施证据（2026-08-08 完成）**：F007 服务端测试见 `server/tests/integration/{intake-confirm,intake-routes,intake-secret,intake-null-definition}.test.ts`，前端测试见 `web/src/f007-intake-dialog.test.tsx`。全部任务经 `npm run lint && npm run format:check && npm run typecheck && npm test && npm run build` 验证通过。
 
-(Showing lines 1-14 of 100. Use
+(Showing lines 1-14 of 100. Use 
 …[truncated]
   ```
   </details>
@@ -1790,11 +1790,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 设计
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
 
 (Showing lines 1-14 of 347. Use offset=15 to continue.)
@@ -1816,11 +1816,11 @@ Specs confirmed: all `done` with `feature_ids: [Fxxx]`. Now reading design.md/ta
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 任务
-11:
+11: 
 12: > Status: done | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：模板读取与派生投影（FR-001）
 
 (Showing lines 1-14 of 90. Use offset=15 to continue.)
@@ -1955,7 +1955,7 @@ Wait, F004 tasks.md has `> Status: done | Owner: Sisyphus | Spec: spec.md | Desi
 ```
 10: # F004：Autonomous Validation - 任务
 11: > Status: done | Owner: Sisyphus | Spec: `spec.md` | Design: `design.md`
-12:
+12: 
 13: ## 规则
 ```
 So for F004 tasks, the H1 is immediately followed by status line (no blank line between). I need to handle that. Replacing line 11 with `> Owner: Sisyphus | Spec: \`spec.md\` | Design: \`design.md\``.
@@ -2599,7 +2599,7 @@ So §3 tasks reference ACs and run tests/gate/回写. Let me map:
 - T033 (AC-001~006): run quality gate (lint/format/typecheck/test/build)
 - T034: 回写 spec AC, BACKLOG, architecture/system-design
 
-Hmm but original T032 was "AC-001~006 matrix + 回归", T033 was "quality gate", T034 was "回写 spec/BACKLOG/全局文档". That maps cleanly to §3. And T030 (archive/restart integration test) and T031 (Windows manual) - T030 is writing the archive integration test (implementation of test for FR-007), T031 is manual verification.
+Hmm but original T032 was "AC-001~006 matrix + 回归", T033 was "quality gate", T034 was "回写 spec/BACKLOG/全局文档". That maps cleanly to §3. And T030 (archive/restart integration test) and T031 (Windows manual) - T030 is writing the archive integration test (implementation of test for FR-007), T031 is manual verification. 
 
 Let me put T030 in §2 Phase 4 (it's creating the archive/restart integration test - part of implementation coverage), and T031/T032/T033/T034 in §3. That keeps IDs continuous T001-T034.
 
@@ -2611,13 +2611,13 @@ Actually, to keep it simple and faithful, let me keep the original task structur
 
 Let me also reconsider: original T032 references AC-001~006. In §3, the template wants tasks like "T006 (AC-001): run unit/integration tests". I'll keep T032 referencing all ACs.
 
-OK let me also handle the [P] marker. Original tasks don't have [P]. The template says [P] only for tasks modifying different files with no sequential dependency. I shouldn't add [P] unless clearly parallel. Original 依赖关系 says "T012 与 T013 可在 T010 后并行". So T012 and T013 are parallel (both after T010). I could mark T012/T013 as [P]. And T021-T023 (UI) - "UI 依赖 API DTO 冻结" so T021/T022/T023 are sequential after T020. Hmm, to be safe and not over-claim [P], I'll mark [P] only where the original explicitly says parallel: T012 [P] and T013 [P] (parallel after T010). Actually the template says [P] tasks不得同时声明前置边. T012 and T013 both depend on T010. If I mark them [P] but they have a前置 (T010), that violates "[P] 任务不得同时声明前置边". So I should NOT mark them [P] if they depend on T010.
+OK let me also handle the [P] marker. Original tasks don't have [P]. The template says [P] only for tasks modifying different files with no sequential dependency. I shouldn't add [P] unless clearly parallel. Original 依赖关系 says "T012 与 T013 可在 T010 后并行". So T012 and T013 are parallel (both after T010). I could mark T012/T013 as [P]. And T021-T023 (UI) - "UI 依赖 API DTO 冻结" so T021/T022/T023 are sequential after T020. Hmm, to be safe and not over-claim [P], I'll mark [P] only where the original explicitly says parallel: T012 [P] and T013 [P] (parallel after T010). Actually the template says [P] tasks不得同时声明前置边. T012 and T013 both depend on T010. If I mark them [P] but they have a前置 (T010), that violates "[P] 任务不得同时声明前置边". So I should NOT mark them [P] if they depend on T010. 
 
 Hmm, the [P] semantic is "修改不同文件、没有显式前置依赖且不会争用同一状态". T012 and T013 have前置 T010. So they can't be [P]. They're just parallelizable after T010 (declared in §4 依赖). So no [P] marker. I'll leave no [P] markers for F009 unless there's a truly independent task. Actually, none of F009's tasks are [P] under the strict definition (all have dependencies in the chain). I'll omit [P] entirely for F009. That's fine - [P] is optional.
 
 Wait, the template §0 says "[P] 只用于修改不同文件、没有显式前置依赖且不会争用同一状态的任务." It's permissive, not required. So omitting [P] is fine.
 
-OK. Let me also reconsider verify paths. I'm inventing test file paths like `server/tests/integration/artifact-crud.test.ts`. These don't exist yet (draft). The gate v1 for draft doesn't require verify paths to exist (only AC tests: in review/done). For tasks, the gate checks format. But will the gate reject a task verify path that doesn't exist? Plan 2.2 gate v1 point 3 is about AC tests: paths, not task verify. Task verify isn't checked for existence per the plan. So inventing planned paths is OK for draft. But to be safe, maybe I should use descriptive verify rather than fake paths. Hmm. The template uses backtick paths. Let me use planned paths but mark them as planned with "（计划）" suffix? No, that breaks format.
+OK. Let me also reconsider verify paths. I'm inventing test file paths like `server/tests/integration/artifact-crud.test.ts`. These don't exist yet (draft). The gate v1 for draft doesn't require verify paths to exist (only AC tests: in review/done). For tasks, the gate checks format. But will the gate reject a task verify path that doesn't exist? Plan 2.2 gate v1 point 3 is about AC tests: paths, not task verify. Task verify isn't checked for existence per the plan. So inventing planned paths is OK for draft. But to be safe, maybe I should use descriptive verify rather than fake paths. Hmm. The template uses backtick paths. Let me use planned paths but mark them as planned with "（计划）" suffix? No, that breaks format. 
 
 Actually, let me reconsider. The task says "do NOT invent new requirements". Inventing test file paths isn't inventing requirements. But it could be misleading. The cleanest: use `verify:` with the test category and planned file path. Since these are draft and the gate doesn't check task verify existence, I'll use plausible planned paths. This is acceptable. I'll proceed.
 
@@ -2637,9 +2637,9 @@ Actually, let me reconsider the time. This is 12 full rewrites + 24 frontmatter 
 
 Let me write F009 spec.md, design.md, tasks.md now.
 
-For F009 tasks §3, let me reconsider task IDs to keep连续. Original: T001-T004, T010-T015, T020-T023, T030-T034. There are gaps (T005-T009, T016-T019, T024-T029). The original has gaps too. The template says "任务 ID 必须全文件连续且唯一". "连续" might mean no gaps? The original F009 has gaps (T004 -> T010). Hmm. The gate might require continuous numbering. But the original has gaps and it's existing. The task says preserve semantics, don't change IDs. So I'll keep the original IDs (with gaps). The gate "连续且唯一" - "连续" likely means monotonic/no duplicates, not no-gaps. Actually "连续" usually means consecutive. But renumbering would change IDs which the task forbids ("do NOT change IDs").
+For F009 tasks §3, let me reconsider task IDs to keep连续. Original: T001-T004, T010-T015, T020-T023, T030-T034. There are gaps (T005-T009, T016-T019, T024-T029). The original has gaps too. The template says "任务 ID 必须全文件连续且唯一". "连续" might mean no gaps? The original F009 has gaps (T004 -> T010). Hmm. The gate might require continuous numbering. But the original has gaps and it's existing. The task says preserve semantics, don't change IDs. So I'll keep the original IDs (with gaps). The gate "连续且唯一" - "连续" likely means monotonic/no duplicates, not no-gaps. Actually "连续" usually means consecutive. But renumbering would change IDs which the task forbids ("do NOT change IDs"). 
 
-Wait, the task says "do NOT invent new requirements or change IDs" - this is about requirement IDs (FR/DR/AC/US). Task IDs (Txxx) - the task doesn't explicitly forbid renumbering tasks. But it says "preserve... AC-xxx IDs, US-xxx IDs". Task IDs aren't mentioned. However, renumbering tasks is risky and the original gaps are intentional (grouping by phase). I'll preserve original task IDs to be safe. If the gate requires no-gaps, that's a separate issue, but the plan's gate description says "任务 ID 必须全文件连续且唯一" - hmm.
+Wait, the task says "do NOT invent new requirements or change IDs" - this is about requirement IDs (FR/DR/AC/US). Task IDs (Txxx) - the task doesn't explicitly forbid renumbering tasks. But it says "preserve... AC-xxx IDs, US-xxx IDs". Task IDs aren't mentioned. However, renumbering tasks is risky and the original gaps are intentional (grouping by phase). I'll preserve original task IDs to be safe. If the gate requires no-gaps, that's a separate issue, but the plan's gate description says "任务 ID 必须全文件连续且唯一" - hmm. 
 
 Let me re-read: plan 2.2 gate v1 point 1: "tasks 的 Phase 只能位于「2. 实现任务」下，任务行必须符合 Txxx 格式并引用合法 ID." It says "符合 Txxx 格式并引用合法 ID" - it doesn't explicitly say no-gaps. The README tasks section says "任务 ID 必须全文件连续且唯一". "连续" = consecutive. So gaps might be flagged.
 
@@ -2647,27 +2647,27 @@ But the original F009 tasks have gaps (T004->T010). If I preserve them, the gate
 
 Hmm. This is a judgment call. The safest path that satisfies the gate's "连续" requirement is to renumber tasks consecutively (T001, T002, T003, ... no gaps) while preserving all requirement/AC references and the dependency relationships (just with new numbers). But that's a lot of renumbering work and risk.
 
-Alternatively, keep original IDs with gaps. The gate might or might not enforce no-gaps. Given the task explicitly says "preserve... IDs" and lists AC/US but the spirit is "don't change things", and renumbering tasks is error-prone, I'll keep original task IDs (with gaps). If the gate enforces no-gaps, that's a separate fix. Actually, let me reconsider - the README says "连续且唯一".
+Alternatively, keep original IDs with gaps. The gate might or might not enforce no-gaps. Given the task explicitly says "preserve... IDs" and lists AC/US but the spirit is "don't change things", and renumbering tasks is error-prone, I'll keep original task IDs (with gaps). If the gate enforces no-gaps, that's a separate fix. Actually, let me reconsider - the README says "连续且唯一". 
 
 Let me make a decision: I'll renumber tasks to be consecutive within each file to satisfy the gate's "连续" requirement, since task IDs are not in the preserve list and the gate explicitly requires连续. I'll renumber sequentially T001, T002, ... and update the §4 dependency references accordingly. This is more work but safer for gate compliance.
 
-Hmm, but that's risky for 4 files × ~15 tasks. Let me reconsider whether the gate really enforces no-gaps. "连续且唯一" - in Chinese, "连续" strictly means consecutive (no gaps). But practically, many gate implementations check uniqueness and monotonic increase, not strict no-gaps. Given uncertainty, and that the task says "do NOT change IDs" (broadly), I'll preserve original task IDs. The task's preserve list is about requirement IDs, but the general principle "do NOT invent new requirements or change IDs" could be read to include task IDs.
+Hmm, but that's risky for 4 files × ~15 tasks. Let me reconsider whether the gate really enforces no-gaps. "连续且唯一" - in Chinese, "连续" strictly means consecutive (no gaps). But practically, many gate implementations check uniqueness and monotonic increase, not strict no-gaps. Given uncertainty, and that the task says "do NOT change IDs" (broadly), I'll preserve original task IDs. The task's preserve list is about requirement IDs, but the general principle "do NOT invent new requirements or change IDs" could be read to include task IDs. 
 
 I'll preserve original task IDs (with gaps). This is the conservative, faithful choice. I'll note in my report that task IDs keep their original (gapped) numbering, and if the gate enforces strict consecutiveness, a follow-up renumbering pass may be needed.
 
 Actually, you know what, let me reconsider once more. The instruction "do NOT invent new requirements or change IDs" - the IDs listed are FR/DR/TR/IR/UX/NFR/AC/US. Task IDs aren't requirements. But "change IDs" broadly... I think the intent is don't change the requirement/AC/US IDs. Task IDs are operational. To best satisfy BOTH the gate (连续) and faithfulness, renumbering tasks consecutively is actually the better choice IF the gate enforces it. But if the gate doesn't enforce no-gaps, renumbering is unnecessary change.
 
-Given the parallel gate script is being implemented to "validate these docs" and the README explicitly says "连续且唯一", I'll renumber tasks consecutively to be safe. Wait - but that could introduce errors and the task says "The template structure must match exactly." The gate will validate. If I leave gaps and the gate enforces连续, the docs fail. If I renumber and make an error, the docs fail differently.
+Given the parallel gate script is being implemented to "validate these docs" and the README explicitly says "连续且唯一", I'll renumber tasks consecutively to be safe. Wait - but that could introduce errors and the task says "The template structure must match exactly." The gate will validate. If I leave gaps and the gate enforces连续, the docs fail. If I renumber and make an error, the docs fail differently. 
 
 Decision: I'll renumber tasks consecutively (T001, T002, ...) in each tasks.md, preserving all FR/AC/US references and dependency relationships (with new numbers). This satisfies "连续且唯一". I'll be careful. This is the safer choice for gate compliance.
 
-Hmm, actually, let me reconsider the effort/risk. 4 tasks files, each ~15-20 tasks with cross-references in §4. Renumbering each carefully... it's doable but error-prone.
+Hmm, actually, let me reconsider the effort/risk. 4 tasks files, each ~15-20 tasks with cross-references in §4. Renumbering each carefully... it's doable but error-prone. 
 
-Let me look at the gate description once more: README "任务 ID 必须全文件连续且唯一". Plan 2.2 point 1: "任务行必须符合 Txxx 格式并引用合法 ID". The plan's gate spec doesn't repeat "连续", only the README does. The actual gate script (parallel task) will implement some check.
+Let me look at the gate description once more: README "任务 ID 必须全文件连续且唯一". Plan 2.2 point 1: "任务行必须符合 Txxx 格式并引用合法 ID". The plan's gate spec doesn't repeat "连续", only the README does. The actual gate script (parallel task) will implement some check. 
 
 I'll go with consecutive renumbering to be safe, since the README explicitly states it. Let me do it carefully per file.
 
-Actually, wait. Let me reconsider. The original F009 tasks.md was presumably written by the team. It has gaps (T004->T010). If the team's own convention allowed gaps, then "连续" might be loosely enforced. But the NEW template/README says "连续且唯一". Since I'm normalizing TO the new template, I should make tasks consecutive.
+Actually, wait. Let me reconsider. The original F009 tasks.md was presumably written by the team. It has gaps (T004->T010). If the team's own convention allowed gaps, then "连续" might be loosely enforced. But the NEW template/README says "连续且唯一". Since I'm normalizing TO the new template, I should make tasks consecutive. 
 
 Final decision: renumber tasks consecutively per file. Preserve requirement/AC/US refs. Update §4 deps with new IDs.
 
@@ -2697,9 +2697,9 @@ Hmm wait, T006 = was T011 (service), T008 = was T013 (evidence). Original said "
 
 This is workable. Let me write it.
 
-Actually, this renumbering is getting complex and error-prone across 4 files. Let me reconsider whether to just keep original IDs.
+Actually, this renumbering is getting complex and error-prone across 4 files. Let me reconsider whether to just keep original IDs. 
 
-You know, I'll keep original task IDs (with gaps). Rationale: (1) the task instruction emphasizes preserving IDs and not changing things; (2) the gate's actual enforcement of "连续" is uncertain and the plan's gate spec (2.2) only says "符合 Txxx 格式并引用合法 ID" without "连续"; (3) renumbering 4 files of tasks is high-risk for introducing reference errors; (4) the original docs were written with these IDs and cross-Feature references (e.g., F011 tasks reference "F008 T041b") use specific task IDs - renumbering F009's tasks won't break F011's references to F008, but within-file refs need consistency which I can maintain.
+You know, I'll keep original task IDs (with gaps). Rationale: (1) the task instruction emphasizes preserving IDs and not changing things; (2) the gate's actual enforcement of "连续" is uncertain and the plan's gate spec (2.2) only says "符合 Txxx 格式并引用合法 ID" without "连续"; (3) renumbering 4 files of tasks is high-risk for introducing reference errors; (4) the original docs were written with these IDs and cross-Feature references (e.g., F011 tasks reference "F008 T041b") use specific task IDs - renumbering F009's tasks won't break F011's references to F008, but within-file refs need consistency which I can maintain. 
 
 Hmm, but F011 tasks reference "F008 T041b" - that's F008's task ID, not F011's. So F011's own renumbering doesn't affect that. But F011 tasks also reference its own tasks in 依赖关系.
 
@@ -2709,7 +2709,7 @@ Wait, but the task says "The template structure must match exactly" and the gate
 
 I'll keep original IDs. Decision final. Moving on.
 
-Actually, let me reconsider one more time by checking: the task description says "Task format: `- [ ] T001 [P] (\`FR-001\`, \`AC-001\`): <action> - verify: \`path\``." It shows T001. And "task ID 必须全文件连续且唯一" is in README. The task description for me says preserve AC/US IDs but is silent on task IDs.
+Actually, let me reconsider one more time by checking: the task description says "Task format: `- [ ] T001 [P] (\`FR-001\`, \`AC-001\`): <action> - verify: \`path\``." It shows T001. And "task ID 必须全文件连续且唯一" is in README. The task description for me says preserve AC/US IDs but is silent on task IDs. 
 
 I'll keep original task IDs. If I had more certainty I'd renumber, but the risk of reference errors outweighs the uncertain benefit. Noting it in report.
 
@@ -2717,9 +2717,9 @@ OK, let me now actually write the files. Starting with F009 spec.md.
 
 Let me also reconsider: should §3 of tasks duplicate task IDs from §2? No - §3 has its own verification tasks. In original F009, T030-T034 are Phase 4. I'll move T030 (archive/restart integration) to §2 Phase 4 (recovery), and T031-T034 to §3. But then T030 is in §2 and T031-T034 in §3 - no ID duplication. Good.
 
-Wait, but T032 (AC matrix) and T033 (quality gate) and T034 (回写) are verification. T031 (Windows manual) is verification. T030 (archive/restart integration test) - is it implementation or verification? It "archive/历史 ref/重启回放集成测试" - writing/running integration tests for FR-007. I'll put it in §2 Phase 4 as the recovery implementation test (it validates FR-007 archive behavior). Actually it could go either way. The template §2 is "实现任务" and §3 is "验证与验收任务". Integration tests for archive are verification of FR-007. But they also involve implementing the test. Hmm. The original grouped it in "Phase 4：恢复与验收" mixing both.
+Wait, but T032 (AC matrix) and T033 (quality gate) and T034 (回写) are verification. T031 (Windows manual) is verification. T030 (archive/restart integration test) - is it implementation or verification? It "archive/历史 ref/重启回放集成测试" - writing/running integration tests for FR-007. I'll put it in §2 Phase 4 as the recovery implementation test (it validates FR-007 archive behavior). Actually it could go either way. The template §2 is "实现任务" and §3 is "验证与验收任务". Integration tests for archive are verification of FR-007. But they also involve implementing the test. Hmm. The original grouped it in "Phase 4：恢复与验收" mixing both. 
 
-To cleanly separate: §2 Phase 4 = recovery implementation (the archive feature itself is already in Phase 2 service; T030 is the integration test verifying FR-007). I'll put T030 in §3 (verification) since it's running integration tests. Actually T030 says "archive/历史 ref/重启回放集成测试" - it's creating+running integration tests. I'll put it in §3 as verification of AC-006 (archive replay).
+To cleanly separate: §2 Phase 4 = recovery implementation (the archive feature itself is already in Phase 2 service; T030 is the integration test verifying FR-007). I'll put T030 in §3 (verification) since it's running integration tests. Actually T030 says "archive/历史 ref/重启回放集成测试" - it's creating+running integration tests. I'll put it in §3 as verification of AC-006 (archive replay). 
 
 Let me restructure F009:
 §2 实现任务: Phase 1 (T001-T004), Phase 2 (T010-T015), Phase 3 (T020-T023). [No Phase 4 in §2]
@@ -2731,7 +2731,7 @@ Let me just do: §2 has Phase 1-3 (implementation) + Phase 4: 恢复 (T030, the 
 
 Actually, the template §3 MUST contain AC对应自动化测试, 真实环境验证, 最终质量门. So §3 needs: AC tests (T032), real-env (T031), quality gate (T033), 回写 (T034). And T030 (archive/restart integration) is an AC test too (AC-006). I'll put T030 in §3 as well (it's running integration tests for AC-006). Then §2 has Phase 1-3 only, §3 has T030-T034. But then §3 starts at T030 which is fine (continuous from §2's last T023... gap T024-T029). With gaps. OK.
 
-Hmm, let me simplify:
+Hmm, let me simplify: 
 §2 实现任务: Phase 1 (T001-T004), Phase 2 (T010-T015), Phase 3 (T020-T023).
 §3 验证与验收任务: T030 (AC-006 archive/restart integration), T031 (AC-003 Windows manual), T032 (AC-001~006 matrix + 回归), T033 (quality gate), T034 (回写).
 
@@ -2791,7 +2791,7 @@ Let me update todos and start writing F009.
   {
     "content": "Rewrite F009 spec/design/tasks to fixed structure",
     "status": "in_progress",
-
+  
 …[truncated]
   ```
   </details>
@@ -2903,11 +2903,11 @@ Now F010 tasks mapping:
 Current: Phase 1-5 + 依赖关系. T001-T043.
 New 6 sections:
 - 0. 来源与执行规则
-- 1. 前置条件: F009 must be done. "F009 完成后 Phase 1". So prerequisite: F009 contract frozen. Write T001 (verify F009 contract)? Or 不适用 with note that F009 must complete first. The template §1 is for closing DQs and verifying upstream contracts. F010 depends on F009. I'll write: "- [ ] T001 (`DQ-001`): 确认 F009 artifact ref/revision 契约已冻结 - verify: docs/features/0.3/F009.../spec.md". Actually DQ-001 is closed. Hmm. The prerequisite is verifying upstream F009 contract. Let me write a prerequisite task. But that shifts numbering.
+- 1. 前置条件: F009 must be done. "F009 完成后 Phase 1". So prerequisite: F009 contract frozen. Write T001 (verify F009 contract)? Or 不适用 with note that F009 must complete first. The template §1 is for closing DQs and verifying upstream contracts. F010 depends on F009. I'll write: "- [ ] T001 (`DQ-001`): 确认 F009 artifact ref/revision 契约已冻结 - verify: docs/features/0.3/F009.../spec.md". Actually DQ-001 is closed. Hmm. The prerequisite is verifying upstream F009 contract. Let me write a prerequisite task. But that shifts numbering. 
 
 Actually the template §1 example: T001 (DQ-001): close blocking spec/design questions; T002 (FR-001): verify upstream contract. For F010, DQs are closed, but verifying F009 contract is a real prerequisite. I'll write §1 with one task: verify F009 contract frozen. But that would be T001, shifting all implementation tasks. To preserve original IDs (T001-T043), I'll instead write §1 as 不适用 with note "F009 契约已冻结（见 F009 spec/design）；本 Feature 在 F009 完成后实施。" and keep implementation starting at T001. That preserves IDs. Good.
 
-Actually wait - F010's Phase 1 starts at T001. If §1 is 不适用, §2 starts at T001. Original T001-T004 (Phase 1), T010-T015 (Phase 2), T020-T024 (Phase 3), T030-T032 (Phase 4), T040-T043 (Phase 5).
+Actually wait - F010's Phase 1 starts at T001. If §1 is 不适用, §2 starts at T001. Original T001-T004 (Phase 1), T010-T015 (Phase 2), T020-T024 (Phase 3), T030-T032 (Phase 4), T040-T043 (Phase 5). 
 
 §2 实现任务: Phase 1-4 (T001-T032). Phase 5 (T040-T043) is验收 -> §3.
 §3 验证与验收任务: T040-T043.
@@ -2986,7 +2986,7 @@ F009 trio complete. Now F010.
   {
     "content": "Rewrite F009 spec/design/tasks to fixed structure",
     "status": "completed",
-
+    
 …[truncated]
   ```
   </details>
@@ -3190,7 +3190,7 @@ F010 trio complete. Now F011.
   {
     "content": "Rewrite F009 spec/design/tasks to fixed structure",
     "status": "completed",
-
+    
 …[truncated]
   ```
   </details>
@@ -3400,7 +3400,7 @@ F011 trio complete. Now F012.
   {
     "content": "Rewrite F009 spec/design/tasks to fixed structure",
     "status": "completed",
-
+    
 …[truncated]
   ```
   </details>
@@ -3504,7 +3504,7 @@ doc_kind: spec
 created: 2026-07-12
 updated: 2026-07-16
 ```
-Edit 1: `feature_ids: [F001]` ->
+Edit 1: `feature_ids: [F001]` -> 
 ```
 kind: feature
 id: F001
@@ -3613,9 +3613,9 @@ Now let me write the spec frontmatter edits. I'll replace the full frontmatter b
 
 Let me do the 8 specs in parallel (one edit each).
 
-Actually, I realize the `feature_ids:` replacement approach (just replacing that one line + the updated line) is less error-prone than replacing the whole block, because I don't need to retype related_features/topics/created. But replacing one line `feature_ids: [F001]` with 5 lines - the oldString `feature_ids: [F001]` must be unique in the file. Is it? It appears once in frontmatter. Body might reference F001 but not as `feature_ids: [F001]`. Should be unique. And `updated: 2026-07-16` - unique. So 2 small edits per spec. But 2 edits per file × 8 = 16 edits for specs. Vs 1 block edit per spec = 8 edits. Block edit is fewer calls but more typing.
+Actually, I realize the `feature_ids:` replacement approach (just replacing that one line + the updated line) is less error-prone than replacing the whole block, because I don't need to retype related_features/topics/created. But replacing one line `feature_ids: [F001]` with 5 lines - the oldString `feature_ids: [F001]` must be unique in the file. Is it? It appears once in frontmatter. Body might reference F001 but not as `feature_ids: [F001]`. Should be unique. And `updated: 2026-07-16` - unique. So 2 small edits per spec. But 2 edits per file × 8 = 16 edits for specs. Vs 1 block edit per spec = 8 edits. Block edit is fewer calls but more typing. 
 
-I'll do the 2-small-edits approach per file to reduce retyping risk:
+I'll do the 2-small-edits approach per file to reduce retyping risk: 
 - Edit A: `feature_ids: [Fxxx]` -> `kind: feature\nid: Fxxx\nversion: "0.x"\nstatus: done\ngate_version: 0`
 - Edit B: `updated: <old>` -> `updated: 2026-08-09`
 
@@ -3624,17 +3624,17 @@ For design/tasks (no status/gate_version):
 - Edit B: `updated: <old>` -> `updated: 2026-08-09`
 - Edit C (design/tasks only): `> Status: ...` line -> `> Owner: ...` line
 
-Edit A and B are on different lines of the same file, non-overlapping. But issuing them in parallel on the same file is risky (both reference original content; edit A changes line 2, edit B changes line 7 - they don't overlap, but the tool might apply them to the same original snapshot). To be safe, sequential per file.
+Edit A and B are on different lines of the same file, non-overlapping. But issuing them in parallel on the same file is risky (both reference original content; edit A changes line 2, edit B changes line 7 - they don't overlap, but the tool might apply them to the same original snapshot). To be safe, sequential per file. 
 
 Hmm, this is getting to many round trips. Let me just do ONE block edit per file (replace entire frontmatter), which is 1 edit per spec and 1 edit per design/tasks frontmatter + 1 edit for status line. So per design/tasks: 2 edits (block frontmatter + status line), sequential. Per spec: 1 edit.
 
-To parallelize: Round 1 = all 8 spec frontmatter block edits + all 16 design/tasks frontmatter block edits = 24 parallel edits (different files). Round 2 = 16 design/tasks status line edits (parallel, different files).
+To parallelize: Round 1 = all 8 spec frontmatter block edits + all 16 design/tasks frontmatter block edits = 24 parallel edits (different files). Round 2 = 16 design/tasks status line edits (parallel, different files). 
 
 24 parallel edits in one message is a lot but should work since they're all different files. Let me do it in 2-3 batches to be safe: batch 1 = 8 specs, batch 2 = 8 design frontmatter, batch 3 = 8 tasks frontmatter, then batch 4 = 16 status lines (or split). Actually let me just do 8 at a time.
 
 Let me reconsider: the block edit requires me to retype related_features/topics/created exactly. Risk of typo. The 2-small-edits approach is safer for content preservation. But more calls.
 
-Compromise: For each file, do the `feature_ids` line replacement (Edit A) and the `updated` line replacement (Edit B) as the frontmatter changes. These are small and safe. For design/tasks, also Edit C for status line.
+Compromise: For each file, do the `feature_ids` line replacement (Edit A) and the `updated` line replacement (Edit B) as the frontmatter changes. These are small and safe. For design/tasks, also Edit C for status line. 
 
 To handle same-file sequential edits while parallelizing across files: I'll issue Edit A for all 24 files in parallel (round 1). Then Edit B for all 24 files in parallel (round 2). Then Edit C for 16 design/tasks in parallel (round 3). 3 rounds, each up to 24 parallel calls. Each round's edits are on different files (safe) and the oldString for Edit B (`updated: <old>`) is unaffected by Edit A (which changed `feature_ids` line). Good.
 
@@ -3652,7 +3652,7 @@ Let me start with the 8 spec frontmatter `feature_ids` replacements (Edit A with
 
 Actually, I'll combine Edit A and Edit B per file into the frontmatter by doing the `feature_ids` line replacement only, and separately the `updated` line. Let me just go.
 
-Let me do the 8 specs first. For each spec, two edits: feature_ids line and updated line. To avoid same-file parallel issues, I'll do feature_ids for all 8 in one message, then updated for all 8 in next message. Actually, since feature_ids and updated are different lines and don't overlap, and the edit tool applies each edit to the current file state, doing them in the same message on the SAME file is risky because both see the original. Let me NOT do same-file parallel.
+Let me do the 8 specs first. For each spec, two edits: feature_ids line and updated line. To avoid same-file parallel issues, I'll do feature_ids for all 8 in one message, then updated for all 8 in next message. Actually, since feature_ids and updated are different lines and don't overlap, and the edit tool applies each edit to the current file state, doing them in the same message on the SAME file is risky because both see the original. Let me NOT do same-file parallel. 
 
 Simplest safe approach: process one file fully at a time? That's 24 files × sequential = too slow.
 
@@ -4369,7 +4369,7 @@ All F001-F008 frontmatter normalized. Now verification. Let me check section cou
   {
     "content": "Rewrite F009 spec/design/tasks to fixed structure",
     "status": "completed",
-
+    
 …[truncated]
   ```
   </details>
@@ -4594,15 +4594,15 @@ Section counts for F009-F012 confirmed: spec 9, design 11, tasks 6. ✓
 
 Now, one thing I should double check: the F009-F012 spec body header line. I wrote `> Owner: TBD | Target: v0.3` (no Status). Good. And the design/tasks body header `> Owner: TBD | Spec: ...`. Good.
 
-Also I should verify that the F001-F008 spec body still has `> Status: done` (which I intentionally left per task instruction "ONLY update frontmatter"). That's expected - not a concern for gate v0 (which doesn't enforce body status removal, and the task explicitly said only frontmatter for F001-F008 specs). But wait - the ownership check `check-doc-ownership` says "status 只能出现在 Feature spec.md frontmatter". Would that flag the `> Status: done` body line in F001-F008 specs?
+Also I should verify that the F001-F008 spec body still has `> Status: done` (which I intentionally left per task instruction "ONLY update frontmatter"). That's expected - not a concern for gate v0 (which doesn't enforce body status removal, and the task explicitly said only frontmatter for F001-F008 specs). But wait - the ownership check `check-doc-ownership` says "status 只能出现在 Feature spec.md frontmatter". Would that flag the `> Status: done` body line in F001-F008 specs? 
 
 Hmm. The task said: "For old features F001-F008 (gate_version 0): DO NOT rewrite their section structures... ONLY update their spec.md frontmatter to add kind, id, version, status, gate_version, and remove status: from design.md/tasks.md." and "Do NOT touch their body content or section structure - only their frontmatter."
 
-So the task explicitly forbids touching F001-F008 spec body. The `> Status: done` body line stays. If the ownership gate flags it, that's a gate v0 vs ownership-check tension, but the task instruction is explicit and I followed it. The gate v0 (per plan 2.2) checks structure/metadata/BACKLOG, and the ownership check is a separate concern. The task author was aware ("just normalize frontmatter to add kind/id/version/status/gate_version").
+So the task explicitly forbids touching F001-F008 spec body. The `> Status: done` body line stays. If the ownership gate flags it, that's a gate v0 vs ownership-check tension, but the task instruction is explicit and I followed it. The gate v0 (per plan 2.2) checks structure/metadata/BACKLOG, and the ownership check is a separate concern. The task author was aware ("just normalize frontmatter to add kind/id/version/status/gate_version"). 
 
 Actually, let me reconsider. The ownership check `check-doc-ownership` (plan 2.2.1) says "status 只能出现在 Feature spec.md frontmatter". This would flag `> Status: done` in F001-F008 spec bodies. But the task said only update frontmatter for F001-F008 specs. There's a genuine conflict.
 
-However, re-reading the task: "and remove status: from design.md/tasks.md" - it specifically scopes status removal to design/tasks, NOT spec. And "ONLY update their spec.md frontmatter". So the task is explicit: don't touch spec body. I followed this. The `> Status: done` in F001-F008 spec bodies remains as documented legacy debt (gate_version: 0).
+However, re-reading the task: "and remove status: from design.md/tasks.md" - it specifically scopes status removal to design/tasks, NOT spec. And "ONLY update their spec.md frontmatter". So the task is explicit: don't touch spec body. I followed this. The `> Status: done` in F001-F008 spec bodies remains as documented legacy debt (gate_version: 0). 
 
 Actually, wait. Let me reconsider whether the ownership check would even consider the `> Status:` body line. The check looks for `status` declarations. A `> Status: done` blockquote in spec body is a status declaration outside frontmatter. The ownership rule says status only in spec frontmatter. So strictly, F001-F008 spec bodies violate this. But the task explicitly told me not to touch them.
 
@@ -4827,7 +4827,7 @@ All verification complete. Marking done.
   {
     "content": "Rewrite F009 spec/design/tasks to fixed structure",
     "status": "completed",
-
+    
 …[truncated]
   ```
   </details>

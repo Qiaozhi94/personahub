@@ -30,12 +30,9 @@ Let me explore the project structure first.
   <details><summary>tool output</summary>
 
   ```text
-[32;1mFullName[0m
-
-[32;1m--------[0m
-
-D:\Projects\personahub\.git\objects\4c\c1ceac8f0080e375609c0415ffdda30653f11b
-
+[32;1mFullName[0m
+[32;1m--------[0m
+D:\Projects\personahub\.git\objects\4c\c1ceac8f0080e375609c0415ffdda30653f11b
 ---docs---
   ```
   </details>
@@ -50,47 +47,27 @@ D:\Projects\personahub\.git\objects\4c\c1ceac8f0080e375609c0415ffdda30653f11b
   <details><summary>tool output</summary>
 
   ```text
-[32;1mName                         [0m[32;1m Mode[0m
-
-[32;1m----                         [0m [32;1m----[0m
-
-.agents                       d----
-
-.claude                       d----
-
-.code-review-graph            d----
-
-.git                          d----
-
-.history                      d----
-
-.playwright-mcp               d----
-
-.sisyphus                     d----
-
-conversations                 d----
-
-docs                          d----
-
-e2e                           d----
-
-node_modules                  d----
-
-server                        d----
-
-shared                        d----
-
-web                           d----
-
-.gitignore                    -a---
-
-.prettierignore               -a---
-
-.prettierrc.json              -a---
-
-AGENTS.md                     -a---
-
-BACKLOG.md
+[32;1mName                         [0m[32;1m Mode[0m
+[32;1m----                         [0m [32;1m----[0m
+.agents                       d----
+.claude                       d----
+.code-review-graph            d----
+.git                          d----
+.history                      d----
+.playwright-mcp               d----
+.sisyphus                     d----
+conversations                 d----
+docs                          d----
+e2e                           d----
+node_modules                  d----
+server                        d----
+shared                        d----
+web                           d----
+.gitignore                    -a---
+.prettierignore               -a---
+.prettierrc.json              -a---
+AGENTS.md                     -a---
+BACKLOG.md        
 …[truncated]
   ```
   </details>
@@ -105,34 +82,20 @@ BACKLOG.md
   <details><summary>tool output</summary>
 
   ```text
-[32;1mFullName[0m
-
-[32;1m--------[0m
-
-D:\Projects\personahub\docs\personahub-architecture.md
-
-D:\Projects\personahub\docs\personahub-prd.md
-
-D:\Projects\personahub\docs\personahub-system-design.md
-
-D:\Projects\personahub\docs\SOP.md
-
-D:\Projects\personahub\docs\decisions\0001-frontend-stack.md
-
-D:\Projects\personahub\docs\decisions\0002-first-agent-adapter.md
-
-D:\Projects\personahub\docs\decisions\0003-backend-runtime.md
-
-D:\Projects\personahub\docs\decisions\0004-ui-styling-stack.md
-
-D:\Projects\personahub\docs\decisions\0005-code-directory-structure.md
-
-D:\Projects\personahub\docs\decisions\0006-executable-work-graph.md
-
-D:\Projects\personahub\docs\decisions\0007-coordinator-execution-channel.md
-
-D:\Projects\personahub\docs\features\README.md
-
+[32;1mFullName[0m
+[32;1m--------[0m
+D:\Projects\personahub\docs\personahub-architecture.md
+D:\Projects\personahub\docs\personahub-prd.md
+D:\Projects\personahub\docs\personahub-system-design.md
+D:\Projects\personahub\docs\SOP.md
+D:\Projects\personahub\docs\decisions\0001-frontend-stack.md
+D:\Projects\personahub\docs\decisions\0002-first-agent-adapter.md
+D:\Projects\personahub\docs\decisions\0003-backend-runtime.md
+D:\Projects\personahub\docs\decisions\0004-ui-styling-stack.md
+D:\Projects\personahub\docs\decisions\0005-code-directory-structure.md
+D:\Projects\personahub\docs\decisions\0006-executable-work-graph.md
+D:\Projects\personahub\docs\decisions\0007-coordinator-execution-channel.md
+D:\Projects\personahub\docs\features\README.md
 D:\Projects\personahub\docs\features\0.1
 …[truncated]
   ```
@@ -160,13 +123,13 @@ D:\Projects\personahub\docs\features\0.1
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Target: v0.2
-13:
+13: 
 14: ## 0. 规格元信息
-15:
+15: 
 16: - **PRD 来源**：`docs/personahub-prd.md` 第 15 节 v0.2 范围中的 "Workflow Template 管理 UI 初版" 与 "Runtime health check"。
 17: - **相关**：F004 的 validation 依赖 `steps_json`；F007 的推荐依赖模板的 active 版本。
 18: - **功能类型**：user-facing / admin / observability。
@@ -191,13 +154,13 @@ D:\Projects\personahub\docs\features\0.1
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 任务
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md` | Design: `design.md`
-13:
+13: 
 14: ## Phase 1：模板读取与派生投影（FR-001）
-15:
+15: 
 16: - [ ] T009：新建 `server/src/db/schema-v10.ts`——`admin_audit_events` 表 + `idx_workflow_templates_issue_type_version` / `idx_workflow_templates_one_active` 两个唯一索引 + `migrations.ts` 分支 + 迁移测试。版本号按实际落地顺序取，**不得追加进已应用版本**（`design.md` 第 4、7 节）。
 17: - [ ] T01
 …[truncated]
@@ -226,20 +189,20 @@ Now let me read the design doc and understand the codebase structure.
 6: created: 2026-08-01
 7: updated: 2026-08-09
 8: ---
-9:
+9: 
 10: # F008：Workflow Template Admin & Runtime Health - 设计
-11:
+11: 
 12: > Status: ready-for-development | Owner: TBD | Spec: `spec.md`
-13:
+13: 
 14: ## 1. 技术概要
-15:
+15: 
 16: 两块互相独立的能力放在同一个 feature，因为它们共享同一条主线：把系统已经拥有但用户看不到的状态呈现出来。
-17:
+17: 
 18: - **模板管理**：给 `WorkflowTemplateRepository` 补写方法，编辑一律走"新增版本"，既有行不可变。
 19: - **Runtime health**：新增一个纯只读聚合服务，全部数据来自既有仓储查询，不新增表、不触发任何副作用。
-20:
+20: 
 21: ## 2. 影响面
-22:
+22: 
 23: - **存储**：`workflow_templates` 本身无变更（`version` / `status` 列已具备
 …[truncated]
   ```
@@ -275,38 +238,22 @@ This is a large feature. Let me understand the codebase structure before plannin
   <details><summary>tool output</summary>
 
   ```text
-[32;1mFullName[0m
-
-[32;1m--------[0m
-
-D:\Projects\personahub\server\src\id.ts
-
-D:\Projects\personahub\server\src\index.ts
-
-D:\Projects\personahub\server\src\api\errors.ts
-
-D:\Projects\personahub\server\src\api\index.ts
-
-D:\Projects\personahub\server\src\api\routes\adapters.ts
-
-D:\Projects\personahub\server\src\api\routes\graph.ts
-
-D:\Projects\personahub\server\src\api\routes\intake.ts
-
-D:\Projects\personahub\server\src\api\routes\issues.ts
-
-D:\Projects\personahub\server\src\api\routes\projects.ts
-
-D:\Projects\personahub\server\src\api\routes\runs.ts
-
-D:\Projects\personahub\server\src\api\routes\threads.ts
-
-D:\Projects\personahub\server\src\api\routes\traces.ts
-
-D:\Projects\personahub\server\src\api\routes\validation.ts
-
-D:\Projects\personahub\server\src\api\routes\workspaces.ts
-
+[32;1mFullName[0m
+[32;1m--------[0m
+D:\Projects\personahub\server\src\id.ts
+D:\Projects\personahub\server\src\index.ts
+D:\Projects\personahub\server\src\api\errors.ts
+D:\Projects\personahub\server\src\api\index.ts
+D:\Projects\personahub\server\src\api\routes\adapters.ts
+D:\Projects\personahub\server\src\api\routes\graph.ts
+D:\Projects\personahub\server\src\api\routes\intake.ts
+D:\Projects\personahub\server\src\api\routes\issues.ts
+D:\Projects\personahub\server\src\api\routes\projects.ts
+D:\Projects\personahub\server\src\api\routes\runs.ts
+D:\Projects\personahub\server\src\api\routes\threads.ts
+D:\Projects\personahub\server\src\api\routes\traces.ts
+D:\Projects\personahub\server\src\api\routes\validation.ts
+D:\Projects\personahub\server\src\api\routes\workspaces.ts
 D:\Pro
 …[truncated]
   ```
@@ -358,7 +305,7 @@ This is a large multi-phase feature. Let me read the critical existing files in 
 <content>
 1: import type Database from "better-sqlite3";
 2: import type { WorkflowTemplate, IssueType } from "@personahub/shared/types";
-3:
+3: 
 4: interface WorkflowTemplateRow {
 5:   id: string;
 6:   name: string;
@@ -374,7 +321,7 @@ This is a large multi-phase feature. Let me read the critical existing files in 
 16:   created_at: string;
 17:   updated_at: string;
 18: }
-19:
+19: 
 20: function mapRow(row: WorkflowTemplateRow): WorkflowTemplate {
 21:   return {
 22:     id: row.id,
@@ -397,7 +344,7 @@ This is a large multi-phase feature. Let me read the critical existing files in 
 6: } from "@personahub/shared/types";
 7: import { ValidationBlockReason } from "@personahub/shared/types";
 8: import { hasCapability } from "../../repositories/agent-config.js";
-9:
+9: 
 10: export class ValidatorSelectorError extends Error {
 11:   constructor(
 12:     public readonly code: string,
@@ -407,12 +354,12 @@ This is a large multi-phase feature. Let me read the critical existing files in 
 16:     this.name = "ValidatorSelectorError";
 17:   }
 18: }
-19:
+19: 
 20: export interface WorkflowStep {
 21:   id: string;
 22:   role: string;
 23: }
-24:
+24: 
 25: interface StepsJson {
 26:   schema_version?: number;
 27:   steps?: Wor
@@ -436,13 +383,13 @@ This is a large multi-phase feature. Let me read the critical existing files in 
 8: import { SCHEMA_V7 } from "./schema-v7.js";
 9: import { SCHEMA_V8 } from "./schema-v8.js";
 10: import { SCHEMA_V9 } from "./schema-v9.js";
-11:
+11: 
 12: export function applyMigrations(db: Database.Database): void {
 13:   db.exec(`CREATE TABLE IF NOT EXISTS schema_version (
 14:     version INTEGER PRIMARY KEY,
 15:     applied_at TEXT NOT NULL
 16:   )`);
-17:
+17: 
 18:   const row = db
 …[truncated]
   ```
@@ -459,7 +406,7 @@ This is a large multi-phase feature. Let me read the critical existing files in 
 3: -- intake_confirmations records ONLY successfully-confirmed tokens (all columns
 4: -- NOT NULL, no status column). The recommendation phase is strictly zero-write;
 5: -- the confirmation token's only durable identity is the nonce column (design §1/§6).
-6:
+6: 
 7: CREATE TABLE IF NOT EXISTS intake_confirmations (
 8:   nonce TEXT PRIMARY KEY,
 9:   project_id TEXT NOT NULL REFERENCES projects(id),
@@ -467,7 +414,7 @@ This is a large multi-phase feature. Let me read the critical existing files in 
 11:   recommendation_id TEXT NOT NULL,
 12:   chosen_json TEXT NOT NULL,
 13:   issue_id TEXT NOT NULL REFERENCES issues(id),
-14:
+14:  
 …[truncated]
   ```
   </details>
@@ -598,7 +545,7 @@ Let me read the remaining critical files in parallel: adapter-failure-reprobe, s
 7: import type { DevelopmentTraceService } from "./development-trace.js";
 8: import type { RunTraceRepository } from "../repositories/run-trace.js";
 9: import { SCAN_REASON_CODES } from "../runtime/trace/constants.js";
-10:
+10: 
 11: export class StaleRecove
 …[truncated]
   ```
@@ -613,7 +560,7 @@ Let me read the remaining critical files in parallel: adapter-failure-reprobe, s
 1: import type { ZodType } from "zod";
 2: import { ErrorCode } from "@personahub/shared/errors";
 3: import type { ApiError as ApiErrorInterface } from "@personahub/shared/errors";
-4:
+4: 
 5: export class AppError extends Error implements ApiErrorInterface {
 6:   constructor(
 7:     public code: ErrorCode,
@@ -625,11 +572,11 @@ Let me read the remaining critical files in parallel: adapter-failure-reprobe, s
 13:     this.name = "AppError";
 14:   }
 15: }
-16:
+16: 
 17: /**
 18:  * design docs/decisions/0005 §route handler contract ("只做参数校验（zod）"):
 19:  * TypeScript `as` casts on `request.body` have zero runtime effect — a
-20:  * wrong-typed field (a number where a string is
+20:  * wrong-typed field (a number where a string is 
 …[truncated]
   ```
   </details>
@@ -652,7 +599,7 @@ Let me read the remaining critical files in parallel: adapter-failure-reprobe, s
 10: import graphRoutes from "./routes/graph.js";
 11: import intakeRoutes from "./routes/intake.js";
 12: import type { GraphRuntimeService } from "../services/graph-runtime.js";
-13: import type { GraphRunRepository
+13: import type { GraphRunRepository 
 …[truncated]
   ```
   </details>
@@ -685,38 +632,22 @@ Actually, let me be efficient. Let me read the shared errors and types, index.ts
   <details><summary>tool output</summary>
 
   ```text
-[32;1mFullName[0m
-
-[32;1m--------[0m
-
-D:\Projects\personahub\shared\dist\errors\index.d.ts
-
-D:\Projects\personahub\shared\dist\types\adapter.d.ts
-
-D:\Projects\personahub\shared\dist\types\graph.d.ts
-
-D:\Projects\personahub\shared\dist\types\index.d.ts
-
-D:\Projects\personahub\shared\dist\types\intake.d.ts
-
-D:\Projects\personahub\shared\dist\types\trace.d.ts
-
-D:\Projects\personahub\shared\dist\types\validation.d.ts
-
-D:\Projects\personahub\shared\dist\index.d.ts
-
-D:\Projects\personahub\shared\src\errors\index.ts
-
-D:\Projects\personahub\shared\src\types\adapter.ts
-
-D:\Projects\personahub\shared\src\types\graph.ts
-
-D:\Projects\personahub\shared\src\types\index.ts
-
-D:\Projects\personahub\shared\src\types\intake.ts
-
-D:\Projects\personahub\shared\src\types\trace.ts
-
+[32;1mFullName[0m
+[32;1m--------[0m
+D:\Projects\personahub\shared\dist\errors\index.d.ts
+D:\Projects\personahub\shared\dist\types\adapter.d.ts
+D:\Projects\personahub\shared\dist\types\graph.d.ts
+D:\Projects\personahub\shared\dist\types\index.d.ts
+D:\Projects\personahub\shared\dist\types\intake.d.ts
+D:\Projects\personahub\shared\dist\types\trace.d.ts
+D:\Projects\personahub\shared\dist\types\validation.d.ts
+D:\Projects\personahub\shared\dist\index.d.ts
+D:\Projects\personahub\shared\src\errors\index.ts
+D:\Projects\personahub\shared\src\types\adapter.ts
+D:\Projects\personahub\shared\src\types\graph.ts
+D:\Projects\personahub\shared\src\types\index.ts
+D:\Projects\personahub\shared\src\types\intake.ts
+D:\Projects\personahub\shared\src\types\trace.ts
 D:\Projects\personahub\shar
 …[truncated]
   ```
@@ -732,28 +663,17 @@ D:\Projects\personahub\shar
   <details><summary>tool output</summary>
 
   ```text
-[32;1mFullName[0m
-
-[32;1m--------[0m
-
-D:\Projects\personahub\server\tests\integration\acceptance-checklist.test.ts
-
-D:\Projects\personahub\server\tests\integration\adapter-availability-convergence.test.ts
-
-D:\Projects\personahub\server\tests\integration\adapter-config-role.test.ts
-
-D:\Projects\personahub\server\tests\integration\adapter-routes.test.ts
-
-D:\Projects\personahub\server\tests\integration\agent-runner-final-message.test.ts
-
-D:\Projects\personahub\server\tests\integration\agent-runner-trace.test.ts
-
-D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts
-
-D:\Projects\personahub\server\tests\integration\claude-pretooluse-hook.test.ts
-
-D:\Projects\personahub\server\tests\integration\codex-cli-adapter.test.ts
-
+[32;1mFullName[0m
+[32;1m--------[0m
+D:\Projects\personahub\server\tests\integration\acceptance-checklist.test.ts
+D:\Projects\personahub\server\tests\integration\adapter-availability-convergence.test.ts
+D:\Projects\personahub\server\tests\integration\adapter-config-role.test.ts
+D:\Projects\personahub\server\tests\integration\adapter-routes.test.ts
+D:\Projects\personahub\server\tests\integration\agent-runner-final-message.test.ts
+D:\Projects\personahub\server\tests\integration\agent-runner-trace.test.ts
+D:\Projects\personahub\server\tests\integration\claude-code-adapter.test.ts
+D:\Projects\personahub\server\tests\integration\claude-pretooluse-hook.test.ts
+D:\Projects\personahub\server\tests\integration\codex-cli-adapter.test.ts
 D:\Projects\personahub\server\tests\integration\c
 …[truncated]
   ```
@@ -791,14 +711,14 @@ Let me read the shared errors, types (relevant), server index.ts, adapters route
 13:   AdapterAuthType,
 14:   AgentCapability,
 15: } from "../types/index.js";
-16:
+16: 
 17: export {
 18:   type IssueValidationResponse,
 19:   type EvidenceSummaryResponse,
 20:   type UnblockInput,
 21:   type UnblockResponse,
 22: } from "../types/validation.js";
-23:
+23: 
 24: export enum ErrorCode {
 25:   PROJECT_NAME_REQUIRED = "PROJECT_NAME_REQUIRED",
 26:   PROJECT_NOT_FOUND = "PROJECT_NOT_FOUND",
@@ -842,15 +762,15 @@ Let me read the shared errors, types (relevant), server index.ts, adapters route
 4: import { AdapterAuthType, AgentCapability } from "@personahub/shared/types";
 5: import { getProviderMetadata } from "../../runtime/provider-metadata.js";
 6: import { parseRequestBody } from "../errors.js";
-7:
+7: 
 8: export interface AdapterRoutesOptions {
 9:   adapterConfigService: AdapterConfigService;
 10: }
-11:
+11: 
 12: /**
 13:  * Route-boundary schemas (docs/decisions/0005: "只做参数校验（zod）") — the
 14:  * service layer trusts these types once past this point. Every field a
-15:  * malformed body could send with the wrong JS type (a number
+15:  * malformed body could send with the wrong JS type (a number 
 …[truncated]
   ```
   </details>
@@ -902,49 +822,28 @@ Let me read these.
   <details><summary>tool output</summary>
 
   ```text
-=== adapter.ts ===
-
- * routing purpose/role instead (see RunPurpose / RunRole).
-
-=== graph.ts ===
-
-export enum GraphRunStatus {
-
-export enum NodeRunStatus {
-
-/** Graph-level blocker reasons. Independent of ValidationBlockReason
-
-  status: GraphRunStatus;
-
-  status: NodeRunStatus;
-
-/** Non-terminal GraphRunStatus values �� used by the partial unique
-
-export const NON_TERMINAL_GRAPH_STATUSES: readonly GraphRunStatus[] = [
-
-  GraphRunStatus.Running,
-
-  GraphRunStatus.Blocked,
-
-  GraphRunStatus.Cancelling,
-
-  status: NodeRunStatus;
-
-  status: GraphRunStatus;
-
-  status: NodeRunStatus;
-
-  status: GraphRunStatus;
-
-=== index.ts ===
-
-import type { RunRole, RunDispatchSource, AdapterIdentitySnapshot, ValidationBlockReason } from "./validation.js";
-
-  issue_type: IssueType;
-
-  status: IssueStatus;
-
-
+=== adapter.ts ===
+ * routing purpose/role instead (see RunPurpose / RunRole).
+=== graph.ts ===
+export enum GraphRunStatus {
+export enum NodeRunStatus {
+/** Graph-level blocker reasons. Independent of ValidationBlockReason
+  status: GraphRunStatus;
+  status: NodeRunStatus;
+/** Non-terminal GraphRunStatus values �� used by the partial unique
+export const NON_TERMINAL_GRAPH_STATUSES: readonly GraphRunStatus[] = [
+  GraphRunStatus.Running,
+  GraphRunStatus.Blocked,
+  GraphRunStatus.Cancelling,
+  status: NodeRunStatus;
+  status: GraphRunStatus;
+  status: NodeRunStatus;
+  status: GraphRunStatus;
+=== index.ts ===
+import type { RunRole, RunDispatchSource, AdapterIdentitySnapshot, ValidationBlockReason } from "./validation.js";
+  issue_type: IssueType;
+  status: IssueStatus;
+ 
 …[truncated]
   ```
   </details>
@@ -1012,7 +911,7 @@ Let me read these in parallel.
 <content>
 1: import type { RunRole, RunDispatchSource, AdapterIdentitySnapshot, ValidationBlockReason } from "./validation.js";
 2: import type { AdapterAuthType, AgentCapability, RunPurpose } from "./adapter.js";
-3:
+3: 
 4: export interface Project {
 5:   id: string;
 6:   name: string;
@@ -1024,7 +923,7 @@ Let me read these in parallel.
 12:   created_at: string;
 13:   updated_at: string;
 14: }
-15:
+15: 
 16: export interface Workspace {
 17:   id: string;
 18:   project_id: string;
@@ -1044,7 +943,7 @@ Let me read these in parallel.
 2: import type { AgentConfigRecord } from "../repositories/agent-config.js";
 3: import { hasCapability } from "../repositories/agent-config.js";
 4: import type { AdapterWorkspaceStatusRecord } from "../repositories/adapter-workspace-status.js";
-5:
+5: 
 6: /**
 7:  * Single place that merges the Project-global baseline with a workspace
 8:  * override (schema v7) — every availability check (resolver, validator
@@ -1323,7 +1222,7 @@ Let me add the shared types. I need to add to shared/src:
 
 Let me check the shared/src/index.ts and types structure to know where to put things.
 
-Actually, let me think about where the health snapshot and template admin types should live. The API contracts are used by both server and web. Let me look at shared/src/index.ts and types/validation.ts for patterns. Actually, I'll add a new types file for F008 or add to errors/index.ts (which re-exports types).
+Actually, let me think about where the health snapshot and template admin types should live. The API contracts are used by both server and web. Let me look at shared/src/index.ts and types/validation.ts for patterns. Actually, I'll add a new types file for F008 or add to errors/index.ts (which re-exports types). 
 
 Looking at errors/index.ts, it re-exports types from types/validation.js and imports types from types/index.js. The shared index re-exports from errors and types.
 
@@ -1380,7 +1279,7 @@ The comment matches the existing `// F006:`/`// F007:` grouping convention in th
 <content>
 1: import type { ValidationFindingSeverity, VerificationKind } from "./trace.js";
 2: import type { IssueStatus, RunSummary, Issue, Run } from "./index.js";
-3:
+3: 
 4: // Extended by F005: adds a persisted, non-null Consult value for ad-hoc
 5: // Runs that don't drive the Issue state machine. Never write null/implementation
 6: // as a stand-in for consult — see design.md §4.1.
@@ -1718,7 +1617,7 @@ Decision: Run A and B in PARALLEL but tell each: create your new files (reposito
 
 Wait — but Agent A (Phases 1-3) needs WorkflowTemplateAdminService wired for its own integration tests to pass? Integration tests can construct services directly without HTTP wiring (they test service-level). The HTTP route tests would need wiring. I can have A write route tests that build the app locally, or test services directly. Let me instruct A to test via services and repository directly (unit/integration), and I'll handle full HTTP wiring.
 
-Actually the existing integration tests (adapter-routes.test.ts etc.) likely build a full app. Let me not over-engineer.
+Actually the existing integration tests (adapter-routes.test.ts etc.) likely build a full app. Let me not over-engineer. 
 
 Given the extreme complexity and the fact that these are genuinely hard, coherent units, and to reduce conflict, I'll run A and B in parallel with explicit file-ownership boundaries, and I'll do the shared wiring integration myself.
 
@@ -1793,16 +1692,11 @@ The comment mirrors the existing `migration-v8.test.ts` convention ("// T012: v7
   <details><summary>tool output</summary>
 
   ```text
-> build:shared
-
-> npm -w @personahub/shared run build
-
-
-
-
-
-> @personahub/shared@0.1.0 build
-
+> build:shared
+> npm -w @personahub/shared run build
+
+
+> @personahub/shared@0.1.0 build
 > tsc
   ```
   </details>
@@ -1814,28 +1708,17 @@ The comment mirrors the existing `migration-v8.test.ts` convention ("// T012: v7
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m[0m
-
-[31;1m[0m
-
-[31;1m[41m[1m FAIL [22m[49m tests/integration/migration-v10.test.ts[2m [ tests/integration/migration-v10.test.ts ][22m[0m
-
-[31;1m[31m[1mError[22m: Transform failed with 1 error:[0m
-
-[31;1mD:/Projects/personahub/server/src/db/schema-v10.ts:32:13: ERROR: Expected ";" but found "INSERT"[39m[0m
-
-[31;1m  Plugin: [35mvite:esbuild[39m[0m
-
-[31;1m  File: [36mD:/Projects/personahub/server/src/db/schema-v10.ts[39m:32:13[0m
-
-[31;1m[33m  [0m
-
-[31;1m  [33mExpected ";" but found "INSERT"[33m[0m
-
-[31;1m  30 |  -- 2. At most one active row per issue_type �?the single-active invariant.[0m
-
-[31;1m  31 |  --    The partial unique index makes it hold for every write path, even a[0m
-
+[31;1m[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m[0m
+[31;1m[0m
+[31;1m[41m[1m FAIL [22m[49m tests/integration/migration-v10.test.ts[2m [ tests/integration/migration-v10.test.ts ][22m[0m
+[31;1m[31m[1mError[22m: Transform failed with 1 error:[0m
+[31;1mD:/Projects/personahub/server/src/db/schema-v10.ts:32:13: ERROR: Expected ";" but found "INSERT"[39m[0m
+[31;1m  Plugin: [35mvite:esbuild[39m[0m
+[31;1m  File: [36mD:/Projects/personahub/server/src/db/schema-v10.ts[39m:32:13[0m
+[31;1m[33m  [0m
+[31;1m  [33mExpected ";" but found "INSERT"[33m[0m
+[31;1m  30 |  -- 2. At most one active row per issue_type �?the single-active invariant.[0m
+[31;1m  31 |  --    The partial unique index makes it hold for every write path, even a[0m
 …[truncated]
   ```
   </details>
@@ -1865,24 +1748,15 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[31;1m    [90m 10| [39m  db[33m.[39m[34mprepare[39m([0m
-
-[31;1m    [90m 11| [39m    "INSERT INTO workflow_templates (id, name, issue_type, collaborati�?    [90m 12| [39m  ).run("wft_1", "v1", "coding", "single", "active", 1, "2026-01-01T00�?    [90m   | [39m    [31m^[39m[0m
-
-[31;1m    [90m 13| [39m  [35mreturn[39m [32m"wft_1"[39m[33m;[39m[0m
-
-[31;1m    [90m 14| [39m}[0m
-
-[31;1m[90m [2m�?[22m tests/integration/migration-v10.test.ts:[2m88:5[22m[39m[0m
-
-[31;1m[0m
-
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]�?[22m[39m[0m
-
-[31;1m[0m
-
-[31;1m[41m[1m FAIL [22m[49m tests/integration/migration-v10.test.ts[2m > [22mT009 schema v10 migration[2m > [22mallows multiple inactive rows for the same issue_type[0m
-
+[31;1m    [90m 10| [39m  db[33m.[39m[34mprepare[39m([0m
+[31;1m    [90m 11| [39m    "INSERT INTO workflow_templates (id, name, issue_type, collaborati�?    [90m 12| [39m  ).run("wft_1", "v1", "coding", "single", "active", 1, "2026-01-01T00�?    [90m   | [39m    [31m^[39m[0m
+[31;1m    [90m 13| [39m  [35mreturn[39m [32m"wft_1"[39m[33m;[39m[0m
+[31;1m    [90m 14| [39m}[0m
+[31;1m[90m [2m�?[22m tests/integration/migration-v10.test.ts:[2m88:5[22m[39m[0m
+[31;1m[0m
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]�?[22m[39m[0m
+[31;1m[0m
+[31;1m[41m[1m FAIL [22m[49m tests/integration/migration-v10.test.ts[2m > [22mT009 schema v10 migration[2m > [22mallows multiple inactive rows for the same issue_type[0m
 [31;1m[31m[1mSqliteError[22m: UNIQ
 …[truncated]
   ```
@@ -1919,7 +1793,7 @@ There's a pre-existing UNIQUE constraint on `issue_type` in workflow_templates. 
 39:   created_at TEXT NOT NULL,
 40:   updated_at TEXT NOT NULL
 41: );
-42:
+42: 
 43: CREATE TABLE IF NOT EXISTS validation_policies (
 44:   id TEXT PRIMARY KEY,
 45:   name TEXT NOT NULL,
@@ -1943,16 +1817,16 @@ Wait — actually, my two unique indexes:
 1. `idx_workflow_templates_issue_type_version ON workflow_templates(issue_type, version)` — this is (issue_type, version), and the error message mentions `workflow_templates.issue_type` (just the first column). When inserting wft_inactive2 with version=2, issue_type=coding, version=2. The seed has wft_1 with version=1. So (coding, 1) vs (coding, 2) — no conflict. Hmm.
 
 But the error says the UNIQUE constraint failed on issue_type. Let me look more carefully. Actually the error output might be showing the wrong test. Let me re-read: The failing tests are at lines 88 and 98. Line 88 is "allows multiple inactive rows" (test) — wait let me count. Actually there are 3 failures. The visible ones are:
-- test at line 88:5 — "allows multiple inactive rows for the same issue_type"
+- test at line 88:5 — "allows multiple inactive rows for the same issue_type" 
 - test at line 98:5
 
 Wait, the tests are:
 - line 88: "rejects two active workflow_templates" (seed then insert active2 version 2) — this SHOULD fail due to one_active index
-- line 98: "allows multiple inactive rows"
+- line 98: "allows multiple inactive rows" 
 
 Actually the failures: it says 3 failed. Let me look at which. The error trace shows seedWorkflowTemplate failing at line 12 with "UNIQUE constraint failed: workflow_templates.issue_type".
 
-Hmm — the seed itself is failing! Because when a test runs, applyMigrations runs first (beforeEach doesn't run migrations — wait, beforeEach only creates db and sets pragma; the seed function is called after applyMigrations in each test). Actually looking at each test: they call `applyMigrations(db)` then `seedWorkflowTemplate(db)`.
+Hmm — the seed itself is failing! Because when a test runs, applyMigrations runs first (beforeEach doesn't run migrations — wait, beforeEach only creates db and sets pragma; the seed function is called after applyMigrations in each test). Actually looking at each test: they call `applyMigrations(db)` then `seedWorkflowTemplate(db)`. 
 
 Wait the error is at line 12:5 which is the seed's INSERT. So the seed insert of wft_1 (issue_type coding, version 1, status active) is failing with UNIQUE constraint on issue_type.
 
@@ -1971,7 +1845,7 @@ So I need to rewrite my test to avoid colliding with wft_coding_default. Let me 
 
 Actually simpler: don't rely on the seed. Let me delete/avoid the default. I'll make my seed insert use version numbers starting high (e.g., 100), or I'll first delete wft_coding_default in test setup. Better: let me restructure the test to not use a shared helper that collides.
 
-Let me rewrite: my helper inserts wft_1 with issue_type 'coding' version 1 active. This collides with seed (coding,1,active) on BOTH indexes.
+Let me rewrite: my helper inserts wft_1 with issue_type 'coding' version 1 active. This collides with seed (coding,1,active) on BOTH indexes. 
 
 Let me change the helper to use a distinct issue_type value, e.g. 'coding' is the only one but I can use version 50. Let me redo:
 - seed: wft_1, issue_type 'coding', version 100, status active. (avoid seed's version 1)
@@ -2000,28 +1874,17 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[36m [2m�?[22m seedWorkflowTemplate tests/integration/migration-v10.test.ts:[2m12:5[22m[39m[0m
-
-[31;1m    [90m 10| [39m  db[33m.[39m[34mprepare[39m([0m
-
-[31;1m    [90m 11| [39m    "INSERT INTO workflow_templates (id, name, issue_type, collaborati�?    [90m 12| [39m  ).run("wft_1", "v100", "coding", "single", "active", 100, "2026-01-0�?    [90m   | [39m    [31m^[39m[0m
-
-[31;1m    [90m 13| [39m  [35mreturn[39m [32m"wft_1"[39m[33m;[39m[0m
-
-[31;1m    [90m 14| [39m}[0m
-
-[31;1m[90m [2m�?[22m tests/integration/migration-v10.test.ts:[2m98:5[22m[39m[0m
-
-[31;1m[0m
-
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]�?[22m[39m[0m
-
-[31;1m[0m
-
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
-
+[31;1m[36m [2m�?[22m seedWorkflowTemplate tests/integration/migration-v10.test.ts:[2m12:5[22m[39m[0m
+[31;1m    [90m 10| [39m  db[33m.[39m[34mprepare[39m([0m
+[31;1m    [90m 11| [39m    "INSERT INTO workflow_templates (id, name, issue_type, collaborati�?    [90m 12| [39m  ).run("wft_1", "v100", "coding", "single", "active", 100, "2026-01-0�?    [90m   | [39m    [31m^[39m[0m
+[31;1m    [90m 13| [39m  [35mreturn[39m [32m"wft_1"[39m[33m;[39m[0m
+[31;1m    [90m 14| [39m}[0m
+[31;1m[90m [2m�?[22m tests/integration/migration-v10.test.ts:[2m98:5[22m[39m[0m
+[31;1m[0m
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]�?[22m[39m[0m
+[31;1m[0m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
 [2m      Tests [22m [1m[31m3 failed[3
 …[truncated]
   ```
@@ -2073,20 +1936,13 @@ Let me re-run.
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
-
-
-
- [32m�?[39m tests/integration/migration-v10.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 68[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
-
-[2m   Start at [22m 18:25:16
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
+
+ [32m�?[39m tests/integration/migration-v10.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 18:25:16
 [2m   Duration [22m 867ms[2m (transform 97ms, setup 0ms, collect 277ms, tests 68ms, environment 0ms, prepare 191ms)[22m
   ```
   </details>
@@ -2255,7 +2111,7 @@ to continue: task(task_id="ses_019eea13bffezbslxUY6Bo88yf", load_skills=[], run_
 
 > [reasoning] Both backend agents launched in parallel. Per the orchestration instructions, I should now continue with non-overlapping work or end my response and wait for the notification.
 
-Non-overlapping work I can do now:
+Non-overlapping work I can do now: 
 - I can prepare the frontend understanding, but Phase 5 UI depends on API contracts. I could read the web App.tsx and UI patterns in the meantime to prepare for the UI agent prompt. But that's overlapping somewhat with future work.
 
 Actually, the instructions say: after launching background agents, continue with non-overlapping work, or end response and wait. The UI (Phase 5) depends on the backend API contracts which aren't finalized yet. I could prepare by reading the web App.tsx structure and how navigation works, to be ready to write the UI agent prompt. But I should not implement the UI until backend is done.
@@ -2315,11 +2171,11 @@ Let me read AdapterSettings.tsx and use-adapters.ts and one test to prepare the 
 7: import { AdapterDialog } from "@/components/adapter/AdapterDialog";
 8: import { AdapterRow } from "@/components/adapter/AdapterRow";
 9: import { effectiveStatusOf } from "@/components/adapter/adapter-status";
-10:
+10: 
 11: interface AdapterSettingsProps {
 12:   projectId: string;
 13: }
-14:
+14: 
 15: export function AdapterSettings({ projectId }: Adapte
 …[truncated]
   ```
@@ -2334,7 +2190,7 @@ Let me read AdapterSettings.tsx and use-adapters.ts and one test to prepare the 
 1: import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 2: import type { AdapterConfigCreateInput, AdapterConfigUpdateInput } from "@personahub/shared";
 3: import { apiClient } from "@/lib/api-client";
-4:
+4: 
 5: /**
 6:  * `workspaceId` (F005 workspace-aware availability closure): when provided,
 7:  * each returned adapter also carries `effective_status`/
@@ -2342,7 +2198,7 @@ Let me read AdapterSettings.tsx and use-adapters.ts and one test to prepare the 
 9:  * `has_workspace_override` — the workspace-effective view
 10:  * (`effectiveAdapterStatus()` server-side), which is what actually
 11:  * determines routability/validator-selection for THIS workspace and can
-12:  * differ from the Project-global `status`.
+12:  * differ from the Project-global `status`. 
 …[truncated]
   ```
   </details>
@@ -2478,44 +2334,25 @@ Both agents completed but outputs were truncated. Let me inspect the actual stat
   <details><summary>tool output</summary>
 
   ```text
-M server/src/api/errors.ts
-
- M server/src/db/migrations.ts
-
- M server/src/id.ts
-
- M server/src/repositories/workflow-template.ts
-
- M server/src/services/adapter-config.ts
-
- M server/src/services/adapter-failure-reprobe.ts
-
- M server/src/services/run-dispatch.ts
-
- M shared/src/errors/index.ts
-
- M shared/src/index.ts
-
- M shared/src/types/index.ts
-
- M structure-improvement-plan.md
-
-?? server/src/api/routes/runtime-health.ts
-
-?? server/src/api/routes/workflow-templates.ts
-
-?? server/src/db/schema-v10.ts
-
-?? server/src/repositories/admin-audit-event.ts
-
-?? server/src/services/queue-classifier.ts
-
-?? server/src/services/runtime-health.ts
-
-?? server/src/services/validation/validate-steps-schema.ts
-
-?? server/src/services/workflow-template-admin.ts
-
+M server/src/api/errors.ts
+ M server/src/db/migrations.ts
+ M server/src/id.ts
+ M server/src/repositories/workflow-template.ts
+ M server/src/services/adapter-config.ts
+ M server/src/services/adapter-failure-reprobe.ts
+ M server/src/services/run-dispatch.ts
+ M shared/src/errors/index.ts
+ M shared/src/index.ts
+ M shared/src/types/index.ts
+ M structure-improvement-plan.md
+?? server/src/api/routes/runtime-health.ts
+?? server/src/api/routes/workflow-templates.ts
+?? server/src/db/schema-v10.ts
+?? server/src/repositories/admin-audit-event.ts
+?? server/src/services/queue-classifier.ts
+?? server/src/services/runtime-health.ts
+?? server/src/services/validation/validate-steps-schema.ts
+?? server/src/services/workflow-template-admin.ts
 ?? server/tests/integration/migration-v10.test.t
 …[truncated]
   ```
@@ -2540,18 +2377,12 @@ Both agents created their files. Let me verify the build/typecheck passes before
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/shared@0.1.0 build
-
-> tsc
-
-
-
-=== SERVER TYPECHECK ===
-
-
-
-> @personahub/server@0.1.0 typecheck
-
+> @personahub/shared@0.1.0 build
+> tsc
+
+=== SERVER TYPECHECK ===
+
+> @personahub/server@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -2567,18 +2398,12 @@ Server typechecks clean. Let me run the new test suites.
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
-
-
-
- [32m�?[39m tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 985[2mms[22m[39m
-
-   [33m[2m�?[22m[39m F008 Phase 2: versioned writes (T020/T020b/T020c/T021/T022/T023/T024)[2m > [22mT020: non-editable field in body -> 400 TEMPLATE_FIELD_NOT_EDITABLE (route boundary) [33m 400[2mms[22m[39m
-
- [32m�?[39m tests/integration/runtime-health.test.ts [2m([22m[2m33 tests[22m[2m)[22m[33m 5954[2mms[22m[39m
-
-   [33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT040 - five categories collected[2m > [22mcollects schema, background, workspaces (with adapters under workspace), and queue [33m 634[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
+
+ [32m�?[39m tests/integration/workflow-template-admin.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 985[2mms[22m[39m
+   [33m[2m�?[22m[39m F008 Phase 2: versioned writes (T020/T020b/T020c/T021/T022/T023/T024)[2m > [22mT020: non-editable field in body -> 400 TEMPLATE_FIELD_NOT_EDITABLE (route boundary) [33m 400[2mms[22m[39m
+ [32m�?[39m tests/integration/runtime-health.test.ts [2m([22m[2m33 tests[22m[2m)[22m[33m 5954[2mms[22m[39m
+   [33m[2m�?[22m[39m RuntimeHealth (F008 Phase 4)[2m > [22mT040 - five categories collected[2m > [22mcollects schema, background, workspaces (with adapters under workspace), and queue [33m 634[2mms[22m[39m
    [33m[2m�?[22m[39m RuntimeHea
 …[truncated]
   ```
@@ -2601,20 +2426,13 @@ All 113 new tests pass. Now let me verify the critical regression tests (queue-d
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
-
-
-
- [32m�?[39m tests/integration/workspace-queue.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 3985[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Same Workspace Serial Execution[2m > [22msecond Run queues while first is running [33m 401[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Same Workspace Serial Execution[2m > [22msecond Run is cancelled when workflow hook transitions issue after first completes [33m 3288[2mms[22m[39m
-
- [32m�?[39m tests/integration/queue-drain-eligibility.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 1697[2mms[22m[39m
-
- [32m�?[39m tests/integration/adapter-config-role.test.ts [2m([22m[2m21 tests[22m[2m)[22m[33m 923[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
+
+ [32m�?[39m tests/integration/workspace-queue.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 3985[2mms[22m[39m
+   [33m[2m�?[22m[39m Same Workspace Serial Execution[2m > [22msecond Run queues while first is running [33m 401[2mms[22m[39m
+   [33m[2m�?[22m[39m Same Workspace Serial Execution[2m > [22msecond Run is cancelled when workflow hook transitions issue after first completes [33m 3288[2mms[22m[39m
+ [32m�?[39m tests/integration/queue-drain-eligibility.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 1697[2mms[22m[39m
+ [32m�?[39m tests/integration/adapter-config-role.test.ts [2m([22m[2m21 tests[22m[2m)[22m[33m 923[2mms[22m[39m
  [32m�?[39m tests/integration/r
 …[truncated]
   ```
@@ -2678,10 +2496,10 @@ Regression tests pass — the classifier extraction preserved drain behavior. Le
 1: import { ErrorCode } from "@personahub/shared/errors";
 2: import { AdapterRole } from "@personahub/shared/types";
 3: import { AppError } from "../../api/errors.js";
-4:
+4: 
 5: const SUPPORTED_SCHEMA_VERSION = 1;
 6: const VALID_ROLES = new Set<string>([AdapterRole.Implementation, AdapterRole.Validator]);
-7:
+7: 
 8: // F008 T023c: STRICT write-gate for activation, distinct from the loose
 9: // parseWorkflowSteps() runtime path (which ignores schema_version, accepts any
 10: // role string, and silently filters malformed entries). This rejects anything
@@ -2729,7 +2547,7 @@ The template admin service and strict validator look correct. Let me review the 
 <content>
 1: import { IssueStatus, RunRole } from "@personahub/shared/types";
 2: import type { Issue, Run } from "@personahub/shared/types";
-3:
+3: 
 4: /**
 5:  * T041b: Pure classification of a Queued Run's drain eligibility, extracted
 6:  * from RunDispatchService.startNextQueuedRun() so drain and health share a
@@ -2759,46 +2577,26 @@ Both services are well-implemented. Let me review the run-dispatch refactor diff
   <details><summary>tool output</summary>
 
   ```text
-[31;1mwarning: in the working copy of 'server/src/services/run-dispatch.ts', LF will be replaced by CRLF the next time Git touches it[0m
-
-diff --git a/server/src/id.ts b/server/src/id.ts
-
-index 98df6b5..0b61e7a 100644
-
---- a/server/src/id.ts
-
-+++ b/server/src/id.ts
-
-@@ -35,3 +35,12 @@ export function generateFileChangeId(): string {
-
- export function generateEvidenceSummaryId(): string {
-
-   return `evs_${ulid()}`;
-
- }
-
-+
-
-+// F008: workflow template admin
-
-+export function generateWorkflowTemplateId(): string {
-
-+  return `wft_${ulid()}`;
-
-+}
-
-+
-
-+export function generateAdminAuditEventId(): string {
-
-+  return `aev_${ulid()}`;
-
-+}
-
-diff --git a/server/src/services/adapter-config.ts b/server/src/services/adapter-config.ts
-
-index cc2e91b..395336b 100644
-
+[31;1mwarning: in the working copy of 'server/src/services/run-dispatch.ts', LF will be replaced by CRLF the next time Git touches it[0m
+diff --git a/server/src/id.ts b/server/src/id.ts
+index 98df6b5..0b61e7a 100644
+--- a/server/src/id.ts
++++ b/server/src/id.ts
+@@ -35,3 +35,12 @@ export function generateFileChangeId(): string {
+ export function generateEvidenceSummaryId(): string {
+   return `evs_${ulid()}`;
+ }
++
++// F008: workflow template admin
++export function generateWorkflowTemplateId(): string {
++  return `wft_${ulid()}`;
++}
++
++export function generateAdminAuditEventId(): string {
++  return `aev_${ulid()}`;
++}
+diff --git a/server/src/services/adapter-config.ts b/server/src/services/adapter-config.ts
+index cc2e91b..395336b 100644
 --- a/server/src/services/adapter
 …[truncated]
   ```
@@ -2838,11 +2636,11 @@ The run-dispatch refactor is behavior-preserving. Let me review the route files 
 3: import { ErrorCode } from "@personahub/shared/errors";
 4: import type { WorkflowTemplateAdminService } from "../../services/workflow-template-admin.js";
 5: import { parseRequestBody, AppError } from "../errors.js";
-6:
+6: 
 7: export interface WorkflowTemplateRoutesOptions {
 8:   workflowTemplateAdminService: WorkflowTemplateAdminService;
 9: }
-10:
+10: 
 11: // F008 T020/AC-008: only name and steps_json are editable content fields.
 12: // Any other field in the body -> 400 TEMPLATE_FIELD_NOT_EDITABLE (not silently
 13: // ignored): a save-and-activate that silently dropped non-editable fields
@@ -2864,16 +2662,16 @@ The run-dispatch refactor is behavior-preserving. Let me review the route files 
 5: import { parseRequestBody } from "../errors.js";
 6: import { AppError } from "../errors.js";
 7: import { ErrorCode } from "@personahub/shared/errors";
-8:
+8: 
 9: export interface RuntimeHealthRoutesOptions {
 10:   runtimeHealthService: RuntimeHealthService;
 11:   projectRepo: ProjectRepository;
 12: }
-13:
+13: 
 14: const healthQuerySchema = z.object({
 15:   workspace_id: z.string().optional(),
 16: });
-17:
+17: 
 18: export const runtimeHealthRoutes: FastifyPluginAsyn
 …[truncated]
   ```
@@ -2887,7 +2685,7 @@ The run-dispatch refactor is behavior-preserving. Let me review the route files 
 <content>
 1: import type Database from "better-sqlite3";
 2: import type { WorkflowTemplate, IssueType } from "@personahub/shared/types";
-3:
+3: 
 4: interface WorkflowTemplateRow {
 5:   id: string;
 6:   name: string;
@@ -2903,7 +2701,7 @@ The run-dispatch refactor is behavior-preserving. Let me review the route files 
 16:   created_at: string;
 17:   updated_at: string;
 18: }
-19:
+19: 
 20: function mapRow(row: WorkflowTemplateRow): WorkflowTemplate {
 21:   return {
 22:     id: row.id,
@@ -2919,7 +2717,7 @@ The run-dispatch refactor is behavior-preserving. Let me review the route files 
 <type>file</type>
 <content>
 1: import type Database from "better-sqlite3";
-2:
+2: 
 3: export interface AdminAuditEventInput {
 4:   id: string;
 5:   action: string;
@@ -2931,7 +2729,7 @@ The run-dispatch refactor is behavior-preserving. Let me review the route files 
 11:   details_json: string;
 12:   created_at: string;
 13: }
-14:
+14: 
 15: // F008 T031: global audit ledger for workflow-template mutations. insert() is
 16: // a plain statement so the service can keep it in the same transaction as the
 17: // template mutation (T031b: audit failure rolls back the template change).
@@ -2962,28 +2760,17 @@ All backend code is high-quality and design-faithful. Let me check the unrelated
   ```text
 structure-improvement-plan.md | 218 +++++++++++++++++++++++++-----------------
  1 file changed, 132 insertions(+), 86 deletions(-)
-[31;1mwarning: in the working copy of 'structure-improvement-plan.md', LF will be replaced by CRLF the next time Git touches it[0m
-
----
-
-[31;1mwarning: in the working copy of 'structure-improvement-plan.md', LF will be replaced by CRLF the next time Git touches it[0m
-
-diff --git a/structure-improvement-plan.md b/structure-improvement-plan.md
-
-index 275c1ca..19b4f04 100644
-
---- a/structure-improvement-plan.md
-
-+++ b/structure-improvement-plan.md
-
-@@ -1,90 +1,69 @@
-
- # PersonaHub 目录结构改造方�?
-
- > 创建�?026-08-10
-
-+> 修订�?026-08-09（复核实际仓库状态后，剔除已经落地的部分，收窄剩余范围）
-
+[31;1mwarning: in the working copy of 'structure-improvement-plan.md', LF will be replaced by CRLF the next time Git touches it[0m
+---
+[31;1mwarning: in the working copy of 'structure-improvement-plan.md', LF will be replaced by CRLF the next time Git touches it[0m
+diff --git a/structure-improvement-plan.md b/structure-improvement-plan.md
+index 275c1ca..19b4f04 100644
+--- a/structure-improvement-plan.md
++++ b/structure-improvement-plan.md
+@@ -1,90 +1,69 @@
+ # PersonaHub 目录结构改造方�? 
+ > 创建�?026-08-10
++> 修订�?026-08-09（复核实际仓库状态后，剔除已经落地的部分，收窄剩余范围）
  > 背景：vibe coding 调研（github/spec-kit 125k★、Fission-AI/OpenSpec 64k★）后对�? > market-game-sim 项目结构，给本仓库的可落地改造
 …[truncated]
   ```
@@ -3096,8 +2883,7 @@ Now let me verify the wiring compiles.
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/server@0.1.0 typecheck
-
+> @personahub/server@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -3114,62 +2900,34 @@ Actually, let me just run the full server test suite to be safe, but it could ta
   <details><summary>tool output</summary>
 
   ```text
-{
-
-  "name": "@personahub/server",
-
-  "version": "0.1.0",
-
-  "private": true,
-
-  "type": "module",
-
-  "scripts": {
-
-    "dev": "tsx watch src/index.ts",
-
-    "build": "tsc",
-
-    "start": "node dist/index.js",
-
-    "test": "vitest run",
-
-    "test:watch": "vitest",
-
-    "typecheck": "tsc --noEmit"
-
-  },
-
-  "dependencies": {
-
-    "@personahub/shared": "*",
-
-    "better-sqlite3": "^12.2.0",
-
-    "fastify": "^5.2.0",
-
-    "@fastify/cors": "^11.0.0",
-
-    "zod": "^3.24.0",
-
-    "ulid": "^2.3.0"
-
-  },
-
-  "devDependencies": {
-
-    "@types/better-sqlite3": "^7.6.12",
-
-    "@types/node": "^22.10.0",
-
-    "tsx": "^4.19.0",
-
-    "typescript": "^5.7.0",
-
-    "vitest": "^3.0.0"
-
-  }
-
+{
+  "name": "@personahub/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@personahub/shared": "*",
+    "better-sqlite3": "^12.2.0",
+    "fastify": "^5.2.0",
+    "@fastify/cors": "^11.0.0",
+    "zod": "^3.24.0",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
 }
   ```
   </details>
@@ -3188,30 +2946,18 @@ Let me check for vitest config in server.
   <details><summary>tool output</summary>
 
   ```text
-Directory: D:\Projects\personahub\server
-
-
-
-[32;1mMode   [0m[32;1m              LastWriteTime[0m[32;1m         Length[0m[32;1m Name[0m
-
-[32;1m----   [0m [32;1m             -------------[0m [32;1m        ------[0m [32;1m----[0m
-
--a---           2026/7/18    11:27            124 vitest.config.ts
-
----
-
--a---           2026/7/18    11:27            124 vitest.config.ts
-
---- root vitest/vite configs ---
-
-
-
-[32;1mFullName : [0mD:\Projects\personahub\server\vitest.config.ts
-
-
-
-
-
+Directory: D:\Projects\personahub\server
+
+[32;1mMode   [0m[32;1m              LastWriteTime[0m[32;1m         Length[0m[32;1m Name[0m
+[32;1m----   [0m [32;1m             -------------[0m [32;1m        ------[0m [32;1m----[0m
+-a---           2026/7/18    11:27            124 vitest.config.ts
+---
+-a---           2026/7/18    11:27            124 vitest.config.ts
+--- root vitest/vite configs ---
+
+[32;1mFullName : [0mD:\Projects\personahub\server\vitest.config.ts
+
+
 [32;1mFullName : [0mD:\Projects\personahub\web\vitest.config.ts
   ```
   </details>
@@ -3223,18 +2969,12 @@ Directory: D:\Projects\personahub\server
   <details><summary>tool output</summary>
 
   ```text
-import { defineConfig } from "vitest/config";
-
-
-
-export default defineConfig({
-
-  test: {
-
-    fileParallelism: false,
-
-  },
-
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    fileParallelism: false,
+  },
 });
   ```
   </details>
@@ -3253,30 +2993,18 @@ Actually, the real-* tests like `real-codex-e2e`, `real-opencode-dispatch-check`
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[0m
-
-[31;1m[41m[1m FAIL [22m[49m tests/integration/persistence.test.ts[2m > [22mPersistence / Restart Recovery[2m > [22mmigration is idempotent on reopen[0m
-
-[31;1m[31m[1mAssertionError[22m: expected 10 to be 9 // Object.is equality[39m[0m
-
-[31;1m[0m
-
-[31;1m[32m- Expected[39m[0m
-
-[31;1m[31m+ Received[39m[0m
-
-[31;1m[0m
-
-[31;1m[32m- 9[39m[0m
-
-[31;1m[31m+ 10[39m[0m
-
-[31;1m[0m
-
-[31;1m[36m [2m�?[22m tests/integration/persistence.test.ts:[2m127:25[22m[39m[0m
-
-[31;1m    [90m125| [39m      [35mconst[39m db [33m=[39m [34mopenDatabase[39m(dbPath)[33m;[39m[0m
-
+[31;1m[0m
+[31;1m[41m[1m FAIL [22m[49m tests/integration/persistence.test.ts[2m > [22mPersistence / Restart Recovery[2m > [22mmigration is idempotent on reopen[0m
+[31;1m[31m[1mAssertionError[22m: expected 10 to be 9 // Object.is equality[39m[0m
+[31;1m[0m
+[31;1m[32m- Expected[39m[0m
+[31;1m[31m+ Received[39m[0m
+[31;1m[0m
+[31;1m[32m- 9[39m[0m
+[31;1m[31m+ 10[39m[0m
+[31;1m[0m
+[31;1m[36m [2m�?[22m tests/integration/persistence.test.ts:[2m127:25[22m[39m[0m
+[31;1m    [90m125| [39m      [35mconst[39m db [33m=[39m [34mopenDatabase[39m(dbPath)[33m;[39m[0m
 [31;1m    [90m126| [39m      const version = db.prepare("SELECT MAX(version) as v FROM schema�?    [90m127| [39m      [34mexpect[39m(version[33m.[39mv)[33m.[39m[34mtoB
 …[truncated]
   ```
@@ -3311,22 +3039,14 @@ There are test failures. Some are F008-caused (schema version now 10, tests hard
   <details><summary>tool output</summary>
 
   ```text
-migration-v10.test.ts:30: const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-
-migration-v10.test.ts:31: expect(row.v).toBe(10);
-
-migration-v10.test.ts:37: const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-
-migration-v10.test.ts:38: expect(row.v).toBe(10);
-
-migration-v6.test.ts:66: const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-
-migration-v6.test.ts:67: expect(row.v).toBe(9);
-
-migration-v6.test.ts:73: const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-
-migration-v6.test.ts:74: expect(row.v).toBe(9);
-
+migration-v10.test.ts:30: const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+migration-v10.test.ts:31: expect(row.v).toBe(10);
+migration-v10.test.ts:37: const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+migration-v10.test.ts:38: expect(row.v).toBe(10);
+migration-v6.test.ts:66: const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+migration-v6.test.ts:67: expect(row.v).toBe(9);
+migration-v6.test.ts:73: const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+migration-v6.test.ts:74: expect(row.v).toBe(9);
 migration-v8.test.ts:121: const row = db.prepare("SELECT MAX(version) as v FROM schema
 …[truncated]
   ```
@@ -3359,7 +3079,7 @@ Let me also double check: are there other failures beyond these version assertio
 
 The version assertions would account for: migration-v6 (2), migration-v8 (~6), migration (2), persistence (1) = 11 tests. But 83 tests failed. So there are many more failures that are likely environment-related (git timeout, EBUSY file locks, real-CLI tests).
 
-Let me get the full list of failed test FILES to understand the scope. Let me run vitest with a way to capture just file failures. Actually, let me run the full suite again but only on the files that don't need real CLI, OR better, let me check which files failed.
+Let me get the full list of failed test FILES to understand the scope. Let me run vitest with a way to capture just file failures. Actually, let me run the full suite again but only on the files that don't need real CLI, OR better, let me check which files failed. 
 
 The summary said "14 failed | 112 passed | 10 skipped (136)". 136 test files total. Let me identify the 14 failed files. Let me run vitest and grep for "FAIL" lines.
 These are legitimate F008-caused failures (schema version bumped 9→10 in test assertions). Let me get the full list of failed files to distinguish F008-caused from environment-caused failures.
@@ -3397,48 +3117,27 @@ Let me fix the F008-caused version assertions (schema bumped 9→10) in the migr
   <details><summary>tool output</summary>
 
   ```text
-afterEach(() => db.close());
-
-
-
-  describe("fresh install reaches latest (v8)", () => {
-
-    it("schema_version max is 8", () => {
-
-      applyMigrations(db);
-
-      const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-
-      expect(row.v).toBe(9);
-
-    });
-
-
-
-    it("is idempotent - running twice does not error and stays at 8", () => {
-
-      applyMigrations(db);
-
-      applyMigrations(db);
-
-      const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-
-      expect(row.v).toBe(9);
-
-    });
-
-  });
-
-
-
-  describe("new columns exist", () => {
-
-    it("agent_configs gets auth_type/model_provider/api_key/auth_status_message", () => {
-
-      applyMigrations(db);
-
-=== migration.test.ts ===
-
+afterEach(() => db.close());
+
+  describe("fresh install reaches latest (v8)", () => {
+    it("schema_version max is 8", () => {
+      applyMigrations(db);
+      const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+      expect(row.v).toBe(9);
+    });
+
+    it("is idempotent - running twice does not error and stays at 8", () => {
+      applyMigrations(db);
+      applyMigrations(db);
+      const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
+      expect(row.v).toBe(9);
+    });
+  });
+
+  describe("new columns exist", () => {
+    it("agent_configs gets auth_type/model_provider/api_key/auth_status_message", () => {
+      applyMigrations(db);
+=== migration.test.ts ===
     db.prep
 …[truncated]
   ```
@@ -3515,22 +3214,14 @@ Let me run the migration and persistence tests now.
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[31m[1mSqliteError[22m: UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version[39m[0m
-
-[31;1m[90m [2m�?[22m Database.exec ../node_modules/better-sqlite3/lib/methods/wrappers.js:[2m9:14[22m[39m[0m
-
-[31;1m[36m [2m�?[22m src/db/migrations.ts:[2m73:10[22m[39m[0m
-
-[31;1m    [90m 71| [39m  [35mif[39m (currentVersion [33m<[39m [34m10[39m) {[0m
-
-[31;1m    [90m 72| [39m    db[33m.[39m[34mtransaction[39m(() [33m=>[39m {[0m
-
-[31;1m    [90m 73| [39m      db[33m.[39m[34mexec[39m([33mSCHEMA_V10[39m)[33m;[39m[0m
-
-[31;1m    [90m   | [39m         [31m^[39m[0m
-
-[31;1m    [90m 74| [39m      db.prepare("INSERT INTO schema_version (version, applied_at) VAL�?    [90m 75| [39m    })()[33m;[39m[0m
-
+[31;1m[31m[1mSqliteError[22m: UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version[39m[0m
+[31;1m[90m [2m�?[22m Database.exec ../node_modules/better-sqlite3/lib/methods/wrappers.js:[2m9:14[22m[39m[0m
+[31;1m[36m [2m�?[22m src/db/migrations.ts:[2m73:10[22m[39m[0m
+[31;1m    [90m 71| [39m  [35mif[39m (currentVersion [33m<[39m [34m10[39m) {[0m
+[31;1m    [90m 72| [39m    db[33m.[39m[34mtransaction[39m(() [33m=>[39m {[0m
+[31;1m    [90m 73| [39m      db[33m.[39m[34mexec[39m([33mSCHEMA_V10[39m)[33m;[39m[0m
+[31;1m    [90m   | [39m         [31m^[39m[0m
+[31;1m    [90m 74| [39m      db.prepare("INSERT INTO schema_version (version, applied_at) VAL�?    [90m 75| [39m    })()[33m;[39m[0m
 [31;1m[90m [
 …[truncated]
   ```
@@ -3541,9 +3232,9 @@ Let me run the migration and persistence tests now.
 - **tool**: `bash({"command": "Select-String -Path .\\server\\tests\\integration\\migration*.test.ts, .\\server\\tests\\integration\\persistence.test.ts -Pattern \"INSERT INTO workflow_templates\" -Context 0,1 | ForEach-Object { \"$($_.Filename):$($_.LineNumber): $($_.Line.Trim())\" }"})`
 
 
-> [reasoning] migration-v8.test.ts now fails with "UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version" during `applyMigrations` (line 348). This is the file-based migration test (setupV7Db → applyMigrations).
+> [reasoning] migration-v8.test.ts now fails with "UNIQUE constraint failed: workflow_templates.issue_type, workflow_templates.version" during `applyMigrations` (line 348). This is the file-based migration test (setupV7Db → applyMigrations). 
 
-The issue: the migration-v8 test's "v7 to v8 file-based migration" test seeds a workflow_templates row. Let me look. In the test "v7 to v8 file-based migration preserves data and is idempotent on retry" (line ~302), it seeds `wft_1` with issue_type coding, version 1, status active. Then applies migrations.
+The issue: the migration-v8 test's "v7 to v8 file-based migration" test seeds a workflow_templates row. Let me look. In the test "v7 to v8 file-based migration preserves data and is idempotent on retry" (line ~302), it seeds `wft_1` with issue_type coding, version 1, status active. Then applies migrations. 
 
 But now with my new indexes, when the v10 migration runs `CREATE UNIQUE INDEX`, if the DB already has the seed `wft_coding_default` (from schema-v1) AND the test's manually-inserted `wft_1` (coding, version 1, active)... wait, the file-based test manually sets up v1-v7 schema (not applyMigrations), then inserts wft_1 (coding, version 1, active). Then applyMigrations runs v8, v9, v10. v10 creates the unique indexes on workflow_templates(issue_type, version). But there's only wft_1 in the manually-seeded DB — no wft_coding_default (since they used SCHEMA_V1-V7 directly, and schema-v1's INSERT OR IGNORE would have added wft_coding_default).
 
@@ -3599,14 +3290,10 @@ The migration-v8 file-based test seeds a `(coding, version 1, active)` template 
   <details><summary>tool output</summary>
 
   ```text
-migration-v10.test.ts:11: "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-
-migration-v10.test.ts:81: "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-
-migration-v10.test.ts:91: "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-
-migration-v10.test.ts:101: "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-
+migration-v10.test.ts:11: "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+migration-v10.test.ts:81: "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+migration-v10.test.ts:91: "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+migration-v10.test.ts:101: "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 migration-v8.test.ts:57: "INSERT INTO workflow_templates (id, name, issue_t
 …[truncated]
   ```
@@ -3633,22 +3320,14 @@ Let me look at the exact run values to edit. Let me read migration-v8.test.ts ar
   <details><summary>tool output</summary>
 
   ```text
-"INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-
-  ).run("wft_test", "test", "coding", "single", "active", 1, now, now);
-
-  db.prepare(
-
-    "INSERT INTO validation_policies (id, name, issue_type, max_validation_rounds, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-
----line334---
-
-            "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-
-          )
-
-          .run("wft_1", "test", "coding", "single", "active", 1, now, now);
-
+"INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run("wft_test", "test", "coding", "single", "active", 1, now, now);
+  db.prepare(
+    "INSERT INTO validation_policies (id, name, issue_type, max_validation_rounds, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+---line334---
+            "INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, status, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          )
+          .run("wft_1", "test", "coding", "single", "active", 1, now, now);
         fileDb
   ```
   </details>
@@ -3679,26 +3358,16 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[90m [2m�?[22m sqliteTransaction ../node_modules/better-sqlite3/lib/methods/transaction.js:[2m65:24[22m[39m[0m
-
-[31;1m[90m [2m�?[22m applyMigrations src/db/migrations.ts:[2m75:6[22m[39m[0m
-
-[31;1m[90m [2m�?[22m tests/integration/migration-v8.test.ts:[2m348:9[22m[39m[0m
-
-[31;1m[0m
-
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]�?[22m[39m[0m
-
-[31;1m[0m
-
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
-
-[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m92 passed[39m[22m[90m (97)[39m
-
-[2m   Start at [22m 19:13:53
-
+[31;1m[90m [2m�?[22m sqliteTransaction ../node_modules/better-sqlite3/lib/methods/transaction.js:[2m65:24[22m[39m[0m
+[31;1m[90m [2m�?[22m applyMigrations src/db/migrations.ts:[2m75:6[22m[39m[0m
+[31;1m[90m [2m�?[22m tests/integration/migration-v8.test.ts:[2m348:9[22m[39m[0m
+[31;1m[0m
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]�?[22m[39m[0m
+[31;1m[0m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m92 passed[39m[22m[90m (97)[39m
+[2m   Start at [22m 19:13:53
 [2m   Duration [22m 9.94s[2m (transform 968ms, setup 0ms, collect 5.05s, tests 2.08s, environment 1ms, prepare 1.20s)[22m
   ```
   </details>
@@ -3719,7 +3388,7 @@ So I need to make these seeded templates INACTIVE (not just change version). Bec
 
 Wait, but this raises a real migration concern: if a pre-existing DB had multiple active templates (e.g., wft_coding_default + another active), the v10 migration would fail to create idx_workflow_templates_one_active. But again, realistically there was no write path, so real DBs only have wft_coding_default active. The test data artificially creates a second active. So the fix is to make the test's seeded template inactive.
 
-Let me change both inserts to status "inactive" instead of "active". And revert version back to 1 (or keep 2, doesn't matter). Actually, keeping version 1 with inactive is fine (no duplicate since wft_coding_default is v1 active but our row is inactive — the issue_type+version index only needs (issue_type, version) unique, and 1 vs... wait wft_coding_default is version 1. If I insert another (coding, version 1) that's a duplicate on issue_type+version regardless of status!).
+Let me change both inserts to status "inactive" instead of "active". And revert version back to 1 (or keep 2, doesn't matter). Actually, keeping version 1 with inactive is fine (no duplicate since wft_coding_default is v1 active but our row is inactive — the issue_type+version index only needs (issue_type, version) unique, and 1 vs... wait wft_coding_default is version 1. If I insert another (coding, version 1) that's a duplicate on issue_type+version regardless of status!). 
 
 So I need BOTH: a unique version AND inactive status. Let me set wft_test/wft_1 to version 2 AND status "inactive". Let me update.
 
@@ -3753,22 +3422,14 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[32m�?[39m tests/integration/persistence.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 633[2mms[22m[39m
-
-   [33m[2m�?[22m[39m Persistence / Restart Recovery[2m > [22mmultiple projects and issues persist across restart [33m 361[2mms[22m[39m
-
- [32m�?[39m tests/integration/migration.test.ts [2m([22m[2m35 tests[22m[2m)[22m[33m 380[2mms[22m[39m
-
- [32m�?[39m tests/integration/migration-v5.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 198[2mms[22m[39m
-
- [32m�?[39m tests/integration/migration-v6.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 139[2mms[22m[39m
-
- [32m�?[39m tests/integration/migration-v10.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 82[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m6 passed[39m[22m[90m (6)[39m
-
+[32m�?[39m tests/integration/persistence.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 633[2mms[22m[39m
+   [33m[2m�?[22m[39m Persistence / Restart Recovery[2m > [22mmultiple projects and issues persist across restart [33m 361[2mms[22m[39m
+ [32m�?[39m tests/integration/migration.test.ts [2m([22m[2m35 tests[22m[2m)[22m[33m 380[2mms[22m[39m
+ [32m�?[39m tests/integration/migration-v5.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 198[2mms[22m[39m
+ [32m�?[39m tests/integration/migration-v6.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 139[2mms[22m[39m
+ [32m�?[39m tests/integration/migration-v10.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 82[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m6 passed[39m[22m[90m (6)[39m
 [2m      Tests
 …[truncated]
   ```
@@ -3779,11 +3440,11 @@ Edit applied successfully.
 - **tool**: `bash({"command": "npx vitest run > \"$env:TEMP\\f008-test-run.txt\" 2>&1; echo \"EXIT=$LASTEXITCODE\"; Select-String -Path \"$env:TEMP\\f008-test-run.txt\" -Pattern \"FAIL \" | ForEach-Object { ($_.Line -replace '\\x1b\\[[0-9;]*m','').Trim() } | Sort-Object -Unique", "timeout": 900000, "workdir": "D:\\Projects\\personahub\\server"})`
 
 
-> [reasoning] All migration/persistence tests pass now.
+> [reasoning] All migration/persistence tests pass now. 
 
 Now I need to determine the remaining failures. The earlier full run showed 14 failed files, 83 tests. I've fixed migration-v6, v8, migration, persistence (F008-caused). The remaining 10 failed files were likely environment issues (git timeout, EBUSY file locks, real CLI tests).
 
-Let me identify which files failed in the earlier run. Since the full run takes 6 minutes, let me instead run the full suite again but now with the fixes, and capture the failed file list. But that's slow.
+Let me identify which files failed in the earlier run. Since the full run takes 6 minutes, let me instead run the full suite again but now with the fixes, and capture the failed file list. But that's slow. 
 
 Alternatively, let me reason about which failures are pre-existing environment issues vs F008-caused. The earlier run showed failures in:
 - persistence.test.ts (F008-caused version 9, FIXED)
@@ -3800,16 +3461,11 @@ All migration/persistence tests pass. Let me run the full server suite once more
   <details><summary>tool output</summary>
 
   ```text
-EXIT=1
-
-�?[22m Validation multi-round (T082) > 3 rounds of fail leads to Blocked with round_limit_reached  2446ms
-
-FAIL  tests/integration/git-scanner.test.ts > Git Workspace Scanner (T026) > pre-existing dirty file committed by agent is not false positive
-
-FAIL  tests/integration/graph-adapter-tests.test.ts > F006 graph adapter qualification, escalation, and cancel edge cases > adapter becomes unavailable while queued - blocked with no_capable_adapter
-
-FAIL  tests/integration/graph-adapter-tests.test.ts > F006 graph adapter qualification, escalation, and cancel edge cases > adapter loses capability while queued - blocked with no_capable_adapter
-
+EXIT=1
+�?[22m Validation multi-round (T082) > 3 rounds of fail leads to Blocked with round_limit_reached  2446ms
+FAIL  tests/integration/git-scanner.test.ts > Git Workspace Scanner (T026) > pre-existing dirty file committed by agent is not false positive
+FAIL  tests/integration/graph-adapter-tests.test.ts > F006 graph adapter qualification, escalation, and cancel edge cases > adapter becomes unavailable while queued - blocked with no_capable_adapter
+FAIL  tests/integration/graph-adapter-tests.test.ts > F006 graph adapter qualification, escalation, and cancel edge cases > adapter loses capability while queued - blocked with no_capable_adapter
 FAIL  tests/integration/graph-adapter-tests.test.ts > F006 graph adapter qualification, escalation, and cancel edge cases > cancel: single queued
 …[truncated]
   ```
@@ -3850,18 +3506,12 @@ Many F006 graph tests are failing. Since my changes don't touch graph execution,
   <details><summary>tool output</summary>
 
   ```text
-�?[39m tests/integration/graph-repositories.test.ts (23 tests | 23 failed) 155ms
-
- FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > creates a graph run and reads it back
-
- FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > getById returns null for unknown id
-
- FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > getByIssueId returns a graph run for the issue
-
- FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > getNonTerminalByIssueId returns only non-terminal graph
-
- FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > listNonTerminal returns only running/blocked/cancelling graphs
-
+�?[39m tests/integration/graph-repositories.test.ts (23 tests | 23 failed) 155ms
+ FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > creates a graph run and reads it back
+ FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > getById returns null for unknown id
+ FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > getByIssueId returns a graph run for the issue
+ FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > getNonTerminalByIssueId returns only non-terminal graph
+ FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > listNonTerminal returns only running/blocked/cancelling graphs
  FAIL  tests/integration/graph-repositories.test.ts > GraphRunRepository > compareAndSetStatus suc
 …[truncated]
   ```
@@ -3890,7 +3540,7 @@ The failures are in `seedDb` setup (line 17), not test logic — likely my new i
 5: import { NodeRunRepository } from "../../src/repositories/node-run.js";
 6: import { RunRepository } from "../../src/repositories/run.js";
 7: import { RunRole, GraphRunStatus, NodeRunStatus, RunStatus } from "@personahub/shared/types";
-8:
+8: 
 9: // T014: GraphRun / NodeRun / Run repository CRUD, CAS, and snapshot mapping.
 10: // Covers: create, getById, list, compareAndSetStatus, target_files parsing,
 11: // node_run_id roun
@@ -3919,13 +3569,13 @@ B. Reconsider the index design. But the design mandates these indexes for the si
 
 Actually, wait. Let me reconsider whether this indicates a genuine migration problem. In production, before F008, the only workflow_templates row is wft_coding_default (coding, v1, active). Real databases won't have duplicates. The tests artificially seed wft_1 (coding, v1, active) which is unrealistic. So the tests need updating.
 
-But this is a LOT of test files. Let me find how many seed a (coding, v1, active) template. The pattern is `.run("wft_...", ..., "coding", ..., "active", 1, ...)`.
+But this is a LOT of test files. Let me find how many seed a (coding, v1, active) template. The pattern is `.run("wft_...", ..., "coding", ..., "active", 1, ...)`. 
 
 Actually, a cleaner approach: instead of editing dozens of test files' seed data, I could reconsider. But no — the indexes are required by the design.
 
-Hmm, but wait. Let me reconsider option A's scope. The failing files are all graph tests + scanner + git tests. That's ~9 graph test files. Each has a seedDb that inserts wft_1 (coding, 1, active).
+Hmm, but wait. Let me reconsider option A's scope. The failing files are all graph tests + scanner + git tests. That's ~9 graph test files. Each has a seedDb that inserts wft_1 (coding, 1, active). 
 
-Let me think about the cleanest fix. Since the seed template from schema-v1 is `wft_coding_default` (coding, v1, active), the tests' custom `wft_1` template is only needed as a valid workflow_template_id for issues/graphs. I can change these test seeds to a non-colliding version + inactive status.
+Let me think about the cleanest fix. Since the seed template from schema-v1 is `wft_coding_default` (coding, v1, active), the tests' custom `wft_1` template is only needed as a valid workflow_template_id for issues/graphs. I can change these test seeds to a non-colliding version + inactive status. 
 
 But there might be MANY files. Let me grep for all test files that insert workflow_templates with issue_type coding and version 1 and status active.
 
@@ -3946,20 +3596,13 @@ The failures stem from my new indexes conflicting with test `seedDb` helpers tha
   <details><summary>tool output</summary>
 
   ```text
-graph-adapter-tests.test.ts: 1
-
-graph-constraints.test.ts: 1
-
-graph-e2e-fake-adapter.test.ts: 1
-
-graph-edge-cases.test.ts: 1
-
-graph-fanin.test.ts: 1
-
-graph-recovery-semantics.test.ts: 1
-
-graph-recovery.test.ts: 1
-
+graph-adapter-tests.test.ts: 1
+graph-constraints.test.ts: 1
+graph-e2e-fake-adapter.test.ts: 1
+graph-edge-cases.test.ts: 1
+graph-fanin.test.ts: 1
+graph-recovery-semantics.test.ts: 1
+graph-recovery.test.ts: 1
 graph-repositories.test.ts: 1
   ```
   </details>
@@ -3981,32 +3624,19 @@ Let me broaden the search to find all test files that insert workflow_templates 
   <details><summary>tool output</summary>
 
   ```text
-graph-adapter-tests.test.ts:27
-
-graph-constraints.test.ts:18
-
-graph-e2e-fake-adapter.test.ts:24
-
-graph-edge-cases.test.ts:21
-
-graph-fanin.test.ts:27
-
-graph-recovery-semantics.test.ts:28
-
-graph-recovery.test.ts:27
-
-graph-repositories.test.ts:17
-
-migration-v10.test.ts:11
-
-migration-v10.test.ts:81
-
-migration-v10.test.ts:91
-
-migration-v10.test.ts:101
-
-migration-v8.test.ts:57
-
+graph-adapter-tests.test.ts:27
+graph-constraints.test.ts:18
+graph-e2e-fake-adapter.test.ts:24
+graph-edge-cases.test.ts:21
+graph-fanin.test.ts:27
+graph-recovery-semantics.test.ts:28
+graph-recovery.test.ts:27
+graph-repositories.test.ts:17
+migration-v10.test.ts:11
+migration-v10.test.ts:81
+migration-v10.test.ts:91
+migration-v10.test.ts:101
+migration-v8.test.ts:57
 migration-v8.test.ts:334
   ```
   </details>
@@ -4029,7 +3659,7 @@ Actually, the issue: if I make wft_1 inactive, and the test creates an issue wit
 
 Actually, let me reconsider. Many graph tests also do full dispatch which may use getDefault() (the active template) for new issues. If the graph tests create issues with explicit workflow_template_id = wft_1, they use wft_1. If they rely on getDefault() returning a template with specific steps, making wft_1 inactive changes which template getDefault returns.
 
-This is getting complex. The cleanest and safest approach: instead of changing the seeded template's version/status (which might subtly affect tests), I should make the SEED insert match a non-conflicting (issue_type, version).
+This is getting complex. The cleanest and safest approach: instead of changing the seeded template's version/status (which might subtly affect tests), I should make the SEED insert match a non-conflicting (issue_type, version). 
 
 Actually, the simplest robust fix: change the seeded template's `version` from 1 to 2 AND keep it `active`... no, that still violates single-active (wft_coding_default active + wft_1 active = 2 active).
 
@@ -4054,20 +3684,13 @@ I need to update the 8 graph test seeds. Let me examine how each uses the seeded
   <details><summary>tool output</summary>
 
   ```text
-=== graph-adapter-tests ===
-
-  db.prepare("INSERT INTO validation_policies (id,name,issue_type,max_validation_rounds,status,version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)").run("vpl_1", "test", "coding", 3, "active", 1, now, now);
-
-  db.prepare("INSERT INTO issues (id,project_id,workspace_id,issue_type,workflow_template_id,validation_policy_id,title,status,priority,labels,validation_round_count,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)").run("iss_1", "prj_1", "wsp_1", "coding", "wft_1", "vpl_1", "test", "Running", "normal", "[]", 0, now, now);
-
-  db.prepare("INSERT INTO threads (id,issue_id,thread_type,title,created_at,updated_at) VALUES (?,?,?,?,?,?)").run("thr_1", "iss_1", "primary", "test", now, now);
-
--- how wft referenced --
-
-2
-
-=== graph-constraints ===
-
+=== graph-adapter-tests ===
+  db.prepare("INSERT INTO validation_policies (id,name,issue_type,max_validation_rounds,status,version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)").run("vpl_1", "test", "coding", 3, "active", 1, now, now);
+  db.prepare("INSERT INTO issues (id,project_id,workspace_id,issue_type,workflow_template_id,validation_policy_id,title,status,priority,labels,validation_round_count,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)").run("iss_1", "prj_1", "wsp_1", "coding", "wft_1", "vpl_1", "test", "Running", "normal", "[]", 0, now, now);
+  db.prepare("INSERT INTO threads (id,issue_id,thread_type,title,created_at,updated_at) VALUES (?,?,?,?,?,?)").run("thr_1", "iss_1", "primary", "test", now, now);
+-- how wft referenced --
+2
+=== graph-constraints ===
   db
 …[truncated]
   ```
@@ -4079,7 +3702,7 @@ I need to update the 8 graph test seeds. Let me examine how each uses the seeded
 …[truncated])`
 
 
-> [reasoning] All 8 graph test files use wft_1 as a workflow_template_id for issues. The template's status/version is not directly asserted. However, some graph tests do full dispatch (graph-e2e-fake-adapter, graph-adapter-tests, graph-fanin) which may go through validation. Those use the issue's workflow_template_id (wft_1). But there's a subtlety: does the graph flow ever call `IssueService.create()` or `getDefault()`?
+> [reasoning] All 8 graph test files use wft_1 as a workflow_template_id for issues. The template's status/version is not directly asserted. However, some graph tests do full dispatch (graph-e2e-fake-adapter, graph-adapter-tests, graph-fanin) which may go through validation. Those use the issue's workflow_template_id (wft_1). But there's a subtlety: does the graph flow ever call `IssueService.create()` or `getDefault()`? 
 
 Actually, the key risk: if wft_1 becomes INACTIVE, does any graph test rely on it being the ACTIVE default for something? The graph tests create issues directly with workflow_template_id=wft_1, so they use wft_1.steps_json directly. But wft_1 has no steps_json set (only name/issue_type/topology/status/version). So steps_json is null → parseWorkflowSteps(null) = [] → hasValidationStep = false. So validation is disabled for these test issues regardless. That's the existing behavior (before my changes too, since these seeds never set steps_json).
 
@@ -4117,20 +3740,13 @@ All 8 graph test files seed `wft_1 (coding, "single", active, 1)` which now coll
   <details><summary>tool output</summary>
 
   ```text
-Updated graph-adapter-tests
-
-Updated graph-constraints
-
-Updated graph-e2e-fake-adapter
-
-Updated graph-edge-cases
-
-Updated graph-fanin
-
-Updated graph-recovery-semantics
-
-Updated graph-recovery
-
+Updated graph-adapter-tests
+Updated graph-constraints
+Updated graph-e2e-fake-adapter
+Updated graph-edge-cases
+Updated graph-fanin
+Updated graph-recovery-semantics
+Updated graph-recovery
 Updated graph-repositories
   ```
   </details>
@@ -4151,14 +3767,10 @@ Let me verify the line-ending changes didn't corrupt the graph test files (Power
   <details><summary>tool output</summary>
 
   ```text
-[31;1mwarning: in the working copy of 'server/tests/integration/graph-e2e-fake-adapter.test.ts', LF will be replaced by CRLF the next time Git touches it[0m
-
-[31;1mwarning: in the working copy of 'server/tests/integration/graph-repositories.test.ts', LF will be replaced by CRLF the next time Git touches it[0m
-
- server/tests/integration/graph-e2e-fake-adapter.test.ts | 2 +-
-
- server/tests/integration/graph-repositories.test.ts     | 2 +-
-
+[31;1mwarning: in the working copy of 'server/tests/integration/graph-e2e-fake-adapter.test.ts', LF will be replaced by CRLF the next time Git touches it[0m
+[31;1mwarning: in the working copy of 'server/tests/integration/graph-repositories.test.ts', LF will be replaced by CRLF the next time Git touches it[0m
+ server/tests/integration/graph-e2e-fake-adapter.test.ts | 2 +-
+ server/tests/integration/graph-repositories.test.ts     | 2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
   ```
   </details>
@@ -4176,20 +3788,13 @@ Only the intended 2-line change per file — line endings preserved. Let me run 
   <details><summary>tool output</summary>
 
   ```text
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
-
-
-
- [32m�?[39m tests/integration/graph-repositories.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 162[2mms[22m[39m
-
- [32m�?[39m tests/integration/graph-constraints.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 108[2mms[22m[39m
-
- [32m�?[39m tests/integration/graph-edge-cases.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 55[2mms[22m[39m
-
- [32m�?[39m tests/integration/graph-recovery.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 62[2mms[22m[39m
-
- [32m�?[39m tests/integration/graph-recovery-semantics.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 61[2mms[22m[39m
-
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Projects/personahub/server[39m
+
+ [32m�?[39m tests/integration/graph-repositories.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 162[2mms[22m[39m
+ [32m�?[39m tests/integration/graph-constraints.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 108[2mms[22m[39m
+ [32m�?[39m tests/integration/graph-edge-cases.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+ [32m�?[39m tests/integration/graph-recovery.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+ [32m�?[39m tests/integration/graph-recovery-semantics.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 61[2mms[22m[39m
  [32m�?[39m tests/integration/graph-adapter-tests.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 52[2mms[2
 …[truncated]
   ```
@@ -4212,27 +3817,22 @@ All 64 graph tests pass. Let me run the last graph test file and check the git-s
   <details><summary>tool output</summary>
 
   ```text
-[32m�?[39m tests/integration/graph-e2e-fake-adapter.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 27[2mms[22m[39m
-
-
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-
-[2m   Start at [22m 19:24:57
-
+[32m�?[39m tests/integration/graph-e2e-fake-adapter.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 27[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m   Start at [22m 19:24:57
 [2m   Duration [22m 1.94s[2m (transform 314ms, setup 0ms, collect 1.26s, tests 27ms, environment 0ms, prepare 262ms)[22m
   ```
   </details>
 
 ## assistant · 2026-08-09T11:25:02Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd $env:TEMP; New-Item -ItemType Directory
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && cd $env:TEMP; New-Item -ItemType Directory 
 …[truncated])`
 
 
-> [reasoning] graph-e2e-fake-adapter passes.
+> [reasoning] graph-e2e-fake-adapter passes. 
 
 Now, the remaining failures in the full run were:
 - git-scanner.test.ts (git init timeout — environment)
@@ -4249,7 +3849,7 @@ Let me verify the git-scanner/scanner-selector failures are indeed git-command t
 
 These are pre-existing environment issues (git subprocess hanging). I should note them as pre-existing, not F008 regressions.
 
-Now let me run the full server test suite one more time to get the final picture, excluding the slow real-CLI tests if possible. Actually, let me just re-run the full suite to confirm the F008-caused failures are resolved and only environment issues remain. But that's 6 minutes.
+Now let me run the full server test suite one more time to get the final picture, excluding the slow real-CLI tests if possible. Actually, let me just re-run the full suite to confirm the F008-caused failures are resolved and only environment issues remain. But that's 6 minutes. 
 
 Let me instead run a comprehensive but targeted set that covers F008 + the previously failing graph/migration tests + the key regression areas, to confirm green. Actually, I already confirmed:
 - All F008 new tests pass (113)
@@ -4266,8 +3866,7 @@ graph-e2e passes too. The remaining failures (git-scanner, scanner-selector) app
 
   ```text
 Initialized empty Git repository in C:/Users/Georg/AppData/Local/Temp/gitprobe/.git/
-git init took 227ms
-
+git init took 227ms
 config took 227.7114ms
   ```
   </details>
@@ -4286,26 +3885,16 @@ git works fine here (227ms) — the earlier timeout was likely transient content
   <details><summary>tool output</summary>
 
   ```text
-[31;1m    [90m 17| [39m[0m
-
-[31;1m    [90m 18| [39m  [34mit[39m([32m"uses git scanner for git workspace"[39m[33m,[39m () [33m=>[39m {[0m
-
-[31;1m    [90m   | [39m  [31m^[39m[0m
-
-[31;1m    [90m 19| [39m    execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 �?    [90m 20| [39m    execSync('git config user.email "t@t.com"', { cwd: dir, encoding: �?[0m
-
-[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]�?[22m[39m[0m
-
-[31;1m[0m
-
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
-
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m13 passed[39m[22m[90m (14)[39m
-
-[2m   Start at [22m 19:25:46
-
+[31;1m    [90m 17| [39m[0m
+[31;1m    [90m 18| [39m  [34mit[39m([32m"uses git scanner for git workspace"[39m[33m,[39m () [33m=>[39m {[0m
+[31;1m    [90m   | [39m  [31m^[39m[0m
+[31;1m    [90m 19| [39m    execSync("git init", { cwd: dir, encoding: "utf-8", timeout: 5000 �?    [90m 20| [39m    execSync('git config user.email "t@t.com"', { cwd: dir, encoding: �?[0m
+[31;1m[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]�?[22m[39m[0m
+[31;1m[0m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m13 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 19:25:46
 [2m   Duration [22m 50.42s[2m (transform 1.60s, setup 0ms, collect 5.84s, tests 43.3
 …[truncated]
   ```
@@ -4362,7 +3951,7 @@ The scanner-selector failure is a pre-existing flaky git-init timeout (purely fi
 …[truncated])`
 
 
-> [reasoning] ESLint passes with no errors on all the new/modified server files.
+> [reasoning] ESLint passes with no errors on all the new/modified server files. 
 
 Now let me run prettier check on the new files to see if they're formatted correctly. The new files aren't in the format targets, but I should add them per T062. Let me run prettier --check on them to see current state.
 
@@ -4372,28 +3961,17 @@ ESLint is clean. Let me check Prettier formatting on the new files (T062 require
   <details><summary>tool output</summary>
 
   ```text
-Checking formatting...
-
-[31;1m[[33mwarn[39m] server/src/services/workflow-template-admin.ts[0m
-
-[31;1m[[33mwarn[39m] server/src/services/runtime-health.ts[0m
-
-[31;1m[[33mwarn[39m] server/src/services/queue-classifier.ts[0m
-
-[31;1m[[33mwarn[39m] server/src/services/validation/validate-steps-schema.ts[0m
-
-[31;1m[[33mwarn[39m] server/src/repositories/workflow-template.ts[0m
-
-[31;1m[[33mwarn[39m] server/src/repositories/admin-audit-event.ts[0m
-
-[31;1m[[33mwarn[39m] server/src/api/routes/workflow-templates.ts[0m
-
-[31;1m[[33mwarn[39m] server/src/api/routes/runtime-health.ts[0m
-
-[31;1m[[33mwarn[39m] server/src/db/schema-v10.ts[0m
-
-[31;1m[[33mwarn[39m] server/tests/integration/workflow-template-admin.test.ts[0m
-
+Checking formatting...
+[31;1m[[33mwarn[39m] server/src/services/workflow-template-admin.ts[0m
+[31;1m[[33mwarn[39m] server/src/services/runtime-health.ts[0m
+[31;1m[[33mwarn[39m] server/src/services/queue-classifier.ts[0m
+[31;1m[[33mwarn[39m] server/src/services/validation/validate-steps-schema.ts[0m
+[31;1m[[33mwarn[39m] server/src/repositories/workflow-template.ts[0m
+[31;1m[[33mwarn[39m] server/src/repositories/admin-audit-event.ts[0m
+[31;1m[[33mwarn[39m] server/src/api/routes/workflow-templates.ts[0m
+[31;1m[[33mwarn[39m] server/src/api/routes/runtime-health.ts[0m
+[31;1m[[33mwarn[39m] server/src/db/schema-v10.ts[0m
+[31;1m[[33mwarn[39m] server/tests/integration/workflow-template-admin.test.ts[0m
 [31;1m[[33mwarn[39m] server/tests/integrati
 …[truncated]
   ```
@@ -4413,36 +3991,21 @@ All new files need formatting. Let me run Prettier --write on them, plus add the
   <details><summary>tool output</summary>
 
   ```text
-server/src/services/workflow-template-admin.ts 90ms
-
-server/src/services/runtime-health.ts 44ms
-
-server/src/services/queue-classifier.ts 8ms
-
-server/src/services/validation/validate-steps-schema.ts 14ms
-
-server/src/repositories/workflow-template.ts 17ms
-
-server/src/repositories/admin-audit-event.ts 5ms
-
-server/src/api/routes/workflow-templates.ts 14ms
-
-server/src/api/routes/runtime-health.ts 3ms
-
-server/src/db/schema-v10.ts 2ms
-
-server/tests/integration/workflow-template-admin.test.ts 93ms
-
-server/tests/integration/runtime-health.test.ts 104ms
-
-server/tests/unit/queue-classifier.test.ts 19ms
-
-server/tests/unit/validate-steps-schema.test.ts 27ms
-
-server/tests/integration/migration-v10.test.ts 13ms
-
-[90mserver/tests/integration/migration-v8.test.ts[39m 37ms (unchanged)
-
+server/src/services/workflow-template-admin.ts 90ms
+server/src/services/runtime-health.ts 44ms
+server/src/services/queue-classifier.ts 8ms
+server/src/services/validation/validate-steps-schema.ts 14ms
+server/src/repositories/workflow-template.ts 17ms
+server/src/repositories/admin-audit-event.ts 5ms
+server/src/api/routes/workflow-templates.ts 14ms
+server/src/api/routes/runtime-health.ts 3ms
+server/src/db/schema-v10.ts 2ms
+server/tests/integration/workflow-template-admin.test.ts 93ms
+server/tests/integration/runtime-health.test.ts 104ms
+server/tests/unit/queue-classifier.test.ts 19ms
+server/tests/unit/validate-steps-schema.test.ts 27ms
+server/tests/integration/migration-v10.test.ts 13ms
+[90mserver/tests/integration/migration-v8.test.ts[39m 37ms (unchanged)
 shared/src/types/f0
 …[truncated]
   ```
@@ -4472,7 +4035,7 @@ Let me update the format and format:check scripts. They're identical lists. Let 
 Actually, let me be careful with the exact string. The format script ends with:
 `"web/src/{App.tsx,test/api-client-mock.ts,components/adapter/*.{ts,tsx},components/intake/IntakeDialog.tsx,f007-intake-dialog.test.tsx}\"`
 
-I'll add the F008 server/shared files before the web part, or after. Let me insert after the schema-v9 entry: `"server/src/db/schema-v9.ts"`.
+I'll add the F008 server/shared files before the web part, or after. Let me insert after the schema-v9 entry: `"server/src/db/schema-v9.ts"`. 
 
 Let me look at the exact current string to edit. The format and format:check have identical content. Let me do a replaceAll on both occurrences of a known substring.
 
@@ -4495,8 +4058,7 @@ Actually, the format:check line ends with a newline and the format line has `\"`
   <details><summary>tool output</summary>
 
   ```text
-L23: "format": "prettier --write \"eslint.config.js\" \"package.json\" \"server/src/s
-
+L23: "format": "prettier --write \"eslint.config.js\" \"package.json\" \"server/src/s
 L24: "format:check": "prettier --check \"eslint.config.js\" \"package.json\" \"server
   ```
   </details>
@@ -4507,7 +4069,7 @@ L24: "format:check": "prettier --check \"eslint.config.js\" \"package.json\" \"s
 …[truncated])`
 
 
-> [reasoning] The format/format:check are long single lines (L23, L24). The `"server/src/db/schema-v9.ts"` string is somewhere in the middle. My oldString should match. The issue is likely line ending — the file might use CRLF and the edit tool expects the exact bytes. Let me check: the earlier edits to other files worked. Let me try a shorter unique oldString.
+> [reasoning] The format/format:check are long single lines (L23, L24). The `"server/src/db/schema-v9.ts"` string is somewhere in the middle. My oldString should match. The issue is likely line ending — the file might use CRLF and the edit tool expects the exact bytes. Let me check: the earlier edits to other files worked. Let me try a shorter unique oldString. 
 
 Actually, the edit failed because `"server/src/db/schema-v9.ts"` might not be unique in a way... no, replaceAll handles that. The issue is probably that the file has CRLF line endings and the edit tool's exact-match includes them, but my oldString has no newlines so it should match within the line regardless.
 
@@ -4536,8 +4098,7 @@ Replaced count: 2
   <details><summary>tool output</summary>
 
   ```text
-> format:check
-
+> format:check
 > prettier --check "eslint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalation-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,issue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-envelope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-run,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{app-secret,intake-confirmation}.ts" "server/src/api/routes/intake.ts" "server/src/db/schema-v9.ts" "server/tests/integration/{intake-confirm,intake-routes,intake-secret
 …[truncated]
   ```
@@ -4558,7 +4119,7 @@ That means the replacement didn't persist. Possibly because Set-Content wrote CR
 
 Wait, the format:check output command line is very long and truncated in display (Select-Object -Last 15 shows the command echo). Let me look — it shows `"server/src/db/schema-v9.ts" "server/tests/integration/{intake-confirm,...` — this is missing my insertion. So the package.json didn't get updated properly, OR npm cached the old package.json.
 
-Hmm, actually npm runs the script from package.json fresh each time. So package.json must not have my changes. But I wrote it with Set-Content...
+Hmm, actually npm runs the script from package.json fresh each time. So package.json must not have my changes. But I wrote it with Set-Content... 
 
 Oh! The issue: I ran `npm run format:check` from a different working directory? No, workdir defaults to current. Actually the bash tool workdir — I didn't set it, so it uses the workspace root D:\Projects\personahub. The PowerShell command also used `.\package.json` relative to the current dir. But the bash tool's default cwd — is it the workspace root? The earlier commands used `.\server\tests` and `.\package.json` successfully. So cwd is workspace root.
 
@@ -4579,19 +4140,19 @@ total lines: 52
 
 > [reasoning] No matches for schema-v10/queue-classifier/admin-audit/f008 in package.json! So my PowerShell replacement did NOT persist. The "Replaced count: 2" was misleading (it counted schema-v9.ts occurrences, which were 2 before and after).
 
-Why didn't it persist? Possibly because the bash tool's cwd for the PowerShell command was NOT the workspace root — but earlier `Select-String -Path .\package.json` worked and found schema-v9 at L23/L24. And the format:check run used the same package.json.
+Why didn't it persist? Possibly because the bash tool's cwd for the PowerShell command was NOT the workspace root — but earlier `Select-String -Path .\package.json` worked and found schema-v9 at L23/L24. And the format:check run used the same package.json. 
 
-Wait — maybe the PowerShell Set-Content wrote to a different file or the replacement string had an issue. Actually, `[regex]::Escape('server/src/db/schema-v9.ts"')` — the string includes a double quote. In the replacement, `'server/src/db/schema-v9.ts" ' + $ins` — that's the replacement. The `-replace` uses the escaped pattern.
+Wait — maybe the PowerShell Set-Content wrote to a different file or the replacement string had an issue. Actually, `[regex]::Escape('server/src/db/schema-v9.ts"')` — the string includes a double quote. In the replacement, `'server/src/db/schema-v9.ts" ' + $ins` — that's the replacement. The `-replace` uses the escaped pattern. 
 
 Hmm, but "Replaced count: 2" was `([regex]::Matches($new,'schema-v9.ts')).Count` which counts schema-v9.ts in the NEW content = 2 (both original occurrences remain, plus my insertion contains schema-v10 not v9). So the count being 2 just means schema-v9.ts still appears twice — consistent with insertion happening OR not happening.
 
 Let me check if the file was actually written. Maybe Set-Content failed silently or the cwd was wrong. Let me directly check the file now and re-read it.
 
-Actually — the `$ins` variable contains `"server/src/...` with `{...}` braces and quotes. When I did `'server/src/db/schema-v9.ts" ' + $ins`, that should produce valid text.
+Actually — the `$ins` variable contains `"server/src/...` with `{...}` braces and quotes. When I did `'server/src/db/schema-v9.ts" ' + $ins`, that should produce valid text. 
 
-Wait, maybe the problem: `Set-Content -Path $p` where $p = ".\package.json" — if the bash tool's cwd is NOT the workspace root for THIS particular invocation... but earlier Select-String with `.\package.json` worked.
+Wait, maybe the problem: `Set-Content -Path $p` where $p = ".\package.json" — if the bash tool's cwd is NOT the workspace root for THIS particular invocation... but earlier Select-String with `.\package.json` worked. 
 
-Let me just verify by reading the actual file content around format. Let me use the read tool or grep. Actually grep found no schema-v10. So the write didn't happen.
+Let me just verify by reading the actual file content around format. Let me use the read tool or grep. Actually grep found no schema-v10. So the write didn't happen. 
 
 Possible reason: The command ran in a subprocess and Set-Content worked but... no. Let me just re-do it more carefully using the edit tool instead. Let me read the exact format line first to get the exact substring.
 
@@ -4631,7 +4192,7 @@ This substring is unique per line and appears twice (format + format:check). Let
 
 Wait — the read output shows exactly `"server/src/db/schema-v9.ts" "server/tests/integration/{intake-confirm`. Let me copy it exactly. The read shows: `\"server/src/db/schema-v9.ts\" \"server/tests/integration/{intake-confirm` — in the actual file it's `"server/src/db/schema-v9.ts" "server/tests/integration/{intake-confirm` (JSON-escaped in the read? No, the read tool shows raw content).
 
-Actually the read output line 23 shows: `...\"server/src/db/schema-v9.ts\" \"server/tests/integration/{intake-confirm...` — wait it shows `\"` in the read output. That's the literal backslash-quote in the JSON file (JSON escaping). So in the file, the actual bytes are `\"server/src/db/schema-v9.ts\"` — backslash, quote. Hmm no. In a JSON file, the format script value is a string with `\"` escapes. The raw file bytes contain `\"` (backslash + quote) to represent a quote inside the JSON string.
+Actually the read output line 23 shows: `...\"server/src/db/schema-v9.ts\" \"server/tests/integration/{intake-confirm...` — wait it shows `\"` in the read output. That's the literal backslash-quote in the JSON file (JSON escaping). So in the file, the actual bytes are `\"server/src/db/schema-v9.ts\"` — backslash, quote. Hmm no. In a JSON file, the format script value is a string with `\"` escapes. The raw file bytes contain `\"` (backslash + quote) to represent a quote inside the JSON string. 
 
 So when I read the file with the read tool, it shows the raw bytes which include `\"`. So my oldString should be `\"server/src/db/schema-v9.ts\" \"server/tests/integration/{intake-confirm` with backslashes.
 
@@ -4667,14 +4228,10 @@ Let me run prettier --write on run-dispatch.ts, then format:check.
   <details><summary>tool output</summary>
 
   ```text
-server/src/services/run-dispatch.ts 146ms
-
-=== format:check ===
-
-
-
-> format:check
-
+server/src/services/run-dispatch.ts 146ms
+=== format:check ===
+
+> format:check
 > prettier --check "eslint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalation-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,issue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-envelope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-run,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{app-secret,intake-confirmation}.ts" "server/src/api/routes/intake.ts" "server/src/db/schema-v9.ts" "s
 …[truncated]
   ```
@@ -4700,12 +4257,9 @@ Let me just re-run prettier --write on admin-audit-event.ts and immediately form
   <details><summary>tool output</summary>
 
   ```text
-server/src/repositories/admin-audit-event.ts 73ms
-
-=== check ===
-
-Checking formatting...
-
+server/src/repositories/admin-audit-event.ts 73ms
+=== check ===
+Checking formatting...
 All matched files use Prettier code style!
   ```
   </details>
@@ -4720,8 +4274,7 @@ All matched files use Prettier code style!
   <details><summary>tool output</summary>
 
   ```text
-> format:check
-
+> format:check
 > prettier --check "eslint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalation-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,issue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-envelope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-run,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{app-secret,intake-confirmation}.ts" "server/src/api/routes/intake.ts" "server/src/db/schema-v9.ts" "server/src/db/schema-v10.ts" "server/src/services/{workflow-template
 …[truncated]
   ```
@@ -4780,7 +4333,7 @@ Key things for the UI agent:
 - Error codes: TEMPLATE_NOT_FOUND, TEMPLATE_STEPS_INVALID, VALIDATION_DISABLE_NOT_ACKNOWLEDGED, TEMPLATE_FIELD_NOT_EDITABLE, TEMPLATE_VERSION_CONFLICT, LAST_ACTIVE_TEMPLATE, WORKSPACE_NOT_FOUND.
 - HealthDiagnosticCode 10 values + assertNever exhaustive rendering.
 
-Where to put UI: The template admin and health panels. The App.tsx left sidebar has a "Configuration" section with a disabled Settings button. The template admin + health could be accessible there. But the template admin is global (not project-scoped) while health is project-scoped.
+Where to put UI: The template admin and health panels. The App.tsx left sidebar has a "Configuration" section with a disabled Settings button. The template admin + health could be accessible there. But the template admin is global (not project-scoped) while health is project-scoped. 
 
 Let me think about the UI surface. Per tasks T050-T054:
 - T050: template list + version history panel
@@ -4905,7 +4458,7 @@ Let me be efficient and read the mock, a UI test, and the ui primitives in paral
 <content>
 1: import { ErrorCode } from "@personahub/shared";
 2: import { vi } from "vitest";
-3:
+3: 
 4: export const apiClient = {
 5:   projects: {
 6:     create: vi.fn(),
@@ -4945,11 +4498,11 @@ Let me be efficient and read the mock, a UI test, and the ui primitives in paral
 3: import { AdapterAuthType, AgentCapability, CliProvider, AdapterStatus } from "@personahub/shared";
 4: import { AdapterSettings } from "@/components/adapter/AdapterSettings";
 5: import { createAdapter, renderWithQuery } from "@/test/ui-flow-helpers";
-6:
+6: 
 7: vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
-8:
+8: 
 9: import { apiClient } from "@/lib/api-client";
-10:
+10: 
 11: const PROVIDERS = [
 12:   { cli_provider: CliProvider.Codex, supported_auth_types: [AdapterAuthType.OAuth], default_command: "codex", capability_description: "I
 …[truncated]
@@ -4990,14 +4543,14 @@ Let me be efficient and read the mock, a UI test, and the ui primitives in paral
 17:   type Run,
 18:   type Workspace,
 19: } from "@personahub/shared";
-20:
+20: 
 21: const TIMESTAMP = "2026-07-16T00:00:00.000Z";
-22:
+22: 
 23: export function createTestQueryClient() {
 24:   return new QueryClient({
 25:     defaultOptions: {
 26:       queries: { retry: false },
-27:       mutations: {
+27:       mutations: { 
 …[truncated]
   ```
   </details>
@@ -5012,12 +4565,12 @@ Let me be efficient and read the mock, a UI test, and the ui primitives in paral
 2: import * as DialogPrimitive from "@radix-ui/react-dialog";
 3: import { X } from "lucide-react";
 4: import { cn } from "@/lib/utils";
-5:
+5: 
 6: const Dialog = DialogPrimitive.Root;
 7: const DialogTrigger = DialogPrimitive.Trigger;
 8: const DialogPortal = DialogPrimitive.Portal;
 9: const DialogClose = DialogPrimitive.Close;
-10:
+10: 
 11: const DialogOverlay = React.forwardRef<
 12:   React.ComponentRef<typeof DialogPrimitive.Overlay>,
 13:   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -5290,8 +4843,7 @@ M web/src/lib/api-client.ts
 ?? web/src/components/workflow-template/
 ?? web/src/hooks/use-runtime-health.ts
 ?? web/src/hooks/use-workflow-templates.ts
-=== untracked web files ===
-
+=== untracked web files ===
 web/src/components/runtime-health/diagnostic-code.ts
 web/src/components/workflow-template/template-status.ts
 web/src/hooks/use-runtime-health.ts
@@ -5329,9 +4881,9 @@ Let me review these files to see their state (complete or partial), then continu
 52:   type DeactivateWorkflowTemplateResponse,
 53:   type RuntimeHealthResponse,
 54: } from "@personahub/shared";
-55:
+55: 
 56: const API_BASE = "/api";
-57:
+57: 
 58: async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 59:   const res = await fetch(`${API_BASE}${path}`, {
 60:     headers: { "Content-Type": "application/json", ...options?.headers },
@@ -5360,16 +4912,16 @@ Let me review these files to see their state (complete or partial), then continu
 4:   ActivateWorkflowTemplateInput,
 5: } from "@personahub/shared";
 6: import { apiClient } from "@/lib/api-client";
-7:
+7: 
 8: const ISSUE_TYPE = "coding";
-9:
+9: 
 10: export function useWorkflowTemplates() {
 11:   return useQuery({
 12:     queryKey: ["workflow-templates", ISSUE_TYPE],
 13:     queryFn: () => apiClient.workflowTemplates.list(ISSUE_TYPE),
 14:   });
 15: }
-16:
+16: 
 17: export function useWorkflowTemplate(id: string | null) {
 18:   return useQuery({
 19:     queryKey: ["workflow-template", id],
@@ -5386,7 +4938,7 @@ Let me review these files to see their state (complete or partial), then continu
 <content>
 1: import { useQuery } from "@tanstack/react-query";
 2: import { apiClient } from "@/lib/api-client";
-3:
+3: 
 4: export function useRuntimeHealth(projectId: string | null, workspaceId?: string) {
 5:   return useQuery({
 6:     queryKey: ["runtime-health", projectId, workspaceId ?? null],
@@ -5407,18 +4959,18 @@ Let me review these files to see their state (complete or partial), then continu
 <type>file</type>
 <content>
 1: import type { HealthDiagnostic, HealthDiagnosticCode } from "@personahub/shared";
-2:
+2: 
 3: export type DiagnosticRender = {
 4:   icon: "lock" | "clock" | "alert" | "queue" | "adapter" | "schema";
 5:   variant: "destructive" | "warning" | "info";
 6:   title: string;
 7:   suggestedAction: string;
 8: };
-9:
+9: 
 10: export function assertNever(x: never): never {
 11:   throw new Error("unhandled diagnostic code: " + (x as unknown));
 12: }
-13:
+13: 
 14: export function renderDiagnosticCode(code: HealthDiagnosticCode): DiagnosticRender {
 15:   switch (code) {
 16:     case "stale_lock_confirmed":
@@ -5437,12 +4989,12 @@ Let me review these files to see their state (complete or partial), then continu
 <type>file</type>
 <content>
 1: import type { WorkflowTemplateVersionSummary, WorkflowTemplateDetail } from "@personahub/shared";
-2:
+2: 
 3: export type ValidationEnabledState =
 4:   | { kind: "enabled"; label: "Validation enabled"; variant: "success" }
 5:   | { kind: "disabled"; label: "Validation disabled"; variant: "warning" }
 6:   | { kind: "unknown"; label: "Validation state unknown"; variant: "destructive" };
-7:
+7: 
 8: export function validationEnabledState(
 9:   value: boolean | null,
 10: ): ValidationEnabledState {
@@ -5496,7 +5048,7 @@ UI 代理完成了 api-client、hooks、diagnostic-code、template-status。还�
 1: import * as React from "react";
 2: import { cva, type VariantProps } from "class-variance-authority";
 3: import { cn } from "@/lib/utils";
-4:
+4: 
 5: const badgeVariants = cva(
 6:   "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
 7:   {
@@ -5519,7 +5071,7 @@ UI 代理完成了 api-client、hooks、diagnostic-code、template-status。还�
 2: import { Slot } from "@radix-ui/react-slot";
 3: import { cva, type VariantProps } from "class-variance-authority";
 4: import { cn } from "@/lib/utils";
-5:
+5: 
 6: const buttonVariants = cva(
 7:   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 8:   {
@@ -5575,7 +5127,7 @@ Flows:
 6. Deactivate: window.confirm; on LAST_ACTIVE_TEMPLATE error → show message.
 7. TEMPLATE_VERSION_CONFLICT → show message "conflict, refresh".
 
-For client-side check of "will disable validation": parse steps_json; hasValidator = steps.some(s => s.role === "validator"). If !hasValidator → acknowledge needed. Also if current active version's validation_enabled !== true → acknowledge needed (escape hatch, can't prove). To know current active, from the list find status === "active".
+For client-side check of "will disable validation": parse steps_json; hasValidator = steps.some(s => s.role === "validator"). If !hasValidator → acknowledge needed. Also if current active version's validation_enabled !== true → acknowledge needed (escape hatch, can't prove). To know current active, from the list find status === "active". 
 
 Simplify: `needsAcknowledge(stepsJson, activeVersion)`:
 - parse JSON; on parse failure → treat as needing acknowledge? No — parse failure should just show inline error "steps_json must be valid JSON" and NOT proceed to enable (server will reject with TEMPLATE_STEPS_INVALID anyway). Actually let the server handle it, but client-side check for valid JSON is good UX. I'll check: if parse fails → inline error, don't enable.
@@ -5791,28 +5343,17 @@ Now let me typecheck the web to catch errors before writing tests.
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/web@0.1.0 typecheck
-
-> tsc --noEmit
-
-
-
-src/components/workflow-template/WorkflowTemplateAdminDialog.tsx(84,27): error TS2339: Property 'steps_json' does not exist on type 'WorkflowTemplateVersionSummary | WorkflowTemplateDetail'.
-
-  Property 'steps_json' does not exist on type 'WorkflowTemplateVersionSummary'.
-
-[31;1mnpm error Lifecycle script `typecheck` failed with error:[0m
-
-[31;1mnpm error code 2[0m
-
-[31;1mnpm error path D:\Projects\personahub\web[0m
-
-[31;1mnpm error workspace @personahub/web@0.1.0[0m
-
-[31;1mnpm error location D:\Projects\personahub\web[0m
-
-[31;1mnpm error command failed[0m
-
+> @personahub/web@0.1.0 typecheck
+> tsc --noEmit
+
+src/components/workflow-template/WorkflowTemplateAdminDialog.tsx(84,27): error TS2339: Property 'steps_json' does not exist on type 'WorkflowTemplateVersionSummary | WorkflowTemplateDetail'.
+  Property 'steps_json' does not exist on type 'WorkflowTemplateVersionSummary'.
+[31;1mnpm error Lifecycle script `typecheck` failed with error:[0m
+[31;1mnpm error code 2[0m
+[31;1mnpm error path D:\Projects\personahub\web[0m
+[31;1mnpm error workspace @personahub/web@0.1.0[0m
+[31;1mnpm error location D:\Projects\personahub\web[0m
+[31;1mnpm error command failed[0m
 [31;1mnpm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit[0m
   ```
   </details>
@@ -5849,8 +5390,7 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/web@0.1.0 typecheck
-
+> @personahub/web@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -5933,7 +5473,7 @@ Details for rendering the dialog: `renderWithQuery(<WorkflowTemplateAdminDialog 
 
 The list uses buttons with `v{t.version}` text. Clicking one sets selectedId → detail query with get mock.
 
-For "Create new version" flow: after clicking a version row, detail loads, and the "Create new version" button appears in the footer area (when !editorOpen && selectedId && detail). Wait — in my component, when selectedId && detailQuery.data → TemplateDetail view (with "Edit & create new version"). The footer with "Create new version" only shows when NOT selected (list view). So from the list, selectedId is null → the footer shows "Create new version" disabled (disabled={!selectedId})! That's a UX bug: you can't create from list since selectedId is null.
+For "Create new version" flow: after clicking a version row, detail loads, and the "Create new version" button appears in the footer area (when !editorOpen && selectedId && detail). Wait — in my component, when selectedId && detailQuery.data → TemplateDetail view (with "Edit & create new version"). The footer with "Create new version" only shows when NOT selected (list view). So from the list, selectedId is null → the footer shows "Create new version" disabled (disabled={!selectedId})! That's a UX bug: you can't create from list since selectedId is null. 
 
 Let me reconsider: the flow should be: click version → detail → "Edit & create new version" (in detail). That's the primary path and works. The footer "Create new version" is redundant/disabled in list view. Let me remove the footer button from the list view entirely (keep active version note only), OR make the footer button work only in detail. Actually simpler: remove the footer "Create new version" button and rely on the detail's "Edit & create new version". Let me remove it to avoid confusion.
 
@@ -5977,7 +5517,7 @@ Wrote file successfully.
 
 ## assistant · 2026-08-09T11:54:49Z
 
-- **tool**: `write({"content": "import { describe, it, expect, beforeEach, vi } from \"vitest\";\nimport { fireEvent, screen, waitFor } from \"@testing-library/react\";\nimport type {\n  WorkflowTemplateDetail,\n  WorkflowTemplateDetailResponse,\n  WorkflowTemplateVersionSummary,\n} from \"@personahub/shared\";\nimport { WorkflowTemplateAdminDialog } from \"@/components/workflow-template/WorkflowTemplateAdminDialog\";\nimport { renderWithQuery } from \"@/test/ui-flow-helpers\";\n\nvi.mock(\"@/lib/api-client\", ()
+- **tool**: `write({"content": "import { describe, it, expect, beforeEach, vi } from \"vitest\";\nimport { fireEvent, screen, waitFor } from \"@testing-library/react\";\nimport type {\n  WorkflowTemplateDetail,\n  WorkflowTemplateDetailResponse,\n  WorkflowTemplateVersionSummary,\n} from \"@personahub/shared\";\nimport { WorkflowTemplateAdminDialog } from \"@/components/workflow-template/WorkflowTemplateAdminDialog\";\nimport { renderWithQuery } from \"@/test/ui-flow-helpers\";\n\nvi.mock(\"@/lib/api-client\", () 
 …[truncated])`
 
 
@@ -6079,40 +5619,23 @@ PRIORITY-BASED ACTION GUIDELINES:
   <details><summary>tool output</summary>
 
   ```text
-[31;1m          [33mstroke-width[39m=[32m"2"[39m[0m
-
-[31;1m          [33mviewBox[39m=[32m"0 0 24 24"[39m[0m
-
-[31;1m          [33mwidth[39m=[32m"24"[39m[0m
-
-[31;1m          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m[0m
-
-[31;1m        [36m>[39m[0m
-
-[31;1m          [36m<path[39m[0m
-
-[31;1m            [33md[39m=[32m"M18 6 6 18"[39m[0m
-
-[31;1m          [36m/>[39m[0m
-
-[31;1m          [36m<path[39m[0m
-
-[31;1m            [33md[39m=[32m"m6 6 12 12"[39m[0m
-
-[31;1m          [36m/>[39m[0m
-
-[31;1m        [36m</svg>[39m[0m
-
-[31;1m        [36m<span[39m[0m
-
-[31;1m          [33mclass[39m=[32m"sr-only"[39m[0m
-
-[31;1m        [36m>[39m[0m
-
-[31;1m          [0mClose[0m[0m
-
-[31;1m        [36m</span>[39m[0m
-
+[31;1m          [33mstroke-width[39m=[32m"2"[39m[0m
+[31;1m          [33mviewBox[39m=[32m"0 0 24 24"[39m[0m
+[31;1m          [33mwidth[39m=[32m"24"[39m[0m
+[31;1m          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m[0m
+[31;1m        [36m>[39m[0m
+[31;1m          [36m<path[39m[0m
+[31;1m            [33md[39m=[32m"M18 6 6 18"[39m[0m
+[31;1m          [36m/>[39m[0m
+[31;1m          [36m<path[39m[0m
+[31;1m            [33md[39m=[32m"m6 6 12 12"[39m[0m
+[31;1m          [36m/>[39m[0m
+[31;1m        [36m</svg>[39m[0m
+[31;1m        [36m<span[39m[0m
+[31;1m          [33mclass[39m=[32m"sr-only"[39m[0m
+[31;1m        [36m>[39m[0m
+[31;1m          [0mClose[0m[0m
+[31;1m        [36m</span>[39m[0m
 [31;1m      [3
 …[truncated]
   ```
@@ -6132,7 +5655,7 @@ Possible root causes:
 2. `getByLabelText("Name")` — the Input has `id="wft-name"` and `<Label htmlFor="wft-name">Name</Label>` — should work.
 3. Maybe the detail query didn't load, so "Edit & create new version" button never appears, and the click on it failed? No — the waitFor before it passed (test got to line 154-155, the click succeeded, then the editor's Name input didn't appear).
 
-Hmm, actually wait. Look at the failure: `openEditor` at line 155 waits for `getByLabelText("Name")` to be in document. It failed with the DOM dump showing the dialog content... I can't see the full dump.
+Hmm, actually wait. Look at the failure: `openEditor` at line 155 waits for `getByLabelText("Name")` to be in document. It failed with the DOM dump showing the dialog content... I can't see the full dump. 
 
 Let me think about what might break the editor rendering. In `openEditor` flow: click "Edit & create new version" → `onEdit={() => openEditor(detailQuery.data!.template)}` → sets editorOpen true. The editor should render in place of the footer (in the list view branch `!selectedId && detailQuery.data`? No wait).
 
@@ -6189,7 +5712,7 @@ Let me restructure the WorkflowTemplateAdminDialog render section.
 188:       },
 189:     );
 190:   }
-191:
+191: 
 192:   function confirmActivate() {
 193:     if (!pendingActivateId) return;
 194:     const id = pendingActivateId;
@@ -6197,7 +5720,7 @@ Let me restructure the WorkflowTemplateAdminDialog render section.
 196:     setPendingActivateId(null);
 197:     activate.mutate({ id, input: { acknowledge_validation_disabled: acknowledgeChecked } });
 198:   }
-199:
+199: 
 200:   function deactivateVersion(id: string) {
 201:     setError(null);
 202:     if (!window.confirm("Deactivate this workflow template version? New issues will keep using the remaining acti
@@ -6207,7 +5730,7 @@ Let me restructure the WorkflowTemplateAdminDialog render section.
 
 ## assistant · 2026-08-09T11:56:37Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\workflow-template\\WorkflowTemplateAdminDialog.tsx", "newString": "        {editorOpen ? (\n          <Editor\n            name={editorName}\n            steps={editorSteps}\n            onNameChange={setEditorName}\n            onStepsChange={setEditorSteps}\n            onSaveDraft={() => {\n              if (!selectedId) return;\n              runCreateVersion({ name: editorName, steps_json: editorSteps, activate: false });\n
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\workflow-template\\WorkflowTemplateAdminDialog.tsx", "newString": "        {editorOpen ? (\n          <Editor\n            name={editorName}\n            steps={editorSteps}\n            onNameChange={setEditorName}\n            onStepsChange={setEditorSteps}\n            onSaveDraft={() => {\n              if (!selectedId) return;\n              runCreateVersion({ name: editorName, steps_json: editorSteps, activate: false });\n      
 …[truncated])`
 
   <details><summary>tool output</summary>
@@ -6240,7 +5763,7 @@ Edit applied successfully.
 282:                 </div>
 283:               ) : null}
 284:             </div>
-285:
+285: 
 286:             {editorOpen ? (
 287:               <Editor
 288:                 name={editorName}
@@ -6269,37 +5792,22 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-src/f008-workflow-template-admin.test.tsx(36,42): error TS2322: Type '"coding"' is not assignable to type 'IssueType'.
-
-[31;1mnpm error Lifecycle script `typecheck` failed with error:[0m
-
-[31;1mnpm error code 2[0m
-
-[31;1mnpm error path D:\Projects\personahub\web[0m
-
-[31;1mnpm error workspace @personahub/web@0.1.0[0m
-
-[31;1mnpm error location D:\Projects\personahub\web[0m
-
-[31;1mnpm error command failed[0m
-
-[31;1mnpm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit[0m
-
-[31;1m        [36m<path[39m[0m
-
-[31;1m          [33md[39m=[32m"M18 6 6 18"[39m[0m
-
-[31;1m        [36m/>[39m[0m
-
-[31;1m        [36m<path[39m[0m
-
-[31;1m          [33md[39m=[32m"m6 6 12 12"[39m[0m
-
-[31;1m        [36m/>[39m[0m
-
-[31;1m      [36m</svg>[39m[0m
-
-[31;1m
+src/f008-workflow-template-admin.test.tsx(36,42): error TS2322: Type '"coding"' is not assignable to type 'IssueType'.
+[31;1mnpm error Lifecycle script `typecheck` failed with error:[0m
+[31;1mnpm error code 2[0m
+[31;1mnpm error path D:\Projects\personahub\web[0m
+[31;1mnpm error workspace @personahub/web@0.1.0[0m
+[31;1mnpm error location D:\Projects\personahub\web[0m
+[31;1mnpm error command failed[0m
+[31;1mnpm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit[0m
+[31;1m        [36m<path[39m[0m
+[31;1m          [33md[39m=[32m"M18 6 6 18"[39m[0m
+[31;1m        [36m/>[39m[0m
+[31;1m        [36m<path[39m[0m
+[31;1m          [33md[39m=[32m"m6 6 12 12"[39m[0m
+[31;1m        [36m/>[39m[0m
+[31;1m      [36m</svg>[39m[0m
+[31;1m    
 …[truncated]
   ```
   </details>
@@ -6314,7 +5822,7 @@ src/f008-workflow-template-admin.test.tsx(36,42): error TS2322: Type '"coding"' 
 
 1. Typecheck error: `issue_type: "coding"` not assignable to IssueType in test fixtures (line 36). Need `IssueType.Coding` or cast. Let me import IssueType and use it.
 
-2. Test failure at line 134: "Activate" button not found — because the detail with parse_error shows... wait, the test "marks a version with a parse error as not enableable and disables its Activate button". The DOM dump shows the dialog rendered but the Activate button not found. Hmm — actually the button name might be different. In TemplateDetail, Activate button: `<Button ... onClick={onActivate} disabled={activating || detail.parse_error !== null}>Activate</Button>`. It should exist. But the dump shows... let me think. The failing query was `getByRole("button", { name: "Activate" })` — maybe the button IS there but disabled buttons are still findable by role. Actually the error was thrown at line 134 — "Unable to find an accessible element with the role button and name Activate".
+2. Test failure at line 134: "Activate" button not found — because the detail with parse_error shows... wait, the test "marks a version with a parse error as not enableable and disables its Activate button". The DOM dump shows the dialog rendered but the Activate button not found. Hmm — actually the button name might be different. In TemplateDetail, Activate button: `<Button ... onClick={onActivate} disabled={activating || detail.parse_error !== null}>Activate</Button>`. It should exist. But the dump shows... let me think. The failing query was `getByRole("button", { name: "Activate" })` — maybe the button IS there but disabled buttons are still findable by role. Actually the error was thrown at line 134 — "Unable to find an accessible element with the role button and name Activate". 
 
 Wait, maybe the detail never loaded in that test — the waitFor at 132 passed ("cannot be enabled" text found). So detail loaded with parse_error. Then Activate button should be present. Unless... the button is `disabled` — RTL getByRole finds disabled buttons fine (disabled is not hidden). Hmm.
 
@@ -6348,10 +5856,8 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-L14
-
-L19
-
+L14
+L19
 L32
   ```
   </details>
@@ -6388,22 +5894,14 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[31m�?[39m src/f008-runtime-health.test.tsx [2m([22m[2m17 tests[22m[2m | [22m[31m10 [7mfailed[0m[39m[2m)[22m[33m 846[2mms[22m[39m
-
-            [0mA validating issue [7mpassed[0m its due time but has not been claimed. Check that the validation dispatch schedul[0m
-
-[0m[7m[0mer is running.[0m
-
- [31m�?[39m src/f008-workflow-template-admin.test.tsx [2m([22m[2m14 tests[22m[2m | [22m[31m2 [7mfailed[0m[39m[2m)[22m[33m 1869[2mms[22m[39m
-
-[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m [7mFailed[0m Tests 12 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m
-
-            [0mA validating issue [7mpassed[0m its due time but has not been claimed. Check that the validation dispatch schedul[0m
-
-[0m[7m[0mer is running.[0m
-
-[2m Test Files [22m [1m[31m2 [7mfailed[0m[39m[22m[90m (2)[39m
-
+[31m�?[39m src/f008-runtime-health.test.tsx [2m([22m[2m17 tests[22m[2m | [22m[31m10 [7mfailed[0m[39m[2m)[22m[33m 846[2mms[22m[39m
+            [0mA validating issue [7mpassed[0m its due time but has not been claimed. Check that the validation dispatch schedul[0m
+[0m[7m[0mer is running.[0m
+ [31m�?[39m src/f008-workflow-template-admin.test.tsx [2m([22m[2m14 tests[22m[2m | [22m[31m2 [7mfailed[0m[39m[2m)[22m[33m 1869[2mms[22m[39m
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m [7mFailed[0m Tests 12 [49m[22m[31m⎯⎯⎯⎯⎯⎯�?[39m
+            [0mA validating issue [7mpassed[0m its due time but has not been claimed. Check that the validation dispatch schedul[0m
+[0m[7m[0mer is running.[0m
+[2m Test Files [22m [1m[31m2 [7mfailed[0m[39m[22m[90m (2)[39m
 [2m
 …[truncated]
   ```
@@ -6420,12 +5918,9 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-�?Unable to find an element with the text: /action-for-stale_lock_confirmed/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
-
-�?Unable to find an element with the text: /action-for-stale_lock_suspected/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
-
-�?Unable to find an element with the text: /action-for-lock_timestamp_invalid/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
-
+�?Unable to find an element with the text: /action-for-stale_lock_confirmed/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+�?Unable to find an element with the text: /action-for-stale_lock_suspected/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+�?Unable to find an element with the text: /action-for-lock_timestamp_invalid/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
 �?Unable to find an element with the text: /action-for-queue_starv
 …[truncated]
   ```
@@ -6434,7 +5929,7 @@ Edit applied successfully.
 ## assistant · 2026-08-09T11:58:51Z
 
 - **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\runtime-health\\RuntimeHealthDialog.tsx", "newString": "      <p>\n        <span className=\"font-medium\">Suggested action: </span>\n        {diagnostic.suggested_action || render.suggestedAction}\n      </p>", "oldString": "      <p>\n        <span className=\"font-medium\">Suggested action: </span>\n        {render.suggestedAction}\n      </p>"})`
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\workflow-template\\WorkflowTemplateAdminDialog.tsx", "newString": "        <div className=\"grid grid-cols-2 gap-1.5 text-xs\">\n          <div className=\"rounded-md border border-border px-3 py-1.5\">\n            collaboration_topology: {detail.collaboration_topology || \"—\"}\n          </div>\n          <div className=\"rounded-md border border-border px-3 py-1.5\">\n            validation_policy_id: {detail.validation_policy_id
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\web\\src\\components\\workflow-template\\WorkflowTemplateAdminDialog.tsx", "newString": "        <div className=\"grid grid-cols-2 gap-1.5 text-xs\">\n          <div className=\"rounded-md border border-border px-3 py-1.5\">\n            collaboration_topology: {detail.collaboration_topology || \"—\"}\n          </div>\n          <div className=\"rounded-md border border-border px-3 py-1.5\">\n            validation_policy_id: {detail.validation_policy_id 
 …[truncated])`
 
 
@@ -6442,13 +5937,13 @@ Edit applied successfully.
 
 1. Health tests: the DiagnosticRow renders suggested action as `Suggested action: {render.suggestedAction}` — the test looks for `action-for-X` which is the raw diagnostic.suggested_action. But the component renders `render.suggestedAction` (from the code→copy map), NOT `diagnostic.suggested_action`. So the test's raw text `action-for-...` never appears. The detail text does appear (`detail-for-X`), and the title appears. The suggested action rendered is the copy from renderDiagnosticCode.
 
-   Fix options: (a) make the component render diagnostic.suggested_action instead of the static copy, or (b) update the test to assert the static copy (render.suggestedAction).
-
-   The design says "每个 code 各有建议动作文案" — the static copy in renderDiagnosticCode IS the 建议动作文案. But the server also sends suggested_action in the payload. Which should the UI show? The static map ensures every code has a copy even if server omits it. But showing the server's payload is more "same-source". Hmm — T054 says "每个 code 各有建议动作文案与至少一条 UI 测试" — the requirement is that each code has a suggested-action copy in UI. The static map satisfies this. But then why does the server send suggested_action? For display parity.
+   Fix options: (a) make the component render diagnostic.suggested_action instead of the static copy, or (b) update the test to assert the static copy (render.suggestedAction). 
+   
+   The design says "每个 code 各有建议动作文案" — the static copy in renderDiagnosticCode IS the 建议动作文案. But the server also sends suggested_action in the payload. Which should the UI show? The static map ensures every code has a copy even if server omits it. But showing the server's payload is more "same-source". Hmm — T054 says "每个 code 各有建议动作文案与至少一条 UI 测试" — the requirement is that each code has a suggested-action copy in UI. The static map satisfies this. But then why does the server send suggested_action? For display parity. 
 
    I'll render the server's `diagnostic.suggested_action` when present, falling back to the static copy. Actually simpler: render `diagnostic.suggested_action || render.suggestedAction`. That way the test asserting action-for-X passes AND each code has a fallback copy. Let me do that.
 
-2. Template admin: "Unable to find element with text: implementation" — in the detail test, I assert `screen.getByText("implementation")`. The detail renders steps with role "implementation". But "implementation" text appears in multiple places? The error says "broken up by multiple elements" — actually getByText("implementation") found... no, it says Unable to find. Hmm wait, the detail view shows steps: `<span className="font-medium">{step.id}</span>` (id "implementation") and `<span>{step.role}</span>` (role "implementation"). So "implementation" appears twice — getByText would throw "multiple elements" not "unable to find". But the error is "Unable to find an element with the text: implementation".
+2. Template admin: "Unable to find element with text: implementation" — in the detail test, I assert `screen.getByText("implementation")`. The detail renders steps with role "implementation". But "implementation" text appears in multiple places? The error says "broken up by multiple elements" — actually getByText("implementation") found... no, it says Unable to find. Hmm wait, the detail view shows steps: `<span className="font-medium">{step.id}</span>` (id "implementation") and `<span>{step.role}</span>` (role "implementation"). So "implementation" appears twice — getByText would throw "multiple elements" not "unable to find". But the error is "Unable to find an element with the text: implementation". 
 
    Wait, that's for the steps test... Let me look: the failing template tests are (a) "opens a version's detail showing steps and validation_enabled" — assert getByText("implementation") and getByText("validator"); (b) "annotates the four non-editable fields..." — assert getByText(/collaboration_topology: sequential/). Both failed with "Unable to find".
 
@@ -6503,18 +5998,12 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-�?[39m src/f008-workflow-template-admin.test.tsx (14 tests | 1 failed) 2639ms
-
-�?[39m T052/T053: save draft vs save & enable, and the disable-validation confirmation gate > surfaces the LAST_ACTIVE_TEMPLATE rejection instead of failing silently 77ms
-
-⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
-
-FAIL  src/f008-workflow-template-admin.test.tsx > T050/T051: workflow template version list and detail > opens a version's detail showing steps and validation_enabled
-
-Test Files  1 failed | 1 passed (2)
-
-Tests  1 failed | 30 passed (31)
-
+�?[39m src/f008-workflow-template-admin.test.tsx (14 tests | 1 failed) 2639ms
+�?[39m T052/T053: save draft vs save & enable, and the disable-validation confirmation gate > surfaces the LAST_ACTIVE_TEMPLATE rejection instead of failing silently 77ms
+⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
+FAIL  src/f008-workflow-template-admin.test.tsx > T050/T051: workflow template version list and detail > opens a version's detail showing steps and validation_enabled
+Test Files  1 failed | 1 passed (2)
+Tests  1 failed | 30 passed (31)
 Duration  8.81s (transform 477ms, setup 1.45s, collect 2.02s, tests 3.32s, environment 4.97s, prepare 642ms)
   ```
   </details>
@@ -6543,10 +6032,8 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-Test Files  2 passed (2)
-
-Tests  31 passed (31)
-
+Test Files  2 passed (2)
+Tests  31 passed (31)
 Duration  7.60s (transform 424ms, setup 1.56s, collect 1.90s, tests 2.16s, environment 5.44s, prepare 569ms)
   ```
   </details>
@@ -6568,32 +6055,19 @@ Let me run web typecheck, eslint on new files, prettier format, and the full web
   <details><summary>tool output</summary>
 
   ```text
-[31;1mnpm error path D:\Projects\personahub\web[0m
-
-[31;1mnpm error workspace @personahub/web@0.1.0[0m
-
-[31;1mnpm error location D:\Projects\personahub\web[0m
-
-[31;1mnpm error command failed[0m
-
-[31;1mnpm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit[0m
-
-=== ESLINT ===
-
-=== PRETTIER ===
-
-Checking formatting...
-
-[31;1m[[33mwarn[39m] web/src/components/workflow-template/WorkflowTemplateAdminDialog.tsx[0m
-
-[31;1m[[33mwarn[39m] web/src/components/runtime-health/RuntimeHealthDialog.tsx[0m
-
-[31;1m[[33mwarn[39m] web/src/components/runtime-health/diagnostic-code.ts[0m
-
-[31;1m[[33mwarn[39m] web/src/hooks/use-workflow-templates.ts[0m
-
-[31;1m[[33mwarn[39m] web/src/hooks/use-runtime-health.ts[0m
-
+[31;1mnpm error path D:\Projects\personahub\web[0m
+[31;1mnpm error workspace @personahub/web@0.1.0[0m
+[31;1mnpm error location D:\Projects\personahub\web[0m
+[31;1mnpm error command failed[0m
+[31;1mnpm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit[0m
+=== ESLINT ===
+=== PRETTIER ===
+Checking formatting...
+[31;1m[[33mwarn[39m] web/src/components/workflow-template/WorkflowTemplateAdminDialog.tsx[0m
+[31;1m[[33mwarn[39m] web/src/components/runtime-health/RuntimeHealthDialog.tsx[0m
+[31;1m[[33mwarn[39m] web/src/components/runtime-health/diagnostic-code.ts[0m
+[31;1m[[33mwarn[39m] web/src/hooks/use-workflow-templates.ts[0m
+[31;1m[[33mwarn[39m] web/src/hooks/use-runtime-health.ts[0m
 [31;1m[[33mwarn[39m] web/src/f008-runtime-health.test.t
 …[truncated]
   ```
@@ -6639,18 +6113,12 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-web/src/f008-workflow-template-admin.test.tsx 50ms
-
-web/src/App.tsx 16ms
-
-[90mweb/src/test/api-client-mock.ts[39m 12ms (unchanged)
-
-=== TYPECHECK ===
-
-
-
-> @personahub/web@0.1.0 typecheck
-
+web/src/f008-workflow-template-admin.test.tsx 50ms
+web/src/App.tsx 16ms
+[90mweb/src/test/api-client-mock.ts[39m 12ms (unchanged)
+=== TYPECHECK ===
+
+> @personahub/web@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -6664,10 +6132,8 @@ Typecheck passes, prettier formatted. Now run the full web test suite to verify 
   <details><summary>tool output</summary>
 
   ```text
-Test Files  25 passed (25)
-
-Tests  212 passed (212)
-
+Test Files  25 passed (25)
+Tests  212 passed (212)
 Duration  28.60s (transform 7.57s, setup 60.87s, collect 47.63s, tests 17.34s, environment 327.79s, prepare 28.58s)
   ```
   </details>
@@ -6711,18 +6177,12 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-> lint
-
-> eslint server shared web e2e eslint.config.js
-
-
-
-=== FORMAT:CHECK ===
-
-
-
-> format:check
-
+> lint
+> eslint server shared web e2e eslint.config.js
+
+=== FORMAT:CHECK ===
+
+> format:check
 > prettier --check "eslint.config.js" "package.json" "server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalation-handler}.ts" "server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,issue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-envelope-contract,validator-slot-claimer,workflow-service}.ts" "server/src/services/{confirmation-token,create-sequential-run,intake-service,routing-recommendation-service}.ts" "server/src/services/routing/rules.ts" "server/src/repositories/{app-secret,intake-confirmation}.ts" "server/src/api/routes/intake.ts" "server/src/db/
 …[truncated]
   ```
@@ -6737,24 +6197,15 @@ Lint 和 format:check 通过。运行 typecheck 和完整 test：
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/e2e@0.1.0 typecheck
-
-> tsc --noEmit
-
-
-
-=== TEST ===
-
-�?[22m Validation multi-round (T082) > 3 rounds of fail leads to Blocked with round_limit_reached  2535ms
-
-⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
-
-FAIL  tests/integration/scanner-selector.test.ts > Scanner Selector (T030) > uses git scanner for git workspace
-
-Test Files  1 failed | 125 passed | 10 skipped (136)
-
-Tests  1 failed | 1673 passed | 18 skipped (1692)
-
+> @personahub/e2e@0.1.0 typecheck
+> tsc --noEmit
+
+=== TEST ===
+�?[22m Validation multi-round (T082) > 3 rounds of fail leads to Blocked with round_limit_reached  2535ms
+⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
+FAIL  tests/integration/scanner-selector.test.ts > Scanner Selector (T030) > uses git scanner for git workspace
+Test Files  1 failed | 125 passed | 10 skipped (136)
+Tests  1 failed | 1673 passed | 18 skipped (1692)
 Duration  378.15s (transform 3.17s, setup 0ms, collect 55.66s, tests 254.10s, environment 28ms, prepare 29.77s)
   ```
   </details>
@@ -6782,12 +6233,9 @@ Actually, let me quickly try running it one more time standalone to see if it's 
   <details><summary>tool output</summary>
 
   ```text
-⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
-
-Test Files  1 failed (1)
-
-Tests  1 failed | 6 passed (7)
-
+⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
+Test Files  1 failed (1)
+Tests  1 failed | 6 passed (7)
 Duration  12.32s (transform 1000ms, setup 0ms, collect 4.41s, tests 7.24s, environment 0ms, prepare 293ms)
   ```
   </details>
@@ -6812,19 +6260,19 @@ Duration  12.32s (transform 1000ms, setup 0ms, collect 4.41s, tests 7.24s, envir
 4: import { join } from "node:path";
 5: import { execSync } from "node:child_process";
 6: import { captureSnapshot, diffSnapshots, snapshotToJson, snapshotFromJson } from "../../src/runtime/trace/workspace-scanner.js";
-7:
+7: 
 8: describe("Scanner Selector (T030)", () => {
 9:   let dir: string;
-10:
+10: 
 11:   beforeEach(() => {
 12:     dir = createTempDir();
 13:   });
 14:   afterEach(() => {
 15:     cleanupTempDir(dir);
 16:   });
-17:
+17: 
 18:   it("uses git scanner for git workspace", () => {
-19:
+19:   
 …[truncated]
   ```
   </details>
@@ -6840,24 +6288,15 @@ Duration  12.32s (transform 1000ms, setup 0ms, collect 4.41s, tests 7.24s, envir
   <details><summary>tool output</summary>
 
   ```text
-WARNING: git diff failed (rc=128): fatal: bad revision 'HEAD~1'
-
-× Scanner Selector (T030) > uses git scanner for git workspace 6225ms
-
-If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
-
-�?[39m Scanner Selector (T030) > falls back to filesystem for non-git workspace 160ms
-
-�?[39m Scanner Selector (T030) > produces stable reason code when git unavailable 155ms
-
-FAIL  tests/integration/scanner-selector.test.ts > Scanner Selector (T030) > uses git scanner for git workspace
-
-Error: Test timed out in 5000ms.
-
-If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
-
-18|   it("uses git scanner for git workspace", () => {
-
+WARNING: git diff failed (rc=128): fatal: bad revision 'HEAD~1'
+× Scanner Selector (T030) > uses git scanner for git workspace 6225ms
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+�?[39m Scanner Selector (T030) > falls back to filesystem for non-git workspace 160ms
+�?[39m Scanner Selector (T030) > produces stable reason code when git unavailable 155ms
+FAIL  tests/integration/scanner-selector.test.ts > Scanner Selector (T030) > uses git scanner for git workspace
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+18|   it("uses git scanner for git workspace", () => {
 19|     execSync("git init", { cwd: dir, enco
 …[truncated]
   ```
@@ -6881,7 +6320,7 @@ But why does it consistently hang at exactly 5s? Let me look at the git scanner 
 
 Actually — wait. Look at the WARNING line: "git diff failed (rc=128): fatal: bad revision 'HEAD~1'" — this warning is printed by the scanner's fallback handling. It's a KNOWN limitation: on a repo with a single commit, `git diff HEAD~1` can't work. The test "uses git scanner for git workspace" creates one commit. If the git scanner's captureSnapshot on single-commit repos hangs (maybe it runs `git diff` with the $GIT_PAGER or waits on stdin?), the test exceeds 5s.
 
-Hmm, but this test must have passed at some point (it's part of F001/F002 era). Maybe on this machine, `git diff` in a fresh single-commit repo triggers a credential/trust prompt (Git for Windows "fatal: detected dubious ownership"? No, that fails fast). Or maybe `git diff HEAD~1` with the local user.name config...
+Hmm, but this test must have passed at some point (it's part of F001/F002 era). Maybe on this machine, `git diff` in a fresh single-commit repo triggers a credential/trust prompt (Git for Windows "fatal: detected dubious ownership"? No, that fails fast). Or maybe `git diff HEAD~1` with the local user.name config... 
 
 Let me check: does `git diff HEAD~1` in a single-commit repo hang on Windows? Let me test manually. Actually — the important thing for my task: this is NOT F008-related (scanner tests don't touch workflow templates/schema/health). It was failing in the first full run at 18:57 BEFORE I fixed the F008-caused failures. So it's a pre-existing environment issue.
 
@@ -6890,42 +6329,24 @@ Let me quickly verify it's truly pre-existing by testing the git behavior manual
   <details><summary>tool output</summary>
 
   ```text
-INFO: Schema version 1 -> 9: running migrations
-
-INFO: Running migration v2
-
-INFO: Migration v2: added 'signature' column to nodes
-
-INFO: Running migration v3
-
-INFO: Migration v3: created flows and flow_memberships tables
-
-INFO: Running migration v4
-
-INFO: Migration v4: added 'community_id' column to nodes
-
-INFO: Migration v4: created communities table
-
-INFO: Running migration v5
-
-INFO: Migration v5: created nodes_fts FTS5 virtual table
-
-INFO: Running migration v6
-
-INFO: Migration v6: created summary tables (community_summaries, flow_snapshots, risk_index)
-
-INFO: Running migration v7
-
-INFO: Migration v7: added compound edge indexes
-
-INFO: Running migration v8
-
-INFO: Migration v8: created composite edge index
-
-INFO: Running migration v9
-
-INFO: Migration v9: added edge confidence columns
-
+INFO: Schema version 1 -> 9: running migrations
+INFO: Running migration v2
+INFO: Migration v2: added 'signature' column to nodes
+INFO: Running migration v3
+INFO: Migration v3: created flows and flow_memberships tables
+INFO: Running migration v4
+INFO: Migration v4: added 'community_id' column to nodes
+INFO: Migration v4: created communities table
+INFO: Running migration v5
+INFO: Migration v5: created nodes_fts FTS5 virtual table
+INFO: Running migration v6
+INFO: Migration v6: created summary tables (community_summaries, flow_snapshots, risk_index)
+INFO: Running migration v7
+INFO: Migration v7: added compound edge indexes
+INFO: Running migration v8
+INFO: Migration v8: created composite edge index
+INFO: Running migration v9
+INFO: Migration v9: added edge confidence columns
 IN
 …[truncated]
   ```
@@ -6938,14 +6359,14 @@ IN
 
 > [reasoning] Interesting! The output shows a weird thing — some external hook/agent output ("Schema version 1 -> 9: running migrations" etc.) got printed. That's an external MCP/agent-reach hook interference or something on this machine (some graph analysis tool that hooks into git). The `git diff HEAD~1` itself took 387ms and failed with rc=128 fast (as expected on single-commit repo). So git commands run fine and fast.
 
-But there's this weird "WARNING: git diff failed... Analyzed 1 changed file(s)..." output — that looks like some external tool intercepting git. Hmm, that's the output of some git hook/MCP on this machine. It printed BEFORE my `git diff HEAD~1` ran — actually it's the output of the `git add -A; git commit` maybe? No... it says "WARNING: git diff failed (rc=128): fatal: bad revision 'HEAD~1'" — this is EXACTLY the warning the scanner prints!
+But there's this weird "WARNING: git diff failed... Analyzed 1 changed file(s)..." output — that looks like some external tool intercepting git. Hmm, that's the output of some git hook/MCP on this machine. It printed BEFORE my `git diff HEAD~1` ran — actually it's the output of the `git add -A; git commit` maybe? No... it says "WARNING: git diff failed (rc=128): fatal: bad revision 'HEAD~1'" — this is EXACTLY the warning the scanner prints! 
 
 Wait — this external output is from a "graph engineering" hook — someone's git hook that runs on commit and analyzes diffs. It printed during my manual `git commit -q -m init`. The "WARNING: git diff failed (rc=128)" — that's THIS external tool's output, not my scanner.
 
 OK regardless: the key insight is `git diff HEAD~1` fails fast (387ms) with rc=128. So the scanner-selector test hang is NOT from git diff hanging.
 
 So why does the test time out at exactly 5000ms (vitest default)? The test runs:
-1. git init (timeout 5000)
+1. git init (timeout 5000) 
 2. git config x2
 3. writeFileSync
 4. git add + commit (timeout 5000)
@@ -6963,9 +6384,9 @@ Hmm, but git-scanner.test.ts passed (13 tests) — does it also commit? Let me c
 
 Let me look at the actual timing: is the vitest timeout 5000ms? The default vitest testTimeout is 5000ms. The test does git init + 2 configs + commit + captureSnapshot. If the external commit hook takes ~5s, the whole test exceeds 5s → vitest timeout.
 
-This is clearly an ENVIRONMENT issue (external git hook on this machine interfering with git commit), NOT F008-related. The scanner-selector test does NOT touch anything F008. It failed in the very first full-suite run before my changes.
+This is clearly an ENVIRONMENT issue (external git hook on this machine interfering with git commit), NOT F008-related. The scanner-selector test does NOT touch anything F008. It failed in the very first full-suite run before my changes. 
 
-Let me verify this is pre-existing by checking whether this test would have failed on the pristine baseline. I can do a quick check: stash all changes? That's risky with many untracked files. Alternative: check git log / look at whether the test env has this hook.
+Let me verify this is pre-existing by checking whether this test would have failed on the pristine baseline. I can do a quick check: stash all changes? That's risky with many untracked files. Alternative: check git log / look at whether the test env has this hook. 
 
 Actually — I'm confident enough: the failure is at `git init`/`git commit` subprocess level, completely unrelated to F008 (scanner selection has zero dependency on workflow templates, schema, or health). It failed identically in the first full run at 18:57 (before my F008 test fixes). This is a pre-existing environment flake caused by an external git hook installed on this machine.
 
@@ -6979,24 +6400,15 @@ Now let me proceed with T062: run `npm run build` (shared + server + web).
   <details><summary>tool output</summary>
 
   ```text
-> @personahub/shared@0.1.0 build
-
-> build:server
-
-> npm -w @personahub/server run build
-
-> @personahub/server@0.1.0 build
-
-> build:web
-
-> npm -w @personahub/web run build
-
-> @personahub/web@0.1.0 build
-
-> tsc -b && vite build
-
-vite v6.4.3 building for production...
-
+> @personahub/shared@0.1.0 build
+> build:server
+> npm -w @personahub/server run build
+> @personahub/server@0.1.0 build
+> build:web
+> npm -w @personahub/web run build
+> @personahub/web@0.1.0 build
+> tsc -b && vite build
+vite v6.4.3 building for production...
 �?built in 16.61s
   ```
   </details>
@@ -7035,13 +6447,13 @@ Build 全部通过。现在做 T063：回写文档（spec 验收清单、tasks �
 3: doc_kind: note
 4: created: 2026-07-11
 5: ---
-6:
+6: 
 7: # Feature Roadmap
-8:
+8: 
 9: > **Rules**: Only active Features (idea/spec/ready-for-development/in-progress/review). Move to done after completion.
 10: > `ready-for-development` = spec 与 design 均已定稿、`design.md` 的待确认问题全部关闭（`docs/features/README.md` 的硬性约束），可以开始写代码。
 11: > Details live in `docs/features/{version}/Fxxx-feature-name/`（`spec.md`、`design.md`、`tasks.md`），按大版本（0.1、0.2…）分层，见 `docs/features/README.md`。
-12:
+12: 
 13: | ID | Version | Name | Status | Owner | Link |
 14: |----|---------|------|--------|-------|------|
 15: | F007 | 0.2 | Coordinator Agent & Routing Recommendation | done | TBD | `docs/features/0.2/F007-coordinator-routing-recom
@@ -7125,8 +6537,7 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-remaining unchecked: 0
-
+remaining unchecked: 0
 checked: 44
   ```
   </details>
@@ -7137,7 +6548,7 @@ checked: 44
 …[truncated])`
 
 
-> [reasoning] tasks.md all 44 checkboxes marked done, status updated.
+> [reasoning] tasks.md all 44 checkboxes marked done, status updated. 
 
 Wait — I used Set-Content with -NoNewline which may have stripped the trailing newline and possibly changed line endings to CRLF. Let me check git diff --stat for tasks.md to make sure only checkbox lines changed.
 
@@ -7147,29 +6558,18 @@ Also, let me verify the tasks.md format is intact.
   <details><summary>tool output</summary>
 
   ```text
-.../tasks.md                                       | 90 +++++++++++-----------
-
- 1 file changed, 45 insertions(+), 45 deletions(-)
-
-[31;1mwarning: in the working copy of 'docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md', LF will be replaced by CRLF the next time Git touches it[0m
-
-diff --git a/docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md b/docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md
-
-index 6d33919..3427fd8 100644
-
---- a/docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md
-
-+++ b/docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md
-
-@@ -9,73 +9,73 @@ updated: 2026-08-09
-
-
-
- # F008：Workflow Template Admin & Runtime Health - 任务
-
-
-
--> Status: ready-for-development | Owner: TBD |
+.../tasks.md                                       | 90 +++++++++++-----------
+ 1 file changed, 45 insertions(+), 45 deletions(-)
+[31;1mwarning: in the working copy of 'docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md', LF will be replaced by CRLF the next time Git touches it[0m
+diff --git a/docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md b/docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md
+index 6d33919..3427fd8 100644
+--- a/docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md
++++ b/docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md
+@@ -9,73 +9,73 @@ updated: 2026-08-09
+ 
+ # F008：Workflow Template Admin & Runtime Health - 任务
+ 
+-> Status: ready-for-development | Owner: TBD | 
 …[truncated]
   ```
   </details>
@@ -7200,10 +6600,8 @@ One thing I noticed: the runtime-health route test coverage — the agent wrote 
   <details><summary>tool output</summary>
 
   ```text
-Test Files  8 passed (8)
-
-Tests  174 passed (174)
-
+Test Files  8 passed (8)
+Tests  174 passed (174)
 Duration  20.05s (transform 1.13s, setup 0ms, collect 7.45s, tests 8.59s, environment 2ms, prepare 1.69s)
   ```
   </details>
@@ -7230,22 +6628,14 @@ Let me check these two.
   <details><summary>tool output</summary>
 
   ```text
-L20: import { DEFAULT_EXECUTION_TIMEOUT_MS } from "../../src/runtime/types.js";
-
-L229: describe("T041 - stale_lock grading (prerequisite: adapter executionTimeoutMs)", () => {
-
-L230: it("all v0.2 adapters set executionTimeoutMs === DEFAULT_EXECUTION_TIMEOUT_MS", () => {
-
-L233: expect(adapter.capabilities.executionTimeoutMs).toBe(DEFAULT_EXECUTION_TIMEOUT_MS);
-
-L237: const THRESHOLD = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
-
-=== T032 check ===
-
-L620: describe("F008 Phase 3: end-to-end validation disable (T032)", () => {
-
-L631: it("T032: after enabling a no-validator template, a new Issue's default template would not trigger validation"
-
+L20: import { DEFAULT_EXECUTION_TIMEOUT_MS } from "../../src/runtime/types.js";
+L229: describe("T041 - stale_lock grading (prerequisite: adapter executionTimeoutMs)", () => {
+L230: it("all v0.2 adapters set executionTimeoutMs === DEFAULT_EXECUTION_TIMEOUT_MS", () => {
+L233: expect(adapter.capabilities.executionTimeoutMs).toBe(DEFAULT_EXECUTION_TIMEOUT_MS);
+L237: const THRESHOLD = DEFAULT_EXECUTION_TIMEOUT_MS + LOCK_DIAGNOSTIC_GRACE_MS;
+=== T032 check ===
+L620: describe("F008 Phase 3: end-to-end validation disable (T032)", () => {
+L631: it("T032: after enabling a no-validator template, a new Issue's default template would not trigger validation"
 L652: // trigger validation (same source of truth as the runtime).
   ```
   </details>
@@ -7270,42 +6660,24 @@ Final git status to summarize the change set.
   <details><summary>tool output</summary>
 
   ```text
-M BACKLOG.md
-
- M docs/features/0.2/F008-workflow-template-admin-runtime-health/spec.md
-
- M docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md
-
- M docs/reviews/RETROSPECTIVE.md
-
- M package.json
-
- M server/src/api/errors.ts
-
- M server/src/api/index.ts
-
- M server/src/db/migrations.ts
-
- M server/src/id.ts
-
- M server/src/index.ts
-
- M server/src/repositories/workflow-template.ts
-
- M server/src/services/adapter-config.ts
-
- M server/src/services/adapter-failure-reprobe.ts
-
- M server/src/services/run-dispatch.ts
-
- M server/tests/integration/graph-adapter-tests.test.ts
-
- M server/tests/integration/graph-constraints.test.ts
-
- M server/tests/integration/graph-e2e-fake-adapter.test.ts
-
- M server/tests/integration/graph-edge-cases.test.ts
-
+M BACKLOG.md
+ M docs/features/0.2/F008-workflow-template-admin-runtime-health/spec.md
+ M docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md
+ M docs/reviews/RETROSPECTIVE.md
+ M package.json
+ M server/src/api/errors.ts
+ M server/src/api/index.ts
+ M server/src/db/migrations.ts
+ M server/src/id.ts
+ M server/src/index.ts
+ M server/src/repositories/workflow-template.ts
+ M server/src/services/adapter-config.ts
+ M server/src/services/adapter-failure-reprobe.ts
+ M server/src/services/run-dispatch.ts
+ M server/tests/integration/graph-adapter-tests.test.ts
+ M server/tests/integration/graph-constraints.test.ts
+ M server/tests/integration/graph-e2e-fake-adapter.test.ts
+ M server/tests/integration/graph-edge-cases.test.ts
  M server/tests/integration/graph-fanin.test
 …[truncated]
   ```
@@ -7329,36 +6701,21 @@ Let me check these two files to see if they were created by the F008 agents (pro
   <details><summary>tool output</summary>
 
   ```text
-[31;1mwarning: in the working copy of 'docs/reviews/RETROSPECTIVE.md', LF will be replaced by CRLF the next time Git touches it[0m
-
- docs/reviews/RETROSPECTIVE.md | 31 +++++++++++++++++++++++++++++++
-
- 1 file changed, 31 insertions(+)
-
-=== code-review-report.md head ===
-
-# Code Review Report
-
-
-
-**Reviewed**: `structure-improvement-plan.md` against the current PersonaHub repository structure, feature artifacts, `BACKLOG.md`, `docs/features/README.md`, `docs/SOP.md`, root scripts, ignored runtime artifacts, and tracked cross-references
-
-**Language(s)**: Markdown, JavaScript/Node.js, TypeScript repository conventions
-
-**Review Date**: 2026-08-09
-
-**Severity Legend**: ?? Critical | ?? High | ?? Medium | ?? Low | ?? Info
-
-
-
----
-
-
-
-## Executive Summary
-
-
-
+[31;1mwarning: in the working copy of 'docs/reviews/RETROSPECTIVE.md', LF will be replaced by CRLF the next time Git touches it[0m
+ docs/reviews/RETROSPECTIVE.md | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+=== code-review-report.md head ===
+# Code Review Report
+
+**Reviewed**: `structure-improvement-plan.md` against the current PersonaHub repository structure, feature artifacts, `BACKLOG.md`, `docs/features/README.md`, `docs/SOP.md`, root scripts, ignored runtime artifacts, and tracked cross-references
+**Language(s)**: Markdown, JavaScript/Node.js, TypeScript repository conventions
+**Review Date**: 2026-08-09
+**Severity Legend**: ?? Critical | ?? High | ?? Medium | ?? Low | ?? Info
+
+---
+
+## Executive Summary
+
 The proposal is directionally right: k
 …[truncated]
   ```
@@ -7529,39 +6886,23 @@ Let me look at recent commit messages to match style.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mwarning: in the working copy of 'docs/reviews/RETROSPECTIVE.md', LF will be replaced by CRLF the next time Git touches it[0m
-
-diff --git a/docs/reviews/RETROSPECTIVE.md b/docs/reviews/RETROSPECTIVE.md
-
-index f07c26c..f6d07e5 100644
-
---- a/docs/reviews/RETROSPECTIVE.md
-
-+++ b/docs/reviews/RETROSPECTIVE.md
-
-@@ -603,3 +603,34 @@ SQL约束逐字段核对才发现。F011-R002再次印证循环7/8已识别的"
-
- 影子"**,目前已在循环4/6/7/8/9至少五次独立命中,是本项目复现率最高的缺陷模式,
-
- 值得在未来评审的检查清单里固定一�?新增跨Feature硬依赖后,同步扫描README依赖
-
- 表与相关frontmatter"�?+
-
-+---
-
-+
-
-+## 循环 10: 目录结构改造方案检�?2�?
-
-+
-
-+- **report_type**: doc-review
-
-+- **周期**: 2026-08-09,2�?· **状�?*: 已闭�?�?轮一致性复核通过,尚未提交)
-
-+- **背景**: �?`structure-improvement-plan.md` 做首轮全量审查并按用户确认正式修�?+  正文。第2轮原�?diff-only,因修复覆盖目标正文超�?0%,按协议只在本轮升级为一�?+  full-scan,检查修复是否留下旧建议、状态双真相或归档路径冲突�?+
-
-+| ID | 标题 | 严重�?| 分类 |
+[31;1mwarning: in the working copy of 'docs/reviews/RETROSPECTIVE.md', LF will be replaced by CRLF the next time Git touches it[0m
+diff --git a/docs/reviews/RETROSPECTIVE.md b/docs/reviews/RETROSPECTIVE.md
+index f07c26c..f6d07e5 100644
+--- a/docs/reviews/RETROSPECTIVE.md
++++ b/docs/reviews/RETROSPECTIVE.md
+@@ -603,3 +603,34 @@ SQL约束逐字段核对才发现。F011-R002再次印证循环7/8已识别的"
+ 影子"**,目前已在循环4/6/7/8/9至少五次独立命中,是本项目复现率最高的缺陷模式,
+ 值得在未来评审的检查清单里固定一�?新增跨Feature硬依赖后,同步扫描README依赖
+ 表与相关frontmatter"�?+
++---
++
++## 循环 10: 目录结构改造方案检�?2�?
++
++- **report_type**: doc-review
++- **周期**: 2026-08-09,2�?· **状�?*: 已闭�?�?轮一致性复核通过,尚未提交)
++- **背景**: �?`structure-improvement-plan.md` 做首轮全量审查并按用户确认正式修�?+  正文。第2轮原�?diff-only,因修复覆盖目标正文超�?0%,按协议只在本轮升级为一�?+  full-scan,检查修复是否留下旧建议、状态双真相或归档路径冲突�?+
++| ID | 标题 | 严重�?| 分类 | 
 …[truncated]
   ```
   </details>
@@ -7671,16 +7012,11 @@ Let me stage with explicit paths.
   <details><summary>tool output</summary>
 
   ```text
-[31;1mwarning: in the working copy of 'BACKLOG.md', LF will be replaced by CRLF the next time Git touches it[0m
-
-[31;1mwarning: in the working copy of 'docs/features/0.2/F008-workflow-template-admin-runtime-health/spec.md', LF will be replaced by CRLF the next time Git touches it[0m
-
-[31;1mwarning: in the working copy of 'docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md', LF will be replaced by CRLF the next time Git touches it[0m
-
-[31;1mwarning: in the working copy of 'server/tests/integration/graph-adapter-tests.test.ts', LF will be replaced by CRLF the next time Git touches it[0m
-
-[31;1mwarning: in the working copy of 'server/tests/integration/graph-constraints.test.ts', LF will be replaced by CRLF the next time Git touches it[0m
-
+[31;1mwarning: in the working copy of 'BACKLOG.md', LF will be replaced by CRLF the next time Git touches it[0m
+[31;1mwarning: in the working copy of 'docs/features/0.2/F008-workflow-template-admin-runtime-health/spec.md', LF will be replaced by CRLF the next time Git touches it[0m
+[31;1mwarning: in the working copy of 'docs/features/0.2/F008-workflow-template-admin-runtime-health/tasks.md', LF will be replaced by CRLF the next time Git touches it[0m
+[31;1mwarning: in the working copy of 'server/tests/integration/graph-adapter-tests.test.ts', LF will be replaced by CRLF the next time Git touches it[0m
+[31;1mwarning: in the working copy of 'server/tests/integration/graph-constraints.test.ts', LF will be replaced by CRLF the next time Git touches it[0m
 [31;1mwarning: in the w
 …[truncated]
   ```
@@ -7688,7 +7024,7 @@ Let me stage with explicit paths.
 
 ## assistant · 2026-08-09T12:26:33Z
 
-- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && git diff --cached --stat package.json 2>&1
+- **tool**: `bash({"command": "set CI=\"true\" && set DEBIAN_FRONTEND=\"noninteractive\" && set GIT_TERMINAL_PROMPT=\"0\" && set GCM_INTERACTIVE=\"never\" && set HOMEBREW_NO_AUTO_UPDATE=\"1\" && set GIT_EDITOR=\":\" && set EDITOR=\":\" && set VISUAL=\"\" && set GIT_SEQUENCE_EDITOR=\":\" && set GIT_MERGE_AUTOEDIT=\"no\" && set GIT_PAGER=\"cat\" && set PAGER=\"cat\" && set npm_config_yes=\"true\" && set PIP_NO_INPUT=\"1\" && set YARN_ENABLE_IMMUTABLE_INSTALLS=\"false\" && git diff --cached --stat package.json 2>&1 
 …[truncated])`
 
 
@@ -7704,26 +7040,16 @@ Let me stage with explicit paths.
   <details><summary>tool output</summary>
 
   ```text
-package.json | 4 ++--
-
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/package.json b/package.json
-
-index e7d8341..0a6b5b0 100644
-
---- a/package.json
-
-+++ b/package.json
-
-@@ -20,8 +20,8 @@
-
-     "pretest": "npm run build:shared",
-
-     "test": "npm -w @personahub/server run test && npm -w @personahub/web run test",
-
-     "lint": "eslint server shared web e2e eslint.config.js",
-
+package.json | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+diff --git a/package.json b/package.json
+index e7d8341..0a6b5b0 100644
+--- a/package.json
++++ b/package.json
+@@ -20,8 +20,8 @@
+     "pretest": "npm run build:shared",
+     "test": "npm -w @personahub/server run test && npm -w @personahub/web run test",
+     "lint": "eslint server shared web e2e eslint.config.js",
 -    "format": "prettier --write \"eslint.config.js\" \"package.json\" \"server/src/services/{adapter-config*,adapter-failure-reprobe,run-dispatch,run-escalation-handler}.ts\" \"server/src/services/validation/{context-builder,evidence-summary-builder,evidence-summary-contract,issue-blocker,non-pass-processor,result-parser,result-parser-contract,result-parser-fields,result-processor,validator-envelope-
 …[truncated]
   ```
@@ -7741,16 +7067,11 @@ package.json 改动仅为 F008 format targets 追加，干净。提交：
   <details><summary>tool output</summary>
 
   ```text
-create mode 100644 web/src/components/workflow-template/WorkflowTemplateAdminDialog.tsx
-
- create mode 100644 web/src/components/workflow-template/template-status.ts
-
- create mode 100644 web/src/f008-runtime-health.test.tsx
-
- create mode 100644 web/src/f008-workflow-template-admin.test.tsx
-
- create mode 100644 web/src/hooks/use-runtime-health.ts
-
+create mode 100644 web/src/components/workflow-template/WorkflowTemplateAdminDialog.tsx
+ create mode 100644 web/src/components/workflow-template/template-status.ts
+ create mode 100644 web/src/f008-runtime-health.test.tsx
+ create mode 100644 web/src/f008-workflow-template-admin.test.tsx
+ create mode 100644 web/src/hooks/use-runtime-health.ts
  create mode 100644 web/src/hooks/use-workflow-templates.ts
   ```
   </details>
@@ -7765,19 +7086,14 @@ create mode 100644 web/src/components/workflow-template/WorkflowTemplateAdminDia
   ```text
 5ef5055 feat(f008): add workflow template admin & runtime health
 485cf23 docs(v0.3): add F009-F012 draft spec/design/tasks; close doc-review cycle 9
-=== ʣ��δ�ύ ===
-
+=== ʣ��δ�ύ ===
  M docs/reviews/RETROSPECTIVE.md
  M structure-improvement-plan.md
 ?? code-review-report.md
-=== �ύͳ�� ===
-
- web/src/hooks/use-workflow-templates.ts            |  54 ++
-
- web/src/lib/api-client.ts                          |  35 +
-
- web/src/test/api-client-mock.ts                    |  17 +
-
+=== �ύͳ�� ===
+ web/src/hooks/use-workflow-templates.ts            |  54 ++
+ web/src/lib/api-client.ts                          |  35 +
+ web/src/test/api-client-mock.ts                    |  17 +
  53 files changed, 4721 insertions(+), 118 deletions(-)
   ```
   </details>
@@ -7897,24 +7213,15 @@ File references (@path) in this skill are relative to this directory.
 M docs/reviews/RETROSPECTIVE.md
  M structure-improvement-plan.md
 ?? docs/reviews/CURRENT-code.md
-[32;1mName[0m
-
-[32;1m----[0m
-
-CURRENT-code.md
-
-RETROSPECTIVE.md
-
-=== git status ===
-
-=== ��Ŀ¼���ļ� ===
-
-BACKLOG.md
-
-CLAUDE.md
-
-package.json
-
+[32;1mName[0m
+[32;1m----[0m
+CURRENT-code.md
+RETROSPECTIVE.md
+=== git status ===
+=== ��Ŀ¼���ļ� ===
+BACKLOG.md
+CLAUDE.md
+package.json
 structure-improvement-plan.md
   ```
   </details>
@@ -8097,10 +7404,8 @@ private expectedSchemaVersion: number = CURRENT_SCHEMA_VERSION,
   <details><summary>tool output</summary>
 
   ```text
-[31;1mSelect-String: [31;1mA parameter cannot be found that matches parameter name 'Recurse'.[0m
-
-=== diagnosticKey usage ===
-
+[31;1mSelect-String: [31;1mA parameter cannot be found that matches parameter name 'Recurse'.[0m
+=== diagnosticKey usage ===
 [31;1mSelect-String: [31;1mA parameter cannot be found that matches parameter name 'Recurse'.[0m
   ```
   </details>
@@ -8112,18 +7417,12 @@ private expectedSchemaVersion: number = CURRENT_SCHEMA_VERSION,
   <details><summary>tool output</summary>
 
   ```text
-runtime-health.ts:19: export const EXPECTED_SCHEMA_VERSION = 10;
-
-runtime-health.ts:45: private expectedSchemaVersion: number = EXPECTED_SCHEMA_VERSION,
-
-runtime-health.test.ts:7: EXPECTED_SCHEMA_VERSION,
-
-runtime-health.test.ts:90: function makeHealthService(services: TestServices, expectedVersion = EXPECTED_SCHEMA_VERSION) {
-
-diagnostic-code.ts:101: export function diagnosticKey(diagnostic: HealthDiagnostic): string {
-
-RuntimeHealthDialog.tsx:8: import { diagnosticKey, renderDiagnosticCode, type DiagnosticRender } from "./diagnostic-code";
-
+runtime-health.ts:19: export const EXPECTED_SCHEMA_VERSION = 10;
+runtime-health.ts:45: private expectedSchemaVersion: number = EXPECTED_SCHEMA_VERSION,
+runtime-health.test.ts:7: EXPECTED_SCHEMA_VERSION,
+runtime-health.test.ts:90: function makeHealthService(services: TestServices, expectedVersion = EXPECTED_SCHEMA_VERSION) {
+diagnostic-code.ts:101: export function diagnosticKey(diagnostic: HealthDiagnostic): string {
+RuntimeHealthDialog.tsx:8: import { diagnosticKey, renderDiagnosticCode, type DiagnosticRender } from "./diagnostic-code";
 RuntimeHealthDialog.tsx:65: <DiagnosticRow key={diagnosticKey(d)} diagnostic={d} />
   ```
   </details>
@@ -8188,10 +7487,8 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-Test Files  1 passed (1)
-
-Tests  15 passed (15)
-
+Test Files  1 passed (1)
+Tests  15 passed (15)
 Duration  6.85s (transform 304ms, setup 579ms, collect 1.28s, tests 1.53s, environment 1.95s, prepare 299ms)
   ```
   </details>
@@ -8257,17 +7554,15 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-Test Files  1 passed (1)
-
-Tests  18 passed (18)
-
+Test Files  1 passed (1)
+Tests  18 passed (18)
 Duration  5.87s (transform 242ms, setup 527ms, collect 1.09s, tests 667ms, environment 1.92s, prepare 321ms)
   ```
   </details>
 
 ## assistant · 2026-08-09T13:02:22Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\src\\db\\migrations.ts", "newString": "import { SCHEMA_V9 } from \"./schema-v9.js\";\nimport { SCHEMA_V10 } from \"./schema-v10.js\";\n\n/** Single source of truth for the current schema version — consumers (e.g.\n *  RuntimeHealthService's expected_version) must reference this instead of\n *  re-declaring the literal. */\nexport const CURRENT_SCHEMA_VERSION = 10;", "oldString": "import { SCHEMA_V9 } from \"./schema-v9.js\";\nimport { SCHEMA_V10 }
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\src\\db\\migrations.ts", "newString": "import { SCHEMA_V9 } from \"./schema-v9.js\";\nimport { SCHEMA_V10 } from \"./schema-v10.js\";\n\n/** Single source of truth for the current schema version — consumers (e.g.\n *  RuntimeHealthService's expected_version) must reference this instead of\n *  re-declaring the literal. */\nexport const CURRENT_SCHEMA_VERSION = 10;", "oldString": "import { SCHEMA_V9 } from \"./schema-v9.js\";\nimport { SCHEMA_V10 } 
 …[truncated])`
 - **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\src\\db\\migrations.ts", "newString": "  if (currentVersion < CURRENT_SCHEMA_VERSION) {\n    db.transaction(() => {\n      db.exec(SCHEMA_V10);\n      db.prepare(\"INSERT INTO schema_version (version, applied_at) VALUES (?, ?)\").run(\n        CURRENT_SCHEMA_VERSION,\n        new Date().toISOString(),\n      );\n    })();\n  }\n}", "oldString": "  if (currentVersion < 10) {\n    db.transaction(() => {\n      db.exec(SCHEMA_V10);\n      db.prepare(\
 …[truncated])`
@@ -8349,44 +7644,25 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-
-import Fastify from "fastify";
-
-import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-
-import {
-
-  RuntimeHealthService,
-
-  LOCK_DIAGNOSTIC_GRACE_MS,
-
-  EXPECTED_SCHEMA_VERSION,
-
-} from "../../src/services/runtime-health.js";
-
-import { runtimeHealthRoutes } from "../../src/api/routes/runtime-health.js";
-
-import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
-
-import { ErrorCode } from "@personahub/shared/errors";
-
-import {
-
-  IssueStatus,
-
-  RunRole,
-
-  RunStatus,
-
-  RunDispatchSource,
-
-  AdapterStatus,
-
-  AgentCapability,
-
-} from "@personahub/shared/types";
-
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import Fastify from "fastify";
+import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
+import {
+  RuntimeHealthService,
+  LOCK_DIAGNOSTIC_GRACE_MS,
+  EXPECTED_SCHEMA_VERSION,
+} from "../../src/services/runtime-health.js";
+import { runtimeHealthRoutes } from "../../src/api/routes/runtime-health.js";
+import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
+import { ErrorCode } from "@personahub/shared/errors";
+import {
+  IssueStatus,
+  RunRole,
+  RunStatus,
+  RunDispatchSource,
+  AdapterStatus,
+  AgentCapability,
+} from "@personahub/shared/types";
 import { DEFAULT_EXECUTION_TIMEOUT_MS } from "../../src/runtime/types.js";
   ```
   </details>
@@ -8409,24 +7685,15 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-);
-
-}
-
-
-
-function makeHealthService(services: TestServices, expectedVersion = EXPECTED_SCHEMA_VERSION) {
-
-  return new RuntimeHealthService(
-
-    services.db,
-
-    services.workspaceRepo,
-
-    services.agentConfigRepo,
-
-    services.adapterWorkspaceStatusRepo,
-
+);
+}
+
+function makeHealthService(services: TestServices, expectedVersion = EXPECTED_SCHEMA_VERSION) {
+  return new RuntimeHealthService(
+    services.db,
+    services.workspaceRepo,
+    services.agentConfigRepo,
+    services.adapterWorkspaceStatusRepo,
     services.runRepo,
   ```
   </details>
@@ -8474,16 +7741,11 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-Test Files  6 passed (6)
-
-Tests  125 passed (125)
-
-Duration  15.48s (transform 1.15s, setup 0ms, collect 6.74s, tests 6.16s, environment 1ms, prepare 1.03s)
-
-=== TYPECHECK ===
-
-> @personahub/server@0.1.0 typecheck
-
+Test Files  6 passed (6)
+Tests  125 passed (125)
+Duration  15.48s (transform 1.15s, setup 0ms, collect 6.74s, tests 6.16s, environment 1ms, prepare 1.03s)
+=== TYPECHECK ===
+> @personahub/server@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -8539,30 +7801,18 @@ return !activeValid || !stepsPreview.hasValidator;
   <details><summary>tool output</summary>
 
   ```text
-[31;1mnpm error location D:\Projects\personahub\web[0m
-
-[31;1mnpm error command failed[0m
-
-[31;1mnpm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit[0m
-
-=== WEB TESTS ===
-
-Test Files  2 failed (2)
-
-Tests  no tests
-
-Duration  2.52s (transform 419ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 566ms)
-
-=== LINT ===
-
-=== FORMAT ===
-
-Checking formatting...
-
-[31;1m[[33mwarn[39m] web/src/f008-runtime-health.test.tsx[0m
-
-[31;1m[[33mwarn[39m] server/tests/integration/runtime-health.test.ts[0m
-
+[31;1mnpm error location D:\Projects\personahub\web[0m
+[31;1mnpm error command failed[0m
+[31;1mnpm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit[0m
+=== WEB TESTS ===
+Test Files  2 failed (2)
+Tests  no tests
+Duration  2.52s (transform 419ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 566ms)
+=== LINT ===
+=== FORMAT ===
+Checking formatting...
+[31;1m[[33mwarn[39m] web/src/f008-runtime-health.test.tsx[0m
+[31;1m[[33mwarn[39m] server/tests/integration/runtime-health.test.ts[0m
 [31;1m[[33mwarn[39m] Code style issues found in 2 files. Run Prettier with --write to fix.[0m
   ```
   </details>
@@ -8611,24 +7861,15 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[90mserver/src/db/migrations.ts[39m 15ms (unchanged)
-
-[90mserver/src/services/runtime-health.ts[39m 38ms (unchanged)
-
-[90mserver/tests/integration/migration-v10.test.ts[39m 7ms (unchanged)
-
-=== WEB TYPECHECK ===
-
-> @personahub/web@0.1.0 typecheck
-
-> tsc --noEmit
-
-
-
-=== SERVER TYPECHECK ===
-
-> @personahub/server@0.1.0 typecheck
-
+[90mserver/src/db/migrations.ts[39m 15ms (unchanged)
+[90mserver/src/services/runtime-health.ts[39m 38ms (unchanged)
+[90mserver/tests/integration/migration-v10.test.ts[39m 7ms (unchanged)
+=== WEB TYPECHECK ===
+> @personahub/web@0.1.0 typecheck
+> tsc --noEmit
+
+=== SERVER TYPECHECK ===
+> @personahub/server@0.1.0 typecheck
 > tsc --noEmit
   ```
   </details>
@@ -8641,14 +7882,10 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-Test Files  2 passed (2)
-
-Tests  33 passed (33)
-
-Duration  7.05s (transform 406ms, setup 1.13s, collect 2.11s, tests 2.30s, environment 4.55s, prepare 600ms)
-
-=== SERVER F008 TESTS ===
-
+Test Files  2 passed (2)
+Tests  33 passed (33)
+Duration  7.05s (transform 406ms, setup 1.13s, collect 2.11s, tests 2.30s, environment 4.55s, prepare 600ms)
+=== SERVER F008 TESTS ===
 No test files found, exiting with code 1
   ```
   </details>
@@ -8665,10 +7902,8 @@ web 33/33 通过。server 测试在错误目录跑了，重跑：
   <details><summary>tool output</summary>
 
   ```text
-Test Files  9 passed (9)
-
-Tests  205 passed (205)
-
+Test Files  9 passed (9)
+Tests  205 passed (205)
 Duration  17.76s (transform 1.28s, setup 0ms, collect 6.63s, tests 7.08s, environment 2ms, prepare 1.73s)
   ```
   </details>
@@ -8720,12 +7955,9 @@ Duration  17.76s (transform 1.28s, setup 0ms, collect 6.63s, tests 7.08s, enviro
   <details><summary>tool output</summary>
 
   ```text
-| active-contract-migration | CLAUDE��ʷǨ�ƿ��ܴ�������Ч��Լ | Medium | ��ȷ�� | ���� | ����ȱ�� | ���޸� | Ҫ��Ǩ��ǰ���ಢ��������Լ���Զ�����·�� | `structure-improvement-plan.md::2.3` | 1 | 1 | active-contract-archived |
-
-| unenforced-feature-gate | ����check�ű�δ����ǿ������ | Medium | ��ȷ�� | ���� | ����ȱ�� | ���޸� | ͳһnpm run verify������SOP��δ��CI | `structure-improvement-plan.md::2.2/2.4/4` | 1 | 1 | unenforced-quality-gate |
-
-| runtime-artifacts-scattered | ��־��SQLite�����в���ɢ���ڸ�Ŀ¼��serverĿ¼ | Medium | ���� | ���� | ԭ������© | ���޸� | ���Ӷ�����`.local/`���з�����������·����Ǩ��ǰ��֤Լ�� | `structure-improvement-plan.md::1.1/2.5` | 1 | 1 | runtime-artifact-boundary |
-
+| active-contract-migration | CLAUDE��ʷǨ�ƿ��ܴ�������Ч��Լ | Medium | ��ȷ�� | ���� | ����ȱ�� | ���޸� | Ҫ��Ǩ��ǰ���ಢ��������Լ���Զ�����·�� | `structure-improvement-plan.md::2.3` | 1 | 1 | active-contract-archived |
+| unenforced-feature-gate | ����check�ű�δ����ǿ������ | Medium | ��ȷ�� | ���� | ����ȱ�� | ���޸� | ͳһnpm run verify������SOP��δ��CI | `structure-improvement-plan.md::2.2/2.4/4` | 1 | 1 | unenforced-quality-gate |
+| runtime-artifacts-scattered | ��־��SQLite�����в���ɢ���ڸ�Ŀ¼��serverĿ¼ | Medium | ���� | ���� | ԭ������© | ���޸� | ���Ӷ�����`.local/`���з�����������·����Ǩ��ǰ��֤Լ�� | `structure-improvement-plan.md::1.1/2.5` | 1 | 1 | runtime-artifact-boundary |
 | plan-metadata-estimates-conflict | ����/�޶����ڼ������ĵ��������빤ʱ��Χ����ì�� | Low | �ĵ�׼ȷ�� | ֢״ | ԭ���� | ���޸� | ͳһ���ڣ���������
 …[truncated]
   ```
@@ -8816,16 +8048,11 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-[main d3df237] fix(f008): align acknowledge-gate precheck with server logic
-
- 2 files changed, 32 insertions(+), 2 deletions(-)
-
-[main 98cc8bf] fix(f008): unique react keys for same-code diagnostics
-
- 2 files changed, 41 insertions(+), 1 deletion(-)
-
-[main 36d4774] fix(f008): single source of truth for expected schema version
-
+[main d3df237] fix(f008): align acknowledge-gate precheck with server logic
+ 2 files changed, 32 insertions(+), 2 deletions(-)
+[main 98cc8bf] fix(f008): unique react keys for same-code diagnostics
+ 2 files changed, 41 insertions(+), 1 deletion(-)
+[main 36d4774] fix(f008): single source of truth for expected schema version
  4 files changed, 23 insertions(+), 11 deletions(-)
   ```
   </details>
@@ -8889,16 +8116,11 @@ Edit applied successfully.
 
   ```text
 warning: in the working copy of 'docs/reviews/CURRENT-code.md', LF will be replaced by CRLF the next time Git touches it
- 1 file changed, 198 insertions(+)
-
- create mode 100644 docs/reviews/CURRENT-code.md
-
-=== �˶Ժ�ɾ�� ===
-
-rm 'docs/reviews/CURRENT-code.md'
-
- 1 file changed, 198 deletions(-)
-
+ 1 file changed, 198 insertions(+)
+ create mode 100644 docs/reviews/CURRENT-code.md
+=== �˶Ժ�ɾ�� ===
+rm 'docs/reviews/CURRENT-code.md'
+ 1 file changed, 198 deletions(-)
  delete mode 100644 docs/reviews/CURRENT-code.md
   ```
   </details>
@@ -8928,24 +8150,18 @@ rm 'docs/reviews/CURRENT-code.md'
   <details><summary>tool output</summary>
 
   ```text
-Checking formatting...
-
-All matched files use Prettier code style!
-
-=== BUILD ===
-
-�?built in 6.59s
-
-=== LOG ===
-
+Checking formatting...
+All matched files use Prettier code style!
+=== BUILD ===
+�?built in 6.59s
+=== LOG ===
 a293263 docs(reviews): remove closed CURRENT-code per convergence protocol
 ae9f648 docs(reviews): close F008 code review cycle (round 2 fix-verification)
 36d4774 fix(f008): single source of truth for expected schema version
 98cc8bf fix(f008): unique react keys for same-code diagnostics
 d3df237 fix(f008): align acknowledge-gate precheck with server logic
 5ef5055 feat(f008): add workflow template admin & runtime health
-=== ʣ��δ�ύ ===
-
+=== ʣ��δ�ύ ===
  M docs/reviews/RETROSPECTIVE.md
  M structure-improvement-plan.md
   ```
@@ -9047,7 +8263,7 @@ return `${diagnostic.code}:${diagnostic.workspace_id ?? "global"}:${diagnostic.d
    - validation_dispatch_overdue: `Issue ${issue.id} ...` + overdue_ms ✓ 唯一
    - no_available_adapter: "Workspace has no adapter with effective status Available."——固定文案！每 workspace 一条 → 同 workspace 不会重复 ✓
    - schema_version_mismatch: 全局一条（workspace_id null）✓
-
+   
    所以 detail 确实唯一。✓ 但这是一个**隐式契约**：key 的唯一性依赖后端 detail 文案包含记录 id。如果后端将来改 detail 文案（比如 waiting_for_recovery 的 detail 不再含 run.id），会重新引入重复 key。有注释说明但无测试锁定后端 detail 格式。测试锁的是前端"两条不同 detail 不报警告"。如果后端让 detail 相同，测试不会红。这算一个潜在弱点，但当前实现正确。
 
 2. **detail 里有特殊字符**？key 只是字符串拼接，React key 是字符串即可。✓
@@ -9193,44 +8409,25 @@ pendingCreate 存在 → confirmCreate；否则 confirmActivate。确认框也�
   <details><summary>tool output</summary>
 
   ```text
-expect(f.repo.getActiveByIssueType("coding")!.id).toBe(activeBefore);
-
-  });
-
-});
-
-
-
-describe("F008 Phase 3: end-to-end validation disable (T032)", () => {
-
-  let services: TestServices;
-
-  let tempDir: string;
-
-  beforeEach(() => {
-
-    tempDir = createTempDir();
-
-    services = createTestServices();
-
-  });
-
-  afterEach(() => {
-
-    disposeTestServices(services);
-
-  });
-
-
-
-  it("T032: after enabling a no-validator template, a new Issue's default template would not trigger validation", () => {
-
-    setStepsJson(services.db, DEFAULT_TEMPLATE_ID, WITH_VALIDATOR);
-
-    // Activate a no-validator template as the new default.
-
-    const adminRepo = new AdminAuditEventRepository(services.db);
-
+expect(f.repo.getActiveByIssueType("coding")!.id).toBe(activeBefore);
+  });
+});
+
+describe("F008 Phase 3: end-to-end validation disable (T032)", () => {
+  let services: TestServices;
+  let tempDir: string;
+  beforeEach(() => {
+    tempDir = createTempDir();
+    services = createTestServices();
+  });
+  afterEach(() => {
+    disposeTestServices(services);
+  });
+
+  it("T032: after enabling a no-validator template, a new Issue's default template would not trigger validation", () => {
+    setStepsJson(services.db, DEFAULT_TEMPLATE_ID, WITH_VALIDATOR);
+    // Activate a no-validator template as the new default.
+    const adminRepo = new AdminAuditEventRepository(services.db);
     const admin = new WorkflowTemplateAdminService(services.workflowTemplateRepo, adminRepo, services.d
 …[truncated]
   ```
@@ -9315,38 +8512,22 @@ T032 测试确实不是真正端到端（只验证了 selectValidator 结果，�
   <details><summary>tool output</summary>
 
   ```text
-export const SCHEMA_V4 = `
-
-ALTER TABLE runs ADD COLUMN role TEXT NOT NULL DEFAULT 'implementation';
-
-ALTER TABLE runs ADD COLUMN workflow_step TEXT;
-
-ALTER TABLE runs ADD COLUMN validation_round INTEGER;
-
-ALTER TABLE runs ADD COLUMN dispatch_source TEXT NOT NULL DEFAULT 'user_explicit';
-
-ALTER TABLE runs ADD COLUMN final_message TEXT;
-
-ALTER TABLE runs ADD COLUMN adapter_identity_json TEXT;
-
-
-
-ALTER TABLE issues ADD COLUMN blocked_reason_code TEXT;
-
-ALTER TABLE issues ADD COLUMN blocked_reason_message TEXT;
-
-
-
-CREATE TABLE IF NOT EXISTS evidence_summaries (
-
-  id TEXT PRIMARY KEY,
-
-  issue_id TEXT NOT NULL UNIQUE REFERENCES issues(id),
-
-  thread_id TEXT NOT NULL REFERENCES threads(id),
-
-  validator_run_id TEXT NOT NULL REFERENCES runs(id),
-
+export const SCHEMA_V4 = `
+ALTER TABLE runs ADD COLUMN role TEXT NOT NULL DEFAULT 'implementation';
+ALTER TABLE runs ADD COLUMN workflow_step TEXT;
+ALTER TABLE runs ADD COLUMN validation_round INTEGER;
+ALTER TABLE runs ADD COLUMN dispatch_source TEXT NOT NULL DEFAULT 'user_explicit';
+ALTER TABLE runs ADD COLUMN final_message TEXT;
+ALTER TABLE runs ADD COLUMN adapter_identity_json TEXT;
+
+ALTER TABLE issues ADD COLUMN blocked_reason_code TEXT;
+ALTER TABLE issues ADD COLUMN blocked_reason_message TEXT;
+
+CREATE TABLE IF NOT EXISTS evidence_summaries (
+  id TEXT PRIMARY KEY,
+  issue_id TEXT NOT NULL UNIQUE REFERENCES issues(id),
+  thread_id TEXT NOT NULL REFERENCES threads(id),
+  validator_run_id TEXT NOT NULL REFERENCES runs(id),
   implementation_run_id TEXT NOT NULL REFERENCES
 …[truncated]
   ```
@@ -9391,12 +8572,12 @@ tasks.md T032 要求"端到端断言——关闭验证的模板启用后，新�
 <path>D:\Projects\personahub\web\src\components\workflow-template\WorkflowTemplateAdminDialog.tsx</path>
 <type>file</type>
 <content>
-60:
+60: 
 61:   const detailQuery = useWorkflowTemplate(selectedId);
 62:   const createVersion = useCreateWorkflowTemplateVersion();
 63:   const activate = useActivateWorkflowTemplate();
 64:   const deactivate = useDeactivateWorkflowTemplate();
-65:
+65: 
 66:   function closeEditor() {
 67:     setEditorOpen(false);
 68:     setPendingCreate(null);
@@ -9406,7 +8587,7 @@ tasks.md T032 要求"端到端断言——关闭验证的模板启用后，新�
 72:     setAcknowledgeError(null);
 73:     setError(null);
 74:   }
-75:
+75: 
 76:   function openEditor(source: WorkflowTemplateDetail | WorkflowTemplateVersionSummary) {
 77:     setEditorName(source.name);
 78:     setEditorSt
@@ -9543,24 +8724,15 @@ if (!current || current.status !== "active") return;
   <details><summary>tool output</summary>
 
   ```text
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-
-import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
-
-import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, AdapterStatus, ActorType, AgentCapability } from "@personahub/shared/types";
-
-
-
-function setupFixture(services: TestServices, tempDir: string) {
-
-  const project = services.projectService.create("Test");
-
-  services.workspaceService.bind(project.id, tempDir);
-
-  const { issue } = services.issueService.create(project.id, { title: "T", goal: "G" });
-
-  services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Running, updatedAt: new Date().toISOString() });
-
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
+import { IssueStatus, RunRole, RunDispatchSource, RunStatus, ThreadEventType, AdapterStatus, ActorType, AgentCapability } from "@personahub/shared/types";
+
+function setupFixture(services: TestServices, tempDir: string) {
+  const project = services.projectService.create("Test");
+  services.workspaceService.bind(project.id, tempDir);
+  const { issue } = services.issueService.create(project.id, { title: "T", goal: "G" });
+  services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Running, updatedAt: new Date().toISOString() });
   const implAdapter = services.agentConfigRepo.create({ project_id: project.
 …[truncated]
   ```
@@ -9594,22 +8766,14 @@ function setupFixture(services: TestServices, tempDir: string) {
   <details><summary>tool output</summary>
 
   ```text
-recovery-service.ts:35
-
-workflow-service.ts:55
-
-workflow-service.ts:98
-
-===
-
-     * synchronously right after Phase A, in the same requestValidation()
-
-  requestValidation(issueId: string, implementationRunId: string): Run | null {
-
-          ValidationBlockReason.WorkflowConfigurationInvalid,
-
-          ValidationBlockReason.WorkflowConfigurationInvalid,
-
+recovery-service.ts:35
+workflow-service.ts:55
+workflow-service.ts:98
+===
+     * synchronously right after Phase A, in the same requestValidation()
+  requestValidation(issueId: string, implementationRunId: string): Run | null {
+          ValidationBlockReason.WorkflowConfigurationInvalid,
+          ValidationBlockReason.WorkflowConfigurationInvalid,
           ValidationBlockReason.WorkflowConfigurationInvalid,
   ```
   </details>
@@ -9832,28 +8996,17 @@ it("T032: after enabling a no-validator template, a completing implementation Ru
   <details><summary>tool output</summary>
 
   ```text
-L145: listByIssue(issueId: string): Run[] {
-
-L153: listByIssueAndPurpose(issueId: string, purpose: RunPurposeType): Run[] {
-
-L160: listQueuedByWorkspace(workspaceId: string): Run[] {
-
-L167: listRunning(): Run[] {
-
-=== selectValidator usages in test file ===
-
-L12: import { ValidationBlockReason } from "@personahub/shared/types";
-
-L13: import { selectValidator } from "../../src/services/validation/validator-selector.js";
-
-L145: // selectValidator returns WorkflowConfigurationInvalid iff the template
-
-L153: const result = selectValidator({ workflowTemplate: template, availableValidators: [] });
-
-L154: selectorEnabled = result.reason !== ValidationBlockReason.WorkflowConfigurationInvalid;
-
-L654: const result = selectValidator({ workflowTemplate: template, availableValidators: [] });
-
+L145: listByIssue(issueId: string): Run[] {
+L153: listByIssueAndPurpose(issueId: string, purpose: RunPurposeType): Run[] {
+L160: listQueuedByWorkspace(workspaceId: string): Run[] {
+L167: listRunning(): Run[] {
+=== selectValidator usages in test file ===
+L12: import { ValidationBlockReason } from "@personahub/shared/types";
+L13: import { selectValidator } from "../../src/services/validation/validator-selector.js";
+L145: // selectValidator returns WorkflowConfigurationInvalid iff the template
+L153: const result = selectValidator({ workflowTemplate: template, availableValidators: [] });
+L154: selectorEnabled = result.reason !== ValidationBlockReason.WorkflowConfigurationInvalid;
+L654: const result = selectValidator({ workflowTemplate: template, availableValidators: [] });
 L656: exp
 …[truncated]
   ```
@@ -9923,20 +9076,13 @@ PRIORITY-BASED ACTION GUIDELINES:
   <details><summary>tool output</summary>
 
   ```text
-�?[39m tests/integration/workflow-template-admin.test.ts (36 tests | 1 failed) 944ms
-
-�?[39m F008 Phase 1: detail projection (T010/T011/T012/T013) > T012: invalid steps_json yields null validation_enabled + parse_error, request does not fail 6ms
-
-�?[39m F008 Phase 3: audit atomicity (T031/T031b) > T031b: audit insert failure rolls back the template change too 7ms
-
-⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
-
-FAIL  tests/integration/workflow-template-admin.test.ts > F008 Phase 3: end-to-end validation disable (T032) > T032: after enabling a no-validator template, a completing implementation Run does not trigger validation
-
-Test Files  1 failed (1)
-
-Tests  1 failed | 35 passed (36)
-
+�?[39m tests/integration/workflow-template-admin.test.ts (36 tests | 1 failed) 944ms
+�?[39m F008 Phase 1: detail projection (T010/T011/T012/T013) > T012: invalid steps_json yields null validation_enabled + parse_error, request does not fail 6ms
+�?[39m F008 Phase 3: audit atomicity (T031/T031b) > T031b: audit insert failure rolls back the template change too 7ms
+⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
+FAIL  tests/integration/workflow-template-admin.test.ts > F008 Phase 3: end-to-end validation disable (T032) > T032: after enabling a no-validator template, a completing implementation Run does not trigger validation
+Test Files  1 failed (1)
+Tests  1 failed | 35 passed (36)
 Duration  6.41s (transform 1.04s, setup 0ms, collect 4.90s, tests 944ms, environment 0ms, prepare 202ms)
   ```
   </details>
@@ -9948,14 +9094,10 @@ Duration  6.41s (transform 1.04s, setup 0ms, collect 4.90s, tests 944ms, environ
   <details><summary>tool output</summary>
 
   ```text
-�?expected 'Blocked' to be 'Validating' // Object.is equality
-
-AssertionError: expected 'Blocked' to be 'Validating' // Object.is equality
-
-Expected: "Validating"
-
-Received: "Blocked"
-
+�?expected 'Blocked' to be 'Validating' // Object.is equality
+AssertionError: expected 'Blocked' to be 'Validating' // Object.is equality
+Expected: "Validating"
+Received: "Blocked"
 668|     services.issueRepo.updateStatus(control.id, { status: IssueStatus.�?    669|     services.validationWorkflowService.requestValidation(control.id, m�?    670|     expect(services.issueRepo.getById(control.id)!.status).toBe(IssueS�?       |                                                            ^
   ```
   </details>
@@ -10008,7 +9150,7 @@ validation-workflow.test.ts 的 setupPassEvidence 写了 HandoffCreated + file c
 146:           "Failed to build policy snapshot",
 147:           pendingEvents,
 148:         );
-149:
+149:         
 …[truncated]
   ```
   </details>
@@ -10088,18 +9230,12 @@ Blocked 一定来自 blockIssueInTx。三个路径：adapter_identity 缺失 / w
   <details><summary>tool output</summary>
 
   ```text
-adapter_identity?: AdapterIdentitySnapshot | null;
-
-  adapter_identity_json: string | null;
-
-    adapter_identity: row.adapter_identity_json
-
-      ? (JSON.parse(row.adapter_identity_json) as AdapterIdentitySnapshot)
-
-  create(input: RunCreateInput): Run {
-
-    const identityJson = input.adapter_identity ? JSON.stringify(input.adapter_identity) : null;
-
+adapter_identity?: AdapterIdentitySnapshot | null;
+  adapter_identity_json: string | null;
+    adapter_identity: row.adapter_identity_json
+      ? (JSON.parse(row.adapter_identity_json) as AdapterIdentitySnapshot)
+  create(input: RunCreateInput): Run {
+    const identityJson = input.adapter_identity ? JSON.stringify(input.adapter_identity) : null;
         `INSERT INTO runs (id, issue_id, thread_id, workspace_id, adapter_config_id, status, failure_reason, instructions, role, workflow_step, validation_round, dispatch_source, adapter_identity_json, started_at, completed_at, exit_code, error_message, purpose, context_source_run_id, node_run_id, created_at, updated_at)
   ```
   </details>
@@ -10126,24 +9262,15 @@ adapter_identity?: AdapterIdentitySnapshot | null;
   <details><summary>tool output</summary>
 
   ```text
-[31;1mnode:internal/modules/run_main:122[0m
-
-[31;1m    triggerUncaughtException([0m
-
-[31;1m    ^[0m
-
-[31;1mError [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Georg\AppData\Local\Temp\server\tests\helpers.js' imported from C:\Users\Georg\AppData\Local\Temp\f008-debug.mts[0m
-
-[31;1m    at finalizeResolution (node:internal/modules/esm/resolve:275:11)[0m
-
-[31;1m    at moduleResolve (node:internal/modules/esm/resolve:860:10)[0m
-
-[31;1m    at defaultResolve (node:internal/modules/esm/resolve:984:11)[0m
-
-[31;1m    at nextResolve (node:internal/modules/esm/hooks:748:28)[0m
-
-[31;1m    at resolveBase (file:///D:/Projects/personahub/node_modules/tsx/dist/register-D5KIhaFJ.mjs:2:8511)[0m
-
+[31;1mnode:internal/modules/run_main:122[0m
+[31;1m    triggerUncaughtException([0m
+[31;1m    ^[0m
+[31;1mError [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Georg\AppData\Local\Temp\server\tests\helpers.js' imported from C:\Users\Georg\AppData\Local\Temp\f008-debug.mts[0m
+[31;1m    at finalizeResolution (node:internal/modules/esm/resolve:275:11)[0m
+[31;1m    at moduleResolve (node:internal/modules/esm/resolve:860:10)[0m
+[31;1m    at defaultResolve (node:internal/modules/esm/resolve:984:11)[0m
+[31;1m    at nextResolve (node:internal/modules/esm/hooks:748:28)[0m
+[31;1m    at resolveBase (file:///D:/Projects/personahub/node_modules/tsx/dist/register-D5KIhaFJ.mjs:2:8511)[0m
 [31;1m    at async resolveDirectory (file:///D:/Projects/personahub/node_modules/tsx/di
 …[truncated]
   ```
@@ -10161,12 +9288,9 @@ adapter_identity?: AdapterIdentitySnapshot | null;
   <details><summary>tool output</summary>
 
   ```text
-after create: status= Inbox thread= thr_01KZKB7ZSVGS1PHJ2436WXNVXX runs= []
-
-implRun reread: status= completed identity= {"adapter_config_id":"adp_01KZKB7ZSWQVTH8ZRCHM0E198P","name":"Impl","cli_provider":"codex","default_model":"gpt-5"}
-
-template= wft_coding_default policy= vpl_coding_default
-
+after create: status= Inbox thread= thr_01KZKB7ZSVGS1PHJ2436WXNVXX runs= []
+implRun reread: status= completed identity= {"adapter_config_id":"adp_01KZKB7ZSWQVTH8ZRCHM0E198P","name":"Impl","cli_provider":"codex","default_model":"gpt-5"}
+template= wft_coding_default policy= vpl_coding_default
 requestValidation result= null after status= Blocked blocked= validator_unavailable blockedMsg= No available validator adapter config found for this project due= 2026-08-09T13:26:23.806Z
   ```
   </details>
@@ -10225,10 +9349,8 @@ validation-workflow.test.ts 的"creates validator run and transitions issue to V
   <details><summary>tool output</summary>
 
   ```text
-ValidationBlockReason.WorkflowConfigurationInvalid,
-
-          ValidationBlockReason.WorkflowConfigurationInvalid,
-
+ValidationBlockReason.WorkflowConfigurationInvalid,
+          ValidationBlockReason.WorkflowConfigurationInvalid,
       const validatorRun = this.runRepo.create({
   ```
   </details>
@@ -10240,10 +9362,8 @@ ValidationBlockReason.WorkflowConfigurationInvalid,
   <details><summary>tool output</summary>
 
   ```text
-ValidationBlockReason.WorkflowConfigurationInvalid,
-
-          ValidationBlockReason.WorkflowConfigurationInvalid,
-
+ValidationBlockReason.WorkflowConfigurationInvalid,
+          ValidationBlockReason.WorkflowConfigurationInvalid,
       const validatorRun = this.runRepo.create({
   ```
   </details>
@@ -10255,52 +9375,29 @@ ValidationBlockReason.WorkflowConfigurationInvalid,
   <details><summary>tool output</summary>
 
   ```text
-import type Database from "better-sqlite3";
-
-import type {
-
-  AdapterConfig,
-
-  AdapterIdentitySnapshot,
-
-  Run,
-
-  ThreadEvent,
-
-  ValidationPolicySnapshot,
-
-} from "@personahub/shared/types";
-
-import {
-
-  ActorType,
-
-  AdapterStatus,
-
-  AgentCapability,
-
-  IssueStatus,
-
-  RunDispatchSource,
-
-  RunRole,
-
-  RunStatus,
-
-  ThreadEventType,
-
-  ValidationBlockReason,
-
-} from "@personahub/shared/types";
-
-import type { AgentConfigRepository } from "../../repositories/agent-config.js";
-
-import { hasCapability } from "../../repositories/agent-config.js";
-
-import { toPublicAdapter } from "../../repositories/agent-config-dto.js";
-
-import type { AdapterWorkspaceStatusRepository } from "../../repositories/adapter-workspace-status.js";
-
+import type Database from "better-sqlite3";
+import type {
+  AdapterConfig,
+  AdapterIdentitySnapshot,
+  Run,
+  ThreadEvent,
+  ValidationPolicySnapshot,
+} from "@personahub/shared/types";
+import {
+  ActorType,
+  AdapterStatus,
+  AgentCapability,
+  IssueStatus,
+  RunDispatchSource,
+  RunRole,
+  RunStatus,
+  ThreadEventType,
+  ValidationBlockReason,
+} from "@personahub/shared/types";
+import type { AgentConfigRepository } from "../../repositories/agent-config.js";
+import { hasCapability } from "../../repositories/agent-config.js";
+import { toPublicAdapter } from "../../repositories/agent-config-dto.js";
+import type { AdapterWorkspaceStatusRepository } from "../../repositories/adapter-workspace-status.js";
 import type { FileChangeRepository } from "../../repositories/file
 …[truncated]
   ```
@@ -10313,52 +9410,29 @@ import type { FileChangeRepository } from "../../repositories/file
   <details><summary>tool output</summary>
 
   ```text
-import type Database from "better-sqlite3";
-
-import type {
-
-  AdapterConfig,
-
-  AdapterIdentitySnapshot,
-
-  Run,
-
-  ThreadEvent,
-
-  ValidationPolicySnapshot,
-
-} from "@personahub/shared/types";
-
-import {
-
-  ActorType,
-
-  AdapterStatus,
-
-  AgentCapability,
-
-  IssueStatus,
-
-  RunDispatchSource,
-
-  RunRole,
-
-  RunStatus,
-
-  ThreadEventType,
-
-  ValidationBlockReason,
-
-} from "@personahub/shared/types";
-
-import type { AgentConfigRepository } from "../../repositories/agent-config.js";
-
-import { hasCapability } from "../../repositories/agent-config.js";
-
-import { toPublicAdapter } from "../../repositories/agent-config-dto.js";
-
-import type { AdapterWorkspaceStatusRepository } from "../../repositories/adapter-workspace-status.js";
-
+import type Database from "better-sqlite3";
+import type {
+  AdapterConfig,
+  AdapterIdentitySnapshot,
+  Run,
+  ThreadEvent,
+  ValidationPolicySnapshot,
+} from "@personahub/shared/types";
+import {
+  ActorType,
+  AdapterStatus,
+  AgentCapability,
+  IssueStatus,
+  RunDispatchSource,
+  RunRole,
+  RunStatus,
+  ThreadEventType,
+  ValidationBlockReason,
+} from "@personahub/shared/types";
+import type { AgentConfigRepository } from "../../repositories/agent-config.js";
+import { hasCapability } from "../../repositories/agent-config.js";
+import { toPublicAdapter } from "../../repositories/agent-config-dto.js";
+import type { AdapterWorkspaceStatusRepository } from "../../repositories/adapter-workspace-status.js";
 import type { FileChangeRepository } from "../../repositories/file
 …[truncated]
   ```
@@ -10374,38 +9448,22 @@ import type { FileChangeRepository } from "../../repositories/file
   <details><summary>tool output</summary>
 
   ```text
-L34
-
-L121
-
-L139
-
-L201
-
-      } else {
-
-        const record = this.agentConfigRepo.getById(adapter.adapterConfigId);
-
-        if (!record || record.project_id !== issue.project_id) {
-
-          return { ok: false, reason: "adapter_invalid", message: "Adapter config not found for this project." };
-
-        }
-
-        const override = this.adapterWorkspaceStatusRepo.get(record.id, issue.workspace_id);
-
-        if (effectiveAdapterStatus(record, override) !== AdapterStatus.Available) {
-
-          return { ok: false, reason: "adapter_invalid", message: "Adapter is not available." };
-
-        }
-
-        if (!hasCapability(record, AgentCapability.Validator)) {
-
-          return { ok: false, reason: "adapter_invalid", message: "Adapter does not have validator capability." };
-
-        }
-
+L34
+L121
+L139
+L201
+      } else {
+        const record = this.agentConfigRepo.getById(adapter.adapterConfigId);
+        if (!record || record.project_id !== issue.project_id) {
+          return { ok: false, reason: "adapter_invalid", message: "Adapter config not found for this project." };
+        }
+        const override = this.adapterWorkspaceStatusRepo.get(record.id, issue.workspace_id);
+        if (effectiveAdapterStatus(record, override) !== AdapterStatus.Available) {
+          return { ok: false, reason: "adapter_invalid", message: "Adapter is not available." };
+        }
+        if (!hasCapability(record, AgentCapability.Validator)) {
+          return { ok: false, reason: "adapter_invalid", message: "Adapter does not have validator capability." };
+        }
         s
 …[truncated]
   ```
@@ -10418,38 +9476,22 @@ L201
   <details><summary>tool output</summary>
 
   ```text
-let selected: AdapterConfig;
-
-      let dispatchSource: RunDispatchSource;
-
-      const userInstructions = adapter.mode === "explicit" ? adapter.userInstructions : null;
-
-      if (adapter.mode === "auto") {
-
-        const wf = this.workflowTemplateRepo.getById(issue.workflow_template_id);
-
-        if (!wf) {
-
-          this.blocker.blockIssueInTx(
-
-            issue,
-
-            ValidationBlockReason.WorkflowConfigurationInvalid,
-
-            "Workflow template not found",
-
-            pendingEvents,
-
-          );
-
-          return { ok: false, reason: "blocked" };
-
-        }
-
-        // Workspace-aware: candidates are every Project adapter (not
-
-        // pre-filtered by global status) so one with a workspace-specific
-
+let selected: AdapterConfig;
+      let dispatchSource: RunDispatchSource;
+      const userInstructions = adapter.mode === "explicit" ? adapter.userInstructions : null;
+      if (adapter.mode === "auto") {
+        const wf = this.workflowTemplateRepo.getById(issue.workflow_template_id);
+        if (!wf) {
+          this.blocker.blockIssueInTx(
+            issue,
+            ValidationBlockReason.WorkflowConfigurationInvalid,
+            "Workflow template not found",
+            pendingEvents,
+          );
+          return { ok: false, reason: "blocked" };
+        }
+        // Workspace-aware: candidates are every Project adapter (not
+        // pre-filtered by global status) so one with a workspace-specific
         // Available override still qualifies even if globally Unkn
 …[truncated]
   ```
@@ -10572,10 +9614,8 @@ PRIORITY-BASED ACTION GUIDELINES:
   <details><summary>tool output</summary>
 
   ```text
-Test Files  1 passed (1)
-
-Tests  36 passed (36)
-
+Test Files  1 passed (1)
+Tests  36 passed (36)
 Duration  6.03s (transform 1.06s, setup 0ms, collect 4.47s, tests 950ms, environment 0ms, prepare 220ms)
   ```
   </details>
@@ -10692,7 +9732,7 @@ L356
 368:     await waitFor(() => {
 369:       expect(screen.getByText("v2")).toBeInTheDocument();
 370:     });
-371:     fireEvent.click(screen.getByRole("button", { name:
+371:     fireEvent.click(screen.getByRole("button", { name: 
 …[truncated]
   ```
   </details>
@@ -10739,21 +9779,14 @@ PRIORITY-BASED ACTION GUIDELINES:
   <details><summary>tool output</summary>
 
   ```text
-[90msrc/components/workflow-template/WorkflowTemplateAdminDialog.tsx[39m 558ms (unchanged)
-
-[90msrc/f008-workflow-template-admin.test.tsx[39m 84ms (unchanged)
-
-[90msrc/f008-runtime-health.test.tsx[39m 27ms (unchanged)
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "server/tests/integration/workflow-template-admin.test.ts".[0m
-
-�?[39m src/f008-workflow-template-admin.test.tsx (16 tests | 1 failed) 2724ms
-
-�?[39m T052/T053: save draft vs save & enable, and the disable-validation confirmation gate > surfaces the LAST_ACTIVE_TEMPLATE rejection instead of failing silently 77ms
-
-⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
-
-FAIL  src/f008-workflow-template-admin.test.tsx > T052/T053: save draft vs save & enable, and the disable-validation confirmation gate > activating a
+[90msrc/components/workflow-template/WorkflowTemplateAdminDialog.tsx[39m 558ms (unchanged)
+[90msrc/f008-workflow-template-admin.test.tsx[39m 84ms (unchanged)
+[90msrc/f008-runtime-health.test.tsx[39m 27ms (unchanged)
+[31;1m[[31merror[39m] No files matching the pattern were found: "server/tests/integration/workflow-template-admin.test.ts".[0m
+�?[39m src/f008-workflow-template-admin.test.tsx (16 tests | 1 failed) 2724ms
+�?[39m T052/T053: save draft vs save & enable, and the disable-validation confirmation gate > surfaces the LAST_ACTIVE_TEMPLATE rejection instead of failing silently 77ms
+⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
+FAIL  src/f008-workflow-template-admin.test.tsx > T052/T053: save draft vs save & enable, and the disable-validation confirmation gate > activating a 
 …[truncated]
   ```
   </details>
@@ -10765,8 +9798,7 @@ FAIL  src/f008-workflow-template-admin.test.tsx > T052/T053: save draft vs save 
   <details><summary>tool output</summary>
 
   ```text
-�?Unable to find an element with the text: v2. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
-
+�?Unable to find an element with the text: v2. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
 TestingLibraryElementError: Unable to find an element with the text: v2. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
   ```
   </details>
@@ -10811,10 +9843,8 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-Test Files  2 passed (2)
-
-Tests  34 passed (34)
-
+Test Files  2 passed (2)
+Tests  34 passed (34)
 Duration  8.27s (transform 418ms, setup 1.54s, collect 2.09s, tests 2.56s, environment 6.06s, prepare 704ms)
   ```
   </details>
@@ -10834,30 +9864,18 @@ Duration  8.27s (transform 418ms, setup 1.54s, collect 2.09s, tests 2.56s, envir
   <details><summary>tool output</summary>
 
   ```text
-> tsc --noEmit
-
-
-
-> tsc --noEmit
-
-
-
-=== SERVER F008 TESTS ===
-
-⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
-
-Test Files  1 failed | 4 passed (5)
-
-Tests  1 failed | 123 passed (124)
-
-Duration  12.49s (transform 1.93s, setup 0ms, collect 13.02s, tests 6.32s, environment 1ms, prepare 2.21s)
-
-=== LINT+FMT ===
-
-[31;1m[[33mwarn[39m] web/src/f008-workflow-template-admin.test.tsx[0m
-
-[31;1m[[33mwarn[39m] server/tests/integration/workflow-template-admin.test.ts[0m
-
+> tsc --noEmit
+
+> tsc --noEmit
+
+=== SERVER F008 TESTS ===
+⎯⎯⎯⎯⎯⎯�?[39m Failed Tests 1 ⎯⎯⎯⎯⎯⎯�?[39m
+Test Files  1 failed | 4 passed (5)
+Tests  1 failed | 123 passed (124)
+Duration  12.49s (transform 1.93s, setup 0ms, collect 13.02s, tests 6.32s, environment 1ms, prepare 2.21s)
+=== LINT+FMT ===
+[31;1m[[33mwarn[39m] web/src/f008-workflow-template-admin.test.tsx[0m
+[31;1m[[33mwarn[39m] server/tests/integration/workflow-template-admin.test.ts[0m
 [31;1m[[33mwarn[39m] Code style issues found in 2 files. Run Prettier with --write to fix.[0m
   ```
   </details>
@@ -10873,14 +9891,10 @@ Duration  12.49s (transform 1.93s, setup 0ms, collect 13.02s, tests 6.32s, envir
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[[31merror[39m] No files matching the pattern were found: "web/src/f008-workflow-template-admin.test.tsx".[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "server/tests/integration/workflow-template-admin.test.ts".[0m
-
-Test Files  1 passed (1)
-
-Tests  36 passed (36)
-
+[31;1m[[31merror[39m] No files matching the pattern were found: "web/src/f008-workflow-template-admin.test.tsx".[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "server/tests/integration/workflow-template-admin.test.ts".[0m
+Test Files  1 passed (1)
+Tests  36 passed (36)
 Duration  6.00s (transform 998ms, setup 0ms, collect 4.64s, tests 858ms, environment 0ms, prepare 186ms)
   ```
   </details>
@@ -10897,14 +9911,10 @@ workflow-template-admin 单独跑 36/36 通过。之前 5 文件合跑的失败�
   <details><summary>tool output</summary>
 
   ```text
-tests/integration/workflow-template-admin.test.ts 250ms
-
-[90mtests/integration/runtime-health.test.ts[39m 128ms (unchanged)
-
-Test Files  5 passed (5)
-
-Tests  124 passed (124)
-
+tests/integration/workflow-template-admin.test.ts 250ms
+[90mtests/integration/runtime-health.test.ts[39m 128ms (unchanged)
+Test Files  5 passed (5)
+Tests  124 passed (124)
 Duration  17.14s (transform 2.11s, setup 0ms, collect 7.86s, tests 6.92s, environment 1ms, prepare 947ms)
   ```
   </details>
@@ -10929,30 +9939,18 @@ web 文件 prettier --write（workdir 是 web）：
   <details><summary>tool output</summary>
 
   ```text
-[31;1m[[31merror[39m] No files matching the pattern were found: "src/components/workflow-template/WorkflowTemplateAdminDialog.tsx".[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "src/f008-workflow-template-admin.test.tsx".[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "src/f008-runtime-health.test.tsx".[0m
-
-Test Files  2 failed (2)
-
-Tests  no tests
-
-Duration  2.56s (transform 392ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 631ms)
-
-=== LINT ===
-
-[31;1mNo files matching the pattern "src/components/workflow-template" were found.[0m
-
-[31;1mPlease check for typing mistakes in the pattern.[0m
-
-[31;1m[0m
-
-=== FORMAT:CHECK ===
-
-Checking formatting...
-
+[31;1m[[31merror[39m] No files matching the pattern were found: "src/components/workflow-template/WorkflowTemplateAdminDialog.tsx".[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "src/f008-workflow-template-admin.test.tsx".[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "src/f008-runtime-health.test.tsx".[0m
+Test Files  2 failed (2)
+Tests  no tests
+Duration  2.56s (transform 392ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 631ms)
+=== LINT ===
+[31;1mNo files matching the pattern "src/components/workflow-template" were found.[0m
+[31;1mPlease check for typing mistakes in the pattern.[0m
+[31;1m[0m
+=== FORMAT:CHECK ===
+Checking formatting...
 [31;1m[[33mwarn[39m] web/src/f008-workflow-template-admin.test.t
 …[truncated]
   ```
@@ -10979,20 +9977,13 @@ workdir 混乱导致路径错误。明确路径重新执行：
   <details><summary>tool output</summary>
 
   ```text
-[90mweb/src/components/workflow-template/WorkflowTemplateAdminDialog.tsx[39m 133ms (unchanged)
-
-web/src/f008-workflow-template-admin.test.tsx 73ms
-
-[90mweb/src/f008-runtime-health.test.tsx[39m 28ms (unchanged)
-
-=== LINT ===
-
-=== FORMAT:CHECK ===
-
-
-
-Checking formatting...
-
+[90mweb/src/components/workflow-template/WorkflowTemplateAdminDialog.tsx[39m 133ms (unchanged)
+web/src/f008-workflow-template-admin.test.tsx 73ms
+[90mweb/src/f008-runtime-health.test.tsx[39m 28ms (unchanged)
+=== LINT ===
+=== FORMAT:CHECK ===
+
+Checking formatting...
 All matched files use Prettier code style!
   ```
   </details>
@@ -11004,10 +9995,8 @@ All matched files use Prettier code style!
   <details><summary>tool output</summary>
 
   ```text
-Test Files  2 passed (2)
-
-Tests  34 passed (34)
-
+Test Files  2 passed (2)
+Tests  34 passed (34)
 Duration  7.61s (transform 386ms, setup 1.30s, collect 2.21s, tests 2.45s, environment 5.02s, prepare 838ms)
   ```
   </details>
@@ -11043,12 +10032,9 @@ Duration  7.61s (transform 386ms, setup 1.30s, collect 2.21s, tests 2.45s, envir
   <details><summary>tool output</summary>
 
   ```text
-[main ae39c31] test(f008): make T032 truly end-to-end through requestValidation
-
- 1 file changed, 89 insertions(+), 15 deletions(-)
-
-[main 8ea500c] fix(f008): unify activate precheck with acknowledge-gate semantics
-
+[main ae39c31] test(f008): make T032 truly end-to-end through requestValidation
+ 1 file changed, 89 insertions(+), 15 deletions(-)
+[main 8ea500c] fix(f008): unify activate precheck with acknowledge-gate semantics
  2 files changed, 33 insertions(+), 3 deletions(-)
   ```
   </details>
@@ -11068,8 +10054,7 @@ Duration  7.61s (transform 386ms, setup 1.30s, collect 2.21s, tests 2.45s, envir
   <details><summary>tool output</summary>
 
   ```text
-L653: | f008-schema-version-hardcoded | EXPECTED_SCHEMA_VERSION ��
-
+L653: | f008-schema-version-hardcoded | EXPECTED_SCHEMA_VERSION �� 
 L655: **�� 2 �ָ���֤��**: �����޸���һ������/�����Լ�˶Եȼۡ���needsAcknowledge �����ޣ�act
   ```
   </details>
@@ -11106,10 +10091,8 @@ Edit applied successfully.
   <details><summary>tool output</summary>
 
   ```text
-docs/reviews/RETROSPECTIVE.md | 56 +++++++++++++++++++++++++++++++++++++++++++
-
- 1 file changed, 56 insertions(+)
-
+docs/reviews/RETROSPECTIVE.md | 56 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
  M docs/reviews/RETROSPECTIVE.md
  M structure-improvement-plan.md
 ?? docs/reviews/CURRENT-code.md
@@ -11136,48 +10119,27 @@ docs/reviews/RETROSPECTIVE.md | 56 +++++++++++++++++++++++++++++++++++++++++++
   <details><summary>tool output</summary>
 
   ```text
-[32;1mLastWriteTime    [0m[32;1m Length[0m
-
-[32;1m-------------    [0m [32;1m------[0m
-
-2026/8/9 21:19:09  14686
-
----
-
-report_type: fix-verification
-
-round: 2
-
-date: 2026-08-09
-
-prior_report: �� 1 �� full-scan��commit 5ef5055 ֮��d3df237/98cc8bf/36d4774 ֮ǰ��ԭ�ļ��ѱ�
-
-  ae9f648 д���ֱ� a293263 ɾ������������ commit ���޸����Լ�д��"�� 2 �ֱջ�"��
-
-  δ�����������˸��˾�����ɾ����Υ��Э��� 8 �ڽ�ɫ����Ҫ�󣬼��·�"���̷���"��
-
-scope: diff-only
-
-stop_condition_met: false
-
-severity_counts: {critical: 0, high: 0, medium: 0, low: 2}
-
-issues:
-
-  - id: f008-ack-dialog-false-positive
-
-    title: ����У��ı༭���̱�����Ϊ"�ر�У��"����������ȷ���İ�
-
-    severity: medium
-
-    category: correctness
-
-    root_cause: root-cause
-
-    origin: original-coding
-
-    pattern_tag: client-server-gate-logic-divergence
-
+[32;1mLastWriteTime    [0m[32;1m Length[0m
+[32;1m-------------    [0m [32;1m------[0m
+2026/8/9 21:19:09  14686
+---
+report_type: fix-verification
+round: 2
+date: 2026-08-09
+prior_report: �� 1 �� full-scan��commit 5ef5055 ֮��d3df237/98cc8bf/36d4774 ֮ǰ��ԭ�ļ��ѱ�
+  ae9f648 д���ֱ� a293263 ɾ������������ commit ���޸����Լ�д��"�� 2 �ֱջ�"��
+  δ�����������˸��˾�����ɾ����Υ��Э��� 8 �ڽ�ɫ����Ҫ�󣬼��·�"���̷���"��
+scope: diff-only
+stop_condition_met: false
+severity_counts: {critical: 0, high: 0, medium: 0, low: 2}
+issues:
+  - id: f008-ack-dialog-false-positive
+    title: ����У��ı༭���̱�����Ϊ"�ر�У��"����������ȷ���İ�
+    severity: medium
+    category: correctness
+    root_cause: root-cause
+    origin: original-coding
+    pattern_tag: client-server-gate-logic-divergence
     status: fixe
 …[truncated]
   ```
@@ -11255,11 +10217,11 @@ issues:
    b. 前端只对本来会重复的类别（invalid_queued_run/waiting_for_recovery）从 detail 提取稳定字段
 
    方案 a 更干净、是 root-cause 修复（诊断条目的逻辑身份本来就是"哪条 run/issue 的诊断"）。但需要改 shared 类型（HealthDiagnostic 加可选 run_id/issue_id 字段）+ 后端 4 处构造诊断的地方补字段 + 前端 key 用结构化字段。
-
+   
    方案 b 是症状修补（symptom-patch），检视人已经标记当前实现是 symptom-patch——如果我再选 b，等于延续症状补丁。
 
    选方案 a：root-cause。
-
+   
    具体：
    - shared/src/types/f008.ts: HealthDiagnostic 加 `run_id?: string | null` 和 `issue_id?: string | null`
    - server runtime-health.ts：构造诊断时带上 run_id/issue_id
@@ -11338,7 +10300,7 @@ Edit applied successfully.
 
 ## assistant · 2026-08-09T13:35:54Z
 
-- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\src\\services\\runtime-health.ts", "newString": "      if (classification === \"waiting_for_recovery\") {\n        diagnostics.push({\n          code: \"waiting_for_recovery\",\n          workspace_id,\n          run_id: run.id,\n          detail: `Queued run ${run.id} (role ${run.role}) is waiting for issue-level recovery.`,\n          suggested_action: \"Resolve the blocking condition on the issue; the run will proceed once unblocked.\",\n
+- **tool**: `edit({"filePath": "D:\\Projects\\personahub\\server\\src\\services\\runtime-health.ts", "newString": "      if (classification === \"waiting_for_recovery\") {\n        diagnostics.push({\n          code: \"waiting_for_recovery\",\n          workspace_id,\n          run_id: run.id,\n          detail: `Queued run ${run.id} (role ${run.role}) is waiting for issue-level recovery.`,\n          suggested_action: \"Resolve the blocking condition on the issue; the run will proceed once unblocked.\",\n       
 …[truncated])`
 
   <details><summary>tool output</summary>
@@ -11365,12 +10327,12 @@ Edit applied successfully.
 <content>
 262:         (workspaceId === undefined || i.workspace_id === workspaceId),
 263:     );
-264:
+264: 
 265:     const diagnostics: HealthDiagnostic[] = [];
 266:     for (const issue of scoped) {
 267:       const dueAt = issue.validation_dispatch_due_at!;
 268:       const dueTime = Date.parse(dueAt);
-269:
+269: 
 270:       if (dueTime > now - VALIDATION_DISPATCH_GRACE_MS) {
 271:         const remainingMs = dueTime - now;
 272:         diagnostics.push({
@@ -11453,44 +10415,25 @@ PRIORITY-BASED ACTION GUIDELINES:
   <details><summary>tool output</summary>
 
   ```text
-L158
-
-                last_checked_at: "2026-01-01T00:00:00.000Z",
-
-              },
-
-            ],
-
-            lock: { locked_by_run_id: "run_1", locked_at: "2026-01-01T00:00:00.000Z", held_ms: 120_000 },
-
-            queue: { queued_count: 3, running_run_id: "run_1" },
-
-          },
-
-        ],
-
-      }),
-
-    );
-
-    renderWithQuery(<RuntimeHealthDialog open projectId="prj_1" onOpenChange={() => {}} />);
-
-
-
-    await waitFor(() => {
-
-      expect(screen.getByText(/schema 10\/10 \(current\)/)).toBeInTheDocument();
-
-    });
-
-    expect(screen.getByText(/probes: 1/)).toBeInTheDocument();
-
-    expect(screen.getByText(/reprobes: 2/)).toBeInTheDocument();
-
-    expect(screen.getByText("wsp_1")).toBeInTheDocument();
-
-    expect(screen.getByText(/Codex: available/)).toBeInTheDocument();
-
+L158
+                last_checked_at: "2026-01-01T00:00:00.000Z",
+              },
+            ],
+            lock: { locked_by_run_id: "run_1", locked_at: "2026-01-01T00:00:00.000Z", held_ms: 120_000 },
+            queue: { queued_count: 3, running_run_id: "run_1" },
+          },
+        ],
+      }),
+    );
+    renderWithQuery(<RuntimeHealthDialog open projectId="prj_1" onOpenChange={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/schema 10\/10 \(current\)/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/probes: 1/)).toBeInTheDocument();
+    expect(screen.getByText(/reprobes: 2/)).toBeInTheDocument();
+    expect(screen.getByText("wsp_1")).toBeInTheDocument();
+    expect(screen.getByText(/Codex: available/)).toBeInTheDocument();
     e
 …[truncated]
   ```
@@ -11508,7 +10451,7 @@ L158
 <content>
 155:     });
 156:   });
-157:
+157: 
 158:   it("renders multiple same-code diagnostics for one workspace without duplicate-key warnings", async () => {
 159:     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 160:     try {
@@ -11556,7 +10499,7 @@ Now add the key-stability unit test after the batch test:
 194:       errSpy.mockRestore();
 195:     }
 196:   });
-197:
+197: 
 198:   it("renders multiple diagnostics of different codes at once", async () => {
 199:     vi.mocked(apiClient.runtimeHealth.get).mockResolvedValue(
 200:       healthResponse([
@@ -11618,20 +10561,13 @@ PRIORITY-BASED ACTION GUIDELINES:
   <details><summary>tool output</summary>
 
   ```text
-[31;1mnpm error To see a list of scripts, run:[0m
-
-[31;1mnpm error   npm run --workspace=@personahub/web@0.1.0[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "web/src/f008-runtime-health.test.tsx".[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "shared/src/types/f008.ts".[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "server/src/services/runtime-health.ts".[0m
-
-Test Files  2 passed (2)
-
-Tests  35 passed (35)
-
+[31;1mnpm error To see a list of scripts, run:[0m
+[31;1mnpm error   npm run --workspace=@personahub/web@0.1.0[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "web/src/f008-runtime-health.test.tsx".[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "shared/src/types/f008.ts".[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "server/src/services/runtime-health.ts".[0m
+Test Files  2 passed (2)
+Tests  35 passed (35)
 Duration  9.20s (transform 560ms, setup 1.86s, collect 2.68s, tests 2.65s, environment 6.25s, prepare 845ms)
   ```
   </details>
@@ -11654,22 +10590,14 @@ workdir 路径混乱。在根目录正确执行构建与格式化，再跑 serve
   <details><summary>tool output</summary>
 
   ```text
-[31;1mnpm error To see a list of scripts, run:[0m
-
-[31;1mnpm error   npm run --workspace=@personahub/server@0.1.0[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "server/src/services/runtime-health.ts".[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "web/src/components/runtime-health/diagnostic-code.ts".[0m
-
-[31;1m[[31merror[39m] No files matching the pattern were found: "web/src/f008-runtime-health.test.tsx".[0m
-
-=== SERVER TESTS ===
-
-Test Files  2 passed (2)
-
-Tests  69 passed (69)
-
+[31;1mnpm error To see a list of scripts, run:[0m
+[31;1mnpm error   npm run --workspace=@personahub/server@0.1.0[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "server/src/services/runtime-health.ts".[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "web/src/components/runtime-health/diagnostic-code.ts".[0m
+[31;1m[[31merror[39m] No files matching the pattern were found: "web/src/f008-runtime-health.test.tsx".[0m
+=== SERVER TESTS ===
+Test Files  2 passed (2)
+Tests  69 passed (69)
 Duration  13.60s (transform 1.23s, setup 0ms, collect 6.39s, tests 6.14s, environment 0ms, prepare 438ms)
   ```
   </details>
@@ -11686,54 +10614,36 @@ server 69/69 通过。在根目录完成构建与全部门禁：
   <details><summary>tool output</summary>
 
   ```text
-> tsc
-
-
-
-[90mshared/src/types/f008.ts[39m 61ms (unchanged)
-
-server/src/services/runtime-health.ts 62ms
-
-[90mweb/src/components/runtime-health/diagnostic-code.ts[39m 12ms (unchanged)
-
-[90mweb/src/f008-runtime-health.test.tsx[39m 42ms (unchanged)
-
-=== TYPECHECK ===
-
-done typecheck
-
-=== LINT ===
-
-> eslint server shared web e2e eslint.config.js
-
-
-
-=== FORMAT ===
-
-Checking formatting...
-
-All matched files use Prettier code style!
-
-=== BUILD ===
-
+> tsc
+
+[90mshared/src/types/f008.ts[39m 61ms (unchanged)
+server/src/services/runtime-health.ts 62ms
+[90mweb/src/components/runtime-health/diagnostic-code.ts[39m 12ms (unchanged)
+[90mweb/src/f008-runtime-health.test.tsx[39m 42ms (unchanged)
+=== TYPECHECK ===
+done typecheck
+=== LINT ===
+> eslint server shared web e2e eslint.config.js
+
+=== FORMAT ===
+Checking formatting...
+All matched files use Prettier code style!
+=== BUILD ===
 �?built in 7.11s
   ```
   </details>
 
 ## assistant · 2026-08-09T13:39:53Z
 
-- **tool**: `bash({"command": "npx vitest run src/f008-runtime-health.test.tsx src/f008-workflow-template-admin.test.tsx 2>&1 | Select-String -Pattern \"Test Files|Tests \" | ForEach-Object { ($_.Line -replace '\\x1b\\[[0-9;]*m','').Trim() }; npx vitest run tests/integration/runtime-health.test.ts tests/integration/workflow-template-admin.test.ts tests/unit/queue-classifier.test.ts tests/unit/validate-steps-schema.test.ts tests/integration/migration-v10.test.ts 2>&1 | Select-String -Pattern \"Test Files|Tests \"
+- **tool**: `bash({"command": "npx vitest run src/f008-runtime-health.test.tsx src/f008-workflow-template-admin.test.tsx 2>&1 | Select-String -Pattern \"Test Files|Tests \" | ForEach-Object { ($_.Line -replace '\\x1b\\[[0-9;]*m','').Trim() }; npx vitest run tests/integration/runtime-health.test.ts tests/integration/workflow-template-admin.test.ts tests/unit/queue-classifier.test.ts tests/unit/validate-steps-schema.test.ts tests/integration/migration-v10.test.ts 2>&1 | Select-String -Pattern \"Test Files|Tests \" 
 …[truncated])`
 
   <details><summary>tool output</summary>
 
   ```text
-Test Files  2 passed (2)
-
-Tests  35 passed (35)
-
-Duration  7.97s (transform 533ms, setup 1.59s, collect 2.42s, tests 2.61s, environment 5.04s, prepare 665ms)
-
+Test Files  2 passed (2)
+Tests  35 passed (35)
+Duration  7.97s (transform 533ms, setup 1.59s, collect 2.42s, tests 2.61s, environment 5.04s, prepare 665ms)
 No test files found, exiting with code 1
   ```
   </details>
@@ -11745,10 +10655,8 @@ No test files found, exiting with code 1
   <details><summary>tool output</summary>
 
   ```text
-Test Files  5 passed (5)
-
-Tests  124 passed (124)
-
+Test Files  5 passed (5)
+Tests  124 passed (124)
 Duration  14.66s (transform 1.14s, setup 0ms, collect 6.44s, tests 5.79s, environment 1ms, prepare 961ms)
   ```
   </details>
@@ -11778,8 +10686,7 @@ Duration  14.66s (transform 1.14s, setup 0ms, collect 6.44s, tests 5.79s, enviro
   <details><summary>tool output</summary>
 
   ```text
-[main bf571c2] fix(f008): stable diagnostic keys via structured run/issue ids
-
+[main bf571c2] fix(f008): stable diagnostic keys via structured run/issue ids
  4 files changed, 78 insertions(+), 5 deletions(-)
   ```
   </details>
@@ -11819,12 +10726,9 @@ Edit applied successfully.
 
   ```text
 warning: in the working copy of 'docs/reviews/CURRENT-code.md', LF will be replaced by CRLF the next time Git touches it
- 1 file changed, 205 insertions(+)
-
- create mode 100644 docs/reviews/CURRENT-code.md
-
-=== LOG ===
-
+ 1 file changed, 205 insertions(+)
+ create mode 100644 docs/reviews/CURRENT-code.md
+=== LOG ===
 7e51bfb docs(reviews): record fix of volatile diagnostic keys, awaiting reviewer
 bf571c2 fix(f008): stable diagnostic keys via structured run/issue ids
 8ea500c fix(f008): unify activate precheck with acknowledge-gate semantics

@@ -476,7 +476,7 @@ v0.3（F009-F012）文档检视第 1 轮完成，报告已写入 [docs/reviews/C
 
 ## assistant · 2026-08-09T09:54:57Z
 
-- **tool**: `Edit({"replace_all": false, "file_path": "d:\\Projects\\personahub\\docs\\features\\0.3\\README.md", "old_string": "| [F011](F011-work-room-human-intervention/spec.md)   | Work Room & Human Intervention   | 给多节点协作增加用户可见、可控制的临时现场             | 用户能进入 Room，查看分工，暂停/纠偏/调整后续执行并归档                     | F006、F007、F009、F010 |", "new_string": "| [F011](F011-work-room-human-intervention/spec.md)   | Work Room & Human Intervention   | 给多节点协作增加用户可见、可控制的临时现场             | 用户能进入 Room，查看分工，暂停/纠偏/调整后续执行并归档
+- **tool**: `Edit({"replace_all": false, "file_path": "d:\\Projects\\personahub\\docs\\features\\0.3\\README.md", "old_string": "| [F011](F011-work-room-human-intervention/spec.md)   | Work Room & Human Intervention   | 给多节点协作增加用户可见、可控制的临时现场             | 用户能进入 Room，查看分工，暂停/纠偏/调整后续执行并归档                     | F006、F007、F009、F010 |", "new_string": "| [F011](F011-work-room-human-intervention/spec.md)   | Work Room & Human Intervention   | 给多节点协作增加用户可见、可控制的临时现场             | 用户能进入 Room，查看分工，暂停/纠偏/调整后续执行并归档           
 …[truncated])`
 
 ## assistant · 2026-08-09T09:54:58Z
