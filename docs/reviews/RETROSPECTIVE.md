@@ -780,10 +780,10 @@ archived ref 的消费限制与 F009 契约一致。
 所有问题均在下一轮关闭，最长存活 1 轮；P0 后续动作优先复用现有创建任务能力，避免修复
 体验缺口时顺手扩张数据模型。
 
-## 循环 16: 用户旅程 M4 页面拼装前复核（3轮）
+## 循环 16: 用户旅程 M4 页面拼装前复核（4轮）
 
 - **report_type**: doc-review
-- **周期**: 2026-08-15，3轮 · **状态**: 已闭环
+- **周期**: 2026-08-15，4轮（含 1 轮 CI 门禁重开） · **状态**: 已闭环
 - **背景**: 进入 M4 页面拼装前，复核 `docs/personahub-user-journeys.md` 是否足以充当
   拼装的行为输入。循环 15 已确认旅程内容本身获批，本轮只问一件事：**拼装真正需要的
   行为依据是否都写了**。检查清单 8 项，第 1、7、8 项（步骤字段完整性、空/错误/恢复
@@ -804,6 +804,7 @@ archived ref 的消费限制与 F009 契约一致。
 | JRN2-011 | 默认落点改按注意力优先级，与 PRD §6 二次分叉未登记影响面 | Medium | 正确性 | 根因 | 修复引入 | fixed | §6.1 补差异段说明分叉条件，登记 reset-plan §7，与 JRN2-003 同规格 | `docs/reviews/product-experience-reset-plan.md::section-7-prd-impact` | 2 | 3 | cross-feature-contract-drift |
 | JRN2-012 | 默认落点表写「右栏收起」，越界写页面形态 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「不呈现空壳区块」，呈现方式交 M4-T02 | `docs/personahub-user-journeys.md::6.1-default-landing` | 2 | 3 | journey-writes-page-form |
 | JRN2-013 | 指派入口表用 composer 组件名，越出行为层用语 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「指令输入处」，不指定具体控件 | `docs/personahub-user-journeys.md::6.5-assignment-entry-priority` | 2 | 3 | journey-writes-page-form |
+| JRN2-014 | E2E 冷启动竞态使最终门禁首跑红（与本次改动无关） | Medium | 测试覆盖 | 根因 | 流程缺口 | carried-forward | 本轮不修，登记 ST-T17：webServer 配真实就绪探测，禁止用 retries 盖红 | `docs/reviews/self-test-system-plan.md::ST-T17` | 4 | — | flaky-gate-erodes-final-check |
 
 **模式性教训**
 
@@ -822,5 +823,10 @@ archived ref 的消费限制与 F009 契约一致。
    （2 次）互为镜像**——前者是 PRD 有而旅程漏（Automations、第一屏落点），后者是旅程列了
    概念却无步骤承载（Room、Message stats）。两者都只有做「PRD ↔ 旅程双向逐条对照」才能
    发现，单向通读任何一份都查不出来。这条对照应固化进旅程类文档的检视清单。
-5. **存活轮数**：全部 1 轮关闭，最长 1 轮，与循环 15 持平。规模从 9 条升到 13 条但收敛
-   速度未退化，说明清单式检视（先定 8 项有限清单再扫）比自由通读更稳定。
+5. **存活轮数**：13 条文档问题全部 1 轮关闭，最长 1 轮，与循环 15 持平。规模从 9 条升到
+   13 条但收敛速度未退化，说明清单式检视（先定 8 项有限清单再扫）比自由通读更稳定。
+6. **第 4 轮由 CI 而非人触发**：第 3 轮已满足前两条停止条件，CI 首跑却红在一条与改动
+   无关的 E2E 冷启动竞态上。这正是「CI 是最终门禁、绿了才闭环」的价值——如果按
+   severity 清零就宣布完成，这条 flake 会一直留在门禁里，直到某次真实回归被当成
+   "重跑一下就好"。新标签 `flaky-gate-erodes-final-check` 记录这个模式：**随机红的门禁
+   比没有门禁更危险**，因为它训练人忽略红色。已登记 ST-T17，且明确禁止用 `retries` 消红。

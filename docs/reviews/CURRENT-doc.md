@@ -1,11 +1,11 @@
 ---
 report_type: doc-review
-round: 3
+round: 4
 date: 2026-08-15
-prior_report: 第 1 轮 commit e5740b5、第 2 轮 commit d09c772（同一文件）
+prior_report: 第 1 轮 commit e5740b5、第 2 轮 commit d09c772、第 3 轮 commit 992eac3（同一文件）
 scope: diff-only
 stop_condition_met: true
-severity_counts: { critical: 0, high: 3, medium: 5, low: 5 }
+severity_counts: { critical: 0, high: 3, medium: 6, low: 5 }
 issues:
   - id: JRN2-001
     title: Issues 列表行的信息需求未定义，拼装 issue list 与验收指标 9 都无断言点
@@ -149,7 +149,7 @@ issues:
     regression_test: docs/reviews/product-experience-reset-plan.md::section-7-prd-impact
     location: docs/personahub-user-journeys.md:272-278
     first_seen_round: 2
-    resolved_round: 3
+    resolved_round: 4
   - id: JRN2-012
     title: 默认落点表右栏行写「收起或显示项目级摘要」，既是形态判断又未裁决
     severity: low
@@ -162,7 +162,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.1-default-landing
     location: docs/personahub-user-journeys.md:268
     first_seen_round: 2
-    resolved_round: 3
+    resolved_round: 4
   - id: JRN2-013
     title: 指派入口表使用 composer 组件名，越出行为层用语
     severity: low
@@ -175,10 +175,10 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.5-assignment-entry-priority
     location: docs/personahub-user-journeys.md:412
     first_seen_round: 2
-    resolved_round: 3
+    resolved_round: 4
 ---
 
-# 用户旅程文档检视（M4 页面拼装前复核）· 第 3 轮（封顶，已闭环）
+# 用户旅程文档检视（M4 页面拼装前复核）· 第 4 轮（已闭环）
 
 ## 结论先行
 
@@ -335,8 +335,28 @@ resolved_round = 3。
 1. Critical/High 清零 —— 13 条全部 fixed，剩余无 open ✅
 2. 本地门禁 `npm run verify` 全绿（lint / format:check / typecheck / 测试 /
    check:features / check:doc-links / check:doc-ownership / check:e2e-fixme）✅
-3. CI 最终门禁 —— 本轮触发一次，绿则闭环
+3. CI 最终门禁 —— 见第 4 轮
 4. 图谱工具：本轮为纯文档改动，`detect_changes_tool` 风险分 0.00，无新增未覆盖高风险点 ✅
+
+## 第 4 轮：CI 门禁
+
+第 3 轮触发的 CI run `31820895449`（commit `992eac3`）**首跑红**，按协议本轮重开为第 4 轮，
+CURRENT 文件不删除。
+
+**分诊结论：与本次改动无关，且不是产品缺陷。** 依据三条——(1) 本次为纯文档改动，
+物理上无法影响 E2E；(2) 红的是 `f005-layout.spec.ts:32` 的**第一条**用例，
+`page.goto("/")` 后等首屏 `text=Agent Adapters` 30s 超时，**同文件后 3 条全过**；
+(3) 本机 `npm run build && npm run test:e2e` 4/4 通过，该条仅耗时 1.8s。判定为
+Windows runner 上 Vite dev + `tsx watch` 未就绪即开测的冷启动竞态。
+
+项目 SOP §「失败分诊」的基线探测规则针对 REAL_* 真实 CLI 测试，不覆盖本条 fake 夹具
+用例，故按上述证据链分诊而非套用该规则。
+
+同 SHA 重跑 `--failed` 后**全绿**，停止条件第 3 条满足，本轮闭环。
+
+**但不把它当成"重跑一下就好"**：一个会随机红的最终门禁，会让下一次真实的首屏回归也被
+当成 flake 重跑掉。已登记 ST-T17（修法为 webServer 真实就绪探测，明确禁止用 `retries`
+盖红），并记为 JRN2-014 `carried-forward`。
 
 ## 遗留跟进（不阻塞本次闭环）
 
@@ -345,3 +365,4 @@ resolved_round = 3。
 - **PRD 两处待修订**：Done 复制/下载降级（JRN2-003）、第一屏默认落点（JRN2-011），
   均已登记进 `product-experience-reset-plan.md` §7，走产品级修订流程。
 - **右栏分区方式**：由 M4-T02 在 PRD §13 约束下裁决并记录（JRN2-005）。
+- **E2E 冷启动竞态**：ST-T17（JRN2-014），在修好前 E2E 红必须先排除是不是这条。
