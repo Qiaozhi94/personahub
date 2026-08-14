@@ -549,6 +549,10 @@ M6 是目标形态定稿后才启动的独立实施阶段，不计入这两周�
    以能力项为路由主依据、role 降级为展示标签，路由偏好可挂 Issue/Room 层级。
    来源与代码证据见 `concept-mapping.md` §7；同时影响 F007 `resolveEligibleAdapter()`
    与 F012 Squad 的成员组合方式。
+   **新增（2026-08-15）**：§10 右侧 Inspector 的「Done evidence summary，以及复制/下载其
+   已持久化 Markdown 的操作」需降级——用户裁决复制/下载/导出属同一类能力，统一为 P1，
+   P0 只保证应用内查看与追溯。依据见 `personahub-user-journeys.md` §7.4。
+   同节的 `Message / event stats` 亦无 P0 信息需求承载，一并在 PRD 修订时重估。
 2. `docs/features/0.3/README.md`：版本目标、Feature 顺序、里程碑和验收旅程。
 3. F009–F012 三件套：用户场景、UX 需求、非目标、依赖和任务顺序。
 4. `docs/SOP.md` / `docs/features/README.md`：加入强制旅程、原型和真实浏览器门禁。
