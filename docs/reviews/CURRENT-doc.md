@@ -1,10 +1,10 @@
 ---
 report_type: doc-review
-round: 2
+round: 3
 date: 2026-08-15
-prior_report: 第 1 轮见 commit e5740b5（同一文件）
+prior_report: 第 1 轮 commit e5740b5、第 2 轮 commit d09c772（同一文件）
 scope: diff-only
-stop_condition_met: false
+stop_condition_met: true
 severity_counts: { critical: 0, high: 3, medium: 5, low: 5 }
 issues:
   - id: JRN2-001
@@ -149,7 +149,7 @@ issues:
     regression_test: docs/reviews/product-experience-reset-plan.md::section-7-prd-impact
     location: docs/personahub-user-journeys.md:272-278
     first_seen_round: 2
-    resolved_round:
+    resolved_round: 3
   - id: JRN2-012
     title: 默认落点表右栏行写「收起或显示项目级摘要」，既是形态判断又未裁决
     severity: low
@@ -162,7 +162,7 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.1-default-landing
     location: docs/personahub-user-journeys.md:268
     first_seen_round: 2
-    resolved_round:
+    resolved_round: 3
   - id: JRN2-013
     title: 指派入口表使用 composer 组件名，越出行为层用语
     severity: low
@@ -175,10 +175,10 @@ issues:
     regression_test: docs/personahub-user-journeys.md::6.5-assignment-entry-priority
     location: docs/personahub-user-journeys.md:412
     first_seen_round: 2
-    resolved_round:
+    resolved_round: 3
 ---
 
-# 用户旅程文档检视（M4 页面拼装前复核）· 第 2 轮
+# 用户旅程文档检视（M4 页面拼装前复核）· 第 3 轮（封顶，已闭环）
 
 ## 结论先行
 
@@ -238,9 +238,9 @@ JRN2-012/013 同属一个模式：**刚在 JRN2-005 立下「旅程不写页面�
 | JRN2-008 | Automations 占位入口未登记 | Low | 质量 | 根因 | 初稿 | fixed | §2.4 补占位行并指向 PRD §15 | `docs/personahub-user-journeys.md::2.4-cross-journey-navigation` | 1 | 2 | prd-requirement-not-carried-into-journey |
 | JRN2-009 | 右栏 Message/event stats 未显式裁决 | Low | 质量 | 根因 | 初稿 | fixed | §6.4 显式裁决不进右栏，回流走 M4-T05 | `docs/personahub-user-journeys.md::6.4-prd-right-panel-exclusion` | 1 | 2 | concept-without-journey-step |
 | JRN2-010 | NOTE-001/002 旅程步骤仍为占位 | Low | 质量 | 根因 | 流程缺口 | fixed | 回填 J1.4 与 adopted，触发自测试体系 §7.2 重复升级 | `docs/reviews/dogfooding-notes.md::note-001-002-journey-mapping` | 1 | 2 | marked-done-not-recorded |
-| JRN2-011 | 默认落点与 PRD §6 分叉未登记影响面 | Medium | 正确性 | 根因 | 修复引入 | fixed | §6.1 补差异段并登记进 reset-plan §7，与 JRN2-003 同规格 | `docs/reviews/product-experience-reset-plan.md::section-7-prd-impact` | 2 | — | cross-feature-contract-drift |
-| JRN2-012 | 默认落点表写「右栏收起」，越界写形态 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「不呈现空壳区块」，呈现方式交 M4-T02 | `docs/personahub-user-journeys.md::6.1-default-landing` | 2 | — | journey-writes-page-form |
-| JRN2-013 | 指派入口表用 composer 组件名 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「指令输入处」 | `docs/personahub-user-journeys.md::6.5-assignment-entry-priority` | 2 | — | journey-writes-page-form |
+| JRN2-011 | 默认落点与 PRD §6 分叉未登记影响面 | Medium | 正确性 | 根因 | 修复引入 | fixed | §6.1 补差异段并登记进 reset-plan §7，与 JRN2-003 同规格 | `docs/reviews/product-experience-reset-plan.md::section-7-prd-impact` | 2 | 3 | cross-feature-contract-drift |
+| JRN2-012 | 默认落点表写「右栏收起」，越界写形态 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「不呈现空壳区块」，呈现方式交 M4-T02 | `docs/personahub-user-journeys.md::6.1-default-landing` | 2 | 3 | journey-writes-page-form |
+| JRN2-013 | 指派入口表用 composer 组件名 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「指令输入处」 | `docs/personahub-user-journeys.md::6.5-assignment-entry-priority` | 2 | 3 | journey-writes-page-form |
 
 ## 逐条问题与修复依据
 
@@ -324,8 +324,24 @@ M5-T02 会漏判。**修复**：两行改 `adopted`、旅程步骤填 `J1.4`。
 `self-test-system-plan.md` §7.2「重复即升级」触发，需要补 J1.4 的需求级 spec。
 这一项落在 M6 首次设置切片，不在本轮检视范围内，已在此登记以免遗漏。
 
-## 下一轮范围
+## 第 3 轮（封顶）结论
 
-第 3 轮 scope 为 `diff-only`，且**只审第 2 轮那三处修改**（§6.1 差异段与右栏行、§6.5
-入口表一行、reset-plan §7 新增段）。这是协议规定的封顶轮：仅因第 2 轮自身引入了新问题
-才触发，不再连锁续轮。
+scope `diff-only`，只审第 2 轮那三处修改（§6.1 差异段与右栏行、§6.5 入口表一行、
+reset-plan §7 新增段）。三处全部成立，**未引入新问题**，JRN2-011/012/013 关闭，
+resolved_round = 3。
+
+**停止条件核对**：
+
+1. Critical/High 清零 —— 13 条全部 fixed，剩余无 open ✅
+2. 本地门禁 `npm run verify` 全绿（lint / format:check / typecheck / 测试 /
+   check:features / check:doc-links / check:doc-ownership / check:e2e-fixme）✅
+3. CI 最终门禁 —— 本轮触发一次，绿则闭环
+4. 图谱工具：本轮为纯文档改动，`detect_changes_tool` 风险分 0.00，无新增未覆盖高风险点 ✅
+
+## 遗留跟进（不阻塞本次闭环）
+
+- **J1.4 触发「重复即升级」**：JRN2-010 回填后 J1.4 累计 2 条 dogfood 发现，按
+  `self-test-system-plan.md` §7.2 需补该步骤的需求级 spec，落在 M6 首次设置切片。
+- **PRD 两处待修订**：Done 复制/下载降级（JRN2-003）、第一屏默认落点（JRN2-011），
+  均已登记进 `product-experience-reset-plan.md` §7，走产品级修订流程。
+- **右栏分区方式**：由 M4-T02 在 PRD §13 约束下裁决并记录（JRN2-005）。

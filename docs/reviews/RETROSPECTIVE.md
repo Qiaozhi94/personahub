@@ -779,3 +779,48 @@ archived ref 的消费限制与 F009 契约一致。
 历史决策记录不能随当前方案改写；未定版本候选也不应被旧优先级映射强行纳入版本。
 所有问题均在下一轮关闭，最长存活 1 轮；P0 后续动作优先复用现有创建任务能力，避免修复
 体验缺口时顺手扩张数据模型。
+
+## 循环 16: 用户旅程 M4 页面拼装前复核（3轮）
+
+- **report_type**: doc-review
+- **周期**: 2026-08-15，3轮 · **状态**: 已闭环
+- **背景**: 进入 M4 页面拼装前，复核 `docs/personahub-user-journeys.md` 是否足以充当
+  拼装的行为输入。循环 15 已确认旅程内容本身获批，本轮只问一件事：**拼装真正需要的
+  行为依据是否都写了**。检查清单 8 项，第 1、7、8 项（步骤字段完整性、空/错误/恢复
+  路径、不可逆操作）无发现。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| JRN2-001 | Issues 列表行的信息需求未定义，拼 list 与验收指标 9 均无断言点 | High | 正确性 | 根因 | 初稿 | fixed | 新增 §6.4.1 五列行级信息需求表，排序沿用注意力优先级，禁止引入参考项目团队字段 | `docs/personahub-user-journeys.md::6.4.1-issue-list-row-requirements` | 1 | 2 | missing-list-level-requirements |
+| JRN2-002 | 第一屏默认落点（PRD §6 已定）未收进旅程 | High | 正确性 | 根因 | 初稿 | fixed | §6.1 补四行默认落点表，冲突时以需要用户的任务优先而非最近时间 | `docs/personahub-user-journeys.md::6.1-default-landing` | 1 | 2 | prd-requirement-not-carried-into-journey |
+| JRN2-003 | Done 摘要复制/下载被降 P1，与 PRD §10 必须项冲突 | High | 正确性 | 根因 | 契约漂移 | fixed | 用户裁决：查看/追溯 P0，复制/下载/导出同属「带出应用」归 P1；差异登记 reset-plan §7 | `docs/reviews/product-experience-reset-plan.md::section-7-prd-impact` | 1 | 2 | cross-feature-contract-drift |
+| JRN2-004 | 信息需求矩阵缺已中断/已取消/正在修复三状态 | Medium | 正确性 | 根因 | 初稿 | fixed | §6.4 补三行，声明不并入 Blocked（三者默认下一步与主操作不同） | `docs/personahub-user-journeys.md::6.4-state-information-matrix` | 1 | 2 | state-matrix-coverage-gap |
+| JRN2-005 | 右栏是否分 tab 三份文档冲突，旅程越界写形态 | Medium | 正确性 | 根因 | 契约漂移 | fixed | 旅程只留「右栏承载快照」，分区交 M4-T02；concept-mapping §5.4 补优先级链澄清 | `docs/reviews/concept-mapping.md::5.4-layout-conclusion` | 1 | 2 | cross-feature-contract-drift |
+| JRN2-006 | 指派两入口（交接卡片按钮 / `@`）主次未定 | Medium | 正确性 | 根因 | 初稿 | fixed | 卡片按钮为等待指派主路径（对应指标 6），`@` 为任意时刻常驻快捷入口 | `docs/personahub-user-journeys.md::6.5-assignment-entry-priority` | 1 | 2 | dual-entry-priority-undefined |
+| JRN2-007 | Room 列为必须理解概念但四条旅程无步骤 | Medium | 质量 | 根因 | 初稿 | fixed | Room 标 [P1]；P0 不承载区块，但左/中栏不得做排斥 Room 的结构假设 | `docs/personahub-user-journeys.md::2.3-room-p0-handling` | 1 | 2 | concept-without-journey-step |
+| JRN2-008 | 左栏 Automations 占位入口未登记 | Low | 质量 | 根因 | 初稿 | fixed | §2.4 补占位行，指向 PRD §15，不得拼成可用功能也不得删除 | `docs/personahub-user-journeys.md::2.4-cross-journey-navigation` | 1 | 2 | prd-requirement-not-carried-into-journey |
+| JRN2-009 | 右栏 Message/event stats 无 P0 需求且未显式裁决 | Low | 质量 | 根因 | 初稿 | fixed | §6.4 显式裁决不进右栏，需要时按 M4-T05 回流本文 | `docs/personahub-user-journeys.md::6.4-prd-right-panel-exclusion` | 1 | 2 | concept-without-journey-step |
+| JRN2-010 | NOTE-001/002 旅程步骤仍为占位，实际已由 J1.4 覆盖 | Low | 质量 | 根因 | 流程缺口 | fixed | 回填 J1.4 + adopted；J1.4 累计 2 条触发自测试体系 §7.2「重复即升级」 | `docs/reviews/dogfooding-notes.md::note-001-002-journey-mapping` | 1 | 2 | marked-done-not-recorded |
+| JRN2-011 | 默认落点改按注意力优先级，与 PRD §6 二次分叉未登记影响面 | Medium | 正确性 | 根因 | 修复引入 | fixed | §6.1 补差异段说明分叉条件，登记 reset-plan §7，与 JRN2-003 同规格 | `docs/reviews/product-experience-reset-plan.md::section-7-prd-impact` | 2 | 3 | cross-feature-contract-drift |
+| JRN2-012 | 默认落点表写「右栏收起」，越界写页面形态 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「不呈现空壳区块」，呈现方式交 M4-T02 | `docs/personahub-user-journeys.md::6.1-default-landing` | 2 | 3 | journey-writes-page-form |
+| JRN2-013 | 指派入口表用 composer 组件名，越出行为层用语 | Low | 质量 | 根因 | 修复引入 | fixed | 改为「指令输入处」，不指定具体控件 | `docs/personahub-user-journeys.md::6.5-assignment-entry-priority` | 2 | 3 | journey-writes-page-form |
+
+**模式性教训**
+
+1. **`origin` 分布：初稿 7 / 修复引入 3 / 契约漂移 2 / 流程缺口 1。** 修复引入占 23%，
+   与协议预期的 20-30% 自伤率吻合——这三条在第 1 轮物理上不存在，只有第 2 轮 diff-only
+   复核抓得到，再次印证「1 轮闭环是假闭环」。
+2. **新出现的 `journey-writes-page-form`（2 次，均在同一轮）**：第 1 轮刚在 JRN2-005 立下
+   「旅程不写页面形态」的边界，同一轮自己新写的段落里就越界两次（「右栏收起」「composer」）。
+   **刚确立的规则对同一轮的新增内容约束力最弱**——立规则的那一轮必须回头用新规则重扫
+   自己这轮写的所有文字，不能只用它审存量。
+3. **`cross-feature-contract-drift` 连续两个循环出现（循环 15 两次、本轮两次）**，且本轮
+   两次都是「旅程偏离 PRD 却没登记影响面」。JRN2-011 尤其典型：同一轮里 JRN2-003 登记了、
+   JRN2-011 没登记，**同类问题在同一轮内被两种规格处理**。已固化为口径：旅程任何一处与
+   PRD 分叉，必须同时在 `product-experience-reset-plan.md` §7 登记，无例外。
+4. **`prd-requirement-not-carried-into-journey`（2 次）与 `concept-without-journey-step`
+   （2 次）互为镜像**——前者是 PRD 有而旅程漏（Automations、第一屏落点），后者是旅程列了
+   概念却无步骤承载（Room、Message stats）。两者都只有做「PRD ↔ 旅程双向逐条对照」才能
+   发现，单向通读任何一份都查不出来。这条对照应固化进旅程类文档的检视清单。
+5. **存活轮数**：全部 1 轮关闭，最长 1 轮，与循环 15 持平。规模从 9 条升到 13 条但收敛
+   速度未退化，说明清单式检视（先定 8 项有限清单再扫）比自由通读更稳定。
