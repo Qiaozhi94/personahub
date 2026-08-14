@@ -168,6 +168,50 @@ stub `global.fetch`——它断言的是自己的预期，不是真实服务端�
 3. **阻塞说明**（若未跑成）：按 SOP「真实环境测试纪律」写明哪条测试、为什么跑不了、缺什么、
    补齐后如何执行——不允许静默跳过或写成通过。
 
+#### 3.3.2 真实 CLI 测试：本机具备环境，不得跳过
+
+**本机装有本项目要求的全部 agent CLI（codex / claude / opencode），因此 `REAL_*` 门控的测试
+必须真跑，不允许因为"默认不跑"就长期不跑。**（2026-08-14 用户明确）
+
+- 涉及文件：`server/tests/integration/real-*.test.ts` 与 `graph-cli-acceptance.test.ts`，
+  由 `REAL_CODEX` / `REAL_CLAUDE` / `REAL_OPENCODE` 三个环境变量门控。
+- **建议串行执行**（`--maxWorkers=1 --no-file-parallelism`）：3.1 那套 8 worker 的并行配置是为
+  fake 夹具调的，串行能排除一个混淆变量。但**串行并不能解决 CLI 本身变慢**——见下方分诊规则。
+- **失败分诊：先判环境，再判产品。** 真实 CLI 的红有两类，混淆它们会导致去修根本不存在的
+  bug，或者反过来把真缺陷当成"今天网络不好"：
+
+  | 症状 | 先做什么 |
+  |---|---|
+  | Issue 停在 `Validating`、graph 停在 `running`、硬超时 | 跑一次基线探测（下方），拿到单次往返耗时 |
+  | 结构性错误：字段缺失、状态机走错、契约不符 | 直接按产品缺陷处理，记 `dogfooding-bugs.md` |
+
+  基线探测（约 30s，与产品无关）：
+
+  ```
+  codex exec --skip-git-repo-check "reply with exactly: PONG"
+  ```
+
+  **健康时应在数秒内返回。** 若一句 PONG 就要 30s+，说明 CLI 侧已降级（配额节流/服务波动），
+  此时所有真实测试的耗时预算都不再成立，结果不足以判定产品健康——按 SOP 记录客观阻塞原因、
+  择时重跑，**不要写成通过，也不要立 bug**。
+
+- **实测记录（2026-08-14）**：`real-codex-e2e` 在 21:54 单跑 **24s 通过**；随后连续跑了约 30 次
+  真实 Codex 调用，一小时内同一条用例变成 **262s 且停在 `Validating`**，基线 PONG 探测 31s。
+  并行跑 11 文件 5 条红、串行跑 6 条红——**串行更差，因此"并发争抢"不是主因**，主因是 CLI
+  侧吞吐降级。Claude / OpenCode 组同期 7 个文件全过。
+- **执行时机**：版本收口前必跑一轮，与 6.1 的 dogfood 场景同批次；结果按 3.3.1 记录。
+  它们是发布级里唯一自动化的部分——省掉的是人的操作，不是人的判断。
+- **不进 `verify`**：真实模型调用耗时不可控（单条 e2e 实测 24s），放进本地高频循环会让
+  4.2 的时长预算直接失效，也会让门禁变得不可信（网络/额度波动导致的红）。
+- **不进 CI**：CI runner 没有凭据，也不该有。
+- **环境缺失时按 SOP 处理**：显式写明哪条测试、缺什么、补齐后如何执行，不得静默跳过或
+  写成通过。
+
+**踩坑记录（2026-08-14）**：nvm-windows 的全局 npm 包**按 Node 版本隔离**。从 Node 22 升到
+24 后，装在 22 下的 `@openai/codex` 与 `opencode-ai` 全部失联，`REAL_*` 测试即使打开也只会
+因为找不到二进制而失败。切换 Node 大版本后必须同时确认：`npm rebuild better-sqlite3`
+（原生模块 ABI）**和**全局 CLI 是否需要重装。
+
 ### 3.4 准入清单
 
 Feature 状态改 `done` 前逐条对照，任一条为否即不得改状态：
@@ -182,7 +226,7 @@ Feature 状态改 `done` 前逐条对照，任一条为否即不得改状态：
 
 | 命令 | 组成 | 什么时候必须跑 |
 |---|---|---|
-| `npm run verify` | lint / format:check / typecheck / 测试 / 文档门禁（**不含 build 与 E2E**） | 每个任务完成后；本地高频循环 |
+| `npm run verify` | lint / format:check / typecheck / 测试 / 文档门禁 / `check:e2e-fixme`（**不含 build 与 E2E**） | 每个任务完成后；本地高频循环 |
 | `npm run verify:release` | `verify` + `build` + `test:e2e:install` + `test:e2e` | 推 main 前、Feature 状态改为 done 前、版本收口前 |
 | CI `verify` + `e2e` 两个 job | verify job 追加一步 `npm run build` | push main 与 PR 自动触发 |
 
@@ -201,7 +245,8 @@ CI 的 `e2e` job 已是强制门禁。若在旅程尚未修通时直接提交断
 
 1. 新旅程 spec 先以 `test.fixme` 提交——用例存在、断言可读、但不计入失败。
 2. 对应旅程整改通过后，同一 commit 里移除 `fixme` 标记，该旅程转入强制。
-3. `fixme` 状态的 spec 必须在第 8 节任务清单里有对应未勾选任务；不允许长期挂着。
+3. `fixme` 状态的 spec 必须在第 9 节任务清单里有对应未勾选任务；不允许长期挂着。
+   由 `npm run check:e2e-fixme` 强制（见 7.3）。
 
 ### 4.2 时长预算
 
@@ -300,6 +345,10 @@ M3-T04 产出。这是本文唯一的外部输入依赖；在它落地前，其�
 
 ### 6.1 固定场景清单
 
+**先跑自动化的那部分**：`REAL_CODEX=1 REAL_CLAUDE=1 REAL_OPENCODE=1 npm -w @personahub/server run test`
+（见 3.3.2）。它覆盖真实 CLI 的派发、验证、跨 provider 与队列语义；下面五个场景是它覆盖不了的
+人工判断部分，不要用它替代。
+
 版本收口前逐条执行并记录实际耗时：
 
 1. 干净数据库的首次启动与配置。
@@ -355,6 +404,14 @@ M3-T04 产出。这是本文唯一的外部输入依赖；在它落地前，其�
 `test.fixme` 的 spec 必须在第 9 节任务清单有对应未勾选任务。允许暂时红转黄（见 4.1），不允许
 无主挂着——无主的 fixme 会变成永久的假覆盖。
 
+**门禁（已生效）**：`npm run check:e2e-fixme`（已接入 `verify`）扫描 `e2e/tests/**/*.spec.ts`
+的无条件停放标记（`test.fixme`、具名 `test.skip`、`describe.skip`），要求第 9 节存在**未勾选**
+任务提及该 spec 的文件名；无主即退出码 1。任务勾掉后该 spec 若仍停放，同样报错——完成的任务
+意味着没人再对它负责。
+
+**刻意不匹配条件跳过**（Playwright 的 `test.skip(condition, reason)`、vitest 的 `describe.skipIf`）：
+那些表达的是"本环境跑不了"，归 SOP 的真实环境测试纪律与 3.3.2 管，不是本门禁的对象。
+
 ### 7.4 漂移即失败
 
 以下不一致必须让 `npm run verify` 直接失败，而不是靠人复查：
@@ -377,6 +434,7 @@ M3-T04 产出。这是本文唯一的外部输入依赖；在它落地前，其�
 4. `dogfooding-notes.md` 中落在三条 P0 旅程步骤上的条目无 `open`；不在 P0 路径上的可留 `open`。
 5. 第 6.1 节五个场景全部执行并留下记录。
 6. 74 条 AC 全部带测试引用或人工验证理由（7.4 门禁自动判定）。
+7. `REAL_*` 真实 CLI 测试本轮跑过并通过（见 3.3.2）；未跑成的按 SOP 显式记录原因。
 
 任一项失败，版本回到整改。**不得把核心路径不可用写进"已知限制"后继续收口。**
 

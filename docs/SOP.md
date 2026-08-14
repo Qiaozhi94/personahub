@@ -36,6 +36,15 @@ updated: 2026-08-09
 - **允许延后的唯一情形是客观不可执行**：缺凭证、缺二进制、需要外部账号或联网服务、会造成破坏性副作用等。此时不得静默跳过，必须在自检结论里显式写出：哪条测试、为什么跑不了、缺什么，以及补齐后如何执行。
 - tasks.md 里的真实环境验证任务默认由开发流程在本机跑完并勾选，而不是甩给“用户在真实环境执行”。确实无法在本机执行的，按上一条显式标注原因。
 - 自检结论要如实反映：本机跑过并通过的说通过，跳过的说跳过并给原因，绝不把“未执行”写成“通过”。
+- **`REAL_*` 门控的测试同样受本纪律约束**（2026-08-14 明确）。本机装有项目要求的全部 agent CLI（codex / claude / opencode），`server/tests/integration/real-*.test.ts` 与 `graph-cli-acceptance.test.ts` 必须真跑，不得因为“默认条件不满足所以跳过”而长期不跑：
+  ```
+  cd server && REAL_CODEX=1 REAL_CLAUDE=1 REAL_OPENCODE=1 \
+    npx vitest run --maxWorkers=1 --no-file-parallelism \
+    tests/integration/real-*.test.ts tests/integration/graph-cli-acceptance.test.ts
+  ```
+  **建议串行**（排除混淆变量）。**红了先分诊再下结论**：卡在 `Validating` / `running` / 硬超时这类症状，先跑 `codex exec --skip-git-repo-check "reply with exactly: PONG"`——健康时数秒返回，若 30s+ 说明 CLI 侧已降级，此时结果不足以判定产品健康，按上面「客观不可执行」记录并择时重跑，不写成通过也不立 bug。分诊规则与 2026-08-14 实测数据见 `docs/reviews/self-test-system-plan.md` §3.3.2。
+  执行时机与记录格式见 `docs/reviews/self-test-system-plan.md` §3.3.2（版本收口前必跑，不进 `verify` / CI）。
+- **换 Node 大版本后先确认环境完整**：nvm-windows 的全局 npm 包按版本隔离，切版本会让 `codex` / `opencode` 失联；同时 `better-sqlite3` 的原生模块 ABI 也要 `npm rebuild`。环境没恢复就跑 `REAL_*`，红的是环境不是代码。
 
 ## 检视文档生命周期纪律
 
