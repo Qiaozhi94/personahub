@@ -37,7 +37,7 @@
     "verify:release": "npm run verify && npm run build && npm run test:e2e:install && npm run test:e2e"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.19",
