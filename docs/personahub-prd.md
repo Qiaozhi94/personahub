@@ -1,10 +1,20 @@
 ---
 feature_ids: []
 related_features: []
-topics: [prd, product, agent-team-os, issue-managed-workflow, room-collaboration, graph-orchestrated-work, evidence-grounded, artifact-centered]
+topics:
+  [
+    prd,
+    product,
+    agent-team-os,
+    issue-managed-workflow,
+    room-collaboration,
+    graph-orchestrated-work,
+    evidence-grounded,
+    artifact-centered,
+  ]
 doc_kind: prd
 created: 2026-07-11
-updated: 2026-08-08
+updated: 2026-08-14
 ---
 
 # PersonaHub PRD: Personal AI Agent Team OS
@@ -13,17 +23,18 @@ updated: 2026-08-08
 
 ## 修订记录
 
-| 日期 | 来源提交 | 修订目的 | 修订内容 |
-| --- | --- | --- | --- |
-| 2026-08-08 | `docs/reviews/requirements-review-2026-08-08-F007-pre-development.md` | F006 完成、进入 F007 开发前的最后契约核对，发现第 15 节 P1 摘要与 v0.2 目标段仍把 Coordinator 写成"可配置 agent role"、"系统自动推荐/分派"，与同节后文及 ADR 0007 已裁定的"进程内确定性规则引擎、只推荐不派工"相矛盾 | P1 摘要与 v0.2 目标段改为如实描述：Coordinator 是进程内确定性规则引擎而非可配置 agent role，推荐维度改为 Issue Type / Workflow Template / Collaboration Topology / Agent Roster，"自动推荐/分派"改为"推荐、用户确认后才执行"；"Agent Team Template 推荐"改称"Agent Roster 推荐"以避免暗示持久化模板 |
-| 2026-08-02 | （v0.2 需求文档外部检视，20 条 finding） | 一份独立检视对 F006/F007/F008 三件套提出 20 条问题，逐条对照源码核实后全部成立，其中五条会导致 v0.2 功能跑不通或静默损坏（F006 fan-in 取不到前驱结果、escalation 销毁排队中的兄弟节点；F007 按 adapter 数量降级 topology 使单 adapter 环境永不启用图、图分支丢弃用户确认的执行者；F008 通用 `setStatus()` 可造出两个 active 模板、审计事件无合法 thread 可写）。修订限于实现级设计，未推翻任何产品判断 | 三个 feature 的 spec/design/tasks 逐条并入；范围侧唯一变化是 F007、F008 由"无 schema 变更"改为各新增一张小表（`intake_confirmations` 幂等认领、`admin_audit_events` 全局审计），因两处需求（确认幂等、验证关闭可追溯）在现有 schema 下不可实现。FR-004 的"谁关掉了验证"如实收窄为"何时对哪个版本做了什么"——本应用无鉴权，不存在可记录的用户身份 |
-| 2026-08-01 | `docs/decisions/0007-coordinator-execution-channel.md` | v0.2 拆成 F006/F007/F008 三个 Feature 后，逐条比对第 15 节范围清单与三份 spec 的实际覆盖，发现四处分叉：范围清单把 Coordinator 描述为可配置 agent、要求写入 `default_coordinator_agent_id`、要求 Agent Team Template 推荐、以及"自动推荐和分派"；而 ADR 0007 已裁定 v0.2 用确定性规则引擎且只推荐不派工，`agent_team_template_id` 又是指向不存在的表的悬空列。另发现 Structured Handoff Packet 实际已在 v0.1.4 交付，仍列在 v0.2 范围内 | 第 15 节 v0.2 范围清单逐条改为如实描述：Coordinator 明确为进程内确定性规则引擎并指向 ADR 0007；`default_coordinator_agent_id` 标注推迟及理由；Agent Team Template 收窄为每次现算的 roster 推荐并说明悬空列成本；自动分派改为推荐 + 用户确认并给出保留人工闸门的理由；Structured Handoff Packet 标注已由 v0.1.4 交付。完成判据第一条补充"自然语言成分很弱"的诚实限定，禁止把 v0.2 描述为语义理解能力 |
-| 2026-07-29 | `docs/decisions/0006-executable-work-graph.md` | 第三至五轮文档/代码交叉复核依次发现：v0.2 完成判据缺少 ADR 0006 Slice 1 要求的"可恢复"语义；"并行执行子任务"与现有 workspace 排他锁矛盾未说明边界；"只读子任务可不持锁并行"缺少运行时强制手段（代码核实 `WorkspaceContext` 无访问模式字段，三个 adapter 均无强制只读能力）；随后又发现第四轮给出的"缓解方案"本身不成立——普通 `git worktree`/目录拷贝只是换了个 cwd，不构成操作系统层面的访问隔离，`git worktree` 还与主仓库共享 `.git` 管理元数据——均已修正；同时补齐 frontmatter `updated` 与修订记录不一致 | 第 15 节 v0.2 完成判据补充"可恢复"最小语义（定义以 ADR 0006 为准）；并行边界改为以 ADR 0006 定义的强制隔离条件（操作系统层面不可访问活 workspace，非仅换 cwd）或跨 adapter 一致的强制只读能力为前提，明确普通 worktree/拷贝不满足该条件，默认基线是全部串行，"并行"退化为图上的逻辑 fan-out；写入子任务始终串行不变；frontmatter `updated` 同步为 2026-07-29 |
-| 2026-07-28 | `docs/decisions/0006-executable-work-graph.md` | 把二级定位表达从 topology-aware 升级为 graph-orchestrated，与 v0.2+ Executable Work Graph 目标架构方向对齐；经两轮文档一致性复核发现首版改动把 v0.1 元数据误述为已具备可执行图能力、`orchestrator_subagent` 拓扑定义缺少可验证的最小场景、且未说明 v0.2 完成判据与该决策 Slice 1 触发条件的关系，本行合并记录修正后的最终改动 | 更新第 2 节"一句话"中英文定位表述，并明确 v0.1 当前只有描述性元数据、不构成可执行图，同时给出 Executable Work Graph 与 Collaboration Topology 的层级关系；第 5 节 `orchestrator_subagent` 拓扑定义补充"至少两个可独立调度子任务 + 显式边回传 + 收敛"的最小场景，排除单一子 agent 顺序接力也算数的歧义；第 13 节差异化描述、第 15 节版本路线引言同步措辞并指向 0006 号决策，不再声称 v0.1 已由 Collaboration Topology 承担 graph-orchestrated collaboration；第 15 节 v0.2 完成判据改为要求至少一次真实 fan-out → fan-in，并把 Slice 1 的验收标准改为"以显式 Node/Edge 语义可执行、可追踪"而非预先约定必须新建运行时表；frontmatter topics 标签同步更新 |
-| 2026-07-19 | （F004 final review） | 统一 Autonomous Validation 的轮次、安全恢复和 Evidence Summary 验收口径 | 明确 Issue 累计 failed count / Run round 的职责、第三次 failed 即 Blocked、普通 unblock 保留轮次、round-limit 只能通过独立带 note 的 reset action 清零，以及 Done Evidence Summary 支持复制/下载已持久化 Markdown |
-| 2026-07-18 | `4d13cab` | 避免 v0.4 在 Workflow 抽象尚未经过跨场景验证时，同时铺开多个浅层非 coding workflow；让后续自动编排有可评价的数据基础 | 将 v0.4 调整为“扩展契约 + 按任务范式逐个验证的垂直切片”，优先做 Windows Troubleshooting，再按实测进入 knowledge/research 与 writing；明确多种 Issue Type 可以保留为方向，但不承诺同一版本全部成熟交付；将最小 AgentOps 原始信号前置到 v0.1–v0.3，v0.5 仍负责完整评价、分析 UI 与 trust scoring |
-| 2026-07-12 | `9c79555` | 在 Coordinator 自动编排前增加一条可独立交付的多 Agent 协作路径 | 新增 v0.1.4 手动多 Agent 路由：补齐 Codex / Claude Code / OpenCode adapter 与鉴权范围，在 Thread 中手动选择下一位 Agent，并通过 Handoff Packet 和 evidence refs 避免复制上下文；相应调整 v0.1 完成判据和 v0.2 Coordinator 边界 |
-| 2026-07-12 | `4af80c1` | 建立 PersonaHub 第一版正式产品真相源 | 创建完整 PRD，确定个人优先的 Agent Team OS 定位，以及 Project / Workspace / Issue / Thread / Room、Workflow Template、Validation、Evidence、Memory、Skill 等核心概念；给出 v0.1–v0.9 路线、信息架构、安全边界与 MVP 验收标准 |
+| 日期       | 来源提交                                                              | 修订目的                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 修订内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-08-14 | 产品体验重置 / 用户旅程决策                                           | 优先交付 P0 最小可用闭环，避免自动阶段流转与自动修复回路拖慢首次可用                                                                                                                                                                                                                                                                                                                                                                                                                                         | P0 改为完全手动阶段指派：系统仍自动生成 Handoff Packet、携带上下文、执行被指派的 Run、收集证据并在验证通过后进入 Done，但阶段完成和 validation fail 后均停在 Ready/“等待你指派”；自动 handoff/自动修复回路登记为 P0 dogfood 后再定版本的后续候选                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 2026-08-08 | `docs/reviews/requirements-review-2026-08-08-F007-pre-development.md` | F006 完成、进入 F007 开发前的最后契约核对，发现第 15 节 P1 摘要与 v0.2 目标段仍把 Coordinator 写成"可配置 agent role"、"系统自动推荐/分派"，与同节后文及 ADR 0007 已裁定的"进程内确定性规则引擎、只推荐不派工"相矛盾                                                                                                                                                                                                                                                                                         | P1 摘要与 v0.2 目标段改为如实描述：Coordinator 是进程内确定性规则引擎而非可配置 agent role，推荐维度改为 Issue Type / Workflow Template / Collaboration Topology / Agent Roster，"自动推荐/分派"改为"推荐、用户确认后才执行"；"Agent Team Template 推荐"改称"Agent Roster 推荐"以避免暗示持久化模板                                                                                                                                                                                                                                                                                                                                                    |
+| 2026-08-02 | （v0.2 需求文档外部检视，20 条 finding）                              | 一份独立检视对 F006/F007/F008 三件套提出 20 条问题，逐条对照源码核实后全部成立，其中五条会导致 v0.2 功能跑不通或静默损坏（F006 fan-in 取不到前驱结果、escalation 销毁排队中的兄弟节点；F007 按 adapter 数量降级 topology 使单 adapter 环境永不启用图、图分支丢弃用户确认的执行者；F008 通用 `setStatus()` 可造出两个 active 模板、审计事件无合法 thread 可写）。修订限于实现级设计，未推翻任何产品判断                                                                                                       | 三个 feature 的 spec/design/tasks 逐条并入；范围侧唯一变化是 F007、F008 由"无 schema 变更"改为各新增一张小表（`intake_confirmations` 幂等认领、`admin_audit_events` 全局审计），因两处需求（确认幂等、验证关闭可追溯）在现有 schema 下不可实现。FR-004 的"谁关掉了验证"如实收窄为"何时对哪个版本做了什么"——本应用无鉴权，不存在可记录的用户身份                                                                                                                                                                                                                                                                                                        |
+| 2026-08-01 | `docs/decisions/0007-coordinator-execution-channel.md`                | v0.2 拆成 F006/F007/F008 三个 Feature 后，逐条比对第 15 节范围清单与三份 spec 的实际覆盖，发现四处分叉：范围清单把 Coordinator 描述为可配置 agent、要求写入 `default_coordinator_agent_id`、要求 Agent Team Template 推荐、以及"自动推荐和分派"；而 ADR 0007 已裁定 v0.2 用确定性规则引擎且只推荐不派工，`agent_team_template_id` 又是指向不存在的表的悬空列。另发现 Structured Handoff Packet 实际已在 v0.1.4 交付，仍列在 v0.2 范围内                                                                      | 第 15 节 v0.2 范围清单逐条改为如实描述：Coordinator 明确为进程内确定性规则引擎并指向 ADR 0007；`default_coordinator_agent_id` 标注推迟及理由；Agent Team Template 收窄为每次现算的 roster 推荐并说明悬空列成本；自动分派改为推荐 + 用户确认并给出保留人工闸门的理由；Structured Handoff Packet 标注已由 v0.1.4 交付。完成判据第一条补充"自然语言成分很弱"的诚实限定，禁止把 v0.2 描述为语义理解能力                                                                                                                                                                                                                                                    |
+| 2026-07-29 | `docs/decisions/0006-executable-work-graph.md`                        | 第三至五轮文档/代码交叉复核依次发现：v0.2 完成判据缺少 ADR 0006 Slice 1 要求的"可恢复"语义；"并行执行子任务"与现有 workspace 排他锁矛盾未说明边界；"只读子任务可不持锁并行"缺少运行时强制手段（代码核实 `WorkspaceContext` 无访问模式字段，三个 adapter 均无强制只读能力）；随后又发现第四轮给出的"缓解方案"本身不成立——普通 `git worktree`/目录拷贝只是换了个 cwd，不构成操作系统层面的访问隔离，`git worktree` 还与主仓库共享 `.git` 管理元数据——均已修正；同时补齐 frontmatter `updated` 与修订记录不一致 | 第 15 节 v0.2 完成判据补充"可恢复"最小语义（定义以 ADR 0006 为准）；并行边界改为以 ADR 0006 定义的强制隔离条件（操作系统层面不可访问活 workspace，非仅换 cwd）或跨 adapter 一致的强制只读能力为前提，明确普通 worktree/拷贝不满足该条件，默认基线是全部串行，"并行"退化为图上的逻辑 fan-out；写入子任务始终串行不变；frontmatter `updated` 同步为 2026-07-29                                                                                                                                                                                                                                                                                           |
+| 2026-07-28 | `docs/decisions/0006-executable-work-graph.md`                        | 把二级定位表达从 topology-aware 升级为 graph-orchestrated，与 v0.2+ Executable Work Graph 目标架构方向对齐；经两轮文档一致性复核发现首版改动把 v0.1 元数据误述为已具备可执行图能力、`orchestrator_subagent` 拓扑定义缺少可验证的最小场景、且未说明 v0.2 完成判据与该决策 Slice 1 触发条件的关系，本行合并记录修正后的最终改动                                                                                                                                                                                | 更新第 2 节"一句话"中英文定位表述，并明确 v0.1 当前只有描述性元数据、不构成可执行图，同时给出 Executable Work Graph 与 Collaboration Topology 的层级关系；第 5 节 `orchestrator_subagent` 拓扑定义补充"至少两个可独立调度子任务 + 显式边回传 + 收敛"的最小场景，排除单一子 agent 顺序接力也算数的歧义；第 13 节差异化描述、第 15 节版本路线引言同步措辞并指向 0006 号决策，不再声称 v0.1 已由 Collaboration Topology 承担 graph-orchestrated collaboration；第 15 节 v0.2 完成判据改为要求至少一次真实 fan-out → fan-in，并把 Slice 1 的验收标准改为"以显式 Node/Edge 语义可执行、可追踪"而非预先约定必须新建运行时表；frontmatter topics 标签同步更新 |
+| 2026-07-19 | （F004 final review）                                                 | 统一 Autonomous Validation 的轮次、安全恢复和 Evidence Summary 验收口径                                                                                                                                                                                                                                                                                                                                                                                                                                      | 明确 Issue 累计 failed count / Run round 的职责、第三次 failed 即 Blocked、普通 unblock 保留轮次、round-limit 只能通过独立带 note 的 reset action 清零，以及 Done Evidence Summary 支持复制/下载已持久化 Markdown                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 2026-07-18 | `4d13cab`                                                             | 避免 v0.4 在 Workflow 抽象尚未经过跨场景验证时，同时铺开多个浅层非 coding workflow；让后续自动编排有可评价的数据基础                                                                                                                                                                                                                                                                                                                                                                                         | 将 v0.4 调整为“扩展契约 + 按任务范式逐个验证的垂直切片”，优先做 Windows Troubleshooting，再按实测进入 knowledge/research 与 writing；明确多种 Issue Type 可以保留为方向，但不承诺同一版本全部成熟交付；将最小 AgentOps 原始信号前置到 v0.1–v0.3，v0.5 仍负责完整评价、分析 UI 与 trust scoring                                                                                                                                                                                                                                                                                                                                                         |
+| 2026-07-12 | `9c79555`                                                             | 在 Coordinator 自动编排前增加一条可独立交付的多 Agent 协作路径                                                                                                                                                                                                                                                                                                                                                                                                                                               | 新增 v0.1.4 手动多 Agent 路由：补齐 Codex / Claude Code / OpenCode adapter 与鉴权范围，在 Thread 中手动选择下一位 Agent，并通过 Handoff Packet 和 evidence refs 避免复制上下文；相应调整 v0.1 完成判据和 v0.2 Coordinator 边界                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 2026-07-12 | `4af80c1`                                                             | 建立 PersonaHub 第一版正式产品真相源                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | 创建完整 PRD，确定个人优先的 Agent Team OS 定位，以及 Project / Workspace / Issue / Thread / Room、Workflow Template、Validation、Evidence、Memory、Skill 等核心概念；给出 v0.1–v0.9 路线、信息架构、安全边界与 MVP 验收标准                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ## 1. 背景
 
@@ -40,7 +51,7 @@ updated: 2026-08-08
 
 核心产品判断：
 
-- 以 Thread 承载 agent 协作、handoff、自动 validation、证据和记忆。
+- 以 Thread 承载 agent 协作、handoff、validation、证据和记忆；P0 阶段间由用户指派，自动流转后续演进。
 - 以 Project / Issue 管理工作对象、状态、归属和自动化。
 - 以 Issue Type / Workflow Template / Collaboration Topology 决定参与哪些 agents、采用什么协作方式、如何验证完成。
 - 第一版以个人工程工作台作为入口形态，不做语音、陪伴、游戏模式。
@@ -169,7 +180,7 @@ PersonaHub 应支持从个人到团队的渐进采用：
 
 ### 4.1 P0 目标
 
-第一阶段目标是：用户可以把日常代码开发工作流完整迁移到 `PersonaHub` 中，不再需要在多个 CLI 工具之间反复切换、复制上下文和手动下发工作指令。
+第一阶段目标是：用户可以把日常代码开发工作流完整迁移到 `PersonaHub` 中，不再需要在多个 CLI 工具之间反复切换或复制上下文。P0 明确保留“下一步交给谁”的人工决策，以更小范围先交付可使用闭环；系统自动阶段派发属于后续版本。
 
 P0 只完整实现 coding workflow：只有 Coding Issue Type 拥有可运行的 Workflow Template、Agent Team Template 和 Validation Policy。Windows / Paper / Book / Research / Writing 等 Issue Type 在 P0 阶段只保留数据模型边界（Issue Type 枚举、Workflow Template / Validation Policy 的可扩展字段结构），不提供可运行模板或占位 UI——多场景同时铺开会稀释 P0 焦点，也会把还不成熟的 workflow 抽象过早产品化。这些候选 workflow 从第 15 节 v0.4 起按任务范式逐个做垂直切片和真实验证，不承诺一次全部实现。
 
@@ -179,12 +190,12 @@ P0 要跑通的开发工作流闭环：
 2. 用户绑定本地 Workspace（local workspace path）。
 3. 用户在 Project 下创建 coding Issue。
 4. 系统自动为 Issue 创建 primary Thread。
-5. 系统根据 Coding Workflow Template 和默认 sequential topology 选择 coding agent roster。
-6. 用户在 PersonaHub 中下发需求、实现、修复、验证等指令，而不是切到各个 CLI。
+5. 系统根据 Coding Workflow Template 和默认 sequential topology 推荐 coding agent roster。
+6. 用户在 PersonaHub 中下发需求，并在每个阶段结束后指派下一位执行者，而不是切到各个 CLI 或复制上下文。
 7. 系统通过 local runner 启动对应 coding agent adapter。
 8. Agents 在 Thread 中执行开发任务。
 9. 系统流式记录 run events、logs、file changes、decisions、evidence。
-10. 实现完成后，validator / reviewer agent 自动检查 diff、测试、风险和证据。
+10. 实现完成后，系统生成 Handoff Packet 并停在“等待你指派”；用户选择 validator / reviewer 后才启动验证。
 11. Validation 通过且 evidence trace 存在时，Issue 自动进入 Done。
 12. 系统沉淀 evidence summary、decisions、lessons。
 
@@ -196,7 +207,7 @@ P0 成功标准：一个真实开发 Issue 可以从创建、执行、验证到 
 
 - 一个真实 Issue 从创建到 Done，用户手动复制上下文、切换终端窗口的次数趋近于 0。
 - 用户愿意把日常真实开发任务而不是测试性任务交给 PersonaHub，并持续使用，而不是体验一次后回到原有 CLI 工具链。
-- 因为 Blocked 而需要 operator 介入的比例，没有高到让"自动执行"名不副实。
+- 每次阶段指派都能在 15 秒内完成，且用户无需重新整理或复制上一阶段上下文。
 
 这些信号不是正式 KPI（个人项目不需要），而是自查 PersonaHub 是否只是把复杂度从"多个终端窗口"搬进了"一个更复杂的界面"，呼应第 13 节"同质化""过度平台化"风险。
 
@@ -409,7 +420,7 @@ Issue Type 表示任务类别，用来帮助系统选择默认 workflow、agent 
 
 ### Workflow Template
 
-Workflow Template 定义某类 Issue 的默认 agent roster、步骤、handoff 规则、validation policy 和 evidence 要求。
+Workflow Template 定义某类 Issue 的默认 agent roster、建议步骤、handoff 规则、validation policy 和 evidence 要求。P0 中它提供建议与完成判据，不自行启动下一阶段。
 
 它解决的问题是：不同任务不应该默认调用同一组 agents。代码开发可能需要 architect / coder / reviewer；Windows 排障可能只需要 diagnostician / fixer / verifier；论文拆解可能需要 reader / critic / note_writer。
 
@@ -470,7 +481,7 @@ Handoff Packet 是 agent 之间转移责任和上下文的结构化交接包。�
 最小内容：
 
 - from_agent_id
-- to_agent_id / to_room_id
+- to_agent_id / to_room_id（P0 在用户完成下一步指派前可以为空）
 - issue_goal
 - current_phase
 - completed_work
@@ -481,7 +492,7 @@ Handoff Packet 是 agent 之间转移责任和上下文的结构化交接包。�
 - open_questions
 - next_expected_output
 
-每次 handoff 必须写入 ThreadEvent，并可追溯到 artifacts 和 evidence。
+每次 handoff 必须写入 ThreadEvent，并可追溯到 artifacts 和 evidence。P0 自动生成交接包，但生成交接包不等于自动派发下一 Run。
 
 ### Validation Policy
 
@@ -489,15 +500,15 @@ Validation Policy 定义某类任务如何判断完成。
 
 不同 Issue Type 的验证方式不同：
 
-| Issue Type | Validation Policy |
-| --- | --- |
-| coding | tests pass、diff review、lint/build、verification trace |
-| windows_troubleshooting | 问题现象消失、命令输出正常、日志无关键错误 |
-| paper_reading | 研究问题、方法、实验、贡献、局限和可复用结论完整 |
-| book_breakdown | 章节结构、关键观点、论证脉络、行动启发完整 |
-| research | 来源足够、结论有证据、分歧和不确定性被标注 |
-| writing | 目标读者、结构、论点、证据和风格符合要求 |
-| custom | 用户自定义 pass/fail 条件 |
+| Issue Type              | Validation Policy                                       |
+| ----------------------- | ------------------------------------------------------- |
+| coding                  | tests pass、diff review、lint/build、verification trace |
+| windows_troubleshooting | 问题现象消失、命令输出正常、日志无关键错误              |
+| paper_reading           | 研究问题、方法、实验、贡献、局限和可复用结论完整        |
+| book_breakdown          | 章节结构、关键观点、论证脉络、行动启发完整              |
+| research                | 来源足够、结论有证据、分歧和不确定性被标注              |
+| writing                 | 目标读者、结构、论点、证据和风格符合要求                |
+| custom                  | 用户自定义 pass/fail 条件                               |
 
 ### Agent
 
@@ -762,9 +773,11 @@ Issue list 是 P0，Board view 是 P2，用于未来多人协作或大量并行�
 - run.started / run.output / run.completed / run.failed 被持久化。
 - Thread 中能看到执行摘要。
 
-### 7.4 自动 Handoff
+### 7.4 结构化 Handoff 与手动指派
 
-实现 agent 完成后，系统自动生成 handoff packet。
+实现 agent 完成后，系统自动生成 handoff packet，然后把 Issue 置为 Ready 并显示“等待你指派”。
+P0 不依据 packet 的 `next action` 自动创建或启动下一 Run；用户选择下一位执行者后，系统才把
+packet 与 evidence refs 作为上下文交给该执行者。自动阶段派发留待 P0 dogfood 后的后续版本。
 
 handoff packet 包含：
 
@@ -779,12 +792,14 @@ handoff packet 包含：
 验收：
 
 - handoff 事件写入 Thread。
-- 下一个 workflow step 的 agent 能读取 handoff packet。
+- 阶段完成后不自动启动下一个 workflow step。
+- 用户能在同一交接卡片中看到建议执行者、理由与可选成员，并完成指派。
+- 被用户指派的下一个 agent 能读取 handoff packet。
 - 用户无需手动复制上下文。
 
 ### 7.5 Agent Validation Loop
 
-Validator agent 根据当前 Workflow Template 自动验证任务结果。
+用户根据当前 Workflow Template 的建议手动指派 Validator agent；指派后系统自动运行验证并记录结果。
 
 Validation 是 Thread 内事件，不是一级产品模块。代码开发 workflow 中的 reviewer agent，是 validator agent 的一种具体角色。
 
@@ -794,15 +809,17 @@ Validator 独立性：默认策略下，validator agent 的 `cli_provider` 与 `
 
 P0 影响：P0 阶段按第 8 节约定只接入一个 coding CLI adapter。为避免单 adapter 下所有 Done Issue 都被标记为"同源验证"，Project 设置应支持为同一 `cli_provider` 配置至少两个不同的 `default_model`，implementation agent 与 validator agent 分别使用不同 model，以满足"至少一项不同"的最低独立性要求。若用户环境下确实只有一个可用 model，则如实标记"同源验证"，不额外伪装成跨模型验证。
 
-失败收敛上限：Issue 记录已形成 failed 结果的累计 `validation_round_count`，每条 validator Run 记录自身不可变的 `validation_round`。Workflow Template / Validation Policy 可配置 `max_validation_rounds`（默认建议 3）；本次 failed 计入后 `validation_round_count >= max_validation_rounds` 即视为“多轮 agent validation 无法收敛”，因此默认第三次 failed 直接使 Issue 转 Blocked，不允许第四次自动验证。
+失败收敛上限：Issue 记录已形成 failed 结果的累计 `validation_round_count`，每条 validator Run 记录自身不可变的 `validation_round`。Workflow Template / Validation Policy 可配置 `max_validation_rounds`（默认建议 3）；本次 failed 计入后 `validation_round_count >= max_validation_rounds` 即视为“多轮 agent validation 无法收敛”，因此默认第三次 failed 直接使 Issue 转 Blocked。未达上限时回到 Ready/“等待你指派”，也不自动启动修复或下一次验证。
 
 状态流转：
 
 ```text
-Running -> Validating -> Done
-Running -> Validating -> Running
-Running -> Validating -> Blocked
-Blocked -> Ready
+Running    -> Ready       implementation 完成，等待用户指派 validator
+Ready      -> Validating 用户指派 validator 并启动验证
+Validating -> Done        validation pass + evidence trace
+Validating -> Ready       validation fail，携带 findings 等待用户指派修复成员
+Validating -> Blocked     达到轮次上限 / 需要 operator escalation
+Blocked    -> Ready       operator 完成 escalation 处理
 ```
 
 Blocked 恢复：Blocked 是需要 operator escalation 处理的暂停态，不是终态。operator 在 Thread / Inspector 中完成 escalation 处理（例如授权、补充信息、人工解决需求冲突）后，Issue 回到 Ready，等待用户重新触发 Running。普通 unblock 保留 `validation_round_count`，不会隐式清零。若 blocker 是 `round_limit_reached` 且 operator 决定授予新的完整验证预算，必须先执行独立、显式、带说明且可追溯的 round reset action；reset 后 Issue 仍保持 Blocked，再由 operator 另行 unblock。系统不会自动把 Blocked 直接推回 Running。
@@ -822,14 +839,14 @@ Blocked 恢复：Blocked 是需要 operator escalation 处理的暂停态，不�
 系统行为：
 
 - pass：Issue 自动进入 Done。
-- fail：Issue 回到 Running，findings 成为下一轮修复输入。
+- fail：未达轮次上限时 Issue 回到 Ready，findings 成为下一轮修复输入；等待用户指派，不自动创建修复 Run。
 - blocked：Issue 进入 Blocked，并提示 operator escalation。
 
 验收：
 
 - validator 输出结构化 findings。
 - validation findings 写入 Thread。
-- pass/fail 能驱动 Issue 状态变化。
+- pass/fail 能驱动 Issue 状态变化；fail 不得绕过人工指派直接启动修复。
 - Done 状态必须绑定 evidence summary。
 
 ### 7.6 Evidence Summary
@@ -874,9 +891,11 @@ P0 / P1 规则：
 
 ## 8. 功能优先级
 
-P0 / P1 / P2 与第 15 节版本路线一一对应，不是独立的第二套排期：**P0 = v0.1**，**P1 = v0.2–v0.3**，**P2 = v0.4 及以后**。P 分层只是版本路线的粗粒度摘要，具体交付顺序、完成判据以第 15 节为准；两处出现分歧时以第 15 节为准。
+产品体验重置期间，P0 / P1 / P2 表达**当前产品优先级**，不再与已经交付的版本号机械一一对应：
+P0 是基于 v0.1/v0.2 现有能力收敛出的手动最小可用闭环；P1 是 P0 dogfood 后的近期候选；
+P2 是更远方向。历史版本实际交付内容仍以第 15 节和 release 文档为准。
 
-### P0（v0.1 Sequential Workflow）
+### P0（当前体验重置：Manual Sequential Workflow）
 
 - Project 创建 / 切换。
 - 本地代码 workspace 绑定。
@@ -890,14 +909,15 @@ P0 / P1 / P2 与第 15 节版本路线一一对应，不是独立的第二套排
 - Agent command dispatch: 用户从 Thread 中下发实现、修复、验证等指令，由 PersonaHub 转发给对应 CLI agent。
 - Run events 持久化。
 - File change / command / test evidence 记录。
-- Agent Validation Loop。
+- 手动启动的 Agent Validation；validation pass 自动收口，validation fail 停下等待指派。
 - Evidence Summary。
 - 本地 SQLite 存储。
 - Markdown export。
 - Claude Code CLI adapter、OpenCode CLI adapter 接入，三者（含 Codex）均支持 OAuth 登录，OpenCode 额外支持单独配置 API key 等模型信息；Thread 内手动多 agent 路由（见第 15 节 v0.1.4）。
 
-### P1（v0.2 Orchestrator Workflow + v0.3 Artifact-Centered Collaboration）
+### P1（P0 dogfood 后的近期候选）
 
+- Automatic Stage Continuation：在明确的重复指派模式下允许“记住选择 / 自动继续”；自动 handoff 与 validation fail 后自动修复必须可见、可暂停、可改派，并受轮次与安全边界约束。具体版本与 Feature ID 等 P0 dogfood 后确定。
 - Coordinator 初版：v0.2 是进程内确定性规则引擎（不是可配置 agent role，见第 15 节、`docs/decisions/0007-coordinator-execution-channel.md`），提供 Issue Type / Workflow Template / Collaboration Topology / Agent Roster 推荐，用户确认后才创建 Issue 与首个执行单元。
 - Agent Roster 推荐（每次请求现算，不持久化为可复用的 Agent Team Template；后者等待真实复用需求出现）。
 - Structured Handoff Packet。
@@ -941,10 +961,11 @@ Done 和 Blocked 都不是从对方转移过去的，以下按转移对列出，
 
 ```text
 Inbox      -> Ready       用户补全 goal / issue type / workflow template / owner agent
-Ready      -> Running     agent run 启动
-Running    -> Validating  workflow run completed
+Ready      -> Running     用户指派实现/修复成员并启动 Run
+Running    -> Ready       当前阶段完成，生成 handoff 后等待用户指派
+Ready      -> Validating  用户指派 validator 并启动验证
 Validating -> Done        validation pass + evidence trace
-Validating -> Running     validation fail，findings 回流
+Validating -> Ready       validation fail，findings 回流但不自动启动修复
 Validating -> Blocked     多轮不收敛 / 需要 operator escalation
 Running    -> Blocked     执行中触发 escalation（新权限、不可逆风险等）
 Blocked    -> Ready       operator 完成 escalation 处理
@@ -954,14 +975,14 @@ Done 为终态；Blocked 只能回到 Ready，不会自动跳回 Running。
 
 ### 状态说明
 
-| Status | 含义 | 进入条件 |
-| --- | --- | --- |
-| Inbox | 未准备执行 | 用户新建但未分配 agent 或信息不足 |
-| Ready | 可执行 | 有 goal、Issue Type、Workflow Template 和 owner agent |
-| Running | Agent 正在执行或修复 | run started / validation fail 后回流 |
-| Validating | Validator agent 正在按当前 Validation Policy 自动验证 | workflow run completed |
-| Done | 自动验证通过，证据完整 | validation pass + evidence trace |
-| Blocked | 需要 operator escalation | 权限、不可逆风险、多轮不收敛、需求冲突 |
+| Status     | 含义                                              | 进入条件                                                                    |
+| ---------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
+| Inbox      | 未准备执行                                        | 用户新建但未分配 agent 或信息不足                                           |
+| Ready      | 可执行或等待下一步指派                            | 有完整 goal/模板，且尚未启动 Run；阶段完成或 validation fail 后也回到此状态 |
+| Running    | Agent 正在执行或修复                              | 用户指派实现/修复成员并启动 Run                                             |
+| Validating | Validator agent 正在按当前 Validation Policy 验证 | 用户指派 validator 并启动 Run                                               |
+| Done       | 自动验证通过，证据完整                            | validation pass + evidence trace                                            |
+| Blocked    | 需要 operator escalation                          | 权限、不可逆风险、多轮不收敛、需求冲突                                      |
 
 ## 10. UI 需求
 
@@ -1071,10 +1092,11 @@ Escalation 是硬阻塞，不是软提示，但对不同风险类型，"硬阻�
 - [ ] 系统可以启动本地 coding agent 执行 Issue。
 - [ ] Thread 可以实时展示 run events。
 - [ ] Thread / Inspector 可以展示 run logs、file changes、command/test evidence。
-- [ ] Workflow step 完成后系统自动 handoff 给 validator agent。
+- [ ] Workflow step 完成后系统自动生成 Handoff Packet，并停在“等待你指派”。
+- [ ] 用户可以从交接卡片手动选择下一位执行者；被指派者自动获得上一阶段上下文与证据。
 - [ ] Validator 输出 structured findings 和 pass/fail。
 - [ ] Validation pass 后 Issue 自动进入 Done。
-- [ ] Validation fail 后 Issue 回到 Running，并携带 findings。
+- [ ] Validation fail 后 Issue 回到 Ready/“等待你指派”，携带 findings 且不自动启动修复。
 - [ ] Done Issue 有 evidence summary。
 - [ ] 一个真实代码开发 Issue 可以从创建到 Done 全程在 PersonaHub 内完成。
 - [ ] 数据持久化在本地。
@@ -1091,17 +1113,17 @@ Escalation 是硬阻塞，不是软提示，但对不同风险类型，"硬阻�
 
 ## 13. 风险与应对
 
-| 风险 | 表现 | 应对 |
-| --- | --- | --- |
-| 过度平台化 | 一开始做 daemon、cloud、auth、multi-user | v0.1 只做 local runner + SQLite |
-| 聊天壳化 | Thread 只是普通聊天记录 | 所有 Thread 必须绑定 Issue、状态和 evidence |
-| Validation 变成人工 gate | 用户仍需手动放行 | Validation 作为 agent loop 自动推进状态 |
-| Agent 团队误配 | 日常任务也拉起 architect / coder / reviewer | Issue Type + Workflow Template + Collaboration Topology 决定 agent roster 和协作方式 |
-| Memory 污染 | agent 随意写长期知识 | Memory 必须有 source issue/thread/event、confidence 和 provenance |
-| UI 过重 | Board / Hub / Logs / 多协作室同时抢中心 | 中间只承载当前协作现场（primary Thread 或 active Room），右侧 Inspector 分 tab |
-| 执行不可信 | Agent 自称完成但无证据 | Done 必须有 validation pass + evidence trace |
-| 同质化 | 看起来像普通聊天壳或普通 issue runner | 主打 Issue-managed Thread + evidence-grounded execution；从 v0.2 `orchestrator_subagent` 起，以 Collaboration Topology 为起点逐步实现 graph-orchestrated collaboration（v0.1 仅有 Collaboration Topology 描述性元数据，尚不驱动执行，见 `docs/decisions/0006-executable-work-graph.md`）+ evidence / skill compounding |
-| git push escalation 曾经过度依赖 CLI 能力（风险已下调） | 早期设计假设"硬阻塞"必须靠 CLI 的执行前 approval/权限钩子实现，一旦 CLI 不提供该钩子就只能事后检测，达不到第 11 节"硬阻塞"的要求 | 已改为凭据/执行环境隔离为主要防线（见第 11 节"凭据与执行环境隔离"）：agent 执行环境默认不下发 push 凭据，push 会因缺少凭据自然失败，不依赖 CLI 内部协议；CLI 的 approval 钩子（若存在）只作为可观测性增强，不再是安全底线本身 |
+| 风险                                                    | 表现                                                                                                                             | 应对                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 过度平台化                                              | 一开始做 daemon、cloud、auth、multi-user                                                                                         | v0.1 只做 local runner + SQLite                                                                                                                                                                                                                                                                                        |
+| 聊天壳化                                                | Thread 只是普通聊天记录                                                                                                          | 所有 Thread 必须绑定 Issue、状态和 evidence                                                                                                                                                                                                                                                                            |
+| P0 手动指派变成长期操作负担                             | 每个阶段都要用户决定下一位执行者                                                                                                 | 先用最小手动闭环验证真实需求并记录重复指派模式；自动继续在 P0 dogfood 后单独规划，不提前引入自动修复回路                                                                                                                                                                                                               |
+| Agent 团队误配                                          | 日常任务也拉起 architect / coder / reviewer                                                                                      | Issue Type + Workflow Template + Collaboration Topology 决定 agent roster 和协作方式                                                                                                                                                                                                                                   |
+| Memory 污染                                             | agent 随意写长期知识                                                                                                             | Memory 必须有 source issue/thread/event、confidence 和 provenance                                                                                                                                                                                                                                                      |
+| UI 过重                                                 | Board / Hub / Logs / 多协作室同时抢中心                                                                                          | 中间只承载当前协作现场（primary Thread 或 active Room），右侧 Inspector 分 tab                                                                                                                                                                                                                                         |
+| 执行不可信                                              | Agent 自称完成但无证据                                                                                                           | Done 必须有 validation pass + evidence trace                                                                                                                                                                                                                                                                           |
+| 同质化                                                  | 看起来像普通聊天壳或普通 issue runner                                                                                            | 主打 Issue-managed Thread + evidence-grounded execution；从 v0.2 `orchestrator_subagent` 起，以 Collaboration Topology 为起点逐步实现 graph-orchestrated collaboration（v0.1 仅有 Collaboration Topology 描述性元数据，尚不驱动执行，见 `docs/decisions/0006-executable-work-graph.md`）+ evidence / skill compounding |
+| git push escalation 曾经过度依赖 CLI 能力（风险已下调） | 早期设计假设"硬阻塞"必须靠 CLI 的执行前 approval/权限钩子实现，一旦 CLI 不提供该钩子就只能事后检测，达不到第 11 节"硬阻塞"的要求 | 已改为凭据/执行环境隔离为主要防线（见第 11 节"凭据与执行环境隔离"）：agent 执行环境默认不下发 push 凭据，push 会因缺少凭据自然失败，不依赖 CLI 内部协议；CLI 的 approval 钩子（若存在）只作为可观测性增强，不再是安全底线本身                                                                                          |
 
 ## 14. Open Questions
 
@@ -1116,7 +1138,7 @@ Escalation 是硬阻塞，不是软提示，但对不同风险类型，"硬阻�
 
 路线图按能力跃迁组织，而不是仅按功能清单组织。`PersonaHub` 的长期演进方向是：从固定 coding workflow，逐步升级为能自动选择协作方式、自动组队、自动验证、自动沉淀经验的个人 AI Agent Team OS。
 
-范围承诺分两层，呼应第 13 节"过度平台化"风险：v0.1–v0.3 是近期承诺范围，目标是先跑通个人闭环、验证 Issue-managed Thread 和 collaboration-topology 驱动的协作这两个核心判断是否成立，而不是先把全部框架搭好；这也是 Executable Work Graph 目标模型（`docs/decisions/0006-executable-work-graph.md`）的早期验证阶段——v0.2 `orchestrator_subagent` 拓扑落地即触发该决策的 Slice 1。v0.4 及以后是方向性设想，用来说明长期演进逻辑自洽，但具体范围、顺序甚至是否要做，会随 v0.1–v0.3 的实际使用反馈调整，不构成当前排期承诺。
+范围承诺分两层，呼应第 13 节"过度平台化"风险：v0.1–v0.3 是近期承诺范围，目标是先跑通个人闭环、验证 Issue-managed Thread 和 collaboration-topology 驱动的协作这两个核心判断是否成立，而不是先把全部框架搭好；这也是 Executable Work Graph 目标模型（`docs/decisions/0006-executable-work-graph.md`）的早期验证阶段——v0.2 `orchestrator_subagent` 拓扑落地即触发该决策的 Slice 1。当前产品体验重置以 P0 完全手动阶段指派为目标行为；v0.1/v0.2 小节仍如实记录历史交付，二者不代表重置后的 P0 继续开放自动流转。v0.4 及以后是方向性设想，用来说明长期演进逻辑自洽，但具体范围、顺序甚至是否要做，会随 v0.1–v0.3 的实际使用反馈调整，不构成当前排期承诺。
 
 ### v0.1 Sequential Workflow
 
@@ -1206,6 +1228,20 @@ v0.1 完成判据：
 - 用户输入自然语言目标后，系统能自动创建或补全 Issue。**v0.2 的"自然语言"成分很弱**——标题/goal 从输入文本直接取用，推荐由关键词与可用性规则驱动，不是语义理解；产品文案不得把它描述为理解能力（见 `docs/decisions/0007-coordinator-execution-channel.md`）。
 - 系统能说明为什么选择某个 workflow / topology / agent roster。
 - 至少 coding workflow 支持 orchestrator_subagent 拓扑，且至少覆盖一次真实的 fan-out → fan-in：Coordinator 拆出至少两个可独立调度的子任务，子任务结果通过显式边回传，由 Coordinator 或 synthesis node 收敛，并记录每个子任务的执行者、输入来源、结果和收敛决策——单一子 agent 顺序接力不满足此判据。**并行范围受现有 workspace 排他锁约束，不隐含放宽写并发；只读子任务的"不持锁并行"必须有结构性隔离，不能只靠角色/prompt 自称只读**：写入代码库的子任务（含最终落盘的 synthesis/implementation 节点）始终受 `workspace-lock.ts` 保护、串行执行；只读分析/审查子任务只有在满足 `docs/decisions/0006-executable-work-graph.md` 定义的强制隔离条件（活 workspace 在操作系统层面不可访问，不是仅仅换一个 `cwd`——普通 `git worktree`/目录拷贝本身不满足该条件，因为子进程仍能通过相对/绝对路径或调用工具触达原 workspace，`git worktree` 还与主仓库共享 `.git` 管理元数据）时，才允许不持锁并行；当前运行时任何 adapter 都不具备满足该条件的能力（`WorkspaceContext` 无访问模式字段，Codex 以 `workspace-write` 沙箱启动，Claude Code/OpenCode 直接以 workspace 路径为 cwd 启动）。因此**默认基线是全部串行**：v0.2 若未落地并验证该隔离边界，只读子任务也必须进入排他锁串行队列，此时"并行"只体现为图上的逻辑 fan-out（可独立调度、可追踪），不代表物理并行执行；结构性隔离是需要额外设计验证才能解锁的加分项，不是默认路径。独立 worktree 级别的并行**写入**不属于本判据范围，除非 v0.2 `design.md` 另行决策。这是第一个非简单串行的多节点协作场景，即 `docs/decisions/0006-executable-work-graph.md`（Executable Work Graph）Slice 1 的触发点：v0.2 至少要能以显式 Node/Edge 语义**执行、可追踪、可恢复**该拓扑（"可恢复"的最小语义——重启后可重建各 Node 状态、已完成不重复执行、进行中 Attempt 标记 interrupted、可从对应 Node 发起新 Attempt、fan-in 不因重启提前收敛——以该决策为准，不在此重复定义）；是否需要为此新增 `GraphRun`/`NodeRun` 等独立持久化表，还是现有 Run/Event 模型经扩展即可满足，由 `design.md` 按恢复、审计、并发和演进需求判断，不是本判据预先假定的结论。范围严格收窄到 `orchestrator_subagent` 本身需要的能力，不因此展开 Graph Compiler、自然语言 Graph Draft、Canvas UI 等仍然等待各自触发条件的部分。
+
+### 后续候选：Automatic Stage Continuation（版本待定）
+
+目标：在 P0 手动指派经过真实 dogfood、已经观察到稳定重复模式后，减少重复点击，同时不牺牲
+handoff 可见性和 Human Lead 控制权。
+
+进入规划的前置证据：
+
+- 至少一条真实旅程反复出现“同一阶段总是指派给同一成员”的模式。
+- P0 的等待指派、改派、取消、findings 对比和恢复路径已经稳定。
+- 自动模式能在每次派发前后说明对象、理由、输入与预期输出，并允许暂停或改派。
+- validation fail 后自动修复有明确轮次上限；重复 findings、危险操作或不确定候选必须停下等用户。
+
+在这些证据满足前，不给该能力分配 Feature ID 或版本号，也不阻塞当前 P0 可用闭环。
 
 ### v0.3 Artifact-Centered Collaboration
 

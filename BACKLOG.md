@@ -12,16 +12,22 @@ created: 2026-07-11
 > prototype are explicitly approved. The execution source of truth is
 > [`docs/reviews/product-experience-reset-plan.md`](docs/reviews/product-experience-reset-plan.md).
 
+> **P0 interaction decision (2026-08-14)**: the reset target uses fully manual stage assignment.
+> A completed stage or failed validation returns to “waiting for your assignment”; PersonaHub still
+> generates and carries the Handoff Packet automatically, but does not start the next Run. Automatic
+> stage continuation and automatic repair are recorded in the PRD as a post-P0 candidate whose version
+> will be assigned only after manual-mode dogfood. They are not active Features and do not block P0.
+
 > **Rules**: Only active Features (idea/spec/ready-for-development/in-progress/review). Move to done after completion.
 > `ready-for-development` = spec 与 design 均已定稿、`design.md` 的待确认问题全部关闭（`docs/features/README.md` 的硬性约束），可以开始写代码。
 > Details live in `docs/features/{version}/Fxxx-feature-name/`（`spec.md`、`design.md`、`tasks.md`），按大版本（0.1、0.2…）分层，见 `docs/features/README.md`。
 
-| ID | Version | Name | Status | Owner | Link |
-|----|---------|------|--------|-------|------|
-| F009 | 0.3 | Artifact Foundation & Provenance | draft | TBD | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md` |
-| F010 | 0.3 | Artifact-Centered Coding Slice | draft | TBD | `docs/features/0.3/F010-artifact-centered-coding-slice/spec.md` |
-| F011 | 0.3 | Work Room & Human Intervention | draft | TBD | `docs/features/0.3/F011-work-room-human-intervention/spec.md` |
-| F012 | 0.3 | Reusable Agent Squads | draft | TBD | `docs/features/0.3/F012-reusable-agent-squads/spec.md` |
+| ID   | Version | Name                             | Status | Owner | Link                                                            |
+| ---- | ------- | -------------------------------- | ------ | ----- | --------------------------------------------------------------- |
+| F009 | 0.3     | Artifact Foundation & Provenance | draft  | TBD   | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md` |
+| F010 | 0.3     | Artifact-Centered Coding Slice   | draft  | TBD   | `docs/features/0.3/F010-artifact-centered-coding-slice/spec.md` |
+| F011 | 0.3     | Work Room & Human Intervention   | draft  | TBD   | `docs/features/0.3/F011-work-room-human-intervention/spec.md`   |
+| F012 | 0.3     | Reusable Agent Squads            | draft  | TBD   | `docs/features/0.3/F012-reusable-agent-squads/spec.md`          |
 
 > v0.1、v0.2（F001-F008）已收口，交付摘要见 `docs/features/releases/0.1.md` /
 > `0.2.md`；均不再出现在上方活跃表。v0.2 期间多轮独立检视的完整逐条记录见

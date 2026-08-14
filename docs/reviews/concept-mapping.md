@@ -2,7 +2,7 @@
 topics: [concept-mapping, reference, ui-assembly, multica, clowder-ai]
 doc_kind: review
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-08-14
 ---
 
 # 概念映射表：multica / clowder-ai ↔ PersonaHub
@@ -390,20 +390,22 @@ interface DispatchProposal {
 
 ### 9.3 对 PersonaHub 的借鉴结论
 
-1. **在 F004 的自动流转前插入一层可否决的提案**——implementation 完成、要交给 validator
-   之前，先在 Thread 里生成一张卡片：谁 → 谁、为什么、依据哪个 workflow、要做什么。
-   用户可以放行、可以否决、可以改指派对象。**这一条同时解掉 NOTE-003/004/005。**
-2. **P0 决策（2026-08-14）：不做自动放行，阶段完成即停下等指派**。早前建议的「默认放行 +
-   倒计时」已废弃——理由见 `personahub-user-journeys.md` §6.2.1：固定顺序为表达「可能循环」
-   付出的状态成本极高（round count / max rounds / round CAS / 显式 reset，且已产生 BUG-003），
-   而手动指派下「再检视一轮」只是「下一步还给检视者」，无需任何额外状态。
-   clowder 的卡片形态仍然直接借用，只是不带自动放行。
+1. **P0 用显式交接卡片取代 F004 的自动派发**——implementation 完成后仍自动生成 Handoff
+   Packet，但不启动 validator；Thread 卡片展示上一步产出、建议执行者、理由和可选成员，用户
+   指派后才创建下一 Run。**这一条同时解掉 NOTE-003/004/005。**
+2. **P0 决策（2026-08-14）：不做自动放行，阶段完成或 validation fail 后都停下等指派**。
+   早前建议的「默认放行 + 倒计时」已废弃——理由见 `personahub-user-journeys.md` §6.2.1：P0
+   仍记录 round count 与 findings 供展示和追溯，但不承担自动选择执行者、自动创建修复 Run 的
+   额外状态与恢复复杂度。clowder 的卡片形态仍然直接借用，只是不带自动放行。
 3. **只对"跨 agent 派活"和 PRD §11 已定义的危险操作设 gate**，其余动作不打扰用户。
    照搬 `effectClass` 的分类思路。
 4. **卡片必须带"改指派"入口**，不能只有批准/拒绝两个按钮——用户要的是矫正流程，
    不是单纯叫停。
 5. **借鉴 `hold_ball` 的硬约束**：任何等待状态必须声明在等什么，界面才能始终回答
    "现在该谁动、要等多久"。
+6. **自动模式后移，不删除**：等 P0 dogfood 出现稳定重复指派模式后，再规划“记住选择 / 自动
+   继续”；自动 handoff 与 validation fail 后自动修复必须保留可见事件、暂停/改派入口、轮次上限
+   和重复 findings 停止条件，具体版本暂不预分配。
 
 ### 9.4 对 v0.3 计划的影响
 
