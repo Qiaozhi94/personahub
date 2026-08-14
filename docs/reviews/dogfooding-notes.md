@@ -13,11 +13,11 @@
 |---|---|---|---|---|---|---|---|
 | NOTE-001 | open | 2026-08-12 00:41 | 交互 | — | 点 adapter 名字可编辑，但点击无任何反馈/提示，第一次用完全不知道能点 | web/adapter | — |
 | NOTE-002 | open | 2026-08-12 00:41 | 交互 | — | 新建 adapter 要点"Configure adapter"按钮，无 + 号之类的新建入口，第一次用猜不到 | web/adapter | — |
-| NOTE-003 | open | 2026-08-13 | 可理解性 | 多 agent 自动接力（implementation→validation）发生时，界面不解释为什么换人、谁决定的、依据什么 | web/thread, F004 | — |
-| NOTE-004 | open | 2026-08-13 | 可发现性 | 决定流程的 Workflow Template / Validation Policy 配置入口找不到，用户不知道自动流转是可配置的 | web/settings, F008 | — |
-| NOTE-005 | open | 2026-08-13 | 能力缺失 | 无法把一段任务单独指派给某个 agent；F005 的手动选择器只作用于"下一轮指令"，不能编排流程 | web/thread, F005 | — |
-| NOTE-006 | open | 2026-08-13 | 可发现性 | 在 composer 里打 @ 没有任何 agent 列表弹出；实现的是常驻下拉选择器，@ 提及从未实现 | web/thread, F005 | — |
-| NOTE-007 | open | 2026-08-13 | 能力缺失 | 验证反复不收敛时，用户在 round 1→N 之间没有任何介入点，只能等撞上限变 Blocked | web/thread, F004 | — |
+| NOTE-003 | adopted | 2026-08-13 | 可理解性 | J3.2 | 多 agent 自动接力（implementation→validation）发生时，界面不解释为什么换人、谁决定的、依据什么 | web/thread, F004 | 旅程 J3.2 + §6.2.1：P0 改为完全手动指派，不存在无解释的自动换人 |
+| NOTE-004 | adopted | 2026-08-13 | 可发现性 | J3.2 | 决定流程的 Workflow Template / Validation Policy 配置入口找不到，用户不知道自动流转是可配置的 | web/settings, F008 | Workflow Template 降级为「建议与判据」（旅程 §3.1），流转由指派决定，配置不再是理解前提 |
+| NOTE-005 | adopted | 2026-08-13 | 能力缺失 | J3.2 | 无法把一段任务单独指派给某个 agent；F005 的手动选择器只作用于"下一轮指令"，不能编排流程 | web/thread, F005 | 旅程 J3.2：阶段级指派成为 P0 主路径 |
+| NOTE-006 | adopted | 2026-08-13 | 可发现性 | J3.2 | 在 composer 里打 @ 没有任何 agent 列表弹出；实现的是常驻下拉选择器，@ 提及从未实现 | web/thread, F005 | 旅程 §6.5：`@` 触发成员列表为主入口，与下拉并存 |
+| NOTE-007 | adopted | 2026-08-13 | 能力缺失 | J3.5 | 验证反复不收敛时，用户在 round 1→N 之间没有任何介入点，只能等撞上限变 Blocked | web/thread, F004 | 旅程 J3.5/J3.6：每轮结束都是介入点，重复 findings 显式提示 |
 
 ## 详情
 
