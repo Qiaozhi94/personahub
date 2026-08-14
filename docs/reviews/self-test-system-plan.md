@@ -46,7 +46,7 @@ v0.2 收口时自动化测试规模不小，但首次 dogfood 立刻撞到阻塞
 
 | 层级 | 回答的问题 | 手段 | 触发点 | 证据落点 |
 |---|---|---|---|---|
-| 任务级 | 这次改动有没有破坏局部契约？ | 单元 + 接口/集成 + jsdom 组件测试 + typecheck | 每个任务完成后 | `npm run verify` 通过记录 |
+| 任务级 | 这次改动有没有破坏局部契约？ | 单元 + 接口/集成 + 跨端契约 + jsdom 组件测试 + typecheck | 每个任务完成后 | `npm run verify` 通过记录 |
 | 需求级 | 受影响的用户旅程还能不能被真实用户走通？ | Playwright 真实浏览器 E2E | Feature 进入 review 前、推 main 前 | spec 文件、失败截图/trace、CI e2e job |
 | 发布级 | 真实用户在真实环境完成闭环后，认不认可？ | 人工 dogfood + 真实 CLI 运行 | 版本收口前 | dogfood 记录、`dogfooding-bugs.md` / `dogfooding-notes.md` |
 
@@ -58,7 +58,7 @@ v0.2 收口时自动化测试规模不小，但首次 dogfood 立刻撞到阻塞
 - **纪律**：新增行为必须同批次带上任务级测试；修 bug 必须补回归用例，并在 `dogfooding-bugs.md`
   的"回归测试"列填具体用例名（现有条目已是这个格式）。
 
-#### 3.1.1 五类必备测试
+#### 3.1.1 六类必备测试
 
 任务级不是"随便写点测试"。按**改动碰到了哪一层**决定必须补哪一类，一类都不能用另一类顶：
 
@@ -69,6 +69,12 @@ v0.2 收口时自动化测试规模不小，但首次 dogfood 立刻撞到阻塞
 | 3 | 服务与状态机 | 跨仓储写入、事务、workspace 锁、Run/Issue 状态流转 | `server/tests/integration/` | 事务回滚、并发/交错、**重启后的恢复语义** |
 | 4 | HTTP 契约 | 新增或修改 API | `server/tests/integration/`（minimal Fastify app） | 状态码 + `ErrorCode` + 字段白名单；用户级错误不得退化成 `INTERNAL_ERROR` |
 | 5 | 前端组件/hook | 新增组件、hook、错误态 | `web/src/*.test.tsx` | loading / error / empty 三态齐全，不只测 happy path |
+| 6 | **跨端契约** | 新增或修改 `api-client` 的请求构造（方法、header、body 形状） | 见 3.1.3 | 真实客户端 × 真实 Fastify，**不 stub `fetch`** |
+
+**断言必须落在可观察终态，不是内部调用发生了。** BUG-001 不是没测试，而是断言了中间步骤
+（claim 成功），没断言最终效果（validator 真的被派工）。"某个函数被调用了"不构成通过条件——
+终态是数据库里的状态、返回给调用方的结果、或用户能看到的东西。需求级已有等价规则（3.2.1 第 2 段），
+任务级同样适用。
 
 补充两条本仓库的特有约定：
 
@@ -83,6 +89,35 @@ v0.2 收口时自动化测试规模不小，但首次 dogfood 立刻撞到阻塞
 - 跨组件、碰 DB / 锁 / 事务 / 时序 → **集成**。
 - **UT 永远抓不到"A 忘了调 B"**（UT 里 B 是假的）。本项目的核心风险正是这类跨组件时序问题，
   因此集成测试占比高是刻意的，**不要为了金字塔比例好看而给集成路径补等价的 UT**。
+
+#### 3.1.3 第 6 类：跨端契约（本仓库的已知盲区）
+
+**这条缝有过实际逃逸**：BUG-002（`apiFetch` 对无 body 的 POST 也发 `Content-Type: application/json`，
+Fastify 拒空 body → 500）。前端测试把整个 `apiClient` mock 掉（`web/src/test/api-client-mock.ts`），
+后端测试不知道前端会怎么发请求，**两边各自全绿**。
+
+现有 `web/src/api-client.test.ts` 已覆盖**响应解析**（绕过模块 mock、用真实 `Response`），但仍
+stub `global.fetch`——它断言的是自己的预期，不是真实服务端的接受行为。缺的正是另一半。
+
+规则：
+
+- 覆盖对象是**请求构造**：HTTP 方法、header（尤其 `Content-Type` 的有无）、body 序列化形状。
+- **不得 stub `fetch`**：用真实 `apiClient` 打真实 Fastify 实例（可复用 server 集成测试里的
+  minimal app），断言服务端真的接受并返回预期状态码。
+- 落点定在 **server 工作区**：真实 Fastify 与既有 helpers 都在那里，`api-client.ts` 只依赖
+  `@personahub/shared`，可直接跨工作区引入；反向（web 里起 Fastify）需要给 web 引入后端依赖，
+  代价更大。
+- 优先覆盖**无 body 的写操作**（cancel、activate、deactivate 这类），它们是这条缝的高发区。
+
+不这么做的代价：这类缺陷只能靠需求级 E2E 兜住，而 E2E 是分钟级的重型手段且只覆盖三条 P0
+旅程——**用最贵的一层去补最基础的缝，是错配**。
+
+**已落地（2026-08-14）**：`server/tests/integration/api-client-contract.test.ts`，2 条用例，
+0.3s。跨工作区引入 `web/src/lib/api-client.ts` 可行；唯一的 shim 是把相对 `/api` 解析到测试
+服务器 origin，method/header/body 原样转发。已用**故障注入**验证它真的会失败——把
+`apiFetch()` 改回无条件设 `Content-Type` 后，两条用例同时红，且复现 BUG-002 的原始症状
+（`INTERNAL_ERROR` 而非 `RUN_NOT_FOUND`）。**不能失败的测试没有价值，新增门禁类用例都应这样
+验一次。**
 
 ### 3.2 需求级（本体系新增的一层）
 
@@ -234,6 +269,10 @@ CI 的 `e2e` job 已是强制门禁。若在旅程尚未修通时直接提交断
 - **每组引用必须标层级**（`[任务级]` / `[需求级]`）。没有标记等同于未覆盖。
 - **落在 P0 旅程路径上的 AC，必须有 `[需求级]` 引用**；不在 P0 路径上的可以只有 `[任务级]`。
   哪些 AC 在 P0 路径上，由 5.2 的旅程矩阵给出——这是纵横两个维度真正的接口。
+  **这条取舍的代价要说清楚**：不在 P0 路径上的界面（如 F008 的模板管理 UI、runtime health
+  面板）只有任务级覆盖，出现 NOTE-001 那类"点了没反应"的可发现性问题**没有任何一层会发现**。
+  接受这个代价的理由是 E2E 成本（见 4.2），不是因为那些界面不重要——扩大需求级覆盖前，
+  它们的可发现性只能靠发布级 dogfood 兜。
 - 用例名必须真实存在——由门禁校验（见 7.4），改测试名不同步改 spec 会直接红。
 - 新 Feature 的 AC 从第一天就带引用，是 Feature 状态改 `done` 的前置条件。
 - 历史回填范围：F001（10）、F002（12）、F003（12）、F004（11）、F005（1）、F006（1）、F008（8），
@@ -368,6 +407,10 @@ M3-T04 产出。这是本文唯一的外部输入依赖；在它落地前，其�
 - [x] ST-T11：测试时长优化——server 并行化、lint 缓存、build 移出 `verify`（见 4.2.1）。
   **已完成 2026-08-14**。
 - [ ] ST-T12：实测并回填 4.2 表里的 `verify:release` 与 CI 全流程时长（依赖 ST-T06 的 E2E 用例）。
+- [x] ST-T15：落地第一组跨端契约测试（3.1.3）——`api-client-contract.test.ts` 覆盖 run cancel
+  的无 body POST，故障注入验证通过。**已完成 2026-08-14**。
+- [ ] ST-T16：把跨端契约覆盖扩到其余无 body 写操作（graph-run cancel、workflow template
+  activate/deactivate），以及带 body 的 POST/PATCH 的 body 形状。
 - [ ] ST-T13：拆分 `server/tests/helpers.ts`（419 行，超 SOP 的 350 行硬上限），按职责分到
   `server/tests/helpers/` 下；拆完在 12.1 记录新的文件划分。
 - [x] ST-T14：把本文纳入 `tools/check-doc-ownership.mjs` 的 `AUTHORITATIVE_DOCS`、`doc_kind`
@@ -448,7 +491,7 @@ M3-T04 产出。这是本文唯一的外部输入依赖；在它落地前，其�
 本文规定测试如何演进，但规则自己也会过时。**没有复审节奏的流程文档三个月后必然与实际脱节。**
 
 - **节奏**：每次版本收口时对照本文一次，与 dogfood 同一批次进行。
-- **对照什么**：3.1.1 的五类是否仍覆盖当下的改动类型；3.2.1 的五段是否有该加的；6.1 的五个
+- **对照什么**：3.1.1 的六类是否仍覆盖当下的改动类型；3.2.1 的五段是否有该加的；6.1 的五个
   场景是否需要增删；4.2 的时长预算是否仍现实。
 - **结论落点**：写进 `docs/reviews/RETROSPECTIVE.md`，需要改规则的部分回到本文修改并记录日期。
 - **不做的事**：不为"文档看起来更完整"而扩写。规则只在被现实证伪时才改。

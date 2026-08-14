@@ -19,5 +19,9 @@ export default defineConfig({
     // on Windows. Raised so a slow machine reports real failures rather than
     // scheduling noise.
     testTimeout: 20_000,
+    // Same reason, for setup that builds a real DB and binds a socket
+    // (tests/integration/api-client-contract.test.ts): the 10s default is
+    // tight once workers compete.
+    hookTimeout: 20_000,
   },
 });
