@@ -125,16 +125,18 @@ Feature、FR/AC 和代码正确性，没有把“用户能否从目标出发完�
 
 **关键点**：静态化阶段只做减法（剥框架运行时、改资源引用），**不重写 CSS、不重命名 class、不重建 token**。打开发现不一样，是漏了某个 CSS 或字体，去补，不要动样式。
 
-#### 已完成的实测结果（2026-08-12）
+#### 已完成的实测结果（2026-08-12 静态还原，2026-08-14 补交互）
 
-| 项目 | 页面数 | 验收项 | 结果 |
-|---|---|---|---|
-| multica | 22 | 66（22 DOM + 44 样式） | **66/66 通过** |
-| clowder-ai | 5 | 15（5 DOM + 10 样式） | **15/15 通过** |
+| 项目 | 页面数 | 静态验收 | 跳转 | 交互状态 |
+|---|---|---|---|---|
+| multica | 26 | **66/66 通过** | 305 条链接 + 3 条行点击全部走得通 | **221/221 回放成功**，27 个已知缺口 |
+| clowder-ai | 5 | **15/15 通过** | 1 条链接通，5 条待补页 | 未采集（需应用在跑） |
 
 产物落点 `D:\Projects\ui-reference\`（独立目录，不进任何现有仓库）。验收标准为「结构与交互一致」：DOM 树逐节点比对 + 每节点约 60 个 computed style 属性比对，非像素级截图比对。
 
-multica 已还原页面：landing / login / about / issues / my-issues / projects / agents / autopilots / skills / runtimes / squads / inbox / chat / usage / billing / settings / issue-detail / project-detail / agent-detail / skill-detail / member-detail / agent-new。
+multica 已还原页面（26）：landing / login / about / usecases / changelog / download / contact-sales / issues / my-issues / projects / agents / autopilots / skills / runtimes / squads / inbox / chat / usage / billing / settings / issue-detail / project-detail / agent-detail / skill-detail / member-detail / agent-new。
+
+后四个营销页是补跳转时加的 —— 落地页页头页脚指向它们，不抓就是 11 条死链。目前仅剩 14 条死链，全部指向 `/docs/zh`（Fumadocs 独立站，不在 3002 上）。
 
 clowder-ai 已还原页面：settings / memory / chat / dev-overflow / showcase-f11。
 
@@ -218,6 +220,39 @@ M2-T02/M2-T03 的主产出**必须是表，不是散文**——散文式旅程�
 
 散文只保留一段「这个页面在整条旅程中承担什么」，控制在 5 行内。旅程叙述放在页面表之前，
 用于串联页面顺序，不重复表里的内容。
+
+### 3.6 归档的交互能力与已知边界（2026-08-14）
+
+静态页现在能点。三件事让它动起来，都不是手写的：
+
+**跳转**。站内链接改写成同级 HTML；带 id 的路由按**实体类型**而非实体身份解析
+（`/test/projects/<任意 uuid>` → `project-detail.html`），因为归档里每类实体只有一个详情页。
+列表行没有 `<a>`（靠 `onClick` 调 `router.push`），只能在配置里声明去向：projects / agents /
+skills 三张表的行各一条规则。`verify-nav.mjs` 会点掉每条规则做回归。
+
+**浮层**。这是最关键的一条认知：**关掉的菜单在冻结页里根本不存在**。Base UI 开时挂载、
+关时卸载，抓下来的永远是关闭态。实测 issues 页 46 个按钮里 20 个是浮层触发器，HTML 里这
+20 个浮层的内容一个字都没有 —— 所以「点了没反应」不是脚本没写，是内容压根没抓。
+
+做法是去真实应用里逐个点开，把浏览器实际插入 `<body>` 的节点原样录下来，静态页点击时放回去。
+全站 19 个应用页共录到 221 个状态（菜单 / 弹层 / tooltip / hover card / tab 面板），
+`verify-interactions.mjs` 逐个回放，221/221 通过。
+
+**已知缺口 27 个**，记在 `ui-reference/multica/states/_gaps.json`：
+
+| 页面 | 数量 | 原因 |
+|---|---|---|
+| issue-detail | 22 | 评论编辑器折叠时工具栏是 23px 隐藏残根，滚不进视口也 hover 不到 |
+| project-detail | 2 | 同上 + 一个隐藏的移动端筛选副本 |
+| issues / my-issues / agents | 各 1 | 隐藏的移动端筛选副本，桌面视口下本就不可见 |
+
+前者要补需要在页面配置里声明 `preSteps`（捕获前先点开编辑器）；后者是桌面视口下的真实不可见元素，
+不补是对的。**缺口写进文件而不是留在脑子里** —— 没记录的缺口会被下一个读归档的人当成 bug
+重新发现一遍。
+
+**clowder-ai 的交互尚未采集**，需要它的前端在 3003 上跑起来（打开桌面应用即可），
+然后两条命令：`capture-states.mjs clowder` + `staticize.mjs clowder`。它的 5 个 memory 子页
+（search / status / health / catalog / graph）也一并待抓，那是当前 5 条死链的去向。
 
 ## 4. M3 方法：PersonaHub 用户旅程梳理
 
