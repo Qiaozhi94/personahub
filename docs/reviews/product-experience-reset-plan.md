@@ -681,13 +681,14 @@ M3-T04 旅程草稿交稿。各里程碑内部按顺序执行。进度按已勾�
 |---|---|---|
 | 用户旅程文档 | `docs/personahub-user-journeys.md` | 产品级真相源，需登记进 `docs/README.md` 所有权矩阵 |
 | 概念映射表 | `docs/reviews/concept-mapping.md` | S1 产出，拼装前置 |
-| 页面选型表 | `docs/reviews/page-sourcing.md` | S2 产出，取代原参考借鉴决策表 |
+| 页面选型表 | `docs/reviews/page-sourcing.md` | S2 产出；含 M4-T02 三栏定位与右栏 tab 裁决 |
 | 页面拼装草案 | `D:\\Projects\ui-reference\personahub-draft\` | 含参考项目文案与素材，**仓外目录，不进 `web/`、不作为实现代码** |
 | 空白区清单 | `docs/reviews/blank-areas.md` | S5 产出；唯一需原创设计的部分，v0.3 重估输入 |
 | clowder-ai 旅程还原 | `docs/research/clowder-ai-user-journeys.md` | 参考证据，不是 PersonaHub 真相源 |
 | multica 旅程还原 | `docs/research/multica-user-journeys.md` | 参考证据，不是 PersonaHub 真相源 |
 | clowder-ai 页面还原 | `D:\Projects\ui-reference\clowder\` | 渲染冻结产物，仓外独立目录，勿入库 |
 | multica 页面还原 | `D:\Projects\ui-reference\multica\` | 渲染冻结产物，仓外独立目录，勿入库 |
+| dsh 页面还原 | `D:\Projects\ui-reference\dsh\` | 第三个素材源（2026-08-15 登记），5 页，同上 |
 | 自测试体系方案 | `docs/reviews/self-test-system-plan.md` | 常驻流程文档，独立于本轮重置 |
 | 旅程—测试映射矩阵 | `docs/reviews/journey-test-matrix.md` | 过程产物，由自测试文档 T003 产出 |
 | 影响面与切片实施计划 | `docs/reviews/refactor-impact-plan.md` | 过程产物 |
@@ -782,13 +783,25 @@ M3-T04 旅程草稿交稿。各里程碑内部按顺序执行。进度按已勾�
   PersonaHub 是本地路径，其工作区切换器不得借用）；Room / Artifact / Provenance Gate /
   Issue Type 四项**无对应**，直接进空白区；右栏 Context Inspector 位置可借但内容全新，
   是最大单点重做。
-- [ ] M4-T02：确认 PRD §6 三栏信息架构直接采用，把旅程每一步定位到左/中/右哪个区域。
+- [x] M4-T02：确认 PRD §6 三栏信息架构直接采用，把旅程每一步定位到左/中/右哪个区域。
   **不重新设计信息架构**（见 5.2）；只按 1440px 单一视口定信息优先级。
-- [ ] M4-T03：S2 页面选型表——按旅程每步的信息需求列出所需页面，逐页指定骨架来源、
+  **已完成 2026-08-15**，落 `page-sourcing.md` §2；同文 §3 裁决了旅程 JRN2-005 留下的右栏
+  分区问题——**分 3 个 tab（概览 / 证据 / 诊断）+ Blockers 常驻置顶**，依据是右栏需承载
+  9 类快照、固定堆叠会踩 PRD §13。
+- [x] M4-T03：S2 页面选型表——按旅程每步的信息需求列出所需页面，逐页指定骨架来源、
   嫁接内容与删除内容（表式见 5.4）。**本表取代原 M2-T07 借鉴决策表。**
-- [ ] M4-T04：S3 拼装草案——基于冻结产物剪贴，文案换成 PersonaHub 概念；执行 5.1 剪贴规则
+  **已完成 2026-08-15**，落 `page-sourcing.md` §4，共 10 个页面（其中 P01–P06 是同一张
+  工作台的六个状态，不是六个界面）。同时登记第三个素材源 `dsh`（DeepSeek Harness，
+  本地 agent harness，5 页），它是三者中唯一与 PersonaHub 同形态的产品，见 §1。
+- [x] M4-T04：S3 拼装草案——基于冻结产物剪贴，文案换成 PersonaHub 概念；执行 5.1 剪贴规则
   （指不回旅程的区块删掉）与 5.4 视觉统一规则（结构任意来源、视觉统一 multica、
   不搬 clowder 的 CSS 变量）。
+  **已完成 2026-08-15**，落 `D:\Projects\ui-reference\personahub-draft\`，11 页
+  （前 7 页是同一张工作台的七个状态）。做法是用 `build.mjs` 对 multica 冻结页做 DOM 手术，
+  **不重写 CSS、不自造类名**；两道机器验收：`check-classes.mjs`（118 个类名必须全部存在于
+  multica 编译 CSS，杜绝 §3.1 记录的「自造 design system」失败模式）与 `verify-draft.mjs`
+  （1440×900 真实浏览器：无横向溢出 / 无控制台错误 / 旅程断言点可见 / 无参考项目残留），
+  当前 118/118 与 11/11 全绿。
 - [ ] M4-T05：拼装过程中把旅程暴露的漏洞回流到 §4——找不到承载区块的旅程步骤，判定为
   「旅程太抽象需改写」或「空白区」，不允许先随便拼一个上去。
 - [ ] M4-T06：5.7 第 1 轮全量检视，逐条过（旅程连续性、区块可回溯性、两条 PRD 硬约束、
