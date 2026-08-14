@@ -11,10 +11,17 @@ import { fileURLToPath } from 'node:url';
 // Constants
 // ---------------------------------------------------------------------------
 
-const BUG_DOC = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'reviews', 'dogfooding-bugs.md');
+const REVIEWS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'reviews');
+const BUG_DOC = join(REVIEWS_DIR, 'dogfooding-bugs.md');
+const NOTE_DOC = join(REVIEWS_DIR, 'dogfooding-notes.md');
 
 const LEGAL_STATUSES = ['fixed', 'open'];
 const LEGAL_SEVERITIES = ['高', '中', '低'];
+// Which layer should have caught this. Drives where the regression case goes —
+// see self-test-system-plan.md §7.1.
+const LEGAL_ESCAPE_LAYERS = ['任务级', '需求级', '发布级'];
+// A journey step that shows up twice has a coverage hole, not bad luck (§7.2).
+const REPEAT_THRESHOLD = 2;
 const EMPTY = '—';
 const SEPARATOR_CELL = /^:?-+:?$/;
 
@@ -74,10 +81,58 @@ export function parseBugLog(markdown) {
     id: row[col('ID')],
     status: row[col('状态')],
     severity: row[col('严重度')],
+    escapeLayer: row[col('逃逸层级')],
+    journeyStep: row[col('旅程步骤')],
     problem: row[col('问题')],
     fixCommit: row[col('修复 commit')] ?? EMPTY,
   }));
   return { header, issues };
+}
+
+/**
+ * Parse the notes doc's master table. Notes carry no severity or fix commit —
+ * the only field this tool needs from them is the journey step, because §7.2
+ * counts repeats across both docs, not per-doc.
+ */
+export function parseNoteLog(markdown) {
+  const table = extractTable(markdown);
+  if (table.length < 2) return { notes: [] };
+  const header = splitRow(table[0]);
+  const idx = Object.fromEntries(header.map((h, i) => [h, i]));
+  const col = (name) => {
+    const key = header.find((h) => h === name || h.startsWith(name));
+    return key !== undefined ? idx[key] : undefined;
+  };
+  const notes = table
+    .slice(1)
+    .filter((line) => !splitRow(line).every((cell) => SEPARATOR_CELL.test(cell)))
+    .map(splitRow)
+    .filter((row) => row[0]?.startsWith('NOTE-'))
+    .map((row) => ({
+      id: row[col('ID')],
+      journeyStep: row[col('旅程步骤')],
+      problem: row[col('问题')],
+    }));
+  return { notes };
+}
+
+/**
+ * Journey steps recorded 2+ times across bugs and notes. Each one means the
+ * step lacks requirement-level coverage — the fix is a spec, not another
+ * one-off patch (§7.2 "重复即升级"). `EMPTY` is excluded: it means "P0
+ * journeys not yet defined", not "the same step again".
+ */
+export function findRepeatedSteps(entries) {
+  const counts = new Map();
+  for (const entry of entries) {
+    const step = entry.journeyStep;
+    if (!step || step === EMPTY) continue;
+    if (!counts.has(step)) counts.set(step, []);
+    counts.get(step).push(entry.id);
+  }
+  return [...counts.entries()]
+    .filter(([, ids]) => ids.length >= REPEAT_THRESHOLD)
+    .map(([step, ids]) => ({ step, ids }));
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +155,19 @@ export function validateBugs(issues) {
     if (!LEGAL_SEVERITIES.includes(issue.severity)) {
       errors.push(`${issue.id}: invalid severity "${issue.severity}" (legal: ${LEGAL_SEVERITIES.join('/')})`);
     }
+    // Required so the regression case lands in the layer that let it through
+    // instead of defaulting to a unit test (§7.1). No "unknown" escape hatch —
+    // an unanswered question here is exactly what makes the loop optional.
+    if (!LEGAL_ESCAPE_LAYERS.includes(issue.escapeLayer)) {
+      errors.push(
+        `${issue.id}: invalid escape layer "${issue.escapeLayer ?? ''}" (legal: ${LEGAL_ESCAPE_LAYERS.join('/')})`,
+      );
+    }
+    // `—` is legal here (P0 journeys not defined yet); blank is not, since a
+    // blank cell is indistinguishable from "nobody looked".
+    if (!issue.journeyStep) {
+      errors.push(`${issue.id}: missing journey step (use "${EMPTY}" until P0 journeys are defined)`);
+    }
     if (issue.status === 'open' && issue.fixCommit && issue.fixCommit !== EMPTY) {
       errors.push(`${issue.id}: status is open but has fix commit "${issue.fixCommit}"`);
     }
@@ -110,14 +178,17 @@ export function validateBugs(issues) {
 export function summarizeBugs(issues) {
   const byStatus = {};
   const bySeverity = {};
+  const byEscapeLayer = {};
   for (const issue of issues) {
     byStatus[issue.status] = (byStatus[issue.status] ?? 0) + 1;
     bySeverity[issue.severity] = (bySeverity[issue.severity] ?? 0) + 1;
+    byEscapeLayer[issue.escapeLayer] = (byEscapeLayer[issue.escapeLayer] ?? 0) + 1;
   }
   return {
     total: issues.length,
     byStatus,
     bySeverity,
+    byEscapeLayer,
     open: issues.filter((i) => i.status === 'open'),
   };
 }
@@ -129,13 +200,22 @@ export function summarizeBugs(issues) {
 function main() {
   const markdown = readFileSync(BUG_DOC, 'utf8');
   const { issues } = parseBugLog(markdown);
+  const { notes } = parseNoteLog(readFileSync(NOTE_DOC, 'utf8'));
   const errors = validateBugs(issues);
   const summary = summarizeBugs(issues);
+  const repeated = findRepeatedSteps([...issues, ...notes]);
 
   console.log('PersonaHub dogfooding bug log');
   console.log(`total: ${summary.total}`);
   console.log(`by status: ${JSON.stringify(summary.byStatus)}`);
   console.log(`by severity: ${JSON.stringify(summary.bySeverity)}`);
+  console.log(`by escape layer: ${JSON.stringify(summary.byEscapeLayer)}`);
+  if (repeated.length > 0) {
+    console.log(`repeated journey steps (§7.2 — needs a requirement-level spec, not another point fix):`);
+    for (const { step, ids } of repeated) {
+      console.log(`  - ${step}: ${ids.join(', ')}`);
+    }
+  }
   if (summary.open.length > 0) {
     console.log('open:');
     for (const issue of summary.open) {

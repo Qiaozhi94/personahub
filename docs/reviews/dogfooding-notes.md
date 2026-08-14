@@ -5,13 +5,14 @@
 > 存放于 `docs/reviews/dogfooding-notes.md`（纳入 git）。
 > 主表是**唯一事实源**（状态/发现时间/类型/去向以主表为准；时间统一本地时区 Asia/Singapore，UTC+8），详情块只补「现象/期望/影响范围/备注」这类不适合塞进表格的内容。
 > 状态流转：`open`（待处理）→ `adopted`（已采纳，去向填 BACKLOG 条目或 Feature ID）→ `dismissed`（决定不做，详情块写理由）。
+> **旅程步骤**（必填）=该问题落在哪条旅程的哪一步；P0 旅程尚未定稿时填 `—`。与 `dogfooding-bugs.md` 合并计数，同一步骤累计出现 ≥2 次即触发 <a href="self-test-system-plan.md">`self-test-system-plan.md`</a> §7.2「重复即升级」，须补该步骤的需求级 spec。
 
 ## 主表
 
-| ID | 状态 | 发现时间 | 类型 | 问题（一句话） | 关联模块 | 去向 |
-|---|---|---|---|---|---|---|
-| NOTE-001 | open | 2026-08-12 00:41 | 交互 | 点 adapter 名字可编辑，但点击无任何反馈/提示，第一次用完全不知道能点 | web/adapter | — |
-| NOTE-002 | open | 2026-08-12 00:41 | 交互 | 新建 adapter 要点"Configure adapter"按钮，无 + 号之类的新建入口，第一次用猜不到 | web/adapter | — |
+| ID | 状态 | 发现时间 | 类型 | 旅程步骤 | 问题（一句话） | 关联模块 | 去向 |
+|---|---|---|---|---|---|---|---|
+| NOTE-001 | open | 2026-08-12 00:41 | 交互 | — | 点 adapter 名字可编辑，但点击无任何反馈/提示，第一次用完全不知道能点 | web/adapter | — |
+| NOTE-002 | open | 2026-08-12 00:41 | 交互 | — | 新建 adapter 要点"Configure adapter"按钮，无 + 号之类的新建入口，第一次用猜不到 | web/adapter | — |
 | NOTE-003 | open | 2026-08-13 | 可理解性 | 多 agent 自动接力（implementation→validation）发生时，界面不解释为什么换人、谁决定的、依据什么 | web/thread, F004 | — |
 | NOTE-004 | open | 2026-08-13 | 可发现性 | 决定流程的 Workflow Template / Validation Policy 配置入口找不到，用户不知道自动流转是可配置的 | web/settings, F008 | — |
 | NOTE-005 | open | 2026-08-13 | 能力缺失 | 无法把一段任务单独指派给某个 agent；F005 的手动选择器只作用于"下一轮指令"，不能编排流程 | web/thread, F005 | — |

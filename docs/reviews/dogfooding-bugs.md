@@ -2,17 +2,19 @@
 
 > 只记录**已确认的 bug**，暂不做分类；等积累多了再用主表聚合复盘。
 > 存放于 `docs/reviews/dogfooding-bugs.md`（纳入 git）。
-> 主表是**唯一事实源**（状态/发现时间/严重度/修复 commit 以主表为准；时间统一本地时区 Asia/Singapore，UTC+8），详情块只补「现象/复现/根因/修复/回归测试/发现方式」这类不适合塞进表格的内容。
+> 主表是**唯一事实源**（状态/发现时间/严重度/逃逸层级/旅程步骤/修复 commit 以主表为准；时间统一本地时区 Asia/Singapore，UTC+8），详情块只补「现象/复现/根因/修复/回归测试/发现方式」这类不适合塞进表格的内容。
 > 严重度判定：**高**=阻塞主流程（无法继续/数据错误）；**中**=有绕过方案但体验受损；**低**=瑕疵不影响使用。
+> **逃逸层级**（必填）=「本该被哪一层拦住」，合法值 `任务级` / `需求级` / `发布级`；回归用例必须补在这一层，判定规则见 <a href="self-test-system-plan.md">`self-test-system-plan.md`</a> §7.1。
+> **旅程步骤**（必填）=该问题落在哪条旅程的哪一步；P0 旅程尚未定稿时填 `—`。同一步骤累计出现 ≥2 次即触发 §7.2「重复即升级」，须补该步骤的需求级 spec。
 > 统计/校验/列 open 用：`npm run bug:log`。
 
 ## 主表
 
-| ID | 状态 | 发现时间 | 严重度 | 问题（一句话） | 根因（一句话） | 关联模块 | 涉及文件 | 回归测试 | 修复 commit |
-|---|---|---|---|---|---|---|---|---|---|
-| BUG-001 | fixed | 2026-08-11 22:27 | 高 | 调度器 claim validator 后不派工，验证卡 queued | scheduler tick claim 后未 drainWorkspace | validation | validation-dispatch-scheduler.ts / index.ts / test | validation-dispatch-scheduler.test.ts::dispatches_the_claimed_validator | 7b81076 |
-| BUG-002 | fixed | 2026-08-11 22:34 | 中 | web cancel 空 body 带 JSON content-type → 500 | apiFetch 无条件设 Content-Type，Fastify 拒空 body | web | api-client.ts | f002-ui-flows.test.tsx | 89ed06d |
-| BUG-003 | open | 2026-08-11 23:36 | 高 | 中断 validator 死锁 round 槽位，重验证无法开始 | interrupted 不推进 round_count 且仍占 round 槽 | validation | result-processor.ts | — | — |
+| ID | 状态 | 发现时间 | 严重度 | 逃逸层级 | 旅程步骤 | 问题（一句话） | 根因（一句话） | 关联模块 | 涉及文件 | 回归测试 | 修复 commit |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| BUG-001 | fixed | 2026-08-11 22:27 | 高 | 任务级 | — | 调度器 claim validator 后不派工，验证卡 queued | scheduler tick claim 后未 drainWorkspace | validation | validation-dispatch-scheduler.ts / index.ts / test | validation-dispatch-scheduler.test.ts::dispatches_the_claimed_validator | 7b81076 |
+| BUG-002 | fixed | 2026-08-11 22:34 | 中 | 任务级 | — | web cancel 空 body 带 JSON content-type → 500 | apiFetch 无条件设 Content-Type，Fastify 拒空 body | web | api-client.ts | f002-ui-flows.test.tsx | 89ed06d |
+| BUG-003 | open | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | interrupted 不推进 round_count 且仍占 round 槽 | validation | result-processor.ts | — | — |
 
 ## 详情
 
