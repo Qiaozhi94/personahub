@@ -545,6 +545,7 @@ test('checkAuthoritativeEntries', async (t) => {
       writeDoc(repo, 'CLAUDE.md', '# Claude');
       mkdirSync(join(repo, 'docs', 'reviews'), { recursive: true });
       writeDoc(repo, 'docs/reviews/RETROSPECTIVE.md', '# Retro');
+      writeDoc(repo, 'docs/reviews/self-test-system-plan.md', '# Self-test');
       const result = checkAuthoritativeEntries(repo);
       assert.equal(result.errors.length, 0, result.errors.join('\n'));
     } finally {

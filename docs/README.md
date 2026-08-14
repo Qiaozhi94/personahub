@@ -22,6 +22,7 @@ updated: 2026-08-09
 | Feature 行为与状态 | `features/<version>/Fxxx-*/spec.md` | 状态唯一真相源 |
 | Feature 实现方案 | `features/<version>/Fxxx-*/design.md` | 技术设计 |
 | 开发、验收和检视纪律 | `SOP.md` | 开发流程约定 |
+| 测试分层、门禁与测试资产管理 | `reviews/self-test-system-plan.md` | 三层测试体系的判据唯一真相源；与 SOP 冲突时以 SOP 为准 |
 | 当前 active Feature 与强提醒 | `../CLAUDE.md` | 自动加载入口 |
 | 非 done Feature 派生索引 | `../BACKLOG.md` | 活跃 feature 索引 |
 | 缺陷和过程教训 | `reviews/RETROSPECTIVE.md` | 检视复盘 |

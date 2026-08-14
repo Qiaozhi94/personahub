@@ -34,6 +34,7 @@ const AUTHORITATIVE_DOCS = [
   'BACKLOG.md',
   'CLAUDE.md',
   'docs/reviews/RETROSPECTIVE.md',
+  'docs/reviews/self-test-system-plan.md',
 ];
 
 // Files that must NOT be declared as current product/status/implementation
