@@ -557,6 +557,12 @@ M6 是目标形态定稿后才启动的独立实施阶段，不计入这两周�
    **信息 / 产物 / 诊断**，其中「产物」承载**项目目录树（带变化标记）**，点任意文件在中栏
    打开全文。依据见 `personahub-user-journeys.md` §6.6 与 §9 指标 10。
 
+   **新增（2026-08-15 第三批，用户判断）**：§5 Agent 的最小字段缺少**执行参数**这一类——
+   用户创建成员时除 CLI 与模型外还要选「思考强度」这类推理档位（Claude/Codex 均有），
+   它会直接影响成员适合做什么。建议补 `execution_params`（含 reasoning effort 档位）
+   或在 `default_model` 旁增设独立字段；同时 §6 需明确**第 4 栏 Inspector 只在有 Issue
+   上下文时存在**（AI 成员、设置等页面无右栏），依据见 `page-sourcing.md` §4.1。
+
 2. `docs/features/0.3/README.md`：版本目标、Feature 顺序、里程碑和验收旅程。
 3. F009–F012 三件套：用户场景、UX 需求、非目标、依赖和任务顺序。
 4. `docs/SOP.md` / `docs/features/README.md`：加入强制旅程、原型和真实浏览器门禁。

@@ -559,9 +559,13 @@ Agent 是长期成员，不是一次性函数。PersonaHub 保留 capability tag
 - role（可选展示标签）: coordinator / architect / coder / reviewer / verifier / researcher / reader / writer / curator / custom
 - cli_provider: codex / claude-code / opencode
 - runtime_id
-- capability_tags
 - default_model
 - system_instructions
+
+**Agent 是用户创建的一层，不等于 CLI** `[2026-08-15 澄清]`：CLI adapter 是执行通道，
+Agent 是建立在通道之上的成员配置——同一个 Claude Code 可以被配置出多个不同的 Agent
+（不同模型、不同能力项、不同 system_instructions）。界面上「AI 成员」列出的是 Agent，
+CLI 与登录状态属于运行时配置，归 Settings。
 
 ### Memory
 
