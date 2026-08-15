@@ -11,10 +11,11 @@ topics:
     graph-orchestrated-work,
     evidence-grounded,
     artifact-centered,
+    multi-user-collaboration,
   ]
 doc_kind: prd
 created: 2026-07-11
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # PersonaHub PRD: Personal AI Agent Team OS
@@ -25,6 +26,7 @@ updated: 2026-08-14
 
 | 日期       | 来源提交                                                              | 修订目的                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 修订内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-08-15 | 产品体验重置 M3/M4 累积决策（`docs/reviews/product-experience-reset-plan.md` §7） | 旅程与页面选型定稿过程中累积了 6 项已拍板但未落地的 PRD 修订，PRD 作为真相源与旅程已有 6 处不一致，继续攒着会持续误导读者与 agent | 一次性落地：①§4.2 多人协同由"不做"改判"后移"，新增§15「远期：多人协同」（默认关闭/可选开启/向后兼容、权限边界挂 Workspace、共享先用 visibility）；②§5 新增三层归属关系 Space > Project > Workspace 及命名纪律，Workspace 明确为权限边界、UI 称"代码目录"；③§6 三栏改四栏（列表独立成栏）并给出三条扩展规则，第一屏默认落点由"最近 active Issue"改为"最需要处理的 Issue"；④§10 中间协作现场新增文件与变更视图（diff/全文、markdown 渲染、只读、锚定 Run/Attempt、不做目录树）；⑤§10 右栏 Message/event stats 移出必须项、Blockers 常驻置顶、复制/下载已持久化 Markdown 降为 P1（推翻 2026-07-19 的排期，不推翻其价值）；⑥§5 Agent 的 capability_tags 升为路由主依据、role 降为展示标签 |
 | 2026-08-14 | 产品体验重置 / 用户旅程决策                                           | 优先交付 P0 最小可用闭环，避免自动阶段流转与自动修复回路拖慢首次可用                                                                                                                                                                                                                                                                                                                                                                                                                                         | P0 改为完全手动阶段指派：系统仍自动生成 Handoff Packet、携带上下文、执行被指派的 Run、收集证据并在验证通过后进入 Done，但阶段完成和 validation fail 后均停在 Ready/“等待你指派”；自动 handoff/自动修复回路登记为 P0 dogfood 后再定版本的后续候选                                                                                                                                                                                                                                                                                                                                                                                                       |
 | 2026-08-08 | `docs/reviews/requirements-review-2026-08-08-F007-pre-development.md` | F006 完成、进入 F007 开发前的最后契约核对，发现第 15 节 P1 摘要与 v0.2 目标段仍把 Coordinator 写成"可配置 agent role"、"系统自动推荐/分派"，与同节后文及 ADR 0007 已裁定的"进程内确定性规则引擎、只推荐不派工"相矛盾                                                                                                                                                                                                                                                                                         | P1 摘要与 v0.2 目标段改为如实描述：Coordinator 是进程内确定性规则引擎而非可配置 agent role，推荐维度改为 Issue Type / Workflow Template / Collaboration Topology / Agent Roster，"自动推荐/分派"改为"推荐、用户确认后才执行"；"Agent Team Template 推荐"改称"Agent Roster 推荐"以避免暗示持久化模板                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-08-02 | （v0.2 需求文档外部检视，20 条 finding）                              | 一份独立检视对 F006/F007/F008 三件套提出 20 条问题，逐条对照源码核实后全部成立，其中五条会导致 v0.2 功能跑不通或静默损坏（F006 fan-in 取不到前驱结果、escalation 销毁排队中的兄弟节点；F007 按 adapter 数量降级 topology 使单 adapter 环境永不启用图、图分支丢弃用户确认的执行者；F008 通用 `setStatus()` 可造出两个 active 模板、审计事件无合法 thread 可写）。修订限于实现级设计，未推翻任何产品判断                                                                                                       | 三个 feature 的 spec/design/tasks 逐条并入；范围侧唯一变化是 F007、F008 由"无 schema 变更"改为各新增一张小表（`intake_confirmations` 幂等认领、`admin_audit_events` 全局审计），因两处需求（确认幂等、验证关闭可追溯）在现有 schema 下不可实现。FR-004 的"谁关掉了验证"如实收窄为"何时对哪个版本做了什么"——本应用无鉴权，不存在可记录的用户身份                                                                                                                                                                                                                                                                                                        |
@@ -215,7 +217,9 @@ P0 成功标准：一个真实开发 Issue 可以从创建、执行、验证到 
 
 第一版不做：
 
-- 多人 workspace / 企业权限。
+- 多人协同与权限（**2026-08-15 改判：从"不做"改为"后移"**）。多人协同是长期方向，
+  见第 15 节「远期：多人协同」；概念层级已在第 5 节预留，但 v0.1–v0.3 不实现身份、
+  成员、角色与访问控制，默认仍是本地单用户。
 - 默认看板作为主界面。
 - 云端托管 runtime / SaaS 计费。
 - GitHub issue / PR 双向同步。
@@ -225,6 +229,29 @@ P0 成功标准：一个真实开发 Issue 可以从创建、执行、验证到 
 - 自动把所有经验写入长期 memory，避免污染。
 
 ## 5. 核心概念
+
+### 三层归属关系 `[2026-08-15 新增]`
+
+PersonaHub 的归属结构是三层，缺一层都会有东西没地方挂：
+
+```text
+Space（UI 显示为「工作区」）   共享什么：Skills、AI 成员配置；将来共享给谁：成员
+  └─ Project（项目）           组织什么：Issues、Threads、Memory、Evidence；启用哪些 AI 成员
+       └─ Workspace（UI 显示为「代码目录」）  在哪执行：真实路径、Git 分支、写锁、adapter 可用性
+```
+
+三层不能合并，理由各不相同：
+
+- **Space 与 Project 不能合并**：Skills 与 AI 成员配置需要跨项目复用，配一次就该处处能用；
+  而 Issue 与 Evidence 必须按项目隔离。
+- **Project 与 Workspace 不能合并**：写锁必须挂在**物理路径**上——两个 Project 指向同一目录时
+  也必须互斥；adapter 可用性同理按目录判定（同一 CLI 在不同目录的登录状态不同）。
+- **命名纪律**：代码与 schema 中的 `workspace` 一律指代码目录，新增的协同层内部命名为
+  `space`。UI 用语见第 5 节各概念与 `docs/personahub-user-journeys.md` §3.1 的映射表。
+  不要因为 UI 上叫「工作区」就在代码里用 `workspace` 指代协同层。
+
+**v0.1–v0.3 的实际形态**：Space 是单例且不可切换，不含成员与权限，只承担「Skills 与
+AI 成员配置的归属层」这一个职责。多人相关能力见第 15 节「远期：多人协同」。
 
 ### Project
 
@@ -248,7 +275,10 @@ v0.1 默认一个 Project 绑定一个 Workspace（即一个本地路径）。�
 
 ### Workspace
 
-Workspace 是真实文件和执行环境所在的位置，通常是本地代码仓库、文档目录、研究资料目录，或未来由 daemon 管理的隔离执行目录。
+Workspace 是真实文件和执行环境所在的位置，通常是本地代码仓库、文档目录、研究资料目录，或未来由 daemon 管理的隔离执行目录。**UI 上称「代码目录」**，不叫工作区——「工作区」在界面上指 Space（见上文三层归属关系）。
+
+**它同时是权限边界** `[2026-08-15]`：多人协同落地后，「谁能在哪个本地目录执行」按 Workspace 授权，
+而不是按 Space 或 Project。这是 Workspace 不能被协同层吞并的根本原因。
 
 Workspace 负责：
 
@@ -514,12 +544,19 @@ Validation Policy 定义某类任务如何判断完成。
 
 可执行工作的 AI 成员。第一版以 agent adapter 为核心；代码开发场景可接 CLI agent，阅读、研究、排障等场景可接不同能力的 agent。Agent 的参与由 Workflow Template / Collaboration Topology / Room 决定，不全局参与所有 Issue。
 
-Agent 是长期成员，不是一次性函数。PersonaHub 保留稳定 role、capability tags、默认模型和历史表现，用于后续 routing、validation trust、workflow recommendation 和 skill compounding，但不做强拟人包装。
+Agent 是长期成员，不是一次性函数。PersonaHub 保留 capability tags、默认模型和历史表现，用于后续 routing、validation trust、workflow recommendation 和 skill compounding，但不做强拟人包装。
+
+**`capability_tags` 是路由主依据，`role` 降级为展示标签** `[2026-08-15 修订]`：agent 之间的真实
+差异来自背后的 CLI 与模型，角色是每次任务里的**工作分配**，不是身份属性。因此 Coordinator 按
+「能做什么」匹配任务，不按 role 名匹配；界面也按能力项呈现成员，不写成「它是 reviewer」。
+路由偏好（prefer / avoid + 理由 + 过期）应挂在 Issue / Room 层级，不烧死在 agent 定义里。
+依据与代码证据见 `docs/reviews/concept-mapping.md` §7。
 
 最小字段：
 
 - name
-- role: coordinator / architect / coder / reviewer / verifier / researcher / reader / writer / curator / custom
+- capability_tags（路由主依据）
+- role（可选展示标签）: coordinator / architect / coder / reviewer / verifier / researcher / reader / writer / curator / custom
 - cli_provider: codex / claude-code / opencode
 - runtime_id
 - capability_tags
@@ -660,37 +697,48 @@ Trace 不是一级产品概念，而是 Thread 内部自动生成的证据事件
 
 ## 6. 信息架构
 
-第一版采用三栏工作台。
+第一版采用四栏工作台。**`[2026-08-15 修订]` 原为三栏，把「当前入口的列表」显式拆成第二栏**——
+最高频的使用场景是跟进任务，用户需要同时看到「还有哪些任务在等我」和「当前这个进行到哪」，
+三栏结构下这两件事必须来回切换。
 
 ```text
-左侧：工程导航
-  Projects
+第 1 栏：入口导航（窄）
+  工作区切换（Space）
   Issues
+  Projects
+  Memory
   Automations
-  Agents
   Skills
-  Settings
+  ——
+  Settings（含运行时、AI 成员配置）
 
-中间：当前协作现场
+第 2 栏：当前入口的列表
+  规则：本栏内容 = 第 1 栏当前选中入口的列表
+  例：选中 Issues 即 Issue 列表，负责增删改查与定位
+  本栏不承载执行动作，只做定位
+
+第 3 栏：当前协作现场
   Primary Thread / Room Thread switcher
-  Messages
-  Agent responses
-  Room members
-  Agent discussion
-  Handoff events
-  Run events
-  Validation events
-  Decisions
+  视图切换：活动 / 变更 / 轨迹（可扩展集合）
+  Messages、Agent responses、Room members、Agent discussion
+  Handoff events、Run events、Validation events、Decisions
+  文件与变更内容（diff 与全文，markdown 渲染后呈现）
 
-右侧：Context Inspector
-  Issue info
-  Agent status
-  Message stats
-  Evidence
-  Run logs
-  Audit / trace events
-  Blockers
+第 4 栏：Context Inspector（按 tab 分区）
+  常驻置顶：Blockers / 需要用户处理
+  tab 信息：Issue info、Agent status、当前阶段与下一步执行者、轮次、队列
+  tab 产物：Evidence、文件变化索引、验证要求
+  tab 诊断：Run logs、Audit / trace events、内部 ID
 ```
+
+三条结构规则（新增功能按此扩展，不改结构）：
+
+- **第 1 栏只加条目**，不改结构；新功能 = 一个入口 + 一个列表。
+- **第 3 栏的视图切换是可扩展集合**，将来的 Room、Artifact 进这里，不新增主栏。
+- **第 4 栏只承载快照，不承载动作**；新增快照进已有 tab，不轻易开第四个 tab。
+
+`Message / event stats` **不再是必须项** `[2026-08-15]`：它在 P0 找不到对应的用户问题，
+需要时按实际信息需求再定归属。
 
 ### 第一屏
 
@@ -698,8 +746,11 @@ Trace 不是一级产品概念，而是 Thread 内部自动生成的证据事件
 
 默认状态：
 
-- 左侧选中最近 Project。
-- 中间默认显示最近 active Issue 的 primary Thread，或空状态引导创建 Issue。
+- 左侧选中上次使用的 Project。
+- 中间默认显示**最需要用户处理的那个 Issue** 的 primary Thread，或空状态引导创建 Issue。
+  `[2026-08-15 修订]` 原为「最近 active Issue」。改判理由：P0 是完全手动阶段指派，停住的
+  任务不会自己往前走；按「最近」排序会让用户每次自己去找那个停下来等指派的任务。
+  优先级顺序见 `docs/personahub-user-journeys.md` §6.4。
 - 当 Issue 存在 active Room 时，中间区域可切换或展开为 Room 协作现场，用户可以旁听、打断、纠偏和调整参与 agents。
 - 右侧显示当前 Issue 的状态、参与 agents、run logs、evidence 和 blockers。
 
@@ -986,16 +1037,19 @@ Done 为终态；Blocked 只能回到 Ready，不会自动跳回 Running。
 
 ## 10. UI 需求
 
-### 左侧导航
+### 左侧导航（第 1、2 栏）
 
 必须支持：
 
-- Project 切换。
+- 工作区（Space）切换位。v0.1–v0.3 为单例，不做多值切换。
+- Project 切换，并显示其绑定的代码目录与 Git 分支。
 - Issues 列表入口。
-- Agents 入口。
-- Automations 入口占位。
-- Skills 入口。
-- Settings 入口。
+- Agents（AI 成员）入口——**保持一级入口**，不得埋进 Settings 二级：添加成员是首次配置的
+  主路径，选择执行者时也要看能力项。
+- Automations / Memory / Skills 入口占位。
+- Settings 入口（含运行时、AI 成员的详细配置）。
+
+第 2 栏是第 1 栏当前入口的列表，只做定位，不承载执行动作。
 
 第一版左侧不需要完整 board。
 
@@ -1015,6 +1069,11 @@ Done 为终态；Blocked 只能回到 Ready，不会自动跳回 Running。
 - 支持输入新指令或 @agent。
 - 支持用户作为 Human Lead 打断讨论、纠正方向、补充约束、暂停 Room。
 - 支持用户手动拉入 agent、移除 agent、指定 agent 接手或要求某个 agent 总结 / 重做 / 提供证据。
+- **查看文件与变更** `[2026-08-15 新增]`：以与「活动」并列的视图呈现本任务涉及的文件，
+  支持 diff 与全文两种看法，markdown 必须渲染后呈现；内容锚定到具体 Run/Attempt 产出的版本，
+  而不是磁盘当前状态；**只读**，且不越出当前 Workspace。**不做常驻文件目录树**（见第 13 节
+  「UI 过重」）。理由：此前用户无法在应用内判断"做对了吗"，审文档必须切到外部编辑器，
+  与第 4.1 节"不离开 PersonaHub"的核心承诺冲突。
 
 ### 右侧 Inspector
 
@@ -1026,10 +1085,16 @@ Done 为终态；Blocked 只能回到 Ready，不会自动跳回 Running。
 - Owner agent / workflow agents / validator agent。
 - Active Room 信息和成员状态。
 - Run logs。
-- Evidence refs。
-- Message / event stats。
-- Blockers。
-- Done evidence summary，以及复制/下载其已持久化 Markdown 的操作。
+- Evidence refs 与文件变化索引（点击后在协作现场打开内容，Inspector 自身不展示 diff）。
+- Blockers（**常驻置顶，不放进 tab**：进入后无需滚动即可看到）。
+- Done evidence summary。
+
+`[2026-08-15 修订]` 两处调整：
+
+- **Message / event stats 移出必须项**，理由见第 6 节。
+- **复制 / 下载已持久化 Markdown 降为 P1**。P0 只保证「在应用内看得到、逐条追得到」；
+  复制、下载、导出属同一类能力（把结果带出应用），一并后移。这推翻了 2026-07-19 修订中
+  「Done Evidence Summary 支持复制/下载已持久化 Markdown」的排期，不推翻其产品价值。
 
 ## 11. 自动化与安全边界
 
@@ -1388,6 +1453,40 @@ Memory / Skill = 长期学习层
 
 - 用户只输入目标，PersonaHub 能自动决定采用 sequential、orchestrator_subagent、coordinator、council、moa 或其他 topology。
 - 系统能解释选择原因、预算影响、风险和人工升级点。
+
+### 远期：多人协同 `[2026-08-15 新增]`
+
+**定位**：从「个人 Agent Team OS」扩展为「一小群人 + 各自 agent 团队共享一个工作区」。
+不承诺版本号——它取决于个人闭环是否已经稳定，以及是否真的出现第二个使用者。
+第 4.2 节因此把多人协同从「不做」改判为「后移」。
+
+**路线原则（三条，决定后续每个版本怎么加多人能力）**：
+
+1. **默认关闭、可选开启、向后兼容。** 认证与访问控制默认不启用，现有单用户使用方式不受
+   影响。本地优先产品不应为一个还没有用户的能力，让每个查询都先付多租户的成本。
+2. **权限边界挂在 Workspace 上。** 「谁能在哪个本地目录执行」是最关键的授权——agent 会真的
+   写文件、跑命令，这一层不设防，其他隔离都是装饰。
+3. **共享先用可见性，不急着上成员表。** 「工作区内共享 Skills 与 AI 成员配置」用一个
+   `visibility: space | private` 字段即可成立，不需要 member / role / 邀请流程。
+
+**分阶段（顺序稳定，版本不定）**：
+
+- 阶段 1 身份与隔离：登录、服务端 session、Thread/Issue 的 owner 与 `access: private | shared`、
+  按 Workspace 的执行授权。
+- 阶段 2 协同语义：共享区的高风险动作审批（非 owner 的文件写入、agent 调用需批准）、
+  角色权限、传输加密。
+- 阶段 3 团队资产：跨成员共享 Skills 与 Memory、团队记忆与责任边界、看板类管理视图。
+
+**现在就要守住的（成本极低，后补极贵）**：
+
+- 每条记录都有 actor（`user` / `agent` / `system`），人类动作不许塞进 `system`。
+- ID 保持不可猜的字符串，避免将来多端合并撞号。
+- Thread / Issue 的 API 形状能容纳 `owner` 与 `access`，**字段可以先不实现**。
+
+**不现在做的**：成员与角色管理、邀请流程、权限矩阵 UI、共享区可见性设置页。
+
+> 一条来自参考项目的教训：multica 曾给 autopilot 加过 `project_id`，后来又用一次迁移删掉，
+> 理由是「从没在 UI 暴露过」。**预留位置可以，预留没有消费者的字段就是下次要删的东西。**
 
 ## 16. 文档关系
 

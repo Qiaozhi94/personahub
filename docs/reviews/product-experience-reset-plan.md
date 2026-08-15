@@ -544,25 +544,12 @@ M6 是目标形态定稿后才启动的独立实施阶段，不计入这两周�
 
 原型批准后再修改，当前只登记影响面：
 
-1. `docs/personahub-prd.md`：信息架构、核心流程、UI 需求和版本路线是否需要调整。
-   **新增（2026-08-13）**：§5 Agent 的 `role` 与 `capability_tags` 主次关系需调整——
-   以能力项为路由主依据、role 降级为展示标签，路由偏好可挂 Issue/Room 层级。
-   来源与代码证据见 `concept-mapping.md` §7；同时影响 F007 `resolveEligibleAdapter()`
-   与 F012 Squad 的成员组合方式。
-   **新增（2026-08-15）**：§10 右侧 Inspector 的「Done evidence summary，以及复制/下载其
-   已持久化 Markdown 的操作」需降级——用户裁决复制/下载/导出属同一类能力，统一为 P1，
-   P0 只保证应用内查看与追溯。依据见 `personahub-user-journeys.md` §7.4。
-   同节的 `Message / event stats` 亦无 P0 信息需求承载，一并在 PRD 修订时重估。
-   **同批（2026-08-15）**：§6「第一屏」的「中间默认显示最近 active Issue」需改为按注意力
-   优先级选择默认任务——手动指派下停住的任务不会自己前进，按最近排序会让用户每次自行寻找。
-   依据见 `personahub-user-journeys.md` §6.1。
-   **新增（2026-08-15，用户提出）**：§6 中间协作现场与 §10 UI 需求都**没有文件与变更内容的
-   查看能力**，导致「做对了吗」只能靠切到 VSCode 判断，与 §4.1「不离开 PersonaHub」的核心
-   承诺冲突——对文档类任务尤其明显（`docs/x.md +120 −8` 无法判断内容对错）。需在中间协作
-   现场补一个与「活动」并列的**变更/文件视图**（diff 与全文可切换、markdown 渲染、只读、
-   锚定具体 Run/Attempt、范围限当前 Workspace），右栏「文件变化」降为索引入口。
-   **明确不做常驻目录树**（PRD §13「UI 过重」）。行为定义见
-   `personahub-user-journeys.md` §6.6，验收见其 §9 指标 10。
+1. `docs/personahub-prd.md`：**已于 2026-08-15 一次性落地 6 项，本条关闭。**
+   落地内容见 PRD 修订记录 2026-08-15 行：多人协同改判后移 + §15 远期章节、§5 三层归属关系
+   （Space > Project > Workspace）与命名纪律、§6 三栏改四栏 + 第一屏默认落点、
+   §10 文件与变更视图、§10 右栏 stats 移出与复制/下载降 P1、§5 Agent capability 升为路由主依据。
+   **后续若再出现旅程与 PRD 分叉，仍按本节登记，不直接改 PRD。**
+
 2. `docs/features/0.3/README.md`：版本目标、Feature 顺序、里程碑和验收旅程。
 3. F009–F012 三件套：用户场景、UX 需求、非目标、依赖和任务顺序。
 4. `docs/SOP.md` / `docs/features/README.md`：加入强制旅程、原型和真实浏览器门禁。

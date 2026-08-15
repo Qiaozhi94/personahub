@@ -52,6 +52,56 @@ multica 给出的是"一个工程化产品该怎么组织工作流"，clowder �
 | **Trace Events** | 执行日志（工具调用/命令/报错带时间戳，可回放） | 审计事件 / Session / Runtime | 一一对应 | multica 借形态，clowder 借分层 |
 | **Adapter / Runtime** | 运行时（daemon） | Agent CLI adapter 表 | 一一对应 | multica 运行时页可直接借 |
 
+## 2.1 多人协同的两条路线（2026-08-15 调研）
+
+> **触发**：用户判断多人协同是 PersonaHub 的重点方向，要求现在就把结构定清楚。
+> 结论已按产品级修订流程落进 PRD §15「远期：多人协同」与 §5 三层归属关系；
+> **本节只保留调研证据**，产品判断以 PRD 为准。
+
+### 2.1.1 multica：生来多租户（已落地）
+
+`server/migrations/001_init.up.sql` 与 `034_projects.up.sql`：
+
+| 机制 | 做法 |
+|---|---|
+| 租户根 | `workspace` + `member(workspace_id, user_id, role: owner/admin/member)` |
+| 隔离 | **每张表都带 `workspace_id`**（agent / issue / project / label / inbox 全部） |
+| 人机统一 | **多态 actor 贯穿全表**：`assignee_type` / `creator_type` / `author_type` / `recipient_type ∈ (member, agent)` |
+| 共享 | `agent.visibility ∈ (workspace, private)` + `owner_id` |
+| project | **后加**的分组维度（迁移 034），`issue.project_id` 可空 |
+
+**反面证据**：迁移 `058_drop_autopilot_priority_and_project_id.up.sql` 把 `autopilot.project_id`
+删掉，注释写明「never exposed in the UI」。这条被引为 PRD §15「预留位置可以，预留没有
+消费者的字段就是下次要删的东西」的依据。
+
+### 2.1.2 clowder-ai：本地优先 + 可选认证（F077，spec 阶段未实现）
+
+`docs/features/F077-multi-user-secure-collab.md`：
+
+- GitHub OAuth + Redis server-side session（不用 JWT）
+- **Thread ACL**：`ownerUserId` + `access: private|shared` + `memberUserIds[]`
+- **`projectPath ACL`：每个用户绑定 `allowedProjectPaths[]`，Agent 只能在授权目录下执行**
+- **AC9：现有单用户部署不受影响——auth 可选、默认关闭 = 向后兼容**
+- Phase 2 才做角色权限与共享区高风险动作审批；Phase 3 才做用户管理 UI
+- 更远的 F290「AI-native Collective」：多个独立 Café 在 Collective / Channel 中共存
+
+起因是真实事故级观察：3001 端口零认证裸跑，同 WiFi 下任何人可读全部 thread。
+
+### 2.1.3 对 PersonaHub 的三条结论
+
+1. **走 clowder 那条，不走 multica 那条。** multica 是 Postgres 多租户 SaaS，单用户只是
+   多租户的特例；PersonaHub 是本地 SQLite 单进程，照抄要给所有表加 `space_id` 并重写全部
+   查询——为一个还没有用户的能力付全量成本。
+2. **`projectPath ACL` 证明代码目录必须保持独立概念**：多人环境里「谁能在哪个本地目录执行」
+   是权限边界；若把 `workspace` 改指协同空间，这个边界就没有承载对象了。这是 PRD §5
+   三层归属关系的直接依据。
+3. **共享靠 `visibility`，不靠 member 表**：multica 用一个字段就实现了共享/私有 agent，
+   PersonaHub 的「工作区内共享 Skills 与 AI 成员配置」抄这一个字段即可成立。
+
+**PersonaHub 现状复核**：`shared/src/types/index.ts:172` 已有
+`ActorType = user | agent | system`，thread events 也带 `actor_type` / `actor_id`——
+多态 actor 位**已经存在**，不需要新造。
+
 ## 3. Workspace 重判：内核是 clowder 的项目空间
 
 **原判为"术语冲突不可借用"，现修正。** 三方对照：
@@ -68,8 +118,13 @@ multica 给出的是"一个工程化产品该怎么组织工作流"，clowder �
   「Issue 必须绑定 Workspace 才能执行」是同一件事。
 - **流程形态取 multica** ——先建 Project、再在其中派活的工程化流程，比 clowder 的
   对话优先更适合 Issue 驱动的产品。
-- **仍然不要的**：multica 顶部的组织级工作区切换器。PersonaHub 没有"团队"这一层，
-  把它借进来会凭空造出一个用户不需要的维度。
+- ~~**仍然不要的**：multica 顶部的组织级工作区切换器。PersonaHub 没有"团队"这一层，
+  把它借进来会凭空造出一个用户不需要的维度。~~
+  **本条已于 2026-08-15 被推翻**：用户确认多人协同是重点方向，PersonaHub 需要一个
+  跨项目共享 Skills 与 AI 成员配置的归属层。原判的错误在于把「协同层」等同于「团队功能」——
+  即便单用户，"配一次 agent、所有项目可用"本身就成立，共享层今天就有价值。
+  新结论见 PRD §5 三层归属关系：**Space（UI 显示「工作区」）> Project > Workspace（UI 显示
+  「代码目录」）**；切换器可以借，但 v0.1–v0.3 是单例、无成员、无权限。
 
 ## 4. 原判"无对应"四项的深挖结果
 
