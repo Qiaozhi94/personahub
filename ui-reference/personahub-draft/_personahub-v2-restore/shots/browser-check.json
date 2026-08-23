@@ -1,0 +1,23 @@
+{
+  "checks": [
+    "默认进入项目工作台并显示三列",
+    "会话管理支持创建入口、管理菜单与打开会话",
+    "Room 可暂停和恢复",
+    "Room 可发送静态演示指令",
+    "Room 概览按会话、Agent、计划排列",
+    "Markdown 与代码可跳转修改位置",
+    "Artifact 与 Evidence 可从产出树打开",
+    "证据不足可下钻并预填验证指令",
+    "底部执行面板可展开",
+    "五个一级工作面可达",
+    "命令面板可打开和关闭"
+  ],
+  "consoleErrors": [],
+  "screenshots": [
+    "shots/workbench.png",
+    "shots/room-overview.png",
+    "shots/change-locations.png",
+    "shots/evidence-chain.png",
+    "shots/task-and-room.png"
+  ]
+}

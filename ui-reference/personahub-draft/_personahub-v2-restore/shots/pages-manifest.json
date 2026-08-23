@@ -1,0 +1,94 @@
+{
+  "generatedAt": "2026-08-15T17:29:05.200Z",
+  "source": "file:///D:/Projects/ui-reference/personahub-draft/_personahub-v2-restore/index.html",
+  "viewport": "1440x900",
+  "count": 17,
+  "exports": [
+    {
+      "file": "workbench.png",
+      "title": "项目工作台 · PersonaHub PRD",
+      "kind": "project-document"
+    },
+    {
+      "file": "document-room-spec.png",
+      "title": "Markdown · F011 Room spec",
+      "kind": "project-document"
+    },
+    {
+      "file": "change-locations.png",
+      "title": "代码 · run-dispatch.ts 修改位置",
+      "kind": "project-document"
+    },
+    {
+      "file": "document-architecture.png",
+      "title": "Markdown · PersonaHub architecture",
+      "kind": "project-document"
+    },
+    {
+      "file": "task-and-room.png",
+      "title": "任务 · Room 人工介入",
+      "kind": "project-document"
+    },
+    {
+      "file": "artifact-synthesis.png",
+      "title": "Artifact · synthesis_plan",
+      "kind": "project-document"
+    },
+    {
+      "file": "artifact-research.png",
+      "title": "Artifact · research_findings",
+      "kind": "project-document"
+    },
+    {
+      "file": "evidence-summary.png",
+      "title": "Evidence Summary · Graph recovery",
+      "kind": "project-document"
+    },
+    {
+      "file": "evidence-chain.png",
+      "title": "验证依据 · Room pause / resume",
+      "kind": "project-document"
+    },
+    {
+      "file": "knowledge-decision.png",
+      "title": "Decision · Issue-first",
+      "kind": "project-document"
+    },
+    {
+      "file": "knowledge-memory.png",
+      "title": "Memory · 人工介入",
+      "kind": "project-document"
+    },
+    {
+      "file": "knowledge-skill.png",
+      "title": "Skill candidate · 前端原型验证",
+      "kind": "project-document"
+    },
+    {
+      "file": "room-overview.png",
+      "title": "Room · 会话概览",
+      "kind": "room-panel"
+    },
+    {
+      "file": "surface-start.png",
+      "title": "开始中心",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-library.png",
+      "title": "能力库",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-automation.png",
+      "title": "自动化",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-settings.png",
+      "title": "设置",
+      "kind": "top-level-surface"
+    }
+  ],
+  "consoleErrors": []
+}

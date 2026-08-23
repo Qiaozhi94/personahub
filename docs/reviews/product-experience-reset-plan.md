@@ -132,7 +132,7 @@ Feature、FR/AC 和代码正确性，没有把“用户能否从目标出发完�
 | multica | 26 | **66/66 通过** | 305 条链接 + 3 条行点击全部走得通 | **221/221 回放成功**，27 个已知缺口 |
 | clowder-ai | 5 | **15/15 通过** | 1 条链接通，5 条待补页 | 未采集（需应用在跑） |
 
-产物落点 `D:\Projects\ui-reference\`（独立目录，不进任何现有仓库）。验收标准为「结构与交互一致」：DOM 树逐节点比对 + 每节点约 60 个 computed style 属性比对，非像素级截图比对。
+产物落点 `ui-reference/`（主仓库内独立参考目录，不进生产 `web/`）。验收标准为「结构与交互一致」：DOM 树逐节点比对 + 每节点约 60 个 computed style 属性比对，非像素级截图比对。第三方冻结页与衍生草案必须保留上游品牌、版权声明及许可证。
 
 multica 已还原页面（26）：landing / login / about / usecases / changelog / download / contact-sales / issues / my-issues / projects / agents / autopilots / skills / runtimes / squads / inbox / chat / usage / billing / settings / issue-detail / project-detail / agent-detail / skill-detail / member-detail / agent-new。
 
@@ -694,13 +694,13 @@ M3-T04 旅程草稿交稿。各里程碑内部按顺序执行。进度按已勾�
 | 用户旅程文档 | `docs/personahub-user-journeys.md` | 产品级真相源，需登记进 `docs/README.md` 所有权矩阵 |
 | 概念映射表 | `docs/reviews/concept-mapping.md` | S1 产出，拼装前置 |
 | 页面选型表 | `docs/reviews/page-sourcing.md` | S2 产出；含 M4-T02 三栏定位与右栏 tab 裁决 |
-| 页面拼装草案 | `D:\\Projects\ui-reference\personahub-draft\` | 含参考项目文案与素材，**仓外目录，不进 `web/`、不作为实现代码** |
+| 页面拼装草案 | `ui-reference/personahub-draft/` | 含参考项目文案与素材，**纳入版本管理，但不进 `web/`、不作为实现代码** |
 | 空白区清单 | `docs/reviews/blank-areas.md` | S5 产出；唯一需原创设计的部分，v0.3 重估输入 |
 | clowder-ai 旅程还原 | `docs/research/clowder-ai-user-journeys.md` | 参考证据，不是 PersonaHub 真相源 |
 | multica 旅程还原 | `docs/research/multica-user-journeys.md` | 参考证据，不是 PersonaHub 真相源 |
-| clowder-ai 页面还原 | `D:\Projects\ui-reference\clowder\` | 渲染冻结产物，仓外独立目录，勿入库 |
-| multica 页面还原 | `D:\Projects\ui-reference\multica\` | 渲染冻结产物，仓外独立目录，勿入库 |
-| dsh 页面还原 | `D:\Projects\ui-reference\dsh\` | 第三个素材源（2026-08-15 登记），5 页，同上 |
+| clowder-ai 页面还原 | `ui-reference/clowder/` | 渲染冻结产物，随主仓库版本管理 |
+| multica 页面还原 | `ui-reference/multica/` | 渲染冻结产物；保留 Multica 品牌、版权及完整许可 |
+| dsh 页面还原 | `ui-reference/dsh/` | 第三个素材源（2026-08-15 登记），5 页，同上 |
 | 自测试体系方案 | `docs/reviews/self-test-system-plan.md` | 常驻流程文档，独立于本轮重置 |
 | 旅程—测试映射矩阵 | `docs/reviews/journey-test-matrix.md` | 过程产物，由自测试文档 T003 产出 |
 | 影响面与切片实施计划 | `docs/reviews/refactor-impact-plan.md` | 过程产物 |
@@ -808,7 +808,7 @@ M3-T04 旅程草稿交稿。各里程碑内部按顺序执行。进度按已勾�
 - [x] M4-T04：S3 拼装草案——基于冻结产物剪贴，文案换成 PersonaHub 概念；执行 5.1 剪贴规则
   （指不回旅程的区块删掉）与 5.4 视觉统一规则（结构任意来源、视觉统一 multica、
   不搬 clowder 的 CSS 变量）。
-  **已完成 2026-08-15**，落 `D:\Projects\ui-reference\personahub-draft\`，14 页
+  **已完成 2026-08-15**，落 `ui-reference/personahub-draft/`，14 页
   （其中 10 页是同一张工作台的十个状态）。**布局已按 PRD §6 修订改为四栏**：入口导航 /
   当前入口的列表 / 协作现场 / Inspector；看文件内容时 Inspector 折叠成窄条。
   **草案可点**：站内跳转、右栏 tab、变更视图的文件切换与「改动/全文」都真的能用；

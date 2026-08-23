@@ -16,3 +16,6 @@
 *.woff2 binary
 *.eot binary
 *.ttf binary
+
+# Frozen browser captures preserve source markup whitespace as rendering truth.
+ui-reference/**/*.html -whitespace

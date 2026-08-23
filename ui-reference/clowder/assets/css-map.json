@@ -1,0 +1,14 @@
+{
+  "http://localhost:3003/_next/static/css/4804df116fce130e.css": "4804df116fce130e.css",
+  "http://localhost:3003/_next/static/css/3174917cb76f7f0b.css": "3174917cb76f7f0b.css",
+  "http://localhost:3003/vendor/app/theme-tokens.css": "theme-tokens.css",
+  "http://localhost:3003/vendor/app/cat-persona-tokens.css": "cat-persona-tokens.css",
+  "http://localhost:3003/vendor/app/cat-persona-derived.css": "cat-persona-derived.css",
+  "http://localhost:3003/vendor/app/connector-tokens.css": "connector-tokens.css",
+  "http://localhost:3003/vendor/app/theme-extras.css": "theme-extras.css",
+  "http://localhost:3003/vendor/app/console-tokens.css": "console-tokens.css",
+  "http://localhost:3003/vendor/app/console-shell.css": "console-shell.css",
+  "http://localhost:3003/vendor/app/console-controls.css": "console-controls.css",
+  "http://localhost:3003/vendor/app/werewolf-theme.css": "werewolf-theme.css",
+  "http://localhost:3003/vendor/xterm/xterm.css": "xterm.css"
+}

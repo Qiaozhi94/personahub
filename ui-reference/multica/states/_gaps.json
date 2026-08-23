@@ -1,0 +1,39 @@
+{
+  "issues": [
+    "menu \"全部\": elementHandle.click: Element is not visible"
+  ],
+  "my-issues": [
+    "menu \"已分配\": elementHandle.click: Element is not visible"
+  ],
+  "agents": [
+    "menu \"我的\": elementHandle.click: Element is not visible"
+  ],
+  "issue-detail": [
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "dialog \"正文\": elementHandle.click: Element is outside of the viewport",
+    "dialog \"正文\": elementHandle.click: Element is outside of the viewport"
+  ],
+  "project-detail": [
+    "tooltip \"\": elementHandle.hover: Element is outside of the viewport",
+    "menu \"全部\": elementHandle.click: Element is not visible"
+  ]
+}

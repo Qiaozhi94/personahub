@@ -1,0 +1,16 @@
+/* Replica interaction layer.
+ *
+ * Intentionally almost empty. The compiled source CSS already carries every
+ * value, including the open/closed and active/inactive variants, because the
+ * captured markup keeps the source project's own state attributes. Adding a
+ * rule here means guessing a value the source already knows — which is the one
+ * thing this pipeline exists to avoid.
+ *
+ * The only thing that belongs here is behavior the archive itself introduces.
+ */
+
+/* Routes with no captured counterpart still look like links, so make the
+   pointer say so before the click reveals nothing happens. */
+a[href="#"][data-original-href] {
+  cursor: default;
+}
