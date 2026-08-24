@@ -5,7 +5,7 @@ PersonaHub 前端设计参考库，随主仓库统一版本管理，但不属于
 ## 内容
 
 - `clowder/`、`dsh/`、`multica/`：浏览器渲染冻结页、样式真值与交互状态。
-- `personahub-draft/personahub-v2.0/`、`personahub-draft/personahub-v2.1/`：可独立评审的 PersonaHub V2 版本化设计稿。
+- `personahub-draft/`、`personahub-v2.0/`、`personahub-v2.1/`：基于参考材料生成的 PersonaHub 内部设计草案。
 - `scripts/`：提取、静态化、交互捕获和自动验收脚本。
 
 ## 使用
@@ -21,13 +21,6 @@ node ui-reference/scripts/verify-interactions.mjs <project>
 
 静态页可直接打开各项目的 `pages/*.html`。运行脚本使用主仓库已经安装的
 `playwright` 与 `jsdom` 依赖。
-
-`truth/` 中的 DOM、computed styles、CSS 变量与元数据使用无损 gzip 保存；流水线会
-透明读取 `*.gz`。重新提取时也会直接写入压缩格式。已有未压缩真值可运行：
-
-```bash
-node ui-reference/scripts/compress-truth.mjs
-```
 
 ## 第三方许可
 

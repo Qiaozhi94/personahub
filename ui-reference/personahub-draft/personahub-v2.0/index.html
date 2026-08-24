@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="PersonaHub V2.0 项目优先工作台静态交互草案"
+    />
+    <title>PersonaHub V2.0 · Project Workbench</title>
+    <link rel="stylesheet" href="assets/f661a7a97e09a850.css" />
+    <link rel="stylesheet" href="assets/styles.css" />
+    <link rel="stylesheet" href="assets/multica-theme.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="titlebar">
+        <div class="global-scope-switchers" aria-label="当前工作范围">
+          <button class="global-scope-button workspace-scope" type="button" data-demo="工作区切换：本轮静态原型只展示我的工作区">
+            <span class="scope-symbol">W</span>
+            <span class="scope-copy"><strong>我的工作区</strong></span>
+            <span class="chevron">⌄</span>
+          </button>
+          <span class="scope-divider" aria-hidden="true"></span>
+          <button class="global-scope-button project-scope" type="button" data-demo="项目切换：当前选择 PersonaHub">
+            <span class="scope-symbol project">PH</span>
+            <span class="scope-copy"><strong>PersonaHub</strong></span>
+            <span class="scope-meta">main</span>
+            <span class="chevron">⌄</span>
+          </button>
+        </div>
+        <button
+          class="command-trigger"
+          type="button"
+          data-command-open
+          data-testid="command-trigger"
+        >
+          <span>搜索项目对象或运行命令</span>
+          <kbd>Ctrl K</kbd>
+        </button>
+        <div class="title-actions">
+          <span class="local-state"><i></i> 本地服务正常</span>
+          <button class="icon-button" type="button" data-demo="通知中心暂无新消息" aria-label="通知">◌</button>
+          <button class="avatar" type="button" data-demo="单用户本地模式" aria-label="用户">G</button>
+        </div>
+      </header>
+
+      <div class="work-area">
+        <nav class="activity-rail" aria-label="一级工作面">
+          <div class="rail-primary">
+            <button class="rail-button" type="button" data-surface="start" aria-label="开始中心" title="开始中心">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9 20v-6h6v6"/></svg>
+            </button>
+            <button class="rail-button active" type="button" data-surface="project" aria-label="项目工作台" title="项目工作台">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h7l2 2h9v10H3z"/><path d="M3 6.5v-2h7l2 2"/></svg>
+            </button>
+            <button class="rail-button" type="button" data-surface="library" aria-label="能力库" title="能力库">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5A2.5 2.5 0 0 1 20 21z"/></svg>
+            </button>
+            <button class="rail-button" type="button" data-surface="automation" aria-label="自动化" title="自动化">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg>
+            </button>
+          </div>
+          <div class="rail-secondary">
+            <button class="rail-button" type="button" data-bottom-toggle aria-label="执行面板" title="执行面板">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 5 5-5 5"/><path d="M12 17h7"/></svg>
+            </button>
+            <button class="rail-button" type="button" data-surface="settings" aria-label="设置与诊断" title="设置与诊断">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1-2.8 2.8-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1 1.6V21h-4v-.1a1.8 1.8 0 0 0-1-1.6 1.8 1.8 0 0 0-2 .4l-.1.1-2.8-2.8.1-.1a1.8 1.8 0 0 0 .4-2A1.8 1.8 0 0 0 3 14H3v-4h.1a1.8 1.8 0 0 0 1.6-1 1.8 1.8 0 0 0-.4-2l-.1-.1L7 4.1l.1.1a1.8 1.8 0 0 0 2 .4A1.8 1.8 0 0 0 10 3V3h4v.1a1.8 1.8 0 0 0 1 1.6 1.8 1.8 0 0 0 2-.4l.1-.1L20 7l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1h.1v4h-.1a1.8 1.8 0 0 0-1.7.9Z"/></svg>
+            </button>
+          </div>
+        </nav>
+
+        <main class="surface-host">
+          <section class="surface project-surface active" data-surface-view="project" aria-label="项目工作台">
+            <aside class="project-explorer">
+              <div class="explorer-mode-tabs" role="tablist" aria-label="项目对象类型">
+                <button type="button" class="active" data-explorer-tab="work">会话</button>
+                <button type="button" data-explorer-tab="resources">资源</button>
+                <button type="button" data-explorer-tab="outputs">产出</button>
+                <button type="button" data-explorer-tab="knowledge">知识</button>
+              </div>
+
+              <div class="explorer-toolbar">
+                <label>
+                  <span aria-hidden="true">⌕</span>
+                  <input type="search" placeholder="筛选当前树" data-tree-filter />
+                </label>
+                <button type="button" data-new-object aria-label="新建会话" title="新建会话">＋</button>
+              </div>
+
+              <div class="explorer-scroll">
+                <div class="explorer-panel" data-explorer-panel="resources">
+                  <div class="tree-section-label">PERSONAHUB</div>
+                  <button class="tree-row folder expanded" type="button" data-folder-toggle>
+                    <span class="twisty">⌄</span><span class="folder-icon">▱</span><span>docs</span>
+                  </button>
+                  <div class="tree-children">
+                    <button class="tree-row file active" type="button" data-open="file-prd" data-label="personahub-prd.md">
+                      <span class="file-icon md">M</span><span>personahub-prd.md</span><span class="change-dot">●</span>
+                    </button>
+                    <button class="tree-row folder expanded indent-1" type="button" data-folder-toggle>
+                      <span class="twisty">⌄</span><span class="folder-icon">▱</span><span>features / 0.3</span>
+                    </button>
+                    <div class="tree-children">
+                      <button class="tree-row file indent-2" type="button" data-open="file-room-spec" data-label="F011 · Room spec">
+                        <span class="file-icon md">M</span><span>F011-room/spec.md</span>
+                      </button>
+                    </div>
+                    <button class="tree-row file" type="button" data-open="file-architecture" data-label="architecture.md">
+                      <span class="file-icon md">M</span><span>architecture.md</span>
+                    </button>
+                  </div>
+                  <button class="tree-row folder expanded" type="button" data-folder-toggle>
+                    <span class="twisty">⌄</span><span class="folder-icon">▱</span><span>server / src</span>
+                  </button>
+                  <div class="tree-children">
+                    <button class="tree-row file" type="button" data-open="file-code" data-label="run-dispatch.ts">
+                      <span class="file-icon ts">TS</span><span>run-dispatch.ts</span><span class="change-mark">M</span>
+                    </button>
+                    <button class="tree-row file" type="button" data-open="file-code" data-label="workspace-lock.ts">
+                      <span class="file-icon ts">TS</span><span>workspace-lock.ts</span>
+                    </button>
+                  </div>
+                  <button class="tree-row folder" type="button" data-folder-toggle>
+                    <span class="twisty">›</span><span class="folder-icon">▱</span><span>web / src</span>
+                  </button>
+                </div>
+
+                <div class="explorer-panel active" data-explorer-panel="work">
+                  <div class="tree-section-label">需要你处理 · 2</div>
+                  <div class="session-item"><button class="work-item attention" type="button" data-open="issue-view" data-label="会话 · Room 人工介入"><span class="signal yellow"></span><span><strong>Room 支持暂停、纠偏与改派</strong><small>等待你指派 · 3 分钟前</small></span></button><button class="session-more" type="button" data-session-menu-toggle aria-label="管理 Room 支持暂停、纠偏与改派">•••</button><div class="session-menu" hidden><button type="button" data-demo="重命名会话：Room 支持暂停、纠偏与改派">重命名</button><button type="button" data-demo="会话已移至归档；静态原型不保存操作">归档</button><button class="danger" type="button" data-demo="删除会话需要二次确认；静态原型未执行删除">删除…</button></div></div>
+                  <div class="session-item"><button class="work-item attention" type="button" data-open="issue-validation" data-label="会话 · 验证未收敛"><span class="signal yellow"></span><span><strong>修复 validation round 恢复</strong><small>连续 2 次未解决 · 18 分钟前</small></span></button><button class="session-more" type="button" data-session-menu-toggle aria-label="管理修复 validation round 恢复">•••</button><div class="session-menu" hidden><button type="button" data-demo="重命名会话：修复 validation round 恢复">重命名</button><button type="button" data-demo="会话已移至归档；静态原型不保存操作">归档</button><button class="danger" type="button" data-demo="删除会话需要二次确认；静态原型未执行删除">删除…</button></div></div>
+                  <div class="tree-section-label spaced">正在进行 · 2</div>
+                  <div class="session-item"><button class="work-item" type="button" data-open="room-view" data-label="会话 · Artifact research"><span class="signal blue"></span><span><strong>Artifact contract research</strong><small>Research Room · 2 / 3 步</small></span></button><button class="session-more" type="button" data-session-menu-toggle aria-label="管理 Artifact contract research">•••</button><div class="session-menu" hidden><button type="button" data-demo="重命名会话：Artifact contract research">重命名</button><button type="button" data-demo="运行中会话需先停止才能归档">归档</button><button class="danger" type="button" data-demo="运行中会话不能直接删除">删除…</button></div></div>
+                  <div class="session-item"><button class="work-item" type="button" data-open="issue-running" data-label="会话 · Runtime health"><span class="signal blue"></span><span><strong>补齐 runtime health 诊断</strong><small>Claude 正在执行 · 46 秒</small></span></button><button class="session-more" type="button" data-session-menu-toggle aria-label="管理补齐 runtime health 诊断">•••</button><div class="session-menu" hidden><button type="button" data-demo="重命名会话：补齐 runtime health 诊断">重命名</button><button type="button" data-demo="运行中会话需先停止才能归档">归档</button><button class="danger" type="button" data-demo="运行中会话不能直接删除">删除…</button></div></div>
+                  <div class="tree-section-label spaced">最近完成</div>
+                  <div class="session-item"><button class="work-item" type="button" data-open="evidence-view" data-label="完成摘要 · Graph recovery"><span class="signal green"></span><span><strong>Graph restart recovery</strong><small>验证通过 · 1 小时前</small></span></button><button class="session-more" type="button" data-session-menu-toggle aria-label="管理 Graph restart recovery">•••</button><div class="session-menu" hidden><button type="button" data-demo="重命名会话：Graph restart recovery">重命名</button><button type="button" data-demo="会话已归档；静态原型不保存操作">归档</button><button class="danger" type="button" data-demo="删除会话需要二次确认；静态原型未执行删除">删除…</button></div></div>
+                </div>
+
+                <div class="explorer-panel" data-explorer-panel="outputs">
+                  <div class="tree-section-label">当前任务成果</div>
+                  <button class="output-item" type="button" data-open="artifact-view" data-label="Artifact · synthesis_plan">
+                    <span class="output-icon">A</span><span><strong>synthesis_plan</strong><small>revision 3 · 已被 implementation 消费</small></span>
+                  </button>
+                  <button class="output-item" type="button" data-open="artifact-research" data-label="Artifact · research_findings">
+                    <span class="output-icon">A</span><span><strong>research_findings</strong><small>revision 1 · Room 产出</small></span>
+                  </button>
+                  <button class="output-item" type="button" data-open="evidence-view" data-label="Evidence Summary">
+                    <span class="output-icon evidence">✓</span><span><strong>Evidence Summary</strong><small>验证通过 · 完整</small></span>
+                  </button>
+                  <button class="output-item" type="button" data-open="evidence-room" data-label="验证依据 · Room pause / resume">
+                    <span class="output-icon pending">!</span><span><strong>Room pause / resume</strong><small>验证依据 · 2 / 3 已满足</small></span>
+                  </button>
+                  <div class="tree-section-label spaced">交付版本</div>
+                  <button class="output-item" type="button" data-open="file-prd" data-label="personahub-prd.md">
+                    <span class="output-icon doc">M</span><span><strong>personahub-prd.md</strong><small>当前 Workspace · 已修改</small></span>
+                  </button>
+                </div>
+
+                <div class="explorer-panel" data-explorer-panel="knowledge">
+                  <div class="tree-section-label">项目知识</div>
+                  <button class="knowledge-item" type="button" data-open="decision-view" data-label="Decision · Issue-first">
+                    <span>#</span><strong>坚持 Issue-first，不做 Canvas-first</strong><small>Decision · 4 个反向链接</small>
+                  </button>
+                  <button class="knowledge-item" type="button" data-open="memory-view" data-label="Memory · 人工介入">
+                    <span>◇</span><strong>自动回路必须提供介入点</strong><small>Memory · 已确认</small>
+                  </button>
+                  <button class="knowledge-item" type="button" data-open="memory-view" data-label="Memory · Workspace">
+                    <span>◇</span><strong>Workspace 是权限边界</strong><small>Memory · 已引用 6 次</small>
+                  </button>
+                  <div class="tree-section-label spaced">待沉淀</div>
+                  <button class="knowledge-item candidate" type="button" data-open="skill-view" data-label="Skill candidate">
+                    <span>✦</span><strong>前端原型验证流程</strong><small>Skill candidate · 等待确认</small>
+                  </button>
+                </div>
+              </div>
+            </aside>
+
+            <section class="editor-area">
+              <div class="editor-tabs" data-editor-tabs>
+                <button class="editor-tab active" type="button" data-open="file-prd" data-label="personahub-prd.md">
+                  <span class="tab-type">M</span><span>personahub-prd.md</span><i></i>
+                </button>
+                <button class="editor-tab" type="button" data-open="file-room-spec" data-label="F011 · Room spec">
+                  <span class="tab-type">M</span><span>F011 · Room spec</span><i></i>
+                </button>
+              </div>
+              <div class="breadcrumbs" data-breadcrumbs>
+                PersonaHub <span>›</span> docs <span>›</span> personahub-prd.md <span>›</span> Room
+              </div>
+
+              <div class="document-stage">
+                <article class="document markdown-document active" data-document="file-prd">
+                  <div class="document-kicker">产品真相源 · 已固定到当前 Workspace</div>
+                  <h1>PersonaHub PRD</h1>
+                  <p class="lead">Personal AI Agent Team OS</p>
+                  <div class="document-meta">
+                    <span>更新于 8 分钟前</span><span>来自 main</span><span class="modified">本次有修改</span>
+                  </div>
+                  <div class="change-navigation" data-change-navigation>
+                    <span><i></i><strong data-change-count>3 处修改</strong><small data-change-status>正在显示全部内容</small></span>
+                    <div><button type="button" data-change-prev aria-label="上一处修改">↑</button><button type="button" data-change-next aria-label="下一处修改">↓</button></div>
+                  </div>
+                  <hr />
+                  <h2><a href="#" data-demo="标题链接已复制">#</a> 产品定位</h2>
+                  <div class="changed-block compact" data-change-location data-change-label="修改 1 · 产品定位">
+                    <span class="change-gutter"></span>
+                    <p>PersonaHub 是一个个人优先、开源可自托管的 AI Agent Team OS。它把真实项目内容、Agent 协作、阶段成果和验证证据放进同一个持续工作的项目空间。</p>
+                  </div>
+                  <blockquote>
+                    以 Issue 管理目标，以可执行 Work Graph 组织 Agent 协作，以 Evidence 验证结果。
+                  </blockquote>
+                  <h2><a href="#" data-demo="标题链接已复制">#</a> 核心概念</h2>
+                  <div class="changed-block" data-change-location data-change-label="修改 2 · 核心概念">
+                    <span class="change-gutter"></span>
+                    <h3>Project</h3>
+                    <p>长期工作空间。组织 Issues、Rooms、Artifacts、Evidence、Memory 与 Skills。</p>
+                    <h3>Issue</h3>
+                    <p>目标和生命周期容器。Issue 负责“要完成什么”，Thread 记录“如何一路发生”。</p>
+                    <h3>Room</h3>
+                    <p>
+                      某个复杂阶段的协作与控制边界。Human Lead 可以旁听、暂停、纠偏、改派和恢复，
+                      但 Room 不拥有第二套执行状态机。
+                    </p>
+                  </div>
+                  <h2><a href="#" data-demo="标题链接已复制">#</a> 可信完成</h2>
+                  <div class="changed-block" data-change-location data-change-label="修改 3 · 可信完成">
+                    <span class="change-gutter"></span>
+                    <ul>
+                      <li>Agent 自称完成不等于 Done。</li>
+                      <li>验证必须针对明确版本，并留下可追溯 Evidence。</li>
+                      <li>阶段成果以固定 revision 的 Artifact 交接。</li>
+                      <li>高风险 Memory 与 Skill 在进入长期状态前需要确认来源。</li>
+                    </ul>
+                  </div>
+                  <div class="backlinks-card">
+                    <strong>提到当前文档</strong>
+                    <button type="button" data-open="decision-view">Decision · Issue-first</button>
+                    <button type="button" data-open="issue-view">Task · Room 人工介入</button>
+                  </div>
+                </article>
+
+                <article class="document markdown-document" data-document="file-room-spec">
+                  <div class="document-kicker">Feature specification · draft</div>
+                  <h1>F011 · Work Room & Human Intervention</h1>
+                  <p class="lead">让用户看见并安全介入一个多节点协作现场。</p>
+                  <div class="callout warning"><strong>设计边界</strong>Room 是 Graph/Run 上方的控制与投影层，不创建独立调度器。</div>
+                  <h2>目标</h2>
+                  <p>用户能够进入 Room 查看分工，暂停后续派工，补充约束，更换尚未开始节点的执行者，并显式恢复。</p>
+                  <h2>Human Lead 能力</h2>
+                  <ol><li>旁听现场与查看创建理由。</li><li>暂停尚未开始的步骤。</li><li>补充约束并明确生效边界。</li><li>取消当前 Run 后重新指派。</li></ol>
+                  <h2>生命周期</h2>
+                  <pre><code>active &lt;-&gt; paused
+active/paused -&gt; blocked
+completed -&gt; archived</code></pre>
+                </article>
+
+                <article class="document code-document" data-document="file-code">
+                  <div class="code-header"><span>run-dispatch.ts</span><div class="code-change-tools"><span><i></i>M · 2 处修改 · +18 −4</span><button type="button" data-change-prev aria-label="上一处修改">↑</button><button type="button" data-change-next aria-label="下一处修改">↓</button></div></div>
+                  <pre><code><span class="line"><b>1</b><em>import</em> { claimWorkspace } <em>from</em> <i>"./workspace-lock"</i>;</span>
+<span class="line"><b>2</b></span>
+<span class="line changed change-start" data-change-location data-change-label="修改 1 · 组装固定上下文"><b>3</b><em>export async function</em> <strong>dispatchRun</strong>(request: DispatchRequest) {</span>
+<span class="line changed"><b>4</b>  <em>const</em> context = <em>await</em> assemblePinnedContext(request.refs);</span>
+<span class="line"><b>5</b>  <em>const</em> lock = <em>await</em> claimWorkspace(request.workspaceId);</span>
+<span class="line"><b>6</b></span>
+<span class="line changed change-start" data-change-location data-change-label="修改 2 · 启动时传入上下文"><b>7</b>  <em>return</em> runner.start({ ...request, context, lock });</span>
+<span class="line"><b>8</b>}</span></code></pre>
+                </article>
+
+                <article class="document markdown-document" data-document="file-architecture">
+                  <div class="document-kicker">Architecture</div><h1>运行时与项目边界</h1>
+                  <p class="lead">Project 组织工作；Workspace 确定真实执行边界。</p>
+                  <div class="architecture-diagram"><span>Project</span><b>→</b><span>Issue</span><b>→</b><span>Graph / Run</span><b>→</b><span>Workspace</span></div>
+                  <h2>关键约束</h2><ul><li>同一 Workspace 的写执行必须串行。</li><li>跨 Workspace 写入必须请求确认。</li><li>Room 不替代 Graph 与 Run。</li></ul>
+                </article>
+
+                <article class="document task-document" data-document="issue-view">
+                  <div class="task-heading"><span class="signal yellow"></span><span><small>TASK · 等待你指派</small><h1>Room 支持暂停、纠偏与改派</h1></span></div>
+                  <div class="task-toolbar"><button type="button" data-demo="任务已保持等待指派">等待你指派</button><button type="button" data-open="room-view">打开 Room 深度视图</button><button type="button" data-room-focus>在右侧协作</button></div>
+                  <div class="task-grid">
+                    <section>
+                      <h2>目标</h2>
+                      <p>让 Human Lead 能在 Room 中暂停尚未开始的工作、补充约束、改派执行者，并在确认后恢复推进。</p>
+                      <h2>完成要求</h2>
+                      <label class="check-row"><input type="checkbox" checked disabled />暂停不会终止正在运行的进程</label>
+                      <label class="check-row"><input type="checkbox" checked disabled />恢复后从原执行计划继续</label>
+                      <label class="check-row"><input type="checkbox" disabled />由独立验证员检查竞态与归档回放</label>
+                    </section>
+                    <aside>
+                      <h3>建议下一步</h3>
+                      <button type="button" data-room-focus><strong>指派独立验证员</strong><small>必须说明版本策略、路径边界和失败语义。</small></button>
+                    </aside>
+                  </div>
+                  <div class="activity-timeline">
+                    <div><span>10:42</span><p><strong>Implementation 完成</strong><small>18 / 18 tests passed</small></p></div>
+                    <div><span>10:43</span><p><strong>等待人工确认</strong><small>建议在右侧 Room 发出验证指令</small></p></div>
+                  </div>
+                </article>
+
+                <article class="document artifact-document" data-document="artifact-view">
+                  <div class="artifact-title"><span>A</span><div><small>ARTIFACT · SYNTHESIS PLAN</small><h1>Artifact Contract Plan</h1><p>revision 3 · immutable · SHA-256 已验证</p></div></div>
+                  <div class="provenance-path"><button type="button" data-open="room-view">Research Room</button><span>→</span><button type="button" data-demo="来源 Run：run_7F2">Synthesis Run</button><span>→</span><strong>当前 Artifact r3</strong><span>→</span><button type="button" data-open="issue-view">Implementation</button></div>
+                  <h2>结论</h2><p>Artifact 采用实体与不可变 revision 分离。进入执行上下文的引用必须固定 revision；只带 artifact id 的引用只允许用于界面导航。</p>
+                  <h2>消费记录</h2><table><thead><tr><th>消费者</th><th>目的</th><th>结果</th></tr></thead><tbody><tr><td>Implementation Run #12</td><td>实现输入</td><td><span class="pill success">已消费</span></td></tr><tr><td>Validator Run #13</td><td>完成要求</td><td><span class="pill blue">等待</span></td></tr></tbody></table>
+                </article>
+
+                <article class="document artifact-document" data-document="artifact-research">
+                  <div class="artifact-title"><span>A</span><div><small>ARTIFACT · RESEARCH FINDINGS</small><h1>Workspace Path Safety Findings</h1><p>revision 1 · 来自 Security research</p></div></div>
+                  <h2>主要发现</h2><ul><li>Local file artifact 只能来自 Workspace 内受控目录。</li><li>路径校验与读取必须基于同一个已打开文件句柄。</li><li>历史 revision 的内容 hash 不允许漂移。</li></ul>
+                </article>
+
+                <article class="document evidence-document" data-document="evidence-view">
+                  <div class="trust-status verified"><span>✓</span><strong>已验证</strong><b>独立验证</b><b>完成要求 3 / 3</b><small>验证对象：artifact:graph-recovery@3</small></div>
+                  <div class="evidence-hero"><span>✓</span><div><small>可信完成</small><h1>Graph restart recovery</h1><p>系统记录、实际文件和独立验证结论一致</p></div></div>
+                  <div class="evidence-grid"><section><small>系统记录</small><strong>24 / 24 通过</strong><p>命令、exit code 与原始输出已保存</p></section><section><small>实际变化</small><strong>3 个文件</strong><p>+118 −26 · 可打开全文核对</p></section><section><small>验证独立性</small><strong>Claude · Sonnet</strong><p>与 Codex · GPT-5 不同源</p></section></div>
+                  <h2>完成要求与依据</h2><button class="evidence-row" type="button" data-bottom-open><span>✓</span><p><strong>重启后已完成节点不会重复运行</strong><small>系统记录 · integration test + graph.node_result events</small></p><b>查看原始证据 →</b></button><button class="evidence-row" type="button" data-open="file-code"><span>✓</span><p><strong>进行中 Attempt 被标记 interrupted</strong><small>实际文件 · run-dispatch.ts + recovery trace</small></p><b>打开修改位置 →</b></button><button class="evidence-row" type="button" data-demo="独立验证结论：pass；无 blocking findings"><span>✓</span><p><strong>恢复路径经不同成员独立验证</strong><small>验证结论 · Claude Sonnet · pass</small></p><b>查看验证结论 →</b></button>
+                  <h2>完整证据链</h2><div class="evidence-chain"><button type="button" data-open="issue-view"><small>目标</small><strong>Graph recovery</strong></button><span>→</span><button type="button" data-open="artifact-view"><small>实现产出</small><strong>Artifact r3</strong></button><span>→</span><button type="button" data-open="file-code"><small>系统记录</small><strong>测试与文件</strong></button><span>→</span><button type="button" data-demo="验证者：Claude Sonnet；与实现者不同源"><small>独立验证</small><strong>Pass</strong></button></div>
+                  <details class="raw-evidence"><summary>原始事件与诊断信息</summary><p>run_7F2 · exit 0 · graph.node_result.v2 · SHA-256 8d48…a91c</p></details>
+                </article>
+
+                <article class="document evidence-document" data-document="evidence-room">
+                  <div class="trust-status pending"><span>!</span><strong>待独立验证</strong><b>完成要求 2 / 3</b><small>当前结果不能进入 Done</small></div>
+                  <div class="evidence-hero pending"><span>!</span><div><small>验证依据</small><h1>Room pause / resume</h1><p>实现结果已有系统记录，仍缺独立验证结论</p></div></div>
+                  <div class="evidence-grid"><section><small>系统记录</small><strong>18 / 18 通过</strong><p>命令与 exit code 来自真实 Run trace</p></section><section><small>实际变化</small><strong>run-dispatch.ts</strong><p>2 处修改，可直接跳到对应位置</p></section><section class="pending"><small>验证独立性</small><strong>尚未验证</strong><p>建议由 Claude Sonnet 检查竞态与回放</p></section></div>
+                  <h2>完成要求与依据</h2><button class="evidence-row" type="button" data-bottom-open><span>✓</span><p><strong>暂停不终止正在运行的进程</strong><small>系统记录 · 8 项 pause / resume 测试通过</small></p><b>查看命令与输出 →</b></button><button class="evidence-row" type="button" data-open="file-code"><span>✓</span><p><strong>恢复后从原执行计划继续</strong><small>实际文件 · run-dispatch.ts 第 3—7 行</small></p><b>打开修改位置 →</b></button><button class="evidence-row missing" type="button" data-prefill-evidence><span>!</span><p><strong>竞态与归档回放尚未独立验证</strong><small>缺少：不同成员的验证结论与原始输出</small></p><b>补充验证 →</b></button>
+                  <h2>当前证据链</h2><div class="evidence-chain"><button type="button" data-open="issue-view"><small>目标</small><strong>Room 控制</strong></button><span>→</span><button type="button" data-open="file-code"><small>实现</small><strong>2 处修改</strong></button><span>→</span><button type="button" data-bottom-open><small>系统记录</small><strong>18 tests</strong></button><span>→</span><button class="missing" type="button" data-prefill-evidence><small>独立验证</small><strong>等待指派</strong></button></div>
+                </article>
+
+                <article class="document knowledge-document" data-document="decision-view">
+                  <small>DECISION · 4 个反向链接</small><h1>坚持 Issue-first，不做 Canvas-first</h1><p class="lead">用户以目标开始，而不是以绘制执行图开始。</p><h2>理由</h2><ol><li>自然语言目标比手动画图更接近真实入口。</li><li>Graph 是运行与解释机制，不是用户购买的结果。</li><li>Thread 和 Room 才是人类理解、介入和协作的位置。</li></ol><div class="backlinks-card"><strong>反向链接</strong><button type="button" data-open="file-prd">personahub-prd.md</button><button type="button" data-open="room-view">Artifact contract research</button></div>
+                </article>
+
+                <article class="document knowledge-document" data-document="memory-view">
+                  <small>PROJECT MEMORY · 已确认</small><h1>自动回路必须提供介入点</h1><div class="callout success"><strong>来源可信</strong>来自 3 个真实 Issue 的重复验证失败与人工恢复记录。</div><h2>记忆内容</h2><p>任何由系统自动决定下一步的路径，都必须显示收敛信号，并允许用户暂停、补充约束、改派或终止。</p><h2>本次使用</h2><p>当前 Room 的 pause / resume 和重复 finding 设计均引用此记忆。</p>
+                </article>
+
+                <article class="document knowledge-document" data-document="skill-view">
+                  <small>SKILL CANDIDATE · 等待确认</small><h1>前端原型验证流程</h1><p class="lead">从设计意图到可点击页面，再到真实浏览器验证的可复用步骤。</p><button class="primary-button" type="button" data-demo="候选已保持待确认；原型不写入长期 Skill">审查来源后保存</button>
+                </article>
+              </div>
+            </section>
+
+            <aside class="room-dock" data-room-dock>
+              <div class="room-tabs" role="tablist" aria-label="Room 内容">
+                <button class="active" type="button" data-room-tab="conversation">会话 <span>28</span></button>
+                <button type="button" data-room-tab="overview">概览</button>
+              </div>
+              <div class="room-body room-conversation active" data-room-panel="conversation">
+                <div class="room-thread-heading">
+                  <div><strong>Room 支持暂停、纠偏与改派</strong><span class="pill blue">等待指派</span><span class="live-indicator"><i></i><b data-room-state>ACTIVE</b></span></div>
+                  <small>Implementation 完成 · 18/18 tests passed · 等待验证</small>
+                </div>
+                <div class="room-conversation-scroll">
+                  <div class="message-stream" data-message-stream>
+                    <div class="message room-user-message"><span class="member-avatar user">我</span><div><header><strong>我</strong><time>10:01</time></header><p>实现 Room 的暂停与恢复；暂停只阻止尚未开始的步骤，不终止当前进程。</p></div></div>
+                    <div class="room-event"><p>已确认执行方案 · Implementation 交给「实现者」</p></div>
+                    <div class="message agent-message"><span class="member-avatar blue">实</span><div><header><strong>实现者</strong><time>1 分 12 秒</time></header><p>暂停和恢复路径已经实现。当前版本只阻止尚未开始的节点，不会终止正在运行的进程。</p><button class="message-trust-link" type="button" data-open="evidence-room"><span>!</span><strong>系统已记录 18 / 18 测试</strong><small>待独立验证 · 查看可信依据 →</small></button><details class="agent-run-details"><summary>执行了 3 步 · 展开看命令与耗时</summary><div class="agent-run-list"><button type="button" data-open="file-code"><i class="status-dot success"></i><span><strong>读取</strong><small>server/src/services/run-dispatch.ts</small></span></button><button type="button" data-open="file-code"><i class="status-dot success"></i><span><strong>编辑</strong><small>run-dispatch.ts +38 −4</small></span></button><button type="button" data-bottom-open><i class="status-dot running"></i><span><strong>运行</strong><small>npm test -w @personahub/server</small></span></button></div></details><footer>Codex CLI · GPT-5 · 3m 18s</footer></div></div>
+                    <div class="message agent-message"><span class="member-avatar purple">P</span><div><header><strong>PersonaHub</strong><time>10:43</time></header><p>建议下一步交给独立验证员，重点检查 pause / resume 竞态与归档回放。</p><button type="button" data-open="artifact-view">打开 synthesis_plan · r3</button></div></div>
+                  </div>
+                </div>
+                <div class="handoff-draft fixed-handoff"><div><span>等待你指派</span><p>Implementation 已完成 · 18 / 18 测试通过 · <button type="button" data-open="evidence-room">查看依据</button></p></div><button type="button" data-room-prefill="@独立验证员&#10;验证上一步实现，重点检查 pause / resume 竞态与归档回放。"><strong>@独立验证员</strong><small>建议成员 · 可直接修改</small></button></div>
+                <form class="room-composer" data-room-form>
+                  <textarea aria-label="Room 指令" data-room-input>@独立验证员
+验证上一步实现，重点检查 pause / resume 竞态与归档回放。</textarea>
+                  <div><button type="button" class="composer-tool" data-demo="可附加当前文件、Artifact 或 Evidence">＋ 添加上下文</button><span class="composer-actions"><button type="button" class="composer-pause" data-room-pause><span>Ⅱ</span><b>暂停</b></button><button type="submit" class="send-button" aria-label="发送指令">↑</button></span></div>
+                </form>
+              </div>
+              <div class="room-body room-overview" data-room-panel="overview">
+                <section class="overview-card session-card">
+                  <header><strong>会话信息</strong><span>ACTIVE</span></header>
+                  <div class="session-primary"><div><small>Room</small><strong>Room 支持暂停、纠偏与改派</strong><span>room_F011_implementation · PersonaHub / main</span></div><button type="button" data-open="evidence-room"><span>!</span><strong>待独立验证</strong><small>2 / 3 完成要求已有证据</small></button></div>
+                  <div class="message-stats-grid"><div><strong>28</strong><small>总消息</small></div><div><strong>16</strong><small>Agent</small></div><div><strong>5</strong><small>系统</small></div><div><strong>4</strong><small>Evidence</small></div></div>
+                  <dl><div><dt>开始于</dt><dd>42 分钟前</dd></div><div><dt>最近活动</dt><dd>2 分钟前 · 等待指派</dd></div><div><dt>阶段产出</dt><dd>Artifact 2 个 · Evidence 1 个</dd></div></dl>
+                </section>
+                <section class="overview-card agent-status-card">
+                  <header><strong>Agent 状态</strong><span>4</span></header>
+                  <div class="agent-status-list">
+                    <div class="agent-status-row"><span class="member-avatar blue">实</span><p><strong>实现者</strong><small>Codex CLI · GPT-5</small></p><span class="agent-state success"><i></i>已完成</span></div>
+                    <div class="agent-status-row"><span class="member-avatar green">验</span><p><strong>独立验证员</strong><small>Claude Code · Sonnet</small></p><span class="agent-state waiting"><i></i>待指派</span></div>
+                    <div class="agent-status-row"><span class="member-avatar purple">研</span><p><strong>架构研究员</strong><small>Claude Code · Opus</small></p><span class="agent-state idle"><i></i>空闲</span></div>
+                    <div class="agent-status-row"><span class="member-avatar amber">整</span><p><strong>快速整理员</strong><small>OpenCode · Qwen</small></p><span class="agent-state idle"><i></i>空闲</span></div>
+                  </div>
+                </section>
+                <section class="overview-card plan-card">
+                  <header><strong>执行计划</strong><span>2 / 3</span></header>
+                  <div class="plan-progress"><i style="width:66%"></i></div>
+                  <ol class="detailed-plan"><li class="done"><span>1</span><div><header><strong>确认执行方案</strong><b>已完成 · 10:01</b></header><p>执行者：Human Lead · 输入：任务目标与 Room 边界</p><small>产出：Implementation 指令 · Evidence：确认事件</small></div></li><li class="done"><span>2</span><div><header><strong>实现 pause / resume</strong><b>已完成 · 3m 18s</b></header><p>执行者：实现者 / Codex GPT-5 · 输入：synthesis_plan r3</p><small>产出：run-dispatch.ts 2 处修改 · Evidence：18 / 18 tests</small></div></li><li class="waiting"><span>3</span><div><header><strong>独立验证竞态与归档回放</strong><b>等待指派</b></header><p>建议：独立验证员 / Claude Sonnet · 依赖：Implementation 已完成</p><small>预期：verification_results · 要求：不同源验证、原始输出可追溯</small></div></li></ol>
+                </section>
+              </div>
+            </aside>
+          </section>
+
+          <section class="surface simple-surface" data-surface-view="start" aria-label="开始中心">
+            <aside class="section-sidebar"><div class="section-title"><small>PERSONAHUB</small><h2>开始中心</h2></div><nav><button class="active" type="button">需要我处理 <span>3</span></button><button type="button" data-demo="正在执行：2 个任务">正在执行 <span>2</span></button><button type="button" data-demo="本周完成：7 个任务">最近完成</button><button type="button" data-demo="项目浏览器将在后续原型展开">所有项目</button></nav></aside>
+            <section class="surface-content start-content"><header><div><small>2026年8月15日 · 本地模式</small><h1>现在最需要你处理的工作</h1><p>按注意力排序，而不是按更新时间排序。</p></div><button class="primary-button" type="button" data-surface="project">打开 PersonaHub 项目</button></header><div class="attention-grid"><button type="button" data-surface="project" data-open-after="issue-view"><span class="signal yellow"></span><div><small>等待你指派 · PersonaHub</small><h3>Room 支持暂停、纠偏与改派</h3><p>上一步已经完成，建议交给独立验证员。</p></div><b>3 分钟</b></button><button type="button" data-surface="project" data-open-after="issue-validation"><span class="signal yellow"></span><div><small>连续 2 次未解决 · PersonaHub</small><h3>修复 validation round 恢复</h3><p>重复 finding 没有收敛，需要换策略。</p></div><b>18 分钟</b></button><button type="button" data-demo="权限请求详情属于另一个演示项目"><span class="signal yellow"></span><div><small>需要审批 · Market Game Sim</small><h3>允许读取外部行情缓存</h3><p>请求范围超出当前 Workspace。</p></div><b>42 分钟</b></button></div><section class="running-strip"><header><h2>系统正在处理</h2><span>无需你操作</span></header><div><span class="signal blue"></span><p><strong>补齐 runtime health 诊断</strong><small>Claude · 检查 CLI 可用性</small></p><i><b style="width:62%"></b></i></div><div><span class="signal blue"></span><p><strong>整理 Artifact contract</strong><small>OpenCode · Synthesis</small></p><i><b style="width:41%"></b></i></div></section></section>
+          </section>
+
+          <section class="surface simple-surface" data-surface-view="library" aria-label="能力库">
+            <aside class="section-sidebar"><div class="section-title"><small>SPACE ASSETS</small><h2>能力库</h2></div><nav><button class="active" type="button">AI 成员 <span>4</span></button><button type="button" data-demo="Squads：2 个常用成员组合">Squads <span>2</span></button><button type="button" data-demo="Workflows：Coding 已启用">Workflows</button><button type="button" data-demo="Skills：12 个已确认做法">Skills</button><button type="button" data-demo="Memory：跨项目偏好与经验">Memory</button></nav></aside>
+            <section class="surface-content library-content"><header><div><small>能力，不是 CLI 列表</small><h1>AI 成员</h1><p>同一个 CLI 可以配置出多个具有不同模型、指令和能力项的成员。</p></div><button class="primary-button" type="button" data-demo="新建成员表单不在本轮静态原型范围">＋ 新建成员</button></header><div class="member-cards"><article><div><span class="member-avatar blue large">C</span><span class="pill success">可用</span></div><h3>实现者</h3><p>Codex CLI · GPT-5 · 高推理</p><footer><span>代码实现</span><span>重构</span><span>测试</span></footer></article><article><div><span class="member-avatar purple large">A</span><span class="pill success">可用</span></div><h3>架构研究员</h3><p>Claude Code · Opus · 深度分析</p><footer><span>架构</span><span>研究</span><span>文档</span></footer></article><article><div><span class="member-avatar green large">V</span><span class="pill success">可用</span></div><h3>独立验证员</h3><p>Claude Code · Sonnet · 隔离上下文</p><footer><span>代码审查</span><span>验证</span></footer></article><article><div><span class="member-avatar amber large">O</span><span class="pill muted">需检查</span></div><h3>快速整理员</h3><p>OpenCode · Qwen · 中等推理</p><footer><span>综合</span><span>格式整理</span></footer></article></div></section>
+          </section>
+
+          <section class="surface simple-surface" data-surface-view="automation" aria-label="自动化中心">
+            <aside class="section-sidebar"><div class="section-title"><small>REPEATABLE WORK</small><h2>自动化</h2></div><nav><button class="active" type="button">规则</button><button type="button" data-demo="即将执行：明天 09:00">即将执行 <span>1</span></button><button type="button" data-demo="执行历史：最近 30 天">执行历史</button><button type="button" data-demo="失败与暂停：当前 0 项">失败与暂停</button></nav></aside>
+            <section class="surface-content automation-content"><header><div><small>自动化仍然产生 Task</small><h1>Scheduled Issues</h1><p>每条规则在明确的 Project 下创建任务，并继承对应的 Workflow、权限与验证要求。</p></div><button class="primary-button" type="button" data-demo="自动化创建表单属于后续版本">＋ 新建自动化</button></header><div class="empty-feature"><span>⌁</span><h2>自动化将在非 Coding Workflow 稳定后开放</h2><p>当前结构先保留入口，避免把未验证能力伪装成可用功能。</p><button type="button" data-surface="project">返回项目工作台</button></div></section>
+          </section>
+
+          <section class="surface simple-surface" data-surface-view="settings" aria-label="设置与诊断">
+            <aside class="section-sidebar"><div class="section-title"><small>LOCAL SYSTEM</small><h2>设置与诊断</h2></div><nav><button class="active" type="button">Runtime</button><button type="button" data-demo="Workspace 权限按真实路径隔离">Workspace 权限</button><button type="button" data-demo="模型与凭据由本机安全存储管理">模型与凭据</button><button type="button" data-demo="数据、备份与 Markdown 导出">数据与备份</button><button type="button" data-demo="诊断会显示服务、数据库与事件流状态">健康诊断</button></nav></aside>
+            <section class="surface-content settings-content"><header><div><small>执行通道，不是 AI 成员</small><h1>本地 Runtime</h1><p>CLI 的安装、登录和 Workspace 可用性在这里管理。</p></div><span class="health-badge"><i></i>全部正常</span></header><div class="runtime-list"><article><span class="runtime-icon">C</span><div><h3>Codex CLI</h3><p>OAuth 已登录 · 版本 0.42.0</p></div><span class="pill success">3 个项目可用</span><button type="button" data-demo="Codex CLI 诊断通过">检查</button></article><article><span class="runtime-icon purple">A</span><div><h3>Claude Code</h3><p>OAuth 已登录 · 版本 1.0.88</p></div><span class="pill success">3 个项目可用</span><button type="button" data-demo="Claude Code 诊断通过">检查</button></article><article><span class="runtime-icon amber">O</span><div><h3>OpenCode</h3><p>API Key · Qwen provider</p></div><span class="pill muted">2 个项目可用</span><button type="button" data-demo="OpenCode 在一个 Workspace 需要重新检查">检查</button></article></div></section>
+          </section>
+        </main>
+      </div>
+
+      <section class="bottom-panel" data-bottom-panel aria-label="执行面板">
+        <header><nav><button class="active" type="button">运行 <span>2</span></button><button type="button" data-demo="问题：当前 1 条非阻塞 finding">问题 <span>1</span></button><button type="button" data-demo="测试：最近一次 18/18 通过">测试</button><button type="button" data-demo="原始日志只在诊断层展示">日志</button></nav><button type="button" data-bottom-toggle aria-label="关闭执行面板">×</button></header>
+        <div class="run-table"><div class="run-row heading"><span>状态</span><span>步骤</span><span>执行者</span><span>耗时</span><span>证据</span></div><div class="run-row"><span><i class="run-spin"></i>运行中</span><strong>Synthesis</strong><span>OpenCode · Qwen</span><span>1m 24s</span><button type="button" data-open="artifact-view">2 个输入</button></div><div class="run-row"><span class="success-text">✓ 完成</span><strong>Implementation</strong><span>Codex · GPT-5</span><span>3m 18s</span><button type="button" data-open="evidence-view">18 tests</button></div></div>
+      </section>
+
+      <footer class="statusbar">
+        <button type="button" data-demo="Git 分支：main；工作区有 3 个改动"><span>⑂</span> main*</button>
+        <button type="button" data-bottom-toggle><span>✓</span> 0 errors <b>1 finding</b></button>
+        <span class="status-spacer"></span>
+        <button type="button" data-demo="Workspace 写锁空闲">Workspace: idle</button>
+        <button type="button" data-bottom-toggle>2 Runs</button>
+        <span>Local</span>
+      </footer>
+    </div>
+
+    <div class="command-overlay" data-command-overlay hidden>
+      <div class="command-dialog" role="dialog" aria-modal="true" aria-label="命令面板">
+        <label><span>⌕</span><input type="text" placeholder="输入文件、任务、Room 或命令…" data-command-input /></label>
+        <div class="command-results">
+          <button type="button" data-command-action="document" data-target="file-prd"><span>最近打开</span><strong>打开 personahub-prd.md</strong><kbd>Enter</kbd></button>
+          <button type="button" data-command-action="document" data-target="issue-view"><span>任务</span><strong>打开等待指派的任务</strong></button>
+          <button type="button" data-command-action="surface" data-target="start"><span>工作面</span><strong>转到开始中心</strong></button>
+          <button type="button" data-command-action="bottom"><span>视图</span><strong>切换执行面板</strong></button>
+        </div>
+        <footer><span>↑↓ 选择</span><span>Enter 打开</span><span>Esc 关闭</span></footer>
+      </div>
+    </div>
+
+    <div class="toast" data-toast role="status" aria-live="polite"></div>
+    <script src="assets/app.js"></script>
+    <aside data-multica-attribution style="position:fixed;right:12px;bottom:8px;z-index:2147483647;display:flex;align-items:center;gap:6px;border:1px solid rgba(127,127,127,.35);border-radius:8px;background:rgba(255,255,255,.92);color:#111827;padding:5px 8px;font:500 11px/1.2 system-ui;box-shadow:0 2px 8px rgba(0,0,0,.12)" aria-label="Multica UI attribution"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Multica" style="width:16px;height:16px"><polygon fill="currentColor" points="35,51.1 35,80 45,80 45,51.1 71.8,77.9 78.9,70.8 52.1,44 90,44 90,34 52.1,34 78.9,7.2 71.8,0.1 45,26.9 45,-11 35,-11 35,26.9 8.2,0.1 1.1,7.2 27.9,34 -10,34 -10,44 27.9,44 1.1,70.8 8.2,77.9" transform="translate(5, 5.5) scale(0.87)"/></svg><span>Multica UI · © 2025–2026 Multica, Inc.</span></aside>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "checks": [
+    "默认进入项目工作台并显示任务、内容与协作 Dock",
+    "任务管理支持创建入口、管理菜单与打开任务",
+    "协作现场可暂停和恢复后续步骤",
+    "Room 可发送静态演示指令",
+    "协作概览按会话、成员、计划排列",
+    "协作 Dock 跟随任务并可固定",
+    "任务列表保持任务与协作现场的父子层级",
+    "三种工作台布局可切换且不丢当前对象",
+    "Markdown 与代码可跳转修改位置",
+    "Artifact 与 Evidence 可从产出树打开",
+    "证据不足可下钻并预填验证指令",
+    "底部执行面板可展开",
+    "一级工作面与首次设置状态可达",
+    "命令面板可打开和关闭"
+  ],
+  "consoleErrors": [],
+  "screenshots": [
+    "shots/workbench.png",
+    "shots/room-overview.png",
+    "shots/change-locations.png",
+    "shots/evidence-chain.png",
+    "shots/task-and-room.png"
+  ]
+}
