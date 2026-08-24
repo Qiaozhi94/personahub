@@ -1,0 +1,644 @@
+/* PersonaHub V3 布局层
+ * 只覆盖 V2 的主次关系与栅格，不改视觉 token。
+ * 设计依据见 docs/design.md §4。
+ */
+
+:root {
+  --sidebar: 248px;   /* V2: 262，合并活动栏后统一为一栏 */
+  --room: 400px;      /* V2: 与画布等宽对半（各 565）*/
+  --rail: 0px;        /* 活动栏并入左栏 */
+  --statusbar: 0px;   /* 删除底部状态栏 */
+}
+
+/* ── 1. 外壳：删掉底部状态栏与活动栏 ───────────────────── */
+
+.app-shell {
+  grid-template-rows: var(--titlebar) minmax(0, 1fr);
+}
+
+.statusbar,
+.activity-rail,
+.bottom-panel,
+.editor-tabs {
+  display: none !important;
+}
+
+.work-area {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ── 2. 三栏：舞台是主角 ──────────────────────────────── */
+
+.project-surface,
+.app-shell[data-layout="balanced"] .project-surface {
+  grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--room);
+}
+
+/* 1440 → 舞台 55%；1600 以上 → 60%+ */
+.app-shell[data-layout="reading"] .project-surface {
+  grid-template-columns: var(--sidebar) minmax(0, 1fr) 52px;
+}
+
+.app-shell[data-layout="collaboration"] .project-surface {
+  grid-template-columns: var(--sidebar) minmax(0, 1fr) minmax(520px, 0.62fr);
+}
+
+.simple-surface {
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
+}
+
+/* ── 3. 左栏：一级入口 + 对象列表 ─────────────────────── */
+
+.project-explorer {
+  grid-template-rows: auto 38px 38px minmax(0, 1fr);
+}
+
+.primary-nav {
+  display: grid;
+  align-content: start;
+  gap: 1px;
+  padding: 8px 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.primary-nav > button {
+  height: 30px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.primary-nav > button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.primary-nav > button:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.primary-nav > button.active {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.primary-nav .nav-count {
+  color: var(--faint);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.primary-nav > button.active .nav-count {
+  color: var(--accent);
+}
+
+/* 两 tab：任务 / 资源库 */
+.explorer-mode-tabs {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+/* 任务范围切换（替代独立的「开始中心」，见 design.md §7.1）*/
+.scope-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin: 0 8px;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.scope-toggle button {
+  height: 22px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.scope-toggle button.active {
+  background: var(--panel-3);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* 资源库分组标题 */
+.library-group {
+  margin: 10px 7px 4px;
+  color: var(--faint);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.library-group:first-child {
+  margin-top: 4px;
+}
+
+/* ── 4. 舞台：单例 + 面包屑返回 ───────────────────────── */
+
+.editor-area {
+  grid-template-rows: 34px minmax(0, 1fr);
+}
+
+.stage-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stage-back {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.stage-back:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.stage-back[hidden] {
+  display: none;
+}
+
+/* ── 5. 成果面 ────────────────────────────────────────── */
+
+.outcome-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.outcome-state {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 20px 0 28px;
+}
+
+.outcome-state > div {
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.outcome-state small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.outcome-state strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.outcome-state span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.outcome-state.pending > div {
+  border-style: dashed;
+  background: transparent;
+}
+
+.outcome-state.pending strong {
+  color: var(--faint);
+}
+
+.outcome-section {
+  margin: 30px 0;
+}
+
+.outcome-section > h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.outcome-section > h2 + p {
+  margin: -6px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* 成果本体空态（刚创建的任务）*/
+.outcome-empty {
+  padding: 26px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.outcome-empty b {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* ── 6. 协作 Dock：发送目标 + 执行状态常驻 ─────────────── */
+
+/* flex 而非 grid：暂停横幅等条件元素隐藏时不会错位 */
+.room-dock {
+  display: flex !important;
+  flex-direction: column;
+}
+
+.room-dock .room-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.room-dock .room-tabs { flex: none; height: 36px; }
+
+/* 发送目标条沿用 V2 的 header，套 V3 样式 */
+.collaboration-dock-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.dock-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.dock-target-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.dock-target small {
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.dock-target strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dock-target .pin {
+  margin-left: auto;
+  flex: none;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.dock-target .pin.pinned {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* 执行状态两行：从 V2 的「概览」tab 里拆出来常驻 */
+.dock-status {
+  display: grid;
+  gap: 4px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dock-status-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 11px;
+}
+
+.dock-status-line .dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.dock-status-line.blocked .dot {
+  background: var(--yellow);
+}
+
+.dock-status-line .who {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.dock-status-line .what {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dock-status-line .step {
+  margin-left: auto;
+  flex: none;
+  color: var(--faint);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 暂停是状态变更，必须持久可见，不能只靠 toast（design.md §6）*/
+.dock-paused-banner {
+  display: none;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(231, 184, 90, 0.1);
+  color: var(--yellow);
+  font-size: 11px;
+}
+
+.app-shell[data-room-paused="true"] .dock-paused-banner {
+  display: flex;
+}
+
+.dock-paused-banner button {
+  margin-left: auto;
+  padding: 3px 9px;
+  border: 1px solid var(--yellow);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--yellow);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+/* 两 tab：任务会话 / 协作现场（概览已拆解）*/
+.room-tabs {
+  grid-template-columns: 1fr 1fr !important;
+}
+
+/* 项目级会话态（没有选中任务时）*/
+.dock-project-hint {
+  padding: 10px 12px;
+  margin: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.dock-project-hint b {
+  color: var(--text);
+}
+
+/* ── 7. 阅读模式下 Dock 收成竖条 ──────────────────────── */
+
+.dock-rail {
+  display: none;
+}
+
+.app-shell[data-layout="reading"] .room-dock > *:not(.dock-rail) {
+  display: none;
+}
+
+.app-shell[data-layout="reading"] .room-dock {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.app-shell[data-layout="reading"] .dock-rail {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+.dock-rail .rail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(128, 156, 255, 0.6);
+}
+
+.dock-rail .rail-unread {
+  min-width: 20px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #0b0e12;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dock-rail .rail-label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  writing-mode: vertical-rl;
+}
+
+/* ── 8. 成果面内部元素 ────────────────────────────────── */
+
+.outcome-state .pending-cell strong { color: var(--yellow); }
+
+.linklike {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.outcome-surface .evidence-row { grid-template-columns: 22px minmax(0, 1fr) auto; }
+.outcome-surface .evidence-row .ok { color: var(--green); font-size: 14px; }
+.outcome-surface .evidence-row .pending-mark {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(231, 184, 90, 0.16);
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 700;
+}
+.outcome-surface .evidence-row strong { display: block; font-size: 12px; font-weight: 600; }
+.outcome-surface .evidence-row small { display: block; margin-top: 3px; color: var(--faint); font-size: 10px; }
+.outcome-surface .evidence-row .row-go { color: var(--accent); font-size: 10px; white-space: nowrap; }
+.outcome-surface .evidence-row.pending { border-style: dashed; }
+
+/* 执行计划：从 V2 的 Dock 概览搬到成果面 */
+.plan-list { display: grid; gap: 8px; }
+
+.plan-step {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: start;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.plan-step.waiting { border-style: dashed; background: transparent; }
+
+.plan-index {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.plan-step.done .plan-index { border-color: var(--green); color: var(--green); }
+.plan-step.waiting .plan-index { border-color: var(--yellow); color: var(--yellow); }
+.plan-step > div { min-width: 0; display: grid; gap: 3px; }
+.plan-step strong { font-size: 12px; font-weight: 600; }
+.plan-step small { color: var(--faint); font-size: 10px; }
+.plan-state { color: var(--faint); font-size: 10px; white-space: nowrap; }
+.plan-state.pending { color: var(--yellow); }
+
+/* ── 9. 项目会话入口与项目会话态 ─────────────────────── */
+
+.project-thread-entry {
+  width: calc(100% - 16px);
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  margin: 6px 8px 8px;
+  padding: 8px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-thread-entry:hover { border-color: var(--accent); background: var(--accent-soft); }
+.project-thread-entry .pt-mark { color: var(--accent); font-size: 13px; }
+.project-thread-entry strong { display: block; font-size: 12px; font-weight: 600; }
+.project-thread-entry small { display: block; margin-top: 2px; color: var(--faint); font-size: 10px; }
+
+/* 项目会话不绑定任务：没有阶段 tab，也没有任务级执行状态 */
+.app-shell[data-dock-mode="project"] .room-tabs,
+.app-shell[data-dock-mode="project"] .dock-status { display: none !important; }
+
+.dock-rail { border: 0; background: transparent; }
+
+/* 成果本体：这次到底做出了什么 */
+.outcome-body { display: grid; gap: 8px; }
+
+.outcome-file,
+.outcome-artifact {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  text-align: left;
+  cursor: pointer;
+}
+
+.outcome-artifact { cursor: default; }
+.outcome-file:hover { border-color: var(--accent); }
+
+.of-type,
+.oa-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--panel-3);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.oa-mark { color: var(--purple); }
+.outcome-file strong,
+.outcome-artifact strong { display: block; font-size: 12px; font-weight: 600; }
+.outcome-file small,
+.outcome-artifact small { display: block; margin-top: 3px; color: var(--faint); font-size: 10px; line-height: 1.5; }
+.of-diff { color: var(--green); font-size: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* 一级入口在每个工作面的左栏都在场（否则切走就回不来）*/
+.section-sidebar { display: flex; flex-direction: column; }
+.section-sidebar .primary-nav { flex: none; }
+.section-sidebar .section-title { flex: none; }
+
+/* 复制到各工作面侧栏后，需要压过 V2 的 section-sidebar nav 样式 */
+.section-sidebar .primary-nav > button,
+.project-explorer .primary-nav > button {
+  height: 30px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 0 8px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.section-sidebar .primary-nav > button > span,
+.project-explorer .primary-nav > button > span { text-align: left; }
