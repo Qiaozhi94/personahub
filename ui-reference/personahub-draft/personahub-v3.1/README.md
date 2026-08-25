@@ -46,7 +46,7 @@ V3 承接 V2 的对象模型、用户语言和浅色视觉语言，**只改布�
 
 ```bash
 # 任意静态服务指向本目录，默认端口 4179
-node browser-check.mjs        # 25 条断言，直接对应 docs/design.md 的结构判断
+node browser-check.mjs        # 26 条断言，直接对应 docs/design.md 的结构判断
 node export-all-pages.mjs     # 批量导出页面截图
 ```
 

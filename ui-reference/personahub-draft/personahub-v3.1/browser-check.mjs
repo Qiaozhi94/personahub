@@ -305,6 +305,24 @@ await check("验证未收敛：打回的要求展开两轮结论（§4.2.2）", 
   if ((await doc.locator(".outcome-file").count()) !== 2) throw new Error("验证不通过不应回滚已有改动");
 });
 
+await check("Dock 两个会话各自说明「我是谁的、覆盖多久」（§4.3.2）", async () => {
+  await page.locator('.work-item[data-open="issue-view"]').click();
+  await page.locator('[data-room-tab="room"]').click();
+  const roomOrigin = page.locator('[data-room-panel="room"] .room-origin');
+  if (!(await roomOrigin.isVisible())) throw new Error("协作现场缺少来源行");
+  const roomText = await roomOrigin.innerText();
+  if (!roomText.includes("阶段")) throw new Error("协作现场未说明只覆盖一个阶段");
+  if (!(await roomOrigin.locator(".linklike").isVisible())) throw new Error("协作现场未指向所属任务");
+  await page.locator('[data-room-tab="primary"]').click();
+  const primaryOrigin = page.locator('[data-room-panel="primary"] .room-origin');
+  if (!(await primaryOrigin.isVisible())) throw new Error("任务会话缺少来源行");
+  if (!(await primaryOrigin.innerText()).includes("全程")) throw new Error("任务会话未说明贯穿全程");
+  for (const tab of ["primary", "room"]) {
+    const title = await page.locator(`[data-room-tab="${tab}"]`).getAttribute("title");
+    if (!title) throw new Error(`${tab} tab 缺少悬停说明`);
+  }
+});
+
 await check("页面无横向溢出", async () => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (overflow > 1) throw new Error(`横向溢出 ${overflow}px`);

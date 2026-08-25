@@ -1153,8 +1153,8 @@ completed -&gt; archived</code></pre>
                 <button type="button" data-room-pause>恢复</button>
               </div>
               <div class="room-tabs" role="tablist" aria-label="协作内容">
-                <button type="button" data-room-tab="primary">任务会话 <span>12</span></button>
-                <button class="active" type="button" data-room-tab="room">协作现场 <span>28</span></button>
+                <button type="button" data-room-tab="primary" title="贯穿任务全程的主控制线，每个任务只有一条。要下指令就在这里。">任务会话 <span>12</span></button>
+                <button class="active" type="button" data-room-tab="room" title="只覆盖任务的一个阶段，有成员名单和交付要求，阶段结束后归档。">协作现场 <span>28</span></button>
               </div>
               <div class="room-body room-conversation" data-room-panel="project">
                 <div class="room-thread-heading">
@@ -1179,6 +1179,13 @@ completed -&gt; archived</code></pre>
                 <div class="room-thread-heading">
                   <div><strong data-primary-title>协作现场支持暂停、纠偏与改派</strong><span class="pill blue" data-primary-status>等待指派</span></div>
                   <small data-primary-summary>任务主会话 · 记录跨阶段决策、交接与验证结论</small>
+                  <div class="room-origin plain">
+                    <span class="ro-mark" aria-hidden="true">&#8593;</span>
+                    <span>
+                      <strong>贯穿这个任务的全程</strong>
+                      <small>每个任务只有一条 · 要下指令、改目标、指派下一步都在这里</small>
+                    </span>
+                  </div>
                 </div>
                 <div class="room-conversation-scroll">
                   <div class="message-stream" data-thread-message-stream>
@@ -1198,6 +1205,13 @@ completed -&gt; archived</code></pre>
                 <div class="room-thread-heading">
                   <div><strong>Implementation 协作现场</strong><span class="pill blue">等待指派</span><span class="live-indicator"><i></i><b data-room-state>活跃</b></span></div>
                   <small>Implementation 完成 · 18/18 tests passed · 等待验证</small>
+                </div>
+                <div class="room-origin">
+                  <span class="ro-mark" aria-hidden="true">&#8627;</span>
+                  <span>
+                    <strong>只覆盖 <em>Implementation</em> 这一个阶段</strong>
+                    <small>属于任务「<button class="linklike" type="button" data-open="issue-view" data-label="任务 · 协作现场人工介入">协作现场支持暂停、纠偏与改派</button>」 · 3 名成员 · 阶段结束后归档，记录不删除</small>
+                  </span>
                 </div>
                 <div class="room-conversation-scroll">
                   <div class="message-stream" data-message-stream>

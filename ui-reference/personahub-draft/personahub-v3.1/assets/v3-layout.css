@@ -998,3 +998,25 @@
 .permission-scope small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.6; color: var(--muted); }
 .permission-scope code { padding: 1px 4px; border-radius: 3px; background: var(--panel-3); font-size: 10.5px; }
 .scope-source { margin-top: 10px; font-size: 11px; color: var(--faint); }
+
+/* ── 10. 会话来源行 ─────────────────────────────────────────
+   Dock 两个 tab 并排看起来像「两个聊天窗口」，实际是「一条主线 +
+   一个阶段的支线」。这一行把「我是谁的、覆盖多久」说清楚，
+   否则区分完全依赖用户已经知道 Thread / Room 模型（design.md §4.3.2）。 */
+.room-origin {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel-3);
+}
+
+.room-origin.plain { background: transparent; }
+.room-origin .ro-mark { text-align: center; color: var(--faint); font-size: 11px; line-height: 1.5; }
+.room-origin strong { display: block; font-size: 11px; font-weight: 600; color: var(--muted); }
+.room-origin strong em { font-style: normal; color: var(--text); }
+.room-origin > span > small { display: block; margin-top: 2px; font-size: 10.5px; line-height: 1.6; color: var(--faint); }
+.room-origin .linklike { font-size: 10.5px; }
