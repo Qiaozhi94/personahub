@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-25T16:17:05.457Z",
+  "generatedAt": "2026-08-25T16:38:53.903Z",
   "source": "http://127.0.0.1:4185/index.html",
   "viewport": "1440x900",
-  "count": 24,
+  "count": 26,
   "exports": [
     {
       "file": "workbench.png",
@@ -102,6 +102,16 @@
     {
       "file": "project-thread.png",
       "title": "项目会话 · 不绑定任务",
+      "kind": "room-panel"
+    },
+    {
+      "file": "member-picker.png",
+      "title": "成员选择器 · 综合员",
+      "kind": "overlay"
+    },
+    {
+      "file": "dispatch-undo.png",
+      "title": "指派撤销窗口 · 正在启动",
       "kind": "room-panel"
     },
     {

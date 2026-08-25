@@ -7,6 +7,8 @@
     explorer: "work",
     document: "file-prd",
     roomTab: "room", roomVariant: "room",
+    pickerRole: null,
+    dispatchTimer: null,
     roomPaused: false,
     layout: "balanced",
     dockPinned: false,
@@ -302,6 +304,129 @@
     if (open) window.setTimeout(() => $("[data-task-goal]")?.focus(), 0);
   }
 
+
+  // ── 成员选择器 ──────────────────────────────────────────────
+  // 不是一份平铺的成员名单：选人本身就是要向 Human Lead 解释的判断，
+  // 所以每一行都必须说清「为什么推荐 / 为什么不建议 / 为什么不能选」
+  // （design.md §4.6）。
+  const MEMBERS = [
+    { id: "implementer", name: "实现者", stack: "Codex CLI · GPT-5 · 高推理", mark: "C", tone: "blue", tags: ["代码实现", "重构", "测试"], status: "ok" },
+    { id: "architect", name: "架构研究员", stack: "Claude Code · Opus · 深度分析", mark: "A", tone: "green", tags: ["架构", "研究", "文档"], status: "ok" },
+    { id: "validator", name: "独立验证员", stack: "Claude Code · Sonnet · 隔离上下文", mark: "V", tone: "purple", tags: ["代码审查", "验证"], status: "ok" },
+    { id: "organizer", name: "快速整理员", stack: "OpenCode · Qwen · 中等推理", mark: "O", tone: "blue", tags: ["综合", "格式整理"], status: "unchecked" },
+  ];
+
+  // 当前这次实现是谁做的。验证角色据此判定同源。
+  const CURRENT_IMPLEMENTER = "implementer";
+
+  const PICKER_ROLES = {
+    implementer: {
+      title: "选择实现者",
+      context: "为「实现」挑一个成员",
+      rule: "实现者可以是任何具备对应能力的成员；换人不会丢掉已有改动。",
+      judge: (m) =>
+        m.status === "unchecked"
+          ? { level: "blocked", why: "登录状态需要重新检查，现在派过去会直接失败" }
+          : m.tags.includes("代码实现")
+            ? { level: "good", why: "能力匹配：代码实现、重构、测试" }
+            : { level: "weak", why: "能力项里没有代码实现，可以选但不是这一步的强项" },
+    },
+    validator: {
+      title: "选择独立验证员",
+      context: "为「独立验证」挑一个成员",
+      rule: "实现与验证不能同源（PRD 第 7.5 节）。同一个成员做完实现再自己验证，等于没有验证。",
+      judge: (m) =>
+        m.id === CURRENT_IMPLEMENTER
+          ? { level: "blocked", why: "本次实现就是它做的，自己验自己不成立" }
+          : m.status === "unchecked"
+            ? { level: "blocked", why: "登录状态需要重新检查，现在派过去会直接失败" }
+            : m.tags.includes("验证")
+              ? { level: "good", why: "能力匹配：代码审查、验证 · 与实现者不同模型" }
+              : { level: "weak", why: "与实现者不同源，满足硬要求；但没有验证能力项" },
+    },
+    synthesizer: {
+      title: "选择综合员",
+      context: "为「收敛为 synthesis_plan」挑一个成员",
+      rule: "综合员不应由参与检索的研究员兼任——兼任会让它偏向自己那份结论。",
+      judge: (m) =>
+        m.id === "architect"
+          ? { level: "blocked", why: "它是本阶段的检索成员之一，兼任综合会偏向自己的结论" }
+          : m.status === "unchecked"
+            ? { level: "blocked", why: "登录状态需要重新检查，现在派过去会直接失败" }
+            : m.tags.includes("综合")
+              ? { level: "good", why: "能力匹配：综合 · 未参与本阶段检索" }
+              : { level: "weak", why: "未参与本阶段检索，可以选；但没有综合能力项" },
+    },
+  };
+
+  const LEVEL_LABEL = { good: "建议", weak: "可选", blocked: "不建议" };
+
+  function setMemberPicker(role) {
+    const overlay = $("[data-member-picker]");
+    if (!overlay) return;
+    if (!role) {
+      overlay.hidden = true;
+      return;
+    }
+    const spec = PICKER_ROLES[role];
+    if (!spec) return;
+    state.pickerRole = role;
+    $("[data-picker-title]").textContent = spec.title;
+    $("[data-picker-context]").textContent = spec.context;
+    $("[data-picker-rule]").textContent = spec.rule;
+    const list = $("[data-picker-list]");
+    list.innerHTML = "";
+    const rows = MEMBERS.map((m) => ({ m, v: spec.judge(m) }));
+    // 建议在前、不建议在后，但不建议的**不隐藏**：藏起来就等于替用户
+    // 做了判断，而这里的产品承诺恰恰是把判断依据摊开。
+    const order = { good: 0, weak: 1, blocked: 2 };
+    rows.sort((a, b) => order[a.v.level] - order[b.v.level]);
+    for (const { m, v } of rows) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "picker-row " + v.level;
+      row.dataset.pickMemberId = m.id;
+      if (v.level === "blocked") row.disabled = true;
+      row.innerHTML =
+        '<span class="member-avatar ' + m.tone + '">' + m.mark + "</span>" +
+        "<span class=\"pr-body\">" +
+        "<span class=\"pr-head\"><strong>" + m.name + "</strong>" +
+        '<span class="pr-level ' + v.level + '">' + LEVEL_LABEL[v.level] + "</span></span>" +
+        "<small>" + m.stack + "</small>" +
+        '<small class="pr-why">' + v.why + "</small>" +
+        "</span>" +
+        '<span class="pr-tags">' + m.tags.map((t) => "<i>" + t + "</i>").join("") + "</span>";
+      list.appendChild(row);
+    }
+    overlay.hidden = false;
+    window.setTimeout(() => list.querySelector(".picker-row:not([disabled])")?.focus(), 0);
+  }
+
+  // ── 指派撤销窗口（design.md §6）────────────────────────────
+  // 发出指派后不立刻判定「已指派」：先进入可取消的启动窗口，
+  // 指派与否由派工结果决定，不由文本前缀猜测。
+  function startDispatch(label) {
+    const bar = $("[data-dispatch-undo]");
+    if (!bar) return;
+    window.clearTimeout(state.dispatchTimer);
+    bar.hidden = false;
+    bar.classList.remove("settled");
+    $("[data-undo-text]").textContent = "正在启动 " + label + "…";
+    state.dispatchLabel = label;
+    state.dispatchTimer = window.setTimeout(() => {
+      bar.classList.add("settled");
+      $("[data-undo-text]").textContent = label + " 已开始执行";
+      state.dispatchTimer = window.setTimeout(() => { bar.hidden = true; }, 4000);
+    }, 6000);
+  }
+
+  function cancelDispatch() {
+    const bar = $("[data-dispatch-undo]");
+    window.clearTimeout(state.dispatchTimer);
+    if (bar) bar.hidden = true;
+    showToast("已取消指派 · 没有产生执行记录");
+  }
+
   function filterTree(value) {
     const activePanel = $("[data-explorer-panel].active");
     if (!activePanel) return;
@@ -384,6 +509,34 @@
       const parent = state.stageParent;
       state.stageParent = null;
       if (parent) openDocument(parent, documentMeta[parent]?.[1]);
+      return;
+    }
+
+    if (target.dataset.pickMember) {
+      setMemberPicker(target.dataset.pickMember);
+      return;
+    }
+
+    if (target.dataset.pickMemberId) {
+      const member = MEMBERS.find((m) => m.id === target.dataset.pickMemberId);
+      setMemberPicker(null);
+      if (member) startDispatch("@" + member.name);
+      return;
+    }
+
+    if (target.hasAttribute("data-picker-close")) {
+      setMemberPicker(null);
+      return;
+    }
+
+    if (target.hasAttribute("data-picker-goto-library")) {
+      setMemberPicker(null);
+      setSurface("library");
+      return;
+    }
+
+    if (target.hasAttribute("data-undo-cancel")) {
+      cancelDispatch();
       return;
     }
 
@@ -512,6 +665,7 @@
     if (target.dataset.commandAction) {
       const action = target.dataset.commandAction;
       setCommand(false);
+      if (action === "picker") { setMemberPicker(target.dataset.target); return; }
       if (action === "document") openDocument(target.dataset.target, documentMeta[target.dataset.target]?.[1]);
       if (action === "surface") setSurface(target.dataset.target);
       return;
@@ -569,6 +723,10 @@
     setSurface("project");
     openDocument("issue-running", documentMeta["issue-running"][1]);
     showToast("任务已创建并进入安全队列；重复提交不会创建第二份任务");
+  });
+
+  $("[data-member-picker]")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) setMemberPicker(null);
   });
 
   $("[data-command-overlay]")?.addEventListener("click", (event) => {

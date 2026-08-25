@@ -370,6 +370,56 @@ await check("Dock 显示当前这个协作现场，不是永远同一个（§5 �
   if ((await page.locator('[data-room-panel]:visible').count()) !== 1) throw new Error("同时有多个协作现场面板可见");
 });
 
+await check("成员选择器把选人依据摊开，不建议的不隐藏（§4.6）", async () => {
+  await page.locator('[data-open="room-view"]').first().click();
+  await page.locator('[data-pick-member="synthesizer"]').click();
+  const picker = page.locator("[data-member-picker]:visible");
+  if (!(await picker.isVisible())) throw new Error("成员选择器未打开");
+  if (!(await picker.locator(".picker-rule").innerText()).includes("兼任")) {
+    throw new Error("硬规则应在名单之前说明");
+  }
+  const rows = picker.locator(".picker-row");
+  if ((await rows.count()) !== 4) throw new Error(`应列出能力库全部 4 名成员，实际 ${await rows.count()}`);
+  const blocked = picker.locator(".picker-row.blocked");
+  if ((await blocked.count()) < 1) throw new Error("不建议的成员应保留在列表里，而不是被藏掉");
+  if (!(await blocked.first().isDisabled())) throw new Error("不建议的成员应不可选");
+  for (const row of await rows.all()) {
+    if (!(await row.locator(".pr-why").innerText()).trim()) throw new Error("每一行都必须写明理由");
+  }
+  const levels = await rows.evaluateAll((els) => els.map((e) => e.className.split(" ")[1]));
+  const rank = { good: 0, weak: 1, blocked: 2 };
+  for (let i = 1; i < levels.length; i += 1) {
+    if (rank[levels[i]] < rank[levels[i - 1]]) throw new Error("建议的应排在不建议的前面");
+  }
+  await picker.locator("[data-picker-close]").first().click();
+});
+
+await check("实现与验证不能同源是硬约束（PRD 第 7.5 节）", async () => {
+  await page.locator("[data-new-object]").click();
+  await page.locator('[data-task-create-overlay] [data-pick-member="validator"]').click();
+  const picker = page.locator("[data-member-picker]:visible");
+  const impl = picker.locator('.picker-row[data-pick-member-id="implementer"]');
+  if (!(await impl.getAttribute("class")).includes("blocked")) {
+    throw new Error("本次实现者仍可被选为验证者——实现与验证不能同源没有落到界面上");
+  }
+  if (!(await impl.isDisabled())) throw new Error("同源成员应不可选，而不是只加个标签");
+  if (!(await impl.locator(".pr-why").innerText()).includes("自己验自己")) throw new Error("未说明为什么不能选");
+  await picker.locator("[data-picker-close]").first().click();
+  await page.locator("[data-task-create-close]").first().click();
+});
+
+await check("指派有撤销窗口，不立刻判定「已指派」（§6）", async () => {
+  await page.locator('[data-open="room-view"]').first().click();
+  await page.locator('[data-pick-member="synthesizer"]').click();
+  await page.locator('[data-member-picker]:visible .picker-row:not([disabled])').first().click();
+  const bar = page.locator("[data-dispatch-undo]");
+  if (!(await bar.isVisible())) throw new Error("指派后没有可取消的启动窗口");
+  if (!(await bar.innerText()).includes("正在启动")) throw new Error("指派后立刻判定为已指派");
+  if (!(await bar.locator("[data-undo-cancel]").isVisible())) throw new Error("启动窗口内没有取消入口");
+  await bar.locator("[data-undo-cancel]").click();
+  if (await bar.isVisible()) throw new Error("取消后启动窗口未收起");
+});
+
 await check("页面无横向溢出", async () => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (overflow > 1) throw new Error(`横向溢出 ${overflow}px`);

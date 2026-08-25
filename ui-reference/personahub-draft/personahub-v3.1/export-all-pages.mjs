@@ -97,6 +97,17 @@ await capture("project-thread.png", "项目会话 · 不绑定任务", "room-pan
 await page.locator('[data-explorer-panel="work"] [data-open="issue-view"]').first().click();
 await page.locator('[data-room-panel="room"]').waitFor({ state: "visible" });
 
+await openDocument({ id: "room-view", explorer: "work", file: "room-tmp.png", title: "临时", kind: "temporary" });
+fs.unlinkSync(path.join(shotsDir, "room-tmp.png"));
+exports.pop();
+await page.locator('[data-pick-member="synthesizer"]').click();
+await page.locator("[data-member-picker]:visible").waitFor({ state: "visible" });
+await capture("member-picker.png", "成员选择器 · 综合员", "overlay");
+await page.locator('[data-member-picker]:visible .picker-row:not([disabled])').first().click();
+await page.locator("[data-dispatch-undo]").waitFor({ state: "visible" });
+await capture("dispatch-undo.png", "指派撤销窗口 · 正在启动", "room-panel");
+await page.locator("[data-undo-cancel]").click();
+
 for (const [surface, file, title] of [
   ["library", "surface-library.png", "能力库"],
   ["automation", "surface-automation.png", "自动化"],

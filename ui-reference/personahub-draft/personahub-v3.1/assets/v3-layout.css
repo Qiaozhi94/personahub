@@ -1125,3 +1125,180 @@
   .member-lane { grid-template-columns: 18px minmax(0, 1fr); }
   .lane-actions { grid-column: 2; grid-auto-flow: column; justify-content: start; margin-top: 8px; }
 }
+
+/* ── 12. 成员选择器 ────────────────────────────────────────
+   选人本身就是一次要向 Human Lead 解释的判断，所以每一行都写明
+   为什么推荐 / 为什么不建议 / 为什么不能选。不建议的**不隐藏**——
+   藏起来等于替用户做了判断（design.md §4.6）。 */
+/* .command-overlay 是给命令面板用的顶部对齐容器；选择器要居中 */
+/* :not([hidden]) 必须写：display:grid 会盖过 hidden 属性的 UA display:none，
+   否则遮罩永远在场，挡住整页点击 */
+.command-overlay:not([hidden]):has(.member-picker) {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.member-picker {
+  width: min(620px, calc(100vw - 48px));
+  max-height: min(72vh, 660px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.member-picker > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 10px;
+}
+
+.member-picker > header small { display: block; font-size: 10.5px; color: var(--faint); }
+.member-picker > header h2 { margin: 3px 0 0; font-size: 15px; color: var(--text); }
+
+.member-picker > header > button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+.member-picker > header > button:hover { background: var(--panel-3); color: var(--text); }
+
+/* 约束先说，再给名单——否则用户读完名单才知道有硬规则 */
+.picker-rule {
+  margin: 0 18px 12px;
+  padding: 9px 11px;
+  border-left: 2px solid var(--warn-border, #d9a441);
+  border-radius: 0 6px 6px 0;
+  background: var(--warn-bg, rgba(217, 164, 65, 0.08));
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.picker-list { flex: 1; min-height: 0; overflow: auto; padding: 0 12px 12px; display: grid; gap: 6px; }
+
+.picker-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-row:hover:not([disabled]) { background: var(--panel-3); }
+.picker-row.good { border-color: var(--ok, #4ec9a5); }
+.picker-row[disabled] { cursor: not-allowed; opacity: 0.55; }
+
+.pr-head { display: flex; align-items: baseline; gap: 8px; }
+.pr-head strong { font-size: 12.5px; color: var(--text); }
+.pr-body > small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--faint); }
+.pr-why { color: var(--muted) !important; }
+.picker-row.blocked .pr-why { color: var(--danger, #d05a5a) !important; }
+
+.pr-level {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 600;
+  background: var(--panel-3);
+  color: var(--muted);
+}
+.pr-level.good { background: rgba(78, 201, 165, 0.16); color: var(--ok, #4ec9a5); }
+.pr-level.blocked { background: rgba(208, 90, 90, 0.14); color: var(--danger, #d05a5a); }
+
+.pr-tags { display: flex; flex-wrap: wrap; gap: 4px; max-width: 160px; justify-content: flex-end; }
+.pr-tags i {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--panel-3);
+  color: var(--muted);
+  font-style: normal;
+  font-size: 9.5px;
+}
+
+.member-picker > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.member-picker > footer > button:last-child {
+  height: 27px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+/* ── 13. 指派撤销窗口（design.md §6）───────────────────────
+   发出指派后不立刻判定「已指派」：先进入可取消的启动窗口。
+   指派与否由派工结果决定，不由文本前缀猜测。 */
+.dispatch-undo {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0 12px 8px;
+  padding: 9px 11px;
+  border: 1px solid var(--accent, #5aa2ff);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.dispatch-undo[hidden] { display: none; }
+.dispatch-undo strong { display: block; font-size: 11.5px; color: var(--text); }
+.dispatch-undo small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
+
+.du-spin {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--accent, #5aa2ff);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: v3-spin 0.8s linear infinite;
+}
+
+@keyframes v3-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .du-spin { animation: none; } }
+
+.dispatch-undo > button {
+  height: 25px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.dispatch-undo > button:hover { color: var(--text); background: var(--panel-3); }
+
+/* 窗口过去后：不再可取消，条子自己退场 */
+.dispatch-undo.settled { border-color: var(--ok, #4ec9a5); }
+.dispatch-undo.settled .du-spin { border-color: var(--ok, #4ec9a5); border-right-color: transparent; animation: none; }
+.dispatch-undo.settled small,
+.dispatch-undo.settled > button { display: none; }

@@ -1210,7 +1210,7 @@ completed -&gt; archived</code></pre>
                         </div>
                         <div class="lane-actions">
                           <button type="button" data-demo="跳过前置立即指派；综合会缺少安全结论这一半输入">现在就派</button>
-                          <button type="button" data-demo="将打开成员选择器，从能力库里挑一个综合员">指定人选</button>
+                          <button type="button" data-pick-member="synthesizer">指定人选</button>
                         </div>
                       </div>
 
@@ -1290,6 +1290,11 @@ completed -&gt; archived</code></pre>
               <div class="room-tabs" role="tablist" aria-label="协作内容">
                 <button type="button" data-room-tab="primary" title="贯穿任务全程的主控制线，每个任务只有一条。要下指令就在这里。">任务会话 <span>12</span></button>
                 <button class="active" type="button" data-room-tab="room" title="只覆盖任务的一个阶段，有成员名单和交付要求，阶段结束后归档。">协作现场 <span>28</span></button>
+              </div>
+              <div class="dispatch-undo" data-dispatch-undo hidden>
+                <span class="du-spin" aria-hidden="true"></span>
+                <span><strong data-undo-text>正在启动…</strong><small>还没有真正开始执行，现在取消不会留下痕迹</small></span>
+                <button type="button" data-undo-cancel>取消</button>
               </div>
               <div class="room-body room-conversation" data-room-panel="project">
                 <div class="room-thread-heading">
@@ -1519,10 +1524,26 @@ completed -&gt; archived</code></pre>
       <form class="task-create-dialog" data-task-create-form>
         <header><div><small>PersonaHub · main</small><h2>创建任务</h2></div><button type="button" data-task-create-close aria-label="关闭创建任务">×</button></header>
         <label><span>目标</span><textarea data-task-goal placeholder="描述要完成什么、约束和完成标准">修复重启恢复时可能发生的重复派工，并提供可追溯验证。</textarea></label>
-        <section><div><small>建议第一步</small><strong>实现者 · Codex GPT-5</strong><p>能力匹配：代码实现、并发问题、测试。</p></div><button type="button" data-demo="打开成员与工作方式调整">调整</button></section>
-        <section><div><small>验证方式</small><strong>独立验证员 · Claude Sonnet</strong><p>必须复核竞态、重启回放和失败语义。</p></div><button type="button" data-demo="打开验证要求调整">调整</button></section>
+        <section><div><small>建议第一步</small><strong>实现者 · Codex GPT-5</strong><p>能力匹配：代码实现、并发问题、测试。</p></div><button type="button" data-pick-member="implementer">调整</button></section>
+        <section><div><small>验证方式</small><strong>独立验证员 · Claude Sonnet</strong><p>必须复核竞态、重启回放和失败语义。</p></div><button type="button" data-pick-member="validator">调整</button></section>
         <footer><button type="button" data-task-create-close>取消</button><button class="primary-button" type="submit">确认并开始</button></footer>
       </form>
+    </div>
+
+
+    <div class="command-overlay" data-member-picker hidden>
+      <div class="member-picker" role="dialog" aria-modal="true" aria-label="选择成员">
+        <header>
+          <div><small data-picker-context>为「独立验证」挑一个成员</small><h2 data-picker-title>选择成员</h2></div>
+          <button type="button" data-picker-close aria-label="关闭成员选择器">×</button>
+        </header>
+        <p class="picker-rule" data-picker-rule></p>
+        <div class="picker-list" data-picker-list></div>
+        <footer>
+          <span>成员来自<button class="linklike" type="button" data-picker-goto-library>能力库</button>，同一个 CLI 可以配置出多个成员</span>
+          <button type="button" data-picker-close>取消</button>
+        </footer>
+      </div>
     </div>
 
     <div class="command-overlay" data-command-overlay hidden>
@@ -1531,7 +1552,7 @@ completed -&gt; archived</code></pre>
         <div class="command-results">
           <button type="button" data-command-action="document" data-target="file-prd"><span>最近打开</span><strong>打开 personahub-prd.md</strong><kbd>Enter</kbd></button>
           <button type="button" data-command-action="document" data-target="issue-view"><span>任务</span><strong>打开等待指派的任务</strong></button>
-          <button type="button" data-command-action="surface" data-target="start"><span>工作面</span><strong>转到开始中心</strong></button>
+          <button type="button" data-command-action="picker" data-target="validator"><span>指派</span><strong>为独立验证挑一个成员</strong></button>
           <button type="button" data-command-action="surface" data-target="setup"><span>状态预览</span><strong>打开首次设置</strong></button>
           <button type="button" data-command-action="bottom"><span>视图</span><strong>切换执行面板</strong></button>
         </div>
