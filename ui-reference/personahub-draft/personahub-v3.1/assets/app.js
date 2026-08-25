@@ -6,7 +6,7 @@
     surface: "project",
     explorer: "work",
     document: "file-prd",
-    roomTab: "room",
+    roomTab: "room", roomVariant: "room",
     roomPaused: false,
     layout: "balanced",
     dockPinned: false,
@@ -41,12 +41,12 @@
   const dockContexts = {
     "project-overview": { tab: "project", target: "项目会话 · PersonaHub", parent: "不绑定任何任务", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "本周 2 个任务在推进、1 个等你指派。可以直接问我某批改动的结论，或从这里发起新任务。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
     "issue-view": { tab: "room", target: "协作现场 · Implementation", parent: "任务：协作现场支持暂停、纠偏与改派", title: "协作现场支持暂停、纠偏与改派", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步交给独立验证员；指派后会自动携带固定版本的阶段成果和现有验证依据。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议交给独立验证员", handoffMember: "@独立验证员", input: "@独立验证员\n验证上一步实现，重点检查 pause / resume 竞态与归档回放。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：还没有人独立验证竞态与归档回放"},
-    "room-view": { tab: "room", target: "协作现场 · Research", parent: "任务：阶段成果契约研究", title: "阶段成果契约研究", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究协作现场正在收集实体、revision 与路径安全结论；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在收集契约结论", step: "2 / 3 步", block: ""},
+    "room-view": { tab: "room", roomPanel: "room-research", target: "协作现场 · Research", parent: "任务：阶段成果契约研究", title: "阶段成果契约研究", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究协作现场正在收集实体、revision 与路径安全结论；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在收集契约结论", step: "2 / 3 步", block: ""},
     "issue-new": { tab: "primary", target: "任务会话 · 刚创建", parent: "任务：把诊断结果导出为可分享的报告", title: "把诊断结果导出为可分享的报告", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以依据这两条拟一份执行计划交你确认，也可以你直接指派第一步。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
     "issue-validation": { tab: "primary", target: "任务会话 · 验证未收敛", parent: "任务：修复验证循环恢复", title: "修复验证循环恢复", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两次验证出现相同问题。建议先由架构研究员隔离分析共同根因，再决定下一次修复。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两次失败的共同根因，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：重复修复无收敛，需要换策略"},
     "issue-permission": { tab: "primary", target: "任务会话 · 权限确认", parent: "任务：允许读取外部行情缓存", title: "允许读取外部行情缓存", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求只读访问 D:\\MarketData\\cache。允许、拒绝和影响范围都需要由你明确确认。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你确认外部路径访问", step: "1 / 3 步", block: "卡在：D:\MarketData\cache 超出当前代码目录"},
     "issue-running": { tab: "primary", target: "任务会话 · 运行中", parent: "任务：运行环境健康诊断", title: "补齐运行环境健康诊断", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全；完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在检查项目级 CLI 可用性", step: "2 / 4 步", block: ""},
-    "issue-research": { tab: "primary", target: "任务会话 · Research", parent: "任务：阶段成果契约研究", title: "阶段成果契约研究", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究协作现场正在形成不可变 revision、来源追踪和路径边界结论。", handoff: false, input: "", who: "OpenCode", what: "正在整理 revision 与来源追踪", step: "2 / 3 步", block: ""},
+    "issue-research": { tab: "primary", roomPanel: "room-research", target: "任务会话 · Research", parent: "任务：阶段成果契约研究", title: "阶段成果契约研究", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究协作现场正在形成不可变 revision、来源追踪和路径边界结论。", handoff: false, input: "", who: "OpenCode", what: "正在整理 revision 与来源追踪", step: "2 / 3 步", block: ""},
     "issue-done": { tab: "primary", target: "任务会话 · 已完成", parent: "任务：Graph 重启恢复", title: "Graph 重启恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
   };
 
@@ -96,6 +96,8 @@
     if (state.dockPinned) return;
     const context = dockContexts[id];
     if (!context) return;
+    state.roomVariant = context.roomPanel || "room";
+    if (state.roomTab === "room") setRoomTab("room");
     const target = $("[data-dock-target]");
     const parent = $("[data-dock-parent]");
     if (target) target.textContent = context.target;
@@ -263,8 +265,12 @@
 
   function setRoomTab(name) {
     state.roomTab = name;
+    // 「协作现场」这个 tab 对应哪个面板，取决于当前舞台属于哪个 Room。
+    // 一个任务可以有多个协作现场（PRD 第 5 节 rooms[]），Dock 必须显示
+    // 当前这一个，而不是永远显示同一个（design.md §5 原则 1）。
+    const panelName = name === "room" ? state.roomVariant : name;
     $$('[data-room-tab]').forEach((button) => button.classList.toggle("active", button.dataset.roomTab === name));
-    $$('[data-room-panel]').forEach((panel) => panel.classList.toggle("active", panel.dataset.roomPanel === name));
+    $$('[data-room-panel]').forEach((panel) => panel.classList.toggle("active", panel.dataset.roomPanel === panelName));
   }
 
   function setRoomPaused(paused) {

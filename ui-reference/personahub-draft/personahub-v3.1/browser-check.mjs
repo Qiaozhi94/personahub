@@ -323,6 +323,53 @@ await check("Dock 两个会话各自说明「我是谁的、覆盖多久」（§
   }
 });
 
+await check("协作现场舞台：前四段沿用，末段换成并行成员泳道（§4.2.3）", async () => {
+  await page.locator('[data-open="room-view"]').first().click();
+  const doc = page.locator('[data-document="room-view"]');
+  if (!(await doc.getAttribute("class")).includes("outcome-surface")) throw new Error("协作现场不是成果面骨架");
+  if ((await doc.locator(".outcome-state > div").count()) !== 3) throw new Error("状态卡不是 3 张");
+  if (await doc.locator(".plan-list").count()) throw new Error("Room 的来历是并行成员，不该用线性 plan-list");
+  const lanes = doc.locator(".member-lane");
+  if ((await lanes.count()) !== 3) throw new Error("成员泳道应为 3 条");
+  for (const state of ["done", "running", "queued"]) {
+    if (!(await doc.locator(`.member-lane.${state}`).count())) throw new Error(`缺少 ${state} 态泳道`);
+  }
+  for (const legacy of [".room-summary", ".task-toolbar", ".task-grid"]) {
+    if (await doc.locator(legacy).count()) throw new Error(`仍有 V2 版式 ${legacy}`);
+  }
+});
+
+await check("介入动作挂在成员身上，不是全局工具条（§4.2.3）", async () => {
+  const doc = page.locator('[data-document="room-view"]');
+  for (const lane of await doc.locator(".member-lane").all()) {
+    if ((await lane.locator(".lane-actions button").count()) < 2) throw new Error("每条泳道至少要有两个成员级动作");
+  }
+  const queued = doc.locator(".member-lane.queued");
+  if (!(await queued.locator(".lane-block").isVisible())) throw new Error("排队中的成员未说明前置为什么没满足");
+});
+
+await check("协作现场说明来源与选人理由（§4.2.3 / PRD 第 5 节）", async () => {
+  const doc = page.locator('[data-document="room-view"]');
+  const origin = doc.locator(".stage-origin");
+  if (!(await origin.isVisible())) throw new Error("缺少来源行");
+  if (!(await origin.locator(".linklike").isVisible())) throw new Error("来源行未指回所属任务");
+  const why = doc.locator(".room-rationale");
+  if (!(await why.isVisible())) throw new Error("缺少「为什么是这些人」——PRD 要求可查看 Coordinator 的选人依据");
+  if ((await why.innerText()).length < 60) throw new Error("选人理由过短，等于没说");
+});
+
+await check("Dock 显示当前这个协作现场，不是永远同一个（§5 原则 1）", async () => {
+  await page.locator('.work-item[data-open="issue-view"]').click();
+  await page.locator('[data-room-tab="room"]').click();
+  const first = await page.locator('[data-room-panel]:visible .room-thread-heading strong').innerText();
+  if (!first.includes("Implementation")) throw new Error(`任务「协作现场支持暂停」应配 Implementation 现场，实际 ${first}`);
+  await page.locator('[data-open="room-view"]').first().click();
+  await page.locator('[data-room-tab="room"]').click();
+  const second = await page.locator('[data-room-panel]:visible .room-thread-heading strong').innerText();
+  if (!second.includes("Research")) throw new Error(`打开 Research 现场后 Dock 仍显示 ${second}`);
+  if ((await page.locator('[data-room-panel]:visible').count()) !== 1) throw new Error("同时有多个协作现场面板可见");
+});
+
 await check("页面无横向溢出", async () => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (overflow > 1) throw new Error(`横向溢出 ${overflow}px`);

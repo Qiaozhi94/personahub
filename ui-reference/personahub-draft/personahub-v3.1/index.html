@@ -1076,11 +1076,146 @@ completed -&gt; archived</code></pre>
                   </section>
                 </article>
 
-                <article class="document task-document" data-document="room-view">
+                <article class="document task-document outcome-surface room-surface" data-document="room-view">
                   <div class="task-heading"><span class="signal blue"></span><span><small>协作现场 · Research · 进行中</small><h1>阶段成果契约研究</h1></span></div>
-                  <div class="task-toolbar"><button type="button" data-room-focus>在右侧打开协作现场</button><button type="button" data-open="artifact-research">查看当前阶段成果</button><button type="button" data-demo="已固定当前协作现场；跨对象浏览时保持可见">固定到协作 Dock</button></div>
-                  <div class="room-summary"><div><small>所属任务</small><strong>Artifact</strong><span>阶段成果契约</span></div><div><small>阶段</small><strong>Research</strong><span>2 / 3 步</span></div><div><small>成员</small><strong>3</strong><span>1 个正在执行</span></div><div><small>状态</small><strong>活跃</strong><span>无需你操作</span></div></div>
-                  <div class="task-grid"><section><h2>目标</h2><p>确认阶段成果的不可变 revision、来源追踪和跨步骤消费边界。</p><h2>当前分工</h2><ul><li>架构研究员：实体与 revision 模型。</li><li>安全研究员：路径与内容完整性。</li><li>综合员：收敛为 synthesis_plan。</li></ul></section><aside><h3>阶段输出</h3><button type="button" data-open="artifact-research"><strong>research_findings · r1</strong><small>已生成，可在中央画布查看并追溯来源。</small></button></aside></div>
+
+                  <div class="room-origin plain stage-origin">
+                    <span class="ro-mark" aria-hidden="true">&#8627;</span>
+                    <span>
+                      <strong>只覆盖 <em>Research</em> 这一个阶段</strong>
+                      <small>属于任务「<button class="linklike" type="button" data-open="issue-research" data-label="任务 · 阶段成果研究">阶段成果契约研究</button>」 · 阶段结束后归档，记录不删除</small>
+                    </span>
+                  </div>
+
+                  <div class="outcome-state">
+                    <div>
+                      <small>阶段进度</small>
+                      <strong>2 / 3 步</strong>
+                      <span>并行检索已完成，正在整理来源</span>
+                    </div>
+                    <div>
+                      <small>成员</small>
+                      <strong>3 名 · 1 名在跑</strong>
+                      <span>1 名已交付 · 1 名排队等前置</span>
+                    </div>
+                    <div class="pending-cell">
+                      <small>交付契约</small>
+                      <strong>2 / 3 达成</strong>
+                      <span>差 synthesis_plan 这一项</span>
+                    </div>
+                  </div>
+
+                  <section class="outcome-section">
+                    <h2>阶段目标</h2>
+                    <p>确认阶段成果的契约：怎样固定为不可变 revision、来源关系怎么表达、读取路径的安全边界在哪，最后收敛成一份能直接交给实现者的 synthesis_plan。</p>
+
+                    <div class="room-rationale">
+                      <span class="rr-mark">◎</span>
+                      <span>
+                        <strong>为什么是这三个人</strong>
+                        <small>Coordinator · 10:32 · <button class="linklike" type="button" data-open="evidence-view" data-label="选人依据 · Research 协作现场" data-stage-child>查看完整依据</button></small>
+                        <p>研究阶段拆成实体建模、安全边界、收敛三块。前两块互不依赖，可以并行；第三块必须等前两块都到齐，所以单独设一名综合员而不是让某个研究员兼任——兼任会让它偏向自己那份结论。安全研究员是因为这次涉及跨目录读取，属于 ADR 0006 的隔离条件范围。</p>
+                      </span>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>本阶段产出</h2>
+                    <p>研究阶段的产出是<strong>固定到 revision 的结论</strong>，不是文件。综合完成前它们各自独立，不互相覆盖。</p>
+                    <div class="outcome-body">
+                      <div class="outcome-artifact">
+                        <span class="oa-mark">A</span>
+                        <span><strong>research_findings · revision 1</strong><small>3 名成员各自的检索结论，已固定；来源可逐条追到原始出处</small></span>
+                        <button class="linklike" type="button" data-open="artifact-research" data-label="阶段成果 · research_findings" data-stage-child>打开</button>
+                      </div>
+                      <div class="outcome-pending-file">
+                        <span class="opf-mark">◐</span>
+                        <span><strong>synthesis_plan</strong><small>还没生成 · 综合员完成后才会固定为 revision</small></span>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>交付契约与终止条件</h2>
+                    <p>三条都达成，这个协作现场才会归档；差一条就不会自动结束。</p>
+                    <button class="evidence-row" type="button" data-open="artifact-research" data-label="阶段成果 · revision 契约" data-stage-child>
+                      <span class="ok">✓</span>
+                      <span><strong>不可变 revision 与来源关系明确</strong><small>research_findings r1 第 1–2 节 · 架构研究员交付</small></span>
+                      <span class="row-go">查看结论 →</span>
+                    </button>
+                    <button class="evidence-row" type="button" data-open="evidence-room" data-label="验证依据 · 路径边界" data-stage-child>
+                      <span class="ok">✓</span>
+                      <span><strong>路径读取边界已有安全结论</strong><small>与 ADR 0006 的隔离条件一致 · 安全研究员交付</small></span>
+                      <span class="row-go">查看结论 →</span>
+                    </button>
+                    <div class="evidence-row inflight">
+                      <span class="pending-mark">◐</span>
+                      <span><strong>收敛为可执行的 synthesis_plan</strong><small>冲突结论必须显式取舍，不能并列保留 · 综合员未开始</small></span>
+                      <span class="row-go muted">未达成</span>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>谁在做什么</h2>
+                    <p>三名成员并行推进，不是接力。前两块互不依赖，第三块等前两块。</p>
+                    <div class="member-lanes">
+
+                      <div class="member-lane done">
+                        <span class="lane-state" aria-hidden="true">●</span>
+                        <div class="lane-body">
+                          <header>
+                            <strong>架构研究员</strong>
+                            <span class="lane-model">Codex GPT-5</span>
+                            <span class="lane-time">已交付 · 3m 12s</span>
+                          </header>
+                          <p>实体与 revision 模型</p>
+                          <button class="lane-output" type="button" data-open="artifact-research" data-label="阶段成果 · research_findings" data-stage-child>
+                            <span class="lo-mark">A</span>research_findings r1 第 1–2 节
+                          </button>
+                        </div>
+                        <div class="lane-actions">
+                          <button type="button" data-demo="将要求该成员补充这一结论的原始检索记录">要证据</button>
+                          <button type="button" data-demo="将以相同输入重做这一块；已有结论保留为上一版">重做</button>
+                          <button type="button" data-demo="移除成员需要二次确认；已交付结论保留在阶段成果里">移除…</button>
+                        </div>
+                      </div>
+
+                      <div class="member-lane running">
+                        <span class="lane-state" aria-hidden="true">◐</span>
+                        <div class="lane-body">
+                          <header>
+                            <strong>安全研究员</strong>
+                            <span class="lane-model">Claude Sonnet</span>
+                            <span class="lane-time running">执行中 · 1m 04s</span>
+                          </header>
+                          <p>路径与内容完整性</p>
+                          <small class="lane-now">正在核对跨目录读取与 ADR 0006 隔离条件的差异</small>
+                        </div>
+                        <div class="lane-actions">
+                          <button type="button" data-room-focus>看它在做什么</button>
+                          <button type="button" data-demo="打断会在当前安全点停下，已产出的部分结论保留">打断并补约束</button>
+                        </div>
+                      </div>
+
+                      <div class="member-lane queued">
+                        <span class="lane-state" aria-hidden="true">○</span>
+                        <div class="lane-body">
+                          <header>
+                            <strong>综合员</strong>
+                            <span class="lane-model">待指派</span>
+                            <span class="lane-time">排队中</span>
+                          </header>
+                          <p>收敛为 synthesis_plan</p>
+                          <small class="lane-block">前置未满足：需要架构与安全两份结论都到齐（现在到 1 份）</small>
+                        </div>
+                        <div class="lane-actions">
+                          <button type="button" data-demo="跳过前置立即指派；综合会缺少安全结论这一半输入">现在就派</button>
+                          <button type="button" data-demo="将打开成员选择器，从能力库里挑一个综合员">指定人选</button>
+                        </div>
+                      </div>
+
+                    </div>
+                  </section>
                 </article>
 
                 <article class="document artifact-document" data-document="artifact-view">
@@ -1228,7 +1363,36 @@ completed -&gt; archived</code></pre>
                   <div><button type="button" class="composer-tool" data-demo="可附加当前文件、阶段成果或验证依据">＋ 添加上下文</button><span class="composer-actions"><button type="button" class="composer-pause" data-room-pause><span>Ⅱ</span><b>暂停后续步骤</b></button><button type="submit" class="send-button" aria-label="发送协作指令">↑</button></span></div>
                 </form>
               </div>
-              
+
+              <div class="room-body room-conversation" data-room-panel="room-research">
+                <div class="room-thread-heading">
+                  <div><strong>Research 协作现场</strong><span class="pill blue">进行中</span><span class="live-indicator"><i></i><b>活跃</b></span></div>
+                  <small>3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置</small>
+                </div>
+                <div class="room-origin">
+                  <span class="ro-mark" aria-hidden="true">&#8627;</span>
+                  <span>
+                    <strong>只覆盖 <em>Research</em> 这一个阶段</strong>
+                    <small>属于任务「<button class="linklike" type="button" data-open="issue-research" data-label="任务 · 阶段成果研究">阶段成果契约研究</button>」 · 阶段结束后归档，记录不删除</small>
+                  </span>
+                </div>
+                <div class="room-conversation-scroll">
+                  <div class="message-stream">
+                    <div class="message room-user-message"><span class="member-avatar user">我</span><div><header><strong>我</strong><time>10:28</time></header><p>研究阶段成果的契约：revision 怎么固定、来源怎么追、读取路径边界在哪。</p></div></div>
+                    <div class="room-event"><p>Coordinator 拆出 3 块工作 · 前两块并行、第三块等前置 · <button class="linklike" type="button" data-open="evidence-view" data-label="选人依据 · Research 协作现场">查看选人依据</button></p></div>
+                    <div class="message agent-message"><span class="member-avatar blue">架</span><div><header><strong>架构研究员</strong><time>3 分 12 秒</time></header><p>实体与 revision 模型已定稿：revision 一旦发布不可改，消费方引用 revision 号而不是引用「最新」。</p><button class="message-trust-link" type="button" data-open="artifact-research"><span>A</span><strong>已交付 research_findings r1 第 1–2 节</strong><small>来源可逐条追到原始出处 →</small></button><footer>Codex CLI · GPT-5 · 3m 12s</footer></div></div>
+                    <div class="room-event parallel"><p>安全研究员与架构研究员 <strong>并行</strong> 执行，互不等待</p></div>
+                    <div class="message agent-message"><span class="member-avatar green">安</span><div><header><strong>安全研究员</strong><time>执行中 · 1 分 04 秒</time></header><p>正在核对跨目录读取与 ADR 0006 隔离条件的差异；目前看普通 worktree 不满足隔离要求这条结论成立。</p><footer>Claude Sonnet · 仍在执行</footer></div></div>
+                    <div class="message agent-message"><span class="member-avatar purple">P</span><div><header><strong>PersonaHub</strong><time>10:44</time></header><p>综合员还没开始：它的前置是两份结论都到齐，现在到 1 份。要跳过前置立即开始，可以在舞台的成员泳道里点「现在就派」。</p><button type="button" data-open="room-view">打开成员泳道</button></div></div>
+                  </div>
+                </div>
+                <form class="room-composer" data-room-form>
+                  <textarea aria-label="协作现场指令" data-room-input>@安全研究员
+把「普通 worktree 不满足隔离」这条结论的依据补到 findings 里，注明它和 ADR 0006 的对应段落。</textarea>
+                  <div><button type="button" class="composer-tool" data-demo="可附加当前文件、阶段成果或验证依据">＋ 添加上下文</button><span class="composer-actions"><button type="button" class="composer-pause" data-room-pause><span>Ⅱ</span><b>暂停后续步骤</b></button><button type="submit" class="send-button" aria-label="发送协作指令">↑</button></span></div>
+                </form>
+              </div>
+
             </aside>
           </section>
 

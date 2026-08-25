@@ -1020,3 +1020,108 @@
 .room-origin strong em { font-style: normal; color: var(--text); }
 .room-origin > span > small { display: block; margin-top: 2px; font-size: 10.5px; line-height: 1.6; color: var(--faint); }
 .room-origin .linklike { font-size: 10.5px; }
+
+/* ── 11. 协作现场舞台 ──────────────────────────────────────
+   Room 沿用成果面的前四段，只换最后一段：任务的来历是线性步骤，
+   Room 的来历是并行成员，plan-list 表达不了「三个人各自到哪了」
+   （design.md §4.2.3）。 */
+.stage-origin { margin: 0 0 14px; }
+
+/* 为什么是这些人：PRD 第 5 节要求 Human Lead 能查看 Coordinator
+   为什么选择这些 agents。此前原型一个字都没有。 */
+.room-rationale {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.room-rationale .rr-mark { text-align: center; color: var(--muted); font-size: 12px; }
+.room-rationale strong { display: block; font-size: 12px; color: var(--text); }
+.room-rationale > span > small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--faint); }
+.room-rationale p { margin: 7px 0 0; font-size: 11.5px; line-height: 1.75; color: var(--muted); }
+
+/* 成员泳道：三种状态 + 成员级动作。
+   介入动作挂在成员身上而不是顶部工具条——PRD 的六项 Human Lead 能力
+   里，移除 / 指定接手 / 要求提供证据都是针对具体成员的。 */
+.member-lanes { display: grid; gap: 8px; }
+
+.member-lane {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 11px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.member-lane .lane-state { text-align: center; font-size: 11px; line-height: 1.6; }
+.member-lane.done .lane-state { color: var(--ok, #4ec9a5); }
+.member-lane.running { border-color: var(--accent, #5aa2ff); }
+.member-lane.running .lane-state { color: var(--accent, #5aa2ff); }
+.member-lane.queued { opacity: 0.82; }
+.member-lane.queued .lane-state { color: var(--faint); }
+
+.lane-body header { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.lane-body header strong { font-size: 12.5px; color: var(--text); }
+.lane-model { font-size: 10.5px; color: var(--muted); }
+.lane-time { margin-left: auto; font-size: 10.5px; color: var(--faint); }
+.lane-time.running { color: var(--accent, #5aa2ff); }
+.lane-body > p { margin: 4px 0 0; font-size: 11.5px; color: var(--muted); }
+.lane-now,
+.lane-block { display: block; margin-top: 5px; font-size: 10.5px; line-height: 1.6; }
+.lane-now { color: var(--accent, #5aa2ff); }
+.lane-block { color: var(--warn, #b8860b); }
+
+.lane-output {
+  display: inline-grid;
+  grid-template-columns: 16px auto;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  padding: 4px 9px 4px 5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.lane-output:hover { color: var(--text); background: var(--panel-3); }
+
+.lane-output .lo-mark {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--panel-3);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.lane-actions { display: grid; align-content: start; gap: 4px; }
+
+.lane-actions button {
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lane-actions button:hover { color: var(--text); background: var(--panel-3); }
+
+@media (max-width: 1500px) {
+  .member-lane { grid-template-columns: 18px minmax(0, 1fr); }
+  .lane-actions { grid-column: 2; grid-auto-flow: column; justify-content: start; margin-top: 8px; }
+}
