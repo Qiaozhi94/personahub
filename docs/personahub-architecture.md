@@ -108,7 +108,7 @@ v0.7 要做的 daemon 化、multi-workspace、workspace isolation、background q
 | 进程启动方式 | 用户手动 `npm run dev` / 双击可执行文件 | API server 代码本身不关心"谁启动了我"；v0.7 换成 systemd / Windows Service / 自带 supervisor 接管启动，server 代码不用改 |
 | Workspace 锁 | 锁状态存 DB，按 `workspace_id` 原子获取；启动时恢复遗留 running Run/锁，无 lease/heartbeat | v0.7 多实例需要新增 owner fencing（候选：`runner_instance_id` + lease/heartbeat），不能直接假设当前单进程锁可无修改扩展 |
 | Agent Runner | 注册表 + 队列，但队列长度实际上恒为 1（同一 workspace 同一时刻只有一个 run） | v0.7 background queue 只是把"队列长度恒为 1"的限制放开为"跨 workspace 并行，同一 workspace 内仍串行"，排队逻辑本身不用重写 |
-| Workspace 执行边界 | Runner 通过一个 `WorkspaceContext`（`workspaceId`/`localPath` 作为 cwd/`gitBranch`/`pushCredentialsEnabled`）传给 adapter，adapter 不直接拼路径字符串；**当前没有访问模式或允许写入路径字段**，无法约束/证明某次执行是只读的（`server/src/runtime/types.ts`） | v0.7 workspace isolation（容器/进程级隔离）需要先补上访问模式字段，再替换 `WorkspaceContext` 的执行方式（例如改成在容器里跑命令）；这个缺口在 v0.2 orchestrator_subagent 只读并行 Node 场景下已提前暴露，见下方说明和 ADR 0006 |
+| Workspace 执行边界 | Runner 通过一个 `WorkspaceContext`（`workspaceId`/`localPath` 作为 cwd/`gitBranch`/`pushCredentialsEnabled`）传给 adapter，adapter 不直接拼路径字符串；**当前没有访问模式或允许写入路径字段**，无法约束/证明某次执行是只读的（`server/src/runtime/types.ts`） | v0.7 workspace isolation（容器/进程级隔离）需要先补上访问模式字段，再替换 `WorkspaceContext` 的执行方式（例如改成在容器里跑命令）；这个缺口在 v0.2 orchestrator_subagent 只读并行 Node 场景下已提前暴露，见下方说明和 ADR 0006；替换执行方式的开缝位置（进程启动收敛为 Definition）与触发信号见 `docs/decisions/0008-capability-seam-convention.md` 第 3 条 |
 | 存储访问 | SQLite，业务代码只通过 Repository 层读写，不直接写 SQL | v0.7 "Postgres/pgvector 可选迁移"只需新增一套 Repository 实现，业务逻辑不用改 |
 | 前后端事件传输 | SSE（单向、够用、比 WebSocket 简单，带 cursor/replay，见第 4 节） | 事件本体（event envelope：`{id, type, thread_id, issue_id, payload, created_at}`）与传输方式解耦；v0.7 若需要多端/远程访问，可切到 WebSocket 或 daemon 内部 pub/sub，不需要改事件模型本身 |
 
