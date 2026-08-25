@@ -6,8 +6,10 @@ PersonaHub 前端设计参考库，随主仓库统一版本管理，但不属于
 
 - `clowder/`、`dsh/`、`multica/`：浏览器渲染冻结页、样式真值与交互状态。
 - `personahub-draft/personahub-v2.0/`、`personahub-draft/personahub-v2.1/`：可独立评审的 PersonaHub V2 版本化设计稿。
-- `personahub-draft/personahub-v3.0/`：**当前设计基线**。以「成果面」为主舞台、协作会话常驻右侧；
-  设计判断见其 `docs/design.md`，验收入口 `node browser-check.mjs`（14 条断言直接对应设计判断）。
+- `personahub-draft/personahub-v3.0/`：V3 首版，历史冻结。
+- `personahub-draft/personahub-v3.1/`：**当前设计基线**。在 V3.0 之上恢复任务 tab、把左栏扁平为
+  单一可折叠列表，并补齐四个任务态的成果面；设计判断见其 `docs/design.md`，
+  验收入口 `node browser-check.mjs`（22 条断言直接对应设计判断）。
   版本索引见 `personahub-draft/VERSIONS.md`。
 - `scripts/`：提取、静态化、交互捕获和自动验收脚本。
 

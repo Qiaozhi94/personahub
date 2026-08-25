@@ -1,0 +1,131 @@
+{
+  "generatedAt": "2026-08-25T15:30:11.242Z",
+  "source": "http://127.0.0.1:4182/index.html",
+  "viewport": "1440x900",
+  "count": 24,
+  "exports": [
+    {
+      "file": "workbench.png",
+      "title": "项目工作台 · PersonaHub PRD",
+      "kind": "project-document"
+    },
+    {
+      "file": "document-room-spec.png",
+      "title": "Markdown · F011 Room spec",
+      "kind": "project-document"
+    },
+    {
+      "file": "change-locations.png",
+      "title": "代码 · run-dispatch.ts 修改位置",
+      "kind": "project-document"
+    },
+    {
+      "file": "document-architecture.png",
+      "title": "Markdown · PersonaHub architecture",
+      "kind": "project-document"
+    },
+    {
+      "file": "task-new.png",
+      "title": "任务 · 刚创建（成果面空态）",
+      "kind": "project-document"
+    },
+    {
+      "file": "task-and-room.png",
+      "title": "任务 · 协作现场人工介入",
+      "kind": "project-document"
+    },
+    {
+      "file": "task-validation.png",
+      "title": "任务 · 验证未收敛",
+      "kind": "project-document"
+    },
+    {
+      "file": "task-permission.png",
+      "title": "任务 · 权限确认",
+      "kind": "project-document"
+    },
+    {
+      "file": "task-running.png",
+      "title": "任务 · 正在执行",
+      "kind": "project-document"
+    },
+    {
+      "file": "task-research.png",
+      "title": "任务 · 阶段成果研究",
+      "kind": "project-document"
+    },
+    {
+      "file": "room-research.png",
+      "title": "协作现场 · Research",
+      "kind": "project-document"
+    },
+    {
+      "file": "task-done.png",
+      "title": "任务 · 已完成",
+      "kind": "project-document"
+    },
+    {
+      "file": "artifact-synthesis.png",
+      "title": "阶段成果 · synthesis_plan",
+      "kind": "project-document"
+    },
+    {
+      "file": "artifact-research.png",
+      "title": "阶段成果 · research_findings",
+      "kind": "project-document"
+    },
+    {
+      "file": "evidence-summary.png",
+      "title": "完成摘要 · Graph recovery",
+      "kind": "project-document"
+    },
+    {
+      "file": "evidence-chain.png",
+      "title": "验证依据 · Room pause / resume",
+      "kind": "project-document"
+    },
+    {
+      "file": "knowledge-decision.png",
+      "title": "Decision · Issue-first",
+      "kind": "project-document"
+    },
+    {
+      "file": "knowledge-memory.png",
+      "title": "Memory · 人工介入",
+      "kind": "project-document"
+    },
+    {
+      "file": "knowledge-skill.png",
+      "title": "Skill candidate · 前端原型验证",
+      "kind": "project-document"
+    },
+    {
+      "file": "project-thread.png",
+      "title": "项目会话 · 不绑定任务",
+      "kind": "room-panel"
+    },
+    {
+      "file": "surface-library.png",
+      "title": "能力库",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-automation.png",
+      "title": "自动化",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-settings.png",
+      "title": "设置",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-setup.png",
+      "title": "首次设置向导",
+      "kind": "top-level-surface"
+    }
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (File not found)"
+  ]
+}
