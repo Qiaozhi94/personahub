@@ -266,6 +266,45 @@ await check("已完成态：依据全部可点，后续建议不被吞掉（§4.
   if (!(await doc.locator(".outcome-followup").isVisible())) throw new Error("验证员的后续建议消失了");
 });
 
+await check("七个任务态全部是成果面，无 V2 遗留版式（§4.2.2）", async () => {
+  const ids = ["issue-new", "issue-view", "issue-running", "issue-research", "issue-validation", "issue-permission", "issue-done"];
+  for (const id of ids) {
+    await page.locator(`.work-item[data-open="${id}"]`).click();
+    const doc = page.locator(`[data-document="${id}"]`);
+    if (!(await doc.getAttribute("class")).includes("outcome-surface")) throw new Error(`${id} 不是成果面`);
+    if ((await doc.locator(".outcome-state > div").count()) !== 3) throw new Error(`${id} 状态卡不是 3 张`);
+    if ((await doc.locator(".outcome-section").count()) < 4) throw new Error(`${id} 段落不足`);
+    for (const legacy of [".room-summary", ".task-toolbar", ".task-grid", ".finding-compare"]) {
+      if (await doc.locator(legacy).count()) throw new Error(`${id} 仍有 V2 版式 ${legacy}`);
+    }
+  }
+});
+
+await check("阻塞态自带动作，不只是一条说明（§4.2.2 / §6）", async () => {
+  await page.locator('.work-item[data-open="issue-permission"]').click();
+  const block = page.locator('[data-document="issue-permission"] .outcome-block');
+  if (!(await block.isVisible())) throw new Error("权限确认缺少阻塞条");
+  if ((await block.locator("button").count()) !== 2) throw new Error("允许 / 拒绝两个动作应就在阻塞条上");
+  if ((await page.locator('[data-document="issue-permission"] .permission-scope > div').count()) !== 4) {
+    throw new Error("「你在批准什么」应逐条列出，含拒绝后果");
+  }
+  if ((await page.locator('[data-document="issue-permission"] .plan-step.blocked').count()) !== 1) {
+    throw new Error("执行计划未标出被阻塞的那一步");
+  }
+});
+
+await check("验证未收敛：打回的要求展开两轮结论（§4.2.2）", async () => {
+  await page.locator('.work-item[data-open="issue-validation"]').click();
+  const doc = page.locator('[data-document="issue-validation"]');
+  const failed = doc.locator(".evidence-row.failed");
+  if ((await failed.count()) !== 1) throw new Error("缺少「未通过」的完成要求");
+  if ((await failed.locator(".round-compare .linklike").count()) !== 2) {
+    throw new Error("未通过的要求应能同时点开两轮各自的结论，否则看不出是不是同一个问题");
+  }
+  if ((await doc.locator(".plan-step.failed").count()) !== 2) throw new Error("两轮失败应各占一个步骤，不能合并");
+  if ((await doc.locator(".outcome-file").count()) !== 2) throw new Error("验证不通过不应回滚已有改动");
+});
+
 await check("页面无横向溢出", async () => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (overflow > 1) throw new Error(`横向溢出 ${overflow}px`);

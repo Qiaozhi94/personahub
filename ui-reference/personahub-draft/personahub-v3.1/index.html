@@ -534,25 +534,221 @@ completed -&gt; archived</code></pre>
                   </section>
                 </article>
 
-                <article class="document task-document" data-document="issue-validation">
+                <article class="document task-document outcome-surface" data-document="issue-validation">
                   <div class="task-heading"><span class="signal yellow"></span><span><small>任务 · 验证未收敛</small><h1>修复验证循环恢复</h1></span></div>
-                  <div class="callout warning"><strong>连续 2 次未解决</strong>相同的恢复边界问题再次出现；系统已停止自动继续，等待你改变策略。</div>
-                  <div class="task-toolbar"><button type="button" data-thread-focus>在任务会话中处理</button><button type="button" data-demo="将打开成员选择器">更换执行者</button><button type="button" data-demo="任务已安全停止；现有证据保留">停止任务</button></div>
-                  <h2>本轮与上轮对比</h2>
-                  <div class="finding-compare"><section><small>第 1 次验证</small><h3>恢复后出现重复派工</h3><p>两个 drain 同时认领了等待节点。</p></section><section><small>第 2 次验证</small><h3>同一问题仍然存在</h3><p>修复只覆盖正常恢复，没有覆盖重启后的并发恢复。</p></section></div>
-                  <div class="task-grid">
-                    <section><h2>已保留</h2><ul><li>当前代码变化与测试输出。</li><li>两轮验证 findings 和原始事件。</li><li>每次尝试使用的执行者与输入版本。</li></ul></section>
-                    <aside><h3>建议动作</h3><button type="button" data-thread-prefill="@架构研究员&#10;先分析两次失败的共同根因，不修改代码；给出新的恢复策略和验证边界。"><strong>先换策略，再继续修复</strong><small>建议由架构研究员隔离分析两轮重复问题。</small></button></aside>
+
+                  <div class="outcome-state">
+                    <div>
+                      <small>系统记录</small>
+                      <strong>2 轮已跑完</strong>
+                      <span>两轮的命令与原始输出都在</span>
+                    </div>
+                    <div>
+                      <small>实际变化</small>
+                      <strong>2 个文件</strong>
+                      <span>+51 −17 · <button class="linklike" type="button" data-open="file-code" data-label="drain-queue.ts" data-stage-child>可打开全文核对</button></span>
+                    </div>
+                    <div class="warn-cell">
+                      <small>验证独立性</small>
+                      <strong>2 次都未通过</strong>
+                      <span>同一条要求连续两轮被打回</span>
+                    </div>
                   </div>
+
+                  <div class="outcome-block">
+                    <span class="ob-mark">!</span>
+                    <span><strong>自动继续已停止</strong><small>相同的恢复边界问题连续出现两次。继续按原策略修复大概率还是同一个结果，所以系统没有自动开第三轮，等你换策略。</small></span>
+                    <button type="button" data-thread-prefill="@架构研究员&#10;先分析两次失败的共同根因，不修改代码；给出新的恢复策略和验证边界。">预填改派指令</button>
+                  </div>
+
+                  <section class="outcome-section">
+                    <h2>目标</h2>
+                    <p>让服务重启后中断的恢复流程能安全续跑：等待中的节点只被认领一次，重复认领必须在恢复阶段就被拦住。</p>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>本次成果</h2>
+                    <p>两轮修改都保留着，没有因为验证不通过被回滚——换策略时它们是输入，不是垃圾。</p>
+                    <div class="outcome-body">
+                      <button class="outcome-file" type="button" data-open="file-code" data-label="drain-queue.ts" data-stage-child>
+                        <span class="of-type">TS</span>
+                        <span><strong>server/src/services/drain-queue.ts</strong><small>第 1 轮：恢复时按节点状态过滤等待队列。未覆盖并发恢复。</small></span>
+                        <span class="of-diff">+31 −11</span>
+                      </button>
+                      <button class="outcome-file" type="button" data-open="file-code" data-label="startup-recovery.ts" data-stage-child>
+                        <span class="of-type">TS</span>
+                        <span><strong>server/src/services/startup-recovery.ts</strong><small>第 2 轮：恢复入口加去重。仍未覆盖两个 drain 同时启动的窗口。</small></span>
+                        <span class="of-diff">+20 −6</span>
+                      </button>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>完成要求与依据</h2>
+                    <p>被打回的那条要求展开显示两轮各自的结论，这样才看得出「是不是同一个问题」。</p>
+                    <button class="evidence-row" type="button" data-open="evidence-view" data-label="验证依据 · 正常恢复" data-stage-child>
+                      <span class="ok">✓</span>
+                      <span><strong>正常重启下恢复流程可续跑</strong><small>系统记录 · 14 项 integration test</small></span>
+                      <span class="row-go">查看原始证据 →</span>
+                    </button>
+                    <div class="evidence-row failed">
+                      <span class="fail-mark">✕</span>
+                      <span>
+                        <strong>等待中的节点只被认领一次</strong>
+                        <small>两轮验证都判定未达成 · 同一个根因</small>
+                        <span class="round-compare">
+                          <button class="linklike" type="button" data-open="evidence-room" data-label="第 1 轮验证 · 重复派工" data-stage-child>第 1 轮：恢复后出现重复派工 →</button>
+                          <button class="linklike" type="button" data-open="evidence-room" data-label="第 2 轮验证 · 并发恢复" data-stage-child>第 2 轮：并发恢复下同一问题仍在 →</button>
+                        </span>
+                      </span>
+                      <span class="row-go muted">连续 2 轮</span>
+                    </div>
+                    <div class="evidence-row inflight">
+                      <span class="pending-mark">·</span>
+                      <span><strong>归档回放能重现恢复过程</strong><small>还没有轮到 · 前一条通过后才验</small></span>
+                      <span class="row-go muted">未开始</span>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>这份成果是怎么来的</h2>
+                    <div class="plan-list">
+                      <div class="plan-step done">
+                        <span class="plan-index">1</span>
+                        <div>
+                          <strong>确认恢复边界</strong>
+                          <small>执行者：Human Lead · 输入：重启后重复派工的现场</small>
+                          <small>产出：Implementation 指令 · Evidence：确认事件</small>
+                        </div>
+                        <span class="plan-state">已完成 · 08:30</span>
+                      </div>
+                      <div class="plan-step failed">
+                        <span class="plan-index">2</span>
+                        <div>
+                          <strong>第 1 轮修复 + 验证</strong>
+                          <small>实现：Codex GPT-5 · 验证：Claude Sonnet</small>
+                          <small>结论：恢复后出现重复派工 · 未覆盖并发恢复</small>
+                        </div>
+                        <span class="plan-state fail">未通过 · 09:14</span>
+                      </div>
+                      <div class="plan-step failed">
+                        <span class="plan-index">3</span>
+                        <div>
+                          <strong>第 2 轮修复 + 验证</strong>
+                          <small>实现：Codex GPT-5（同一执行者）· 验证：Claude Sonnet</small>
+                          <small>结论：同一问题仍在 · 修复没有触及共同根因</small>
+                        </div>
+                        <span class="plan-state fail">未通过 · 09:52</span>
+                      </div>
+                      <div class="plan-step waiting">
+                        <span class="plan-index">4</span>
+                        <div>
+                          <strong>换策略：先隔离共同根因</strong>
+                          <small>建议：架构研究员 · 依据：同一执行者连续两轮同一结论，问题在策略不在实现</small>
+                          <small>预期：新的恢复策略与验证边界 · 要求：本轮不改代码</small>
+                        </div>
+                        <span class="plan-state pending">等待你指派</span>
+                      </div>
+                    </div>
+                  </section>
                 </article>
 
-                <article class="document task-document" data-document="issue-permission">
+                <article class="document task-document outcome-surface" data-document="issue-permission">
                   <div class="task-heading"><span class="signal yellow"></span><span><small>任务 · 等待权限确认</small><h1>允许读取外部行情缓存</h1></span></div>
-                  <div class="callout warning"><strong>执行已安全暂停</strong>任务请求读取当前代码目录之外的 <code>D:\MarketData\cache</code>；未获得确认前不会继续。</div>
-                  <div class="task-grid">
-                    <section><h2>请求影响</h2><ul><li>只读访问 12 个缓存文件。</li><li>不会写入或删除外部内容。</li><li>拒绝后当前诊断步骤失败，已完成结果仍保留。</li></ul><h2>请求来源</h2><p>运行环境诊断步骤 · Claude Code · 10:58 · 原始命令可在底部执行面板查看。</p></section>
-                    <aside><h3>确认前复核</h3><button type="button" data-demo="已允许本次只读访问；静态原型不执行真实操作"><strong>允许本次只读访问</strong><small>仅对当前任务和这个规范化路径生效。</small></button><button type="button" data-demo="权限请求已拒绝；任务保持可恢复"><strong>拒绝并保持暂停</strong><small>不会自动改用其他目录。</small></button></aside>
+
+                  <div class="outcome-state">
+                    <div>
+                      <small>系统记录</small>
+                      <strong>1 / 3 步</strong>
+                      <span>已完成的部分照常保留</span>
+                    </div>
+                    <div class="empty-cell">
+                      <small>实际变化</small>
+                      <strong>0 个文件</strong>
+                      <span>暂停发生在任何写入之前</span>
+                    </div>
+                    <div class="empty-cell">
+                      <small>验证独立性</small>
+                      <strong>尚未验证</strong>
+                      <span>执行没走完，无从验证</span>
+                    </div>
                   </div>
+
+                  <div class="outcome-block">
+                    <span class="ob-mark">⏸</span>
+                    <span>
+                      <strong>执行已安全暂停，等你决定</strong>
+                      <small>任务请求<strong>只读</strong>访问当前代码目录之外的 <code>D:\MarketData\cache</code>（12 个缓存文件）。在你确认之前它不会继续，也不会自己换一个目录试。</small>
+                    </span>
+                    <span class="ob-actions">
+                      <button type="button" data-demo="已允许本次只读访问；仅对当前任务和这个规范化路径生效">允许本次只读</button>
+                      <button type="button" class="ghost" data-demo="权限请求已拒绝；任务保持可恢复，已完成结果保留">拒绝并保持暂停</button>
+                    </span>
+                  </div>
+
+                  <section class="outcome-section">
+                    <h2>目标</h2>
+                    <p>把本地行情缓存的完整性诊断结果并入运行环境报告，让「数据过期」和「服务不可用」在报告里能分开看。</p>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>你在批准什么</h2>
+                    <div class="permission-scope">
+                      <div><span class="ps-mark ok">✓</span><span><strong>只读 12 个缓存文件</strong><small>路径已规范化：<code>D:\MarketData\cache</code>，不含子目录以外的任何位置</small></span></div>
+                      <div><span class="ps-mark ok">✓</span><span><strong>不写入、不删除外部内容</strong><small>本次授权不包含写权限；请求写入会重新弹一次确认</small></span></div>
+                      <div><span class="ps-mark scope">◷</span><span><strong>仅对当前任务生效</strong><small>不会成为项目级长期授权，下一个任务要重新确认</small></span></div>
+                      <div><span class="ps-mark warn">!</span><span><strong>拒绝的后果</strong><small>当前诊断步骤失败，已完成的 1 / 3 步结果仍然保留，任务可从这一步重新指派</small></span></div>
+                    </div>
+                    <p class="scope-source">请求来源：运行环境诊断第 2 步 · Claude Code · 10:58 · <button class="linklike" type="button" data-open="evidence-view" data-label="权限请求 · 原始命令" data-stage-child>查看原始命令</button></p>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>完成要求与依据</h2>
+                    <p>两条要求都要等这次授权决定之后才可能拿到依据。</p>
+                    <div class="evidence-row inflight">
+                      <span class="pending-mark">·</span>
+                      <span><strong>报告能区分「数据过期」与「服务不可用」</strong><small>你写的要求 · 依赖本次授权</small></span>
+                      <span class="row-go muted">待决定</span>
+                    </div>
+                    <div class="evidence-row inflight">
+                      <span class="pending-mark">·</span>
+                      <span><strong>外部路径访问全程可追溯到一次显式授权</strong><small>你写的要求 · 本次确认本身就是它的依据</small></span>
+                      <span class="row-go muted">待决定</span>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>这份成果是怎么来的</h2>
+                    <div class="plan-list">
+                      <div class="plan-step done">
+                        <span class="plan-index">1</span>
+                        <div>
+                          <strong>采集本地服务状态</strong>
+                          <small>执行者：Claude Code · 输入：项目诊断范围</small>
+                          <small>产出：3 项服务状态 · Evidence：命令与原始输出</small>
+                        </div>
+                        <span class="plan-state">已完成 · 10:56</span>
+                      </div>
+                      <div class="plan-step blocked">
+                        <span class="plan-index">2</span>
+                        <div>
+                          <strong>检查行情缓存完整性</strong>
+                          <small>执行者：Claude Code · 输入：缓存路径</small>
+                          <small>阻塞：路径超出代码目录边界，需要一次显式授权</small>
+                        </div>
+                        <span class="plan-state block">已暂停 · 10:58</span>
+                      </div>
+                      <div class="plan-step waiting">
+                        <span class="plan-index">3</span>
+                        <div>
+                          <strong>合并为运行环境报告</strong>
+                          <small>计划：同一执行者 · 依据：只是汇总，无需交接</small>
+                          <small>预期：Markdown 报告 · 要求：两类失败可分辨</small>
+                        </div>
+                        <span class="plan-state pending">排队中</span>
+                      </div>
+                    </div>
+                  </section>
                 </article>
 
                 <article class="document task-document outcome-surface" data-document="issue-running">
@@ -666,11 +862,106 @@ completed -&gt; archived</code></pre>
                   </section>
                 </article>
 
-                <article class="document task-document" data-document="issue-research">
+                <article class="document task-document outcome-surface" data-document="issue-research">
                   <div class="task-heading"><span class="signal blue"></span><span><small>任务 · Research 阶段进行中</small><h1>阶段成果契约研究</h1></span></div>
-                  <div class="task-toolbar"><button type="button" data-thread-focus>打开任务会话</button><button type="button" data-open="room-view">进入 Research 协作现场</button><button type="button" data-open="artifact-research">查看阶段成果</button></div>
-                  <div class="room-summary"><div><small>当前阶段</small><strong>Research</strong><span>2 / 3 步</span></div><div><small>协作现场</small><strong>活跃</strong><span>3 名成员</span></div><div><small>阶段成果</small><strong>r1</strong><span>等待综合</span></div><div><small>需要你</small><strong>否</strong><span>完成后通知</span></div></div>
-                  <h2>完成要求</h2><label class="check-row"><input type="checkbox" checked disabled />不可变 revision 与来源关系明确</label><label class="check-row"><input type="checkbox" checked disabled />路径读取边界已有安全结论</label><label class="check-row"><input type="checkbox" disabled />综合为可执行的 synthesis_plan</label>
+
+                  <div class="outcome-state">
+                    <div>
+                      <small>系统记录</small>
+                      <strong>3 名成员在跑</strong>
+                      <span>各自的检索与结论都单独留痕</span>
+                    </div>
+                    <div>
+                      <small>实际变化</small>
+                      <strong>0 个文件</strong>
+                      <span>研究阶段只产出结论，不改代码</span>
+                    </div>
+                    <div class="pending-cell">
+                      <small>验证独立性</small>
+                      <strong>等待综合</strong>
+                      <span>三份结论还没收敛成一份方案</span>
+                    </div>
+                  </div>
+
+                  <div class="outcome-live">
+                    <span class="live-dot"></span>
+                    <span><strong>OpenCode 正在整理 revision 与来源追踪</strong><small>Research 第 2 / 3 步 · 3 名成员 · 1 名执行中 · <button class="linklike" type="button" data-open="room-view" data-label="协作现场 · Research">进入协作现场</button></small></span>
+                    <button type="button" data-demo="停止会先等待当前安全点并保留已产出结论">先停一下</button>
+                  </div>
+
+                  <section class="outcome-section">
+                    <h2>目标</h2>
+                    <p>确定阶段成果的契约：怎样固定为不可变 revision、来源关系怎么表达、读取路径的安全边界在哪，最后收敛成一份能直接交给实现者的 synthesis_plan。</p>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>本次成果</h2>
+                    <p>研究阶段的成果不是文件，是<strong>固定到 revision 的结论</strong>。综合完成前它们各自独立，不互相覆盖。</p>
+                    <div class="outcome-body">
+                      <div class="outcome-artifact">
+                        <span class="oa-mark">A</span>
+                        <span><strong>research_findings · revision 1</strong><small>3 名成员各自的检索结论，已固定；来源可逐条追到原始出处</small></span>
+                        <button class="linklike" type="button" data-open="artifact-research" data-label="阶段成果 · research_findings" data-stage-child>打开</button>
+                      </div>
+                      <div class="outcome-pending-file">
+                        <span class="opf-mark">◐</span>
+                        <span><strong>synthesis_plan</strong><small>还没生成 · 三份结论收敛后才会固定为 revision</small></span>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>完成要求与依据</h2>
+                    <p>前两条已经有结论支撑，第三条是这个阶段的出口。</p>
+                    <button class="evidence-row" type="button" data-open="artifact-research" data-label="阶段成果 · revision 契约" data-stage-child>
+                      <span class="ok">✓</span>
+                      <span><strong>不可变 revision 与来源关系明确</strong><small>阶段成果 · research_findings r1 第 1–2 节</small></span>
+                      <span class="row-go">查看结论 →</span>
+                    </button>
+                    <button class="evidence-row" type="button" data-open="evidence-room" data-label="验证依据 · 路径边界" data-stage-child>
+                      <span class="ok">✓</span>
+                      <span><strong>路径读取边界已有安全结论</strong><small>阶段成果 · 与 ADR 0006 的隔离条件一致</small></span>
+                      <span class="row-go">查看结论 →</span>
+                    </button>
+                    <div class="evidence-row inflight">
+                      <span class="pending-mark">◐</span>
+                      <span><strong>综合为可执行的 synthesis_plan</strong><small>正在进行第 2 / 3 步 · 这是本阶段的出口条件</small></span>
+                      <span class="row-go muted">执行中</span>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section">
+                    <h2>这份成果是怎么来的</h2>
+                    <div class="plan-list">
+                      <div class="plan-step done">
+                        <span class="plan-index">1</span>
+                        <div>
+                          <strong>并行检索三个方向</strong>
+                          <small>执行者：3 名成员并行 · 输入：契约问题清单</small>
+                          <small>产出：research_findings r1 · Evidence：各自的原始检索记录</small>
+                        </div>
+                        <span class="plan-state">已完成 · 4m 51s</span>
+                      </div>
+                      <div class="plan-step doing">
+                        <span class="plan-index">2</span>
+                        <div>
+                          <strong>整理 revision 与来源追踪</strong>
+                          <small>执行者：OpenCode · 输入：research_findings r1</small>
+                          <small>产出：来源关系表 · Evidence：逐条出处</small>
+                        </div>
+                        <span class="plan-state running">执行中</span>
+                      </div>
+                      <div class="plan-step waiting">
+                        <span class="plan-index">3</span>
+                        <div>
+                          <strong>收敛为 synthesis_plan</strong>
+                          <small>计划：综合者 · 依据：并行检索需要一次显式收敛，不能三份直接交给实现者</small>
+                          <small>预期：synthesis_plan r1 · 要求：冲突结论必须显式取舍，不能并列保留</small>
+                        </div>
+                        <span class="plan-state pending">排队中</span>
+                      </div>
+                    </div>
+                  </section>
                 </article>
 
                 <article class="document task-document outcome-surface" data-document="issue-done">
