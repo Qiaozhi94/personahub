@@ -6,7 +6,9 @@
     surface: "project",
     explorer: "work",
     document: "file-prd",
-    roomTab: "room", roomVariant: "room",
+    dockPanel: "primary",
+    recipient: "这个任务",
+    dockTaskLabel: "",
     pickerRole: null,
     dispatchTimer: null,
     roomPaused: false,
@@ -41,15 +43,15 @@
   };
 
   const dockContexts = {
-    "project-overview": { tab: "project", target: "项目会话 · PersonaHub", parent: "不绑定任何任务", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "本周 2 个任务在推进、1 个等你指派。可以直接问我某批改动的结论，或从这里发起新任务。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
-    "issue-view": { tab: "room", target: "协作现场 · Implementation", parent: "任务：协作现场支持暂停、纠偏与改派", title: "协作现场支持暂停、纠偏与改派", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步交给独立验证员；指派后会自动携带固定版本的阶段成果和现有验证依据。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议交给独立验证员", handoffMember: "@独立验证员", input: "@独立验证员\n验证上一步实现，重点检查 pause / resume 竞态与归档回放。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：还没有人独立验证竞态与归档回放"},
-    "room-view": { tab: "room", roomPanel: "room-research", target: "协作现场 · Research", parent: "任务：阶段成果契约研究", title: "阶段成果契约研究", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究协作现场正在收集实体、revision 与路径安全结论；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在收集契约结论", step: "2 / 3 步", block: ""},
-    "issue-new": { tab: "primary", target: "任务会话 · 刚创建", parent: "任务：把诊断结果导出为可分享的报告", title: "把诊断结果导出为可分享的报告", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以依据这两条拟一份执行计划交你确认，也可以你直接指派第一步。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
-    "issue-validation": { tab: "primary", target: "任务会话 · 验证未收敛", parent: "任务：修复验证循环恢复", title: "修复验证循环恢复", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两次验证出现相同问题。建议先由架构研究员隔离分析共同根因，再决定下一次修复。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两次失败的共同根因，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：重复修复无收敛，需要换策略"},
-    "issue-permission": { tab: "primary", target: "任务会话 · 权限确认", parent: "任务：允许读取外部行情缓存", title: "允许读取外部行情缓存", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求只读访问 D:\\MarketData\\cache。允许、拒绝和影响范围都需要由你明确确认。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你确认外部路径访问", step: "1 / 3 步", block: "卡在：D:\MarketData\cache 超出当前代码目录"},
-    "issue-running": { tab: "primary", target: "任务会话 · 运行中", parent: "任务：运行环境健康诊断", title: "补齐运行环境健康诊断", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全；完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在检查项目级 CLI 可用性", step: "2 / 4 步", block: ""},
-    "issue-research": { tab: "primary", roomPanel: "room-research", target: "任务会话 · Research", parent: "任务：阶段成果契约研究", title: "阶段成果契约研究", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究协作现场正在形成不可变 revision、来源追踪和路径边界结论。", handoff: false, input: "", who: "OpenCode", what: "正在整理 revision 与来源追踪", step: "2 / 3 步", block: ""},
-    "issue-done": { tab: "primary", target: "任务会话 · 已完成", parent: "任务：Graph 重启恢复", title: "Graph 重启恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
+    "project-overview": { panel: "project", recipient: "这个项目", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "本周 2 个任务在推进、1 个等你指派。可以直接问我某批改动的结论，或从这里发起新任务。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
+    "issue-view": { panel: "primary", recipient: "@独立验证员", room: { name: "Implementation 现场", meta: "3 名成员 · 1 名已交付 · 阶段结束后归档，记录不删除" }, title: "协作现场支持暂停、纠偏与改派", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步交给独立验证员；指派后会自动携带固定版本的阶段成果和现有验证依据。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议交给独立验证员", handoffMember: "@独立验证员", input: "@独立验证员\n验证上一步实现，重点检查 pause / resume 竞态与归档回放。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：还没有人独立验证竞态与归档回放"},
+    "room-view": { panel: "research-thread", recipient: "@安全研究员", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "阶段成果契约研究", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究协作现场正在收集实体、revision 与路径安全结论；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在收集契约结论", step: "2 / 3 步", block: ""},
+    "issue-new": { panel: "primary", recipient: "这个任务", title: "把诊断结果导出为可分享的报告", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以依据这两条拟一份执行计划交你确认，也可以你直接指派第一步。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
+    "issue-validation": { panel: "primary", recipient: "@架构研究员", title: "修复验证循环恢复", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两次验证出现相同问题。建议先由架构研究员隔离分析共同根因，再决定下一次修复。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两次失败的共同根因，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：重复修复无收敛，需要换策略"},
+    "issue-permission": { panel: "primary", recipient: "这个任务", title: "允许读取外部行情缓存", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求只读访问 D:\\MarketData\\cache。允许、拒绝和影响范围都需要由你明确确认。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你确认外部路径访问", step: "1 / 3 步", block: "卡在：D:\MarketData\cache 超出当前代码目录"},
+    "issue-running": { panel: "primary", recipient: "@Claude", title: "补齐运行环境健康诊断", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全；完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在检查项目级 CLI 可用性", step: "2 / 4 步", block: ""},
+    "issue-research": { panel: "research-thread", recipient: "@安全研究员", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "阶段成果契约研究", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究协作现场正在形成不可变 revision、来源追踪和路径边界结论。", handoff: false, input: "", who: "OpenCode", what: "正在整理 revision 与来源追踪", step: "2 / 3 步", block: ""},
+    "issue-done": { panel: "primary", recipient: "这个任务", title: "Graph 重启恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
   };
 
   function showToast(message) {
@@ -95,25 +97,36 @@
   }
 
   function syncDock(id) {
-    if (state.dockPinned) return;
     const context = dockContexts[id];
     if (!context) return;
-    state.roomVariant = context.roomPanel || "room";
-    if (state.roomTab === "room") setRoomTab("room");
-    const target = $("[data-dock-target]");
-    const parent = $("[data-dock-parent]");
-    if (target) target.textContent = context.target;
-    if (parent) parent.textContent = context.parent;
+    // 固定后收件人不跟随，但面板仍然跟着舞台走——「看什么」和「发给谁」是两件事
+    if (!state.dockPinned) {
+      state.dockTaskLabel = context.title || "";
+      setRecipient(context.recipient || "这个任务");
+    }
+    renderPinnedNote();
+
+    const room = $("[data-inline-room]");
+    if (room) {
+      room.hidden = !context.room;
+      if (context.room) {
+        const name = $("[data-inline-room-name]");
+        const meta = $("[data-inline-room-meta]");
+        if (name) name.textContent = context.room.name;
+        if (meta) meta.textContent = context.room.meta;
+      }
+    }
 
     const shell = $(".app-shell");
-    if (shell) shell.dataset.dockMode = context.tab === "project" ? "project" : "task";
+    if (shell) shell.dataset.dockMode = context.panel === "project" ? "project" : "task";
     const setText = (sel, value) => { const el = $(sel); if (el) el.textContent = value; };
-    setText("[data-status-who]", context.who || "");
-    setText("[data-status-what]", context.what || "");
+    // Dock 不重复舞台已经说过的话：任务名归舞台标题，这里只留「谁在做 / 卡在哪」
+    const parts = [];
+    if (context.who && context.what) parts.push(`${context.who} ${context.what}`);
+    else if (context.what) parts.push(context.what);
+    if (context.block) parts.push(context.block);
+    setText("[data-status-what]", parts.join(" · "));
     setText("[data-status-step]", context.step || "");
-    const blockLine = $("[data-status-block]")?.closest(".dock-status-line");
-    if (blockLine) blockLine.hidden = !context.block;
-    setText("[data-status-block]", context.block || "");
     if (context.title) {
       const title = $("[data-primary-title]");
       const status = $("[data-primary-status]");
@@ -136,7 +149,7 @@
       if (handoffButton && context.input !== undefined) handoffButton.dataset.threadPrefill = context.input;
       if (input && context.input !== undefined) input.value = context.input;
     }
-    setRoomTab(context.tab);
+    setPanel(context.panel);
   }
 
   function updateStageBack() {
@@ -265,14 +278,56 @@
     window.setTimeout(() => target.classList.remove("change-focus"), 1500);
   }
 
-  function setRoomTab(name) {
-    state.roomTab = name;
-    // 「协作现场」这个 tab 对应哪个面板，取决于当前舞台属于哪个 Room。
-    // 一个任务可以有多个协作现场（PRD 第 5 节 rooms[]），Dock 必须显示
-    // 当前这一个，而不是永远显示同一个（design.md §5 原则 1）。
-    const panelName = name === "room" ? state.roomVariant : name;
-    $$('[data-room-tab]').forEach((button) => button.classList.toggle("active", button.dataset.roomTab === name));
-    $$('[data-room-panel]').forEach((panel) => panel.classList.toggle("active", panel.dataset.roomPanel === panelName));
+  // Dock 只有一条流。Room 不再是阅读入口，只是流里的一段可折叠内容：
+  // 它是组织单位（谁一起干、交付什么），那些结构信息在舞台的成员泳道上。
+  // Dock 只有一个输入框在场——取当前可见面板里的那个
+  function activeComposer() {
+    return $('[data-room-panel].active textarea');
+  }
+
+  function fillComposer(text) {
+    const input = activeComposer();
+    if (!input) return;
+    input.value = text;
+    input.focus();
+    const at = text.match(/^@(\S+)/);
+    if (at) setRecipient("@" + at[1]);
+  }
+
+  function setPanel(name) {
+    state.dockPanel = name;
+    $$('[data-room-panel]').forEach((panel) => panel.classList.toggle("active", panel.dataset.roomPanel === name));
+  }
+
+  // 收件人是显式的一件事，不由「看哪个面板」隐含决定——
+  // 这正是此前两个输入框分不清的根源。
+  function setRecipient(label) {
+    state.recipient = label;
+    const target = $("[data-dock-target]");
+    if (target) target.textContent = label;
+    $$("[data-composer-to]").forEach((el) => (el.textContent = label));
+    $$("[data-recipient]").forEach((option) =>
+      option.classList.toggle("active", option.dataset.recipientLabel === label),
+    );
+  }
+
+  function setRecipientPopover(open) {
+    const popover = $("[data-recipient-popover]");
+    const trigger = $("[data-recipient-open]");
+    if (!popover) return;
+    popover.hidden = !open;
+    trigger?.setAttribute("aria-expanded", String(open));
+  }
+
+  // 固定住的收件人必须持续可见，并说明它属于哪个任务——
+  // 否则会对着上一个任务的成员发指令。
+  function renderPinnedNote() {
+    const note = $("[data-dock-parent]");
+    if (!note) return;
+    note.hidden = !state.dockPinned;
+    if (state.dockPinned) {
+      note.textContent = `已固定发给 ${state.recipient} · 属于任务「${state.dockTaskLabel}」 · 切换任务不跟随`;
+    }
   }
 
   function setRoomPaused(paused) {
@@ -487,6 +542,59 @@
       return;
     }
 
+    // 视图切换：成果看结构，轨迹看时间。两者同属一个任务 tab，不新开 tab。
+    if (target.dataset.stageView) {
+      const article = target.closest(".task-document");
+      if (article) {
+        const name = target.dataset.stageView;
+        $$("[data-stage-view]", article).forEach((b) => b.classList.toggle("active", b === target));
+        $$("[data-stage-pane]", article).forEach((pane) => (pane.hidden = pane.dataset.stagePane !== name));
+      }
+      return;
+    }
+
+    // 轨迹筛选：复盘时通常只关心某一类事件（用例变更 / 产物 / 人工介入）
+    if (target.dataset.traceFilter) {
+      const pane = target.closest("[data-stage-pane]");
+      if (pane) {
+        const kind = target.dataset.traceFilter;
+        $$("[data-trace-filter]", pane).forEach((b) => b.classList.toggle("active", b === target));
+        $$("[data-trace-kind]", pane).forEach((item) => {
+          item.hidden = kind !== "all" && item.dataset.traceKind !== kind;
+        });
+      }
+      return;
+    }
+
+    // 证据抽屉：三张状态卡就地展开原始命令 / 实际改动 / 独立性判定。
+    // 抽查成本必须接近零——跳到另一个页面去核对，等于没有人会核对。
+    if (target.dataset.drawerToggle) {
+      const key = target.dataset.drawerToggle;
+      const body = $(`[data-drawer-body="${key}"]`);
+      if (body) {
+        const open = body.hidden;
+        // 同一行三张卡互斥，避免三个抽屉同时撑开把下文推到屏幕外
+        const row = target.closest(".outcome-state");
+        if (row) {
+          $$("[data-drawer-body]", row).forEach((item) => (item.hidden = true));
+          $$("[data-drawer-toggle]", row).forEach((item) => item.setAttribute("aria-expanded", "false"));
+        }
+        body.hidden = !open;
+        target.setAttribute("aria-expanded", String(open));
+      }
+      return;
+    }
+
+    // 完成要求：就地展开这一条的可证伪切片（测试名 · 断言 · 实际输出）
+    if (target.hasAttribute("data-claim-toggle")) {
+      const body = target.nextElementSibling;
+      if (body?.classList.contains("claim-body")) {
+        body.hidden = !body.hidden;
+        target.setAttribute("aria-expanded", String(!body.hidden));
+      }
+      return;
+    }
+
     if (target.hasAttribute("data-new-object")) {
       if (state.explorer === "work") setTaskCreate(true);
       else {
@@ -571,8 +679,27 @@
       return;
     }
 
-    if (target.dataset.roomTab) {
-      setRoomTab(target.dataset.roomTab);
+    // 收件人选择器：Dock 只有一个输入框，发给谁是显式的一件事
+    if (target.hasAttribute("data-recipient-open")) {
+      setRecipientPopover($("[data-recipient-popover]")?.hidden !== false);
+      return;
+    }
+
+    if (target.dataset.recipientLabel) {
+      setRecipient(target.dataset.recipientLabel);
+      setRecipientPopover(false);
+      renderPinnedNote();
+      showToast(`下一条指令将发给 ${target.dataset.recipientLabel}`);
+      return;
+    }
+
+    // 内嵌的协作现场段：Room 是流里的一段，不是第二个阅读入口
+    if (target.hasAttribute("data-inline-room-toggle")) {
+      const room = target.closest(".inline-room");
+      if (room) {
+        const collapsed = room.classList.toggle("collapsed");
+        target.setAttribute("aria-expanded", String(!collapsed));
+      }
       return;
     }
 
@@ -586,8 +713,13 @@
       target.setAttribute("aria-pressed", String(state.dockPinned));
       target.classList.toggle("active", state.dockPinned);
       target.textContent = state.dockPinned ? "◆" : "◇";
+      renderPinnedNote();
       if (!state.dockPinned) syncDock(state.document);
-      showToast(state.dockPinned ? "已固定当前协作现场；浏览其他对象时不会自动切换" : "已取消固定；协作 Dock 将跟随任务切换");
+      showToast(
+        state.dockPinned
+          ? `已固定发给 ${state.recipient}；切换任务时收件人不跟随`
+          : "已取消固定；收件人将跟随任务切换",
+      );
       return;
     }
 
@@ -596,47 +728,20 @@
       return;
     }
 
-    if (target.hasAttribute("data-room-focus")) {
-      setRoomTab("room");
-      $("[data-room-input]")?.focus();
+    if (target.hasAttribute("data-room-focus") || target.hasAttribute("data-thread-focus")) {
+      activeComposer()?.focus();
       return;
     }
 
-    if (target.hasAttribute("data-thread-focus")) {
-      setRoomTab("primary");
-      $("[data-thread-input]")?.focus();
-      return;
-    }
-
-    if (target.dataset.roomPrefill) {
-      setRoomTab("room");
-      const input = $("[data-room-input]");
-      if (input) {
-        input.value = target.dataset.roomPrefill;
-        input.focus();
-      }
+    const prefill = target.dataset.roomPrefill || target.dataset.threadPrefill;
+    if (prefill) {
+      fillComposer(prefill);
       showToast("已把建议指令写入输入框；可以修改成员或要求");
       return;
     }
 
-    if (target.dataset.threadPrefill) {
-      setRoomTab("primary");
-      const input = $("[data-thread-input]");
-      if (input) {
-        input.value = target.dataset.threadPrefill;
-        input.focus();
-      }
-      showToast("已把建议写入任务会话；可以修改成员、目标或验证要求");
-      return;
-    }
-
     if (target.hasAttribute("data-prefill-evidence")) {
-      setRoomTab("room");
-      const input = $("[data-room-input]");
-      if (input) {
-        input.value = "@独立验证员\n请验证竞态与归档回放，并附上测试命令、原始输出和明确结论。";
-        input.focus();
-      }
+      fillComposer("@独立验证员\n请验证竞态与归档回放，并附上测试命令、原始输出和明确结论。");
       showToast("已预填补充验证指令");
       return;
     }

@@ -69,7 +69,7 @@ await check("舞台顶部是任务 tab，不是文件 tab（§4.2.1）", async (
 await check("子文档在所属任务的 tab 内切换，不新开 tab（§4.2.1）", async () => {
   await page.locator('.work-item[data-open="issue-done"]').click();
   const before = await page.locator("[data-task-tabs] .editor-tab").count();
-  await page.locator('[data-document="issue-done"] .evidence-row').first().click();
+  await page.locator('[data-document="issue-done"] .outcome-file').first().click();
   const after = await page.locator("[data-task-tabs] .editor-tab").count();
   if (after !== before) throw new Error(`子文档新开了 tab（${before} → ${after}）`);
   if (!(await page.locator(".stage-bar:visible").isVisible())) throw new Error("子文档缺少返回条");
@@ -103,16 +103,28 @@ await check("左栏是单一列表，没有第二层 tab（§4.1）", async () =
   }
 });
 
-await check("一级入口钉在左栏底部，与列表控件分开（§4.1）", async () => {
-  const foot = page.locator(".sidebar-foot:visible");
-  const navCount = await foot.locator("> button").count();
-  if (navCount !== 4) throw new Error(`一级入口应为 4 个，实际 ${navCount}`);
-  if (!(await foot.locator('[data-surface="library"]').innerText()).includes("能力库")) {
-    throw new Error("AI 成员入口未带文字（PRD §10 要求一级可见）");
+await check("一级入口与搜索同行，设置单独留在底部（§4.1）", async () => {
+  const icons = page.locator(".explorer-toolbar:visible .nav-icons");
+  const navCount = await icons.locator("> button").count();
+  if (navCount !== 3) throw new Error(`顶部一级入口应为 3 个，实际 ${navCount}`);
+  for (const surface of ["project", "library", "automation"]) {
+    if (!(await icons.locator(`[data-surface="${surface}"]`).isVisible())) {
+      throw new Error(`顶部缺少 ${surface} 入口`);
+    }
   }
+  // 纯图标必须有 tooltip 与无障碍名，否则 V2 的辨识度问题会原样搬回来
+  const lib = icons.locator('[data-surface="library"]');
+  if (!((await lib.getAttribute("title")) || "").includes("能力库")) throw new Error("图标入口缺少 title 说明");
+  if (!(await lib.getAttribute("aria-label"))) throw new Error("图标入口缺少 aria-label");
+
+  const iconBox = await icons.boundingBox();
+  const search = await page.locator(".explorer-toolbar:visible label").boundingBox();
+  if (Math.abs(iconBox.y - search.y) > 6) throw new Error("一级入口未与搜索框同行");
+
+  const foot = page.locator(".sidebar-foot:visible");
+  if ((await foot.locator("> button").count()) !== 1) throw new Error("底部应只剩设置一个入口");
   const footBox = await foot.boundingBox();
-  const toolbar = await page.locator(".explorer-toolbar:visible").boundingBox();
-  if (!footBox || !toolbar || footBox.y <= toolbar.y) throw new Error("一级入口未在列表下方");
+  if (!footBox || footBox.y <= iconBox.y) throw new Error("设置未在底部");
 });
 
 await check("分节可折叠，资源库默认收起（§4.1 / §7.3）", async () => {
@@ -139,27 +151,127 @@ await check("成果面首屏回答「做成什么样、可不可信」（§4.2�
   const stage = page.locator('[data-document="issue-view"]');
   await stage.locator("h1").filter({ hasText: "协作现场支持暂停" }).waitFor();
 
-  const cards = await stage.locator(".outcome-state > div").allInnerTexts();
+  const cards = await stage.locator(".outcome-state > button.state-card").allInnerTexts();
   if (cards.length !== 3) throw new Error(`成果状态条应为三卡，实际 ${cards.length}`);
   const joined = cards.join(" ");
-  for (const want of ["系统记录", "实际变化", "验证独立性"]) {
+  for (const want of ["覆盖", "对齐", "时序"]) {
     if (!joined.includes(want)) throw new Error(`成果状态条缺少「${want}」`);
   }
   if (/\d+%/.test(joined)) throw new Error("出现百分比信任评分（design.md §4.2 明确禁止）");
 
-  const rows = await stage.locator(".evidence-row").count();
+  const rows = await stage.locator(".claim").count();
   if (rows !== 3) throw new Error(`完成要求应逐条挂依据，实际 ${rows} 条`);
-  if (!(await stage.locator(".evidence-row.pending").isVisible())) {
+  if (!(await stage.locator(".claim.unproven-claim").isVisible())) {
     throw new Error("未验证项没有显式标记，用户会误以为全部已验证");
   }
 
-  const steps = await stage.locator(".plan-step").count();
-  if (steps !== 3) throw new Error(`执行计划应在成果面上（从 V2 概览搬入），实际 ${steps} 步`);
+  const steps = await stage.locator(".pp-step").count();
+  if (steps !== 5) throw new Error(`实现/验证双列应在成果面上，实际 ${steps} 步`);
   await page.screenshot({ path: "shots/outcome-waiting.png", fullPage: true });
 });
 
+// §4.2.4 可信度表达 ───────────────────────────────────────
+// 信任不来自更好的摘要（摘要恰好是 agent 最容易凭空写出来的东西），
+// 只来自：信源分层 + 抽查成本接近零 + 主动暴露没有被证明的部分。
+await check("每条陈述标明信源：机器事实与 Agent 的说法不混同（§4.2.4）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  if (!(await stage.locator(".source-legend").isVisible())) throw new Error("成果面没有信源图例，用户学不会哪些像素可能骗人");
+  if ((await stage.locator(".src-badge.machine").count()) < 3) throw new Error("机器事实没有被标出来");
+  if ((await stage.locator(".src-badge.agent").count()) < 2) throw new Error("Agent 的说法没有被标出来，它正长成事实的样子");
+
+  // 文件说明是 agent 写的，必须带 agent 标记而不是裸文本
+  const note = stage.locator(".outcome-file .agent-note").first();
+  if (!(await note.isVisible())) throw new Error("成员写的文件说明没有和机器事实拉开距离");
+});
+
+await check("三张卡是用例视角的抽屉：就地展开，不跳页（§4.2.4）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  await stage.locator('[data-drawer-toggle="view-cover"]').click();
+  const cover = stage.locator('[data-drawer-body="view-cover"]');
+  await cover.waitFor({ state: "visible" });
+  if ((await cover.locator(".cover-row").count()) !== 3) throw new Error("覆盖表没有逐条列出完成要求");
+  if (!(await cover.locator(".cover-row.gap").isVisible())) throw new Error("没有标出覆盖缺口");
+  if (!(await stage.isVisible())) throw new Error("展开把用户带离了成果面");
+
+  // 三卡互斥，不能同时撑开
+  await stage.locator('[data-drawer-toggle="view-align"]').click();
+  if (await cover.isVisible()) throw new Error("三个抽屉可同时展开，下文会被推到屏幕外");
+
+  // 对齐是整条链上唯一需要人看的断点：用例必须能追到设计稿
+  const align = stage.locator('[data-drawer-body="view-align"]');
+  const alignText = await align.innerText();
+  if (!alignText.includes("设计稿")) throw new Error("对齐抽屉没有把用例追回设计文档");
+  if (!(await align.locator(".cover-row.gap").isVisible())) throw new Error("没有标出对齐缺口");
+  await stage.locator('[data-drawer-toggle="view-align"]').click();
+});
+
+await check("用例必须先于实现固定，破线要顶到首屏（§4.2.4 / ADR 0009）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  const alert = stage.locator("[data-fence-alert]");
+  if (!(await alert.isVisible())) throw new Error("实现期间改过用例，但首屏没有提示");
+  if (!(await alert.innerText()).includes("实现开始后")) throw new Error("破线提示没有说清是时序问题");
+
+  await stage.locator('[data-drawer-toggle="view-order"]').click();
+  const order = stage.locator('[data-drawer-body="view-order"]');
+  await order.waitFor({ state: "visible" });
+  const timeline = await order.locator(".raw-block pre").innerText();
+  for (const want of ["用例集 r1 冻结", "实现 Run #2 开始"]) {
+    if (!timeline.includes(want)) throw new Error(`时间轴缺少「${want}」`);
+  }
+  if ((await order.locator(".raw-block pre .del").count()) < 2) throw new Error("破线的两次未被标红");
+  await stage.locator('[data-drawer-toggle="view-order"]').click();
+});
+
+await check("实现与验证双列等重，中间是上下文围栏（ADR 0009）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  const plan = stage.locator(".pair-plan");
+  await plan.scrollIntoViewIfNeeded();
+  if (!(await plan.isVisible())) throw new Error("执行计划没有改成实现/验证双列");
+
+  const cols = plan.locator(".pp-col");
+  if ((await cols.count()) !== 2) throw new Error("双列结构不完整");
+  const left = await cols.nth(0).boundingBox();
+  const right = await cols.nth(1).boundingBox();
+  if (Math.abs(left.width - right.width) > 4) throw new Error("实现与验证两列不等宽——验证被做轻了");
+
+  const fence = plan.locator("[data-pp-fence]");
+  if (!(await fence.isVisible())) throw new Error("缺少上下文围栏");
+  if (!(await fence.innerText()).includes("看不到")) throw new Error("围栏没有说明它隔离了什么");
+
+  // 围栏右侧的步骤必须标明是冷启动
+  const cold = cols.nth(1).locator(".pp-mode.cold");
+  if (!(await cold.isVisible())) throw new Error("验证步骤没有标明冷启动");
+  if (!(await cold.innerText()).includes("自述")) throw new Error("没有说明冷启动隔离掉了什么");
+});
+
+await check("完成要求就地展开可证伪切片（§4.2.4）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  const head = stage.locator(".claim .claim-head").first();
+  await head.click();
+  const body = stage.locator(".claim .claim-body").first();
+  await body.waitFor({ state: "visible" });
+  if (!(await body.locator(".proof-test > code").first().isVisible())) throw new Error("展开后没有测试名，无法核对这条要求靠什么成立");
+  if (!(await body.locator(".raw-block pre").first().isVisible())) throw new Error("展开后没有断言的实际输出");
+  if (!(await body.locator(".proof-author").first().isVisible())) throw new Error("没有说明这个测试是谁写的");
+  await head.click();
+  if (await body.isVisible()) throw new Error("依据无法收起");
+});
+
+await check("「还没有被证明」常驻，成功态也要认怂（§4.2.4）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  const section = stage.locator(".outcome-section.unproven-section");
+  if (!(await section.isVisible())) throw new Error("成果面只报喜，没有固定的缺口段");
+  const items = await section.locator(".unproven-list > li").count();
+  if (items < 1) throw new Error("缺口段是空的，但这份成果显然还没有独立验证");
+  if (!(await section.innerText()).includes("独立验证")) throw new Error("最大的一个缺口（没有独立验证）没有写在缺口段里");
+  // 舞台自己滚动，fullPage 截不到下半屏，先把缺口段滚进视口
+  await section.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "shots/outcome-unproven.png" });
+  await page.locator('[data-document="issue-view"] .task-heading').scrollIntoViewIfNeeded();
+});
+
 await check("舞台是单例：点进文件后可返回任务（§4.2）", async () => {
-  await page.locator('[data-document="issue-view"] .evidence-row[data-open="file-code"]').click();
+  await page.locator('[data-document="issue-view"] .outcome-file[data-open="file-code"]').first().click();
   await page.locator('[data-document="file-code"]').waitFor({ state: "visible" });
   const back = page.locator("[data-stage-back]");
   if (!(await back.isVisible())) throw new Error("从成果面点入后没有返回入口");
@@ -176,19 +288,54 @@ await check("执行状态常驻，不需要切 tab 才能看到（§4.3）", asy
   const text = await status.innerText();
   if (!text.includes("实现者") || !text.includes("2 / 3 步")) throw new Error(`执行状态内容不完整：${text}`);
   if (!text.includes("卡在")) throw new Error("阻塞原因未常驻显示");
-  if (await page.locator('[data-room-tab="overview"]').count()) {
-    throw new Error("概览 tab 应已拆解（高频上提常驻，执行计划下沉成果面）");
-  }
+  if ((await status.locator(".dock-status-line").count()) !== 1) throw new Error("执行状态应收敛为一行");
+  if (await page.locator("[data-room-tab]").count()) throw new Error("Dock 不应再有会话 tab");
+
+  // Dock 不重复舞台已经说过的话：任务名归舞台标题
+  // 任务名归舞台标题；Dock 只在收件人被固定到别的任务时才写任务名
+  const chrome = await page.locator("[data-room-dock]").innerText();
+  const beforeStream = chrome.split("我")[0];
+  if (beforeStream.includes("协作现场支持暂停")) throw new Error("Dock 顶部重复了舞台标题里的任务名");
 });
 
-await check("Dock 跟随任务切换，可显式固定（§4.3）", async () => {
+await check("收件人跟随任务切换，可显式固定（§4.3）", async () => {
   await page.locator('[data-open="issue-validation"]').first().click();
-  await page.locator("[data-dock-target]").filter({ hasText: "验证未收敛" }).waitFor();
+  await page.locator("[data-dock-target]").filter({ hasText: "@架构研究员" }).waitFor();
   await page.locator("[data-dock-pin]").click();
+
+  // 固定后切任务：收件人不跟随，且必须持续说明它属于哪个任务
   await page.locator('[data-open="issue-running"]').first().click();
-  await page.locator("[data-dock-target]").filter({ hasText: "验证未收敛" }).waitFor();
+  await page.locator("[data-dock-target]").filter({ hasText: "@架构研究员" }).waitFor();
+  const note = page.locator("[data-dock-parent]");
+  if (!(await note.isVisible())) throw new Error("固定后没有持续提示收件人属于哪个任务");
+  if (!(await note.innerText()).includes("修复验证循环恢复")) throw new Error("固定提示未写明所属任务");
+
   await page.locator("[data-dock-pin]").click();
-  await page.locator("[data-dock-target]").filter({ hasText: "运行中" }).waitFor();
+  await page.locator("[data-dock-target]").filter({ hasText: "@Claude" }).waitFor();
+  if (await note.isVisible()) throw new Error("取消固定后仍显示固定提示");
+});
+
+await check("Dock 只有一个输入框，收件人是显式的一件事（§4.3.2）", async () => {
+  await page.locator('.work-item[data-open="issue-view"]').click();
+  const composers = await page.locator('[data-room-panel].active textarea').count();
+  if (composers !== 1) throw new Error(`当前面板应只有 1 个输入框，实际 ${composers}`);
+
+  // 输入框上方复述收件人，打字时看得见发给谁
+  const to = page.locator('[data-room-panel].active [data-composer-to]');
+  if (!(await to.isVisible())) throw new Error("输入框上方没有复述收件人");
+  if ((await to.innerText()) !== (await page.locator("[data-dock-target]").innerText())) {
+    throw new Error("顶部收件人与输入框上方不一致");
+  }
+
+  // 选择器把「发给任务」和「发给成员」两类摊开
+  await page.locator("[data-recipient-open]").click();
+  const popover = page.locator("[data-recipient-popover]");
+  await popover.waitFor({ state: "visible" });
+  if (!(await popover.locator('[data-recipient="task"]').isVisible())) throw new Error("收件人里没有「这个任务」");
+  if ((await popover.locator('[data-recipient="member"]').count()) < 2) throw new Error("收件人里没有列出成员");
+  await popover.locator('[data-recipient-label="@实现者"]').click();
+  await page.locator("[data-dock-target]").filter({ hasText: "@实现者" }).waitFor();
+  if (!(await to.innerText()).includes("@实现者")) throw new Error("切换收件人后输入框上方未同步");
 });
 
 await check("暂停是持久状态，不只是一条会消失的 toast（§6）", async () => {
@@ -205,8 +352,11 @@ await check("暂停是持久状态，不只是一条会消失的 toast（§6）"
 await check("没有选中任务时 Dock 仍有意义：项目级会话（§4.3.1）", async () => {
   await page.locator(".project-thread-entry").click();
   await page.locator('[data-room-panel="project"].active').waitFor({ state: "visible" });
-  await page.locator("[data-dock-target]").filter({ hasText: "项目会话" }).waitFor();
-  if (await page.locator(".room-tabs").isVisible()) throw new Error("项目会话不该显示任务阶段 tab");
+  await page.locator("[data-dock-target]").filter({ hasText: "这个项目" }).waitFor();
+  if (await page.locator(".room-tabs").count()) throw new Error("Dock 不应再有会话 tab");
+  if (await page.locator('[data-room-panel="project"] [data-inline-room]').count()) {
+    throw new Error("项目会话不该出现协作现场段");
+  }
   await page.locator('[data-document="project-overview"]').waitFor({ state: "visible" });
   await page.screenshot({ path: "shots/project-thread.png", fullPage: true });
 });
@@ -261,9 +411,29 @@ await check("执行中态：活动常驻正文，计划标出正在跑的那一�
 await check("已完成态：依据全部可点，后续建议不被吞掉（§4.2.2）", async () => {
   await page.locator('.work-item[data-open="issue-done"]').click();
   const doc = page.locator('[data-document="issue-done"]');
-  if ((await doc.locator(".evidence-row .ok").count()) !== 3) throw new Error("完成要求未全部拿到依据");
-  if (await doc.locator(".evidence-row.pending").count()) throw new Error("已完成却仍有未验证项");
+  if ((await doc.locator(".claim .ok").count()) !== 3) throw new Error("完成要求未全部拿到依据");
+  if (await doc.locator(".claim.unproven-claim").count()) throw new Error("已完成却仍有未验证项");
   if (!(await doc.locator(".outcome-followup").isVisible())) throw new Error("验证员的后续建议消失了");
+  // 成功态照样要认怂：三张全绿不等于什么都验过了（§4.2.4）
+  const gaps = doc.locator(".outcome-section.unproven-section");
+  if (!(await gaps.isVisible())) throw new Error("已完成态没有「还没有被证明」段，绿卡会被读成全部验过");
+  if ((await gaps.locator(".unproven-list > li").count()) < 1) throw new Error("已完成态的缺口段是空的");
+});
+
+await check("七个任务态的可信度表达同构（§4.2.4）", async () => {
+  const ids = ["issue-new", "issue-view", "issue-running", "issue-research", "issue-validation", "issue-permission", "issue-done"];
+  for (const id of ids) {
+    await page.locator(`.work-item[data-open="${id}"]`).click();
+    const doc = page.locator(`[data-document="${id}"]`);
+    if (!(await doc.locator(".source-legend").isVisible())) throw new Error(`${id} 缺少信源图例`);
+    const cards = await doc.locator(".outcome-state > button.state-card").count();
+    if (cards !== 3) throw new Error(`${id} 的状态卡不是三个可展开的证据抽屉（实际 ${cards}）`);
+    const drawers = await doc.locator(".state-drawer").count();
+    if (drawers !== 3) throw new Error(`${id} 的抽屉数量不对（实际 ${drawers}）`);
+    if (!(await doc.locator(".outcome-section.unproven-section").isVisible())) {
+      throw new Error(`${id} 没有「还没有被证明」段——七态必须同构，否则重演「只有几个态是成果面」`);
+    }
+  }
 });
 
 await check("七个任务态全部是成果面，无 V2 遗留版式（§4.2.2）", async () => {
@@ -305,22 +475,79 @@ await check("验证未收敛：打回的要求展开两轮结论（§4.2.2）", 
   if ((await doc.locator(".outcome-file").count()) !== 2) throw new Error("验证不通过不应回滚已有改动");
 });
 
-await check("Dock 两个会话各自说明「我是谁的、覆盖多久」（§4.3.2）", async () => {
+// §4.2.5 轨迹视图 ─────────────────────────────────────────
+// 三个正交维度：舞台成果面按结构，Dock 会话按对话，轨迹按时间。
+await check("轨迹在任务 tab 内切换，不新开 tab（§4.2.5 / §4.2.1）", async () => {
   await page.locator('.work-item[data-open="issue-view"]').click();
-  await page.locator('[data-room-tab="room"]').click();
-  const roomOrigin = page.locator('[data-room-panel="room"] .room-origin');
-  if (!(await roomOrigin.isVisible())) throw new Error("协作现场缺少来源行");
-  const roomText = await roomOrigin.innerText();
-  if (!roomText.includes("阶段")) throw new Error("协作现场未说明只覆盖一个阶段");
-  if (!(await roomOrigin.locator(".linklike").isVisible())) throw new Error("协作现场未指向所属任务");
-  await page.locator('[data-room-tab="primary"]').click();
-  const primaryOrigin = page.locator('[data-room-panel="primary"] .room-origin');
+  const before = await page.locator("[data-task-tabs] .editor-tab").count();
+  const stage = page.locator('[data-document="issue-view"]');
+  await stage.locator('[data-stage-view="trace"]').click();
+
+  const trace = stage.locator('[data-stage-pane="trace"]');
+  await trace.waitFor({ state: "visible" });
+  if (await stage.locator('[data-stage-pane="outcome"]').isVisible()) throw new Error("成果面与轨迹同时可见");
+  if ((await page.locator("[data-task-tabs] .editor-tab").count()) !== before) throw new Error("轨迹新开了 tab");
+  if (!(await page.locator('[data-task-tabs] .editor-tab.active[data-open="issue-view"]').isVisible())) {
+    throw new Error("轨迹期间所属任务的 tab 未保持选中");
+  }
+  if ((await trace.locator(".trace-item").count()) < 6) throw new Error("轨迹内容过少，看不出一路发生了什么");
+  await page.screenshot({ path: "shots/task-trace.png" });
+});
+
+await check("轨迹里每个 Run 标出上下文血统（ADR 0009）", async () => {
+  const trace = page.locator('[data-document="issue-view"] [data-stage-pane="trace"]');
+
+  const resume = trace.locator(".tr-lineage.resume");
+  if (!(await resume.isVisible())) throw new Error("续跑的 Run 没有标出它继承了上下文");
+  if (!(await resume.innerText()).includes("续跑")) throw new Error("续跑标记看不出是续跑");
+
+  const cold = trace.locator(".tr-lineage.cold");
+  if (!(await cold.isVisible())) throw new Error("跨围栏的步骤没有标出冷启动");
+  if (!(await cold.innerText()).includes("自述")) throw new Error("冷启动没有说明它隔离掉了什么");
+
+  // 原始 session 只能出现在诊断层（渐进披露，§5 原则 5）
+  const diag = trace.locator(".tr-diag");
+  if (!(await diag.count())) throw new Error("缺少诊断层");
+  if ((await trace.innerText()).includes("~/.codex/sessions")) {
+    throw new Error("原始 session 路径不该默认展开——它不是复盘真相源");
+  }
+});
+
+await check("轨迹可按事件类型筛选，用例变更醒目（§4.2.5）", async () => {
+  const trace = page.locator('[data-document="issue-view"] [data-stage-pane="trace"]');
+  const total = await trace.locator(".trace-item").count();
+  await trace.locator('[data-trace-filter="case"]').click();
+  const shown = await trace.locator(".trace-item:visible").count();
+  if (shown === 0) throw new Error("筛用例变更后一条都不剩");
+  if (shown >= total) throw new Error("筛选没有生效");
+  if ((await trace.locator(".trace-item.case:visible").count()) !== shown) throw new Error("筛选结果混入了其他类型");
+  await trace.locator('[data-trace-filter="all"]').click();
+  if ((await trace.locator(".trace-item:visible").count()) !== total) throw new Error("恢复全部失败");
+  await page.locator('[data-document="issue-view"] [data-stage-view="outcome"]').click();
+});
+
+await check("协作现场是流里的一段，不是第二个阅读入口（§4.3.2）", async () => {
+  await page.locator('.work-item[data-open="issue-view"]').click();
+  const panel = page.locator('[data-room-panel].active');
+
+  // 任务会话仍要说明自己贯穿全程
+  const primaryOrigin = panel.locator(".room-origin");
   if (!(await primaryOrigin.isVisible())) throw new Error("任务会话缺少来源行");
   if (!(await primaryOrigin.innerText()).includes("全程")) throw new Error("任务会话未说明贯穿全程");
-  for (const tab of ["primary", "room"]) {
-    const title = await page.locator(`[data-room-tab="${tab}"]`).getAttribute("title");
-    if (!title) throw new Error(`${tab} tab 缺少悬停说明`);
-  }
+
+  // Room 作为可折叠段内嵌在同一条流里
+  const room = panel.locator("[data-inline-room]");
+  if (!(await room.isVisible())) throw new Error("协作现场没有内嵌进任务会话流");
+  const meta = await room.locator(".ir-head").innerText();
+  if (!meta.includes("现场")) throw new Error("内嵌段没有标明是协作现场");
+  if (!meta.includes("名成员")) throw new Error("内嵌段没有说明成员规模");
+  if (!(await room.locator(".ir-go").isVisible())) throw new Error("内嵌段没有指向舞台的结构视图");
+
+  // 可折叠：Room 是组织单位，读不读由用户决定
+  await room.locator("[data-inline-room-toggle]").click();
+  if (await room.locator(".ir-body").isVisible()) throw new Error("协作现场段无法折叠");
+  await room.locator("[data-inline-room-toggle]").click();
+  if (!(await room.locator(".ir-body").isVisible())) throw new Error("协作现场段无法展开");
 });
 
 await check("协作现场舞台：前四段沿用，末段换成并行成员泳道（§4.2.3）", async () => {
@@ -358,16 +585,15 @@ await check("协作现场说明来源与选人理由（§4.2.3 / PRD 第 5 节�
   if ((await why.innerText()).length < 60) throw new Error("选人理由过短，等于没说");
 });
 
-await check("Dock 显示当前这个协作现场，不是永远同一个（§5 原则 1）", async () => {
+await check("内嵌的协作现场跟随当前任务，不是永远同一个（§5 原则 1）", async () => {
   await page.locator('.work-item[data-open="issue-view"]').click();
-  await page.locator('[data-room-tab="room"]').click();
-  const first = await page.locator('[data-room-panel]:visible .room-thread-heading strong').innerText();
+  const first = await page.locator('[data-room-panel].active [data-inline-room] .ir-head').innerText();
   if (!first.includes("Implementation")) throw new Error(`任务「协作现场支持暂停」应配 Implementation 现场，实际 ${first}`);
+
   await page.locator('[data-open="room-view"]').first().click();
-  await page.locator('[data-room-tab="room"]').click();
-  const second = await page.locator('[data-room-panel]:visible .room-thread-heading strong').innerText();
-  if (!second.includes("Research")) throw new Error(`打开 Research 现场后 Dock 仍显示 ${second}`);
-  if ((await page.locator('[data-room-panel]:visible').count()) !== 1) throw new Error("同时有多个协作现场面板可见");
+  const second = await page.locator('[data-room-panel].active [data-inline-room] .ir-head').innerText();
+  if (!second.includes("Research")) throw new Error(`打开 Research 现场后内嵌段仍是 ${second}`);
+  if ((await page.locator('[data-room-panel].active').count()) !== 1) throw new Error("同时有多个 Dock 面板可见");
 });
 
 await check("成员选择器把选人依据摊开，不建议的不隐藏（§4.6）", async () => {

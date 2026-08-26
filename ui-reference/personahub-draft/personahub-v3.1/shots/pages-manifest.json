@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-25T16:38:53.903Z",
-  "source": "http://127.0.0.1:4185/index.html",
+  "generatedAt": "2026-08-26T17:33:23.020Z",
+  "source": "file:///D:/Projects/personahub/ui-reference/personahub-draft/personahub-v3.1/index.html",
   "viewport": "1440x900",
   "count": 26,
   "exports": [
@@ -135,7 +135,5 @@
       "kind": "top-level-surface"
     }
   ],
-  "consoleErrors": [
-    "Failed to load resource: the server responded with a status of 404 (File not found)"
-  ]
+  "consoleErrors": []
 }

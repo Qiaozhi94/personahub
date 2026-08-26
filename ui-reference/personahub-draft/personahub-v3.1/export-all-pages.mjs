@@ -95,7 +95,7 @@ await page.locator(".project-thread-entry").click();
 await page.locator('[data-room-panel="project"]').waitFor({ state: "visible" });
 await capture("project-thread.png", "项目会话 · 不绑定任务", "room-panel");
 await page.locator('[data-explorer-panel="work"] [data-open="issue-view"]').first().click();
-await page.locator('[data-room-panel="room"]').waitFor({ state: "visible" });
+await page.locator('[data-room-panel="primary"]').waitFor({ state: "visible" });
 
 await openDocument({ id: "room-view", explorer: "work", file: "room-tmp.png", title: "临时", kind: "temporary" });
 fs.unlinkSync(path.join(shotsDir, "room-tmp.png"));

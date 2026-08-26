@@ -81,11 +81,22 @@
           <section class="surface project-surface active" data-surface-view="project" aria-label="项目工作台">
             <aside class="project-explorer">
               <div class="explorer-toolbar">
+                <nav class="primary-nav nav-icons" aria-label="一级工作面">
+                  <button type="button" class="active" data-surface="project" title="项目工作台" aria-label="项目工作台">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h7l2 2h9v10H3z"/><path d="M3 6.5v-2h7l2 2"/></svg>
+                  </button>
+                  <button type="button" data-surface="library" title="能力库 · 4 名成员" aria-label="能力库">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5A2.5 2.5 0 0 1 20 21z"/></svg>
+                    <span class="nav-dot" aria-hidden="true"></span>
+                  </button>
+                  <button type="button" data-surface="automation" title="自动化" aria-label="自动化">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg>
+                  </button>
+                </nav>
                 <label>
                   <span aria-hidden="true">⌕</span>
-                  <input type="search" placeholder="筛选当前树" data-tree-filter />
+                  <input type="search" placeholder="搜索" data-tree-filter />
                 </label>
-                <button type="button" data-new-object aria-label="新建任务" title="新建任务">＋</button>
               </div>
 
               <div class="explorer-scroll">
@@ -94,9 +105,12 @@
                     <span class="pt-mark">◎</span>
                     <span><strong>项目会话</strong><small>不绑定任务 · 问项目现在什么情况</small></span>
                   </button>
-                  <div class="scope-toggle" role="group" aria-label="任务范围">
-                    <button type="button" class="active" data-task-scope="project">当前项目</button>
-                    <button type="button" data-task-scope="all">全部项目 <b>2</b></button>
+                  <div class="scope-row">
+                    <div class="scope-toggle" role="group" aria-label="任务范围">
+                      <button type="button" class="active" data-task-scope="project">当前项目</button>
+                      <button type="button" data-task-scope="all">全部项目 <b>2</b></button>
+                    </div>
+                    <button class="scope-new" type="button" data-new-object aria-label="新建任务" title="新建任务">＋</button>
                   </div>
                   <section class="nav-group" data-nav-group="attention">
                     <button class="group-head" type="button" data-group-toggle><span class="twisty">⌄</span><span>需要你处理</span><b>4</b></button>
@@ -202,23 +216,10 @@
                   </section>
                 </div>
               </div>
-              <nav class="primary-nav sidebar-foot" aria-label="一级工作面">
-                <button type="button" class="active" data-surface="project">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h7l2 2h9v10H3z"/><path d="M3 6.5v-2h7l2 2"/></svg>
-                  <span>项目工作台</span>
-                </button>
-                <button type="button" data-surface="library">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5A2.5 2.5 0 0 1 20 21z"/></svg>
-                  <span>能力库</span>
-                  <span class="nav-count">4</span>
-                </button>
-                <button type="button" data-surface="automation">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg>
-                  <span>自动化</span>
-                </button>
+              <nav class="primary-nav sidebar-foot" aria-label="设置">
                 <button type="button" data-surface="settings">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M4 12a8 8 0 0 1 .6-3l2.2.5 1.4-1.4-.5-2.2a8 8 0 0 1 3-1.3l1.1 2 2 0 1.1-2a8 8 0 0 1 3 1.3l-.5 2.2 1.4 1.4 2.2-.5a8 8 0 0 1 0 6l-2.2-.5-1.4 1.4.5 2.2a8 8 0 0 1-3 1.3l-1.1-2-2 0-1.1 2a8 8 0 0 1-3-1.3l.5-2.2-1.4-1.4-2.2.5A8 8 0 0 1 4 12Z"/></svg>
-                  <span>设置</span>
+                  <span>设置与诊断</span>
                 </button>
               </nav>
             </aside>
@@ -365,23 +366,83 @@ completed -&gt; archived</code></pre>
                 </article>
 
                 <article class="document task-document outcome-surface" data-document="issue-view">
-                  <div class="task-heading"><span class="signal yellow"></span><span><small>任务 · 等待你指派</small><h1>协作现场支持暂停、纠偏与改派</h1></span></div>
+                  <div class="task-heading">
+                    <span class="signal yellow"></span>
+                    <span><small>任务 · 等待你指派</small><h1>协作现场支持暂停、纠偏与改派</h1></span>
+                    <span class="stage-views" role="tablist" aria-label="视图">
+                      <button type="button" class="active" data-stage-view="outcome" title="按结构看：这件事做成什么样了">成果</button>
+                      <button type="button" data-stage-view="trace" title="按时间看：一路都发生了什么">轨迹</button>
+                    </span>
+                  </div>
+
+                  <div class="stage-pane" data-stage-pane="outcome">
+                  <div class="source-legend">
+                    <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
+                    <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
+                  </div>
+
+                  <div class="fence-alert" data-fence-alert>
+                    <span class="fa-mark" aria-hidden="true">!</span>
+                    <span>
+                      <strong>用例在实现开始后被改过 2 次</strong>
+                      <small>TC-03 期望值 10:52 被改（实现进行中）· TC-07 新增于 11:04。用例应当先于实现固定，否则它会被改成迁就代码的样子。</small>
+                    </span>
+                    <button class="linklike" type="button" data-open="evidence-room" data-label="用例变更 · 两次" data-stage-child>看改了什么 →</button>
+                  </div>
 
                   <div class="outcome-state">
-                    <div>
-                      <small>系统记录</small>
-                      <strong>18 / 18 通过</strong>
-                      <span>命令、exit code 与原始输出已保存</span>
+                    <button class="state-card" type="button" data-drawer-toggle="view-cover" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>覆盖</small>
+                      <strong>2 / 3 条</strong>
+                      <span>要求有用例 · <em class="drawer-cue"><i>展开覆盖表</i></em></span>
+                    </button>
+                    <button class="state-card pending-cell" type="button" data-drawer-toggle="view-align" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>对齐</small>
+                      <strong>11 / 18 条</strong>
+                      <span>用例可追到设计稿 · <em class="drawer-cue"><i>展开来源</i></em></span>
+                    </button>
+                    <button class="state-card warn-cell" type="button" data-drawer-toggle="view-order" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>时序</small>
+                      <strong>破线 2 处</strong>
+                      <span>实现开始后改过用例 · <em class="drawer-cue"><i>展开时间轴</i></em></span>
+                    </button>
+
+                    <div class="state-drawer" data-drawer-body="view-cover" hidden>
+                      <h3>哪几条完成要求还没有用例</h3>
+                      <p>覆盖只回答「有没有人验」，不回答「验得对不对」——后者归对齐。</p>
+                      <div class="cover-grid">
+                        <div class="cover-row ok"><span class="cv-mark">✓</span><span><strong>暂停不会终止正在运行的进程</strong><small>TC-01 · TC-02</small></span><span class="cv-state">2 条用例</span></div>
+                        <div class="cover-row ok"><span class="cv-mark">✓</span><span><strong>恢复后从原执行计划继续</strong><small>TC-03</small></span><span class="cv-state">1 条用例</span></div>
+                        <div class="cover-row gap"><span class="cv-mark">!</span><span><strong>竞态与归档回放</strong><small>没有任何用例覆盖这条要求</small></span><span class="cv-state bad">覆盖缺口</span></div>
+                      </div>
                     </div>
-                    <div>
-                      <small>实际变化</small>
-                      <strong>2 个文件</strong>
-                      <span>+64 −12 · <button class="linklike" type="button" data-open="file-code" data-label="run-dispatch.ts" data-stage-child>可打开全文核对</button></span>
+
+                    <div class="state-drawer" data-drawer-body="view-align" hidden>
+                      <h3>用例是不是忠实于设计稿</h3>
+                      <p>这是整条链上唯一需要你看的断点。前后两段机器能担保，这一段不能。</p>
+                      <div class="cover-grid">
+                        <div class="cover-row ok"><span class="cv-mark">✓</span><span><strong>TC-01 / TC-02</strong><small>来源：设计稿 §3.2「暂停只阻止尚未开始的步骤」</small></span><span class="cv-state">来源可追</span></div>
+                        <div class="cover-row gap"><span class="cv-mark">!</span><span><strong>TC-03 及另外 6 条</strong><small>没有写来源——无法判断它测的是不是你要的东西</small></span><span class="cv-state bad">对齐缺口</span></div>
+                      </div>
+                      <div class="indep-verdict">
+                        7 条用例全过，但没人能保证它们测的是设计稿里那件事。<strong>「全过」与「做对了」之间隔的就是这 7 条。</strong>
+                      </div>
                     </div>
-                    <div class="pending-cell">
-                      <small>验证独立性</small>
-                      <strong>尚未独立验证</strong>
-                      <span>实现与验证需由不同成员完成</span>
+
+                    <div class="state-drawer" data-drawer-body="view-order" hidden>
+                      <h3>用例必须先于实现固定</h3>
+                      <p>这条红线一眼可查、无法伪造：用例集 revision 的时间必须早于实现 Run 的开始时间（ADR 0009）。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>用例与实现的时间轴</code><span class="exit-bad">2 处破线</span></div>
+                        <pre>09:58  用例集 r1 冻结 · 18 条          <span class="ctx">✓ 早于实现</span>
+10:31  实现 Run #2 开始
+<span class="del">10:52  用例集 r2 · TC-03 期望值被改      ✗ 实现进行中</span>
+<span class="del">11:04  用例集 r3 · 新增 TC-07            ✗ 实现进行中</span>
+11:10  跑用例 18 / 18 通过</pre>
+                      </div>
+                      <div class="indep-verdict">
+                        实现阶段改用例，等于让被测者自己出题。要改可以，但必须走显式的「用例变更」并写明理由——这两次都没有写。
+                      </div>
                     </div>
                   </div>
 
@@ -392,16 +453,16 @@ completed -&gt; archived</code></pre>
 
                   <section class="outcome-section">
                     <h2>本次成果</h2>
-                    <p>阶段成果已固定到 revision，内容不随磁盘后续改动而变化。</p>
+                    <p>这里只列改动了什么。判断改得对不对请打开全文——带上下文才看得出来。</p>
                     <div class="outcome-body">
                       <button class="outcome-file" type="button" data-open="file-code" data-label="run-dispatch.ts" data-stage-child>
                         <span class="of-type">TS</span>
-                        <span><strong>server/src/services/run-dispatch.ts</strong><small>暂停时不再向已启动的 Attempt 发送终止信号；恢复时从原执行计划的下一个节点继续。</small></span>
+                        <span><strong>server/src/services/run-dispatch.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>暂停时不再向已启动的 Attempt 发送终止信号；恢复时从原执行计划的下一个节点继续。</small></span>
                         <span class="of-diff">+48 −9</span>
                       </button>
                       <button class="outcome-file" type="button" data-open="file-code" data-label="workspace-lock.ts" data-stage-child>
                         <span class="of-type">TS</span>
-                        <span><strong>server/src/services/workspace-lock.ts</strong><small>暂停期间保留写锁，避免恢复时与其他任务争抢代码目录。</small></span>
+                        <span><strong>server/src/services/workspace-lock.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>暂停期间保留写锁，避免恢复时与其他任务争抢代码目录。</small></span>
                         <span class="of-diff">+16 −3</span>
                       </button>
                       <div class="outcome-artifact">
@@ -414,76 +475,278 @@ completed -&gt; archived</code></pre>
 
                   <section class="outcome-section">
                     <h2>完成要求与依据</h2>
-                    <p>每一条都必须能点到原始记录、实际文件或验证者结论，不使用信任评分。</p>
-                    <button class="evidence-row" type="button" data-open="evidence-room" data-label="验证依据 · 暂停与恢复" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>暂停不会终止正在运行的进程</strong><small>系统记录 · integration test + graph.node_result events</small></span>
-                      <span class="row-go">查看原始证据 →</span>
-                    </button>
-                    <button class="evidence-row" type="button" data-open="file-code" data-label="run-dispatch.ts" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>恢复后从原执行计划继续</strong><small>实际文件 · run-dispatch.ts + recovery trace</small></span>
-                      <span class="row-go">打开修改位置 →</span>
-                    </button>
-                    <button class="evidence-row pending" type="button" data-prefill-evidence>
-                      <span class="pending-mark">!</span>
-                      <span><strong>由独立验证员检查竞态与归档回放</strong><small>还没有人验证过这一条</small></span>
-                      <span class="row-go">预填验证指令 →</span>
-                    </button>
+                    <p>依据就地展开，不跳页——核对一条结论应该是 0 到 1 次点击，超过这个数就没有人会核对。</p>
+
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>暂停不会终止正在运行的进程</strong><small><em class="src-badge machine">系统记录</em>2 个测试 · integration · 实现者所写</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>pause_does_not_kill_running_attempt</code>
+                          <small>断言：pause 之后 running 的 Attempt 进程仍存活，且 graph.node_result 事件继续到达。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>断言实际输出</code><span class="exit-ok">通过 · 412 ms</span></div>
+                            <pre>expect(attempt.status).toBe("running")     → running   ✓
+expect(events.filter(nodeResult)).toHaveLength(2) → 2   ✓</pre>
+                          </div>
+                          <p class="proof-author">这个测试由实现者本人在本次执行中写入 · <button class="linklike" type="button" data-open="evidence-room" data-label="验证依据 · 暂停与恢复" data-stage-child>看它的完整执行记录 →</button></p>
+                        </div>
+                        <div class="proof-test">
+                          <code>pause_blocks_queued_nodes_only</code>
+                          <small>断言：queued 节点被 cancel，running 节点不受影响。</small>
+                          <p class="proof-author">同上，实现者本人所写</p>
+                        </div>
+                        <div class="claim-foot">
+                          <span><em class="src-badge machine">系统记录</em>命令 · 退出码 · 原始 stdout 均可追</span>
+                          <button class="linklike" type="button" data-open="evidence-room" data-label="验证依据 · 暂停与恢复" data-stage-child>打开完整证据链 →</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>恢复后从原执行计划继续</strong><small><em class="src-badge machine">系统记录</em>1 个测试 + 实际改动 · run-dispatch.ts</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>resume_continues_from_next_plan_node</code>
+                          <small>断言：resume 后派发的节点 id 等于 pausedAtNode 的下一个，而不是重跑当前节点。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>对应改动</code><span class="exit-ok">run-dispatch.ts · +2</span></div>
+                            <pre><span class="add">+  const next = plan.nodeAfter(room.pausedAtNodeId);</span>
+<span class="add">+  return dispatchNode(next, { reason: "resume" });</span></pre>
+                          </div>
+                          <p class="proof-author">这个测试由实现者本人在本次执行中写入</p>
+                        </div>
+                        <div class="claim-foot">
+                          <button class="linklike" type="button" data-open="file-code" data-label="run-dispatch.ts" data-stage-child>打开修改位置 →</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="claim unproven-claim">
+                      <button class="claim-head" type="button" disabled aria-expanded="false">
+                        <span class="pending-mark">!</span>
+                        <span><strong>由独立验证员检查竞态与归档回放</strong><small>没有任何依据 —— 还没有人验证过这一条</small></span>
+                        <span class="row-go muted">无可展开的依据</span>
+                      </button>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section unproven-section">
+                    <h2>还没有被证明</h2>
+                    <p>这一段常驻，任何状态下都在。只有真的没有缺口时才会写「没有未证明项」。</p>
+                    <ul class="unproven-list">
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>整份成果都没有独立验证</strong><small>实现、写测试、跑测试是同一个成员。18 / 18 通过只证明它写的代码符合它自己写的测试。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>竞态与归档回放：0 个测试覆盖</strong><small>暂停与恢复在并发下的行为没有被任何测试执行到，也没有人工核对记录。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>workspace-lock.ts 的 +16 −3 没有被执行到</strong><small>18 个测试没有一个走进这段代码；「避免争抢代码目录」目前只有实现者的一句说明，没有并发场景的测量。</small></span>
+                      </li>
+                    </ul>
+                    <button class="linklike" type="button" data-prefill-evidence>把这三条写成验证指令 →</button>
                   </section>
 
                   <section class="outcome-section">
-                    <h2>这份成果是怎么来的</h2>
-                    <div class="plan-list">
-                      <div class="plan-step done">
-                        <span class="plan-index">1</span>
-                        <div>
-                          <strong>确认执行方案</strong>
-                          <small>执行者：Human Lead · 输入：任务目标与边界</small>
-                          <small>产出：Implementation 指令 · Evidence：确认事件</small>
+                    <h2>实现与验证</h2>
+                    <p>两列等宽等重。围栏右侧永远是一个新 session，看不到左侧的过程消息与自述（ADR 0009）。</p>
+                    <div class="pair-plan">
+                      <div class="pp-col">
+                        <h3>实现</h3>
+                        <div class="pp-step done">
+                          <span class="pp-index">1</span>
+                          <div><strong>确认目标与完成要求</strong><small>Human Lead · 10:01</small></div>
                         </div>
-                        <span class="plan-state">已完成 · 10:01</span>
+                        <div class="pp-step done">
+                          <span class="pp-index">2</span>
+                          <div>
+                            <strong>实现 pause / resume</strong>
+                            <small>实现者 / Codex GPT-5 · 3m 18s</small>
+                            <small class="pp-ctx">收到：目标 · 用例集 r1 · 设计稿 §3</small>
+                            <small class="pp-mode">⟳ 续跑自 Run #1 · 继承上下文</small>
+                          </div>
+                        </div>
                       </div>
-                      <div class="plan-step done">
-                        <span class="plan-index">2</span>
-                        <div>
-                          <strong>实现 pause / resume</strong>
-                          <small>执行者：实现者 / Codex GPT-5 · 输入：synthesis_plan r3</small>
-                          <small>产出：run-dispatch.ts 2 处修改 · Evidence：18 / 18 tests</small>
+                      <div class="pp-col">
+                        <h3>验证</h3>
+                        <div class="pp-step done">
+                          <span class="pp-index">1v</span>
+                          <div><strong>从设计稿生成用例集</strong><small>用例集 r1 · 18 条 · 09:58 冻结</small></div>
                         </div>
-                        <span class="plan-state">已完成 · 3m 18s</span>
+                        <div class="pp-step warn">
+                          <span class="pp-index">2v</span>
+                          <div>
+                            <strong>跑用例</strong>
+                            <small>18 / 18 通过</small>
+                            <small class="pp-warn">⚠ 期间改过 2 条用例，见时序卡</small>
+                          </div>
+                        </div>
+                        <div class="pp-step waiting">
+                          <span class="pp-index">3v</span>
+                          <div>
+                            <strong>竞态与归档回放</strong>
+                            <small>还没有用例，先补用例再跑</small>
+                            <small class="pp-ctx">将收到：用例集 · 产物 · 设计稿 §3</small>
+                            <small class="pp-mode cold">⊘ 冷启动 · 看不到实现者的自述</small>
+                          </div>
+                        </div>
                       </div>
-                      <div class="plan-step waiting">
-                        <span class="plan-index">3</span>
-                        <div>
-                          <strong>独立验证竞态与归档回放</strong>
-                          <small>建议：独立验证员 / Claude Sonnet · 依据：实现与验证不能同源</small>
-                          <small>预期：verification_results · 要求：不同模型、原始输出可追溯</small>
-                        </div>
-                        <span class="plan-state pending">等待你指派</span>
+                      <div class="pp-fence" data-pp-fence>
+                        <span>上下文围栏</span>
+                        <small>围栏右侧看不到左侧的过程消息与自述</small>
                       </div>
                     </div>
                   </section>
+                  </div>
+
+                  <div class="stage-pane" data-stage-pane="trace" hidden>
+                    <div class="trace-filters" role="group" aria-label="轨迹筛选">
+                      <button type="button" class="active" data-trace-filter="all">全部</button>
+                      <button type="button" data-trace-filter="case">用例变更</button>
+                      <button type="button" data-trace-filter="artifact">产物</button>
+                      <button type="button" data-trace-filter="human">人工介入</button>
+                    </div>
+                    <p class="trace-note">按时间排列的完整记录，用于事后追溯与复盘。实时跟进请看右侧会话。数据来自执行记录本身，不是成员的复述。</p>
+
+                    <ol class="trace-list">
+                      <li class="trace-item artifact" data-trace-kind="artifact">
+                        <span class="tr-time">09:58</span>
+                        <span class="tr-mark artifact">●</span>
+                        <div>
+                          <strong>用例集 r1 冻结 · 18 条</strong>
+                          <small>来自设计稿 §3 · 早于实现开始，未破线</small>
+                          <button class="linklike" type="button" data-open="artifact-view" data-label="用例集 · r1" data-stage-child>看用例集 →</button>
+                        </div>
+                      </li>
+                      <li class="trace-item human" data-trace-kind="human">
+                        <span class="tr-time">10:01</span>
+                        <span class="tr-mark human">◆</span>
+                        <div>
+                          <strong>你确认执行方案，指派 Implementation</strong>
+                          <small>Human Lead · 目标与边界已写入交接包</small>
+                        </div>
+                      </li>
+                      <li class="trace-item run" data-trace-kind="run">
+                        <span class="tr-time">10:31</span>
+                        <span class="tr-mark run">▸</span>
+                        <div>
+                          <strong>Run #2 · 实现者 / Codex GPT-5 · 3m 18s</strong>
+                          <small class="tr-lineage resume">⟳ 续跑自 Run #1 · 同一 session，继承上下文</small>
+                          <ul class="tr-steps">
+                            <li>读 synthesis_plan r3</li>
+                            <li>写 run-dispatch.ts <em>+48 −9</em> <button class="linklike" type="button" data-open="file-code" data-label="run-dispatch.ts" data-stage-child>全文</button></li>
+                            <li>写 workspace-lock.ts <em>+16 −3</em> <button class="linklike" type="button" data-open="file-code" data-label="workspace-lock.ts" data-stage-child>全文</button></li>
+                            <li>跑 npm run test <em>18 passed</em></li>
+                          </ul>
+                          <details class="tr-diag">
+                            <summary>诊断</summary>
+                            <p><code>run_a3f2 · exit 0 · 原始 session ~/.codex/sessions/01J8…</code><br />PersonaHub 的记录才是复盘真相源；这一行只是它失灵时的逃生口（ADR 0009）。</p>
+                          </details>
+                        </div>
+                      </li>
+                      <li class="trace-item case" data-trace-kind="case">
+                        <span class="tr-time">10:52</span>
+                        <span class="tr-mark case">⚠</span>
+                        <div>
+                          <strong>用例变更 · TC-03 期望值被改</strong>
+                          <small>实现进行中 —— 破线。用例应先于实现固定，改动未写理由。</small>
+                          <button class="linklike" type="button" data-open="evidence-room" data-label="用例变更 · TC-03" data-stage-child>对比 →</button>
+                        </div>
+                      </li>
+                      <li class="trace-item case" data-trace-kind="case">
+                        <span class="tr-time">11:04</span>
+                        <span class="tr-mark case">⚠</span>
+                        <div>
+                          <strong>用例变更 · 新增 TC-07</strong>
+                          <small>实现进行中 —— 破线</small>
+                          <button class="linklike" type="button" data-open="evidence-room" data-label="用例变更 · TC-07" data-stage-child>对比 →</button>
+                        </div>
+                      </li>
+                      <li class="trace-item artifact" data-trace-kind="artifact">
+                        <span class="tr-time">11:10</span>
+                        <span class="tr-mark artifact">●</span>
+                        <div>
+                          <strong>synthesis_plan r3 被 Implementation 消费</strong>
+                          <small>阶段成果固定到 revision，不随磁盘后续改动变化</small>
+                          <button class="linklike" type="button" data-open="artifact-view" data-label="阶段成果 · synthesis_plan" data-stage-child>打开 →</button>
+                        </div>
+                      </li>
+                      <li class="trace-item human" data-trace-kind="human">
+                        <span class="tr-time">11:22</span>
+                        <span class="tr-mark human">◆</span>
+                        <div>
+                          <strong>你暂停 Room，补充约束</strong>
+                          <small>只阻止尚未开始的步骤，正在运行的进程未终止</small>
+                        </div>
+                      </li>
+                      <li class="trace-item run" data-trace-kind="run">
+                        <span class="tr-time">—</span>
+                        <span class="tr-mark run pending">⊘</span>
+                        <div>
+                          <strong>下一步 · 独立验证员 · 尚未开始</strong>
+                          <small class="tr-lineage cold">⊘ 冷启动 · 跨上下文围栏，看不到实现者的自述与过程消息</small>
+                          <small>将收到：用例集 · 产物 · 设计稿 §3</small>
+                        </div>
+                      </li>
+                    </ol>
+                  </div>
                 </article>
 
                 <article class="document task-document outcome-surface" data-document="issue-new">
                   <div class="task-heading"><span class="signal"></span><span><small>任务 · 刚创建</small><h1>把诊断结果导出为可分享的报告</h1></span></div>
 
+                  <div class="source-legend">
+                    <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
+                    <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
+                  </div>
+
                   <div class="outcome-state">
-                    <div class="empty-cell">
-                      <small>系统记录</small>
+                    <button class="state-card empty-cell" type="button" data-drawer-toggle="new-sys" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
                       <strong>还没有执行</strong>
-                      <span>指派后这里会出现命令与原始输出</span>
-                    </div>
-                    <div class="empty-cell">
-                      <small>实际变化</small>
+                      <span>指派后才有 · <em class="drawer-cue"><i>展开将会记录什么</i></em></span>
+                    </button>
+                    <button class="state-card empty-cell" type="button" data-drawer-toggle="new-diff" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
                       <strong>0 个文件</strong>
-                      <span>代码目录尚未被改动</span>
-                    </div>
-                    <div class="empty-cell">
-                      <small>验证独立性</small>
+                      <span>尚未改动 · <em class="drawer-cue"><i>展开将会比对什么</i></em></span>
+                    </button>
+                    <button class="state-card empty-cell" type="button" data-drawer-toggle="new-indep" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
                       <strong>尚未验证</strong>
-                      <span>完成要求写清楚才好验证</span>
+                      <span>还无从验证 · <em class="drawer-cue"><i>展开验证会怎么判</i></em></span>
+                    </button>
+
+                    <div class="state-drawer" data-drawer-body="new-sys" hidden>
+                      <h3>指派之后，这里会出现什么</h3>
+                      <p>空白本身就是证据——它说明还没有任何事发生。这里不会填占位数字或预估进度。</p>
+                      <p class="agent-note">执行开始后：每条命令的原文、退出码、耗时与完整 stdout 都会逐条落在这里，由 PersonaHub 自己捕获，不经成员转述。</p>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="new-diff" hidden>
+                      <h3>变化会和什么比</h3>
+                      <p>以指派那一刻的代码目录状态为基线，之后每次写入都记一次 diff。</p>
+                      <p class="agent-note">基线未建立——任务还没有指派，没有可比的起点。</p>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="new-indep" hidden>
+                      <h3>验证会怎么判</h3>
+                      <p>这张卡变绿只认三件事，现在一件都还没有：</p>
+                      <div class="indep-grid">
+                        <div class="indep-row"><small>谁实现的</small><span>还没有执行者</span></div>
+                        <div class="indep-row"><small>谁验证的</small><span>还没有验证员</span></div>
+                        <div class="indep-row"><small>验的是谁的检查</small><span>还没有检查</span></div>
+                      </div>
+                      <div class="indep-verdict">先把「做成什么样算完成」写具体，验证员才有东西可对。要求越具体，验证越不容易走过场。</div>
                     </div>
                   </div>
 
@@ -521,6 +784,21 @@ completed -&gt; archived</code></pre>
                     </button>
                   </section>
 
+                  <section class="outcome-section unproven-section">
+                    <h2>还没有被证明</h2>
+                    <p>刚创建的任务，所有事情都还没有被证明——这不是问题，是当前的事实。</p>
+                    <ul class="unproven-list">
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>2 条完成要求全部没有依据</strong><small>你写下了要求，但还没有任何执行产生过对应的记录。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>还没有执行计划</strong><small>没有人被指派，也没有 Coordinator 拟过步骤。</small></span>
+                      </li>
+                    </ul>
+                  </section>
+
                   <section class="outcome-section">
                     <h2>这份成果是怎么来的</h2>
                     <div class="outcome-empty">
@@ -537,21 +815,63 @@ completed -&gt; archived</code></pre>
                 <article class="document task-document outcome-surface" data-document="issue-validation">
                   <div class="task-heading"><span class="signal yellow"></span><span><small>任务 · 验证未收敛</small><h1>修复验证循环恢复</h1></span></div>
 
+                  <div class="source-legend">
+                    <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
+                    <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
+                  </div>
+
                   <div class="outcome-state">
-                    <div>
-                      <small>系统记录</small>
+                    <button class="state-card" type="button" data-drawer-toggle="val-sys" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
                       <strong>2 轮已跑完</strong>
-                      <span>两轮的命令与原始输出都在</span>
-                    </div>
-                    <div>
-                      <small>实际变化</small>
+                      <span>两轮输出都在 · <em class="drawer-cue"><i>展开两轮输出</i></em></span>
+                    </button>
+                    <button class="state-card" type="button" data-drawer-toggle="val-diff" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
                       <strong>2 个文件</strong>
-                      <span>+51 −17 · <button class="linklike" type="button" data-open="file-code" data-label="drain-queue.ts" data-stage-child>可打开全文核对</button></span>
-                    </div>
-                    <div class="warn-cell">
-                      <small>验证独立性</small>
+                      <span>+51 −17 · 两轮都保留 · <em class="drawer-cue"><i>展开实际改动</i></em></span>
+                    </button>
+                    <button class="state-card warn-cell" type="button" data-drawer-toggle="val-indep" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
                       <strong>2 次都未通过</strong>
-                      <span>同一条要求连续两轮被打回</span>
+                      <span>同一条结论 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
+                    </button>
+
+                    <div class="state-drawer" data-drawer-body="val-sys" hidden>
+                      <h3>两轮各自的原始输出，没有合并</h3>
+                      <p>合并成「重试 2 次」会抹掉最关键的事实：两轮是同一个执行者、同一个结论。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>node scripts/replay-restart.mjs --concurrent 3   # 第 1 轮</code><span class="exit-bad">exit 1 · 1m 48s · 14:02</span></div>
+                        <pre>duplicate attempts: 2   ✗ expected 0
+node drain-queue: re-dispatched node_7 twice</pre>
+                      </div>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>node scripts/replay-restart.mjs --concurrent 3   # 第 2 轮</code><span class="exit-bad">exit 1 · 1m 51s · 14:31</span></div>
+                        <pre>duplicate attempts: 1   ✗ expected 0
+同一路径：drain 与 recovery 仍然可以同时进入</pre>
+                      </div>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="val-diff" hidden>
+                      <h3>两轮改动都保留，验证不通过不回滚</h3>
+                      <p>换策略时它们是输入，不是垃圾。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>server/src/services/drain-queue.ts</code><span class="exit-ok">+38 −11 · 两轮累计</span></div>
+                        <pre><span class="ctx">@@ drain() @@ 第 1 轮</span>
+<span class="add">+  if (isRecovering) return;              // 仍有窗口</span>
+<span class="ctx">@@ drain() @@ 第 2 轮</span>
+<span class="add">+  await lock.acquire("drain");           // 仍有窗口</span></pre>
+                      </div>
+                      <p class="agent-note"><em class="src-badge agent">Agent 的说法</em>实现者两轮都判断「加一道判空即可」。验证员两轮都指向同一处竞态——这正是该换策略而不是再修一次的依据。</p>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="val-indep" hidden>
+                      <h3>验证本身是独立的，结论也是可信的</h3>
+                      <p>这次卡片发红不是因为独立性不足，恰恰相反：</p>
+                      <div class="indep-grid">
+                        <div class="indep-row"><small>谁实现的</small><span>实现者 / Codex GPT-5 · 两轮都是它</span></div>
+                        <div class="indep-row"><small>谁验证的</small><span><span class="good">独立验证员 / Claude Sonnet · 与实现者不同源</span></span></div>
+                        <div class="indep-row"><small>验的是谁的检查</small><span><span class="good">验证员自己写的并发回放</span></span></div>
+                      </div>
+                      <div class="indep-verdict">两轮独立验证都指向同一处竞态，所以「未通过」这个结论本身是可信的。要改的是实现策略，不是验证方式。</div>
                     </div>
                   </div>
 
@@ -572,12 +892,12 @@ completed -&gt; archived</code></pre>
                     <div class="outcome-body">
                       <button class="outcome-file" type="button" data-open="file-code" data-label="drain-queue.ts" data-stage-child>
                         <span class="of-type">TS</span>
-                        <span><strong>server/src/services/drain-queue.ts</strong><small>第 1 轮：恢复时按节点状态过滤等待队列。未覆盖并发恢复。</small></span>
+                        <span><strong>server/src/services/drain-queue.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>第 1 轮：恢复时按节点状态过滤等待队列。未覆盖并发恢复。</small></span>
                         <span class="of-diff">+31 −11</span>
                       </button>
                       <button class="outcome-file" type="button" data-open="file-code" data-label="startup-recovery.ts" data-stage-child>
                         <span class="of-type">TS</span>
-                        <span><strong>server/src/services/startup-recovery.ts</strong><small>第 2 轮：恢复入口加去重。仍未覆盖两个 drain 同时启动的窗口。</small></span>
+                        <span><strong>server/src/services/startup-recovery.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>第 2 轮：恢复入口加去重。仍未覆盖两个 drain 同时启动的窗口。</small></span>
                         <span class="of-diff">+20 −6</span>
                       </button>
                     </div>
@@ -586,11 +906,29 @@ completed -&gt; archived</code></pre>
                   <section class="outcome-section">
                     <h2>完成要求与依据</h2>
                     <p>被打回的那条要求展开显示两轮各自的结论，这样才看得出「是不是同一个问题」。</p>
-                    <button class="evidence-row" type="button" data-open="evidence-view" data-label="验证依据 · 正常恢复" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>正常重启下恢复流程可续跑</strong><small>系统记录 · 14 项 integration test</small></span>
-                      <span class="row-go">查看原始证据 →</span>
-                    </button>
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>正常重启下恢复流程可续跑</strong><small><em class="src-badge machine">系统记录</em>14 项 integration test · 单进程场景</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>restart_resumes_from_next_pending_node</code>
+                          <small>断言：单进程重启后，未收敛节点被派发且只被派发一次。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>断言实际输出</code><span class="exit-ok">通过 · 341 ms</span></div>
+                            <pre>pending nodes after restart: 3
+dispatched: 3   ✓
+duplicates: 0   ✓  （注意：本例是单进程，不含并发）</pre>
+                          </div>
+                          <p class="proof-author">这一条成立的范围只到单进程；并发场景由下面那条负责，而它两轮都没通过</p>
+                        </div>
+                        <div class="claim-foot">
+                          <button class="linklike" type="button" data-open="evidence-view" data-label="验证依据 · 正常恢复" data-stage-child>打开完整证据链 →</button>
+                        </div>
+                      </div>
+                    </div>
                     <div class="evidence-row failed">
                       <span class="fail-mark">✕</span>
                       <span>
@@ -608,6 +946,21 @@ completed -&gt; archived</code></pre>
                       <span><strong>归档回放能重现恢复过程</strong><small>还没有轮到 · 前一条通过后才验</small></span>
                       <span class="row-go muted">未开始</span>
                     </div>
+                  </section>
+
+                  <section class="outcome-section unproven-section">
+                    <h2>还没有被证明</h2>
+                    <p>两轮之后仍然没有被证明的部分：</p>
+                    <ul class="unproven-list">
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>并发下 drain 与 recovery 的互斥</strong><small>两轮改动都没有真正建立互斥，回放每次都能撞出重复 Attempt。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>换策略后的行为完全未知</strong><small>第 3 步要换的是策略，现有的 51 行改动没有一行验证过新策略。</small></span>
+                      </li>
+                    </ul>
                   </section>
 
                   <section class="outcome-section">
@@ -656,21 +1009,53 @@ completed -&gt; archived</code></pre>
                 <article class="document task-document outcome-surface" data-document="issue-permission">
                   <div class="task-heading"><span class="signal yellow"></span><span><small>任务 · 等待权限确认</small><h1>允许读取外部行情缓存</h1></span></div>
 
+                  <div class="source-legend">
+                    <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
+                    <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
+                  </div>
+
                   <div class="outcome-state">
-                    <div>
-                      <small>系统记录</small>
+                    <button class="state-card" type="button" data-drawer-toggle="perm-sys" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
                       <strong>1 / 3 步</strong>
-                      <span>已完成的部分照常保留</span>
-                    </div>
-                    <div class="empty-cell">
-                      <small>实际变化</small>
+                      <span>已完成部分保留 · <em class="drawer-cue"><i>展开已跑过什么</i></em></span>
+                    </button>
+                    <button class="state-card empty-cell" type="button" data-drawer-toggle="perm-diff" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
                       <strong>0 个文件</strong>
-                      <span>暂停发生在任何写入之前</span>
-                    </div>
-                    <div class="empty-cell">
-                      <small>验证独立性</small>
+                      <span>暂停在写入之前 · <em class="drawer-cue"><i>展开确认这一点</i></em></span>
+                    </button>
+                    <button class="state-card empty-cell" type="button" data-drawer-toggle="perm-indep" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
                       <strong>尚未验证</strong>
-                      <span>执行没走完，无从验证</span>
+                      <span>执行没走完 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
+                    </button>
+
+                    <div class="state-drawer" data-drawer-body="perm-sys" hidden>
+                      <h3>停住之前跑过的只有这一条</h3>
+                      <p>第 2 步在发起前请求权限，因此它没有产生任何执行记录。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>ls ~/.codex/sessions</code><span class="exit-ok">exit 0 · 3s · 10:57</span></div>
+                        <pre>3 files · 最近一次 2026-08-26 09:41</pre>
+                      </div>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="perm-diff" hidden>
+                      <h3>0 个文件不是「没查出来」，是「还没开始写」</h3>
+                      <p>暂停点在写入之前，所以代码目录与指派那一刻完全一致。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>git status --porcelain</code><span class="exit-ok">exit 0 · 10:58</span></div>
+                        <pre>（无输出：工作区干净）</pre>
+                      </div>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="perm-indep" hidden>
+                      <h3>现在无从验证</h3>
+                      <p>执行没走完，三条判定都还不成立：</p>
+                      <div class="indep-grid">
+                        <div class="indep-row"><small>谁实现的</small><span>Claude Code · 第 2 步被阻塞</span></div>
+                        <div class="indep-row"><small>谁验证的</small><span>还没有验证员</span></div>
+                        <div class="indep-row"><small>验的是谁的检查</small><span>还没有可验的产出</span></div>
+                      </div>
+                      <div class="indep-verdict">先决定允不允许读取外部目录。允许后第 2 步才会产生第一条可验证的记录。</div>
                     </div>
                   </div>
 
@@ -717,6 +1102,21 @@ completed -&gt; archived</code></pre>
                     </div>
                   </section>
 
+                  <section class="outcome-section unproven-section">
+                    <h2>还没有被证明</h2>
+                    <p>被阻塞状态下，几乎所有事情都还没有被证明——这一段照样在场，避免「1 / 3 步」被读成已经进展了三分之一。</p>
+                    <ul class="unproven-list">
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>三条完成要求全部待定</strong><small>第 2 步没跑，没有任何依据产生。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>请求读取的目录里究竟有什么，尚未查证</strong><small>PersonaHub 只能担保这条请求的来源与原文，不能担保它读到的内容。</small></span>
+                      </li>
+                    </ul>
+                  </section>
+
                   <section class="outcome-section">
                     <h2>这份成果是怎么来的</h2>
                     <div class="plan-list">
@@ -754,21 +1154,59 @@ completed -&gt; archived</code></pre>
                 <article class="document task-document outcome-surface" data-document="issue-running">
                   <div class="task-heading"><span class="signal blue"></span><span><small>任务 · 正在执行</small><h1>补齐运行环境健康诊断</h1></span></div>
 
+                  <div class="source-legend">
+                    <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
+                    <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
+                  </div>
+
                   <div class="outcome-state">
-                    <div>
-                      <small>系统记录</small>
+                    <button class="state-card" type="button" data-drawer-toggle="run-sys" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
                       <strong>12 / 12 通过</strong>
-                      <span>已跑完的部分 · 仍在增加</span>
-                    </div>
-                    <div>
-                      <small>实际变化</small>
+                      <span>仍在增加 · <em class="drawer-cue"><i>展开原始输出</i></em></span>
+                    </button>
+                    <button class="state-card" type="button" data-drawer-toggle="run-diff" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
                       <strong>1 个文件</strong>
-                      <span>+23 −4 · <button class="linklike" type="button" data-open="file-code" data-label="adapter-eligibility.ts" data-stage-child>可打开全文核对</button></span>
-                    </div>
-                    <div class="pending-cell">
-                      <small>验证独立性</small>
+                      <span>+23 −4 · <em class="drawer-cue"><i>展开实际改动</i></em></span>
+                    </button>
+                    <button class="state-card pending-cell" type="button" data-drawer-toggle="run-indep" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
                       <strong>尚未独立验证</strong>
-                      <span>执行完成后才会指派验证</span>
+                      <span>测试作者与执行者同源 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
+                    </button>
+
+                    <div class="state-drawer" data-drawer-body="run-sys" hidden>
+                      <h3>到此刻为止跑过的命令</h3>
+                      <p>执行还在继续，这里会继续增加。已经产生的输出不会被后续步骤改写。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>npm run test -- adapter-eligibility</code><span class="exit-ok">exit 0 · 1m 12s · 10:41</span></div>
+                        <pre>PASS server/test/adapter-eligibility.test.ts
+  ✓ probe_distinguishes_not_installed_from_not_logged_in  (233 ms)
+  … 11 more
+Tests: 12 passed, 12 total</pre>
+                      </div>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="run-diff" hidden>
+                      <h3>已经落盘的改动</h3>
+                      <p>正在写入的文件不计入成果，也不在这里比对——它随时还会变。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>server/src/services/adapter-eligibility.ts</code><span class="exit-ok">+23 −4 · 已落盘</span></div>
+                        <pre><span class="ctx">@@ probeAdapter(id) @@</span>
+<span class="del">-  return { ok: false, reason: String(error) };</span>
+<span class="add">+  return { ok: false, reason: classify(error) };  // 结构化，不是字符串</span></pre>
+                      </div>
+                      <p class="agent-note"><em class="src-badge agent">Agent 的说法</em>实现者：「把 CLI 探测结果按项目缓存，失效原因保留为结构化字段而不是字符串。」缓存那一半还没写完。</p>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="run-indep" hidden>
+                      <h3>现在的 12 / 12 说明不了什么</h3>
+                      <p>执行还没结束，而且测试与实现同源：</p>
+                      <div class="indep-grid">
+                        <div class="indep-row"><small>测试谁写的</small><span>12 个全部由实现者本人在本次执行中新增</span></div>
+                        <div class="indep-row"><small>测试谁跑的</small><span>实现者本人（同一个 Attempt 内）</span></div>
+                        <div class="indep-row"><small>是否同源</small><span><span class="bad">是</span></span></div>
+                      </div>
+                      <div class="indep-verdict">执行完成后需要指派一名没有参与实现的成员重新验一遍，这张卡才有机会变绿。</div>
                     </div>
                   </div>
 
@@ -789,7 +1227,7 @@ completed -&gt; archived</code></pre>
                     <div class="outcome-body">
                       <button class="outcome-file" type="button" data-open="file-code" data-label="adapter-eligibility.ts" data-stage-child>
                         <span class="of-type">TS</span>
-                        <span><strong>server/src/services/adapter-eligibility.ts</strong><small>把 CLI 探测结果按项目缓存，失效原因保留为结构化字段而不是字符串。</small></span>
+                        <span><strong>server/src/services/adapter-eligibility.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>把 CLI 探测结果按项目缓存，失效原因保留为结构化字段而不是字符串。</small></span>
                         <span class="of-diff">+23 −4</span>
                       </button>
                       <div class="outcome-pending-file">
@@ -802,11 +1240,29 @@ completed -&gt; archived</code></pre>
                   <section class="outcome-section">
                     <h2>完成要求与依据</h2>
                     <p>三条要求里已经有一条拿到依据；其余两条要等执行走到对应步骤。</p>
-                    <button class="evidence-row" type="button" data-open="evidence-view" data-label="验证依据 · CLI 探测" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>三个 CLI 的探测结果可区分「未安装」与「未登录」</strong><small>系统记录 · 12 项 probe 测试</small></span>
-                      <span class="row-go">查看原始证据 →</span>
-                    </button>
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>三个 CLI 的探测结果可区分「未安装」与「未登录」</strong><small><em class="src-badge machine">系统记录</em>12 项 probe 测试 · 实现者所写</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>probe_distinguishes_not_installed_from_not_logged_in</code>
+                          <small>断言：三个 adapter 各造一次「未安装」与「未登录」，探测结果的 reason 字段必须落在不同枚举值上。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>断言实际输出</code><span class="exit-ok">通过 · 233 ms</span></div>
+                            <pre>codex     not_installed / not_logged_in   ✓
+claude    not_installed / not_logged_in   ✓
+opencode  not_installed / not_logged_in   ✓</pre>
+                          </div>
+                          <p class="proof-author">实现者所写 · 属于自证，尚未有人独立复核</p>
+                        </div>
+                        <div class="claim-foot">
+                          <button class="linklike" type="button" data-open="evidence-view" data-label="验证依据 · CLI 探测" data-stage-child>打开完整证据链 →</button>
+                        </div>
+                      </div>
+                    </div>
                     <div class="evidence-row inflight">
                       <span class="pending-mark">◐</span>
                       <span><strong>登录失效时给出可操作的修复入口</strong><small>正在执行第 2 / 4 步 · 预计还有 2 步</small></span>
@@ -817,6 +1273,25 @@ completed -&gt; archived</code></pre>
                       <span><strong>由独立验证员确认三种失败态的提示文案</strong><small>还没有开始 · 执行完成后才会指派</small></span>
                       <span class="row-go muted">未开始</span>
                     </div>
+                  </section>
+
+                  <section class="outcome-section unproven-section">
+                    <h2>还没有被证明</h2>
+                    <p>执行中的缺口会随进度变化，但不会因为「还在跑」就不显示。</p>
+                    <ul class="unproven-list">
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>整份成果都没有独立验证</strong><small>实现、写测试、跑测试是同一个成员，12 / 12 目前只是自证。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>AdapterCard.tsx 正在写入，没有任何测试</strong><small>前端那一半还没落盘，也没有对应的检查。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>「按项目缓存」的失效行为没有测量</strong><small>缓存命中与失效目前只有实现者的说明，没有跑出过数据。</small></span>
+                      </li>
+                    </ul>
                   </section>
 
                   <section class="outcome-section">
@@ -865,21 +1340,57 @@ completed -&gt; archived</code></pre>
                 <article class="document task-document outcome-surface" data-document="issue-research">
                   <div class="task-heading"><span class="signal blue"></span><span><small>任务 · Research 阶段进行中</small><h1>阶段成果契约研究</h1></span></div>
 
+                  <div class="source-legend">
+                    <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
+                    <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
+                  </div>
+
                   <div class="outcome-state">
-                    <div>
-                      <small>系统记录</small>
+                    <button class="state-card" type="button" data-drawer-toggle="res-sys" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>检索留痕</small>
                       <strong>3 名成员在跑</strong>
-                      <span>各自的检索与结论都单独留痕</span>
-                    </div>
-                    <div>
-                      <small>实际变化</small>
-                      <strong>0 个文件</strong>
-                      <span>研究阶段只产出结论，不改代码</span>
-                    </div>
-                    <div class="pending-cell">
-                      <small>验证独立性</small>
+                      <span>3 份结论各自留痕 · <em class="drawer-cue"><i>展开检索记录</i></em></span>
+                    </button>
+                    <button class="state-card" type="button" data-drawer-toggle="res-diff" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>来源可追</small>
+                      <strong>11 处引用</strong>
+                      <span>0 个文件改动 · <em class="drawer-cue"><i>展开来源清单</i></em></span>
+                    </button>
+                    <button class="state-card pending-cell" type="button" data-drawer-toggle="res-indep" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>结论独立性</small>
                       <strong>等待综合</strong>
-                      <span>三份结论还没收敛成一份方案</span>
+                      <span>还没交叉核对 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
+                    </button>
+
+                    <div class="state-drawer" data-drawer-body="res-sys" hidden>
+                      <h3>研究阶段的机器事实是「谁读了什么」</h3>
+                      <p>研究不改代码，所以它的系统记录不是测试结果，而是检索动作本身：读过哪些路径、命中哪几段。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>read: docs/decisions/0006-executable-work-graph.md</code><span class="exit-ok">架构研究员 · 10:33 · 命中 3 段</span></div>
+                        <pre>§Slice 1 触发条件
+§并行边界与强制隔离条件
+§worktree 不构成访问隔离</pre>
+                      </div>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>read: docs/features/0.3/F011-room/spec.md</code><span class="exit-ok">安全研究员 · 10:36 · 命中 2 段</span></div>
+                        <pre>FR-004 跨目录读取边界
+AC-011 归档后记录不删除</pre>
+                      </div>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="res-diff" hidden>
+                      <h3>研究场景下「实际变化」换成「来源可追」</h3>
+                      <p>固定三卡的语义按任务类型换一组：代码任务问改了什么，研究任务问凭什么这么说。0 个文件在这里是正常，不是缺陷。</p>
+                      <p class="agent-note">11 处引用全部带原始出处（文件 + 段落锚点），可逐条跳回。没有一条结论是「综述出来的」而找不到来源。</p>
+                    </div>
+                    <div class="state-drawer" data-drawer-body="res-indep" hidden>
+                      <h3>三份结论还没有互相核对过</h3>
+                      <p>研究阶段的独立性判定和代码任务不同：</p>
+                      <div class="indep-grid">
+                        <div class="indep-row"><small>谁在检索</small><span>架构研究员 / 安全研究员 / 归档研究员 · 并行、互不等待</span></div>
+                        <div class="indep-row"><small>谁来综合</small><span><span class="good">综合员 · 不参与本阶段检索（避免偏向自己那份结论）</span></span></div>
+                        <div class="indep-row"><small>交叉核对</small><span><span class="bad">还没有</span>：三份结论目前各自独立，冲突之处尚未暴露</span></div>
+                      </div>
+                      <div class="indep-verdict">综合的价值不是把三份拼起来，而是找出它们互相矛盾的地方。在综合完成之前，任何单份结论都不该被当成定论。</div>
                     </div>
                   </div>
 
@@ -913,21 +1424,74 @@ completed -&gt; archived</code></pre>
                   <section class="outcome-section">
                     <h2>完成要求与依据</h2>
                     <p>前两条已经有结论支撑，第三条是这个阶段的出口。</p>
-                    <button class="evidence-row" type="button" data-open="artifact-research" data-label="阶段成果 · revision 契约" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>不可变 revision 与来源关系明确</strong><small>阶段成果 · research_findings r1 第 1–2 节</small></span>
-                      <span class="row-go">查看结论 →</span>
-                    </button>
-                    <button class="evidence-row" type="button" data-open="evidence-room" data-label="验证依据 · 路径边界" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>路径读取边界已有安全结论</strong><small>阶段成果 · 与 ADR 0006 的隔离条件一致</small></span>
-                      <span class="row-go">查看结论 →</span>
-                    </button>
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>不可变 revision 与来源关系明确</strong><small><em class="src-badge machine">系统记录</em>research_findings r1 第 1–2 节 · 4 处引用可追</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>research_findings · revision 1 · §1 实体与 revision 模型</code>
+                          <small>结论：revision 一旦发布不可改；消费方引用 revision 号而不是引用「最新」。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>这条结论引用的原文</code><span class="exit-ok">4 处 · 可逐条跳回</span></div>
+                            <pre>docs/features/0.3/F009-artifact/spec.md  §FR-002  不可变 revision
+docs/decisions/0006-executable-work-graph.md  §Slice 1
+docs/personahub-system-design.md  §Artifact 表结构
+server/src/db/schema-v7.ts  artifact_revisions</pre>
+                          </div>
+                          <p class="proof-author">架构研究员 · 尚未与其他两份结论交叉核对</p>
+                        </div>
+                        <div class="claim-foot">
+                          <button class="linklike" type="button" data-open="artifact-research" data-label="阶段成果 · revision 契约" data-stage-child>打开完整结论 →</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>路径读取边界已有安全结论</strong><small><em class="src-badge machine">系统记录</em>安全研究员 · 与 ADR 0006 隔离条件比对</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>research_findings · revision 1 · §3 读取边界</code>
+                          <small>结论：普通 worktree 不满足 ADR 0006 的隔离要求（共享 .git 元数据），只读并行必须另有强制手段。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>这条结论引用的原文</code><span class="exit-ok">2 处 · 可逐条跳回</span></div>
+                            <pre>docs/decisions/0006-executable-work-graph.md  §并行边界
+  「普通 git worktree 与主仓库共享 .git 管理元数据，
+   不构成操作系统层面的访问隔离」
+docs/features/0.3/F011-room/spec.md  §FR-004</pre>
+                          </div>
+                          <p class="proof-author">安全研究员 · 这条与架构研究员的并行前提可能冲突，等综合时暴露</p>
+                        </div>
+                        <div class="claim-foot">
+                          <button class="linklike" type="button" data-open="evidence-room" data-label="验证依据 · 路径边界" data-stage-child>打开完整结论 →</button>
+                        </div>
+                      </div>
+                    </div>
                     <div class="evidence-row inflight">
                       <span class="pending-mark">◐</span>
                       <span><strong>综合为可执行的 synthesis_plan</strong><small>正在进行第 2 / 3 步 · 这是本阶段的出口条件</small></span>
                       <span class="row-go muted">执行中</span>
                     </div>
+                  </section>
+
+                  <section class="outcome-section unproven-section">
+                    <h2>还没有被证明</h2>
+                    <p>研究阶段的缺口是「哪些结论还没有交叉核对」，不是「改了几个文件」。</p>
+                    <ul class="unproven-list">
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>三份结论之间的冲突尚未暴露</strong><small>安全研究员对隔离条件的判断与架构研究员的并行前提可能不一致，综合前无法确认。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>synthesis_plan 还没有生成</strong><small>阶段出口未达成，本阶段还不能交给实现者。</small></span>
+                      </li>
+                    </ul>
                   </section>
 
                   <section class="outcome-section">
@@ -967,21 +1531,80 @@ completed -&gt; archived</code></pre>
                 <article class="document task-document outcome-surface" data-document="issue-done">
                   <div class="task-heading"><span class="signal green"></span><span><small>任务 · 已完成</small><h1>Graph 重启恢复</h1></span></div>
 
+                  <div class="source-legend">
+                    <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
+                    <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
+                  </div>
+
                   <div class="outcome-state">
-                    <div class="ok-cell">
-                      <small>系统记录</small>
+                    <button class="state-card ok-cell" type="button" data-drawer-toggle="done-sys" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
                       <strong>24 / 24 通过</strong>
-                      <span>命令、exit code 与原始输出已保存</span>
-                    </div>
-                    <div class="ok-cell">
-                      <small>实际变化</small>
+                      <span>4 条命令 · 全部 exit 0 · <em class="drawer-cue"><i>展开原始输出</i></em></span>
+                    </button>
+                    <button class="state-card ok-cell" type="button" data-drawer-toggle="done-diff" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
                       <strong>3 个文件</strong>
-                      <span>+118 −26 · <button class="linklike" type="button" data-open="file-code" data-label="graph-recovery.ts" data-stage-child>可打开全文核对</button></span>
-                    </div>
-                    <div class="ok-cell">
-                      <small>验证独立性</small>
+                      <span>+118 −26 · <em class="drawer-cue"><i>展开实际改动</i></em></span>
+                    </button>
+                    <button class="state-card ok-cell" type="button" data-drawer-toggle="done-indep" aria-expanded="false">
+                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
                       <strong>已独立验证</strong>
-                      <span>Claude Sonnet · 与实现者不同源</span>
+                      <span>验证员自带检查 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
+                    </button>
+
+                    <div class="state-drawer" data-drawer-body="done-sys" hidden>
+                      <h3>实现者跑了 24 个，验证员另外跑了 6 个</h3>
+                      <p>两批命令分属两个成员、两个 Attempt，输出各自独立保存。绿卡只是这两批都 exit 0 的结果。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>npm run test -- graph-recovery</code><span class="exit-ok">实现者 · exit 0 · 7m 02s · 09:26</span></div>
+                        <pre>PASS server/test/integration/graph-recovery.test.ts
+  ✓ completed_nodes_are_not_rerun_after_restart    (508 ms)
+  ✓ inflight_attempt_marked_interrupted            (271 ms)
+  … 22 more
+Tests: 24 passed, 24 total</pre>
+                      </div>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>node scripts/replay-concurrent-restart.mjs --rounds 20</code><span class="exit-ok">独立验证员 · exit 0 · 2m 41s · 09:41</span></div>
+                        <pre>20 rounds · 3 concurrent restarts each
+duplicate attempts: 0
+orphaned node_runs: 0
+interrupted → new attempt transitions: 60 / 60 ok</pre>
+                      </div>
+                    </div>
+
+                    <div class="state-drawer" data-drawer-body="done-diff" hidden>
+                      <h3>3 个文件的实际改动</h3>
+                      <p>加减行来自 git；每段下面的解释是实现者写的。</p>
+                      <div class="raw-block">
+                        <div class="raw-head"><code>server/src/services/graph/recovery.ts</code><span class="exit-ok">+71 −14</span></div>
+                        <pre><span class="ctx">@@ recoverOnBoot() @@</span>
+<span class="del">-  for (const node of graph.nodes) await dispatchNode(node);</span>
+<span class="add">+  const settled = new Set(results.filter(isTerminal).map((r) =&gt; r.nodeId));</span>
+<span class="add">+  for (const node of graph.nodes) {</span>
+<span class="add">+    if (settled.has(node.id)) continue;          // 已收敛的不重跑</span>
+<span class="add">+    if (node.attempt?.status === "running") {</span>
+<span class="add">+      await markInterrupted(node.attempt);        // 独立终态，不算 failed</span>
+<span class="add">+    }</span>
+<span class="add">+    await dispatchNode(node, { reason: "boot-recovery" });</span>
+<span class="add">+  }</span></pre>
+                      </div>
+                      <p class="agent-note"><em class="src-badge agent">Agent 的说法</em>实现者：「启动时按节点结果收敛，已完成节点跳过重跑；进行中 Attempt 统一标记 interrupted。」</p>
+                      <button class="linklike" type="button" data-open="file-code" data-label="graph-recovery.ts" data-stage-child>打开全文逐处核对 →</button>
+                    </div>
+
+                    <div class="state-drawer" data-drawer-body="done-indep" hidden>
+                      <h3>这次的独立性是怎么成立的</h3>
+                      <p>三条都满足才算独立验证。缺任何一条，这张卡不会变绿。</p>
+                      <div class="indep-grid">
+                        <div class="indep-row"><small>谁实现的</small><span>实现者 / Codex GPT-5 · Attempt #1</span></div>
+                        <div class="indep-row"><small>谁验证的</small><span class="good">独立验证员 / Claude Sonnet · Attempt #3 · 与实现者不同成员、不同模型</span></div>
+                        <div class="indep-row"><small>验的是谁的检查</small><span class="good">验证员自己写的并发重启回放脚本，<strong>没有复用实现者的 24 个测试</strong></span></div>
+                      </div>
+                      <div class="indep-verdict">
+                        这批绿有效的原因不是「24 / 24 通过」，而是：另一个成员用它自己设计的检查，独立跑出了同样的结论。<br />
+                        实现者的 24 个测试仍然只是自证，它们的价值是回归，不是验证。
+                      </div>
                     </div>
                   </div>
 
@@ -996,17 +1619,17 @@ completed -&gt; archived</code></pre>
                     <div class="outcome-body">
                       <button class="outcome-file" type="button" data-open="file-code" data-label="graph-recovery.ts" data-stage-child>
                         <span class="of-type">TS</span>
-                        <span><strong>server/src/services/graph/recovery.ts</strong><small>启动时按节点结果收敛，已完成节点跳过重跑；进行中 Attempt 统一标记 interrupted。</small></span>
+                        <span><strong>server/src/services/graph/recovery.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>启动时按节点结果收敛，已完成节点跳过重跑；进行中 Attempt 统一标记 interrupted。</small></span>
                         <span class="of-diff">+71 −14</span>
                       </button>
                       <button class="outcome-file" type="button" data-open="file-code" data-label="node-run.ts" data-stage-child>
                         <span class="of-type">TS</span>
-                        <span><strong>server/src/repositories/node-run.ts</strong><small>新增按 graph 查询未收敛 Attempt 的读取路径。</small></span>
+                        <span><strong>server/src/repositories/node-run.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>新增按 graph 查询未收敛 Attempt 的读取路径。</small></span>
                         <span class="of-diff">+29 −8</span>
                       </button>
                       <button class="outcome-file" type="button" data-open="file-code" data-label="schema-v7.ts" data-stage-child>
                         <span class="of-type">TS</span>
-                        <span><strong>server/src/db/schema-v7.ts</strong><small>interrupted 作为独立终态落库，与 failed / cancelled 区分。</small></span>
+                        <span><strong>server/src/db/schema-v7.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>interrupted 作为独立终态落库，与 failed / cancelled 区分。</small></span>
                         <span class="of-diff">+18 −4</span>
                       </button>
                       <div class="outcome-artifact">
@@ -1020,21 +1643,92 @@ completed -&gt; archived</code></pre>
                   <section class="outcome-section">
                     <h2>完成要求与依据</h2>
                     <p>三条要求全部拿到依据，每一条都能点到原始记录或独立验证结论。</p>
-                    <button class="evidence-row" type="button" data-open="evidence-view" data-label="验证依据 · 重启不重跑" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>重启后已完成节点不重复运行</strong><small>系统记录 · 9 项 integration test + 启动恢复 trace</small></span>
-                      <span class="row-go">查看原始证据 →</span>
-                    </button>
-                    <button class="evidence-row" type="button" data-open="file-code" data-label="schema-v7.ts" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>interrupted 与 failed / cancelled 在证据里可区分</strong><small>实际文件 · schema-v7.ts + run 状态机测试</small></span>
-                      <span class="row-go">打开修改位置 →</span>
-                    </button>
-                    <button class="evidence-row" type="button" data-open="evidence-room" data-label="独立验证 · 竞态与回放" data-stage-child>
-                      <span class="ok">✓</span>
-                      <span><strong>并发重启下不产生重复 Attempt</strong><small>独立验证 · Claude Sonnet · 与实现者不同模型</small></span>
-                      <span class="row-go">查看验证结论 →</span>
-                    </button>
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>重启后已完成节点不重复运行</strong><small><em class="src-badge machine">系统记录</em>9 项 integration test · 实现者所写</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>completed_nodes_are_not_rerun_after_restart</code>
+                          <small>断言：重启后已收敛节点的 dispatch 次数保持不变。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>断言实际输出</code><span class="exit-ok">通过 · 508 ms</span></div>
+                            <pre>dispatchNode calls before restart: 6
+dispatchNode calls after  restart: 6   ✓
+settled nodes skipped: 4               ✓</pre>
+                          </div>
+                          <p class="proof-author">实现者所写 · 属于自证，与下面第三条的独立验证不是一回事</p>
+                        </div>
+                        <div class="claim-foot">
+                          <button class="linklike" type="button" data-open="evidence-view" data-label="验证依据 · 重启不重跑" data-stage-child>打开完整证据链 →</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>interrupted 与 failed / cancelled 在证据里可区分</strong><small><em class="src-badge machine">系统记录</em>实际改动 · schema-v7.ts + 状态机测试</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>server/src/db/schema-v7.ts</code>
+                          <small>interrupted 作为独立终态落库，查询证据时不会被并进 failed。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>对应改动</code><span class="exit-ok">+18 −4</span></div>
+                            <pre><span class="del">-  status: "queued" | "running" | "failed" | "cancelled" | "done";</span>
+<span class="add">+  status: "queued" | "running" | "failed" | "cancelled" | "interrupted" | "done";</span></pre>
+                          </div>
+                          <p class="proof-author">实现者所写 · 由验证员在回放中确认可区分</p>
+                        </div>
+                        <div class="claim-foot">
+                          <button class="linklike" type="button" data-open="file-code" data-label="schema-v7.ts" data-stage-child>打开修改位置 →</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="claim">
+                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
+                        <span class="ok">✓</span>
+                        <span><strong>并发重启下不产生重复 Attempt</strong><small><em class="src-badge machine">系统记录</em>独立验证 · Claude Sonnet 自带检查 · 20 轮回放</small></span>
+                        <span class="row-go"><i>展开依据</i></span>
+                      </button>
+                      <div class="claim-body" hidden>
+                        <div class="proof-test">
+                          <code>scripts/replay-concurrent-restart.mjs --rounds 20</code>
+                          <small>验证员自己写的回放：每轮 3 个并发重启，检查是否出现重复 Attempt 或孤儿 node_run。</small>
+                          <div class="raw-block">
+                            <div class="raw-head"><code>原始输出</code><span class="exit-ok">exit 0 · 2m 41s</span></div>
+                            <pre>duplicate attempts: 0
+orphaned node_runs: 0
+interrupted → new attempt transitions: 60 / 60 ok</pre>
+                          </div>
+                          <p class="proof-author">这一条是全篇唯一不属于自证的依据：检查由验证员设计，实现者没有参与</p>
+                        </div>
+                        <div class="claim-foot">
+                          <button class="linklike" type="button" data-open="evidence-room" data-label="独立验证 · 竞态与回放" data-stage-child>查看验证结论 →</button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="outcome-section unproven-section">
+                    <h2>还没有被证明</h2>
+                    <p>已完成不等于全部被证明。这一段在成功态照样在场，否则「三张全绿」会被读成「什么都验过了」。</p>
+                    <ul class="unproven-list">
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>只验了 20 轮并发，没有验长时间运行后的重启</strong><small>回放脚本覆盖的是刚启动即重启；节点跑到一半、连续多次重启的组合没有被执行到。</small></span>
+                      </li>
+                      <li>
+                        <span class="up-mark">!</span>
+                        <span><strong>node-run.ts 的新读取路径只有实现者自己的测试</strong><small>+29 −8 这段没有进入验证员的回放路径，目前属于自证。</small></span>
+                      </li>
+                    </ul>
+                    <button class="linklike" type="button" data-demo="从缺口创建后续任务；静态原型未执行创建">把这两条建成后续任务 →</button>
                   </section>
 
                   <section class="outcome-section">
@@ -1268,28 +1962,45 @@ completed -&gt; archived</code></pre>
                 <span class="rail-label">协作现场</span>
               </button>
               <div class="collaboration-dock-header">
-                <div><small>指令将发送到</small><strong data-dock-target>协作现场 · Implementation</strong><span data-dock-parent>任务：协作现场支持暂停、纠偏与改派</span></div>
-                <button type="button" data-dock-pin aria-pressed="false" title="固定当前协作现场">◇</button>
+                <button class="dock-recipient" type="button" data-recipient-open aria-expanded="false">
+                  <small>发给</small>
+                  <strong data-dock-target>@独立验证员</strong>
+                  <span class="dr-caret" aria-hidden="true">▾</span>
+                </button>
+                <button type="button" data-dock-pin aria-pressed="false" title="固定当前收件人，切换任务时不跟随">◇</button>
               </div>
+              <p class="dock-pinned-note" data-dock-parent hidden></p>
               <div class="dock-status" data-dock-status>
                 <div class="dock-status-line">
                   <span class="dot"></span>
-                  <span class="who" data-status-who>实现者</span>
-                  <span class="what" data-status-what>已交付实现，等待独立验证</span>
+                  <span class="what" data-status-what>实现者已交付 · 卡在：没有人验证竞态</span>
                   <span class="step" data-status-step>2 / 3 步</span>
-                </div>
-                <div class="dock-status-line blocked">
-                  <span class="dot"></span>
-                  <span class="what" data-status-block>卡在：还没有人独立验证竞态与归档回放</span>
                 </div>
               </div>
               <div class="dock-paused-banner">
                 已暂停 · 尚未开始的步骤不会启动
                 <button type="button" data-room-pause>恢复</button>
               </div>
-              <div class="room-tabs" role="tablist" aria-label="协作内容">
-                <button type="button" data-room-tab="primary" title="贯穿任务全程的主控制线，每个任务只有一条。要下指令就在这里。">任务会话 <span>12</span></button>
-                <button class="active" type="button" data-room-tab="room" title="只覆盖任务的一个阶段，有成员名单和交付要求，阶段结束后归档。">协作现场 <span>28</span></button>
+              <div class="recipient-popover" data-recipient-popover hidden>
+                <p class="rp-head">下一条指令发给谁</p>
+                <button class="rp-option active" type="button" data-recipient="task" data-recipient-label="这个任务">
+                  <span class="rp-mark task">◎</span>
+                  <span><strong>这个任务</strong><small>改目标 · 指派下一步 · 要求补证据</small></span>
+                </button>
+                <p class="rp-group" data-recipient-group>Implementation 现场 · 3 名成员</p>
+                <button class="rp-option" type="button" data-recipient="member" data-recipient-label="@实现者">
+                  <span class="rp-mark blue">实</span>
+                  <span><strong>@实现者</strong><small>已交付实现，等待验证</small></span>
+                </button>
+                <button class="rp-option" type="button" data-recipient="member" data-recipient-label="@独立验证员">
+                  <span class="rp-mark purple">验</span>
+                  <span><strong>@独立验证员</strong><small>还没开始 · 建议下一步交给它</small></span>
+                </button>
+                <button class="rp-option" type="button" data-recipient="member" data-recipient-label="@架构研究员">
+                  <span class="rp-mark green">架</span>
+                  <span><strong>@架构研究员</strong><small>未参与本阶段</small></span>
+                </button>
+                <p class="rp-foot">切换任务时收件人默认跟着切；点 ◇ 可以固定住。</p>
               </div>
               <div class="dispatch-undo" data-dispatch-undo hidden>
                 <span class="du-spin" aria-hidden="true"></span>
@@ -1311,14 +2022,14 @@ completed -&gt; archived</code></pre>
                   这里问的是<b>项目</b>，不是某个任务。指令不会进入任何任务的执行队列；说「帮我建一个任务…」可以直接从这里发起。
                 </div>
                 <form class="room-composer">
+                  <p class="composer-to"><small>发给</small><strong>这个项目</strong></p>
                   <textarea aria-label="项目会话输入" placeholder="问这个项目现在什么情况，或直接发起一个新任务…"></textarea>
                   <div><button type="button" class="composer-tool" data-demo="项目会话可附加项目文档与历史完成摘要">＋ 添加上下文</button><button class="send" type="submit" data-demo="静态原型不会真的发起项目级请求" aria-label="发送">↑</button></div>
                 </form>
               </div>
               <div class="room-body room-conversation primary-conversation" data-room-panel="primary">
                 <div class="room-thread-heading">
-                  <div><strong data-primary-title>协作现场支持暂停、纠偏与改派</strong><span class="pill blue" data-primary-status>等待指派</span></div>
-                  <small data-primary-summary>任务主会话 · 记录跨阶段决策、交接与验证结论</small>
+                  <div><span class="pill blue" data-primary-status>等待指派</span><small data-primary-summary>记录跨阶段决策、交接与验证结论</small></div>
                   <div class="room-origin plain">
                     <span class="ro-mark" aria-hidden="true">&#8593;</span>
                     <span>
@@ -1330,69 +2041,57 @@ completed -&gt; archived</code></pre>
                 <div class="room-conversation-scroll">
                   <div class="message-stream" data-thread-message-stream>
                     <div class="message room-user-message"><span class="member-avatar user">我</span><div><header><strong>我</strong><time>09:58</time></header><p>完成实现后先停住，由我确认下一位执行者。</p></div></div>
+                    <div class="inline-room" data-inline-room>
+                      <button class="ir-head" type="button" data-inline-room-toggle aria-expanded="true">
+                        <span class="ir-caret" aria-hidden="true">▾</span>
+                        <span><strong data-inline-room-name>Implementation 现场</strong><small data-inline-room-meta>3 名成员 · 1 名已交付 · 阶段结束后归档，记录不删除</small></span>
+                        <span class="ir-go" data-open="room-view" data-label="协作现场 · Research">看结构视图 →</span>
+                      </button>
+                      <div class="ir-body" data-message-stream>
+                    <div class="message room-user-message"><span class="member-avatar user">我</span><div><header><strong>我</strong><time>10:01</time></header><p>实现 Room 的暂停与恢复；暂停只阻止尚未开始的步骤，不终止当前进程。</p></div></div>
+                    <div class="room-event"><p>已确认执行方案 · Implementation 交给「实现者」</p></div>
+                    <div class="message agent-message"><span class="member-avatar blue">实</span><div><header><strong>实现者</strong><time>1 分 12 秒</time></header><p>暂停和恢复路径已经实现。当前版本只阻止尚未开始的节点，不会终止正在运行的进程。</p><button class="message-trust-link" type="button" data-open="evidence-room"><span>!</span><strong>系统已记录 18 / 18 测试</strong><small>待独立验证 · 查看可信依据 →</small></button><details class="agent-run-details"><summary>执行了 3 步 · 展开看命令与耗时</summary><div class="agent-run-list"><button type="button" data-open="file-code"><i class="status-dot success"></i><span><strong>读取</strong><small>server/src/services/run-dispatch.ts</small></span></button><button type="button" data-open="file-code"><i class="status-dot success"></i><span><strong>编辑</strong><small>run-dispatch.ts +38 −4</small></span></button><button type="button" data-bottom-open><i class="status-dot running"></i><span><strong>运行</strong><small>npm test -w @personahub/server</small></span></button></div></details><footer>Codex CLI · GPT-5 · 3m 18s</footer></div></div>
+                    <div class="message agent-message"><span class="member-avatar purple">P</span><div><header><strong>PersonaHub</strong><time>10:43</time></header><p>建议下一步交给独立验证员，重点检查 pause / resume 竞态与归档回放。</p><button type="button" data-open="artifact-view">打开 synthesis_plan · r3</button></div></div>
+                  </div>
+                    </div>
                     <div class="room-event"><p>Implementation 阶段已完成 · 阶段成果与验证依据已汇总</p></div>
                     <div class="message agent-message"><span class="member-avatar purple">P</span><div><header><strong>PersonaHub</strong><time>10:43</time></header><p data-primary-message>建议下一步交给独立验证员；指派后会自动携带固定版本的阶段成果和现有验证依据。</p><button type="button" data-open="evidence-room">查看待补验证依据</button></div></div>
                   </div>
                 </div>
                 <div class="handoff-draft fixed-thread-handoff" data-primary-handoff><div><span data-primary-handoff-label>等待你指派</span><p data-primary-handoff-summary>上一步已完成 · 建议交给独立验证员</p></div><button type="button" data-primary-handoff-button data-thread-prefill="@独立验证员&#10;验证上一步实现，重点检查 pause / resume 竞态与归档回放。"><strong data-primary-handoff-member>@独立验证员</strong><small>建议成员 · 可直接修改</small></button></div>
                 <form class="room-composer" data-thread-form>
-                  <textarea aria-label="任务会话指令" data-thread-input>@独立验证员
+                  <p class="composer-to"><small>发给</small><strong data-composer-to>@独立验证员</strong></p>
+                  <textarea aria-label="任务指令" data-thread-input>@独立验证员
 验证上一步实现，重点检查 pause / resume 竞态与归档回放。</textarea>
-                  <div><button type="button" class="composer-tool" data-demo="可附加当前文件、阶段成果或验证依据">＋ 添加上下文</button><span class="composer-actions"><button type="button" class="composer-pause" data-demo="当前没有正在运行的步骤"><span>Ⅱ</span><b>先停一下</b></button><button type="submit" class="send-button" aria-label="发送任务指令">↑</button></span></div>
+                  <div><button type="button" class="composer-tool" data-demo="可附加当前文件、阶段成果或验证依据">＋ 添加上下文</button><span class="composer-actions"><button type="button" class="composer-pause" data-room-pause><span>Ⅱ</span><b>暂停后续步骤</b></button><button type="submit" class="send-button" aria-label="发送任务指令">↑</button></span></div>
                 </form>
               </div>
-              <div class="room-body room-conversation active" data-room-panel="room">
+              <div class="room-body room-conversation primary-conversation" data-room-panel="research-thread">
                 <div class="room-thread-heading">
-                  <div><strong>Implementation 协作现场</strong><span class="pill blue">等待指派</span><span class="live-indicator"><i></i><b data-room-state>活跃</b></span></div>
-                  <small>Implementation 完成 · 18/18 tests passed · 等待验证</small>
-                </div>
-                <div class="room-origin">
-                  <span class="ro-mark" aria-hidden="true">&#8627;</span>
-                  <span>
-                    <strong>只覆盖 <em>Implementation</em> 这一个阶段</strong>
-                    <small>属于任务「<button class="linklike" type="button" data-open="issue-view" data-label="任务 · 协作现场人工介入">协作现场支持暂停、纠偏与改派</button>」 · 3 名成员 · 阶段结束后归档，记录不删除</small>
-                  </span>
-                </div>
-                <div class="room-conversation-scroll">
-                  <div class="message-stream" data-message-stream>
-                    <div class="message room-user-message"><span class="member-avatar user">我</span><div><header><strong>我</strong><time>10:01</time></header><p>实现 Room 的暂停与恢复；暂停只阻止尚未开始的步骤，不终止当前进程。</p></div></div>
-                    <div class="room-event"><p>已确认执行方案 · Implementation 交给「实现者」</p></div>
-                    <div class="message agent-message"><span class="member-avatar blue">实</span><div><header><strong>实现者</strong><time>1 分 12 秒</time></header><p>暂停和恢复路径已经实现。当前版本只阻止尚未开始的节点，不会终止正在运行的进程。</p><button class="message-trust-link" type="button" data-open="evidence-room"><span>!</span><strong>系统已记录 18 / 18 测试</strong><small>待独立验证 · 查看可信依据 →</small></button><details class="agent-run-details"><summary>执行了 3 步 · 展开看命令与耗时</summary><div class="agent-run-list"><button type="button" data-open="file-code"><i class="status-dot success"></i><span><strong>读取</strong><small>server/src/services/run-dispatch.ts</small></span></button><button type="button" data-open="file-code"><i class="status-dot success"></i><span><strong>编辑</strong><small>run-dispatch.ts +38 −4</small></span></button><button type="button" data-bottom-open><i class="status-dot running"></i><span><strong>运行</strong><small>npm test -w @personahub/server</small></span></button></div></details><footer>Codex CLI · GPT-5 · 3m 18s</footer></div></div>
-                    <div class="message agent-message"><span class="member-avatar purple">P</span><div><header><strong>PersonaHub</strong><time>10:43</time></header><p>建议下一步交给独立验证员，重点检查 pause / resume 竞态与归档回放。</p><button type="button" data-open="artifact-view">打开 synthesis_plan · r3</button></div></div>
-                  </div>
-                </div>
-                <div class="handoff-draft fixed-handoff"><div><span>等待你指派</span><p>Implementation 已完成 · 18 / 18 测试通过 · <button type="button" data-open="evidence-room">查看依据</button></p></div><button type="button" data-room-prefill="@独立验证员&#10;验证上一步实现，重点检查 pause / resume 竞态与归档回放。"><strong>@独立验证员</strong><small>建议成员 · 可直接修改</small></button></div>
-                <form class="room-composer" data-room-form>
-                  <textarea aria-label="协作现场指令" data-room-input>@独立验证员
-验证上一步实现，重点检查 pause / resume 竞态与归档回放。</textarea>
-                  <div><button type="button" class="composer-tool" data-demo="可附加当前文件、阶段成果或验证依据">＋ 添加上下文</button><span class="composer-actions"><button type="button" class="composer-pause" data-room-pause><span>Ⅱ</span><b>暂停后续步骤</b></button><button type="submit" class="send-button" aria-label="发送协作指令">↑</button></span></div>
-                </form>
-              </div>
-
-              <div class="room-body room-conversation" data-room-panel="room-research">
-                <div class="room-thread-heading">
-                  <div><strong>Research 协作现场</strong><span class="pill blue">进行中</span><span class="live-indicator"><i></i><b>活跃</b></span></div>
-                  <small>3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置</small>
-                </div>
-                <div class="room-origin">
-                  <span class="ro-mark" aria-hidden="true">&#8627;</span>
-                  <span>
-                    <strong>只覆盖 <em>Research</em> 这一个阶段</strong>
-                    <small>属于任务「<button class="linklike" type="button" data-open="issue-research" data-label="任务 · 阶段成果研究">阶段成果契约研究</button>」 · 阶段结束后归档，记录不删除</small>
-                  </span>
+                  <div><span class="pill blue">正在执行</span><small>贯穿全程 · 阶段协作作为其中一段</small></div>
                 </div>
                 <div class="room-conversation-scroll">
                   <div class="message-stream">
                     <div class="message room-user-message"><span class="member-avatar user">我</span><div><header><strong>我</strong><time>10:28</time></header><p>研究阶段成果的契约：revision 怎么固定、来源怎么追、读取路径边界在哪。</p></div></div>
+                    <div class="inline-room" data-inline-room>
+                      <button class="ir-head" type="button" data-inline-room-toggle aria-expanded="true">
+                        <span class="ir-caret" aria-hidden="true">▾</span>
+                        <span><strong>Research 现场</strong><small>3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置</small></span>
+                        <span class="ir-go" data-open="room-view" data-label="协作现场 · Research">看结构视图 →</span>
+                      </button>
+                      <div class="ir-body">
                     <div class="room-event"><p>Coordinator 拆出 3 块工作 · 前两块并行、第三块等前置 · <button class="linklike" type="button" data-open="evidence-view" data-label="选人依据 · Research 协作现场">查看选人依据</button></p></div>
                     <div class="message agent-message"><span class="member-avatar blue">架</span><div><header><strong>架构研究员</strong><time>3 分 12 秒</time></header><p>实体与 revision 模型已定稿：revision 一旦发布不可改，消费方引用 revision 号而不是引用「最新」。</p><button class="message-trust-link" type="button" data-open="artifact-research"><span>A</span><strong>已交付 research_findings r1 第 1–2 节</strong><small>来源可逐条追到原始出处 →</small></button><footer>Codex CLI · GPT-5 · 3m 12s</footer></div></div>
                     <div class="room-event parallel"><p>安全研究员与架构研究员 <strong>并行</strong> 执行，互不等待</p></div>
                     <div class="message agent-message"><span class="member-avatar green">安</span><div><header><strong>安全研究员</strong><time>执行中 · 1 分 04 秒</time></header><p>正在核对跨目录读取与 ADR 0006 隔离条件的差异；目前看普通 worktree 不满足隔离要求这条结论成立。</p><footer>Claude Sonnet · 仍在执行</footer></div></div>
                     <div class="message agent-message"><span class="member-avatar purple">P</span><div><header><strong>PersonaHub</strong><time>10:44</time></header><p>综合员还没开始：它的前置是两份结论都到齐，现在到 1 份。要跳过前置立即开始，可以在舞台的成员泳道里点「现在就派」。</p><button type="button" data-open="room-view">打开成员泳道</button></div></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <form class="room-composer" data-room-form>
-                  <textarea aria-label="协作现场指令" data-room-input>@安全研究员
+                  <p class="composer-to"><small>发给</small><strong data-composer-to>@安全研究员</strong></p>
+                  <textarea aria-label="任务指令" data-room-input>@安全研究员
 把「普通 worktree 不满足隔离」这条结论的依据补到 findings 里，注明它和 ADR 0006 的对应段落。</textarea>
                   <div><button type="button" class="composer-tool" data-demo="可附加当前文件、阶段成果或验证依据">＋ 添加上下文</button><span class="composer-actions"><button type="button" class="composer-pause" data-room-pause><span>Ⅱ</span><b>暂停后续步骤</b></button><button type="submit" class="send-button" aria-label="发送协作指令">↑</button></span></div>
                 </form>

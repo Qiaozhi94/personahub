@@ -182,14 +182,8 @@
   letter-spacing: -0.01em;
 }
 
-/* 首个入口（项目工作台）已经是当前所在位置，收成纯图标让出宽度 */
-.project-explorer .primary-nav.sidebar-foot > button:first-child {
-  flex: 0 0 28px;
-  grid-template-columns: 16px;
-  padding: 0;
-  justify-items: center;
-}
-.project-explorer .primary-nav.sidebar-foot > button:first-child > span:last-child { display: none; }
+/* V3.2：底部只剩「设置与诊断」，高频入口已上移到搜索行，因此保留文字。
+   （原本这里把首个入口收成纯图标，是四个入口挤一行时的取舍，现已不适用。）*/
 
 .primary-nav {
   display: grid;
@@ -1302,3 +1296,825 @@
 .dispatch-undo.settled .du-spin { border-color: var(--ok, #4ec9a5); border-right-color: transparent; animation: none; }
 .dispatch-undo.settled small,
 .dispatch-undo.settled > button { display: none; }
+
+/* ── 14. 可信度表达：信源分层 + 证据抽屉 + 未证明段 ──────────
+   起因：三张状态卡展示的是「关于证据的摘要」，而摘要恰好是不可靠
+   agent 最容易凭空写出来的东西。信任不来自更好的摘要，只来自
+   ①机器事实与 agent 叙述在视觉上永久分开 ②抽查成本接近零
+   ③主动暴露没有被证明的部分。 */
+
+/* 14.1 信源标记：全成果面只有这两类陈述 */
+.src-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+
+/* 机器事实：PersonaHub 自己执行、自己捕获，可以担保 */
+.src-badge.machine {
+  border: 1px solid color-mix(in oklch, var(--green) 45%, transparent);
+  background: color-mix(in oklch, var(--green) 12%, transparent);
+  color: var(--green);
+}
+
+/* Agent 的说法：允许存在，但不许长成事实的样子 */
+.src-badge.agent {
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--faint);
+}
+
+.source-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 14px 0 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.source-legend > span { display: inline-flex; align-items: center; }
+
+/* Agent 写的说明文字：虚线左边框，和机器事实拉开距离 */
+.agent-note {
+  margin-top: 6px;
+  padding-left: 9px;
+  border-left: 2px dashed var(--border);
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* 14.2 三张状态卡改成证据抽屉的入口 */
+.outcome-state > button.state-card {
+  display: block;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+}
+
+.outcome-state > button.state-card:hover { border-color: var(--accent); }
+.outcome-state > button.state-card[aria-expanded="true"] { border-color: var(--accent); }
+
+.drawer-cue { color: var(--accent); font-style: normal; }
+.outcome-state > button.state-card[aria-expanded="true"] .drawer-cue::before { content: "收起"; }
+.outcome-state > button.state-card[aria-expanded="true"] .drawer-cue > i { display: none; }
+
+/* 抽屉横跨三列，展开在卡片行下方，不跳页 */
+.state-drawer {
+  grid-column: 1 / -1;
+  margin-top: -2px;
+  padding: 14px 15px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+/* 抽屉是 .outcome-state 的网格子项，会继承状态卡的 strong/small/span 排版，
+   在这里复位，否则正文里的加粗会被撑成 17px 的卡片数字。 */
+.state-drawer strong {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+  font-weight: 650;
+  letter-spacing: normal;
+}
+
+.state-drawer small { display: inline; margin: 0; font-size: inherit; color: inherit; }
+.state-drawer > p span,
+.state-drawer .indep-row > span,
+.state-drawer .indep-verdict span { font-size: inherit; color: inherit; }
+
+.state-drawer > h3 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.state-drawer > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+/* 原始命令 / 输出：等宽块，是全成果面唯一「不可能被润色」的东西 */
+.raw-block {
+  margin: 0 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.raw-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  background: var(--panel-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.raw-head code {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.raw-head .exit-ok { color: var(--green); font-size: 10px; white-space: nowrap; }
+.raw-head .exit-bad { color: var(--red); font-size: 10px; white-space: nowrap; }
+
+.raw-block pre {
+  margin: 0;
+  padding: 9px 10px;
+  overflow-x: auto;
+  background: var(--panel-2);
+  font: 11px/1.75 "Cascadia Code", Consolas, monospace;
+  color: var(--text);
+  white-space: pre;
+}
+
+.raw-block pre .add { color: var(--green); }
+.raw-block pre .del { color: var(--red); }
+.raw-block pre .ctx { color: var(--faint); }
+
+/* 独立性明细：三行判定 + 一句结论 */
+.indep-grid {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.indep-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.indep-row > small { color: var(--faint); font-size: 10px; }
+.indep-row > span { color: var(--text); }
+.indep-row .bad { color: var(--red); font-weight: 600; }
+.indep-row .good { color: var(--green); font-weight: 600; }
+
+.indep-verdict {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklch, var(--yellow) 45%, transparent);
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--yellow) 8%, transparent);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+/* 14.3 完成要求：就地展开可证伪切片，不跳页 */
+.claim {
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.claim.unproven-claim { border-style: dashed; }
+
+.claim-head {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.claim-head:hover { background: var(--panel-3); }
+.claim-head[disabled] { cursor: default; opacity: 0.8; }
+.claim-head[disabled]:hover { background: transparent; }
+
+.claim-head .ok { color: var(--green); font-size: 14px; }
+.claim-head .pending-mark { color: var(--yellow); font-size: 13px; }
+.claim-head strong { display: block; font-size: 12px; font-weight: 600; }
+.claim-head small { display: block; margin-top: 3px; color: var(--faint); font-size: 10px; }
+.claim-head .row-go { color: var(--accent); font-size: 10px; white-space: nowrap; }
+.claim-head .row-go.muted { color: var(--faint); }
+.claim-head[aria-expanded="true"] .row-go > i { display: none; }
+.claim-head[aria-expanded="true"] .row-go::before { content: "收起依据"; }
+
+.claim-body {
+  padding: 2px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.proof-test {
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.proof-test:last-of-type { border-bottom: 0; }
+
+.proof-test > code {
+  display: block;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.proof-test > small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.proof-author {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.claim-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+}
+
+/* 14.4 常驻的「还没有被证明」段 */
+.outcome-section.unproven-section > h2 { color: var(--yellow); }
+
+.outcome-section .unproven-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unproven-list > li {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in oklch, var(--yellow) 40%, var(--border));
+  border-radius: 8px;
+}
+
+.unproven-list .up-mark { color: var(--yellow); font-size: 12px; line-height: 1.5; }
+.unproven-list strong { display: block; font-size: 12px; font-weight: 600; }
+.unproven-list small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.65; }
+
+.unproven-clean {
+  padding: 12px;
+  border: 1px solid color-mix(in oklch, var(--green) 40%, var(--border));
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+/* ── 15. 左栏：一级入口上移到搜索行 ────────────────────────
+   一级入口（换工作面）与搜索/列表（换看什么）原本上下堆四层控件，
+   改为纯图标与搜索同行；设置留在底部，与高频入口分开。 */
+.explorer-toolbar .nav-icons {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.explorer-toolbar .nav-icons > button {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.explorer-toolbar .nav-icons > button:hover { background: var(--panel-3); color: var(--text); }
+
+.explorer-toolbar .nav-icons > button.active {
+  border-color: var(--border);
+  background: var(--panel);
+  color: var(--accent);
+}
+
+.explorer-toolbar .nav-icons svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 能力库有待处理项时的小圆点，替代原来的数字角标 */
+.explorer-toolbar .nav-icons .nav-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.explorer-toolbar > label { flex: 1 1 auto; min-width: 0; }
+
+/* 新建下移到范围切换行 */
+.scope-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  align-items: center;
+  gap: 6px;
+}
+
+.scope-row .scope-toggle { margin: 0; }
+
+.scope-new {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.scope-new:hover { color: var(--text); background: var(--panel-3); }
+
+/* 底部只剩设置，不再是一组按钮 */
+.sidebar-foot { border-top: 1px solid var(--border); }
+
+/* ── 16. Dock：发给选择器 + 单一输入框 + 内嵌协作现场 ──────────
+   顶部原有 9 行 chrome，任务名出现 3 次、状态出现 2 次。
+   规则：Dock 不重复舞台已经说过的话；只有收件人被固定到别的任务时才写任务名。 */
+.collaboration-dock-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
+}
+
+.collaboration-dock-header > .dock-recipient {
+  width: auto;
+  height: 28px;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collaboration-dock-header > .dock-recipient:hover,
+.collaboration-dock-header > .dock-recipient[aria-expanded="true"] { border-color: var(--border); background: var(--panel); }
+.collaboration-dock-header > .dock-recipient > small { flex: none; color: var(--faint); font-size: 10px; }
+.collaboration-dock-header > .dock-recipient > strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 650; }
+.collaboration-dock-header > .dock-recipient .dr-caret { flex: none; color: var(--faint); font-size: 9px; }
+
+/* 固定态：必须持续可见，并说明属于哪个任务 */
+.dock-pinned-note {
+  margin: 6px 0 0;
+  padding: 6px 9px;
+  border: 1px solid color-mix(in oklch, var(--yellow) 45%, transparent);
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--yellow) 8%, transparent);
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.recipient-popover {
+  position: absolute;
+  z-index: 40;
+  left: 12px;
+  right: 12px;
+  margin-top: 4px;
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--panel);
+  box-shadow: 0 12px 32px oklch(0% 0 0 / 0.12);
+}
+
+.rp-head { margin: 2px 4px 8px; color: var(--faint); font-size: 10px; }
+
+.rp-group {
+  margin: 10px 4px 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.rp-foot { margin: 8px 4px 2px; color: var(--faint); font-size: 10px; line-height: 1.6; }
+
+.rp-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rp-option:hover { background: var(--panel-3); }
+.rp-option.active { border-color: var(--accent); background: var(--accent-soft); }
+.rp-option strong { display: block; font-size: 12px; font-weight: 600; }
+.rp-option small { display: block; margin-top: 2px; color: var(--faint); font-size: 10px; }
+
+.rp-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--panel-3);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+.rp-mark.task { color: var(--accent); }
+.rp-mark.blue { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent); }
+.rp-mark.green { background: color-mix(in oklch, var(--green) 14%, transparent); color: var(--green); }
+.rp-mark.purple { background: color-mix(in oklch, var(--purple) 14%, transparent); color: var(--purple); }
+
+/* 输入框上方复述收件人，避免打字时看不见发给谁 */
+.composer-to {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.composer-to > small { color: var(--faint); font-size: 10px; }
+.composer-to > strong { font-size: 11px; font-weight: 650; color: var(--text); }
+
+/* 内嵌的协作现场：流里的一段，不是第二个阅读入口 */
+.inline-room {
+  margin: 10px 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.ir-head {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ir-head:hover { background: var(--panel-3); }
+.ir-head strong { display: block; font-size: 11px; font-weight: 650; }
+.ir-head small { display: block; margin-top: 2px; color: var(--faint); font-size: 10px; line-height: 1.55; }
+.ir-caret { color: var(--faint); font-size: 9px; }
+.ir-go { color: var(--accent); font-size: 10px; white-space: nowrap; }
+
+.inline-room.collapsed .ir-caret { transform: rotate(-90deg); }
+.inline-room.collapsed .ir-body { display: none; }
+
+.ir-body {
+  padding: 4px 11px 11px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── 17. 用例承载可信度：覆盖 / 对齐 / 时序 ────────────────────
+   可信链条是「设计文档 → 用例 → 执行结果」，唯一需要人看的断点是中间那段：
+   用例是不是忠实于设计文档。三张卡对应这条链的三个断点。 */
+
+/* 时序破线：实现开始后改过用例，必须顶到首屏 */
+.fence-alert {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in oklch, var(--yellow) 50%, transparent);
+  border-radius: 8px;
+  background: color-mix(in oklch, var(--yellow) 8%, transparent);
+}
+
+.fence-alert .fa-mark { color: var(--yellow); font-weight: 700; line-height: 1.5; }
+.fence-alert strong { display: block; font-size: 12px; font-weight: 650; }
+.fence-alert small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.65; }
+.fence-alert > .linklike { white-space: nowrap; font-size: 10px; }
+
+/* 覆盖 / 对齐 的明细行 */
+.cover-grid { display: grid; gap: 6px; margin-bottom: 10px; }
+
+.cover-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.cover-row.gap { border-style: dashed; border-color: color-mix(in oklch, var(--yellow) 45%, var(--border)); }
+.cover-row .cv-mark { text-align: center; font-size: 12px; }
+.cover-row.ok .cv-mark { color: var(--green); }
+.cover-row.gap .cv-mark { color: var(--yellow); font-weight: 700; }
+.cover-row strong { display: block; font-size: 12px; font-weight: 600; }
+.cover-row small { display: block; margin-top: 2px; color: var(--faint); font-size: 10px; }
+.cover-row .cv-state { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.cover-row .cv-state.bad { color: var(--yellow); font-weight: 600; }
+
+/* 实现 / 验证双列：等宽等重，中间是上下文围栏 */
+.pair-plan {
+  display: grid;
+  grid-template-columns: 1fr 118px 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+
+/* 围栏占一整列，不再浮在两列之上——它是结构的一部分，不是装饰 */
+.pair-plan > .pp-col:nth-of-type(1) { grid-column: 1; }
+.pair-plan > .pp-col:nth-of-type(2) { grid-column: 3; }
+.pair-plan > .pp-fence { grid-column: 2; grid-row: 1; }
+
+.pair-plan .pp-col { display: grid; align-content: start; gap: 8px; }
+
+.pair-plan .pp-col > h3 {
+  margin: 0 0 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.pp-step {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.pp-step.waiting { border-style: dashed; background: transparent; }
+.pp-step.warn { border-color: color-mix(in oklch, var(--yellow) 45%, var(--border)); }
+
+.pp-index {
+  display: grid;
+  place-items: center;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--panel-3);
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-step.done .pp-index { background: color-mix(in oklch, var(--green) 14%, transparent); color: var(--green); }
+.pp-step.waiting .pp-index { color: var(--yellow); }
+
+.pp-step strong { display: block; font-size: 12px; font-weight: 600; }
+.pp-step small { display: block; margin-top: 3px; color: var(--faint); font-size: 10px; line-height: 1.6; }
+.pp-step .pp-ctx { color: var(--muted); }
+.pp-step .pp-warn { color: var(--yellow); }
+.pp-step .pp-mode { color: var(--accent); }
+.pp-step .pp-mode.cold { color: var(--green); font-weight: 600; }
+
+/* 围栏本体：竖线穿过两列之间 */
+.pp-fence {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 8px 0;
+  pointer-events: none;
+}
+
+.pp-fence::before {
+  content: "";
+  position: absolute;
+  top: 30px;
+  bottom: 0;
+  left: 50%;
+  border-left: 2px dashed color-mix(in oklch, var(--green) 55%, transparent);
+}
+
+.pp-fence > span {
+  padding: 3px 7px;
+  border: 1px solid color-mix(in oklch, var(--green) 45%, transparent);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.pp-fence > small {
+  position: relative;
+  margin-top: 8px;
+  max-width: 102px;
+  padding: 4px 3px;
+  background: var(--bg);
+  color: var(--faint);
+  font-size: 9px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+@media (max-width: 1180px) {
+  .pair-plan { grid-template-columns: 1fr; gap: 14px; }
+  .pair-plan > .pp-col:nth-of-type(1),
+  .pair-plan > .pp-col:nth-of-type(2) { grid-column: 1; }
+  /* 窄屏下围栏改成两列之间的一条横向分隔，仍然在场 */
+  .pair-plan > .pp-fence {
+    grid-column: 1;
+    grid-row: auto;
+    order: 1;
+    flex-direction: row;
+    gap: 8px;
+    padding: 0;
+  }
+  .pp-fence::before { top: 50%; bottom: auto; left: 0; right: 0; border-left: 0; border-top: 2px dashed color-mix(in oklch, var(--green) 55%, transparent); }
+  .pp-fence > small { max-width: none; }
+}
+
+/* ── 18. 轨迹视图：第三个正交维度 ──────────────────────────────
+   舞台成果面按结构，Dock 会话按对话，轨迹按时间。
+   它是复盘面，不是实时跟进面；数据来自 F003 Development Trace。
+   每个 Run 标出上下文血统（ADR 0009）——复盘时判断它有没有被上一轮污染，全靠这个标记。 */
+.task-heading { grid-template-columns: 10px minmax(0, 1fr) auto; }
+
+.stage-views {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel-2);
+}
+
+.stage-views > button {
+  height: 24px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.stage-views > button:hover { color: var(--text); }
+.stage-views > button.active { background: var(--panel); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px oklch(0% 0 0 / 0.06); }
+
+.trace-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 18px 0 10px;
+}
+
+.trace-filters > button {
+  height: 26px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.trace-filters > button:hover { border-color: var(--accent); color: var(--text); }
+.trace-filters > button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.trace-note { margin: 0 0 16px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+
+.trace-list {
+  margin: 0;
+  padding: 0 0 0 2px;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.trace-item {
+  display: grid;
+  grid-template-columns: 44px 18px minmax(0, 1fr);
+  gap: 10px;
+  padding: 11px 12px 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.trace-item:last-child { border-bottom: 0; }
+/* display: grid 会盖掉 [hidden] 的 display:none，筛选必须显式复位 */
+.trace-item[hidden] { display: none; }
+.trace-item .tr-time { color: var(--faint); font-size: 10px; font-variant-numeric: tabular-nums; line-height: 1.7; }
+.trace-item .tr-mark { text-align: center; font-size: 11px; line-height: 1.5; }
+.trace-item .tr-mark.artifact { color: var(--green); }
+.trace-item .tr-mark.human { color: var(--accent); }
+.trace-item .tr-mark.run { color: var(--purple); }
+.trace-item .tr-mark.run.pending { color: var(--faint); }
+.trace-item .tr-mark.case { color: var(--yellow); font-weight: 700; }
+
+.trace-item strong { display: block; font-size: 12px; font-weight: 600; }
+.trace-item small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.65; }
+.trace-item .linklike { margin-top: 5px; font-size: 10px; }
+
+/* 用例变更天然被顶到最显眼的位置——它是可信度链条上最容易断的一环 */
+.trace-item.case { background: color-mix(in oklch, var(--yellow) 6%, transparent); }
+.trace-item.case strong { color: var(--yellow); }
+
+/* 上下文血统：⊘ 冷启动 / ⟳ 续跑 / ✂ 封印重生 */
+.tr-lineage { font-weight: 600; }
+.tr-lineage.resume { color: var(--accent); }
+.tr-lineage.cold { color: var(--green); }
+
+.tr-steps {
+  margin: 7px 0 0;
+  padding: 0 0 0 12px;
+  border-left: 1px solid var(--border);
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.tr-steps > li { color: var(--muted); font-size: 10px; line-height: 1.6; }
+.tr-steps em { color: var(--green); font-style: normal; font-variant-numeric: tabular-nums; }
+.tr-steps .linklike { margin: 0 0 0 4px; font-size: 10px; }
+
+.tr-diag { margin-top: 8px; }
+.tr-diag > summary { color: var(--faint); font-size: 10px; cursor: pointer; }
+.tr-diag > p { margin: 6px 0 0; color: var(--faint); font-size: 10px; line-height: 1.7; }
+.tr-diag code { font-family: "Cascadia Code", Consolas, monospace; font-size: 10px; overflow-wrap: anywhere; }
