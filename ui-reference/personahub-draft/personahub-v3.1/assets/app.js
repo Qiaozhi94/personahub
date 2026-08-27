@@ -22,17 +22,17 @@
   const documentMeta = {
     "project-overview": ["PersonaHub › 项目会话", "PersonaHub 项目会话"],
     "file-prd": ["PersonaHub › docs › personahub-prd.md › Room", "personahub-prd.md"],
-    "file-room-spec": ["PersonaHub › docs › features › 0.3 › F011-room › spec.md", "F011 · Room spec"],
-    "file-code": ["PersonaHub › server › src › services › run-dispatch.ts", "run-dispatch.ts"],
+    "file-room-spec": ["PersonaHub › docs › features › 0.3 › F011-room › spec.md", "F009 · Artifact spec"],
+    "file-code": ["PersonaHub › server › src › services › artifact.ts", "artifact.ts"],
     "file-architecture": ["PersonaHub › docs › personahub-architecture.md", "architecture.md"],
     "issue-view": ["PersonaHub › 任务 › 等待你指派", "任务 · 协作现场人工介入"],
     "issue-new": ["PersonaHub › 任务 › 刚创建", "任务 · 刚创建"],
     "issue-validation": ["PersonaHub › 工作 › 反复未收敛", "任务 · 验证未收敛"],
     "issue-permission": ["PersonaHub › 任务 › 等待权限确认", "任务 · 权限确认"],
-    "issue-running": ["PersonaHub › 任务 › 运行中", "任务 · 运行环境健康诊断"],
+    "issue-running": ["PersonaHub › 任务 › 运行中", "任务 · Inspector 的 artifact 状态"],
     "issue-research": ["PersonaHub › 任务 › Research 进行中", "任务 · 阶段成果研究"],
-    "issue-done": ["PersonaHub › 任务 › 已完成", "任务 · Graph 重启恢复"],
-    "room-view": ["PersonaHub › 任务 › 阶段成果契约研究 › 协作现场", "协作现场 · 阶段成果研究"],
+    "issue-done": ["PersonaHub › 任务 › 已完成", "任务 · Graph 启动恢复"],
+    "room-view": ["PersonaHub › 任务 › Agent session 生命周期调研 › 协作现场", "协作现场 · 阶段成果研究"],
     "artifact-view": ["PersonaHub › 产出 › 阶段成果 › synthesis_plan › revision 3", "阶段成果 · synthesis_plan"],
     "artifact-research": ["PersonaHub › 产出 › 阶段成果 › research_findings › revision 1", "阶段成果 · research_findings"],
     "evidence-view": ["PersonaHub › 产出 › 完成摘要 › Graph restart recovery", "完成摘要"],
@@ -43,15 +43,15 @@
   };
 
   const dockContexts = {
-    "project-overview": { panel: "project", recipient: "这个项目", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "本周 2 个任务在推进、1 个等你指派。可以直接问我某批改动的结论，或从这里发起新任务。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
-    "issue-view": { panel: "primary", recipient: "@独立验证员", room: { name: "Implementation 现场", meta: "3 名成员 · 1 名已交付 · 阶段结束后归档，记录不删除" }, title: "协作现场支持暂停、纠偏与改派", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步交给独立验证员；指派后会自动携带固定版本的阶段成果和现有验证依据。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议交给独立验证员", handoffMember: "@独立验证员", input: "@独立验证员\n验证上一步实现，重点检查 pause / resume 竞态与归档回放。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：还没有人独立验证竞态与归档回放"},
-    "room-view": { panel: "research-thread", recipient: "@安全研究员", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "阶段成果契约研究", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究协作现场正在收集实体、revision 与路径安全结论；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在收集契约结论", step: "2 / 3 步", block: ""},
-    "issue-new": { panel: "primary", recipient: "这个任务", title: "把诊断结果导出为可分享的报告", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以依据这两条拟一份执行计划交你确认，也可以你直接指派第一步。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
-    "issue-validation": { panel: "primary", recipient: "@架构研究员", title: "修复验证循环恢复", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两次验证出现相同问题。建议先由架构研究员隔离分析共同根因，再决定下一次修复。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两次失败的共同根因，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：重复修复无收敛，需要换策略"},
-    "issue-permission": { panel: "primary", recipient: "这个任务", title: "允许读取外部行情缓存", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求只读访问 D:\\MarketData\\cache。允许、拒绝和影响范围都需要由你明确确认。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你确认外部路径访问", step: "1 / 3 步", block: "卡在：D:\MarketData\cache 超出当前代码目录"},
-    "issue-running": { panel: "primary", recipient: "@Claude", title: "补齐运行环境健康诊断", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全；完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在检查项目级 CLI 可用性", step: "2 / 4 步", block: ""},
-    "issue-research": { panel: "research-thread", recipient: "@安全研究员", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "阶段成果契约研究", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究协作现场正在形成不可变 revision、来源追踪和路径边界结论。", handoff: false, input: "", who: "OpenCode", what: "正在整理 revision 与来源追踪", step: "2 / 3 步", block: ""},
-    "issue-done": { panel: "primary", recipient: "这个任务", title: "Graph 重启恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
+    "project-overview": { panel: "project", recipient: "这个项目", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "v0.3 有 2 个任务在推进、1 个等你指派。F009 的 artifact 引用刚做完实现，还没有独立验证。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
+    "issue-view": { panel: "primary", recipient: "@独立验证员", room: { name: "Implementation 现场", meta: "3 名成员 · 1 名已交付 · 阶段结束后归档，记录不删除" }, title: "artifact 引用不漂移与来源可追", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步交给独立验证员，重点是 scope 泄露与 TOCTOU 边界——这两条 F009 spec 明确要求，但现在一个用例都没有。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议交给独立验证员", handoffMember: "@独立验证员", input: "@独立验证员\n验证上一步实现，重点检查反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：scope 泄露与 TOCTOU 还没有任何用例"},
+    "room-view": { panel: "research-thread", recipient: "@安全研究员", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究现场正在核实两个参考项目的 session 机制；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在核实 session 机制", step: "2 / 3 步", block: ""},
+    "issue-new": { panel: "primary", recipient: "这个任务", title: "把 dogfooding 问题导出为周报", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以先依据它们生成用例集交你确认，再指派实现——用例先于实现固定是 ADR 0009 的硬要求。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
+    "issue-validation": { panel: "primary", recipient: "@架构研究员", title: "修复图重启的并发认领", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两轮独立验证都指向同一处并发窗口。建议先由架构研究员隔离分析共同根因，再决定换什么策略。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两轮都撞上的那个并发窗口，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：两轮都撞同一处并发窗口，需要换策略"},
+    "issue-permission": { panel: "primary", recipient: "这个任务", title: "允许 agent 执行 git push", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求执行 git push origin HEAD:feat/f009-artifact-ref。这是显式的能力边界，每次都要你单独授权。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你授权 git push", step: "1 / 3 步", block: "卡在：git push 是显式能力边界，需要你单独授权"},
+    "issue-running": { panel: "primary", recipient: "@Claude", title: "补齐 Inspector 的 artifact 状态", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全。四种 artifact 状态里已完成两种，完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在补 missing / invalid 两种状态", step: "2 / 4 步", block: ""},
+    "issue-research": { panel: "research-thread", recipient: "@安全研究员", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究现场正在核实 multica 与 clowder 的 session 机制，以及 PersonaHub 现状的差距。", handoff: false, input: "", who: "OpenCode", what: "正在整理两个项目的 session 机制", step: "2 / 3 步", block: ""},
+    "issue-done": { panel: "primary", recipient: "这个任务", title: "Graph 启动恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
   };
 
   function showToast(message) {

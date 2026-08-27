@@ -149,7 +149,7 @@ await check("跨项目注意力降级为范围切换，不占独立工作面（�
 await check("成果面首屏回答「做成什么样、可不可信」（§4.2）", async () => {
   await page.locator('[data-explorer-panel="work"] [data-open="issue-view"]').first().click();
   const stage = page.locator('[data-document="issue-view"]');
-  await stage.locator("h1").filter({ hasText: "协作现场支持暂停" }).waitFor();
+  await stage.locator("h1").filter({ hasText: "artifact 引用不漂移" }).waitFor();
 
   const cards = await stage.locator(".outcome-state > button.state-card").allInnerTexts();
   if (cards.length !== 3) throw new Error(`成果状态条应为三卡，实际 ${cards.length}`);
@@ -295,7 +295,7 @@ await check("执行状态常驻，不需要切 tab 才能看到（§4.3）", asy
   // 任务名归舞台标题；Dock 只在收件人被固定到别的任务时才写任务名
   const chrome = await page.locator("[data-room-dock]").innerText();
   const beforeStream = chrome.split("我")[0];
-  if (beforeStream.includes("协作现场支持暂停")) throw new Error("Dock 顶部重复了舞台标题里的任务名");
+  if (beforeStream.includes("artifact 引用不漂移")) throw new Error("Dock 顶部重复了舞台标题里的任务名");
 });
 
 await check("收件人跟随任务切换，可显式固定（§4.3）", async () => {
@@ -308,7 +308,7 @@ await check("收件人跟随任务切换，可显式固定（§4.3）", async ()
   await page.locator("[data-dock-target]").filter({ hasText: "@架构研究员" }).waitFor();
   const note = page.locator("[data-dock-parent]");
   if (!(await note.isVisible())) throw new Error("固定后没有持续提示收件人属于哪个任务");
-  if (!(await note.innerText()).includes("修复验证循环恢复")) throw new Error("固定提示未写明所属任务");
+  if (!(await note.innerText()).includes("修复图重启的并发认领")) throw new Error("固定提示未写明所属任务");
 
   await page.locator("[data-dock-pin]").click();
   await page.locator("[data-dock-target]").filter({ hasText: "@Claude" }).waitFor();
@@ -588,7 +588,7 @@ await check("协作现场说明来源与选人理由（§4.2.3 / PRD 第 5 节�
 await check("内嵌的协作现场跟随当前任务，不是永远同一个（§5 原则 1）", async () => {
   await page.locator('.work-item[data-open="issue-view"]').click();
   const first = await page.locator('[data-room-panel].active [data-inline-room] .ir-head').innerText();
-  if (!first.includes("Implementation")) throw new Error(`任务「协作现场支持暂停」应配 Implementation 现场，实际 ${first}`);
+  if (!first.includes("Implementation")) throw new Error(`任务「artifact 引用不漂移」应配 Implementation 现场，实际 ${first}`);
 
   await page.locator('[data-open="room-view"]').first().click();
   const second = await page.locator('[data-room-panel].active [data-inline-room] .ir-head').innerText();
