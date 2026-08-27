@@ -151,28 +151,35 @@ await check("成果面首屏回答「做成什么样、可不可信」（§4.2�
   const stage = page.locator('[data-document="issue-view"]');
   await stage.locator("h1").filter({ hasText: "artifact 引用不漂移" }).waitFor();
 
-  const cards = await stage.locator(".outcome-state > button.state-card").allInnerTexts();
-  if (cards.length !== 3) throw new Error(`成果状态条应为三卡，实际 ${cards.length}`);
+  // 三张卡是同一条「验证进度」轴上的三段，因此可以并列
+  const cards = await stage.locator("[data-claim-filter-btn]").allInnerTexts();
+  if (cards.length !== 3) throw new Error(`状态卡应为三张，实际 ${cards.length}`);
   const joined = cards.join(" ");
-  for (const want of ["覆盖", "对齐", "时序"]) {
-    if (!joined.includes(want)) throw new Error(`成果状态条缺少「${want}」`);
+  for (const want of ["已独立验证", "有证据待验证", "需要你处理"]) {
+    if (!joined.includes(want)) throw new Error(`状态卡缺少「${want}」`);
   }
   if (/\d+%/.test(joined)) throw new Error("出现百分比信任评分（design.md §4.2 明确禁止）");
 
-  const rows = await stage.locator(".claim").count();
-  if (rows !== 3) throw new Error(`完成要求应逐条挂依据，实际 ${rows} 条`);
-  if (!(await stage.locator(".claim.unproven-claim").isVisible())) {
-    throw new Error("未验证项没有显式标记，用户会误以为全部已验证");
+  // 三个数字之和必须等于主张总数——这是它们能并列的前提
+  const nums = joined.match(/\d+/g).map(Number);
+  const total = await stage.locator("[data-claim-state]").count();
+  const verified = nums[0];
+  const pending = nums[2];
+  const attention = nums[3];
+  if (verified + pending + attention !== total) {
+    throw new Error(`三张卡之和 ${verified}+${pending}+${attention} 不等于主张总数 ${total}`);
   }
 
-  const steps = await stage.locator(".pp-step").count();
-  if (steps !== 5) throw new Error(`实现/验证双列应在成果面上，实际 ${steps} 步`);
+  // 变更是历史事件，不在验证进度轴上，必须拆出独立一行
+  const changeLine = stage.locator(".claim-change-line");
+  if (!(await changeLine.isVisible())) throw new Error("缺少「上次查看后」变更行");
+  if ((await stage.locator("[data-claim-filter-btn]").filter({ hasText: "变更" }).count())) {
+    throw new Error("变更被混进了状态卡——它不在验证进度轴上");
+  }
+
   await page.screenshot({ path: "shots/outcome-waiting.png", fullPage: true });
 });
 
-// §4.2.4 可信度表达 ───────────────────────────────────────
-// 信任不来自更好的摘要（摘要恰好是 agent 最容易凭空写出来的东西），
-// 只来自：信源分层 + 抽查成本接近零 + 主动暴露没有被证明的部分。
 await check("每条陈述标明信源：机器事实与 Agent 的说法不混同（§4.2.4）", async () => {
   const stage = page.locator('[data-document="issue-view"]');
   if (!(await stage.locator(".source-legend").isVisible())) throw new Error("成果面没有信源图例，用户学不会哪些像素可能骗人");
@@ -184,90 +191,115 @@ await check("每条陈述标明信源：机器事实与 Agent 的说法不混同
   if (!(await note.isVisible())) throw new Error("成员写的文件说明没有和机器事实拉开距离");
 });
 
-await check("三张卡是用例视角的抽屉：就地展开，不跳页（§4.2.4）", async () => {
+await check("主张与证据之间有显式的「论证」（ADR 0010 / GSN Strategy）", async () => {
   const stage = page.locator('[data-document="issue-view"]');
-  await stage.locator('[data-drawer-toggle="view-cover"]').click();
-  const cover = stage.locator('[data-drawer-body="view-cover"]');
-  await cover.waitFor({ state: "visible" });
-  if ((await cover.locator(".cover-row").count()) !== 3) throw new Error("覆盖表没有逐条列出完成要求");
-  if (!(await cover.locator(".cover-row.gap").isVisible())) throw new Error("没有标出覆盖缺口");
-  if (!(await stage.isVisible())) throw new Error("展开把用户带离了成果面");
+  const claims = stage.locator("[data-claim-state]");
+  if ((await claims.count()) < 3) throw new Error("主张树内容过少");
 
-  // 三卡互斥，不能同时撑开
-  await stage.locator('[data-drawer-toggle="view-align"]').click();
-  if (await cover.isVisible()) throw new Error("三个抽屉可同时展开，下文会被推到屏幕外");
-
-  // 对齐是整条链上唯一需要人看的断点：用例必须能追到设计稿
-  const align = stage.locator('[data-drawer-body="view-align"]');
-  const alignText = await align.innerText();
-  if (!alignText.includes("设计稿")) throw new Error("对齐抽屉没有把用例追回设计文档");
-  if (!(await align.locator(".cover-row.gap").isVisible())) throw new Error("没有标出对齐缺口");
-  await stage.locator('[data-drawer-toggle="view-align"]').click();
-});
-
-await check("用例必须先于实现固定，破线要顶到首屏（§4.2.4 / ADR 0009）", async () => {
-  const stage = page.locator('[data-document="issue-view"]');
-  const alert = stage.locator("[data-fence-alert]");
-  if (!(await alert.isVisible())) throw new Error("实现期间改过用例，但首屏没有提示");
-  if (!(await alert.innerText()).includes("实现开始后")) throw new Error("破线提示没有说清是时序问题");
-
-  await stage.locator('[data-drawer-toggle="view-order"]').click();
-  const order = stage.locator('[data-drawer-body="view-order"]');
-  await order.waitFor({ state: "visible" });
-  const timeline = await order.locator(".raw-block pre").innerText();
-  for (const want of ["用例集 r1 冻结", "实现 Run #2 开始"]) {
-    if (!timeline.includes(want)) throw new Error(`时间轴缺少「${want}」`);
+  // 有证据的主张必须写明「凭什么」——缺了它，主张与证据的联系只能靠读者脑补
+  const withEvidence = stage.locator("[data-claim-state]").filter({ has: page.locator(".evidence-list") });
+  const n = await withEvidence.count();
+  if (n === 0) throw new Error("没有任何主张挂了证据");
+  for (let i = 0; i < n; i += 1) {
+    const item = withEvidence.nth(i);
+    if (!(await item.locator(".claim-why").isVisible())) throw new Error("有证据的主张缺少「凭什么」");
+    const why = await item.locator(".claim-why").innerText();
+    if (why.length < 12) throw new Error(`论证过短，等于没说：${why}`);
+    if (/^凭什么\s*(因为)?(测试)?通过了?$/.test(why.replace(/\s/g, ""))) {
+      throw new Error("论证退化成同义反复");
+    }
+    // 每条有证据的主张都要给出结论，精确状态由文字承担
+    if (!(await item.locator(".claim-verdict").isVisible())) throw new Error("有证据的主张缺少「结论」行");
   }
-  if ((await order.locator(".raw-block pre .del").count()) < 2) throw new Error("破线的两次未被标红");
-  await stage.locator('[data-drawer-toggle="view-order"]').click();
 });
 
-await check("实现与验证双列等重，中间是上下文围栏（ADR 0009）", async () => {
+await check("只用三个符号，同源验证不冒充独立验证（提案 §3 / ADR 0010）", async () => {
   const stage = page.locator('[data-document="issue-view"]');
-  const plan = stage.locator(".pair-plan");
-  await plan.scrollIntoViewIfNeeded();
-  if (!(await plan.isVisible())) throw new Error("执行计划没有改成实现/验证双列");
+  const marks = await stage.locator(".claim-mark").allInnerTexts();
+  const uniq = [...new Set(marks.map((m) => m.trim()))];
+  if (uniq.some((m) => !["✓", "◐", "⚠"].includes(m))) {
+    throw new Error(`出现三个符号之外的记号：${uniq.join(" ")}——使用者已反馈界面太复杂`);
+  }
 
-  const cols = plan.locator(".pp-col");
-  if ((await cols.count()) !== 2) throw new Error("双列结构不完整");
-  const left = await cols.nth(0).boundingBox();
-  const right = await cols.nth(1).boundingBox();
-  if (Math.abs(left.width - right.width) > 4) throw new Error("实现与验证两列不等宽——验证被做轻了");
+  // 同源验证必须落在 ◐，不能拿到绿勾；这正是 ADR 0009 上下文围栏的界面兑现
+  const pending = stage.locator('[data-claim-state="pending"]').first();
+  const verdict = await pending.locator(".claim-verdict").innerText();
+  if (!verdict.includes("同源")) throw new Error("同源验证没有在结论里说明");
+  if ((await pending.locator(".claim-mark").innerText()).trim() === "✓") {
+    throw new Error("同源验证拿到了独立验证的绿勾");
+  }
 
-  const fence = plan.locator("[data-pp-fence]");
-  if (!(await fence.isVisible())) throw new Error("缺少上下文围栏");
-  if (!(await fence.innerText()).includes("看不到")) throw new Error("围栏没有说明它隔离了什么");
-
-  // 围栏右侧的步骤必须标明是冷启动
-  const cold = cols.nth(1).locator(".pp-mode.cold");
-  if (!(await cold.isVisible())) throw new Error("验证步骤没有标明冷启动");
-  if (!(await cold.innerText()).includes("自述")) throw new Error("没有说明冷启动隔离掉了什么");
+  // 独立验证过的主张要写明验证者拿不到实现者的自述
+  const ok = stage.locator('[data-claim-state="verified"]').first();
+  if (!(await ok.locator(".claim-verdict").innerText()).includes("独立验证通过")) {
+    throw new Error("已验证主张的结论没有写明独立性");
+  }
+  if (!(await ok.locator(".evidence-list").innerText()).includes("冷启动")) {
+    throw new Error("独立验证的证据没有标出冷启动");
+  }
 });
 
-await check("完成要求就地展开可证伪切片（§4.2.4）", async () => {
+await check("证据用仓库里的天然标识，不新造编号体系（提案 §2）", async () => {
   const stage = page.locator('[data-document="issue-view"]');
-  const head = stage.locator(".claim .claim-head").first();
-  await head.click();
-  const body = stage.locator(".claim .claim-body").first();
-  await body.waitFor({ state: "visible" });
-  if (!(await body.locator(".proof-test > code").first().isVisible())) throw new Error("展开后没有测试名，无法核对这条要求靠什么成立");
-  if (!(await body.locator(".raw-block pre").first().isVisible())) throw new Error("展开后没有断言的实际输出");
-  if (!(await body.locator(".proof-author").first().isVisible())) throw new Error("没有说明这个测试是谁写的");
-  await head.click();
-  if (await body.isVisible()) throw new Error("依据无法收起");
+  const text = await stage.locator(".evidence-list").first().innerText();
+  if (!/\.test\.ts|\.tsx|\.md|\//.test(text)) throw new Error("证据没有使用测试名或文件路径这类天然标识");
+  const all = await stage.locator("[data-claim-list]").innerText();
+  if (/\b(TEST|SRC|FILE|REVIEW|COUNTER|VALIDATION)-\d+/.test(all)) {
+    throw new Error("出现新造的 ID 前缀——证据对象本来就各自可寻址");
+  }
 });
 
-await check("「还没有被证明」常驻，成功态也要认怂（§4.2.4）", async () => {
+await check("点状态卡筛主张树，可再次点击取消（提案 §6）", async () => {
   const stage = page.locator('[data-document="issue-view"]');
-  const section = stage.locator(".outcome-section.unproven-section");
-  if (!(await section.isVisible())) throw new Error("成果面只报喜，没有固定的缺口段");
-  const items = await section.locator(".unproven-list > li").count();
-  if (items < 1) throw new Error("缺口段是空的，但这份成果显然还没有独立验证");
-  if (!(await section.innerText()).includes("独立验证")) throw new Error("最大的一个缺口（没有独立验证）没有写在缺口段里");
-  // 舞台自己滚动，fullPage 截不到下半屏，先把缺口段滚进视口
-  await section.scrollIntoViewIfNeeded();
-  await page.screenshot({ path: "shots/outcome-unproven.png" });
-  await page.locator('[data-document="issue-view"] .task-heading').scrollIntoViewIfNeeded();
+  const total = await stage.locator("[data-claim-state]").count();
+  const btn = stage.locator('[data-claim-filter-btn="attention"]');
+  await btn.click();
+  const shown = await stage.locator("[data-claim-state]:visible").count();
+  if (shown === 0) throw new Error("筛「需要你处理」后一条都不剩");
+  if (shown >= total) throw new Error("筛选没有生效");
+  if ((await stage.locator('[data-claim-state="attention"]:visible').count()) !== shown) {
+    throw new Error("筛选结果混入了其他状态");
+  }
+  await btn.click();
+  if ((await stage.locator("[data-claim-state]:visible").count()) !== total) throw new Error("再次点击未取消筛选");
+});
+
+await check("验收基线变更事前阻塞，新增证据不拦截（提案 §5）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  const gate = stage.locator("[data-baseline-gate]");
+  if (!(await gate.isVisible())) throw new Error("验收基线被申请修改，但首屏没有拦住");
+  const text = await gate.innerText();
+  if (!text.includes("验收基线")) throw new Error("阻塞条没有说清拦的是验收基线");
+  if (text.includes("修改主张的证据")) throw new Error("证据是已发生的记录，不存在修改");
+  if (!text.includes("可能把主张改弱")) throw new Error("没有提示这次改动会削弱断言");
+  if (!text.includes("已有证据保持不变")) throw new Error("没有说明新增证据不受影响");
+  if ((await gate.locator(".bg-actions > button").count()) < 3) throw new Error("缺少批准 / 拒绝 / 看差异三个动作");
+});
+
+await check("范围血统默认收起，按需展开（提案 §9.2）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  const scope = stage.locator(".scope-line");
+  if (!(await scope.innerText()).includes("US-002")) throw new Error("没有显示当前范围");
+  const full = stage.locator("[data-scope-full]");
+  if (await full.isVisible()) throw new Error("完整血统不该默认占首屏");
+  await scope.locator("[data-scope-toggle]").click();
+  await full.waitFor({ state: "visible" });
+  if (!(await full.innerText()).includes("F009")) throw new Error("展开后没有完整路径");
+  await scope.locator("[data-scope-toggle]").click();
+  if (await full.isVisible()) throw new Error("血统无法收起");
+});
+
+await check("实现回归单独成段，不与端到端验收混算（ADR 0010 决策 3）", async () => {
+  const stage = page.locator('[data-document="issue-view"]');
+  const band = stage.locator(".regression-band");
+  if (!(await band.isVisible())) throw new Error("实现回归没有单独成段");
+  const text = await band.innerText();
+  if (!text.includes("15 / 15")) throw new Error("回归数量未显示");
+  if (!text.includes("不计入")) throw new Error("没有说明它不计入三张卡");
+  // 主张树里不能出现把两者合计的数字
+  if ((await stage.locator("[data-claim-list]").innerText()).includes("18 / 18")) {
+    throw new Error("端到端与单元又被合计成一个数字");
+  }
 });
 
 await check("舞台是单例：点进文件后可返回任务（§4.2）", async () => {
@@ -379,104 +411,99 @@ await check("命令面板可开可关", async () => {
   await page.locator("[data-command-overlay]").waitFor({ state: "hidden" });
 });
 
-await check("四个任务态共用同一套成果面结构（§4.2.2）", async () => {
-  for (const [id, label] of [["issue-new", "刚创建"], ["issue-view", "等待指派"], ["issue-running", "执行中"], ["issue-done", "已完成"]]) {
+await check("七个任务态共用同一套数据骨架（提案 §10）", async () => {
+  const ids = ["issue-new", "issue-view", "issue-running", "issue-research", "issue-validation", "issue-permission", "issue-done"];
+  for (const id of ids) {
     await page.locator(`.work-item[data-open="${id}"]`).click();
     const doc = page.locator(`[data-document="${id}"]`);
-    const cls = await doc.getAttribute("class");
-    if (!cls.includes("outcome-surface")) throw new Error(`${label}态不是成果面`);
-    const cards = await doc.locator(".outcome-state > div").count();
-    if (cards !== 3) throw new Error(`${label}态首屏状态卡应为 3 张，实际 ${cards}`);
-    const sections = await doc.locator(".outcome-section").count();
-    if (sections < 4) throw new Error(`${label}态段落不足（${sections} < 4）`);
+
+    // 骨架同构：三张卡 + 主张树 + 范围血统，在每个状态下都在
+    if ((await doc.locator("[data-claim-filter-btn]").count()) !== 3) {
+      throw new Error(`${id} 的状态卡不是三张`);
+    }
+    const claims = await doc.locator("[data-claim-state]").count();
+    if (claims < 2) throw new Error(`${id} 的主张树内容过少（${claims}）`);
+    if (!(await doc.locator(".scope-line").isVisible())) throw new Error(`${id} 缺少当前范围`);
+    if (await doc.locator("[data-scope-full]").isVisible()) throw new Error(`${id} 的完整血统不该默认展开`);
+
+    // 三张卡之和必须等于主张总数
+    const nums = (await doc.locator("[data-claim-filter-btn]").allInnerTexts()).join(" ").match(/\d+/g).map(Number);
+    if (nums[0] + nums[2] + nums[3] !== claims) {
+      throw new Error(`${id} 三张卡之和 ${nums[0]}+${nums[2]}+${nums[3]} 不等于主张总数 ${claims}`);
+    }
+
+    // 符号只有三个
+    const marks = [...new Set((await doc.locator(".claim-mark").allInnerTexts()).map((m) => m.trim()))];
+    if (marks.some((m) => !["✓", "◐", "⚠"].includes(m))) {
+      throw new Error(`${id} 出现三个符号之外的记号：${marks.join(" ")}`);
+    }
+
+    // 目标不再占首屏，收进折叠详情
+    const detail = doc.locator(".outcome-detail");
+    if (!(await detail.count())) throw new Error(`${id} 缺少「目标与完整执行计划」折叠段`);
   }
 });
 
-await check("刚创建态用空态表达「还没发生」，不填占位数字（§4.2.2 / §6）", async () => {
-  await page.locator('.work-item[data-open="issue-new"]').click();
-  const doc = page.locator('[data-document="issue-new"]');
-  if ((await doc.locator(".outcome-empty").count()) !== 2) throw new Error("成果与执行计划应各有一处空态");
-  if (await doc.locator(".outcome-file").count()) throw new Error("尚未执行却列出了产出文件");
-  if ((await doc.locator(".evidence-row .ok").count()) !== 0) throw new Error("尚未执行却有已达成的依据");
-});
-
-await check("执行中态：活动常驻正文，计划标出正在跑的那一步（§4.2.2）", async () => {
+await check("首屏顺序按状态变化，不是七态照抄同一套（提案 §10）", async () => {
+  // 执行中：当前动作优先——正在做什么必须排在主张树前面
   await page.locator('.work-item[data-open="issue-running"]').click();
-  const doc = page.locator('[data-document="issue-running"]');
-  if (!(await doc.locator(".outcome-live").isVisible())) throw new Error("缺少常驻活动条");
-  if ((await doc.locator(".plan-step.doing").count()) !== 1) throw new Error("执行计划未标出正在跑的步骤");
-  if ((await doc.locator(".evidence-row.inflight").count()) < 1) throw new Error("未区分「还没拿到依据」的要求");
-});
+  let doc = page.locator('[data-document="issue-running"]');
+  let lead = doc.locator(".state-lead");
+  if (!(await lead.isVisible())) throw new Error("执行中态没有把当前动作放首屏");
+  if (!(await lead.innerText()).includes("第 2 / 4 步")) throw new Error("执行中态首屏没说进行到哪一步");
+  let leadY = (await lead.boundingBox()).y;
+  let listY = (await doc.locator("[data-claim-list]").boundingBox()).y;
+  if (leadY >= listY) throw new Error("执行中态：当前动作没有排在主张树前面");
 
-await check("已完成态：依据全部可点，后续建议不被吞掉（§4.2.2）", async () => {
-  await page.locator('.work-item[data-open="issue-done"]').click();
-  const doc = page.locator('[data-document="issue-done"]');
-  if ((await doc.locator(".claim .ok").count()) !== 3) throw new Error("完成要求未全部拿到依据");
-  if (await doc.locator(".claim.unproven-claim").count()) throw new Error("已完成却仍有未验证项");
-  if (!(await doc.locator(".outcome-followup").isVisible())) throw new Error("验证员的后续建议消失了");
-  // 成功态照样要认怂：三张全绿不等于什么都验过了（§4.2.4）
-  const gaps = doc.locator(".outcome-section.unproven-section");
-  if (!(await gaps.isVisible())) throw new Error("已完成态没有「还没有被证明」段，绿卡会被读成全部验过");
-  if ((await gaps.locator(".unproven-list > li").count()) < 1) throw new Error("已完成态的缺口段是空的");
-});
-
-await check("七个任务态的可信度表达同构（§4.2.4）", async () => {
-  const ids = ["issue-new", "issue-view", "issue-running", "issue-research", "issue-validation", "issue-permission", "issue-done"];
-  for (const id of ids) {
-    await page.locator(`.work-item[data-open="${id}"]`).click();
-    const doc = page.locator(`[data-document="${id}"]`);
-    if (!(await doc.locator(".source-legend").isVisible())) throw new Error(`${id} 缺少信源图例`);
-    const cards = await doc.locator(".outcome-state > button.state-card").count();
-    if (cards !== 3) throw new Error(`${id} 的状态卡不是三个可展开的证据抽屉（实际 ${cards}）`);
-    const drawers = await doc.locator(".state-drawer").count();
-    if (drawers !== 3) throw new Error(`${id} 的抽屉数量不对（实际 ${drawers}）`);
-    if (!(await doc.locator(".outcome-section.unproven-section").isVisible())) {
-      throw new Error(`${id} 没有「还没有被证明」段——七态必须同构，否则重演「只有几个态是成果面」`);
-    }
-  }
-});
-
-await check("七个任务态全部是成果面，无 V2 遗留版式（§4.2.2）", async () => {
-  const ids = ["issue-new", "issue-view", "issue-running", "issue-research", "issue-validation", "issue-permission", "issue-done"];
-  for (const id of ids) {
-    await page.locator(`.work-item[data-open="${id}"]`).click();
-    const doc = page.locator(`[data-document="${id}"]`);
-    if (!(await doc.getAttribute("class")).includes("outcome-surface")) throw new Error(`${id} 不是成果面`);
-    if ((await doc.locator(".outcome-state > div").count()) !== 3) throw new Error(`${id} 状态卡不是 3 张`);
-    if ((await doc.locator(".outcome-section").count()) < 4) throw new Error(`${id} 段落不足`);
-    for (const legacy of [".room-summary", ".task-toolbar", ".task-grid", ".finding-compare"]) {
-      if (await doc.locator(legacy).count()) throw new Error(`${id} 仍有 V2 版式 ${legacy}`);
-    }
-  }
-});
-
-await check("阻塞态自带动作，不只是一条说明（§4.2.2 / §6）", async () => {
-  await page.locator('.work-item[data-open="issue-permission"]').click();
-  const block = page.locator('[data-document="issue-permission"] .outcome-block');
-  if (!(await block.isVisible())) throw new Error("权限确认缺少阻塞条");
-  if ((await block.locator("button").count()) !== 2) throw new Error("允许 / 拒绝两个动作应就在阻塞条上");
-  if ((await page.locator('[data-document="issue-permission"] .permission-scope > div').count()) !== 4) {
-    throw new Error("「你在批准什么」应逐条列出，含拒绝后果");
-  }
-  if ((await page.locator('[data-document="issue-permission"] .plan-step.blocked').count()) !== 1) {
-    throw new Error("执行计划未标出被阻塞的那一步");
-  }
-});
-
-await check("验证未收敛：打回的要求展开两轮结论（§4.2.2）", async () => {
+  // 验证未收敛：差异与换策略优先，且必须给出动作
   await page.locator('.work-item[data-open="issue-validation"]').click();
-  const doc = page.locator('[data-document="issue-validation"]');
-  const failed = doc.locator(".evidence-row.failed");
-  if ((await failed.count()) !== 1) throw new Error("缺少「未通过」的完成要求");
-  if ((await failed.locator(".round-compare .linklike").count()) !== 2) {
-    throw new Error("未通过的要求应能同时点开两轮各自的结论，否则看不出是不是同一个问题");
-  }
-  if ((await doc.locator(".plan-step.failed").count()) !== 2) throw new Error("两轮失败应各占一个步骤，不能合并");
-  if ((await doc.locator(".outcome-file").count()) !== 2) throw new Error("验证不通过不应回滚已有改动");
+  doc = page.locator('[data-document="issue-validation"]');
+  lead = doc.locator(".state-lead.attention");
+  if (!(await lead.isVisible())) throw new Error("验证未收敛态没有把差异放首屏");
+  const vText = await lead.innerText();
+  if (!vText.includes("同一 finding")) throw new Error("没有说明两轮是同一个根因");
+  if ((await lead.locator(".sl-actions > button").count()) < 3) throw new Error("换策略的动作不足三个");
+  leadY = (await lead.boundingBox()).y;
+  listY = (await doc.locator("[data-claim-list]").boundingBox()).y;
+  if (leadY >= listY) throw new Error("验证未收敛态：差异没有排在主张树前面");
+
+  // 两轮失败必须各占一条证据，不合并成「重试 2 次」
+  const failed = doc.locator('[data-claim-state="attention"]').first();
+  const evidence = await failed.locator(".evidence-item").count();
+  if (evidence < 2) throw new Error("两轮验证失败被合并了，看不出是同一个执行者同一个结论");
+
+  // 已完成：交付与结论优先
+  await page.locator('.work-item[data-open="issue-done"]').click();
+  doc = page.locator('[data-document="issue-done"]');
+  lead = doc.locator(".state-lead");
+  if (!(await lead.innerText()).includes("结论")) throw new Error("已完成态首屏不是结论");
+  leadY = (await lead.boundingBox()).y;
+  listY = (await doc.locator("[data-claim-list]").boundingBox()).y;
+  if (leadY >= listY) throw new Error("已完成态：结论没有排在主张树前面");
+  // 成功态照样要认怂
+  if (!(await doc.locator(".claim-na-line").isVisible())) throw new Error("已完成态没有写仍未证明的部分");
+  await page.screenshot({ path: "shots/task-done.png", fullPage: true });
 });
 
-// §4.2.5 轨迹视图 ─────────────────────────────────────────
-// 三个正交维度：舞台成果面按结构，Dock 会话按对话，轨迹按时间。
+await check("非代码任务同骨架，证据换成引用与反证（ADR 0010 决策 4）", async () => {
+  await page.locator('.work-item[data-open="issue-research"]').click();
+  const doc = page.locator('[data-document="issue-research"]');
+
+  const text = await doc.locator("[data-claim-list]").innerText();
+  if (!text.includes("跳回原文")) throw new Error("研究任务的证据没有提供回原文的入口");
+  if (!text.includes("反证")) throw new Error("研究任务没有表达反证——不能强压成二元通过/失败");
+
+  // 有争议的结论落在 ◐，不是 ✓ 也不是新符号
+  const disputed = doc.locator('[data-claim-state="pending"]').first();
+  if ((await disputed.locator(".claim-mark").innerText()).trim() !== "◐") throw new Error("有争议的结论没有落在 ◐");
+  if (!(await disputed.locator(".claim-verdict").innerText()).includes("争议")) {
+    throw new Error("结论行没有写明仍有争议");
+  }
+
+  // 研究任务不该出现代码任务才有的实现回归段
+  if (await doc.locator(".regression-band").count()) throw new Error("研究任务出现了实现回归段");
+});
+
 await check("轨迹在任务 tab 内切换，不新开 tab（§4.2.5 / §4.2.1）", async () => {
   await page.locator('.work-item[data-open="issue-view"]').click();
   const before = await page.locator("[data-task-tabs] .editor-tab").count();

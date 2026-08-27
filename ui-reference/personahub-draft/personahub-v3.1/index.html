@@ -381,75 +381,111 @@ completed -&gt; archived</code></pre>
                     <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
                   </div>
 
-                  <div class="fence-alert" data-fence-alert>
-                    <span class="fa-mark" aria-hidden="true">!</span>
-                    <span>
-                      <strong>用例在实现开始后被改过 2 次</strong>
-                      <small>AC-010 的期望值 10:52 被改（实现进行中）· AC-013 新增于 11:04。用例应当先于实现固定，否则它会被改成迁就代码的样子。</small>
-                    </span>
-                    <button class="linklike" type="button" data-open="evidence-room" data-label="用例变更 · 两次" data-stage-child>看改了什么 →</button>
-                  </div>
-
-                  <div class="outcome-state">
-                    <button class="state-card" type="button" data-drawer-toggle="view-cover" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>覆盖</small>
-                      <strong>2 / 3 条</strong>
-                      <span>要求有用例 · <em class="drawer-cue"><i>展开覆盖表</i></em></span>
-                    </button>
-                    <button class="state-card pending-cell" type="button" data-drawer-toggle="view-align" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>对齐</small>
-                      <strong>11 / 18 条</strong>
-                      <span>用例可追到设计稿 · <em class="drawer-cue"><i>展开来源</i></em></span>
-                    </button>
-                    <button class="state-card warn-cell" type="button" data-drawer-toggle="view-order" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>时序</small>
-                      <strong>破线 2 处</strong>
-                      <span>实现开始后改过用例 · <em class="drawer-cue"><i>展开时间轴</i></em></span>
-                    </button>
-
-                    <div class="state-drawer" data-drawer-body="view-cover" hidden>
-                      <h3>哪几条完成要求还没有用例</h3>
-                      <p>覆盖只回答「有没有人验」，不回答「验得对不对」——后者归对齐。</p>
-                      <div class="cover-grid">
-                        <div class="cover-row ok"><span class="cv-mark">✓</span><span><strong>创建新 revision 后旧引用不漂移</strong><small>AC-009 · AC-010</small></span><span class="cv-state">2 条用例</span></div>
-                        <div class="cover-row ok"><span class="cv-mark">✓</span><span><strong>archived locator 由内容 hash 派生，调用方不可覆盖</strong><small>AC-011</small></span><span class="cv-state">1 条用例</span></div>
-                        <div class="cover-row gap"><span class="cv-mark">!</span><span><strong>反向查询不跨 Project / Issue scope 泄露存在性</strong><small>没有任何用例覆盖这条要求</small></span><span class="cv-state bad">覆盖缺口</span></div>
+                  <div class="baseline-gate" data-baseline-gate>
+                    <span class="bg-mark" aria-hidden="true">⏸</span>
+                    <div>
+                      <h3>实现者申请修改验收基线，等你决定</h3>
+                      <div class="bg-diff">
+                        <div><span>主张</span><span><code>AC-002</code> · 旧 revision ref 永远解析旧内容</span></div>
+                        <div class="bg-old"><span>原</span><span><code>resolve("artifact:art_7f2@1") 返回 r1 原文</code></span></div>
+                        <div class="bg-new"><span>改</span><span><code>resolve("artifact:art_7f2@1") 返回 r1 原文 或 null</code></span></div>
                       </div>
-                    </div>
-
-                    <div class="state-drawer" data-drawer-body="view-align" hidden>
-                      <h3>用例是不是忠实于设计稿</h3>
-                      <p>这是整条链上唯一需要你看的断点。前后两段机器能担保，这一段不能——用例是不是忠实于 F009 spec，只有你能判断。</p>
-                      <div class="cover-grid">
-                        <div class="cover-row ok"><span class="cv-mark">✓</span><span><strong>AC-009 / AC-010</strong><small>来源：F009 spec §US-002「artifact 有 r1 与 r2，解析 @1 与 @2 分别返回原始内容」</small></span><span class="cv-state">来源可追</span></div>
-                        <div class="cover-row gap"><span class="cv-mark">!</span><span><strong>AC-011 及另外 6 条</strong><small>没有写来源——无法判断它测的是不是 spec 里那件事</small></span><span class="cv-state bad">对齐缺口</span></div>
-                      </div>
-                      <div class="indep-verdict">
-                        7 条用例全过，但没人能保证它们测的是 F009 spec 里那件事。<strong>「全过」与「做对了」之间隔的就是这 7 条。</strong>
-                      </div>
-                    </div>
-
-                    <div class="state-drawer" data-drawer-body="view-order" hidden>
-                      <h3>用例必须先于实现固定</h3>
-                      <p>这条红线一眼可查、无法伪造：用例集 revision 的时间必须早于实现 Run 的开始时间（<code>docs/decisions/0009-agent-session-lifecycle.md</code>）。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>用例与实现的时间轴</code><span class="exit-bad">2 处破线</span></div>
-                        <pre>09:58  用例集 r1 冻结 · 18 条           <span class="ctx">✓ 早于实现</span>
-10:31  实现 Run #2 开始
-<span class="del">10:52  用例集 r2 · AC-010 期望值被改     ✗ 实现进行中</span>
-<span class="del">11:04  用例集 r3 · 新增 AC-013           ✗ 实现进行中</span>
-11:10  跑用例 18 / 18 通过</pre>
-                      </div>
-                      <div class="indep-verdict">
-                        实现阶段改用例，等于让被测者自己出题。要改可以，但必须走显式的「用例变更」并写明理由——这两次都没有写。
+                      <p class="bg-reason"><em class="src-badge agent">Agent 的说法</em>实现者：源文件被删时拿不到原文，断言「永远」跑不过。</p>
+                      <p class="bg-risk"><strong>⚠ 系统提示：这可能把主张改弱。</strong>原来断言「永远」，改后允许返回 null。是不是可接受由你判断，系统只负责把差异和理由摊开。</p>
+                      <p class="bg-hold">在你决定之前，验收基线停在 r1；已有证据保持不变，新跑出来的结果照常记录。</p>
+                      <div class="bg-actions">
+                        <button type="button" class="primary" data-demo="已批准为 r2；旧主张、旧证据与旧结论仍可追溯，不原地覆盖">批准为 r2</button>
+                        <button type="button" data-demo="已拒绝；验收基线保持 r1，实现需按原断言继续">拒绝并保持 r1</button>
+                        <button type="button" data-open="evidence-room" data-label="验收基线变更 · AC-002" data-stage-child>看完整差异</button>
                       </div>
                     </div>
                   </div>
 
-                  <section class="outcome-section">
-                    <h2>目标</h2>
-                    <p>让 <code>artifact:&lt;id&gt;@&lt;revision&gt;</code> 引用确定内容：创建新 revision 后旧引用仍解析到原内容；archived locator 由服务端按 <code>content_sha256</code> 派生，调用方不可指定、不可覆盖。</p>
-                  </section>
+                  <div class="scope-line">
+                    <strong>US-002<small>稳定引用与历史复现</small></strong>
+                    <button class="linklike" type="button" data-scope-toggle aria-expanded="false">展开血统</button>
+                  </div>
+                  <p class="scope-full" data-scope-full hidden>
+                    <code>J3 跟进执行中的任务</code> › <code>F009 Artifact Foundation &amp; Provenance</code> › <code>US-002 稳定引用与历史复现</code><br />
+                    上层贡献（F009 共 9 条主张）需要 spec 模板补齐 AC 与 US 的连线后才能统计，见提案 §8。
+                  </p>
+
+                  <div class="claim-state" data-claim-filter>
+                    <button class="cs-verified" type="button" data-claim-filter-btn="verified">
+                      <small>已独立验证</small>
+                      <strong>1 / 3 条主张</strong>
+                    </button>
+                    <button class="cs-pending" type="button" data-claim-filter-btn="pending">
+                      <small>有证据待验证</small>
+                      <strong>1 条</strong>
+                    </button>
+                    <button class="cs-attention" type="button" data-claim-filter-btn="attention">
+                      <small>需要你处理</small>
+                      <strong>1 条</strong>
+                    </button>
+                  </div>
+                  <p class="claim-change-line">
+                    <span>上次查看后：<code>AC-002</code> 的验收基线被申请修改一次，尚未决定</span>
+                    <button class="linklike" type="button" data-open="evidence-room" data-label="验收基线变更 · AC-002" data-stage-child>看变更 →</button>
+                  </p>
+
+                  <div class="claim-list" data-claim-list>
+                    <div class="claim-item" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-004</code>双向追溯跨 scope 不泄露存在性</strong>
+                        <p class="claim-empty">没有证据 —— 这条主张目前只是一句话。F009 spec §US-003 要求反向查询受 Project / Issue scope 限制，但没有任何用例执行到它。</p>
+                        <div class="claim-actions">
+                          <button type="button" data-prefill-evidence>补一条用例</button>
+                          <button type="button" data-demo="需填写理由并由你确认；确认后该行显示为灰色不适用，不计入三张卡">申请标记不适用</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="claim-item" data-claim-state="pending">
+                      <span class="claim-mark pending" aria-hidden="true">◐</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-003</code>归档路径由内容派生，调用方不可指定或覆盖</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>一条端到端用例走完整归档路径，加上服务端派生逻辑的实际改动</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>artifact-ref.test.ts › locator derives from sha256</code></span>
+                            <span class="ev-meta"><b>通过</b> 233ms · 实现者执行</span>
+                          </div>
+                          <div class="evidence-item">
+                            <span><code>server/src/services/artifact.ts</code> <span class="ev-meta">+48 −9</span></span>
+                            <button class="linklike" type="button" data-open="file-code" data-label="artifact.ts" data-stage-child>打开全文</button>
+                          </div>
+                        </div>
+                        <p class="claim-verdict pending"><span>结论</span>有证据，但执行者与实现者同源，等待独立验证</p>
+                      </div>
+                    </div>
+
+                    <div class="claim-item" data-claim-state="verified">
+                      <span class="claim-mark verified" aria-hidden="true">✓</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-002</code>旧 revision ref 永远解析旧内容</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>两条端到端用例走完整读取路径，其中一条由未参与实现的成员在独立上下文里跑</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>artifact-ref.test.ts › old ref resolves to r1</code></span>
+                            <span class="ev-meta"><b>通过</b> 412ms · 实现者执行</span>
+                          </div>
+                          <div class="evidence-item">
+                            <span><code>artifact-ref.test.ts › content survives mutation</code></span>
+                            <span class="ev-meta"><b>通过</b> 188ms · 验证员执行 · <i>⊘ 冷启动</i></span>
+                          </div>
+                        </div>
+                        <p class="claim-verdict ok"><span>结论</span>独立验证通过 · 验证者未收到实现者的过程消息与自述</p>
+                        <p class="claim-collapsed-note">这条主张已收敛，默认可收起；当前展开是为了对照上方的基线变更申请。</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="regression-band">
+                    <span>实现回归 <strong>15 / 15</strong> 当前无失败 · 挂在代码上，不计入上面三张卡</span>
+                    <button class="linklike" type="button" data-demo="展开单元与属性测试清单；失败时会自动展开并进入「需要你处理」">展开</button>
+                  </div>
 
                   <section class="outcome-section">
                     <h2>本次成果</h2>
@@ -472,143 +508,10 @@ completed -&gt; archived</code></pre>
                       </div>
                     </div>
                   </section>
-
-                  <section class="outcome-section">
-                    <h2>完成要求与依据</h2>
-                    <p>依据就地展开，不跳页——核对一条结论应该是 0 到 1 次点击，超过这个数就没有人会核对。</p>
-
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>创建新 revision 后旧引用不漂移</strong><small><em class="src-badge machine">系统记录</em>2 个用例 · integration · 实现者所写</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>AC-009: old ref resolves to r1 after r2 is created</code>
-                          <small>断言：artifact 有 r1 与 r2 时，解析 <code>artifact:&lt;id&gt;@1</code> 返回 r1 的原始内容，不返回 r2。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>断言实际输出</code><span class="exit-ok">通过 · 412 ms</span></div>
-                            <pre>resolve("artifact:art_7f2@1").content  → r1 原文   ✓
-resolve("artifact:art_7f2@2").content  → r2 原文   ✓
-resolve("artifact:art_7f2").revision   → 2         ✓</pre>
-                          </div>
-                          <p class="proof-author">这个测试由实现者本人在本次执行中写入 · <button class="linklike" type="button" data-open="evidence-room" data-label="验证依据 · artifact 引用不漂移" data-stage-child>看它的完整执行记录 →</button></p>
-                        </div>
-                        <div class="proof-test">
-                          <code>AC-010: revision content survives source file mutation</code>
-                          <small>断言：改动 workspace 里的源文件后，已归档 revision 的内容与 hash 不变。</small>
-                          <p class="proof-author">同上，实现者本人所写</p>
-                        </div>
-                        <div class="claim-foot">
-                          <span><em class="src-badge machine">系统记录</em>命令 · 退出码 · 原始 stdout 均可追</span>
-                          <button class="linklike" type="button" data-open="evidence-room" data-label="验证依据 · artifact 引用不漂移" data-stage-child>打开完整证据链 →</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>archived locator 由内容 hash 派生，调用方不可覆盖</strong><small><em class="src-badge machine">系统记录</em>1 个用例 + 实际改动 · artifact.ts</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>AC-011: archived locator derives from content_sha256</code>
-                          <small>断言：调用方给的 source locator 不会成为归档路径；归档路径由服务端按内容 hash 生成，调用方不可覆盖。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>对应改动</code><span class="exit-ok">artifact.ts · +2</span></div>
-                            <pre><span class="add">+  const archived = archivePath(contentSha256);   // 服务端派生</span>
-<span class="add">+  if (input.locator) assertStagingOnly(input.locator);</span></pre>
-                          </div>
-                          <p class="proof-author">这个测试由实现者本人在本次执行中写入</p>
-                        </div>
-                        <div class="claim-foot">
-                          <button class="linklike" type="button" data-open="file-code" data-label="artifact.ts" data-stage-child>打开修改位置 →</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="claim unproven-claim">
-                      <button class="claim-head" type="button" disabled aria-expanded="false">
-                        <span class="pending-mark">!</span>
-                        <span><strong>反向查询不跨 Project / Issue scope 泄露存在性</strong><small>没有任何依据 —— 还没有人验证过这一条</small></span>
-                        <span class="row-go muted">无可展开的依据</span>
-                      </button>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section unproven-section">
-                    <h2>还没有被证明</h2>
-                    <p>这一段常驻，任何状态下都在。只有真的没有缺口时才会写「没有未证明项」。</p>
-                    <ul class="unproven-list">
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>整份成果都没有独立验证</strong><small>实现、写用例、跑用例是同一个成员。18 / 18 通过只证明它写的代码符合它自己写的用例。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>scope 泄露与 TOCTOU：0 个用例覆盖</strong><small>F009 spec 明确要求防 junction/symlink 的校验-读取窗口，以及反向查询不跨 scope 泄露存在性；两条都没有被任何用例执行到。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>executable-resolver.ts 的 +16 −3 没有被执行到</strong><small>18 个用例没有一个走进 invalid 分支；「missing 与 invalid 分别返回」目前只有实现者的一句说明。</small></span>
-                      </li>
-                    </ul>
-                    <button class="linklike" type="button" data-prefill-evidence>把这三条写成验证指令 →</button>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>实现与验证</h2>
-                    <p>两列等宽等重。围栏右侧永远是一个新 session，看不到左侧的过程消息与自述（ADR 0009）。</p>
-                    <div class="pair-plan">
-                      <div class="pp-col">
-                        <h3>实现</h3>
-                        <div class="pp-step done">
-                          <span class="pp-index">1</span>
-                          <div><strong>确认目标与完成要求</strong><small>Human Lead · 10:01</small></div>
-                        </div>
-                        <div class="pp-step done">
-                          <span class="pp-index">2</span>
-                          <div>
-                            <strong>实现 revision 解析与 archived locator</strong>
-                            <small>实现者 / Codex GPT-5 · 3m 18s</small>
-                            <small class="pp-ctx">收到：目标 · 用例集 r1 · F009 spec §US-002</small>
-                            <small class="pp-mode">⟳ 续跑自 Run #1 · 继承上下文</small>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="pp-col">
-                        <h3>验证</h3>
-                        <div class="pp-step done">
-                          <span class="pp-index">1v</span>
-                          <div><strong>从 F009 spec 生成用例集</strong><small>用例集 r1 · 18 条 · 09:58 冻结</small></div>
-                        </div>
-                        <div class="pp-step warn">
-                          <span class="pp-index">2v</span>
-                          <div>
-                            <strong>跑用例</strong>
-                            <small>18 / 18 通过</small>
-                            <small class="pp-warn">⚠ 期间改过 2 条用例（AC-010 / AC-013），见时序卡</small>
-                          </div>
-                        </div>
-                        <div class="pp-step waiting">
-                          <span class="pp-index">3v</span>
-                          <div>
-                            <strong>scope 泄露与 TOCTOU 边界</strong>
-                            <small>还没有用例，先补用例再跑</small>
-                            <small class="pp-ctx">将收到：用例集 · 产物 · F009 spec §7</small>
-                            <small class="pp-mode cold">⊘ 冷启动 · 看不到实现者的自述</small>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="pp-fence" data-pp-fence>
-                        <span>上下文围栏</span>
-                        <small>围栏右侧看不到左侧的过程消息与自述</small>
-                      </div>
-                    </div>
-                  </section>
+                  <details class="outcome-detail">
+                    <summary>目标与完整执行计划</summary>
+                    <p>让 <code>artifact:&lt;id&gt;@&lt;revision&gt;</code> 引用确定内容：创建新 revision 后旧引用仍解析到原内容；archived locator 由服务端按 <code>content_sha256</code> 派生，调用方不可指定、不可覆盖。完整执行过程见「轨迹」视图。</p>
+                  </details>
                   </div>
 
                   <div class="stage-pane" data-stage-pane="trace" hidden>
@@ -711,633 +614,262 @@ resolve("artifact:art_7f2").revision   → 2         ✓</pre>
                     <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
                     <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
                   </div>
+                  <div class="scope-line">
+                    <strong>US-新<small>把 dogfooding 问题导出为周报</small></strong>
+                    <button class="linklike" type="button" data-scope-toggle aria-expanded="false">展开血统</button>
+                  </div>
+                  <p class="scope-full" data-scope-full hidden>
+                    尚未归入 Feature —— 这是一条直接来自使用的任务，还没有被拆进 v0.3 的任何 Feature。
+                  </p>
 
-                  <div class="outcome-state">
-                    <button class="state-card empty-cell" type="button" data-drawer-toggle="new-sys" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
-                      <strong>还没有执行</strong>
-                      <span>指派后才有 · <em class="drawer-cue"><i>展开将会记录什么</i></em></span>
-                    </button>
-                    <button class="state-card empty-cell" type="button" data-drawer-toggle="new-diff" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
-                      <strong>0 个文件</strong>
-                      <span>尚未改动 · <em class="drawer-cue"><i>展开将会比对什么</i></em></span>
-                    </button>
-                    <button class="state-card empty-cell" type="button" data-drawer-toggle="new-indep" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
-                      <strong>尚未验证</strong>
-                      <span>还无从验证 · <em class="drawer-cue"><i>展开验证会怎么判</i></em></span>
-                    </button>
+                  <div class="claim-state" data-claim-filter>
+                    <button class="cs-verified" type="button" data-claim-filter-btn="verified"><small>已独立验证</small><strong>0 / 2 条主张</strong></button>
+                    <button class="cs-pending" type="button" data-claim-filter-btn="pending"><small>有证据待验证</small><strong>0 条</strong></button>
+                    <button class="cs-attention" type="button" data-claim-filter-btn="attention"><small>需要你处理</small><strong>2 条</strong></button>
+                  </div>
 
-                    <div class="state-drawer" data-drawer-body="new-sys" hidden>
-                      <h3>指派之后，这里会出现什么</h3>
-                      <p>空白本身就是证据——它说明还没有任何事发生。这里不会填占位数字或预估进度。</p>
-                      <p class="agent-note">执行开始后：每条命令的原文、退出码、耗时与完整 stdout 都会逐条落在这里，由 PersonaHub 自己捕获，不经成员转述。</p>
-                    </div>
-                    <div class="state-drawer" data-drawer-body="new-diff" hidden>
-                      <h3>变化会和什么比</h3>
-                      <p>以指派那一刻的代码目录状态为基线，之后每次写入都记一次 diff。</p>
-                      <p class="agent-note">基线未建立——任务还没有指派，没有可比的起点。</p>
-                    </div>
-                    <div class="state-drawer" data-drawer-body="new-indep" hidden>
-                      <h3>验证会怎么判</h3>
-                      <p>这张卡变绿只认三件事，现在一件都还没有：</p>
-                      <div class="indep-grid">
-                        <div class="indep-row"><small>谁实现的</small><span>还没有执行者</span></div>
-                        <div class="indep-row"><small>谁验证的</small><span>还没有验证员</span></div>
-                        <div class="indep-row"><small>验的是谁的检查</small><span>还没有检查</span></div>
+                  <div class="claim-list" data-claim-list>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-新1</code>周报包含未修复项并按严重度分组</strong>
+                        <p class="claim-empty">没有证据 —— 你写的要求，还没有指派，也没有任何执行。空白本身就是「还没发生」的证据。</p>
+                        <div class="claim-actions">
+                          <button type="button" data-demo="用例先于实现固定是 ADR 0009 的硬要求；生成后需你确认再指派">先生成用例集</button>
+                          <button type="button" data-prefill-evidence>直接指派第一步</button>
+                        </div>
                       </div>
-                      <div class="indep-verdict">先把「做成什么样算完成」写具体，验证员才有东西可对。要求越具体，验证越不容易走过场。</div>
+                    </div>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-新2</code>每条带可复现步骤，能直接贴进 issue</strong>
+                        <p class="claim-empty">没有证据 —— 同上。</p>
+                      </div>
                     </div>
                   </div>
 
-                  <section class="outcome-section">
-                    <h2>目标</h2>
+                  <details class="outcome-detail">
+                    <summary>目标与完整执行计划</summary>
                     <p>把 <code>docs/reviews/dogfooding-bugs.md</code> 主表导出成一份能直接贴进 issue 的 Markdown 周报，包含未修复项、按严重度分组和逐条复现步骤。</p>
                     <button class="linklike" type="button" data-demo="编辑目标；静态原型不保存修改">修改目标</button>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>本次成果</h2>
-                    <div class="outcome-empty">
-                      <span class="oe-mark">◌</span>
-                      <span><strong>还没有任何产出</strong><small>这里会列出实际被创建或修改的文件，以及固定到 revision 的阶段成果。指派之前它保持为空——空白本身就是「还没发生」的证据，不用占位数字填满。</small></span>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>完成要求与依据</h2>
-                    <p>先写清楚「做成什么样算完成」，指派出去的结果才有东西可对。</p>
-                    <div class="evidence-row inflight">
-                      <span class="pending-mark">·</span>
-                      <span><strong>周报包含未修复项并按严重度分组</strong><small>你写的要求 · 还没有依据</small></span>
-                      <span class="row-go muted">待执行</span>
-                    </div>
-                    <div class="evidence-row inflight">
-                      <span class="pending-mark">·</span>
-                      <span><strong>每条带可复现步骤，能直接贴进 issue</strong><small>你写的要求 · 还没有依据</small></span>
-                      <span class="row-go muted">待执行</span>
-                    </div>
-                    <button class="evidence-row pending" type="button" data-demo="新增一条完成要求；静态原型不保存">
-                      <span class="pending-mark">＋</span>
-                      <span><strong>再加一条完成要求</strong><small>要求越具体，验证越不容易走过场</small></span>
-                      <span class="row-go">添加 →</span>
-                    </button>
-                  </section>
-
-                  <section class="outcome-section unproven-section">
-                    <h2>还没有被证明</h2>
-                    <p>刚创建的任务，所有事情都还没有被证明——这不是问题，是当前的事实。</p>
-                    <ul class="unproven-list">
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>2 条完成要求全部没有依据</strong><small>你写下了要求，但还没有任何执行产生过对应的记录。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>还没有执行计划</strong><small>没有人被指派，也没有 Coordinator 拟过步骤。</small></span>
-                      </li>
-                    </ul>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>这份成果是怎么来的</h2>
-                    <div class="outcome-empty">
-                      <span class="oe-mark">◌</span>
-                      <span><strong>还没有执行计划</strong><small>可以自己指派第一步，也可以让 Coordinator 依据完成要求先拟一份计划、由你确认后再开始。</small></span>
-                    </div>
-                    <div class="outcome-cta">
-                      <button type="button" data-demo="Coordinator 会依据完成要求拟计划并等你确认；静态原型未执行">让 Coordinator 拟计划</button>
-                      <button type="button" class="ghost" data-thread-focus>自己指派第一步</button>
-                    </div>
-                  </section>
-                </article>
+                  </details>
+</article>
 
                 <article class="document task-document outcome-surface" data-document="issue-validation">
                   <div class="task-heading"><span class="signal yellow"></span><span><small>任务 · 验证未收敛</small><h1>修复图重启的并发认领</h1></span></div>
 
+                  <div class="state-lead attention">
+                    <h3>⚠ 连续两次验证得到同一 finding，自动继续已停止</h3>
+                    <p>两轮都指向恢复时的并发窗口，不是两个独立问题。继续按原策略修复大概率还是同一结果——这正是「该换策略而不是再修一次」的依据。</p>
+                    <div class="sl-actions">
+                      <button type="button" data-prefill-evidence>换执行者</button>
+                      <button type="button" data-demo="修改验收基线需要你批准；旧主张与旧证据仍可追溯">修改约束</button>
+                      <button type="button" data-demo="停止任务；已产出的改动与 findings 全部保留">停止任务</button>
+                    </div>
+                  </div>
+
                   <div class="source-legend">
                     <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
                     <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
                   </div>
+                  <div class="scope-line">
+                    <strong>US-006<small>图重启的并发认领</small></strong>
+                    <button class="linklike" type="button" data-scope-toggle aria-expanded="false">展开血统</button>
+                  </div>
+                  <p class="scope-full" data-scope-full hidden>
+                    <code>J3 跟进执行中的任务</code> › <code>F006 Orchestrated Coding Graph</code> › <code>US-006 恢复安全性</code>
+                  </p>
 
-                  <div class="outcome-state">
-                    <button class="state-card" type="button" data-drawer-toggle="val-sys" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
-                      <strong>2 轮已跑完</strong>
-                      <span>两轮输出都在 · <em class="drawer-cue"><i>展开两轮输出</i></em></span>
-                    </button>
-                    <button class="state-card" type="button" data-drawer-toggle="val-diff" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
-                      <strong>2 个文件</strong>
-                      <span>+51 −17 · 两轮都保留 · <em class="drawer-cue"><i>展开实际改动</i></em></span>
-                    </button>
-                    <button class="state-card warn-cell" type="button" data-drawer-toggle="val-indep" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
-                      <strong>2 次都未通过</strong>
-                      <span>同一条结论 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
-                    </button>
-
-                    <div class="state-drawer" data-drawer-body="val-sys" hidden>
-                      <h3>两轮各自的原始输出，没有合并</h3>
-                      <p>合并成「重试 2 次」会抹掉最关键的事实：两轮是同一个执行者、同一个结论。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>node scripts/replay-restart.mjs --concurrent 3   # 第 1 轮</code><span class="exit-bad">exit 1 · 1m 48s · 14:02</span></div>
-                        <pre>duplicate attempts: 2   ✗ expected 0
-graph-recovery: re-dispatched node_7 twice</pre>
-                      </div>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>node scripts/replay-restart.mjs --concurrent 3   # 第 2 轮</code><span class="exit-bad">exit 1 · 1m 51s · 14:31</span></div>
-                        <pre>duplicate attempts: 1   ✗ expected 0
-同一路径：两个 recovery 仍然可以同时进入</pre>
-                      </div>
-                    </div>
-                    <div class="state-drawer" data-drawer-body="val-diff" hidden>
-                      <h3>两轮改动都保留，验证不通过不回滚</h3>
-                      <p>换策略时它们是输入，不是垃圾。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>server/src/services/graph-recovery.ts</code><span class="exit-ok">+38 −11 · 两轮累计</span></div>
-                        <pre><span class="ctx">@@ recoverOnBoot() @@ 第 1 轮</span>
-<span class="add">+  if (isRecovering) return;              // 仍有窗口</span>
-<span class="ctx">@@ recoverOnBoot() @@ 第 2 轮</span>
-<span class="add">+  await lock.acquire("recovery");        // 仍有窗口</span></pre>
-                      </div>
-                      <p class="agent-note"><em class="src-badge agent">Agent 的说法</em>实现者两轮都判断「加一道判空即可」。验证员两轮都指向同一处竞态——这正是该换策略而不是再修一次的依据。</p>
-                    </div>
-                    <div class="state-drawer" data-drawer-body="val-indep" hidden>
-                      <h3>验证本身是独立的，结论也是可信的</h3>
-                      <p>这次卡片发红不是因为独立性不足，恰恰相反：</p>
-                      <div class="indep-grid">
-                        <div class="indep-row"><small>谁实现的</small><span>实现者 / Codex GPT-5 · 两轮都是它</span></div>
-                        <div class="indep-row"><small>谁验证的</small><span><span class="good">独立验证员 / Claude Sonnet · 与实现者不同源</span></span></div>
-                        <div class="indep-row"><small>验的是谁的检查</small><span><span class="good">验证员自己写的并发回放</span></span></div>
-                      </div>
-                      <div class="indep-verdict">两轮独立验证都指向同一处竞态，所以「未通过」这个结论本身是可信的。要改的是实现策略，不是验证方式。</div>
-                    </div>
+                  <div class="claim-state" data-claim-filter>
+                    <button class="cs-verified" type="button" data-claim-filter-btn="verified"><small>已独立验证</small><strong>1 / 3 条主张</strong></button>
+                    <button class="cs-pending" type="button" data-claim-filter-btn="pending"><small>有证据待验证</small><strong>0 条</strong></button>
+                    <button class="cs-attention" type="button" data-claim-filter-btn="attention"><small>需要你处理</small><strong>2 条</strong></button>
                   </div>
 
-                  <div class="outcome-block">
-                    <span class="ob-mark">!</span>
-                    <span><strong>自动继续已停止</strong><small>相同的恢复边界问题连续出现两次。继续按原策略修复大概率还是同一个结果，所以系统没有自动开第三轮，等你换策略。</small></span>
-                    <button type="button" data-thread-prefill="@架构研究员&#10;先分析两次失败的共同根因，不修改代码；给出新的恢复策略和验证边界。">预填改派指令</button>
-                  </div>
-
-                  <section class="outcome-section">
-                    <h2>目标</h2>
-                    <p>让服务重启后中断的图能安全续跑：等待中的 NodeRun 只被认领一次，并发恢复下的重复认领必须在恢复阶段就被拦住。</p>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>本次成果</h2>
-                    <p>两轮修改都保留着，没有因为验证不通过被回滚——换策略时它们是输入，不是垃圾。</p>
-                    <div class="outcome-body">
-                      <button class="outcome-file" type="button" data-open="file-code" data-label="graph-recovery.ts" data-stage-child>
-                        <span class="of-type">TS</span>
-                        <span><strong>server/src/services/graph-recovery.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>第 1 轮：恢复时按 NodeRun 状态过滤等待队列。未覆盖并发恢复。</small></span>
-                        <span class="of-diff">+31 −11</span>
-                      </button>
-                      <button class="outcome-file" type="button" data-open="file-code" data-label="stale-recovery.ts" data-stage-child>
-                        <span class="of-type">TS</span>
-                        <span><strong>server/src/services/stale-recovery.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>第 2 轮：恢复入口加去重。仍未覆盖两个 recovery 同时启动的窗口。</small></span>
-                        <span class="of-diff">+20 −6</span>
-                      </button>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>完成要求与依据</h2>
-                    <p>被打回的那条要求展开显示两轮各自的结论，这样才看得出「是不是同一个问题」。</p>
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>单进程重启下图可续跑</strong><small><em class="src-badge machine">系统记录</em>14 个用例 · integration · 单进程场景</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>AC-006: stale running Run recovered as interrupted, lock released</code>
-                          <small>断言：单进程重启后，未收敛节点被派发且只被派发一次。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>断言实际输出</code><span class="exit-ok">通过 · 341 ms</span></div>
-                            <pre>pending nodes after restart: 3
-dispatched: 3   ✓
-duplicates: 0   ✓  （注意：本例是单进程，不含并发）</pre>
+                  <div class="claim-list" data-claim-list>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-014</code>并发恢复下等待中的 NodeRun 只被认领一次</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>两轮独立验证各跑一次并发回放，结论一致</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span>第 1 次 · <code>replay-restart.mjs --concurrent 3</code></span>
+                            <span class="ev-meta"><span class="ev-counter">失败</span> · 独立验证员 · Run #4 · 同一窗口重复认领</span>
                           </div>
-                          <p class="proof-author">这一条成立的范围只到单进程；并发场景由下面那条负责，而它两轮都没通过</p>
+                          <div class="evidence-item">
+                            <span>第 2 次 · <code>replay-restart.mjs --concurrent 3</code></span>
+                            <span class="ev-meta"><span class="ev-counter">失败</span> · 独立验证员 · Run #6 · finding 未变化</span>
+                          </div>
                         </div>
-                        <div class="claim-foot">
-                          <button class="linklike" type="button" data-open="evidence-view" data-label="验证依据 · 正常恢复" data-stage-child>打开完整证据链 →</button>
-                        </div>
+                        <p class="claim-verdict bad"><span>结论</span>两轮验证失败，同一根因，当前策略未收敛。验证本身是独立的，所以这个结论可信——要换的是实现策略</p>
                       </div>
                     </div>
-                    <div class="evidence-row failed">
-                      <span class="fail-mark">✕</span>
-                      <span>
-                        <strong>等待中的 NodeRun 只被认领一次</strong>
-                        <small>两轮验证都判定未达成 · 同一个根因</small>
-                        <span class="round-compare">
-                          <button class="linklike" type="button" data-open="evidence-room" data-label="第 1 轮验证 · 重复派工" data-stage-child>第 1 轮：恢复后出现重复派工 →</button>
-                          <button class="linklike" type="button" data-open="evidence-room" data-label="第 2 轮验证 · 并发恢复" data-stage-child>第 2 轮：并发恢复下同一问题仍在 →</button>
-                        </span>
-                      </span>
-                      <span class="row-go muted">连续 2 轮</span>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-015</code>归档回放能重现恢复过程</strong>
+                        <p class="claim-empty">没有证据 —— 前一条通过后才轮到它。</p>
+                      </div>
                     </div>
-                    <div class="evidence-row inflight">
-                      <span class="pending-mark">·</span>
-                      <span><strong>归档回放能重现恢复过程</strong><small>还没有轮到 · 前一条通过后才验</small></span>
-                      <span class="row-go muted">未开始</span>
+                    <div class="claim-item" data-claim-state="verified">
+                      <span class="claim-mark verified" aria-hidden="true">✓</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-013</code>单进程重启下图可续跑</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>14 条集成用例覆盖单进程路径，其中 3 条由验证员在独立上下文复跑</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>graph-recovery.test.ts › restart resumes from next pending node</code></span>
+                            <span class="ev-meta"><b>通过</b> 341ms · 验证员执行 · <i>⊘ 冷启动</i></span>
+                          </div>
+                        </div>
+                        <p class="claim-verdict ok"><span>结论</span>独立验证通过 —— 但成立范围只到单进程，并发场景由上面那条负责</p>
+                      </div>
                     </div>
-                  </section>
+                  </div>
 
-                  <section class="outcome-section unproven-section">
-                    <h2>还没有被证明</h2>
-                    <p>两轮之后仍然没有被证明的部分：</p>
-                    <ul class="unproven-list">
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>两个 recovery 之间的互斥</strong><small>两轮改动都没有真正建立互斥，回放每次都能撞出重复 Attempt。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>换策略后的行为完全未知</strong><small>第 3 步要换的是策略，现有的 51 行改动没有一行验证过新策略。</small></span>
-                      </li>
-                    </ul>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>这份成果是怎么来的</h2>
-                    <div class="plan-list">
-                      <div class="plan-step done">
-                        <span class="plan-index">1</span>
-                        <div>
-                          <strong>确认恢复边界</strong>
-                          <small>执行者：Human Lead · 输入：重启后重复派工的现场</small>
-                          <small>产出：Implementation 指令 · Evidence：确认事件</small>
-                        </div>
-                        <span class="plan-state">已完成 · 08:30</span>
-                      </div>
-                      <div class="plan-step failed">
-                        <span class="plan-index">2</span>
-                        <div>
-                          <strong>第 1 轮修复 + 验证</strong>
-                          <small>实现：Codex GPT-5 · 验证：Claude Sonnet</small>
-                          <small>结论：恢复后出现重复派工 · 未覆盖并发恢复</small>
-                        </div>
-                        <span class="plan-state fail">未通过 · 09:14</span>
-                      </div>
-                      <div class="plan-step failed">
-                        <span class="plan-index">3</span>
-                        <div>
-                          <strong>第 2 轮修复 + 验证</strong>
-                          <small>实现：Codex GPT-5（同一执行者）· 验证：Claude Sonnet</small>
-                          <small>结论：同一问题仍在 · 修复没有触及共同根因</small>
-                        </div>
-                        <span class="plan-state fail">未通过 · 09:52</span>
-                      </div>
-                      <div class="plan-step waiting">
-                        <span class="plan-index">4</span>
-                        <div>
-                          <strong>换策略：先隔离共同根因</strong>
-                          <small>建议：架构研究员 · 依据：同一执行者连续两轮同一结论，问题在策略不在实现</small>
-                          <small>预期：新的恢复策略与验证边界 · 要求：本轮不改代码</small>
-                        </div>
-                        <span class="plan-state pending">等待你指派</span>
-                      </div>
-                    </div>
-                  </section>
-                </article>
+                  <details class="outcome-detail">
+                    <summary>目标与完整执行计划</summary>
+                    <p>让服务重启后中断的图能安全续跑：等待中的 NodeRun 只被认领一次，并发恢复下的重复认领必须在恢复阶段就被拦住。</p>
+                  </details>
+</article>
 
                 <article class="document task-document outcome-surface" data-document="issue-permission">
                   <div class="task-heading"><span class="signal yellow"></span><span><small>任务 · 等待权限确认</small><h1>允许 agent 执行 git push</h1></span></div>
 
+                  <div class="state-lead attention">
+                    <h3>⏸ 执行已安全暂停，等你授权</h3>
+                    <p>任务请求执行 <code>git push origin HEAD:feat/f009-artifact-ref</code>（2 个 commit）。在你确认之前它不会继续，也不会自己换一个远端或分支试。</p>
+                    <div class="sl-actions">
+                      <button type="button" data-demo="已允许本次推送；仅对当前任务和这个分支生效">允许本次推送</button>
+                      <button type="button" data-demo="权限请求已拒绝；任务保持可恢复，已完成结果保留">拒绝并保持暂停</button>
+                    </div>
+                  </div>
+
                   <div class="source-legend">
                     <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
                     <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
                   </div>
+                  <div class="scope-line">
+                    <strong>US-002<small>稳定引用与历史复现</small></strong>
+                    <button class="linklike" type="button" data-scope-toggle aria-expanded="false">展开血统</button>
+                  </div>
+                  <p class="scope-full" data-scope-full hidden>
+                    <code>J3 跟进执行中的任务</code> › <code>F009 Artifact Foundation &amp; Provenance</code> › <code>US-002 稳定引用与历史复现</code>
+                  </p>
 
-                  <div class="outcome-state">
-                    <button class="state-card" type="button" data-drawer-toggle="perm-sys" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
-                      <strong>1 / 3 步</strong>
-                      <span>已完成部分保留 · <em class="drawer-cue"><i>展开已跑过什么</i></em></span>
-                    </button>
-                    <button class="state-card empty-cell" type="button" data-drawer-toggle="perm-diff" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
-                      <strong>0 个文件</strong>
-                      <span>暂停在写入之前 · <em class="drawer-cue"><i>展开确认这一点</i></em></span>
-                    </button>
-                    <button class="state-card empty-cell" type="button" data-drawer-toggle="perm-indep" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
-                      <strong>尚未验证</strong>
-                      <span>执行没走完 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
-                    </button>
+                  <div class="claim-state" data-claim-filter>
+                    <button class="cs-verified" type="button" data-claim-filter-btn="verified"><small>已独立验证</small><strong>0 / 2 条主张</strong></button>
+                    <button class="cs-pending" type="button" data-claim-filter-btn="pending"><small>有证据待验证</small><strong>0 条</strong></button>
+                    <button class="cs-attention" type="button" data-claim-filter-btn="attention"><small>需要你处理</small><strong>2 条</strong></button>
+                  </div>
 
-                    <div class="state-drawer" data-drawer-body="perm-sys" hidden>
-                      <h3>停住之前跑过的只有这一条</h3>
-                      <p>第 2 步在发起前请求权限，因此它没有产生任何执行记录。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>ls ~/.codex/sessions</code><span class="exit-ok">exit 0 · 3s · 10:57</span></div>
-                        <pre>3 files · 最近一次 2026-08-26 09:41</pre>
+                  <div class="claim-list" data-claim-list>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-016</code>推送范围限定在当前 Issue 的分支</strong>
+                        <p class="claim-empty">没有证据 —— 第 2 步在发起前请求授权，因此没有产生任何执行记录。代码目录仍与指派时一致。</p>
+                        <div class="claim-actions">
+                          <button type="button" data-open="evidence-view" data-label="权限请求 · 原始命令" data-stage-child>看请求原文</button>
+                        </div>
                       </div>
                     </div>
-                    <div class="state-drawer" data-drawer-body="perm-diff" hidden>
-                      <h3>0 个文件不是「没查出来」，是「还没开始写」</h3>
-                      <p>暂停点在写入之前，所以代码目录与指派那一刻完全一致。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>git status --porcelain</code><span class="exit-ok">exit 0 · 10:58</span></div>
-                        <pre>（无输出：工作区干净）</pre>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-017</code>push 全程可追溯到一次显式授权</strong>
+                        <p class="claim-empty">没有证据 —— 本次确认本身就会成为它的第一条证据。</p>
                       </div>
-                    </div>
-                    <div class="state-drawer" data-drawer-body="perm-indep" hidden>
-                      <h3>现在无从验证</h3>
-                      <p>执行没走完，三条判定都还不成立：</p>
-                      <div class="indep-grid">
-                        <div class="indep-row"><small>谁实现的</small><span>Claude Code · 第 2 步被阻塞</span></div>
-                        <div class="indep-row"><small>谁验证的</small><span>还没有验证员</span></div>
-                        <div class="indep-row"><small>验的是谁的检查</small><span>还没有可验的产出</span></div>
-                      </div>
-                      <div class="indep-verdict">先决定允不允许读取外部目录。允许后第 2 步才会产生第一条可验证的记录。</div>
                     </div>
                   </div>
 
-                  <div class="outcome-block">
-                    <span class="ob-mark">⏸</span>
-                    <span>
-                      <strong>执行已安全暂停，等你决定</strong>
-                      <small>任务请求执行 <code>git push origin HEAD:feat/f009-artifact-ref</code>（2 个 commit）。在你确认之前它不会继续，也不会自己换一个远端或分支试。</small>
-                    </span>
-                    <span class="ob-actions">
-                      <button type="button" data-demo="已允许本次推送；仅对当前任务和这个分支生效">允许本次推送</button>
-                      <button type="button" class="ghost" data-demo="权限请求已拒绝；任务保持可恢复，已完成结果保留">拒绝并保持暂停</button>
-                    </span>
-                  </div>
-
-                  <section class="outcome-section">
-                    <h2>目标</h2>
+                  <details class="outcome-detail">
+                    <summary>目标与完整执行计划</summary>
                     <p>把已验证通过的 artifact 引用改动推到远端分支。git push 是 PersonaHub 显式圈出的能力边界，每次都必须由你单独授权（PRD 安全边界 / AC-009）。</p>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>你在批准什么</h2>
-                    <div class="permission-scope">
-                      <div><span class="ps-mark ok">✓</span><span><strong>推送 2 个 commit 到 feat/f009-artifact-ref</strong><small>远端已固定为 origin，分支名不含通配，不会推到 main</small></span></div>
-                      <div><span class="ps-mark ok">✓</span><span><strong>不改写远端历史</strong><small>本次授权不含 force push；请求 --force 会重新弹一次确认</small></span></div>
-                      <div><span class="ps-mark scope">◷</span><span><strong>仅对当前任务生效</strong><small>不会成为项目级长期授权，下一个任务要重新确认</small></span></div>
-                      <div><span class="ps-mark warn">!</span><span><strong>拒绝的后果</strong><small>当前推送步骤失败，已完成的 1 / 3 步结果仍然保留，任务可从这一步重新指派</small></span></div>
-                    </div>
-                    <p class="scope-source">请求来源：artifact 引用不漂移 第 2 步 · Claude Code · 10:58 · <button class="linklike" type="button" data-open="evidence-view" data-label="权限请求 · 原始命令" data-stage-child>查看原始命令</button></p>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>完成要求与依据</h2>
-                    <p>两条要求都要等这次授权决定之后才可能拿到依据。</p>
-                    <div class="evidence-row inflight">
-                      <span class="pending-mark">·</span>
-                      <span><strong>推送范围限定在当前 Issue 的分支</strong><small>你写的要求 · 依赖本次授权</small></span>
-                      <span class="row-go muted">待决定</span>
-                    </div>
-                    <div class="evidence-row inflight">
-                      <span class="pending-mark">·</span>
-                      <span><strong>push 全程可追溯到一次显式授权</strong><small>你写的要求 · 本次确认本身就是它的依据</small></span>
-                      <span class="row-go muted">待决定</span>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section unproven-section">
-                    <h2>还没有被证明</h2>
-                    <p>被阻塞状态下，几乎所有事情都还没有被证明——这一段照样在场，避免「1 / 3 步」被读成已经进展了三分之一。</p>
-                    <ul class="unproven-list">
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>三条完成要求全部待定</strong><small>第 2 步没跑，没有任何依据产生。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>请求读取的目录里究竟有什么，尚未查证</strong><small>PersonaHub 只能担保这条请求的来源与原文，不能担保它读到的内容。</small></span>
-                      </li>
-                    </ul>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>这份成果是怎么来的</h2>
-                    <div class="plan-list">
-                      <div class="plan-step done">
-                        <span class="plan-index">1</span>
-                        <div>
-                          <strong>采集本地服务状态</strong>
-                          <small>执行者：Claude Code · 输入：项目诊断范围</small>
-                          <small>产出：3 项服务状态 · Evidence：命令与原始输出</small>
-                        </div>
-                        <span class="plan-state">已完成 · 10:56</span>
-                      </div>
-                      <div class="plan-step blocked">
-                        <span class="plan-index">2</span>
-                        <div>
-                          <strong>推送到远端分支</strong>
-                          <small>执行者：Claude Code · 输入：缓存路径</small>
-                          <small>阻塞：路径超出代码目录边界，需要一次显式授权</small>
-                        </div>
-                        <span class="plan-state block">已暂停 · 10:58</span>
-                      </div>
-                      <div class="plan-step waiting">
-                        <span class="plan-index">3</span>
-                        <div>
-                          <strong>合并为运行环境报告</strong>
-                          <small>计划：同一执行者 · 依据：只是汇总，无需交接</small>
-                          <small>预期：Markdown 报告 · 要求：两类失败可分辨</small>
-                        </div>
-                        <span class="plan-state pending">排队中</span>
-                      </div>
-                    </div>
-                  </section>
-                </article>
+                  </details>
+</article>
 
                 <article class="document task-document outcome-surface" data-document="issue-running">
                   <div class="task-heading"><span class="signal blue"></span><span><small>任务 · 正在执行</small><h1>补齐 Inspector 的 artifact 状态</h1></span></div>
 
+                  <div class="state-lead">
+                    <h3><span class="live-dot" aria-hidden="true"></span> Claude 正在检查 artifact 内容状态 · 第 2 / 4 步</h3>
+                    <p>已跑 46 秒 · 代码目录写锁已持有 · 完成或遇到阻塞时会在右侧通知你。</p>
+                    <div class="sl-actions">
+                      <button type="button" data-room-pause>先停一下</button>
+                      <button type="button" data-stage-view="trace">看轨迹</button>
+                    </div>
+                  </div>
+
+                  <p class="state-section-label">最新结果</p>
+                  <div class="outcome-body">
+                    <button class="outcome-file" type="button" data-open="file-code" data-label="executable-resolver.ts" data-stage-child>
+                      <span class="of-type">TS</span>
+                      <span><strong>server/src/runtime/executable-resolver.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>把 artifact 内容状态保留为结构化枚举而不是布尔值，UI 才能分开渲染。</small></span>
+                      <span class="of-diff">+23 −4</span>
+                    </button>
+                    <div class="outcome-pending-file">
+                      <span class="opf-mark">◌</span>
+                      <span><strong>web/src/components/inspector/EvidenceSection.tsx</strong><small>正在写入 · 完成前不计入成果</small></span>
+                    </div>
+                  </div>
+
                   <div class="source-legend">
                     <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
                     <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
                   </div>
+                  <div class="scope-line">
+                    <strong>US-004<small>Inspector 的 artifact 状态</small></strong>
+                    <button class="linklike" type="button" data-scope-toggle aria-expanded="false">展开血统</button>
+                  </div>
+                  <p class="scope-full" data-scope-full hidden>
+                    <code>J3 跟进执行中的任务</code> › <code>F009 Artifact Foundation &amp; Provenance</code> › <code>US-004 内容状态可见</code>
+                  </p>
 
-                  <div class="outcome-state">
-                    <button class="state-card" type="button" data-drawer-toggle="run-sys" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
-                      <strong>12 / 12 通过</strong>
-                      <span>仍在增加 · <em class="drawer-cue"><i>展开原始输出</i></em></span>
-                    </button>
-                    <button class="state-card" type="button" data-drawer-toggle="run-diff" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
-                      <strong>1 个文件</strong>
-                      <span>+23 −4 · <em class="drawer-cue"><i>展开实际改动</i></em></span>
-                    </button>
-                    <button class="state-card pending-cell" type="button" data-drawer-toggle="run-indep" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
-                      <strong>尚未独立验证</strong>
-                      <span>测试作者与执行者同源 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
-                    </button>
-
-                    <div class="state-drawer" data-drawer-body="run-sys" hidden>
-                      <h3>到此刻为止跑过的命令</h3>
-                      <p>执行还在继续，这里会继续增加。已经产生的输出不会被后续步骤改写。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>npm run test -- adapter-eligibility</code><span class="exit-ok">exit 0 · 1m 12s · 10:41</span></div>
-                        <pre>PASS server/test/adapter-eligibility.test.ts
-  ✓ probe_distinguishes_not_installed_from_not_logged_in  (233 ms)
-  … 11 more
-Tests: 12 passed, 12 total</pre>
-                      </div>
-                    </div>
-                    <div class="state-drawer" data-drawer-body="run-diff" hidden>
-                      <h3>已经落盘的改动</h3>
-                      <p>正在写入的文件不计入成果，也不在这里比对——它随时还会变。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>server/src/runtime/executable-resolver.ts</code><span class="exit-ok">+23 −4 · 已落盘</span></div>
-                        <pre><span class="ctx">@@ probeAdapter(id) @@</span>
-<span class="del">-  return { ok: false, reason: String(error) };</span>
-<span class="add">+  return { ok: false, reason: classify(error) };  // 结构化，不是字符串</span></pre>
-                      </div>
-                      <p class="agent-note"><em class="src-badge agent">Agent 的说法</em>实现者：「把 CLI 探测结果按项目缓存，失效原因保留为结构化字段而不是字符串。」缓存那一半还没写完。</p>
-                    </div>
-                    <div class="state-drawer" data-drawer-body="run-indep" hidden>
-                      <h3>现在的 12 / 12 说明不了什么</h3>
-                      <p>执行还没结束，而且测试与实现同源：</p>
-                      <div class="indep-grid">
-                        <div class="indep-row"><small>测试谁写的</small><span>12 个全部由实现者本人在本次执行中新增</span></div>
-                        <div class="indep-row"><small>测试谁跑的</small><span>实现者本人（同一个 Attempt 内）</span></div>
-                        <div class="indep-row"><small>是否同源</small><span><span class="bad">是</span></span></div>
-                      </div>
-                      <div class="indep-verdict">执行完成后需要指派一名没有参与实现的成员重新验一遍，这张卡才有机会变绿。</div>
-                    </div>
+                  <div class="claim-state" data-claim-filter>
+                    <button class="cs-verified" type="button" data-claim-filter-btn="verified"><small>已独立验证</small><strong>0 / 3 条主张</strong></button>
+                    <button class="cs-pending" type="button" data-claim-filter-btn="pending"><small>有证据待验证</small><strong>1 条</strong></button>
+                    <button class="cs-attention" type="button" data-claim-filter-btn="attention"><small>需要你处理</small><strong>2 条</strong></button>
                   </div>
 
-                  <div class="outcome-live">
-                    <span class="live-dot"></span>
-                    <span><strong>Claude 正在检查项目级 CLI 可用性</strong><small>第 2 / 4 步 · 已运行 46 秒 · 代码目录写锁已持有</small></span>
-                    <button type="button" data-demo="停止会先等待当前安全点并保留已产出结果">先停一下</button>
-                  </div>
-
-                  <section class="outcome-section">
-                    <h2>目标</h2>
-                    <p>让 Inspector 的 artifact 面板把 loading / empty / missing / invalid 四种状态分开表达，而不是统统显示成空列表（F009 spec §范围内最后一条）。</p>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>本次成果</h2>
-                    <p>下面是<strong>到此刻为止</strong>已经产生的实际变化，会随执行继续增加。</p>
-                    <div class="outcome-body">
-                      <button class="outcome-file" type="button" data-open="file-code" data-label="executable-resolver.ts" data-stage-child>
-                        <span class="of-type">TS</span>
-                        <span><strong>server/src/runtime/executable-resolver.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>把 artifact 内容状态保留为结构化枚举而不是布尔值，UI 才能分开渲染。</small></span>
-                        <span class="of-diff">+23 −4</span>
-                      </button>
-                      <div class="outcome-pending-file">
-                        <span class="opf-mark">◐</span>
-                        <span><strong>web/src/components/inspector/EvidenceSection.tsx</strong><small>正在写入 · 完成前不计入成果</small></span>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>完成要求与依据</h2>
-                    <p>三条要求里已经有一条拿到依据；其余两条要等执行走到对应步骤。</p>
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>四种状态在 UI 上可区分</strong><small><em class="src-badge machine">系统记录</em>12 个用例 · component 测试 · 实现者所写</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>AC-024: inspector renders missing and invalid distinctly</code>
-                          <small>断言：源文件被删（missing）与 hash 对不上（invalid）必须渲染成两种不同的提示，不能都退化成空列表。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>断言实际输出</code><span class="exit-ok">通过 · 233 ms</span></div>
-                            <pre>state=loading  → 骨架占位            ✓
-state=empty    → 「还没有 artifact」   ✓
-state=missing  → 「源文件已不在」      ✓
-state=invalid  → 「内容与 hash 不符」  ✓</pre>
+                  <div class="claim-list" data-claim-list>
+                    <div class="claim-item" data-claim-state="pending">
+                      <span class="claim-mark pending" aria-hidden="true">◐</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-008</code>六种 Inspector 状态可区分</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>一条组件用例覆盖四种已实现状态，另两种等这一步跑完</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>evidence-section.test.tsx › renders missing and invalid distinctly</code></span>
+                            <span class="ev-meta"><b>通过</b> 233ms · 实现者执行</span>
                           </div>
-                          <p class="proof-author">实现者所写 · 属于自证，尚未有人独立复核</p>
                         </div>
-                        <div class="claim-foot">
-                          <button class="linklike" type="button" data-open="evidence-view" data-label="验证依据 · CLI 探测" data-stage-child>打开完整证据链 →</button>
-                        </div>
+                        <p class="claim-verdict pending"><span>结论</span>有证据，但只覆盖 4 / 6 种状态，且执行者与实现者同源</p>
                       </div>
                     </div>
-                    <div class="evidence-row inflight">
-                      <span class="pending-mark">◐</span>
-                      <span><strong>missing 与 invalid 分别给出可操作的下一步</strong><small>正在执行第 2 / 4 步 · 预计还有 2 步</small></span>
-                      <span class="row-go muted">执行中</span>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-009</code>列表 100 个 artifact 时不读正文，响应小于 200 ms</strong>
+                        <p class="claim-empty">没有证据 —— 性能这条要等实现走完第 4 步才可能测。</p>
+                      </div>
                     </div>
-                    <div class="evidence-row inflight">
-                      <span class="pending-mark">·</span>
-                      <span><strong>由独立验证员确认四种状态的提示文案</strong><small>还没有开始 · 执行完成后才会指派</small></span>
-                      <span class="row-go muted">未开始</span>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-010</code>missing 与 invalid 分别给出可操作的下一步</strong>
+                        <p class="claim-empty">没有证据 —— 前端那一半正在写入，尚未落盘。</p>
+                      </div>
                     </div>
-                  </section>
+                  </div>
 
-                  <section class="outcome-section unproven-section">
-                    <h2>还没有被证明</h2>
-                    <p>执行中的缺口会随进度变化，但不会因为「还在跑」就不显示。</p>
-                    <ul class="unproven-list">
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>整份成果都没有独立验证</strong><small>实现、写测试、跑测试是同一个成员，12 / 12 目前只是自证。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>EvidenceSection.tsx 正在写入，没有任何测试</strong><small>前端那一半还没落盘，也没有对应的检查。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>「按项目缓存」的失效行为没有测量</strong><small>缓存命中与失效目前只有实现者的说明，没有跑出过数据。</small></span>
-                      </li>
-                    </ul>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>这份成果是怎么来的</h2>
-                    <div class="plan-list">
-                      <div class="plan-step done">
-                        <span class="plan-index">1</span>
-                        <div>
-                          <strong>确认三种失败态的边界</strong>
-                          <small>执行者：Human Lead · 输入：设置页现状</small>
-                          <small>产出：Implementation 指令 · Evidence：确认事件</small>
-                        </div>
-                        <span class="plan-state">已完成 · 10:47</span>
-                      </div>
-                      <div class="plan-step doing">
-                        <span class="plan-index">2</span>
-                        <div>
-                          <strong>补齐探测与缓存</strong>
-                          <small>执行者：实现者 / Claude Sonnet · 输入：失败态边界</small>
-                          <small>产出：executable-resolver.ts · Evidence：12 / 12 probe</small>
-                        </div>
-                        <span class="plan-state running">执行中 · 46s</span>
-                      </div>
-                      <div class="plan-step waiting">
-                        <span class="plan-index">3</span>
-                        <div>
-                          <strong>接上设置页 UI</strong>
-                          <small>计划：同一实现者 · 依据：改动集中、无需交接</small>
-                          <small>预期：EvidenceSection.tsx · 要求：三种失败态各有文案</small>
-                        </div>
-                        <span class="plan-state pending">排队中</span>
-                      </div>
-                      <div class="plan-step waiting">
-                        <span class="plan-index">4</span>
-                        <div>
-                          <strong>独立验证提示文案</strong>
-                          <small>建议：独立验证员 / Codex GPT-5 · 依据：实现与验证不能同源</small>
-                          <small>预期：verification_results · 要求：不同模型</small>
-                        </div>
-                        <span class="plan-state pending">排队中</span>
-                      </div>
-                    </div>
-                  </section>
-                </article>
+                  <details class="outcome-detail">
+                    <summary>目标与完整执行计划</summary>
+                    <p>让 Inspector 的 artifact 面板把 loading / empty / missing / invalid 四种状态分开表达，而不是统统显示成空列表（F009 spec §范围内最后一条）。</p>
+                  </details>
+</article>
 
                 <article class="document task-document outcome-surface" data-document="issue-research">
                   <div class="task-heading"><span class="signal blue"></span><span><small>任务 · Research 阶段进行中</small><h1>Agent session 生命周期调研</h1></span></div>
@@ -1346,431 +878,194 @@ state=invalid  → 「内容与 hash 不符」  ✓</pre>
                     <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
                     <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
                   </div>
+                  <div class="scope-line">
+                    <strong>调研出口<small>Agent session 生命周期</small></strong>
+                    <button class="linklike" type="button" data-scope-toggle aria-expanded="false">展开血统</button>
+                  </div>
+                  <p class="scope-full" data-scope-full hidden>
+                    尚未归入 Feature —— 产出是一份 ADR，不是代码。分解只有「调研目标 → 结论」两层。
+                  </p>
 
-                  <div class="outcome-state">
-                    <button class="state-card" type="button" data-drawer-toggle="res-sys" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>检索留痕</small>
-                      <strong>3 名成员在跑</strong>
-                      <span>3 份结论各自留痕 · <em class="drawer-cue"><i>展开检索记录</i></em></span>
-                    </button>
-                    <button class="state-card" type="button" data-drawer-toggle="res-diff" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>来源可追</small>
-                      <strong>11 处引用</strong>
-                      <span>0 个文件改动 · <em class="drawer-cue"><i>展开来源清单</i></em></span>
-                    </button>
-                    <button class="state-card pending-cell" type="button" data-drawer-toggle="res-indep" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>结论独立性</small>
-                      <strong>等待综合</strong>
-                      <span>还没交叉核对 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
-                    </button>
+                  <div class="claim-state" data-claim-filter>
+                    <button class="cs-verified" type="button" data-claim-filter-btn="verified"><small>已独立验证</small><strong>1 / 3 条主张</strong></button>
+                    <button class="cs-pending" type="button" data-claim-filter-btn="pending"><small>有证据待验证</small><strong>1 条</strong></button>
+                    <button class="cs-attention" type="button" data-claim-filter-btn="attention"><small>需要你处理</small><strong>1 条</strong></button>
+                  </div>
 
-                    <div class="state-drawer" data-drawer-body="res-sys" hidden>
-                      <h3>调研的机器事实是「谁读了什么」</h3>
-                      <p>调研不改代码，所以它的系统记录不是用例结果，而是检索动作本身：读过哪些源码、命中哪几段。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>read: multica-ai/multica · server/pkg/db/queries/agent.sql</code><span class="exit-ok">架构研究员 · 10:33 · 命中 3 段</span></div>
-                        <pre>GetLastTaskSession   按 (agent_id, issue_id) 取最近一次
-poisoned terminal states  6 种终态禁止 resume
-force_fresh_session  手动重跑一律冷启动</pre>
-                      </div>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>read: zts212653/clowder-ai · packages/api/src/config/session-strategy.ts</code><span class="exit-ok">安全研究员 · 10:36 · 命中 2 段</span></div>
-                        <pre>strategy: handoff | compress | hybrid
-thresholds 按 provider 分：0.8/0.9 · 0.75/0.85 · 0.55/0.65</pre>
+                  <div class="claim-list" data-claim-list>
+                    <div class="claim-item attention" data-claim-state="attention">
+                      <span class="claim-mark attention" aria-hidden="true">⚠</span>
+                      <div>
+                        <strong class="claim-title"><code>结论-3</code>同成员长链的成本反转点在哪</strong>
+                        <p class="claim-empty">没有证据 —— 本地没有数据，只有结构性推断：resume 成本随轮次递增、冷启动恒定，某一轮会交叉，但交叉点未知。</p>
+                        <div class="claim-actions">
+                          <button type="button" data-demo="需要真实运行数据；dogfooding 攒够后再定阈值">补一次测量</button>
+                          <button type="button" data-demo="需填写理由并由你确认；确认后显示为灰色不适用">标为本轮不解决</button>
+                        </div>
                       </div>
                     </div>
-                    <div class="state-drawer" data-drawer-body="res-diff" hidden>
-                      <h3>研究场景下「实际变化」换成「来源可追」</h3>
-                      <p>三卡的语义按任务类型换一组：代码任务问改了什么，调研任务问凭什么这么说。0 个文件在这里是正常，不是缺陷。</p>
-                      <p class="agent-note">11 处引用全部带原始出处（仓库 + 文件路径 + 符号名），可逐条跳回。没有一条结论是「综述出来的」而找不到来源。</p>
-                    </div>
-                    <div class="state-drawer" data-drawer-body="res-indep" hidden>
-                      <h3>三份结论还没有互相核对过</h3>
-                      <p>调研任务的独立性判定和代码任务不同：</p>
-                      <div class="indep-grid">
-                        <div class="indep-row"><small>谁在检索</small><span>架构研究员 / 安全研究员 / 归档研究员 · 并行、互不等待</span></div>
-                        <div class="indep-row"><small>谁来综合</small><span><span class="good">综合员 · 不参与本阶段检索（避免偏向自己那份结论）</span></span></div>
-                        <div class="indep-row"><small>交叉核对</small><span><span class="bad">还没有</span>：三份结论目前各自独立，冲突之处尚未暴露</span></div>
+                    <div class="claim-item" data-claim-state="pending">
+                      <span class="claim-mark pending" aria-hidden="true">◐</span>
+                      <div>
+                        <strong class="claim-title"><code>结论-2</code>只有冷启动能保证验证者看不到实现者自述</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>与 PRD 第 7.5 节比对，加一名未参与检索的安全研究员独立核对，但存在一条反证</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>docs/personahub-prd.md §7.5</code> 实现与验证不能同源</span>
+                            <button class="linklike" type="button" data-open="file-prd" data-label="personahub-prd.md" data-stage-child>跳回原文</button>
+                          </div>
+                          <div class="evidence-item">
+                            <span>安全研究员结论 · Run #7</span>
+                            <span class="ev-meta"><i>⊘ 独立</i> · 未参与检索</span>
+                          </div>
+                          <div class="evidence-item">
+                            <span><span class="ev-counter">反证</span> provider / model 不同不必然隔离上下文</span>
+                            <span class="ev-meta">待核实</span>
+                          </div>
+                        </div>
+                        <p class="claim-verdict pending"><span>结论</span>部分支持，边界仍有争议 —— 反证未被排除，不能当定论</p>
                       </div>
-                      <div class="indep-verdict">综合的价值不是把三份拼起来，而是找出它们互相矛盾的地方。在综合完成之前，任何单份结论都不该被当成定论。</div>
+                    </div>
+                    <div class="claim-item" data-claim-state="verified">
+                      <span class="claim-mark verified" aria-hidden="true">✓</span>
+                      <div>
+                        <strong class="claim-title"><code>结论-1</code>multica 不是纯冷启动，而是有条件 resume</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>两处源码原文加一处反向证据，且由另一名研究员复核过</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>multica · server/pkg/db/queries/agent.sql › GetLastTaskSession</code></span>
+                            <button class="linklike" type="button" data-open="file-code" data-label="agent.sql" data-stage-child>跳回原文</button>
+                          </div>
+                          <div class="evidence-item">
+                            <span>同上 · 六种中毒终态禁止 resume 的注释</span>
+                            <button class="linklike" type="button" data-open="file-code" data-label="agent.sql" data-stage-child>跳回原文</button>
+                          </div>
+                          <div class="evidence-item">
+                            <span>同上 · <code>force_fresh_session</code> 手动重跑强制冷启动</span>
+                            <button class="linklike" type="button" data-open="file-code" data-label="agent.sql" data-stage-child>跳回原文</button>
+                          </div>
+                        </div>
+                        <p class="claim-verdict ok"><span>结论</span>已由独立研究员复核 —— 三处来源可逐条跳回原始出处</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="outcome-live">
-                    <span class="live-dot"></span>
-                    <span><strong>OpenCode 正在整理 revision 与来源追踪</strong><small>Research 第 2 / 3 步 · 3 名成员 · 1 名执行中 · <button class="linklike" type="button" data-open="room-view" data-label="协作现场 · Research">进入协作现场</button></small></span>
-                    <button type="button" data-demo="停止会先等待当前安全点并保留已产出结论">先停一下</button>
-                  </div>
-
-                  <section class="outcome-section">
-                    <h2>目标</h2>
+                  <details class="outcome-detail">
+                    <summary>目标与完整执行计划</summary>
                     <p>确定每次执行是开新会话还是接着上一次：它同时决定可信度（验证者能不能看见实现者的自述）、成本（重发历史还是重建理解）和复盘（Run 之间有没有上下文继承）。最后收敛成一份能直接写成 ADR 的结论。</p>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>本次成果</h2>
-                    <p>调研的成果不是文件，是<strong>固定到 revision 的结论</strong>。综合完成前三份结论各自独立，冲突之处留到综合时暴露。</p>
-                    <div class="outcome-body">
-                      <div class="outcome-artifact">
-                        <span class="oa-mark">A</span>
-                        <span><strong>research_findings · revision 1</strong><small>3 名成员各自的核实结论，已固定；每条都能追到具体源码路径或仓库文件</small></span>
-                        <button class="linklike" type="button" data-open="artifact-research" data-label="阶段成果 · research_findings" data-stage-child>打开</button>
-                      </div>
-                      <div class="outcome-pending-file">
-                        <span class="opf-mark">◐</span>
-                        <span><strong>synthesis_plan</strong><small>还没生成 · 三份结论收敛后才会固定为 revision</small></span>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>完成要求与依据</h2>
-                    <p>前两条已经有结论支撑，第三条是这个阶段的出口。</p>
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>两个参考项目的 session 机制已核实</strong><small><em class="src-badge machine">系统记录</em>research_findings r1 第 1–2 节 · 4 处引用可追</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>research_findings · revision 1 · §1 实体与 revision 模型</code>
-                          <small>结论：revision 一旦发布不可改；消费方引用 revision 号而不是引用「最新」。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>这条结论引用的原文</code><span class="exit-ok">4 处 · 可逐条跳回</span></div>
-                            <pre>docs/features/0.3/F009-artifact/spec.md  §FR-002  不可变 revision
-docs/decisions/0006-executable-work-graph.md  §Slice 1
-docs/personahub-system-design.md  §Artifact 表结构
-server/src/db/schema-v7.ts  artifact_revisions</pre>
-                          </div>
-                          <p class="proof-author">架构研究员 · 尚未与其他两份结论交叉核对</p>
-                        </div>
-                        <div class="claim-foot">
-                          <button class="linklike" type="button" data-open="artifact-research" data-label="阶段成果 · revision 契约" data-stage-child>打开完整结论 →</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>上下文隔离的硬约束已确认</strong><small><em class="src-badge machine">系统记录</em>安全研究员 · 与 PRD 第 7.5 节比对</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>research_findings · revision 1 · §3 读取边界</code>
-                          <small>结论：普通 worktree 不满足 ADR 0006 的隔离要求（共享 .git 元数据），只读并行必须另有强制手段。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>这条结论引用的原文</code><span class="exit-ok">2 处 · 可逐条跳回</span></div>
-                            <pre>docs/decisions/0006-executable-work-graph.md  §并行边界
-  「普通 git worktree 与主仓库共享 .git 管理元数据，
-   不构成操作系统层面的访问隔离」
-docs/features/0.3/F009-artifact/spec.md  §FR-004</pre>
-                          </div>
-                          <p class="proof-author">安全研究员 · 这条与架构研究员的并行前提可能冲突，等综合时暴露</p>
-                        </div>
-                        <div class="claim-foot">
-                          <button class="linklike" type="button" data-open="evidence-room" data-label="验证依据 · 路径边界" data-stage-child>打开完整结论 →</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="evidence-row inflight">
-                      <span class="pending-mark">◐</span>
-                      <span><strong>综合为可直接写成 ADR 的结论</strong><small>正在进行第 2 / 3 步 · 这是本阶段的出口条件</small></span>
-                      <span class="row-go muted">执行中</span>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section unproven-section">
-                    <h2>还没有被证明</h2>
-                    <p>调研任务的缺口是「哪些结论还没有交叉核对」，不是「改了几个文件」。</p>
-                    <ul class="unproven-list">
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>三份结论之间的冲突尚未暴露</strong><small>安全研究员的「只有冷启动能保证围栏」与架构研究员的「同成员 resume 更省」可能互相冲突，综合前无法确认。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>ADR 草案还没有生成</strong><small>阶段出口未达成，结论还不能固化成决策记录。</small></span>
-                      </li>
-                    </ul>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>这份成果是怎么来的</h2>
-                    <div class="plan-list">
-                      <div class="plan-step done">
-                        <span class="plan-index">1</span>
-                        <div>
-                          <strong>并行检索三个方向</strong>
-                          <small>执行者：3 名成员并行 · 输入：契约问题清单</small>
-                          <small>产出：research_findings r1 · Evidence：各自的原始检索记录</small>
-                        </div>
-                        <span class="plan-state">已完成 · 4m 51s</span>
-                      </div>
-                      <div class="plan-step doing">
-                        <span class="plan-index">2</span>
-                        <div>
-                          <strong>整理 revision 与来源追踪</strong>
-                          <small>执行者：OpenCode · 输入：research_findings r1</small>
-                          <small>产出：来源关系表 · Evidence：逐条出处</small>
-                        </div>
-                        <span class="plan-state running">执行中</span>
-                      </div>
-                      <div class="plan-step waiting">
-                        <span class="plan-index">3</span>
-                        <div>
-                          <strong>收敛为 synthesis_plan</strong>
-                          <small>计划：综合者 · 依据：并行检索需要一次显式收敛，不能三份直接交给实现者</small>
-                          <small>预期：synthesis_plan r1 · 要求：冲突结论必须显式取舍，不能并列保留</small>
-                        </div>
-                        <span class="plan-state pending">排队中</span>
-                      </div>
-                    </div>
-                  </section>
-                </article>
+                  </details>
+</article>
 
                 <article class="document task-document outcome-surface" data-document="issue-done">
                   <div class="task-heading"><span class="signal green"></span><span><small>任务 · 已完成</small><h1>Graph 启动恢复</h1></span></div>
+
+                  <div class="state-lead">
+                    <h3>结论</h3>
+                    <p>重启后已完成的节点不会重跑；进行中的 Attempt 被标记为 interrupted，并能从明确的节点创建新尝试。3 条主张全部独立验证通过。</p>
+                  </div>
+
+                  <p class="state-section-label">交付物</p>
+                  <div class="outcome-body">
+                    <button class="outcome-file" type="button" data-open="file-code" data-label="graph-recovery.ts" data-stage-child>
+                      <span class="of-type">TS</span>
+                      <span><strong>server/src/services/graph-recovery.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>启动时按节点结果收敛，已完成节点跳过重跑；进行中 Attempt 统一标记 interrupted。</small></span>
+                      <span class="of-diff">+71 −14</span>
+                    </button>
+                    <button class="outcome-file" type="button" data-open="file-code" data-label="node-run.ts" data-stage-child>
+                      <span class="of-type">TS</span>
+                      <span><strong>server/src/repositories/node-run.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>新增按 graph 查询未收敛 Attempt 的读取路径。</small></span>
+                      <span class="of-diff">+29 −8</span>
+                    </button>
+                    <div class="outcome-artifact">
+                      <span class="oa-mark">A</span>
+                      <span><strong>完成摘要 · revision 1</strong><small>目标、变化、依据与后续建议的定稿</small></span>
+                      <button class="linklike" type="button" data-open="evidence-view" data-label="完成摘要 · Graph 启动恢复" data-stage-child>打开</button>
+                    </div>
+                  </div>
 
                   <div class="source-legend">
                     <span><em class="src-badge machine">系统记录</em>PersonaHub 亲自执行并保存了命令、退出码与完整输出</span>
                     <span><em class="src-badge agent">Agent 的说法</em>成员写下的解释，PersonaHub 没有核对过</span>
                   </div>
+                  <div class="scope-line">
+                    <strong>US-006<small>恢复安全性</small></strong>
+                    <button class="linklike" type="button" data-scope-toggle aria-expanded="false">展开血统</button>
+                  </div>
+                  <p class="scope-full" data-scope-full hidden>
+                    <code>J3 跟进执行中的任务</code> › <code>F006 Orchestrated Coding Graph</code> › <code>US-006 恢复安全性</code>
+                  </p>
 
-                  <div class="outcome-state">
-                    <button class="state-card ok-cell" type="button" data-drawer-toggle="done-sys" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>命令与输出</small>
-                      <strong>24 / 24 通过</strong>
-                      <span>4 条命令 · 全部 exit 0 · <em class="drawer-cue"><i>展开原始输出</i></em></span>
-                    </button>
-                    <button class="state-card ok-cell" type="button" data-drawer-toggle="done-diff" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>实际变化</small>
-                      <strong>3 个文件</strong>
-                      <span>+118 −26 · <em class="drawer-cue"><i>展开实际改动</i></em></span>
-                    </button>
-                    <button class="state-card ok-cell" type="button" data-drawer-toggle="done-indep" aria-expanded="false">
-                      <small><em class="src-badge machine">系统记录</em>验证独立性</small>
-                      <strong>已独立验证</strong>
-                      <span>验证员自带检查 · <em class="drawer-cue"><i>展开判定过程</i></em></span>
-                    </button>
+                  <div class="claim-state" data-claim-filter>
+                    <button class="cs-verified" type="button" data-claim-filter-btn="verified"><small>已独立验证</small><strong>3 / 3 条主张</strong></button>
+                    <button class="cs-pending" type="button" data-claim-filter-btn="pending"><small>有证据待验证</small><strong>0 条</strong></button>
+                    <button class="cs-attention" type="button" data-claim-filter-btn="attention"><small>需要你处理</small><strong>0 条</strong></button>
+                  </div>
 
-                    <div class="state-drawer" data-drawer-body="done-sys" hidden>
-                      <h3>实现者跑了 24 个，验证员另外跑了 6 个</h3>
-                      <p>两批命令分属两个成员、两个 Attempt，输出各自独立保存。绿卡只是这两批都 exit 0 的结果。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>npm test -w @personahub/server -- graph-recovery</code><span class="exit-ok">实现者 · exit 0 · 7m 02s · 09:26</span></div>
-                        <pre>PASS server/test/integration/graph-recovery.test.ts
-  ✓ completed_nodes_are_not_rerun_after_restart    (508 ms)
-  ✓ inflight_attempt_marked_interrupted            (271 ms)
-  … 22 more
-Tests: 24 passed, 24 total</pre>
-                      </div>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>node scripts/replay-concurrent-restart.mjs --rounds 20</code><span class="exit-ok">独立验证员 · exit 0 · 2m 41s · 09:41</span></div>
-                        <pre>20 rounds · 3 concurrent restarts each
-duplicate attempts: 0
-orphaned node_runs: 0
-interrupted → new attempt transitions: 60 / 60 ok</pre>
+                  <div class="claim-list" data-claim-list>
+                    <div class="claim-item" data-claim-state="verified">
+                      <span class="claim-mark verified" aria-hidden="true">✓</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-011</code>重启后已完成节点不重复运行</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>9 条集成用例，加一次由验证员自己设计的 20 轮并发回放</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>graph-recovery.test.ts › completed nodes are not rerun</code></span>
+                            <span class="ev-meta"><b>通过</b> 508ms · 实现者执行</span>
+                          </div>
+                          <div class="evidence-item">
+                            <span><code>replay-concurrent-restart.mjs --rounds 20</code></span>
+                            <span class="ev-meta"><b>通过</b> 2m41s · 验证员执行 · <i>⊘ 冷启动</i></span>
+                          </div>
+                        </div>
+                        <p class="claim-verdict ok"><span>结论</span>独立验证通过 —— 验证员用的是自己写的回放，没有复用实现者的 9 条用例</p>
                       </div>
                     </div>
-
-                    <div class="state-drawer" data-drawer-body="done-diff" hidden>
-                      <h3>3 个文件的实际改动</h3>
-                      <p>加减行来自 git；每段下面的解释是实现者写的。</p>
-                      <div class="raw-block">
-                        <div class="raw-head"><code>server/src/services/graph-recovery.ts</code><span class="exit-ok">+71 −14</span></div>
-                        <pre><span class="ctx">@@ recoverOnBoot() @@</span>
-<span class="del">-  for (const node of graph.nodes) await dispatchNode(node);</span>
-<span class="add">+  const settled = new Set(results.filter(isTerminal).map((r) =&gt; r.nodeId));</span>
-<span class="add">+  for (const node of graph.nodes) {</span>
-<span class="add">+    if (settled.has(node.id)) continue;          // 已收敛的不重跑</span>
-<span class="add">+    if (node.attempt?.status === "running") {</span>
-<span class="add">+      await markInterrupted(node.attempt);        // 独立终态，不算 failed</span>
-<span class="add">+    }</span>
-<span class="add">+    await dispatchNode(node, { reason: "boot-recovery" });</span>
-<span class="add">+  }</span></pre>
+                    <div class="claim-item" data-claim-state="verified">
+                      <span class="claim-mark verified" aria-hidden="true">✓</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-012</code>interrupted 与 failed / cancelled 在证据里可区分</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>状态机用例加落库结构的实际改动，并在回放中被确认</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>server/src/db/schema-v7.ts</code> interrupted 独立终态</span>
+                            <button class="linklike" type="button" data-open="file-code" data-label="schema-v7.ts" data-stage-child>打开全文</button>
+                          </div>
+                          <div class="evidence-item">
+                            <span><code>node-run.test.ts › interrupted is a distinct terminal state</code></span>
+                            <span class="ev-meta"><b>通过</b> 96ms · 实现者执行</span>
+                          </div>
+                        </div>
+                        <p class="claim-verdict ok"><span>结论</span>独立验证通过 —— 由验证员在回放中确认可区分</p>
                       </div>
-                      <p class="agent-note"><em class="src-badge agent">Agent 的说法</em>实现者：「启动时按节点结果收敛，已完成节点跳过重跑；进行中 Attempt 统一标记 interrupted。」</p>
-                      <button class="linklike" type="button" data-open="file-code" data-label="graph-recovery.ts" data-stage-child>打开全文逐处核对 →</button>
                     </div>
-
-                    <div class="state-drawer" data-drawer-body="done-indep" hidden>
-                      <h3>这次的独立性是怎么成立的</h3>
-                      <p>三条都满足才算独立验证。缺任何一条，这张卡不会变绿。</p>
-                      <div class="indep-grid">
-                        <div class="indep-row"><small>谁实现的</small><span>实现者 / Codex GPT-5 · Attempt #1</span></div>
-                        <div class="indep-row"><small>谁验证的</small><span class="good">独立验证员 / Claude Sonnet · Attempt #3 · 与实现者不同成员、不同模型</span></div>
-                        <div class="indep-row"><small>验的是谁的检查</small><span class="good">验证员自己写的并发重启回放脚本，<strong>没有复用实现者的 24 个测试</strong></span></div>
-                      </div>
-                      <div class="indep-verdict">
-                        这批绿有效的原因不是「24 / 24 通过」，而是：另一个成员用它自己设计的检查，独立跑出了同样的结论。<br />
-                        实现者的 24 个测试仍然只是自证，它们的价值是回归，不是验证。
+                    <div class="claim-item" data-claim-state="verified">
+                      <span class="claim-mark verified" aria-hidden="true">✓</span>
+                      <div>
+                        <strong class="claim-title"><code>AC-013</code>并发重启下不产生重复 Attempt</strong>
+                        <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>全篇唯一不属于自证的依据：检查由验证员设计，实现者没有参与</span></p>
+                        <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
+                          <div class="evidence-item">
+                            <span><code>replay-concurrent-restart.mjs</code> duplicate=0 · orphaned=0 · 60/60 ok</span>
+                            <span class="ev-meta"><b>通过</b> 2m41s · 验证员执行 · <i>⊘ 冷启动</i></span>
+                          </div>
+                        </div>
+                        <p class="claim-verdict ok"><span>结论</span>独立验证通过</p>
                       </div>
                     </div>
                   </div>
 
-                  <section class="outcome-section">
-                    <h2>目标</h2>
+                  <div class="regression-band">
+                    <span>实现回归 <strong>24 / 24</strong> 当前无失败 · 挂在代码上，不计入上面三张卡</span>
+                    <button class="linklike" type="button" data-demo="展开单元与属性测试清单；失败时会自动展开并进入「需要你处理」">展开</button>
+                  </div>
+
+                  <p class="claim-na-line">仍未证明：只验了 20 轮并发，长时间运行后的重启组合没有被执行到；node-run.ts 的读取路径只有实现者自己的用例。两条已登记为后续任务。</p>
+
+                  <details class="outcome-detail">
+                    <summary>目标与完整执行计划</summary>
                     <p>让服务重启后已完成的节点不再重复运行，进行中的 Attempt 被标记为 interrupted，并能从明确的节点创建新尝试。</p>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>本次成果</h2>
-                    <p>阶段成果已固定到 revision，内容不随磁盘后续改动而变化。</p>
-                    <div class="outcome-body">
-                      <button class="outcome-file" type="button" data-open="file-code" data-label="graph-recovery.ts" data-stage-child>
-                        <span class="of-type">TS</span>
-                        <span><strong>server/src/services/graph-recovery.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>启动时按节点结果收敛，已完成节点跳过重跑；进行中 Attempt 统一标记 interrupted。</small></span>
-                        <span class="of-diff">+71 −14</span>
-                      </button>
-                      <button class="outcome-file" type="button" data-open="file-code" data-label="node-run.ts" data-stage-child>
-                        <span class="of-type">TS</span>
-                        <span><strong>server/src/repositories/node-run.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>新增按 graph 查询未收敛 Attempt 的读取路径。</small></span>
-                        <span class="of-diff">+29 −8</span>
-                      </button>
-                      <button class="outcome-file" type="button" data-open="file-code" data-label="schema-v7.ts" data-stage-child>
-                        <span class="of-type">TS</span>
-                        <span><strong>server/src/db/schema-v7.ts</strong><small class="agent-note"><em class="src-badge agent">Agent 的说法</em>interrupted 作为独立终态落库，与 failed / cancelled 区分。</small></span>
-                        <span class="of-diff">+18 −4</span>
-                      </button>
-                      <div class="outcome-artifact">
-                        <span class="oa-mark">A</span>
-                        <span><strong>完成摘要 · revision 1</strong><small>目标、变化、依据与后续建议的定稿</small></span>
-                        <button class="linklike" type="button" data-open="evidence-view" data-label="完成摘要 · Graph 启动恢复" data-stage-child>打开</button>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>完成要求与依据</h2>
-                    <p>三条要求全部拿到依据，每一条都能点到原始记录或独立验证结论。</p>
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>重启后已完成节点不重复运行</strong><small><em class="src-badge machine">系统记录</em>9 项 integration test · 实现者所写</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>completed_nodes_are_not_rerun_after_restart</code>
-                          <small>断言：重启后已收敛节点的 dispatch 次数保持不变。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>断言实际输出</code><span class="exit-ok">通过 · 508 ms</span></div>
-                            <pre>dispatchNode calls before restart: 6
-dispatchNode calls after  restart: 6   ✓
-settled nodes skipped: 4               ✓</pre>
-                          </div>
-                          <p class="proof-author">实现者所写 · 属于自证，与下面第三条的独立验证不是一回事</p>
-                        </div>
-                        <div class="claim-foot">
-                          <button class="linklike" type="button" data-open="evidence-view" data-label="验证依据 · 重启不重跑" data-stage-child>打开完整证据链 →</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>interrupted 与 failed / cancelled 在证据里可区分</strong><small><em class="src-badge machine">系统记录</em>实际改动 · schema-v7.ts + 状态机测试</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>server/src/db/schema-v7.ts</code>
-                          <small>interrupted 作为独立终态落库，查询证据时不会被并进 failed。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>对应改动</code><span class="exit-ok">+18 −4</span></div>
-                            <pre><span class="del">-  status: "queued" | "running" | "failed" | "cancelled" | "done";</span>
-<span class="add">+  status: "queued" | "running" | "failed" | "cancelled" | "interrupted" | "done";</span></pre>
-                          </div>
-                          <p class="proof-author">实现者所写 · 由验证员在回放中确认可区分</p>
-                        </div>
-                        <div class="claim-foot">
-                          <button class="linklike" type="button" data-open="file-code" data-label="schema-v7.ts" data-stage-child>打开修改位置 →</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="claim">
-                      <button class="claim-head" type="button" data-claim-toggle aria-expanded="false">
-                        <span class="ok">✓</span>
-                        <span><strong>并发重启下不产生重复 Attempt</strong><small><em class="src-badge machine">系统记录</em>独立验证 · Claude Sonnet 自带检查 · 20 轮回放</small></span>
-                        <span class="row-go"><i>展开依据</i></span>
-                      </button>
-                      <div class="claim-body" hidden>
-                        <div class="proof-test">
-                          <code>scripts/replay-concurrent-restart.mjs --rounds 20</code>
-                          <small>验证员自己写的回放：每轮 3 个并发重启，检查是否出现重复 Attempt 或孤儿 node_run。</small>
-                          <div class="raw-block">
-                            <div class="raw-head"><code>原始输出</code><span class="exit-ok">exit 0 · 2m 41s</span></div>
-                            <pre>duplicate attempts: 0
-orphaned node_runs: 0
-interrupted → new attempt transitions: 60 / 60 ok</pre>
-                          </div>
-                          <p class="proof-author">这一条是全篇唯一不属于自证的依据：检查由验证员设计，实现者没有参与</p>
-                        </div>
-                        <div class="claim-foot">
-                          <button class="linklike" type="button" data-open="evidence-room" data-label="独立验证 · 竞态与回放" data-stage-child>查看验证结论 →</button>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section class="outcome-section unproven-section">
-                    <h2>还没有被证明</h2>
-                    <p>已完成不等于全部被证明。这一段在成功态照样在场，否则「三张全绿」会被读成「什么都验过了」。</p>
-                    <ul class="unproven-list">
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>只验了 20 轮并发，没有验长时间运行后的重启</strong><small>回放脚本覆盖的是刚启动即重启；节点跑到一半、连续多次重启的组合没有被执行到。</small></span>
-                      </li>
-                      <li>
-                        <span class="up-mark">!</span>
-                        <span><strong>node-run.ts 的新读取路径只有实现者自己的测试</strong><small>+29 −8 这段没有进入验证员的回放路径，目前属于自证。</small></span>
-                      </li>
-                    </ul>
-                    <button class="linklike" type="button" data-demo="从缺口创建后续任务；静态原型未执行创建">把这两条建成后续任务 →</button>
-                  </section>
-
-                  <section class="outcome-section">
-                    <h2>这份成果是怎么来的</h2>
-                    <div class="plan-list">
-                      <div class="plan-step done">
-                        <span class="plan-index">1</span>
-                        <div>
-                          <strong>确认恢复语义</strong>
-                          <small>执行者：Human Lead · 输入：ADR 0006 恢复要求</small>
-                          <small>产出：Implementation 指令 · Evidence：确认事件</small>
-                        </div>
-                        <span class="plan-state">已完成 · 09:12</span>
-                      </div>
-                      <div class="plan-step done">
-                        <span class="plan-index">2</span>
-                        <div>
-                          <strong>实现启动恢复</strong>
-                          <small>执行者：实现者 / Codex GPT-5 · 输入：恢复语义</small>
-                          <small>产出：3 个文件修改 · Evidence：24 / 24 tests</small>
-                        </div>
-                        <span class="plan-state">已完成 · 7m 02s</span>
-                      </div>
-                      <div class="plan-step done">
-                        <span class="plan-index">3</span>
-                        <div>
-                          <strong>独立验证 scope 泄露与 TOCTOU 边界</strong>
-                          <small>执行者：独立验证员 / Claude Sonnet · 输入：变更集 + 完成要求</small>
-                          <small>产出：verification_results · Evidence：并发重启回放</small>
-                        </div>
-                        <span class="plan-state">通过 · 2m 41s</span>
-                      </div>
-                    </div>
-                    <div class="outcome-followup">
-                      <span class="ofu-mark">↗</span>
-                      <span><strong>1 条后续建议未处理</strong><small>验证员提出：恢复日志建议补一条 metric，便于 v0.7 多实例排查。不阻塞本任务完成。</small></span>
-                      <button class="linklike" type="button" data-demo="从后续建议创建新任务；静态原型未执行创建">建成新任务</button>
-                    </div>
-                  </section>
-                </article>
+                  </details>
+</article>
 
                 <article class="document task-document outcome-surface room-surface" data-document="room-view">
                   <div class="task-heading"><span class="signal blue"></span><span><small>协作现场 · Research · 进行中</small><h1>Agent session 生命周期调研</h1></span></div>

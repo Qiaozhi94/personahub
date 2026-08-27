@@ -542,6 +542,30 @@
       return;
     }
 
+    // 范围血统默认收起：对每天只看这个任务的人，完整路径是装饰（提案 §9.2）
+    if (target.hasAttribute("data-scope-toggle")) {
+      const full = target.closest(".task-document")?.querySelector("[data-scope-full]");
+      if (full) {
+        full.hidden = !full.hidden;
+        target.textContent = full.hidden ? "展开血统" : "收起血统";
+        target.setAttribute("aria-expanded", String(!full.hidden));
+      }
+      return;
+    }
+
+    // 三张卡是同一条验证进度轴上的三段，点卡片 = 筛主张树。
+    // 三个数字之和必须等于主张总数，这是它们能并列的前提。
+    if (target.dataset.claimFilterBtn) {
+      const doc = target.closest(".task-document");
+      const wanted = target.dataset.claimFilterBtn;
+      const already = target.classList.contains("active");
+      $$("[data-claim-filter-btn]", doc).forEach((b) => b.classList.toggle("active", !already && b === target));
+      $$("[data-claim-state]", doc).forEach((item) => {
+        item.hidden = !already && item.dataset.claimState !== wanted;
+      });
+      return;
+    }
+
     // 视图切换：成果看结构，轨迹看时间。两者同属一个任务 tab，不新开 tab。
     if (target.dataset.stageView) {
       const article = target.closest(".task-document");

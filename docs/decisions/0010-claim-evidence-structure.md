@@ -80,6 +80,8 @@ PersonaHub 的需求与验收结构采用三个角色，与 GSN 同构：
 
 **范围血统与主张结构分开。** `旅程 → Feature → US` 回答「这条主张属于哪里」，不是三层上位主张；可判真假的完成要求 / AC 才进入主张—论证—证据结构。范围层数不预先规定，coding 常见三层血统，写作可能只有作品与章节。
 
+**证据使用已有的天然标识，不新建编号体系。** 测试用测试名，文件用 workspace 相对路径，源码引用用「仓库 · 路径 · 符号」，验证结论用「成员 · Run」，反证用文字标签。PersonaHub 的证据对象本来就各自可寻址（Run ID、ThreadEvent ID、artifact revision、文件路径），再造一套 `TEST-xxx` / `SRC-xxx` 前缀只会多出一份需要人工维护、且与真实对象二次对齐的编号表。
+
 **「论证」这一层不可省略。** 设计评审中出现过「三段像在讲同一件事但抓不住联系」的反馈，缺的正是它：主张与证据之间没有显式连线，读者只能自己脑补。GSN 把 Strategy 作为独立节点，正是为了消除这种脑补。
 
 ### 2. 未被支撑的主张必须显式在场
@@ -146,6 +148,6 @@ PRD 已有的 Validation Policy 表按 Issue Type 给出了证据类型（coding
 
 - 依赖：`docs/decisions/0009-agent-session-lifecycle.md`（跨围栏冷启动决定证据能不能算独立）
 - 约束：`docs/personahub-prd.md` 第 5 节 Validation Policy（升格为插件定义）
-- 约束：`docs/personahub-user-journeys.md`（旅程需编号到步）
+- 约束：`docs/personahub-user-journeys.md`（步骤 ID `J1.1`–`J3.6` 已存在；需补的是 Feature / US 对应哪一步的引用规则）
 - 约束：`docs/features/README.md` 的 spec 模板（AC 需标注所属 US）
 - 落点：v3.1 交互设计基线 `ui-reference/personahub-draft/personahub-v3.1/docs/design.md`
