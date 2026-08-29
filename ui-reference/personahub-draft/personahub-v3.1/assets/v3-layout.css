@@ -2395,3 +2395,38 @@
 /* 论证是成员写的，证据是机器记录——两边都要标信源（design.md §4.2.4）*/
 .evidence-list > .ev-source { margin: 0 0 4px; color: var(--faint); font-size: 9px; }
 .claim-why .src-badge { vertical-align: 0; }
+
+/* 20. 验收基线决策：舞台给结构，Dock 给原文，决定产生事件行而不是消息 */
+.claim-rev {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in oklch, var(--yellow) 45%, transparent);
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--yellow) 10%, transparent);
+  color: var(--yellow);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+.claim-verdict b { color: var(--text); font-weight: 650; }
+
+/* Dock 里的决定：事件行，不是消息气泡——它不是你说的话，是状态变更 */
+.room-event.decision > p {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  background: color-mix(in oklch, var(--accent) 8%, transparent);
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* 从舞台跳过来时闪一下，指明「原文在这」*/
+.message.flash > div { animation: v3-flash 1.6s ease-out 1; }
+@keyframes v3-flash {
+  0%, 30% { box-shadow: 0 0 0 2px var(--accent); }
+  100% { box-shadow: 0 0 0 2px transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .message.flash > div { animation: none; } }
+/* display:grid 会盖掉 [hidden] 的 display:none，凡是靠 hidden 切换的都要复位 */
+.baseline-gate[hidden] { display: none; }
+.claim-state[hidden] { display: none; }

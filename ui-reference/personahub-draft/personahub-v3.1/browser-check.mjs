@@ -276,6 +276,58 @@ await check("验收基线变更事前阻塞，新增证据不拦截（提案 §5
   if ((await gate.locator(".bg-actions > button").count()) < 3) throw new Error("缺少批准 / 拒绝 / 看差异三个动作");
 });
 
+await check("决定产生状态变更，不产生消息气泡（舞台 / Dock 分工）", async () => {
+  await page.locator('.work-item[data-open="issue-view"]').click();
+  const stage = page.locator('[data-document="issue-view"]');
+  const gate = stage.locator("[data-baseline-gate]");
+  await gate.waitFor({ state: "visible" });
+
+  // 舞台不复述对话，只留回链
+  const reason = await gate.locator(".bg-reason").innerText();
+  if (reason.includes("源文件被删")) throw new Error("实现者的理由全文跑到舞台上了——那是对话，不是结构");
+  if (!(await gate.locator("[data-reveal-request]").isVisible())) throw new Error("舞台没有回链到会话原文");
+
+  // 原文在 Dock 里
+  const request = page.locator("[data-baseline-request]");
+  if (!(await request.isVisible())) throw new Error("Dock 里没有实现者的申请原文");
+  if (!(await request.innerText()).includes("源文件被删")) throw new Error("Dock 的原文内容不对");
+
+  const before = await page.locator("[data-room-panel].active .message").count();
+  await gate.locator('[data-baseline-decide="approve"]').click();
+
+  // 决定不产生消息气泡——实现者不在线，收不到消息（ADR 0009）
+  const after = await page.locator("[data-room-panel].active .message").count();
+  if (after !== before) throw new Error("批准产生了一条消息气泡；它是状态变更，不是你说的话");
+  const event = page.locator("[data-baseline-event]");
+  if (!(await event.isVisible())) throw new Error("Dock 里没有留下状态变更事件行");
+  if (!(await event.innerText()).includes("r2")) throw new Error("事件行没写明新的基线版本");
+
+  // 舞台：阻塞条解除，主张标上 revision
+  if (await gate.isVisible()) throw new Error("批准后阻塞条仍在");
+  const claim = stage.locator('[data-claim="AC-002"]');
+  if (!(await claim.locator("[data-claim-rev]").innerText()).includes("r2")) throw new Error("主张没有标上新 revision");
+
+  // 关键：改了基线，原来的绿勾就不成立——已有证据验的是 r1
+  if ((await claim.locator(".claim-mark").innerText()).trim() !== "◐") {
+    throw new Error("批准改基线后主张仍是绿勾，但已有证据验的是旧断言");
+  }
+  const verdict = await claim.locator("[data-claim-verdict]").innerText();
+  if (!verdict.includes("r1")) throw new Error("结论没有说明已有证据指向旧基线");
+
+  // 三卡跟着变，且总数仍然守恒
+  const nums = (await stage.locator("[data-claim-filter-btn]").allInnerTexts()).join(" ").match(/\d+/g).map(Number);
+  const total = await stage.locator("[data-claim-state]").count();
+  if (nums[0] + nums[2] + nums[3] !== total) throw new Error("批准后三张卡之和不再等于主张总数");
+  if (nums[0] !== 0) throw new Error("批准后已独立验证数没有下调");
+
+  await page.screenshot({ path: "shots/baseline-approved.png", fullPage: true });
+
+  // 这条 check 会真的改变舞台状态，收尾时复位，避免污染后续断言
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator('[data-explorer-panel="work"] [data-open="issue-view"]').first().click();
+  await page.locator('[data-document="issue-view"] [data-baseline-gate]').waitFor({ state: "visible" });
+});
+
 await check("范围血统默认收起，按需展开（提案 §9.2）", async () => {
   const stage = page.locator('[data-document="issue-view"]');
   const scope = stage.locator(".scope-line");

@@ -280,6 +280,72 @@
 
   // Dock 只有一条流。Room 不再是阅读入口，只是流里的一段可折叠内容：
   // 它是组织单位（谁一起干、交付什么），那些结构信息在舞台的成员泳道上。
+  // ── 验收基线决策：舞台与 Dock 的分工 ──────────────────────
+  //
+  // 舞台放「待决状态 + 决策界面」，Dock 放「对话原文」。
+  // 决定本身产生的是**状态变更**，不是一条你发给实现者的消息——
+  // 实现者不在线（ADR 0009：每次执行都是全新进程），它收不到消息，
+  // 只会在下次被调度时拿到已经更新的验收基线。
+  function revealBaselineRequest() {
+    const msg = $("[data-baseline-request]");
+    if (!msg) return;
+    setPanel("primary");
+    msg.scrollIntoView({ block: "center", behavior: "smooth" });
+    msg.classList.add("flash");
+    window.setTimeout(() => msg.classList.remove("flash"), 1600);
+  }
+
+  function decideBaseline(approved) {
+    const gate = $("[data-baseline-gate]");
+    const claim = $('[data-claim="AC-002"]');
+    if (!gate || !claim) return;
+
+    gate.hidden = true;
+
+    if (approved) {
+      // 关键一条：改了基线，原来的绿勾就不成立了——
+      // 已有证据验的是旧断言 r1，r2 的证据还没产生。
+      claim.dataset.claimState = "pending";
+      const mark = $(".claim-mark", claim);
+      mark.className = "claim-mark pending";
+      mark.textContent = "◐";
+      $("[data-claim-text]", claim).textContent = "旧 revision ref 解析旧内容，或在源文件缺失时返回 null";
+      const rev = $("[data-claim-rev]", claim);
+      rev.hidden = false;
+      rev.textContent = "r2 · 你批准于 14:32";
+      const verdict = $("[data-claim-verdict]", claim);
+      verdict.className = "claim-verdict pending";
+      verdict.innerHTML =
+        "<span>结论</span>下面两条证据验的是 <b>r1</b>，基线已改为 r2 —— r2 的证据尚未产生，独立验证需要重跑";
+
+      setText("[data-count-verified]", "0 / 3 条主张");
+      setText("[data-count-pending]", "2 条");
+      $("[data-change-text]").innerHTML = "你已批准 <code>AC-002</code> 的验收基线 → <b>r2</b> · 14:32 · 旧主张与旧证据仍可追溯";
+      showBaselineEvent("验收基线 AC-002 → r2（你批准）· 已有证据仍指向 r1，需重新验证");
+      showToast("已批准为 r2：旧证据验的是 r1，这条主张退回「有证据待验证」");
+    } else {
+      const rev = $("[data-claim-rev]", claim);
+      rev.hidden = false;
+      rev.textContent = "r1 · 你拒绝了修改";
+      $("[data-change-text]").innerHTML = "你已拒绝 <code>AC-002</code> 的基线修改 · 14:32 · 实现需按原断言继续";
+      showBaselineEvent("验收基线 AC-002 保持 r1（你拒绝）· 实现需按原断言继续");
+      showToast("已拒绝：验收基线保持 r1，已有的独立验证仍然成立");
+    }
+  }
+
+  function showBaselineEvent(text) {
+    const row = $("[data-baseline-event]");
+    if (!row) return;
+    row.hidden = false;
+    $("[data-baseline-event-text]", row).textContent = text;
+    row.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+
+  function setText(selector, value) {
+    const el = $(selector);
+    if (el) el.textContent = value;
+  }
+
   // Dock 只有一个输入框在场——取当前可见面板里的那个
   function activeComposer() {
     return $('[data-room-panel].active textarea');
@@ -539,6 +605,17 @@
         if (twisty) twisty.textContent = collapsed ? "›" : "⌄";
         target.setAttribute("aria-expanded", String(!collapsed));
       }
+      return;
+    }
+
+    // 舞台不复述对话，只留一个回链到 Dock 的原文
+    if (target.hasAttribute("data-reveal-request")) {
+      revealBaselineRequest();
+      return;
+    }
+
+    if (target.dataset.baselineDecide) {
+      decideBaseline(target.dataset.baselineDecide === "approve");
       return;
     }
 

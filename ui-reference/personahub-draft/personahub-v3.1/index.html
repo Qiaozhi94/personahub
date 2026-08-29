@@ -390,12 +390,12 @@ completed -&gt; archived</code></pre>
                         <div class="bg-old"><span>原</span><span><code>resolve("artifact:art_7f2@1") 返回 r1 原文</code></span></div>
                         <div class="bg-new"><span>改</span><span><code>resolve("artifact:art_7f2@1") 返回 r1 原文 或 null</code></span></div>
                       </div>
-                      <p class="bg-reason"><em class="src-badge agent">Agent 的说法</em>实现者：源文件被删时拿不到原文，断言「永远」跑不过。</p>
+                      <p class="bg-reason">理由由实现者写在会话里，这里不复述 —— 舞台只放结构 <button class="linklike" type="button" data-reveal-request>看原文 →</button></p>
                       <p class="bg-risk"><strong>⚠ 系统提示：这可能把主张改弱。</strong>原来断言「永远」，改后允许返回 null。是不是可接受由你判断，系统只负责把差异和理由摊开。</p>
                       <p class="bg-hold">在你决定之前，验收基线停在 r1；已有证据保持不变，新跑出来的结果照常记录。</p>
                       <div class="bg-actions">
-                        <button type="button" class="primary" data-demo="已批准为 r2；旧主张、旧证据与旧结论仍可追溯，不原地覆盖">批准为 r2</button>
-                        <button type="button" data-demo="已拒绝；验收基线保持 r1，实现需按原断言继续">拒绝并保持 r1</button>
+                        <button type="button" class="primary" data-baseline-decide="approve">批准为 r2</button>
+                        <button type="button" data-baseline-decide="reject">拒绝并保持 r1</button>
                         <button type="button" data-open="evidence-room" data-label="验收基线变更 · AC-002" data-stage-child>看完整差异</button>
                       </div>
                     </div>
@@ -413,19 +413,19 @@ completed -&gt; archived</code></pre>
                   <div class="claim-state" data-claim-filter>
                     <button class="cs-verified" type="button" data-claim-filter-btn="verified">
                       <small>已独立验证</small>
-                      <strong>1 / 3 条主张</strong>
+                      <strong data-count-verified>1 / 3 条主张</strong>
                     </button>
                     <button class="cs-pending" type="button" data-claim-filter-btn="pending">
                       <small>有证据待验证</small>
-                      <strong>1 条</strong>
+                      <strong data-count-pending>1 条</strong>
                     </button>
                     <button class="cs-attention" type="button" data-claim-filter-btn="attention">
                       <small>需要你处理</small>
                       <strong>1 条</strong>
                     </button>
                   </div>
-                  <p class="claim-change-line">
-                    <span>上次查看后：<code>AC-002</code> 的验收基线被申请修改一次，尚未决定</span>
+                  <p class="claim-change-line" data-change-line>
+                    <span data-change-text>上次查看后：<code>AC-002</code> 的验收基线被申请修改一次，尚未决定</span>
                     <button class="linklike" type="button" data-open="evidence-room" data-label="验收基线变更 · AC-002" data-stage-child>看变更 →</button>
                   </p>
 
@@ -461,10 +461,10 @@ completed -&gt; archived</code></pre>
                       </div>
                     </div>
 
-                    <div class="claim-item" data-claim-state="verified">
+                    <div class="claim-item" data-claim-state="verified" data-claim="AC-002">
                       <span class="claim-mark verified" aria-hidden="true">✓</span>
                       <div>
-                        <strong class="claim-title"><code>AC-002</code>旧 revision ref 永远解析旧内容</strong>
+                        <strong class="claim-title"><code>AC-002</code><span data-claim-text>旧 revision ref 永远解析旧内容</span><em class="claim-rev" data-claim-rev hidden></em></strong>
                         <p class="claim-why"><span>凭什么</span><span><em class="src-badge agent">Agent 的说法</em>两条端到端用例走完整读取路径，其中一条由未参与实现的成员在独立上下文里跑</span></p>
                         <div class="evidence-list"><p class="ev-source"><em class="src-badge machine">系统记录</em>下面每一条都可核对到原件</p>
                           <div class="evidence-item">
@@ -476,7 +476,7 @@ completed -&gt; archived</code></pre>
                             <span class="ev-meta"><b>通过</b> 188ms · 验证员执行 · <i>⊘ 冷启动</i></span>
                           </div>
                         </div>
-                        <p class="claim-verdict ok"><span>结论</span>独立验证通过 · 验证者未收到实现者的过程消息与自述</p>
+                        <p class="claim-verdict ok" data-claim-verdict><span>结论</span>独立验证通过 · 验证者未收到实现者的过程消息与自述</p>
                         <p class="claim-collapsed-note">这条主张已收敛，默认可收起；当前展开是为了对照上方的基线变更申请。</p>
                       </div>
                     </div>
@@ -1351,6 +1351,8 @@ completed -&gt; archived</code></pre>
                     <div class="message agent-message"><span class="member-avatar purple">P</span><div><header><strong>PersonaHub</strong><time>10:43</time></header><p>建议下一步交给独立验证员，重点检查反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。</p><button type="button" data-open="artifact-view">打开 synthesis_plan · r3</button></div></div>
                   </div>
                     </div>
+                    <div class="message agent-message" data-baseline-request><span class="member-avatar blue">实</span><div><header><strong>实现者</strong><time>10:52</time></header><p>AC-002 断言「永远解析旧内容」，但源文件被删时拿不到原文，这条跑不过。建议把期望值改成「返回 r1 原文 或 null」。</p><footer>Codex CLI · GPT-5 · 申请修改验收基线</footer></div></div>
+                    <div class="room-event decision" data-baseline-event hidden><p data-baseline-event-text></p></div>
                     <div class="room-event"><p>Implementation 阶段已完成 · 阶段成果与验证依据已汇总</p></div>
                     <div class="message agent-message"><span class="member-avatar purple">P</span><div><header><strong>PersonaHub</strong><time>10:43</time></header><p data-primary-message>建议下一步交给独立验证员；指派后会自动携带固定版本的阶段成果和现有验证依据。</p><button type="button" data-open="evidence-room">查看待补验证依据</button></div></div>
                   </div>
