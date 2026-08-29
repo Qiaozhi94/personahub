@@ -63,6 +63,8 @@ async function openDocument({ id, explorer, file, title }) {
       await taskTab.click();
     }
   }
+  // V3.3：任务面分了六个视图，文档都活在「验收」面里；截图前先切过去。
+  await page.locator('[data-pane-tabs] [data-pane-tab="acceptance"]').click();
   await targetDocument.waitFor({ state: "visible" });
   await page.locator(".document-stage").evaluate((element) => { element.scrollTop = 0; });
   await capture(file, title, "project-document");
@@ -92,14 +94,17 @@ await openDocument({ id: "issue-view", explorer: "work", file: "task-and-room.tm
 fs.unlinkSync(path.join(shotsDir, "task-and-room.tmp.png"));
 exports.pop();
 await page.locator(".project-thread-entry").click();
+await page.locator('[data-pane-tabs] [data-pane-tab="thread"]').click();
 await page.locator('[data-room-panel="project"]').waitFor({ state: "visible" });
 await capture("project-thread.png", "项目会话 · 不绑定任务", "room-panel");
 await page.locator('[data-explorer-panel="work"] [data-open="issue-view"]').first().click();
+await page.locator('[data-pane-tabs] [data-pane-tab="thread"]').click();
 await page.locator('[data-room-panel="primary"]').waitFor({ state: "visible" });
 
 await openDocument({ id: "room-view", explorer: "work", file: "room-tmp.png", title: "临时", kind: "temporary" });
 fs.unlinkSync(path.join(shotsDir, "room-tmp.png"));
 exports.pop();
+await page.locator('[data-pane-tabs] [data-pane-tab="acceptance"]').click();
 await page.locator('[data-pick-member="synthesizer"]').click();
 await page.locator("[data-member-picker]:visible").waitFor({ state: "visible" });
 await capture("member-picker.png", "成员选择器 · 综合员", "overlay");

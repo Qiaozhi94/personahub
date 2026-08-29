@@ -6,8 +6,11 @@
     surface: "project",
     explorer: "work",
     document: "file-prd",
+    pane: "overview",
     dockPanel: "primary",
-    recipient: "这个任务",
+    recipient: "实现 · codex-gpt5.6-high",
+    contextScope: "只给结果",
+    draft: "",
     dockTaskLabel: "",
     pickerRole: null,
     dispatchTimer: null,
@@ -43,15 +46,15 @@
   };
 
   const dockContexts = {
-    "project-overview": { panel: "project", recipient: "这个项目", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "v0.3 有 2 个任务在推进、1 个等你指派。F009 的 artifact 引用刚做完实现，还没有独立验证。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
-    "issue-view": { panel: "primary", recipient: "@独立验证员", room: { name: "Implementation 现场", meta: "3 名成员 · 1 名已交付 · 阶段结束后归档，记录不删除" }, title: "artifact 引用不漂移与来源可追", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步交给独立验证员，重点是 scope 泄露与 TOCTOU 边界——这两条 F009 spec 明确要求，但现在一个用例都没有。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议交给独立验证员", handoffMember: "@独立验证员", input: "@独立验证员\n验证上一步实现，重点检查反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：scope 泄露与 TOCTOU 还没有任何用例"},
-    "room-view": { panel: "research-thread", recipient: "@安全研究员", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究现场正在核实两个参考项目的 session 机制；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在核实 session 机制", step: "2 / 3 步", block: ""},
-    "issue-new": { panel: "primary", recipient: "这个任务", title: "把 dogfooding 问题导出为周报", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以先依据它们生成用例集交你确认，再指派实现——用例先于实现固定是 ADR 0009 的硬要求。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
-    "issue-validation": { panel: "primary", recipient: "@架构研究员", title: "修复图重启的并发认领", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两轮独立验证都指向同一处并发窗口。建议先由架构研究员隔离分析共同根因，再决定换什么策略。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两轮都撞上的那个并发窗口，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：两轮都撞同一处并发窗口，需要换策略"},
-    "issue-permission": { panel: "primary", recipient: "这个任务", title: "允许 agent 执行 git push", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求执行 git push origin HEAD:feat/f009-artifact-ref。这是显式的能力边界，每次都要你单独授权。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你授权 git push", step: "1 / 3 步", block: "卡在：git push 是显式能力边界，需要你单独授权"},
-    "issue-running": { panel: "primary", recipient: "@Claude", title: "补齐 Inspector 的 artifact 状态", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全。四种 artifact 状态里已完成两种，完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在补 missing / invalid 两种状态", step: "2 / 4 步", block: ""},
-    "issue-research": { panel: "research-thread", recipient: "@安全研究员", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究现场正在核实 multica 与 clowder 的 session 机制，以及 PersonaHub 现状的差距。", handoff: false, input: "", who: "OpenCode", what: "正在整理两个项目的 session 机制", step: "2 / 3 步", block: ""},
-    "issue-done": { panel: "primary", recipient: "这个任务", title: "Graph 启动恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
+    "project-overview": { panel: "project", recipient: "项目会话 · claude-opus4.6-medium", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "v0.3 有 2 个任务在推进、1 个等你指派。F009 的 artifact 引用刚做完实现，还没有独立验证。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
+    "issue-view": { panel: "primary", recipient: "实现 · codex-gpt5.6-high", room: { name: "Implementation 现场", meta: "3 名成员 · 1 名已交付 · 阶段结束后归档，记录不删除" }, title: "artifact 引用不漂移与来源可追", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步交给独立验证员，重点是 scope 泄露与 TOCTOU 边界——这两条 F009 spec 明确要求，但现在一个用例都没有。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议交给独立验证员", handoffMember: "@独立验证员", input: "@独立验证员\n验证上一步实现，重点检查反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：scope 泄露与 TOCTOU 还没有任何用例"},
+    "room-view": { panel: "research-thread", recipient: "调研 · claude-opus4.6-medium", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究现场正在核实两个参考项目的 session 机制；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在核实 session 机制", step: "2 / 3 步", block: ""},
+    "issue-new": { panel: "primary", recipient: "实现 · codex-gpt5.6-high", title: "把 dogfooding 问题导出为周报", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以先依据它们生成用例集交你确认，再指派实现——用例先于实现固定是 ADR 0009 的硬要求。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
+    "issue-validation": { panel: "primary", recipient: "实现 · claude-opus4.6-medium", title: "修复图重启的并发认领", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两轮独立验证都指向同一处并发窗口。建议先由架构研究员隔离分析共同根因，再决定换什么策略。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两轮都撞上的那个并发窗口，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：两轮都撞同一处并发窗口，需要换策略"},
+    "issue-permission": { panel: "primary", recipient: "实现 · codex-gpt5.6-high", title: "允许 agent 执行 git push", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求执行 git push origin HEAD:feat/f009-artifact-ref。这是显式的能力边界，每次都要你单独授权。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你授权 git push", step: "1 / 3 步", block: "卡在：git push 是显式能力边界，需要你单独授权"},
+    "issue-running": { panel: "primary", recipient: "实现 · claude-opus4.6-medium", title: "补齐 Inspector 的 artifact 状态", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全。四种 artifact 状态里已完成两种，完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在补 missing / invalid 两种状态", step: "2 / 4 步", block: ""},
+    "issue-research": { panel: "research-thread", recipient: "调研 · claude-opus4.6-medium", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究现场正在核实 multica 与 clowder 的 session 机制，以及 PersonaHub 现状的差距。", handoff: false, input: "", who: "OpenCode", what: "正在整理两个项目的 session 机制", step: "2 / 3 步", block: ""},
+    "issue-done": { panel: "primary", recipient: "实现 · codex-gpt5.6-high", title: "Graph 启动恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
   };
 
   function showToast(message) {
@@ -96,7 +99,15 @@
     $$('[data-layout-mode]').forEach((button) => button.classList.toggle("active", button.dataset.layoutMode === mode));
   }
 
+  function syncOverview(id) {
+    const docs = $$("[data-overview]");
+    if (!docs.length) return;
+    const hit = docs.some((d) => d.dataset.overview === id);
+    docs.forEach((d) => (d.hidden = hit ? d.dataset.overview !== id : d.dataset.overview !== "issue-view"));
+  }
+
   function syncDock(id) {
+    syncOverview(id);
     const context = dockContexts[id];
     if (!context) return;
     // 固定后收件人不跟随，但面板仍然跟着舞台走——「看什么」和「发给谁」是两件事
@@ -119,6 +130,7 @@
 
     const shell = $(".app-shell");
     if (shell) shell.dataset.dockMode = context.panel === "project" ? "project" : "task";
+    refreshPaneCounts();
     const setText = (sel, value) => { const el = $(sel); if (el) el.textContent = value; };
     // Dock 不重复舞台已经说过的话：任务名归舞台标题，这里只留「谁在做 / 卡在哪」
     const parts = [];
@@ -226,6 +238,7 @@
     setSurface("project");
     if (opts && opts.child) {
       if (!state.stageParent) state.stageParent = state.document;
+      setPane("acceptance");
     } else {
       state.stageParent = null;
     }
@@ -280,6 +293,75 @@
 
   // Dock 只有一条流。Room 不再是阅读入口，只是流里的一段可折叠内容：
   // 它是组织单位（谁一起干、交付什么），那些结构信息在舞台的成员泳道上。
+  // ── 任务面：六个视图共用一个输入框 ──────────────────────
+  //
+  // Dock 已取消（ADR 0012）。会话降为一个 tab，输入框常驻任务面底部，
+  // 切 tab 时保留草稿——因此「发给」必须两段（会话 · 执行组合），
+  // 否则在概览里发的话进了哪个会话说不清。
+  function setPane(name) {
+    const composer = $("[data-pane-composer]");
+    if (composer) state.draft = $("[data-pane-input]", composer)?.value ?? state.draft;
+
+    state.pane = name;
+    $$("[data-pane-tab]").forEach((b) => b.classList.toggle("active", b.dataset.paneTab === name));
+    $$("[data-pane]").forEach((pane) => (pane.hidden = pane.dataset.pane !== name));
+
+    // 子文档（文件 / 阶段成果 / 知识）活在验收面里，靠返回条回来
+    const input = $("[data-pane-input]");
+    if (input) input.value = state.draft;
+    setRecipientPopover(false);
+    setScopePopover(false);
+  }
+
+  // tab 上的数字 = 需要人工介入的件数，不是内容总数。
+  // 去重规则：一件事只在它的「处理位置」计数——基线变更的按钮在概览，
+  // 所以只算概览，不在会话里重复计一次。
+  function refreshPaneCounts() {
+    const counts = {
+      overview: $("[data-baseline-gate]") && !$("[data-baseline-gate]").hidden ? 1 : 0,
+      thread: $$('[data-room-panel].active .handoff-draft:not([hidden])').length,
+      acceptance: $$('.task-document.active .claim-item.attention').length,
+      // 概览块与 article 同步切换，计数只看当前这一块
+    };
+    $$("[data-pane-count]").forEach((el) => {
+      const n = counts[el.dataset.paneCount] ?? 0;
+      el.textContent = String(n);
+      el.hidden = n === 0;
+    });
+  }
+
+  function setScopePopover(open) {
+    const pop = $("[data-scope-popover]");
+    if (!pop) return;
+    pop.hidden = !open;
+    $("[data-scope-open]")?.setAttribute("aria-expanded", String(open));
+  }
+
+  function setContextScope(label) {
+    state.contextScope = label;
+    const el = $("[data-scope-label]");
+    if (el) el.textContent = label;
+    $$("[data-scope-pick]").forEach((b) => b.classList.toggle("active", b.dataset.scopePick === label));
+    // 把验证类的上下文改回「全部」，这次验证就不算独立（ADR 0012 第 4 条保护条款）
+    const warn = $("[data-scope-warn]");
+    if (warn) {
+      warn.classList.toggle("firing", label === "全部");
+      warn.textContent =
+        label === "全部"
+          ? "⚠ 已选「全部」：验证者会读到实现者的自述，这次验证不算独立，AC-002 的结论将降级"
+          : "⚠ 改成「全部」的话，这次验证不算独立，AC-002 的结论会降级";
+    }
+  }
+
+  function setProjectFilter(name) {
+    const label = $("[data-project-filter-label]");
+    if (label) label.textContent = name;
+    $$("[data-project-pick]").forEach((b) => b.classList.toggle("active", b.dataset.projectPick === name));
+    $("[data-project-filter-menu]").hidden = true;
+    $("[data-project-filter]")?.setAttribute("aria-expanded", "false");
+    showToast(`任务列表已筛为「${name}」；管理项目本身走左上角的项目入口`);
+  }
+
   // ── 验收基线决策：舞台与 Dock 的分工 ──────────────────────
   //
   // 舞台放「待决状态 + 决策界面」，Dock 放「对话原文」。
@@ -289,6 +371,7 @@
   function revealBaselineRequest() {
     const msg = $("[data-baseline-request]");
     if (!msg) return;
+    setPane("thread");
     setPanel("primary");
     msg.scrollIntoView({ block: "center", behavior: "smooth" });
     msg.classList.add("flash");
@@ -322,6 +405,7 @@
       setText("[data-count-pending]", "2 条");
       $("[data-change-text]").innerHTML = "你已批准 <code>AC-002</code> 的验收基线 → <b>r2</b> · 14:32 · 旧主张与旧证据仍可追溯";
       showBaselineEvent("验收基线 AC-002 → r2（你批准）· 已有证据仍指向 r1，需重新验证");
+      refreshPaneCounts();
       showToast("已批准为 r2：旧证据验的是 r1，这条主张退回「有证据待验证」");
     } else {
       const rev = $("[data-claim-rev]", claim);
@@ -329,6 +413,7 @@
       rev.textContent = "r1 · 你拒绝了修改";
       $("[data-change-text]").innerHTML = "你已拒绝 <code>AC-002</code> 的基线修改 · 14:32 · 实现需按原断言继续";
       showBaselineEvent("验收基线 AC-002 保持 r1（你拒绝）· 实现需按原断言继续");
+      refreshPaneCounts();
       showToast("已拒绝：验收基线保持 r1，已有的独立验证仍然成立");
     }
   }
@@ -348,13 +433,14 @@
 
   // Dock 只有一个输入框在场——取当前可见面板里的那个
   function activeComposer() {
-    return $('[data-room-panel].active textarea');
+    return $("[data-pane-input]");
   }
 
   function fillComposer(text) {
     const input = activeComposer();
     if (!input) return;
     input.value = text;
+    state.draft = text;
     input.focus();
     const at = text.match(/^@(\S+)/);
     if (at) setRecipient("@" + at[1]);
@@ -608,6 +694,48 @@
       return;
     }
 
+    if (target.dataset.paneTab) {
+      setPane(target.dataset.paneTab);
+      return;
+    }
+
+    if (target.hasAttribute("data-goto-acceptance")) {
+      setPane("acceptance");
+      return;
+    }
+
+    if (target.hasAttribute("data-scope-open")) {
+      setScopePopover($("[data-scope-popover]")?.hidden !== false);
+      return;
+    }
+
+    if (target.dataset.scopePick) {
+      setContextScope(target.dataset.scopePick);
+      setScopePopover(false);
+      return;
+    }
+
+    if (target.hasAttribute("data-project-filter")) {
+      const menu = $("[data-project-filter-menu]");
+      if (menu) {
+        menu.hidden = !menu.hidden;
+        target.setAttribute("aria-expanded", String(!menu.hidden));
+      }
+      return;
+    }
+
+    if (target.dataset.projectPick) {
+      setProjectFilter(target.dataset.projectPick);
+      return;
+    }
+
+    // 会话面里切 Room：Room 是阅读容器，承载什么由用户决定（ADR 0012）
+    if (target.dataset.roomPick) {
+      $$("[data-room-pick]").forEach((b) => b.classList.toggle("active", b === target));
+      setPanel(target.dataset.roomPick);
+      return;
+    }
+
     // 舞台不复述对话，只留一个回链到 Dock 的原文
     if (target.hasAttribute("data-reveal-request")) {
       revealBaselineRequest();
@@ -643,20 +771,9 @@
       return;
     }
 
-    // 视图切换：成果看结构，轨迹看时间。两者同属一个任务 tab，不新开 tab。
-    if (target.dataset.stageView) {
-      const article = target.closest(".task-document");
-      if (article) {
-        const name = target.dataset.stageView;
-        $$("[data-stage-view]", article).forEach((b) => b.classList.toggle("active", b === target));
-        $$("[data-stage-pane]", article).forEach((pane) => (pane.hidden = pane.dataset.stagePane !== name));
-      }
-      return;
-    }
-
     // 轨迹筛选：复盘时通常只关心某一类事件（用例变更 / 产物 / 人工介入）
     if (target.dataset.traceFilter) {
-      const pane = target.closest("[data-stage-pane]");
+      const pane = target.closest("[data-pane]");
       if (pane) {
         const kind = target.dataset.traceFilter;
         $$("[data-trace-filter]", pane).forEach((b) => b.classList.toggle("active", b === target));
@@ -879,6 +996,11 @@
 
     if (target.dataset.demo) showToast(target.dataset.demo);
   });
+
+  syncOverview(state.document);
+  setPane("overview");
+  setContextScope(state.contextScope);
+  refreshPaneCounts();
 
   $("[data-tree-filter]")?.addEventListener("input", (event) => filterTree(event.currentTarget.value));
 

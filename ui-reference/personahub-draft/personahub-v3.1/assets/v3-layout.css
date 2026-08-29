@@ -2430,3 +2430,268 @@
 /* display:grid 会盖掉 [hidden] 的 display:none，凡是靠 hidden 切换的都要复位 */
 .baseline-gate[hidden] { display: none; }
 .claim-state[hidden] { display: none; }
+
+/* ── 21. V3.3：左 issue + 右任务面，取消 Dock（ADR 0012 / v3.2 提案）──
+   Dock 取消后主区变两栏；会话降为任务面的一个 tab；输入框常驻面底部，
+   切 tab 保留草稿，因此「发给」必须两段（会话 · 执行组合）。 */
+
+/* 两栏：舞台吃掉原 Dock 的宽度 */
+.app-shell[data-layout] .project-surface,
+.project-surface { grid-template-columns: 248px minmax(0, 1fr) !important; }
+
+.editor-area { display: flex; flex-direction: column; min-height: 0; }
+
+/* 21.1 视图 tab 条：数字 = 需要人工介入的件数，不是内容总数 */
+.pane-tabs {
+  display: flex;
+  gap: 2px;
+  flex: none;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.pane-tabs > button {
+  position: relative;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pane-tabs > button:hover { color: var(--text); }
+.pane-tabs > button.active { border-bottom-color: var(--accent); color: var(--text); font-weight: 600; }
+
+.pane-tabs i {
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: color-mix(in oklch, var(--yellow) 18%, transparent);
+  color: var(--yellow);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+.pane-tabs i[hidden] { display: none; }
+
+/* 21.2 面本体 */
+.task-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.task-pane[hidden] { display: none; }
+.document-stage[data-pane][hidden] { display: none; }
+
+.pane-doc { max-width: 900px; padding: 22px 26px 30px; }
+.pane-h { margin: 22px 0 10px; font-size: 13px; font-weight: 650; }
+.pane-h:first-child { margin-top: 0; }
+.pane-note { margin: 0 0 16px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+
+/* 任务标题上的 labels —— 代替父子 Issue（ADR 0012）*/
+.issue-labels { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.issue-labels > em {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* git 段 */
+.git-block { display: grid; gap: 6px; }
+.git-block > div { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; font-size: 11px; line-height: 1.7; }
+.git-block > div > span:first-child { color: var(--faint); font-size: 10px; }
+.git-block code { font-family: "Cascadia Code", Consolas, monospace; font-size: 11px; }
+.git-warn { color: var(--yellow); }
+
+/* 21.3 会话面：Room 在这里切 */
+.room-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px 26px 0;
+}
+
+.room-switch > button {
+  height: 28px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.room-switch > button:hover { border-color: var(--accent); color: var(--text); }
+.room-switch > button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.room-switch > button > small { color: var(--faint); font-size: 9px; }
+.room-switch .room-new { border-style: dashed; }
+
+/* 会话面板改为面内容，不再是 Dock 里的窄栏 */
+[data-pane="thread"] .room-body { display: none; padding: 0 26px 20px; }
+[data-pane="thread"] .room-body.active { display: block; }
+[data-pane="thread"] .room-conversation-scroll { max-height: none; overflow: visible; }
+[data-pane="thread"] .message-stream { max-width: 820px; }
+[data-pane="thread"] .room-thread-heading,
+[data-pane="thread"] .room-origin { max-width: 820px; }
+[data-pane="thread"] .dock-paused-banner,
+[data-pane="thread"] .dispatch-undo { margin: 12px 26px; }
+
+/* 21.4 常驻输入框 */
+.pane-composer {
+  flex: none;
+  display: grid;
+  gap: 8px;
+  padding: 12px 26px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.pc-head { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.pc-head > button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.pc-head > button:hover,
+.pc-head > button[aria-expanded="true"] { border-color: var(--accent); }
+.pc-head small { color: var(--faint); font-size: 10px; }
+.pc-head strong { font-size: 11px; font-weight: 650; }
+
+.pane-composer > textarea {
+  min-height: 62px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  resize: vertical;
+}
+.pane-composer > textarea:focus { outline: none; border-color: var(--accent); }
+
+.pc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+/* 21.5 发给 / 上下文 两个弹层 */
+.recipient-popover,
+.scope-popover {
+  position: absolute;
+  z-index: 40;
+  bottom: 120px;
+  left: 274px;
+  width: 420px;
+  max-width: calc(100vw - 300px);
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 16px 40px oklch(0% 0 0 / 0.14);
+}
+
+.cap-tag {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.rp-option .quota { color: var(--muted); }
+.rp-option .quota.warn { color: var(--yellow); }
+.rp-option .quota.bad { color: var(--faint); }
+
+.scope-warn {
+  margin: 8px 4px 2px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in oklch, var(--yellow) 40%, transparent);
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--yellow) 7%, transparent);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.65;
+}
+.scope-warn.firing { border-color: var(--yellow); color: var(--text); font-weight: 500; }
+.scope-warn code { font-family: "Cascadia Code", Consolas, monospace; }
+
+/* 21.6 左栏项目筛选器 —— 管理项目走 ▦ 入口，这里只筛 */
+.project-filter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.project-filter:hover,
+.project-filter[aria-expanded="true"] { border-color: var(--accent); }
+.project-filter > small { color: var(--faint); font-size: 10px; }
+.project-filter > strong { font-size: 11px; font-weight: 650; }
+.pf-caret { color: var(--faint); font-size: 9px; }
+
+.project-filter-menu {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 0;
+  padding: 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.project-filter-menu[hidden] { display: none; }
+.project-filter-menu > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.project-filter-menu > button:hover { background: var(--panel-3); }
+.project-filter-menu > button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.project-filter-menu > button > small { color: var(--faint); font-size: 9px; }
+.pfm-foot { margin: 6px 4px 0; color: var(--faint); font-size: 9px; line-height: 1.5; }
