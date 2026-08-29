@@ -71,7 +71,9 @@ v0.3 交互设计定稿过程中出现一个此前没有答案的问题：**复�
 
 **第 3 层 v0.3 不实现，只预留判据。** 理由见第 5 条。
 
-### 2. resume 的键是「成员 × Issue × 上下文分段」，不是 CLI
+### 2. resume 的键是「执行组合 × Issue × 上下文范围」，不是 CLI
+
+> **`[2026-08-29 修订]`** 本条原文写的是「成员 × Issue × 上下文分段」，分段取值为 `implement` / `verify`。ADR 0012 取消了「成员」这一层（执行单位改为 `adapter + 模型 + 深度`），并把分段改为**派工时显式选择的上下文范围**——因为上下文边界不该是 Room 或角色的副作用，而应是每次派工的显式决定。下文按修订后的口径阅读。
 
 **这是本决策最容易踩错、且踩错不报错的一条。**
 
@@ -81,9 +83,9 @@ multica 用 `(agent_id, issue_id)`。若 PersonaHub 照抄成 `(cli_provider, is
 
 | 段 | 取值 | 已有承载 |
 | --- | --- | --- |
-| 成员 | `agent_configs.id` | **已存在**。`runs.adapter_config_id`（`db/schema-v2.ts:26`）已指向它 |
+| 执行组合 | `adapter + 模型 + 深度`（如 `codex-gpt5.6-high`） | `runs.adapter_config_id` 指向的记录改为运行配置，见 ADR 0012 第 2 条 |
 | Issue | `runs.issue_id` | 已存在 |
-| 上下文分段 | `implement` / `verify` | **需新增** |
+| 上下文范围 | `全部` / `只给结果` / `只给目标` | **需新增**，挂在派工记录上（ADR 0012 第 3、4 条） |
 
 PRD 已经把成员与 CLI 的关系裁定清楚：
 
@@ -93,7 +95,7 @@ PRD 已经把成员与 CLI 的关系裁定清楚：
 
 **关于表名的提示**：`agent_configs` 就是「AI 成员」表（字段为 `name / role / cli_provider / capability_tags / default_model`），`runs.adapter_config_id` 是成员外键。名字读起来像 CLI 配置，是 v0.1 的历史命名，**不改名**（改名的收益不抵迁移成本），但新代码与文档一律称其为「成员」，避免有人按字面理解成 CLI 而把键取错。
 
-**为什么还需要第三段「上下文分段」**：PRD 已将 `role` 降为展示标签，`capability_tags` 才是路由主依据，因此**同一个成员可以先后承担实现与验证两种工作**。此时前两段完全相同，只有分段能把围栏表达出来。分段由 Validation Policy 判定该步骤属于实现类还是验证类，v0.3 只需要两个取值。
+**为什么还需要第三段「上下文范围」**：同一个执行组合可以先后承担实现与验证两种工作，此时前两段完全相同，只有范围能把围栏表达出来。范围由 Workflow Template 的验证段预选（ADR 0012 第 7 条），但**用户可改**；改回「全部」时验证结论必须降级，见 ADR 0012 第 4 条的保护条款。
 
 ### 3. 中毒隔离与降级披露，第一版就要有
 
@@ -109,7 +111,7 @@ PRD 已经把成员与 CLI 的关系裁定清楚：
 
 | 字段 | 用途 |
 | --- | --- |
-| `context_lane` | `implement` / `verify`。resume 查找键的第三段 |
+| `context_scope` | `全部` / `只给结果` / `只给目标`。resume 查找键的第三段，挂在派工记录上（原名 `context_lane`，取值为 `implement`/`verify`，已由 ADR 0012 第 4 条取代） |
 | `session_start_mode` | `cold` / `resume` / `reseal`。轨迹页据此标注每个 Run 的上下文血统 |
 | `resume_of_run_id` | 续自哪一次 Run；`cold` 时为空 |
 | `agent_session_ref` | provider 侧的 session 标识或文件路径。**仅供诊断层使用，不进产品语言**，符合交互设计 §5 原则 5「高级内部信息渐进披露」 |
@@ -139,7 +141,7 @@ PRD 已经把成员与 CLI 的关系裁定清楚：
 
 **成本反转的具体阈值未知。** 「resume 成本随轮次递增、冷启动成本恒定，某一轮会交叉」是结构性判断，但交叉点在哪取决于 provider 的缓存行为和 Issue 的上下文体量，本地无数据。第一版先记录 `session_start_mode` 与轮次，等 dogfooding 攒出数据再定阈值——这也是第 3 层暂不实现的原因。
 
-**围栏的判定依赖 Validation Policy 能区分实现类与验证类步骤。** PRD 的 Validation Policy 表按 Issue Type 给出了验证方式（coding = tests pass / diff review / lint / verification trace 等），但尚未形式化到「某个 Run 属于哪一段」的粒度。这是 v0.3 交互设计「用例覆盖表 + 上下文围栏」落地时必须一并解决的，不能只在界面上画一条线。
+**围栏的判定依赖 Workflow Template 的验证段能区分实现类与验证类步骤。** PRD 的 Validation Policy 表按 Issue Type 给出了验证方式（coding = tests pass / diff review / lint / verification trace 等），但尚未形式化到「某个 Run 属于哪一段」的粒度。这是 v0.3 交互设计「用例覆盖表 + 上下文围栏」落地时必须一并解决的，不能只在界面上画一条线。
 
 ## 后果
 
@@ -152,6 +154,8 @@ PRD 已经把成员与 CLI 的关系裁定清楚：
 
 ## 关联
 
+- 被修订：`docs/decisions/0012-object-model-simplification.md`（执行单位、上下文范围）
+- 依赖：`docs/decisions/0011-disable-native-agent-memory.md`（关掉 agent 原生 memory，否则围栏有后门）
 - 依赖：`docs/decisions/0008-capability-seam-convention.md`（`supportsSessionResume` 走 capabilities，不走 provider 分支）
 - 依赖：`docs/features/0.1/F003-development-trace/spec.md`（复盘真相源）
 - 约束：`docs/features/0.3/F009-artifact-foundation-provenance/spec.md`、`F010-artifact-centered-coding-slice/spec.md`（Artifact 是成员之间唯一的通信介质——成员之间没有共享上下文，只有共享产物）
