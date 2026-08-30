@@ -2607,9 +2607,12 @@
 .scope-popover {
   position: absolute;
   z-index: 40;
-  bottom: 120px;
+  /* 输入框整体约 145px 高——弹层底边必须让开它，否则会盖住自己的触发按钮 */
+  bottom: 156px;
   left: 274px;
   width: 420px;
+  max-height: calc(100vh - 240px);
+  overflow: auto;
   max-width: calc(100vw - 300px);
   padding: 10px;
   border: 1px solid var(--border-strong);
@@ -2695,3 +2698,119 @@
 .project-filter-menu > button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .project-filter-menu > button > small { color: var(--faint); font-size: 9px; }
 .pfm-foot { margin: 6px 4px 0; color: var(--faint); font-size: 9px; line-height: 1.5; }
+
+/* ── 22. 执行组合：选模型 + 深度滑条 ──────────────────────────
+   不做固定组合。adapter × 模型 来自运行时的真实清单，深度每次可调；
+   打包成预设等于又造一遍 ADR 0012 刚取消的「成员」。 */
+
+.rp-group > small { margin-left: 6px; color: var(--faint); font-size: 9px; font-weight: 400; }
+.rp-head.mismatch { color: var(--yellow); }
+
+/* 会话选择：一行 chip */
+.room-pick-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
+.room-pick-row > button {
+  height: 25px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.room-pick-row > button:hover { border-color: var(--accent); color: var(--text); }
+.room-pick-row > button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.room-pick-row > button > small { color: var(--faint); font-size: 9px; }
+
+/* 模型清单 */
+.model-list { display: grid; gap: 2px; margin-bottom: 4px; }
+
+.model-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.model-row:hover { background: var(--panel-3); }
+.model-row.active { border-color: var(--accent); background: var(--accent-soft); }
+.model-row strong { display: block; font-size: 12px; font-weight: 600; }
+.model-row small { display: block; margin-top: 2px; color: var(--faint); font-size: 9px; }
+
+.mr-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--panel-3);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+.mr-mark.blue { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent); }
+.mr-mark.purple { background: color-mix(in oklch, var(--purple) 14%, transparent); color: var(--purple); }
+.mr-mark.green { background: color-mix(in oklch, var(--green) 14%, transparent); color: var(--green); }
+
+.mr-quota { color: var(--faint); font-size: 10px; white-space: nowrap; }
+.mr-quota.warn { color: var(--yellow); font-weight: 600; }
+
+/* 深度滑条：档位由模型决定，不是我们规定的 */
+.depth-slider { padding: 2px 4px 0; }
+
+.depth-slider > input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.depth-slider > input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ds-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  color: var(--faint);
+  font-size: 9px;
+}
+.ds-scale > span.on { color: var(--accent); font-weight: 700; }
+.ds-scale > span.off { opacity: 0.3; text-decoration: line-through; }
+
+.ds-est { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.ds-est b { color: var(--text); font-weight: 650; }
+.ds-est.warn { color: var(--yellow); }
+.ds-est.warn b { color: var(--yellow); }
+
+.rp-resolved {
+  margin: 10px 4px 2px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 10px;
+}
+.rp-resolved > code {
+  margin-left: 6px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* 搜索只有一处：左栏工具条只剩四个入口 */
+.explorer-toolbar { justify-content: flex-start; }
+.command-hint { margin: 8px 2px 0; color: var(--faint); font-size: 10px; line-height: 1.6; }

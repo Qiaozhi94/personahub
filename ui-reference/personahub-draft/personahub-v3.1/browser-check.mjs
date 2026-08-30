@@ -120,9 +120,10 @@ await check("一级入口四个，项目照 multica 进左栏（ADR 0012）", as
   if (!((await lib.getAttribute("title")) || "").includes("能力库")) throw new Error("图标入口缺少 title 说明");
   if (!(await lib.getAttribute("aria-label"))) throw new Error("图标入口缺少 aria-label");
 
-  const iconBox = await icons.boundingBox();
-  const search = await page.locator(".explorer-toolbar:visible label").boundingBox();
-  if (Math.abs(iconBox.y - search.y) > 6) throw new Error("一级入口未与搜索框同行");
+  // 搜索只有一处：顶栏主搜索框，左栏不再有第二个入口
+  if (await page.locator(".explorer-toolbar:visible input[type=\"search\"]").count()) {
+    throw new Error("左栏仍有搜索框——搜索应只保留顶栏一处");
+  }
 
   // 项目在列表里只作筛选；管理项目本身走 ▦ 入口
   const filter = page.locator("[data-project-filter]");
@@ -439,24 +440,51 @@ await check("一个输入框，切 tab 保留草稿（提案 §10 / 你选 A）"
   await input.fill("");
 });
 
-await check("发给是两段：会话 · 执行组合，且带额度（ADR 0012 第 2 条）", async () => {
-  const target = page.locator("[data-dock-target]");
-  const label = await target.innerText();
+await check("执行组合不是预设：选模型 + 深度滑条（ADR 0012 第 2 条）", async () => {
+  await openTask("issue-view", "overview");
+  const label = await page.locator("[data-dock-target]").innerText();
   if (!label.includes("·")) throw new Error("发给没有分成「会话 · 执行组合」两段");
   if (/@(实现者|独立验证员|架构研究员|安全研究员|综合员)/.test(label)) {
     throw new Error("仍在用固定角色名——PRD 明确「界面按能力项呈现成员，不写成它是 reviewer」");
   }
-  if (!/(codex|claude|opencode)-/.test(label)) throw new Error("执行组合不是 adapter+模型+深度");
 
-  await page.locator("[data-pane-tabs] [data-pane-tab=\"overview\"]").click();
   await page.locator("[data-recipient-open]").click();
   const pop = page.locator("[data-recipient-popover]");
   await pop.waitFor({ state: "visible" });
-  const text = await pop.innerText();
-  if (!text.includes("额度")) throw new Error("选择器没有显示剩余额度");
-  if (!text.includes("不建议")) throw new Error("能力不匹配的组合没有给出理由");
-  if (!text.includes("adapter + 模型 + 深度")) throw new Error("没有说明执行单位是什么");
-  await pop.locator('[data-recipient-label="实现 · codex-gpt5.6-high"]').click();
+
+  // adapter × 模型 是运行时的真实清单，不是三个打包好的组合
+  const models = pop.locator("[data-pick-model]");
+  if ((await models.count()) < 4) throw new Error("模型清单过少，看不出是运行时的真实清单");
+  if (!(await pop.innerText()).includes("额度")) throw new Error("没有显示剩余额度");
+
+  // 深度独立可调：同一个模型能配出不同深度
+  const range = pop.locator("[data-depth-range]");
+  const before = await pop.locator("[data-combo-preview]").innerText();
+  if (!before.endsWith("-high")) throw new Error(`默认深度不是 high，实际 ${before}`);
+  await range.fill("1");
+  await range.dispatchEvent("input");
+  const after = await pop.locator("[data-combo-preview]").innerText();
+  if (after === before) throw new Error("拖动滑条后组合没变");
+  if (!after.endsWith("-medium")) throw new Error(`滑到 medium 后组合是 ${after}`);
+  if (after.split("-").slice(0, -1).join("-") !== before.split("-").slice(0, -1).join("-")) {
+    throw new Error("换深度不该换模型");
+  }
+
+  // 额度估算跟着深度走——这才是选深度时真正要权衡的
+  const est = await pop.locator("[data-depth-est]").innerText();
+  if (!est.includes("medium")) throw new Error("深度变了但估算没跟上");
+  if (!/\d+ 次调用/.test(est)) throw new Error("没有把深度折算成可用次数");
+
+  // 档位由模型决定，不是我们规定的三档
+  await pop.locator('[data-pick-model="opencode-deepseekv4flash"]').click();
+  if (!(await range.isDisabled())) throw new Error("只支持一档的模型，滑条应禁用");
+  if (!(await pop.locator("[data-depth-note]").innerText()).includes("一档")) {
+    throw new Error("没有说明为什么滑条不可用");
+  }
+  await pop.locator('[data-pick-model="codex-gpt5.6"]').click();
+  await range.fill("2");
+  await range.dispatchEvent("input");
+  await page.locator("[data-recipient-open]").click();
   await pop.waitFor({ state: "hidden" });
 });
 
@@ -482,6 +510,7 @@ await check("上下文范围可选，改回「全部」会触发降级提示（A
   await page.locator("[data-scope-open]").click();
   await page.locator('[data-scope-pick="只给结果"]').click();
   await page.locator("[data-scope-popover]").waitFor({ state: "hidden" });
+  if ((await page.locator("[data-scope-label]").innerText()) !== "只给结果") throw new Error("上下文未复位");
 });
 
 await check("会话是一个视图，Room 在里面切（ADR 0012）", async () => {

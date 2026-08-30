@@ -36,7 +36,7 @@
           data-command-open
           data-testid="command-trigger"
         >
-          <span>搜索项目对象或运行命令</span>
+          <span>搜索任务、文件、产出或运行命令</span>
           <kbd>Ctrl K</kbd>
         </button>
         <div class="title-actions">
@@ -87,10 +87,6 @@
                   <button type="button" data-surface="automation" title="自动化" aria-label="自动化"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg></button>
                   <button type="button" data-surface="library" title="能力库 · Skills 与编组" aria-label="能力库"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5A2.5 2.5 0 0 1 20 21z"/></svg><span class="nav-dot" aria-hidden="true"></span></button>
                 </nav>
-                <label>
-                  <span aria-hidden="true">⌕</span>
-                  <input type="search" placeholder="搜索" data-tree-filter />
-                </label>
               </div>
 
               <div class="explorer-scroll">
@@ -1658,23 +1654,52 @@ completed -&gt; archived</code></pre>
 
               <div class="recipient-popover" data-recipient-popover hidden>
                 <p class="rp-head">这一步需要什么　<em class="cap-tag">深度分析</em><em class="cap-tag">隔离验证</em></p>
-                <button class="rp-option active" type="button" data-recipient="combo" data-recipient-label="实现 · codex-gpt5.6-high">
-                  <span class="rp-mark blue">C</span>
-                  <span><strong>codex-gpt5.6-high</strong><small>Codex CLI v2.4.1 · GPT-5.6 · 深度 high</small><small class="quota warn">额度 18% ⚠ 约够 12 次调用 · 本任务已用它跑过实现</small></span>
-                </button>
-                <button class="rp-option" type="button" data-recipient="combo" data-recipient-label="实现 · claude-opus4.6-medium">
-                  <span class="rp-mark purple">A</span>
-                  <span><strong>claude-opus4.6-medium</strong><small>Claude Code v1.9.0 · Opus 4.6 · 深度 medium</small><small class="quota">额度 62% · 未参与本任务</small></span>
-                </button>
-                <button class="rp-option" type="button" data-recipient="combo" data-recipient-label="实现 · opencode-deepseekv4flash-low">
-                  <span class="rp-mark green">O</span>
-                  <span><strong>opencode-deepseekv4flash-low</strong><small>OpenCode v0.7.2 · DeepSeek-V4-Flash · 深度 low</small><small class="quota bad">额度 94% · ⚠ 不建议：这一步需要深度分析</small></span>
-                </button>
+
                 <p class="rp-group">发到哪个会话</p>
-                <button class="rp-option" type="button" data-recipient="room" data-recipient-label="调研 · codex-gpt5.6-high">
-                  <span class="rp-mark task">◎</span><span><strong>调研</strong><small>活跃 · 3 个执行组合参与过</small></span>
-                </button>
-                <p class="rp-foot">没有「成员」这一层：执行单位就是 adapter + 模型 + 深度，历史表现记在这个组合上。</p>
+                <div class="room-pick-row" data-room-pick-row>
+                  <button class="active" type="button" data-pick-room="实现">实现</button>
+                  <button type="button" data-pick-room="调研">调研</button>
+                  <button type="button" data-pick-room="早期讨论">早期讨论<small>已结束</small></button>
+                </div>
+
+                <p class="rp-group">用哪个 adapter 与模型　<small>来自运行时的真实清单</small></p>
+                <div class="model-list" data-model-list>
+                  <button class="model-row active" type="button" data-pick-model="codex-gpt5.6" data-depths="low,medium,high" data-quota="18">
+                    <span class="mr-mark blue">C</span>
+                    <span><strong>GPT-5.6</strong><small>Codex CLI v2.4.1</small></span>
+                    <span class="mr-quota warn">额度 18%</span>
+                  </button>
+                  <button class="model-row" type="button" data-pick-model="codex-gpt5.6-mini" data-depths="low,medium" data-quota="62">
+                    <span class="mr-mark blue">C</span>
+                    <span><strong>GPT-5.6-mini</strong><small>Codex CLI v2.4.1 · 不支持 high</small></span>
+                    <span class="mr-quota">额度 62%</span>
+                  </button>
+                  <button class="model-row" type="button" data-pick-model="claude-opus4.6" data-depths="low,medium,high" data-quota="62">
+                    <span class="mr-mark purple">A</span>
+                    <span><strong>Opus 4.6</strong><small>Claude Code v1.9.0</small></span>
+                    <span class="mr-quota">额度 62%</span>
+                  </button>
+                  <button class="model-row" type="button" data-pick-model="claude-sonnet4.8" data-depths="low,medium,high" data-quota="88">
+                    <span class="mr-mark purple">A</span>
+                    <span><strong>Sonnet 4.8</strong><small>Claude Code v1.9.0</small></span>
+                    <span class="mr-quota">额度 88%</span>
+                  </button>
+                  <button class="model-row" type="button" data-pick-model="opencode-deepseekv4flash" data-depths="low" data-quota="94" data-advice="这一步要深度分析，它只有 low">
+                    <span class="mr-mark green">O</span>
+                    <span><strong>DeepSeek-V4-Flash</strong><small>OpenCode v0.7.2 · 只有 low</small></span>
+                    <span class="mr-quota">额度 94%</span>
+                  </button>
+                </div>
+
+                <p class="rp-group">思考深度　<small data-depth-note>深度由每次派工决定，不烧进配置</small></p>
+                <div class="depth-slider">
+                  <input type="range" min="0" max="2" step="1" value="2" data-depth-range aria-label="思考深度" />
+                  <div class="ds-scale"><span>low</span><span>medium</span><span>high</span></div>
+                  <p class="ds-est" data-depth-est></p>
+                </div>
+
+                <p class="rp-resolved">将派给　<code data-combo-preview>codex-gpt5.6-high</code></p>
+                <p class="rp-foot">没有「成员」这一层：adapter 与模型来自运行时的真实清单，深度每次可调；历史表现记在这个组合上。</p>
               </div>
 
               <div class="scope-popover" data-scope-popover hidden>
@@ -1845,13 +1870,14 @@ completed -&gt; archived</code></pre>
 
     <div class="command-overlay" data-command-overlay hidden>
       <div class="command-dialog" role="dialog" aria-modal="true" aria-label="命令面板">
-        <label><span>⌕</span><input type="text" placeholder="输入文件、任务、协作现场或命令…" data-command-input /></label>
+        <label><span>⌕</span><input type="text" placeholder="搜索任务、文件、产出，或输入命令…" data-command-input /></label>
+        <p class="command-hint" data-command-hint>输入即筛左栏的任务列表；这是全站唯一的搜索入口。</p>
         <div class="command-results">
-          <button type="button" data-command-action="document" data-target="file-prd"><span>最近打开</span><strong>打开 personahub-prd.md</strong><kbd>Enter</kbd></button>
-          <button type="button" data-command-action="document" data-target="issue-view"><span>任务</span><strong>打开等待指派的任务</strong></button>
-          <button type="button" data-command-action="picker" data-target="validator"><span>指派</span><strong>为独立验证挑一个成员</strong></button>
-          <button type="button" data-command-action="surface" data-target="setup"><span>状态预览</span><strong>打开首次设置</strong></button>
-          <button type="button" data-command-action="bottom"><span>视图</span><strong>切换执行面板</strong></button>
+          <button type="button" data-command-action="document" data-target="issue-view"><span>任务</span><strong>artifact 引用不漂移与来源可追</strong><kbd>Enter</kbd></button>
+          <button type="button" data-command-action="document" data-target="issue-validation"><span>任务</span><strong>修复图重启的并发认领</strong></button>
+          <button type="button" data-command-action="document" data-target="file-prd"><span>文件</span><strong>docs/personahub-prd.md</strong></button>
+          <button type="button" data-command-action="document" data-target="artifact-view"><span>产出</span><strong>synthesis_plan · revision 3</strong></button>
+          <button type="button" data-command-action="surface" data-target="settings"><span>命令</span><strong>打开设置与诊断</strong></button>
         </div>
         <footer><span>↑↓ 选择</span><span>Enter 打开</span><span>Esc 关闭</span></footer>
       </div>

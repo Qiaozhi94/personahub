@@ -77,12 +77,7 @@
     // V3.1：左栏已扁平为单一列表（design.md §4.1），不再有「任务 | 资源库」
     // 二级 tab；本函数只维护统一列表的搜索与新建文案。
     state.explorer = name;
-    const filter = $("[data-tree-filter]");
-    if (filter) {
-      filter.value = "";
-      filter.placeholder = "搜索任务、文档与产出";
-      filterTree("");
-    }
+    filterTree("");
     const create = $("[data-new-object]");
     if (create) {
       create.setAttribute("aria-label", "新建任务");
@@ -293,6 +288,63 @@
 
   // Dock 只有一条流。Room 不再是阅读入口，只是流里的一段可折叠内容：
   // 它是组织单位（谁一起干、交付什么），那些结构信息在舞台的成员泳道上。
+  // ── 执行组合：选 adapter+模型，深度单独调 ────────────────────
+  //
+  // 不做固定组合。adapter × 模型 是运行时的真实清单（装了什么、登录没登录），
+  // 深度是每次派工的自由参数——把三者打包成预设，等于又造一遍 ADR 0012
+  // 刚取消掉的「成员」，只是换了个名字。
+  const DEPTHS = ["low", "medium", "high"];
+  const comboState = { room: "实现", model: "codex-gpt5.6", depth: "high" };
+
+  function currentModelRow() {
+    return $(`[data-pick-model="${comboState.model}"]`);
+  }
+
+  function syncCombo() {
+    const row = currentModelRow();
+    if (!row) return;
+    const allowed = (row.dataset.depths || "low,medium,high").split(",");
+    const range = $("[data-depth-range]");
+    const note = $("[data-depth-note]");
+    const est = $("[data-depth-est]");
+
+    // 不是每个模型都支持三档——档位来自模型，不是我们规定的
+    if (!allowed.includes(comboState.depth)) comboState.depth = allowed[allowed.length - 1];
+    if (range) {
+      range.max = String(allowed.length - 1);
+      range.value = String(allowed.indexOf(comboState.depth));
+      range.disabled = allowed.length < 2;
+    }
+    $$(".ds-scale > span").forEach((el, i) => {
+      el.classList.toggle("off", i >= allowed.length);
+      el.classList.toggle("on", DEPTHS[i] === comboState.depth);
+    });
+    if (note) {
+      note.textContent = allowed.length < 2
+        ? `${row.querySelector("strong").textContent} 只有 ${allowed[0]} 一档，滑条不可用`
+        : "深度由每次派工决定，不烧进配置";
+    }
+
+    // 额度按深度折算——这是选深度时真正要权衡的东西
+    const quota = Number(row.dataset.quota || 0);
+    const cost = { low: 1, medium: 2.5, high: 5 }[comboState.depth] || 1;
+    if (est) {
+      const calls = Math.max(1, Math.round((quota * 2) / cost));
+      est.innerHTML = `当前 <b>${comboState.depth}</b> · 剩余额度 ${quota}% 约够 <b>${calls}</b> 次调用`;
+      est.classList.toggle("warn", calls < 20);
+    }
+
+    const combo = `${comboState.model}-${comboState.depth}`;
+    const preview = $("[data-combo-preview]");
+    if (preview) preview.textContent = combo;
+    setRecipient(`${comboState.room} · ${combo}`);
+
+    const advice = row.dataset.advice;
+    $$(".model-row").forEach((r) => r.classList.toggle("active", r === row));
+    const head = $(".rp-head");
+    if (head) head.classList.toggle("mismatch", Boolean(advice));
+  }
+
   // ── 任务面：六个视图共用一个输入框 ──────────────────────
   //
   // Dock 已取消（ADR 0012）。会话降为一个 tab，输入框常驻任务面底部，
@@ -657,6 +709,9 @@
 
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button, a");
+    // 点弹层外部即关闭——弹层比触发按钮高，不能只靠再点一次按钮
+    if (!event.target.closest("[data-recipient-popover],[data-recipient-open]")) setRecipientPopover(false);
+    if (!event.target.closest("[data-scope-popover],[data-scope-open]")) setScopePopover(false);
     if (!target) return;
 
     if (target.matches("a[href='#']")) event.preventDefault();
@@ -691,6 +746,20 @@
         if (twisty) twisty.textContent = collapsed ? "›" : "⌄";
         target.setAttribute("aria-expanded", String(!collapsed));
       }
+      return;
+    }
+
+    if (target.dataset.pickModel) {
+      comboState.model = target.dataset.pickModel;
+      syncCombo();
+      if (target.dataset.advice) showToast(`不建议：${target.dataset.advice}`);
+      return;
+    }
+
+    if (target.dataset.pickRoom) {
+      comboState.room = target.dataset.pickRoom;
+      $$("[data-pick-room]").forEach((b) => b.classList.toggle("active", b === target));
+      syncCombo();
       return;
     }
 
@@ -998,11 +1067,29 @@
   });
 
   syncOverview(state.document);
+  syncCombo();
   setPane("overview");
   setContextScope(state.contextScope);
   refreshPaneCounts();
 
-  $("[data-tree-filter]")?.addEventListener("input", (event) => filterTree(event.currentTarget.value));
+  // 搜索只有一处：顶栏主搜索框。输入即筛左栏任务列表。
+  $("[data-depth-range]")?.addEventListener("input", (event) => {
+    const row = currentModelRow();
+    const allowed = (row?.dataset.depths || "low,medium,high").split(",");
+    comboState.depth = allowed[Number(event.currentTarget.value)] || allowed[0];
+    syncCombo();
+  });
+
+  $("[data-command-input]")?.addEventListener("input", (event) => {
+    const value = event.currentTarget.value;
+    filterTree(value);
+    const hint = $("[data-command-hint]");
+    if (hint) {
+      hint.textContent = value
+        ? `左栏已按「${value}」筛选 · 按 Esc 关闭面板后仍然保持`
+        : "输入即筛左栏的任务列表；这是全站唯一的搜索入口。";
+    }
+  });
 
   $("[data-room-form]")?.addEventListener("submit", (event) => {
     event.preventDefault();
