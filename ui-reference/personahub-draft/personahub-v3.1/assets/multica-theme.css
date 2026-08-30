@@ -1081,6 +1081,14 @@ kbd {
 .automation-rules small { color: var(--muted); font-size: 8px; }
 .automation-rules article > button { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); font-size: 8px; cursor: pointer; }
 
+/* 账号弹层复用新建任务弹层的外壳（同一种居中表单），只是字段布局不同 */
+.account-dialog { width: min(620px, calc(100vw - 40px)); display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); box-shadow: 0 24px 70px rgb(0 0 0 / 0.18); }
+.account-dialog > header { display: flex; align-items: start; justify-content: space-between; }
+.account-dialog h2 { margin: 2px 0 0; font-size: 19px; }
+.account-dialog > header > button { border: 0; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; }
+.account-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; }
+.account-dialog > footer button:not(.primary-button) { padding: 7px 14px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer; }
+.account-dialog > footer button:not(.primary-button):hover { border-color: var(--accent); color: var(--accent); }
 .task-create-dialog { width: min(620px, calc(100vw - 40px)); display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); box-shadow: 0 24px 70px rgb(0 0 0 / 0.18); }
 .task-create-dialog > header { display: flex; align-items: start; justify-content: space-between; }
 .task-create-dialog h2 { margin: 2px 0 0; font-size: 19px; }

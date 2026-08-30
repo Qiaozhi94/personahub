@@ -241,6 +241,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border-strong); border-radius: 4
 .pill.success { background: rgba(98,197,150,.1); color: var(--green); }
 .pill.blue { background: var(--accent-soft); color: #a7b7ff; }
 .pill.muted { background: rgba(138,150,164,.1); color: var(--muted); }
+.pill.warn { background: rgba(231,184,90,.1); color: var(--yellow); }
 .evidence-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 25px 0; }
 .evidence-grid section { padding: 13px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); }
 .evidence-grid small { color: var(--faint); font-size: 9px; }

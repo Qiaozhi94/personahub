@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-30T04:29:08.105Z",
+  "generatedAt": "2026-08-30T16:39:46.301Z",
   "source": "file:///D:/Projects/personahub/ui-reference/personahub-draft/personahub-v3.1/index.html",
   "viewport": "1440x900",
-  "count": 26,
+  "count": 29,
   "exports": [
     {
       "file": "workbench.png",
@@ -100,13 +100,8 @@
       "kind": "project-document"
     },
     {
-      "file": "project-thread.png",
-      "title": "项目会话 · 不绑定任务",
-      "kind": "room-panel"
-    },
-    {
-      "file": "member-picker.png",
-      "title": "成员选择器 · 综合员",
+      "file": "combo-picker.png",
+      "title": "执行组合选择器 · 综合步",
       "kind": "overlay"
     },
     {
@@ -115,8 +110,28 @@
       "kind": "room-panel"
     },
     {
+      "file": "surface-threads.png",
+      "title": "会话",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-projects.png",
+      "title": "项目",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-memory.png",
+      "title": "记忆",
+      "kind": "top-level-surface"
+    },
+    {
       "file": "surface-library.png",
-      "title": "能力库",
+      "title": "能力",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-usage.png",
+      "title": "用量",
       "kind": "top-level-surface"
     },
     {

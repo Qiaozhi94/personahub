@@ -39,86 +39,117 @@ async function capture(file, title, kind) {
 }
 
 async function openProject() {
-  await page.locator(".primary-nav:visible [data-surface=\"project\"]").click();
+  await page.locator(".main-rail [data-surface=\"project\"]").click();
   await page.locator('[data-surface-view="project"]').waitFor({ state: "visible" });
 }
 
-async function openDocument({ id, explorer, file, title }) {
+async function openDocument({ id, explorer, file, title, host = "issue-view", via }) {
   await openProject();
-  // V3.1：左栏已扁平为单一列表，没有 explorer tab；资源库分节默认收起，
-  // 入口不可见时先展开它所属的分节（design.md §4.1）。
+  // 有些子文档只能从另一个子文档里进（例如阶段成果挂在协作现场里）
+  if (via && !(await page.locator(`[data-document="${id}"]`).isVisible())) {
+    await openDocument({ id: via.id, explorer, file: null, title: null, host: via.host });
+  }
   const targetDocument = page.locator(`[data-document="${id}"]`);
   if (!(await targetDocument.isVisible())) {
-    const scoped = page.locator(`.explorer-panel [data-open="${id}"]`).first();
-    if (await scoped.count()) {
-      const group = scoped.locator("xpath=ancestor::section[contains(@class,'nav-group')][1]");
-      if ((await group.count()) && ((await group.getAttribute("class")) || "").includes("collapsed")) {
-        await group.locator(".group-head").click();
+    // V3.4：左栏只剩任务列表，子文档的入口散在任务的各个视图里
+    // （资源库那三样已经搬进项目面，成果与资料并成了「资源」）。
+    // 所以逐个视图找可见入口，而不是假定它一定在左栏。
+    const item = page.locator(`.explorer-panel [data-open="${id}"]`).first();
+    if (await item.count()) {
+      if (!(await item.isVisible())) {
+        await page.locator('[data-issue-label="全部"]').click();
+        await page.locator('[data-issue-tab="recent"]').click();
       }
-      await scoped.click();
-    }
-    else {
-      const taskTab = page.locator(`[data-task-tabs] [data-open="${id}"]`);
-      if ((await taskTab.count()) === 0) throw new Error(`没有可见入口：${id}`);
-      await taskTab.click();
+      await item.click();
+    } else {
+      await page.locator(`.explorer-panel [data-open="${host}"]`).first().click();
+      let opened = false;
+      for (const pane of ["overview", "acceptance", "resource", "thread"]) {
+        await page.locator(`[data-pane-tabs] [data-pane-tab="${pane}"]`).click();
+        for (const dir of pane === "resource" ? ["out", "in"] : [null]) {
+          if (dir) {
+            await page.locator(`[data-res-dir="${dir}"]`).click();
+            // 资源清单是就地预览，子文档入口在预览栏的「打开全文」里
+            for (const item of await page.locator(`[data-res-body="${dir}"] [data-res-open]`).all()) {
+              await item.click();
+              // 只有当前展示的那份预览里的入口才点得到
+              const full = page.locator(`.res-preview [data-res-view]:not([hidden]) [data-open="${id}"]`);
+              if (await full.count()) {
+                await full.first().click();
+                opened = true;
+                break;
+              }
+            }
+            if (opened) break;
+          }
+          const entry = page.locator(`[data-pane="${pane}"] [data-open="${id}"]:visible`).first();
+          if (await entry.count()) {
+            await entry.click();
+            opened = true;
+            break;
+          }
+        }
+        if (opened) break;
+      }
+      if (!opened) throw new Error(`没有可见入口：${id}`);
     }
   }
-  // V3.3：任务面分了六个视图，文档都活在「验收」面里；截图前先切过去。
+  // V3.4：任务面五个视图，文档都活在「验收」面里；截图前先切过去。
   await page.locator('[data-pane-tabs] [data-pane-tab="acceptance"]').click();
   await targetDocument.waitFor({ state: "visible" });
   await page.locator(".document-stage").evaluate((element) => { element.scrollTop = 0; });
-  await capture(file, title, "project-document");
+  if (file) await capture(file, title, "project-document");
 }
 
-await openDocument({ id: "file-prd", explorer: "work", file: "workbench.png", title: "项目工作台 · PersonaHub PRD" });
-await openDocument({ id: "file-room-spec", explorer: "library", file: "document-room-spec.png", title: "Markdown · F011 Room spec" });
-await openDocument({ id: "file-code", explorer: "library", file: "change-locations.png", title: "代码 · run-dispatch.ts 修改位置" });
-await openDocument({ id: "file-architecture", explorer: "library", file: "document-architecture.png", title: "Markdown · PersonaHub architecture" });
+await openDocument({ id: "file-prd",host: "issue-research",  explorer: "work", file: "workbench.png", title: "项目工作台 · PersonaHub PRD" });
+await openDocument({ id: "file-room-spec",host: "issue-view",  explorer: "library", file: "document-room-spec.png", title: "Markdown · F011 Room spec" });
+await openDocument({ id: "file-code",host: "issue-view",  explorer: "library", file: "change-locations.png", title: "代码 · run-dispatch.ts 修改位置" });
+await openDocument({ id: "file-architecture",host: "issue-view",  explorer: "library", file: "document-architecture.png", title: "Markdown · PersonaHub architecture" });
 await openDocument({ id: "issue-new", explorer: "work", file: "task-new.png", title: "任务 · 刚创建（成果面空态）" });
 await openDocument({ id: "issue-view", explorer: "work", file: "task-and-room.png", title: "任务 · 协作现场人工介入" });
 await openDocument({ id: "issue-validation", explorer: "work", file: "task-validation.png", title: "任务 · 验证未收敛" });
 await openDocument({ id: "issue-permission", explorer: "work", file: "task-permission.png", title: "任务 · 权限确认" });
 await openDocument({ id: "issue-running", explorer: "work", file: "task-running.png", title: "任务 · 正在执行" });
 await openDocument({ id: "issue-research", explorer: "work", file: "task-research.png", title: "任务 · 阶段成果研究" });
-await openDocument({ id: "room-view", explorer: "work", file: "room-research.png", title: "协作现场 · Research" });
+await openDocument({ id: "room-view",explorer: "library", host: "issue-research", file: "room-research.png", title: "协作现场 · Research" });
 await openDocument({ id: "issue-done", explorer: "work", file: "task-done.png", title: "任务 · 已完成" });
-await openDocument({ id: "artifact-view", explorer: "library", file: "artifact-synthesis.png", title: "阶段成果 · synthesis_plan" });
-await openDocument({ id: "artifact-research", explorer: "library", file: "artifact-research.png", title: "阶段成果 · research_findings" });
-await openDocument({ id: "evidence-view", explorer: "library", file: "evidence-summary.png", title: "完成摘要 · Graph recovery" });
-await openDocument({ id: "evidence-room", explorer: "library", file: "evidence-chain.png", title: "验证依据 · Room pause / resume" });
-await openDocument({ id: "decision-view", explorer: "library", file: "knowledge-decision.png", title: "Decision · Issue-first" });
-await openDocument({ id: "memory-view", explorer: "library", file: "knowledge-memory.png", title: "Memory · 人工介入" });
-await openDocument({ id: "skill-view", explorer: "library", file: "knowledge-skill.png", title: "Skill candidate · 前端原型验证" });
+await openDocument({ id: "artifact-view",explorer: "library", host: "issue-done", file: "artifact-synthesis.png", title: "阶段成果 · synthesis_plan" });
+await openDocument({ id: "artifact-research",explorer: "library", host: "issue-research", file: "artifact-research.png", title: "阶段成果 · research_findings" });
+await openDocument({ id: "evidence-view",explorer: "library", host: "issue-done", file: "evidence-summary.png", title: "完成摘要 · Graph recovery" });
+await openDocument({ id: "evidence-room",explorer: "library", host: "issue-done", file: "evidence-chain.png", title: "验证依据 · Room pause / resume" });
+await openDocument({ id: "decision-view",explorer: "library", host: "issue-done", file: "knowledge-decision.png", title: "Decision · Issue-first" });
+await openDocument({ id: "memory-view",explorer: "library", host: "issue-done", file: "knowledge-memory.png", title: "Memory · 人工介入" });
+await openDocument({ id: "skill-view",explorer: "library", host: "issue-done", file: "knowledge-skill.png", title: "Skill candidate · 前端原型验证" });
 
 await openDocument({ id: "issue-view", explorer: "work", file: "task-and-room.tmp.png", title: "临时", kind: "temporary" });
 fs.unlinkSync(path.join(shotsDir, "task-and-room.tmp.png"));
 exports.pop();
-await page.locator(".project-thread-entry").click();
-await page.locator('[data-pane-tabs] [data-pane-tab="thread"]').click();
-await page.locator('[data-room-panel="project"]').waitFor({ state: "visible" });
-await capture("project-thread.png", "项目会话 · 不绑定任务", "room-panel");
 await page.locator('[data-explorer-panel="work"] [data-open="issue-view"]').first().click();
 await page.locator('[data-pane-tabs] [data-pane-tab="thread"]').click();
 await page.locator('[data-room-panel="primary"]').waitFor({ state: "visible" });
 
-await openDocument({ id: "room-view", explorer: "work", file: "room-tmp.png", title: "临时", kind: "temporary" });
+await openDocument({ id: "room-view", explorer: "library", host: "issue-research", file: "room-tmp.png", title: "临时", kind: "temporary" });
 fs.unlinkSync(path.join(shotsDir, "room-tmp.png"));
 exports.pop();
 await page.locator('[data-pane-tabs] [data-pane-tab="acceptance"]').click();
-await page.locator('[data-pick-member="synthesizer"]').click();
-await page.locator("[data-member-picker]:visible").waitFor({ state: "visible" });
-await capture("member-picker.png", "成员选择器 · 综合员", "overlay");
-await page.locator('[data-member-picker]:visible .picker-row:not([disabled])').first().click();
+await page.locator('[data-pick-combo="synthesizer"]').click();
+await page.locator("[data-combo-picker]:visible").waitFor({ state: "visible" });
+await capture("combo-picker.png", "执行组合选择器 · 综合步", "overlay");
+await page.locator('[data-combo-picker]:visible .picker-row:not([disabled])').first().click();
 await page.locator("[data-dispatch-undo]").waitFor({ state: "visible" });
 await capture("dispatch-undo.png", "指派撤销窗口 · 正在启动", "room-panel");
 await page.locator("[data-undo-cancel]").click();
 
 for (const [surface, file, title] of [
-  ["library", "surface-library.png", "能力库"],
+  ["threads", "surface-threads.png", "会话"],
+  ["projects", "surface-projects.png", "项目"],
+  ["memory", "surface-memory.png", "记忆"],
+  ["library", "surface-library.png", "能力"],
+  ["usage", "surface-usage.png", "用量"],
   ["automation", "surface-automation.png", "自动化"],
   ["settings", "surface-settings.png", "设置"],
 ]) {
-  await page.locator(`.primary-nav:visible [data-surface="${surface}"]`).click();
+  await page.locator(`.main-rail [data-surface="${surface}"]`).click();
   await page.locator(`[data-surface-view="${surface}"]`).waitFor({ state: "visible" });
   await capture(file, title, "top-level-surface");
 }

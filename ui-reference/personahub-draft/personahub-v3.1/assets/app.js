@@ -8,7 +8,7 @@
     document: "file-prd",
     pane: "overview",
     dockPanel: "primary",
-    recipient: "实现 · codex-gpt5.6-high",
+    recipient: "codex-gpt5.6-high",
     contextScope: "只给结果",
     draft: "",
     dockTaskLabel: "",
@@ -46,15 +46,15 @@
   };
 
   const dockContexts = {
-    "project-overview": { panel: "project", recipient: "项目会话 · claude-opus4.6-medium", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "v0.3 有 2 个任务在推进、1 个等你指派。F009 的 artifact 引用刚做完实现，还没有独立验证。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
-    "issue-view": { panel: "primary", recipient: "实现 · codex-gpt5.6-high", room: { name: "Implementation 现场", meta: "3 名成员 · 1 名已交付 · 阶段结束后归档，记录不删除" }, title: "artifact 引用不漂移与来源可追", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步交给独立验证员，重点是 scope 泄露与 TOCTOU 边界——这两条 F009 spec 明确要求，但现在一个用例都没有。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议交给独立验证员", handoffMember: "@独立验证员", input: "@独立验证员\n验证上一步实现，重点检查反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：scope 泄露与 TOCTOU 还没有任何用例"},
-    "room-view": { panel: "research-thread", recipient: "调研 · claude-opus4.6-medium", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究现场正在核实两个参考项目的 session 机制；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在核实 session 机制", step: "2 / 3 步", block: ""},
-    "issue-new": { panel: "primary", recipient: "实现 · codex-gpt5.6-high", title: "把 dogfooding 问题导出为周报", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以先依据它们生成用例集交你确认，再指派实现——用例先于实现固定是 ADR 0009 的硬要求。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
-    "issue-validation": { panel: "primary", recipient: "实现 · claude-opus4.6-medium", title: "修复图重启的并发认领", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两轮独立验证都指向同一处并发窗口。建议先由架构研究员隔离分析共同根因，再决定换什么策略。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两轮都撞上的那个并发窗口，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：两轮都撞同一处并发窗口，需要换策略"},
-    "issue-permission": { panel: "primary", recipient: "实现 · codex-gpt5.6-high", title: "允许 agent 执行 git push", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求执行 git push origin HEAD:feat/f009-artifact-ref。这是显式的能力边界，每次都要你单独授权。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你授权 git push", step: "1 / 3 步", block: "卡在：git push 是显式能力边界，需要你单独授权"},
-    "issue-running": { panel: "primary", recipient: "实现 · claude-opus4.6-medium", title: "补齐 Inspector 的 artifact 状态", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全。四种 artifact 状态里已完成两种，完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在补 missing / invalid 两种状态", step: "2 / 4 步", block: ""},
-    "issue-research": { panel: "research-thread", recipient: "调研 · claude-opus4.6-medium", room: { name: "Research 现场", meta: "3 名成员并行 · 1 名已交付 · 1 名执行中 · 1 名等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究现场正在核实 multica 与 clowder 的 session 机制，以及 PersonaHub 现状的差距。", handoff: false, input: "", who: "OpenCode", what: "正在整理两个项目的 session 机制", step: "2 / 3 步", block: ""},
-    "issue-done": { panel: "primary", recipient: "实现 · codex-gpt5.6-high", title: "Graph 启动恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
+    "project-overview": { panel: "project", recipient: "claude-opus4.6-medium", title: "PersonaHub 项目会话", status: "随时可问", summary: "跨任务提问、回顾结论、直接发起新任务", message: "v0.3 有 2 个任务在推进、1 个等你指派。F009 的 artifact 引用刚做完实现，还没有独立验证。", handoff: false, input: "", who: "项目级", what: "不绑定任务，问什么都行", step: "", block: "" },
+    "issue-view": { panel: "primary", recipient: "codex-gpt5.6-high", room: { name: "Implementation 现场", meta: "3 个执行组合 · 1 个已交付 · 阶段结束后归档，记录不删除" }, title: "artifact 引用不漂移与来源可追", status: "等待指派", summary: "任务主会话 · Implementation 已完成", message: "建议下一步换一个模型做独立验证，重点是 scope 泄露与 TOCTOU 边界——这两条 F009 spec 明确要求，但现在一个用例都没有。", handoff: true, handoffLabel: "等待你指派", handoffSummary: "上一步已完成 · 建议换一个模型做独立验证", handoffMember: "@claude-sonnet5-medium", input: "@claude-sonnet5-medium\n验证上一步实现，重点检查反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。", who: "实现者", what: "已交付实现，等待独立验证", step: "2 / 3 步", block: "卡在：scope 泄露与 TOCTOU 还没有任何用例"},
+    "room-view": { panel: "research-thread", recipient: "claude-opus4.6-medium", room: { name: "Research 现场", meta: "3 个执行组合并行 · 1 个已交付 · 1 个执行中 · 1 个等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "任务主会话 · Research 进行中", message: "研究现场正在核实两个参考项目的 session 机制；当前无需你操作。", handoff: false, input: "", who: "Research 协作现场", what: "3 名成员正在核实 session 机制", step: "2 / 3 步", block: ""},
+    "issue-new": { panel: "primary", recipient: "codex-gpt5.6-high", title: "把 dogfooding 问题导出为周报", status: "刚创建", summary: "还没有执行计划 · 等你指派第一步", message: "你已经写了目标和两条完成要求。我可以先依据它们生成用例集交你确认，再指派实现——用例先于实现固定是 ADR 0009 的硬要求。", handoff: false, input: "", who: "还没有执行者", what: "目标与 2 条完成要求已写", step: "0 / 0 步", block: "卡在：还没有执行计划" },
+    "issue-validation": { panel: "primary", recipient: "claude-opus4.6-medium", title: "修复图重启的并发认领", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两轮独立验证都指向同一处并发窗口。建议先由架构研究员隔离分析共同根因，再决定换什么策略。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两轮都撞上的那个并发窗口，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：两轮都撞同一处并发窗口，需要换策略"},
+    "issue-permission": { panel: "primary", recipient: "codex-gpt5.6-high", title: "允许 agent 执行 git push", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求执行 git push origin HEAD:feat/f009-artifact-ref。这是显式的能力边界，每次都要你单独授权。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你授权 git push", step: "1 / 3 步", block: "卡在：git push 是显式能力边界，需要你单独授权"},
+    "issue-running": { panel: "primary", recipient: "claude-opus4.6-medium", title: "补齐 Inspector 的 artifact 状态", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全。四种 artifact 状态里已完成两种，完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在补 missing / invalid 两种状态", step: "2 / 4 步", block: ""},
+    "issue-research": { panel: "research-thread", recipient: "claude-opus4.6-medium", room: { name: "Research 现场", meta: "3 个执行组合并行 · 1 个已交付 · 1 个执行中 · 1 个等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究现场正在核实 multica 与 clowder 的 session 机制，以及 PersonaHub 现状的差距。", handoff: false, input: "", who: "OpenCode", what: "正在整理两个项目的 session 机制", step: "2 / 3 步", block: ""},
+    "issue-done": { panel: "primary", recipient: "codex-gpt5.6-high", title: "Graph 启动恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
   };
 
   function showToast(message) {
@@ -94,6 +94,36 @@
     $$('[data-layout-mode]').forEach((button) => button.classList.toggle("active", button.dataset.layoutMode === mode));
   }
 
+  // 任务 tab 条已取消（两行 chrome 太重）。当前任务的标识挪到视图行左侧，
+  // 切任务回左栏点——左栏本来就常驻任务列表。
+  // 任务名与元信息提到 chrome 第一行；概览里那份重复的已经删掉。
+  const taskMeta = {
+    "issue-new": ["把 dogfooding 问题导出为周报", "未归类", "2026-08-30 14:20", "刚创建，还没有指派", ["未归类"]],
+    "issue-view": ["artifact 引用不漂移与来源可追", "PersonaHub", "2026-08-27 09:12", "等待你指派", ["F009", "v0.3", "coding"]],
+    "issue-validation": ["修复图重启的并发认领", "PersonaHub", "2026-08-26 16:40", "连续 2 次未解决", ["F006", "bug"]],
+    "issue-permission": ["允许 agent 执行 git push", "PersonaHub", "2026-08-30 13:38", "等待你确认权限", ["运维"]],
+    "issue-research": ["Agent session 生命周期调研", "PersonaHub", "2026-08-25 10:02", "Research 阶段 · 执行中", ["ADR", "v0.3"]],
+    "issue-running": ["补齐 Inspector 的 artifact 状态", "PersonaHub", "2026-08-29 21:15", "Claude 正在执行", ["F009"]],
+    "issue-done": ["Graph 启动恢复", "PersonaHub", "2026-08-20 09:00", "已完成 · 验证通过", ["F006", "v0.2"]],
+  };
+
+  function syncPaneTask(id) {
+    const row = taskMeta[id];
+    if (!row) return;
+    const [name, project, created, status, labels] = row;
+    const nameEl = $("[data-pane-task-name]");
+    if (nameEl) nameEl.textContent = name;
+    const meta = $("[data-task-meta]");
+    if (!meta) return;
+    $$("span", meta)[0].innerHTML = `项目 <b>${project}</b>`;
+    $$("span", meta)[1].innerHTML = `创建 <b>${created}</b>`;
+    const state = $("[data-task-state]", meta);
+    if (state) state.textContent = status;
+    const tags = $(".th-labels", meta);
+    if (tags) tags.innerHTML = labels.map((t) => `<em>${t}</em>`).join("");
+  }
+
+
   function syncOverview(id) {
     const docs = $$("[data-overview]");
     if (!docs.length) return;
@@ -103,6 +133,7 @@
 
   function syncDock(id) {
     syncOverview(id);
+    syncPaneTask(id);
     const context = dockContexts[id];
     if (!context) return;
     // 固定后收件人不跟随，但面板仍然跟着舞台走——「看什么」和「发给谁」是两件事
@@ -180,50 +211,6 @@
     "room-view", "project-overview",
   ]);
 
-  const TAB_SIGNAL = {
-    "issue-new": "", "issue-view": "yellow", "issue-validation": "yellow", "issue-permission": "yellow",
-    "issue-running": "blue", "issue-research": "blue", "room-view": "blue",
-    "issue-done": "green", "project-overview": "",
-  };
-
-  function syncTaskTabs(id) {
-    const strip = $("[data-task-tabs]");
-    if (!strip) return;
-    const owner = state.stageParent || id;
-    if (!TAB_DOCUMENTS.has(owner)) return;
-
-    let tab = strip.querySelector('[data-open="' + owner + '"]');
-
-    // 进入子文档 = 这个任务已经不只是「扫一眼」，把预览 tab 钉住。
-    if (state.stageParent && tab) tab.classList.remove("preview");
-
-    if (!tab) {
-      const meta = documentMeta[owner];
-      const preview = strip.querySelector(".editor-tab.preview");
-      // 预览 tab 复用：从左栏单击打开的任务落在同一个位置，
-      // 不会点五个任务就攒出五个 tab（design.md §4.2.1「预览 tab」）。
-      tab = preview || document.createElement("button");
-      tab.type = "button";
-      tab.className = "editor-tab preview";
-      tab.dataset.open = owner;
-      tab.dataset.label = meta ? meta[1] : owner;
-      tab.innerHTML =
-        '<span class="signal ' + (TAB_SIGNAL[owner] || "") + '"></span>' +
-        "<span>" + (meta ? meta[1].replace(/^(任务|协作现场) · /, "") : owner) + "</span>" +
-        '<i data-tab-close aria-label="关闭">\u00d7</i>';
-      if (!preview) strip.appendChild(tab);
-    }
-
-    $$("[data-task-tabs] .editor-tab").forEach((button) => {
-      button.classList.toggle("active", button === tab);
-    });
-    tab.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }
-
-  function pinTab(tab) {
-    if (tab) tab.classList.remove("preview");
-  }
-
   function openDocument(id, label, opts) {
     const target = $("[data-document='" + id + "']");
     if (!target) {
@@ -250,7 +237,6 @@
     state.changeIndex = -1;
     updateChangeNavigation();
     updateStageBack();
-    syncTaskTabs(id);
     syncDock(id);
   }
 
@@ -287,14 +273,46 @@
   }
 
   // Dock 只有一条流。Room 不再是阅读入口，只是流里的一段可折叠内容：
-  // 它是组织单位（谁一起干、交付什么），那些结构信息在舞台的成员泳道上。
+  // 它是组织单位（谁一起干、交付什么），那些结构信息在舞台的执行组合泳道上。
+  // ── 轨迹：adapter 的详细交互过程 ────────────────────────
+  //
+  // 形态取自 deepseek-harness 的 trajectory：事件表格 + 折叠开关 + 选中出详情。
+  // 会话视图看「说了什么」，这里看「实际做了什么」——每次模型调用、每个
+  // 工具调用的入参与结果。
+  function selectTraceEvent(row) {
+    if (!row) return;
+    $$("[data-tr-event]").forEach((r) => r.classList.toggle("selected", r === row));
+    const detail = $("[data-trace-detail]");
+    if (!detail) return;
+    detail.hidden = false;
+    const kind = $(".tr-kind", row)?.textContent || "";
+    const main = $(".tr-main", row)?.textContent || "";
+    $("[data-tr-detail-kind]").textContent = `${kind} · ${main.slice(0, 42)}`;
+    $("[data-td-body]").textContent = row.dataset.trDetail || "这一行没有更多细节。";
+  }
+
+  function refreshTraceCount() {
+    const rows = $$("[data-tr-event]").filter((r) => !r.hidden);
+    const el = $("[data-tr-count]");
+    if (el) el.textContent = `${rows.length} 条事件`;
+  }
+
+  function filterTrace(value) {
+    const q = value.trim().toLowerCase();
+    $$("[data-tr-event]").forEach((row) => {
+      row.hidden = Boolean(q) && !row.textContent.toLowerCase().includes(q);
+    });
+    $$(".tr-turn").forEach((t) => (t.hidden = Boolean(q)));
+    refreshTraceCount();
+  }
+
   // ── 执行组合：选 adapter+模型，深度单独调 ────────────────────
   //
   // 不做固定组合。adapter × 模型 是运行时的真实清单（装了什么、登录没登录），
   // 深度是每次派工的自由参数——把三者打包成预设，等于又造一遍 ADR 0012
   // 刚取消掉的「成员」，只是换了个名字。
   const DEPTHS = ["low", "medium", "high"];
-  const comboState = { room: "实现", model: "codex-gpt5.6", depth: "high" };
+  const comboState = { model: "codex-gpt5.6", depth: "high" };
 
   function currentModelRow() {
     return $(`[data-pick-model="${comboState.model}"]`);
@@ -337,7 +355,7 @@
     const combo = `${comboState.model}-${comboState.depth}`;
     const preview = $("[data-combo-preview]");
     if (preview) preview.textContent = combo;
-    setRecipient(`${comboState.room} · ${combo}`);
+    setRecipient(combo);
 
     const advice = row.dataset.advice;
     $$(".model-row").forEach((r) => r.classList.toggle("active", r === row));
@@ -350,6 +368,189 @@
   // Dock 已取消（ADR 0012）。会话降为一个 tab，输入框常驻任务面底部，
   // 切 tab 时保留草稿——因此「发给」必须两段（会话 · 执行组合），
   // 否则在概览里发的话进了哪个会话说不清。
+  // ── 左栏：组织维度而非状态维度（照 clowder ThreadSidebar）────
+  //
+  // 原来按「需要你处理 / 正在进行 / 最近完成」分三组，问题是状态天天在变，
+  // 同一个任务今天在这组明天在那组，位置记不住。改成置顶/最近/项目/收藏：
+  // 位置由你决定，状态退回条目里的圆点。
+  const explorer = { tab: "recent", label: "全部" };
+
+  function filterIssues() {
+    const items = $$("[data-issue-tabs]");
+    let shown = 0;
+    items.forEach((el) => {
+      const inTab = el.dataset.issueTabs.split(" ").includes(explorer.tab);
+      const inLabel = explorer.label === "全部" || el.dataset.issueTags.split(" ").includes(explorer.label);
+      el.hidden = !(inTab && inLabel);
+      if (!el.hidden) shown += 1;
+    });
+    // 「项目」分类下才按项目分段——其余分类里项目名是噪声
+    const head = $("[data-project-head]");
+    if (head) head.hidden = explorer.tab !== "project" || shown === 0;
+    const empty = $("[data-issue-empty]");
+    if (empty) empty.hidden = shown > 0;
+  }
+
+  function setIssueTab(tab) {
+    explorer.tab = tab;
+    $$("[data-issue-tab]").forEach((b) => {
+      const on = b.dataset.issueTab === tab;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", String(on));
+    });
+    filterIssues();
+  }
+
+  // 标签横排成 chip 条时，标签一多就会挤成两行再挤成三行；收进下拉，
+  // 左栏的高度就不再随标签数量变化。
+  function setIssueLabel(label) {
+    explorer.label = label;
+    $$("[data-issue-label]").forEach((b) => b.classList.toggle("active", b.dataset.issueLabel === label));
+    const cur = $("[data-label-current]");
+    if (cur) cur.textContent = label === "全部" ? "全部标签" : label;
+    $("[data-label-menu]")?.setAttribute("hidden", "");
+    $("[data-label-menu-toggle]")?.setAttribute("aria-expanded", "false");
+    filterIssues();
+  }
+
+  function setLabelMenu(open) {
+    const menu = $("[data-label-menu]");
+    if (!menu) return;
+    menu.hidden = !open;
+    $("[data-label-menu-toggle]")?.setAttribute("aria-expanded", String(open));
+  }
+
+  // 左框选中一项 → 右主体换成它的内容。六个面共用这一套。
+  function pickInList(group, value, scope) {
+    $$(`[data-${group}-pick]`, scope).forEach((b) => b.classList.toggle("active", b.dataset[`${group}Pick`] === value));
+    const views = $$(`[data-${group}-view]`, scope);
+    if (views.length) views.forEach((el) => (el.hidden = el.dataset[`${group}View`] !== value));
+  }
+
+  // 项目面：点文件在右侧出预览（GitHub 式），树本身不跳走
+  function openFilePreview(key) {
+    $$("[data-file-view]").forEach((el) => {
+      const on = el.dataset.fileView === key;
+      el.hidden = !on;
+      el.classList.toggle("active", on);
+    });
+    $$("[data-tree-open]").forEach((b) => b.classList.toggle("selected", b.dataset.treeOpen === key));
+  }
+
+  // ── 目录树：折叠状态只影响下一层，深层保持原样 ────────────────
+  function treeToggle(node) {
+    const open = node.classList.toggle("open");
+    $(".tn-twisty", node).textContent = open ? "▾" : "▸";
+    applyTreeVisibility();
+  }
+
+  // 过滤时把树摊平成命中列表；清空后按各节点的折叠状态复原
+  function filterFileTree(q) {
+    const query = q.trim().toLowerCase();
+    if (!query) {
+      applyTreeVisibility();
+      refreshTreeCount(null);
+      return;
+    }
+    let n = 0;
+    $$("[data-tree-node]").forEach((node) => {
+      const hit = $(".tn-name", node).textContent.toLowerCase().includes(query);
+      node.hidden = !hit;
+      if (hit) n += 1;
+    });
+    refreshTreeCount(n);
+  }
+
+  // 一个节点可见，当且仅当它所有祖先目录都是展开的
+  function applyTreeVisibility() {
+    const openAt = [];
+    $$("[data-tree-node]").forEach((node) => {
+      const depth = Number(node.style.getPropertyValue("--tn-depth"));
+      node.hidden = openAt.slice(0, depth).some((v) => v === false);
+      openAt[depth] = node.dataset.treeNode === "dir" ? node.classList.contains("open") : true;
+      openAt.length = depth + 1;
+    });
+  }
+
+  function refreshTreeCount(n) {
+    const el = $("[data-tree-count]");
+    if (!el) return;
+    el.textContent = n == null ? "" : `${n} 项匹配`;
+  }
+
+  // ── 一组同构的 tab：切按钮 + 切对应的面 ──────────────────────
+  function setLocalTab(group, value) {
+    $$(`[data-${group}-tab]`).forEach((b) => {
+      const on = b.dataset[`${group}Tab`] === value;
+      b.classList.toggle("active", on);
+      if (b.getAttribute("role") === "tab") b.setAttribute("aria-selected", String(on));
+    });
+    $$(`[data-${group}-body]`).forEach((el) => (el.hidden = el.dataset[`${group}Body`] !== value));
+  }
+
+  // 会话面复用任务面的骨架：左列表 + 上 tab + 消息流 + 漂浮输入框。
+  // tab 切的是「哪一类会话」，左列表跟着只显示这一类。
+  const threadMeta = {
+    "thread-adr": ["ADR 0013 的 stance 白名单要不要放宽", "codex-gpt5.6-high", "2026-08-30 19:12", "冷启动 · 3 个回合", "solo"],
+    "thread-ask": ["这个仓库的 workspace 依赖是怎么解析的", "claude-sonnet5-low", "2026-08-29 11:03", "已结束 · 2 个回合", "solo"],
+    "thread-idea": ["随手记：验收面的三张卡能不能合成一张", "还没派出去", "2026-08-27 22:40", "只有你写的一条", "solo"],
+    "thread-ph": ["PersonaHub 现在整体什么情况", "claude-sonnet5-medium", "2026-08-29 16:20", "冷启动 · 3 个回合", "project"],
+    "thread-mg": ["Market Game Sim 要不要先绑代码目录", "还没派出去", "2026-08-22 09:30", "只有你写的一条", "project"],
+  };
+
+  function setThreadTab(kind) {
+    $$("[data-thread-tab]").forEach((b) => b.classList.toggle("active", b.dataset.threadTab === kind));
+    $$("[data-thread-pane]").forEach((el) => (el.hidden = el.dataset.threadPane !== kind));
+    let shown = 0;
+    $$("[data-thread-kind]").forEach((el) => {
+      el.hidden = el.dataset.threadKind !== kind;
+      if (!el.hidden) shown += 1;
+    });
+    const empty = $("[data-thread-empty]");
+    if (empty) empty.hidden = shown > 0;
+    // 切类别后选中该类别的第一条，否则标题还停在上一类的会话上
+    const first = $$("[data-thread-kind]:not([hidden]) [data-thread-pick]")[0];
+    if (first) pickThread(first.dataset.threadPick);
+  }
+
+  function pickThread(id) {
+    const row = threadMeta[id];
+    if (!row) return;
+    const [title, combo, started, state] = row;
+    $$("[data-thread-pick]").forEach((b) => b.classList.toggle("active", b.dataset.threadPick === id));
+    const name = $("[data-thread-name]");
+    if (name) name.textContent = title;
+    const meta = $("[data-thread-meta]");
+    if (!meta) return;
+    const spans = $$("span", meta);
+    spans[0].innerHTML = `执行组合 <b>${combo}</b>`;
+    spans[1].innerHTML = `开始 <b>${started}</b>`;
+    spans[2].textContent = state;
+  }
+
+  // 右侧留白的解法：每个视图 = 主栏 + 副栏，副栏放「看主栏时最想同时
+  // 看到的那一份」。三档布局——both（默认）/ main（收起副栏，主栏拉满）
+  // / aside（放大副栏，主栏让位，用于复盘轨迹）。
+  function setSplitLayout(key, layout) {
+    const split = $(`[data-split="${key}"]`);
+    if (!split) return;
+    split.dataset.layout = layout;
+    const reopen = $(`[data-aside-open="${key}"]`);
+    if (reopen) reopen.hidden = layout !== "main";
+    const zoom = $(`[data-aside-zoom="${key}"]`);
+    if (zoom) zoom.textContent = layout === "aside" ? "⤡" : "⤢";
+  }
+
+  // 资源面：点清单里的一项，右侧换成它的内容（和项目面同构）
+  function openResource(key) {
+    $$("[data-res-open]").forEach((b) => b.classList.toggle("active", b.dataset.resOpen === key));
+    $$("[data-res-view]").forEach((el) => {
+      const on = el.dataset.resView === key;
+      el.hidden = !on;
+      el.classList.toggle("active", on);
+    });
+  }
+
   function setPane(name) {
     const composer = $("[data-pane-composer]");
     if (composer) state.draft = $("[data-pane-input]", composer)?.value ?? state.draft;
@@ -524,7 +725,7 @@
   }
 
   // 固定住的收件人必须持续可见，并说明它属于哪个任务——
-  // 否则会对着上一个任务的成员发指令。
+  // 否则会对着上一个任务的执行组合发指令。
   function renderPinnedNote() {
     const note = $("[data-dock-parent]");
     if (!note) return;
@@ -564,64 +765,109 @@
   }
 
 
-  // ── 成员选择器 ──────────────────────────────────────────────
-  // 不是一份平铺的成员名单：选人本身就是要向 Human Lead 解释的判断，
-  // 所以每一行都必须说清「为什么推荐 / 为什么不建议 / 为什么不能选」
+  // ── 账号与凭据弹层 ─────────────────────────────────────────
+  // 认证方式决定要填什么：登录态那一支**没有输入项**，PersonaHub 不代管
+  // token；只有 API Key 这一支才由 PersonaHub 自己存。两支共用一个弹层，
+  // 但绝不共用字段——混在一起会让人以为登录态也要填 key。
+  function setAccountMode(mode) {
+    $$("[data-account-mode]").forEach((b) => b.classList.toggle("active", b.dataset.accountMode === mode));
+    $$("[data-account-body]").forEach((el) => (el.hidden = el.dataset.accountBody !== mode));
+  }
+
+  function setAccountDialog(target) {
+    const overlay = $("[data-account-dialog]");
+    if (!overlay) return;
+    if (target === false) {
+      overlay.hidden = true;
+      return;
+    }
+    const editing = typeof target === "string" && target;
+    $("[data-account-title]").textContent = editing ? "编辑账号 · " + target : "新增账号";
+    $("[data-account-context]").textContent = editing
+      ? "已保存的 key 不回显；留空表示不改"
+      : "凭据只存在本机，不上传";
+    setAccountMode(editing ? "api_key" : "oauth");
+    overlay.hidden = false;
+  }
+
+  // ── 执行组合选择器 ──────────────────────────────────────────
+  // 这里没有「成员」这种常驻角色：能派出去的最小单位是**执行组合**
+  // （adapter × 模型 × 深度），由设置里的 adapter 检查决定有哪些，
+  // 不在这个弹层里增删。选哪一个本身就是要向使用者解释的判断，
+  // 所以每一行都必须说清「为什么建议 / 为什么不建议 / 为什么不能选」
   // （design.md §4.6）。
-  const MEMBERS = [
-    { id: "implementer", name: "实现者", stack: "Codex CLI · GPT-5 · 高推理", mark: "C", tone: "blue", tags: ["代码实现", "重构", "测试"], status: "ok" },
-    { id: "architect", name: "架构研究员", stack: "Claude Code · Opus · 深度分析", mark: "A", tone: "green", tags: ["架构", "研究", "文档"], status: "ok" },
-    { id: "validator", name: "独立验证员", stack: "Claude Code · Sonnet · 隔离上下文", mark: "V", tone: "purple", tags: ["代码审查", "验证"], status: "ok" },
-    { id: "organizer", name: "快速整理员", stack: "OpenCode · Qwen · 中等推理", mark: "O", tone: "blue", tags: ["综合", "格式整理"], status: "unchecked" },
+  const COMBOS = [
+    { id: "codex-gpt5.6-high", adapter: "codex", model: "gpt-5.6", depth: "high", mark: "C", tone: "blue", quota: "剩 42 次", tags: ["代码实现", "重构", "测试"], status: "ok" },
+    { id: "codex-gpt5.6-medium", adapter: "codex", model: "gpt-5.6", depth: "medium", mark: "C", tone: "blue", quota: "剩 107 次", tags: ["代码实现", "测试"], status: "ok" },
+    { id: "claude-opus5-high", adapter: "claude", model: "opus-5", depth: "high", mark: "A", tone: "purple", quota: "剩 3 次 low 折算", tags: ["架构", "调研", "综合"], status: "quota" },
+    { id: "claude-opus5-medium", adapter: "claude", model: "opus-5", depth: "medium", mark: "A", tone: "purple", quota: "剩 1 次", tags: ["架构", "调研", "综合"], status: "ok" },
+    { id: "claude-sonnet5-medium", adapter: "claude", model: "sonnet-5", depth: "medium", mark: "A", tone: "purple", quota: "剩 451 次", tags: ["代码审查", "验证"], status: "ok" },
+    { id: "claude-haiku4.5-low", adapter: "claude", model: "haiku-4.5", depth: "low", mark: "A", tone: "purple", quota: "剩 5.2k 次", tags: ["格式整理"], status: "ok" },
+    { id: "opencode-qwen3max-medium", adapter: "opencode", model: "qwen3-max", depth: "medium", mark: "O", tone: "amber", quota: "本地无限", tags: ["综合", "格式整理"], status: "unchecked" },
   ];
 
-  // 当前这次实现是谁做的。验证角色据此判定同源。
-  const CURRENT_IMPLEMENTER = "implementer";
+  // 本次实现是哪个模型做的。同源判定看**模型**，不看深度：
+  // 同一个模型换个深度再验一遍，验的还是它自己。
+  const CURRENT_IMPLEMENTER_MODEL = "gpt-5.6";
+  // 本阶段检索用过的组合（对应协作现场那两条已交付/执行中的泳道），综合步据此判定兼任。
+  const RESEARCH_USED = ["codex-gpt5.6-high", "claude-sonnet5-medium"];
+
+  // 所有角色共用的前置：组合本身能不能派出去，和这一步要什么无关。
+  function comboBlocked(c) {
+    if (c.status === "unchecked") return "adapter 登录状态需要重新检查，现在派过去会直接失败";
+    if (c.status === "quota") return "额度只剩 3 次 low 折算，跑不完一次 high（要 5 次）——去用量面看还剩多少";
+    return null;
+  }
 
   const PICKER_ROLES = {
     implementer: {
-      title: "选择实现者",
-      context: "为「实现」挑一个成员",
-      rule: "实现者可以是任何具备对应能力的成员；换人不会丢掉已有改动。",
-      judge: (m) =>
-        m.status === "unchecked"
-          ? { level: "blocked", why: "登录状态需要重新检查，现在派过去会直接失败" }
-          : m.tags.includes("代码实现")
-            ? { level: "good", why: "能力匹配：代码实现、重构、测试" }
-            : { level: "weak", why: "能力项里没有代码实现，可以选但不是这一步的强项" },
+      title: "选择执行组合",
+      context: "为「实现」挑一个执行组合",
+      rule: "实现步可以用任何具备对应能力的组合。中途换组合会冷启动一个新进程（ADR 0009），已有改动不会丢，但上下文要重新给。",
+      judge: (c) => {
+        const stop = comboBlocked(c);
+        if (stop) return { level: "blocked", why: stop };
+        return c.tags.includes("代码实现")
+          ? { level: "good", why: "能力匹配：代码实现、重构、测试" }
+          : { level: "weak", why: "能力项里没有代码实现，可以选但不是这一步的强项" };
+      },
     },
     validator: {
-      title: "选择独立验证员",
-      context: "为「独立验证」挑一个成员",
-      rule: "实现与验证不能同源（PRD 第 7.5 节）。同一个成员做完实现再自己验证，等于没有验证。",
-      judge: (m) =>
-        m.id === CURRENT_IMPLEMENTER
-          ? { level: "blocked", why: "本次实现就是它做的，自己验自己不成立" }
-          : m.status === "unchecked"
-            ? { level: "blocked", why: "登录状态需要重新检查，现在派过去会直接失败" }
-            : m.tags.includes("验证")
-              ? { level: "good", why: "能力匹配：代码审查、验证 · 与实现者不同模型" }
-              : { level: "weak", why: "与实现者不同源，满足硬要求；但没有验证能力项" },
+      title: "选择验证用的执行组合",
+      context: "为「独立验证」挑一个执行组合",
+      rule: "实现与验证不能同源（PRD 第 7.5 节）。同源看的是**模型**，不是深度——同一个模型换个深度再验一遍，验的还是它自己。",
+      judge: (c) => {
+        if (c.model === CURRENT_IMPLEMENTER_MODEL) {
+          return { level: "blocked", why: "本次实现就是 " + c.model + " 做的，换深度不解决同源，自己验自己不成立" };
+        }
+        const stop = comboBlocked(c);
+        if (stop) return { level: "blocked", why: stop };
+        return c.tags.includes("验证")
+          ? { level: "good", why: "能力匹配：代码审查、验证 · 与实现者不同模型" }
+          : { level: "weak", why: "与实现者不同源，满足硬要求；但没有验证能力项" };
+      },
     },
     synthesizer: {
-      title: "选择综合员",
-      context: "为「收敛为 synthesis_plan」挑一个成员",
-      rule: "综合员不应由参与检索的研究员兼任——兼任会让它偏向自己那份结论。",
-      judge: (m) =>
-        m.id === "architect"
-          ? { level: "blocked", why: "它是本阶段的检索成员之一，兼任综合会偏向自己的结论" }
-          : m.status === "unchecked"
-            ? { level: "blocked", why: "登录状态需要重新检查，现在派过去会直接失败" }
-            : m.tags.includes("综合")
-              ? { level: "good", why: "能力匹配：综合 · 未参与本阶段检索" }
-              : { level: "weak", why: "未参与本阶段检索，可以选；但没有综合能力项" },
+      title: "选择综合用的执行组合",
+      context: "为「收敛为 synthesis_plan」挑一个执行组合",
+      rule: "综合步不该由参与检索的组合兼任——兼任会让它偏向自己那份结论。",
+      judge: (c) => {
+        if (RESEARCH_USED.includes(c.id)) {
+          return { level: "blocked", why: "它是本阶段的检索组合之一，兼任综合会偏向自己的结论" };
+        }
+        const stop = comboBlocked(c);
+        if (stop) return { level: "blocked", why: stop };
+        return c.tags.includes("综合")
+          ? { level: "good", why: "能力匹配：综合 · 未参与本阶段检索" }
+          : { level: "weak", why: "未参与本阶段检索，可以选；但没有综合能力项" };
+      },
     },
   };
 
   const LEVEL_LABEL = { good: "建议", weak: "可选", blocked: "不建议" };
 
-  function setMemberPicker(role) {
-    const overlay = $("[data-member-picker]");
+  function setComboPicker(role) {
+    const overlay = $("[data-combo-picker]");
     if (!overlay) return;
     if (!role) {
       overlay.hidden = true;
@@ -635,26 +881,26 @@
     $("[data-picker-rule]").textContent = spec.rule;
     const list = $("[data-picker-list]");
     list.innerHTML = "";
-    const rows = MEMBERS.map((m) => ({ m, v: spec.judge(m) }));
+    const rows = COMBOS.map((c) => ({ c, v: spec.judge(c) }));
     // 建议在前、不建议在后，但不建议的**不隐藏**：藏起来就等于替用户
     // 做了判断，而这里的产品承诺恰恰是把判断依据摊开。
     const order = { good: 0, weak: 1, blocked: 2 };
     rows.sort((a, b) => order[a.v.level] - order[b.v.level]);
-    for (const { m, v } of rows) {
+    for (const { c, v } of rows) {
       const row = document.createElement("button");
       row.type = "button";
       row.className = "picker-row " + v.level;
-      row.dataset.pickMemberId = m.id;
+      row.dataset.pickComboId = c.id;
       if (v.level === "blocked") row.disabled = true;
       row.innerHTML =
-        '<span class="member-avatar ' + m.tone + '">' + m.mark + "</span>" +
+        '<span class="member-avatar ' + c.tone + '">' + c.mark + "</span>" +
         "<span class=\"pr-body\">" +
-        "<span class=\"pr-head\"><strong>" + m.name + "</strong>" +
+        "<span class=\"pr-head\"><strong>" + c.id + "</strong>" +
         '<span class="pr-level ' + v.level + '">' + LEVEL_LABEL[v.level] + "</span></span>" +
-        "<small>" + m.stack + "</small>" +
+        "<small>" + c.adapter + " · " + c.model + " · " + c.depth + " · " + c.quota + "</small>" +
         '<small class="pr-why">' + v.why + "</small>" +
         "</span>" +
-        '<span class="pr-tags">' + m.tags.map((t) => "<i>" + t + "</i>").join("") + "</span>";
+        '<span class="pr-tags">' + c.tags.map((t) => "<i>" + t + "</i>").join("") + "</span>";
       list.appendChild(row);
     }
     overlay.hidden = false;
@@ -722,20 +968,107 @@
       return;
     }
 
-    // 关闭按钮是 tab <button> 内的 <i>，全局委托的 closest("button, a")
-    // 会解析到 tab 本身，因此这里必须回看原始事件目标。
-    if (event.target.closest("[data-tab-close]")) {
-      const tab = event.target.closest(".editor-tab");
-      const strip = $("[data-task-tabs]");
-      if (tab && strip && strip.querySelectorAll(".editor-tab").length > 1) {
-        const wasActive = tab.classList.contains("active");
-        const next = tab.nextElementSibling || tab.previousElementSibling;
-        tab.remove();
-        if (wasActive && next) openDocument(next.dataset.open, next.dataset.label);
-      } else {
-        showToast("至少保留一个打开的任务");
-      }
+    if (target.hasAttribute("data-label-menu-toggle")) {
+      setLabelMenu($("[data-label-menu]").hidden);
       return;
+    }
+
+    if (target.dataset.treeOpen) {
+      openFilePreview(target.dataset.treeOpen);
+      return;
+    }
+
+    for (const group of ["automation", "settings", "usage"]) {
+      const value = target.dataset[`${group}Pick`];
+      if (value) {
+        pickInList(group, value);
+        showToast(`已切换到「${$("strong", target)?.textContent ?? value}」`);
+        return;
+      }
+    }
+
+    if (target.dataset.threadTab) {
+      setThreadTab(target.dataset.threadTab);
+      return;
+    }
+
+    if (target.dataset.threadPick) {
+      pickThread(target.dataset.threadPick);
+      return;
+    }
+
+    if (target.hasAttribute("data-task-model-toggle")) {
+      const menu = $("[data-task-model-menu]");
+      menu.hidden = !menu.hidden;
+      target.setAttribute("aria-expanded", String(!menu.hidden));
+      return;
+    }
+
+    if (target.dataset.taskModelPick) {
+      const value = target.dataset.taskModelPick;
+      $$("[data-task-model-pick]").forEach((b) => b.classList.toggle("active", b === target));
+      $("[data-task-model]").textContent = value;
+      $("[data-task-model-menu]").hidden = true;
+      $("[data-task-model-toggle]")?.setAttribute("aria-expanded", "false");
+      return;
+    }
+
+    if (target.dataset.asideToggle) {
+      setSplitLayout(target.dataset.asideToggle, "main");
+      return;
+    }
+
+    if (target.dataset.asideOpen) {
+      setSplitLayout(target.dataset.asideOpen, "both");
+      return;
+    }
+
+    if (target.dataset.asideZoom) {
+      const key = target.dataset.asideZoom;
+      const now = $(`[data-split="${key}"]`)?.dataset.layout;
+      setSplitLayout(key, now === "aside" ? "both" : "aside");
+      showToast(now === "aside" ? "轨迹已还原为副栏" : "轨迹已放大：工具栏、搜索与详情栏都在这里");
+      return;
+    }
+
+    if (target.dataset.resOpen) {
+      openResource(target.dataset.resOpen);
+      return;
+    }
+
+    if (target.dataset.issueTab) {
+      setIssueTab(target.dataset.issueTab);
+      return;
+    }
+
+    if (target.dataset.issueLabel) {
+      setIssueLabel(target.dataset.issueLabel);
+      return;
+    }
+
+    if (target.hasAttribute("data-tree-toggle")) {
+      treeToggle(target);
+      return;
+    }
+
+    if (target.hasAttribute("data-tree-collapse-all")) {
+      $$("[data-tree-node].open").forEach((n) => treeToggle(n));
+      return;
+    }
+
+    if (target.dataset.resDir) {
+      const dir = target.dataset.resDir;
+      $$("[data-res-dir]").forEach((b) => b.classList.toggle("active", b.dataset.resDir === dir));
+      $$("[data-res-body]").forEach((el) => (el.hidden = el.dataset.resBody !== dir));
+      return;
+    }
+
+    for (const group of ["project", "memory", "library", "automation"]) {
+      const value = target.dataset[`${group}Tab`];
+      if (value) {
+        setLocalTab(group, value);
+        return;
+      }
     }
 
     if (target.hasAttribute("data-group-toggle")) {
@@ -749,17 +1082,87 @@
       return;
     }
 
+    // 点泳道条 = 选中表格里对应的那条事件，两者是同一份数据的两种画法
+    if (target.dataset.wfJump) {
+      // 标签形如「TOOL bash npm test · 3m18s」：去掉 kind 前缀和耗时后缀才是键
+      // 表格行里 `bash` 和 `npm test` 被 JSON 入参隔开，整串匹配不到，按词匹配
+      const words = target.dataset.wfJump.replace(/^[A-Z]+\s+/, "").split(" · ")[0].split(/\s+/);
+      $$(".tl-span").forEach((sp) => sp.classList.toggle("selected", sp === target));
+      const row = $$("[data-tr-event]").find((r) => words.every((w) => r.textContent.includes(w)));
+      if (row) {
+        selectTraceEvent(row);
+        row.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+      return;
+    }
+
+    if (target.hasAttribute("data-tr-event")) {
+      selectTraceEvent(target);
+      return;
+    }
+
+    if (target.hasAttribute("data-tr-detail-close")) {
+      $("[data-trace-detail]").hidden = true;
+      $$("[data-tr-event]").forEach((r) => r.classList.remove("selected"));
+      return;
+    }
+
+    if (target.dataset.tdTab) {
+      $$("[data-td-tab]").forEach((b) => b.classList.toggle("active", b === target));
+      const row = $("[data-tr-event].selected");
+      const body = $("[data-td-body]");
+      const map = {
+        result: row?.dataset.trDetail || "这一行没有结果。",
+        payload: ($(".tr-main", row)?.textContent || "").replace(/^\S+\s*/, "") || "无入参",
+        timing: $(".tr-extra", row)?.textContent || "无耗时记录",
+      };
+      if (body) body.textContent = map[target.dataset.tdTab];
+      return;
+    }
+
+    if (target.dataset.trToggle) {
+      const key = target.dataset.trToggle;
+      const on = target.classList.toggle("active");
+      const shell = target.closest(".trace-main");
+      if (key === "duration") shell.classList.toggle("no-duration", !on);
+      if (key === "turns") $$(".tr-row.user, .tr-row.system", shell).forEach((r) => (r.hidden = on));
+      if (key === "calls") $$(".tr-row.tool", shell).forEach((r) => (r.hidden = on));
+      refreshTraceCount();
+      return;
+    }
+
     if (target.dataset.pickModel) {
       comboState.model = target.dataset.pickModel;
       syncCombo();
+  refreshTraceCount();
       if (target.dataset.advice) showToast(`不建议：${target.dataset.advice}`);
       return;
     }
 
-    if (target.dataset.pickRoom) {
-      comboState.room = target.dataset.pickRoom;
-      $$("[data-pick-room]").forEach((b) => b.classList.toggle("active", b === target));
-      syncCombo();
+    if (target.dataset.projectTab) {
+      const card = target.closest(".project-card");
+      if (card) {
+        const name = target.dataset.projectTab;
+        $$("[data-project-tab]", card).forEach((b) => b.classList.toggle("active", b === target));
+        $$("[data-project-body]", card).forEach((body) => (body.hidden = body.dataset.projectBody !== name));
+      }
+      return;
+    }
+
+    if (target.dataset.gotoPane) {
+      // 轨迹不再是独立 tab：它是会话面里那条可放大的副栏
+      if (target.dataset.gotoPane === "trace") {
+        setPane("thread");
+        setSplitLayout("thread", "aside");
+        return;
+      }
+      setPane(target.dataset.gotoPane);
+      return;
+    }
+
+    if (target.dataset.adoptNext) {
+      fillComposer(target.dataset.adoptNext);
+      showToast("已把建议写入输入框；可以直接改");
       return;
     }
 
@@ -907,26 +1310,41 @@
       return;
     }
 
-    if (target.dataset.pickMember) {
-      setMemberPicker(target.dataset.pickMember);
+    if (target.hasAttribute("data-account-new") || target.dataset.accountEdit) {
+      setAccountDialog(target.dataset.accountEdit ?? null);
       return;
     }
 
-    if (target.dataset.pickMemberId) {
-      const member = MEMBERS.find((m) => m.id === target.dataset.pickMemberId);
-      setMemberPicker(null);
-      if (member) startDispatch("@" + member.name);
+    if (target.hasAttribute("data-account-close")) {
+      setAccountDialog(false);
+      return;
+    }
+
+    if (target.dataset.accountMode) {
+      setAccountMode(target.dataset.accountMode);
+      return;
+    }
+
+    if (target.dataset.pickCombo) {
+      setComboPicker(target.dataset.pickCombo);
+      return;
+    }
+
+    if (target.dataset.pickComboId) {
+      const combo = COMBOS.find((c) => c.id === target.dataset.pickComboId);
+      setComboPicker(null);
+      if (combo) startDispatch(combo.id);
       return;
     }
 
     if (target.hasAttribute("data-picker-close")) {
-      setMemberPicker(null);
+      setComboPicker(null);
       return;
     }
 
-    if (target.hasAttribute("data-picker-goto-library")) {
-      setMemberPicker(null);
-      setSurface("library");
+    if (target.hasAttribute("data-picker-goto-settings")) {
+      setComboPicker(null);
+      setSurface("settings");
       return;
     }
 
@@ -934,8 +1352,6 @@
       cancelDispatch();
       return;
     }
-
-    if (target.classList.contains("editor-tab")) pinTab(target);
 
     if (target.dataset.open) {
       openDocument(target.dataset.open, target.dataset.label || documentMeta[target.dataset.open]?.[1], {
@@ -1023,12 +1439,12 @@
     const prefill = target.dataset.roomPrefill || target.dataset.threadPrefill;
     if (prefill) {
       fillComposer(prefill);
-      showToast("已把建议指令写入输入框；可以修改成员或要求");
+      showToast("已把建议指令写入输入框；可以改执行组合或要求");
       return;
     }
 
     if (target.hasAttribute("data-prefill-evidence")) {
-      fillComposer("@独立验证员\n请验证竞态与归档回放，并附上测试命令、原始输出和明确结论。");
+      fillComposer("@claude-sonnet5-medium\n请验证竞态与归档回放，并附上测试命令、原始输出和明确结论。");
       showToast("已预填补充验证指令");
       return;
     }
@@ -1057,7 +1473,7 @@
     if (target.dataset.commandAction) {
       const action = target.dataset.commandAction;
       setCommand(false);
-      if (action === "picker") { setMemberPicker(target.dataset.target); return; }
+      if (action === "picker") { setComboPicker(target.dataset.target); return; }
       if (action === "document") openDocument(target.dataset.target, documentMeta[target.dataset.target]?.[1]);
       if (action === "surface") setSurface(target.dataset.target);
       return;
@@ -1068,11 +1484,14 @@
 
   syncOverview(state.document);
   syncCombo();
+  setIssueTab("recent");
   setPane("overview");
   setContextScope(state.contextScope);
   refreshPaneCounts();
 
   // 搜索只有一处：顶栏主搜索框。输入即筛左栏任务列表。
+  $("[data-tr-search]")?.addEventListener("input", (event) => filterTrace(event.currentTarget.value));
+
   $("[data-depth-range]")?.addEventListener("input", (event) => {
     const row = currentModelRow();
     const allowed = (row?.dataset.depths || "low,medium,high").split(",");
@@ -1109,7 +1528,7 @@
       const summary = $(".room-thread-heading > small");
       if (summary) summary.textContent = "Independent validation 已加入队列 · 将自动携带上一步产出与证据";
     }
-    showToast("指令已加入协作现场；静态原型不会启动真实 AI 成员");
+    showToast("指令已加入协作现场；静态原型不会真的派工");
   });
 
   $("[data-thread-form]")?.addEventListener("submit", (event) => {
@@ -1132,16 +1551,33 @@
     showToast("指令已加入任务主会话；后续会自动携带任务上下文");
   });
 
+  // 建完就开跑：这一条和「谁来做等会儿再说」的默认不同——用户在弹窗里
+  // 已经选了执行模型，那就说明他现在就要它动起来。所以直接落到会话视图，
+  // 并且把第一轮派工写进流里，而不是丢回概览让他再点一次。
+  $("[data-account-form]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setAccountDialog(false);
+    showToast("静态原型不保存凭据；真实实现会保存后立刻做一次连通与 key 有效性检查");
+  });
+
   $("[data-task-create-form]")?.addEventListener("submit", (event) => {
     event.preventDefault();
+    const combo = $("[data-task-model]")?.textContent ?? "codex-gpt5.6-high";
+    const goal = $("[data-task-title]")?.value.trim() || "新任务";
     setTaskCreate(false);
     setSurface("project");
     openDocument("issue-running", documentMeta["issue-running"][1]);
-    showToast("任务已创建并进入安全队列；重复提交不会创建第二份任务");
+    setPane("thread");
+    appendRoomMessage(goal);
+    showToast(`任务已创建，已派给 ${combo} 并开始执行`);
   });
 
-  $("[data-member-picker]")?.addEventListener("click", (event) => {
-    if (event.target === event.currentTarget) setMemberPicker(null);
+  $("[data-account-dialog]")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) setAccountDialog(false);
+  });
+
+  $("[data-combo-picker]")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) setComboPicker(null);
   });
 
   $("[data-command-overlay]")?.addEventListener("click", (event) => {
@@ -1159,6 +1595,36 @@
     }
   });
 
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest("[data-label-menu], [data-label-menu-toggle]")) setLabelMenu(false);
+  });
+
+  document.addEventListener("input", (event) => {
+    if (event.target.matches("[data-tree-filter]")) filterFileTree(event.target.value);
+  });
+
+  $("[data-thread-composer]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = $("[data-thread-input]");
+    const text = input?.value.trim();
+    if (!text) {
+      showToast("先写点什么再发");
+      return;
+    }
+    const stream = $('[data-thread-pane]:not([hidden]) .message-stream');
+    if (stream) {
+      const message = document.createElement("div");
+      message.className = "message user-message";
+      message.innerHTML = '<span class="member-avatar user">我</span><div><header><strong>我</strong><time>现在</time></header><p></p></div>';
+      $("p", message).textContent = text;
+      stream.appendChild(message);
+      message.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    input.value = "";
+    showToast("已发送；独立会话不产生验收，也不写记忆");
+  });
+
+  setThreadTab("solo");
   setLayout(state.layout);
   setExplorer(state.explorer);
   openDocument(state.document, documentMeta[state.document][1]);
