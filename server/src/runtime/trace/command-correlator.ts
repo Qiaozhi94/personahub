@@ -13,6 +13,7 @@ import { redactCommand, redactSummary } from "./redaction.js";
 import { classifyVerificationCommand } from "./verification-classifier.js";
 import { TRACE_LIMITS } from "./constants.js";
 import { normalizeWorkspacePath } from "./path-utils.js";
+import { buildEvidenceRef } from "../../evidence-ref.js";
 
 interface RunContext {
   run: Run;
@@ -219,7 +220,7 @@ export class CommandCorrelator {
         summary,
         confidence: EvidenceConfidence.Confirmed,
       },
-      [`event:${completedEvent.id}`],
+      [buildEvidenceRef("event", completedEvent.id)],
     );
   }
 
@@ -236,10 +237,10 @@ export class CommandCorrelator {
 
   private buildCompletedRefs(startedEventId: string | null, outputEventIds: string[]): string[] {
     const refs: string[] = [];
-    if (startedEventId) refs.push(`event:${startedEventId}`);
+    if (startedEventId) refs.push(buildEvidenceRef("event", startedEventId));
     const limitedOutput = outputEventIds.slice(0, TRACE_LIMITS.outputRefMax);
     for (const id of limitedOutput) {
-      refs.push(`event:${id}`);
+      refs.push(buildEvidenceRef("event", id));
     }
     return refs;
   }

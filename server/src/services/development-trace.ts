@@ -20,6 +20,7 @@ import { captureSnapshot, diffSnapshots, snapshotToJson, snapshotFromJson } from
 import { buildHandoff } from "./handoff-builder.js";
 import { buildTraceCompleteness } from "./trace-completeness.js";
 import { FINALIZATION_RETRY_MAX, SCAN_REASON_CODES, TRACE_LIMITS } from "../runtime/trace/constants.js";
+import { buildEvidenceRef } from "../evidence-ref.js";
 
 export interface PrepareRunInput {
   run: Run;
@@ -263,7 +264,7 @@ export class DevelopmentTraceService {
         const fileEvent = this.threadEventService.write(
           run.thread_id, ThreadEventType.FileChangeSummary,
           ActorType.System, null, fileSummary,
-          [`file-change-set:${run.id}`],
+          [buildEvidenceRef("file_change_set", run.id)],
         );
         pendingBroadcasts.push(fileEvent);
         fileEventId = fileEvent.id;
@@ -297,11 +298,11 @@ export class DevelopmentTraceService {
     const refs: string[] = [];
     for (const e of events) {
       if (e.type === ThreadEventType.CommandCompleted || e.type === ThreadEventType.TestCompleted) {
-        refs.push(`event:${e.id}`);
+        refs.push(buildEvidenceRef("event", e.id));
       }
     }
     if (fileEventId) {
-      refs.push(`event:${fileEventId}`);
+      refs.push(buildEvidenceRef("event", fileEventId));
     }
     return [...new Set(refs)];
   }

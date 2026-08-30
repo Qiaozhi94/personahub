@@ -5,6 +5,12 @@ import type { ThreadEventRepository } from "../repositories/thread-event.js";
 import type { FileChangeRepository } from "../repositories/file-change.js";
 import type { RunRepository } from "../repositories/run.js";
 import type { RunTraceRepository } from "../repositories/run-trace.js";
+import { parseEvidenceRef } from "../evidence-ref.js";
+
+// ADR 0014 P4: ref 词汇（构造 + 解析）现由 `server/src/evidence-ref.ts` 唯一拥有。
+// 这里保留再导出，使既有 `services/evidence.js` 导入路径不变。
+export { buildEvidenceRef, parseEvidenceRef } from "../evidence-ref.js";
+export type { EvidenceRefKind, ParsedRef, ParsedRefKind } from "../evidence-ref.js";
 
 export interface EvidenceScope {
   issueId: string;
@@ -12,10 +18,6 @@ export interface EvidenceScope {
   runId?: string;
 }
 
-export interface ParsedRef {
-  kind: "event" | "file_change_set" | "unknown";
-  id: string;
-}
 
 const TRUSTED_INTERNAL_ALLOWLIST = new Set<string>([
   "command.started",
@@ -30,25 +32,6 @@ const TRUSTED_INTERNAL_ALLOWLIST = new Set<string>([
   "run.interrupted",
   "graph.node_result",
 ]);
-
-export function parseEvidenceRef(ref: string): ParsedRef {
-  if (typeof ref !== "string" || ref.length === 0) {
-    return { kind: "unknown", id: "" };
-  }
-  const colonIdx = ref.indexOf(":");
-  if (colonIdx < 0) {
-    return { kind: "unknown", id: ref };
-  }
-  const prefix = ref.substring(0, colonIdx);
-  const id = ref.substring(colonIdx + 1);
-  if (prefix === "event") {
-    return { kind: "event", id };
-  }
-  if (prefix === "file-change-set") {
-    return { kind: "file_change_set", id };
-  }
-  return { kind: "unknown", id };
-}
 
 function dedupeRefs(refs: string[]): string[] {
   const seen = new Set<string>();

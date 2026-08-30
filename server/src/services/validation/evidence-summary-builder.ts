@@ -18,6 +18,7 @@ export type {
   SummaryRunIdentity,
   SummaryVerificationEvent,
 } from "./evidence-summary-contract.js";
+import { buildEvidenceRef } from "../../evidence-ref.js";
 
 export const SUMMARY_MAX_BYTES = 256 * 1024;
 export const SUMMARY_REFS_MAX = 500;
@@ -67,16 +68,16 @@ function dedupePreserveOrder(refs: string[]): string[] {
 
 export function aggregateEvidenceRefs(input: EvidenceSummaryBuildInput): string[] {
   const refs: string[] = [];
-  refs.push(`event:${input.passEventId}`);
+  refs.push(buildEvidenceRef("event", input.passEventId));
   refs.push(...input.result.evidence_refs);
   if (input.handoff) {
-    refs.push(`file-change-set:${input.implementationRun.id}`);
+    refs.push(buildEvidenceRef("file_change_set", input.implementationRun.id));
   }
   for (const v of input.verifications) {
-    refs.push(`event:${v.id}`);
+    refs.push(buildEvidenceRef("event", v.id));
   }
   for (const cmd of input.commands) {
-    refs.push(`event:${cmd.id}`);
+    refs.push(buildEvidenceRef("event", cmd.id));
   }
   const deduped = dedupePreserveOrder(refs);
   return deduped.slice(0, SUMMARY_REFS_MAX);
@@ -169,7 +170,7 @@ function buildVerificationEvidence(verifications: SummaryVerificationEvent[]): s
 
 function buildChangedFiles(fileChanges: SummaryFileChange[], implementationRunId: string, truncated: boolean): string {
   const safe = fileChanges.filter((fc) => !isAbsoluteLike(fc.path) && !fc.path.includes(".."));
-  const ref = `file-change-set:${implementationRunId}`;
+  const ref = buildEvidenceRef("file_change_set", implementationRunId);
   if (safe.length === 0) {
     return `## Changed Files\n\n*No file changes recorded.*\n\n**File Change Set Ref:** ${ref}`;
   }

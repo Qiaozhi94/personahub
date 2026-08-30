@@ -9,6 +9,7 @@ import {
   CommandTraceCapability,
 } from "@personahub/shared/types";
 import { parseEvidenceRef, EvidenceService } from "../../src/services/evidence.js";
+import { buildEvidenceRef } from "../../src/evidence-ref.js";
 import { AppError } from "../../src/api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
 
@@ -65,6 +66,30 @@ describe("Evidence Ref Parser/Resolver (T016)", () => {
     it("returns unknown for empty string", () => {
       const parsed = parseEvidenceRef("");
       expect(parsed.kind).toBe("unknown");
+    });
+  });
+
+  // ADR 0014 P4: 构造侧收敛到 buildEvidenceRef 后，构造与解析必须是同一张前缀表的
+  // 两个方向——任何一侧被单独改动都会让这些断言失败。
+  describe("buildEvidenceRef", () => {
+    it("builds the event wire form", () => {
+      expect(buildEvidenceRef("event", "evt_123")).toBe("event:evt_123");
+    });
+
+    it("builds the file-change-set wire form", () => {
+      expect(buildEvidenceRef("file_change_set", "run_456")).toBe("file-change-set:run_456");
+    });
+
+    it("round-trips every known kind through parseEvidenceRef", () => {
+      for (const kind of ["event", "file_change_set"] as const) {
+        const parsed = parseEvidenceRef(buildEvidenceRef(kind, "id_1"));
+        expect(parsed).toEqual({ kind, id: "id_1" });
+      }
+    });
+
+    it("keeps ids containing a colon intact through a round trip", () => {
+      const parsed = parseEvidenceRef(buildEvidenceRef("event", "evt:with:colons"));
+      expect(parsed).toEqual({ kind: "event", id: "evt:with:colons" });
     });
   });
 

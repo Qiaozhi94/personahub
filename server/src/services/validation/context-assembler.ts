@@ -11,6 +11,7 @@ import {
   type ContextPriorFinding,
   type ContextVerificationEvent,
 } from "./context-builder.js";
+import { buildEvidenceRef } from "../../evidence-ref.js";
 
 /**
  * Collects the persisted implementation evidence for one implementation Run and
@@ -68,7 +69,7 @@ function collectVerifications(
     kind: (e.payload_json.kind as string) ?? "test",
     result: (e.payload_json.result as string) ?? "unknown",
     command: (e.payload_json.command as string) ?? null,
-    evidence_ref: `event:${e.id}`,
+    evidence_ref: buildEvidenceRef("event", e.id),
   }));
   return { items, truncated };
 }
@@ -126,7 +127,7 @@ export function assembleValidatorContext(
     handoff,
     verifications,
     fileChanges,
-    fileChangeSetRef: `file-change-set:${params.implementationRunId}`,
+    fileChangeSetRef: buildEvidenceRef("file_change_set", params.implementationRunId),
     priorFindings,
     traceCompleteness,
     validationRound: params.validationRound,

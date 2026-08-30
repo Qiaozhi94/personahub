@@ -11,6 +11,7 @@ import {
   FileChangeType,
 } from "@personahub/shared/types";
 import { TRACE_LIMITS } from "../runtime/trace/constants.js";
+import { buildEvidenceRef } from "../evidence-ref.js";
 
 export interface HandoffFileChange {
   path: string;
@@ -220,7 +221,7 @@ function buildFileSummary(
   return {
     total: fileChanges.length,
     scan_status: fileScanStatus,
-    ref: `file-change-set:${runId}`,
+    ref: buildEvidenceRef("file_change_set", runId),
   };
 }
 
@@ -231,10 +232,10 @@ function collectEvidenceRefs(
 ): string[] {
   const refs: string[] = [];
   for (const cmd of commands) {
-    refs.push(`event:${cmd.id}`);
+    refs.push(buildEvidenceRef("event", cmd.id));
   }
   for (const test of tests) {
-    refs.push(`event:${test.id}`);
+    refs.push(buildEvidenceRef("event", test.id));
   }
   if (fileSummary) {
     refs.push(fileSummary.ref);

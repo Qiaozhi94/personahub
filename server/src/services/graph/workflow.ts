@@ -17,6 +17,7 @@ import type { AdapterResolverDeps } from "../adapter-resolver.js";
 import { resolveEligibleAdapter } from "../adapter-eligibility.js";
 import { mapGraphConstraint } from "../../db/sqlite-errors.js";
 import type Database from "better-sqlite3";
+import { buildEvidenceRef } from "../../evidence-ref.js";
 
 export interface GraphWorkflowDeps {
   graphRunRepo: GraphRunRepository;
@@ -150,7 +151,7 @@ export function evaluateJoinAndTrigger(
 
         for (const je of joinGroupEdges) {
           const predNodeRun = deps.nodeRunRepo.getByGraphRunAndKey(graphRun.id, je.from);
-          const edgeRefs = predNodeRun?.result_event_id ? [`event:${predNodeRun.result_event_id}`] : [];
+          const edgeRefs = predNodeRun?.result_event_id ? [buildEvidenceRef("event", predNodeRun.result_event_id)] : [];
           const edgeEvent = deps.threadEventService.write(
             graphRun.thread_id,
             ThreadEventType.GraphEdgeTraversed,

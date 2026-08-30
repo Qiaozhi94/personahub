@@ -22,6 +22,7 @@ import type { ThreadEvent } from "@personahub/shared/types";
 import type { ThreadEventService } from "../../services/thread-event.js";
 import type { RunDispatchService } from "../../services/run-dispatch.js";
 import { RunRole, RunPurpose, RunStatus, ThreadEventType, ActorType, NodeRunStatus, IssueStatus, GraphRunStatus } from "@personahub/shared/types";
+import { buildEvidenceRef } from "../../evidence-ref.js";
 
 interface GraphRouteDeps {
   graphRunRepo: GraphRunRepository;
@@ -414,7 +415,7 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
 
           for (const edge of incomingEdges) {
             const predNodeRun = nodeRunRepo.getByGraphRunAndKey(graphRunId, edge.from);
-            const edgeRefs = predNodeRun?.result_event_id ? [`event:${predNodeRun.result_event_id}`] : [];
+            const edgeRefs = predNodeRun?.result_event_id ? [buildEvidenceRef("event", predNodeRun.result_event_id)] : [];
             const edgeEvent = deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphEdgeTraversed, ActorType.System, null,
               { from_node_key: edge.from, to_node_key: target.nodeKey, outcome: "completed", decided_by: "deterministic_join" }, edgeRefs);
             pendingBroadcasts.push(edgeEvent);
