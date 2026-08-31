@@ -34,6 +34,9 @@ await page.addStyleTag({ content: "*,*::before,*::after{animation:none!important
 
 async function capture(file, title, kind) {
   const target = path.join(shotsDir, file);
+  // toast 活 2200ms，导出比它快，于是每张参考图的右下角都冻着一条提示，
+  // 盖住的往往是长表格最后一列的正文。截图前先把它收掉。
+  await page.evaluate(() => document.querySelector("[data-toast]")?.classList.remove("show"));
   await page.screenshot({ path: target, fullPage: true });
   exports.push({ file, title, kind });
 }
@@ -131,6 +134,17 @@ await page.locator('[data-room-panel="primary"]').waitFor({ state: "visible" });
 await openDocument({ id: "room-view", explorer: "library", host: "issue-research", file: "room-tmp.png", title: "临时", kind: "temporary" });
 fs.unlinkSync(path.join(shotsDir, "room-tmp.png"));
 exports.pop();
+// 轨迹副栏：概览分段条 + 事件表格。没有这张，改概览条时没有参考图可对照。
+await page.locator('[data-pane-tabs] [data-pane-tab="thread"]').click();
+await page.locator("[data-waterfall]").waitFor({ state: "visible" });
+// 副栏有自己的滚动条，初始不在顶部——不滚回去，概览条就不在画面里
+await page.locator("[data-waterfall]").evaluate((el) => {
+  // 滚动的容器是 .task-pane（副栏的祖先），不是副栏本身——逐级往上全部归零
+  for (let n = el; n && n !== document.body; n = n.parentElement) n.scrollTop = 0;
+  el.closest("[data-aside]")?.querySelectorAll("*").forEach((n) => (n.scrollTop = 0));
+});
+await capture("task-trace.png", "任务 · 会话与轨迹副栏（概览分段条）", "task-pane");
+
 await page.locator('[data-pane-tabs] [data-pane-tab="acceptance"]').click();
 await page.locator('[data-pick-combo="synthesizer"]').click();
 await page.locator("[data-combo-picker]:visible").waitFor({ state: "visible" });

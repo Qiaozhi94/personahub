@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-31T15:51:54.169Z",
+  "generatedAt": "2026-08-31T17:44:40.022Z",
   "source": "file:///D:/Projects/personahub/ui-reference/personahub-draft/personahub-v3.1/index.html",
   "viewport": "1440x900",
-  "count": 31,
+  "count": 32,
   "exports": [
     {
       "file": "workbench.png",
@@ -98,6 +98,11 @@
       "file": "knowledge-skill.png",
       "title": "Skill candidate · 前端原型验证",
       "kind": "project-document"
+    },
+    {
+      "file": "task-trace.png",
+      "title": "任务 · 会话与轨迹副栏（概览分段条）",
+      "kind": "task-pane"
     },
     {
       "file": "combo-picker.png",

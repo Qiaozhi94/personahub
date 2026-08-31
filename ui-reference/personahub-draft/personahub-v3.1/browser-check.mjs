@@ -856,44 +856,55 @@ await check("轨迹并入会话：默认陪着会话，按 ⤢ 放大成全宽�
   if ((await split.getAttribute("data-layout")) !== "both") throw new Error("再按一次没有还原");
 });
 
-await check("轨迹概览是三条泳道：输入 / 模型 / 工具（照 harness）", async () => {
+await check("轨迹概览是一条占比分段条：时间花在哪，未计入的单独成段", async () => {
   await openTrace();
   const tl = page.locator("[data-waterfall]");
-  if (!(await tl.isVisible())) throw new Error("轨迹上方没有概览泳道");
-
-  // 就三条，不是逐调用一行的甘特图
-  const labels = await tl.locator(".tl-labels > span").allInnerTexts();
-  if (labels.join("/") !== "输入/模型/工具") throw new Error(`泳道应是 输入/模型/工具，实际 ${labels}`);
+  if (!(await tl.isVisible())) throw new Error("轨迹上方没有概览条");
+  if (await tl.locator(".tl-labels").count()) throw new Error("还留着三泳道的标签列");
   if (await tl.locator(".wf-row").count()) throw new Error("还留着逐行甘特图");
 
-  // 记录按 kind 投影到泳道：tool→2、message→1、其余→0（harness 的 laneFor）
-  for (const [kind, lane] of [["tool", "2"], ["message", "1"], ["user", "0"], ["system", "0"]]) {
-    const sp = tl.locator(`[data-tl-span="${kind}"]`).first();
-    if (!(await sp.count())) throw new Error(`缺少 ${kind} 的条`);
-    const top = await sp.evaluate((el) => getComputedStyle(el).getPropertyValue("--sp-lane").trim());
-    if (top !== lane) throw new Error(`${kind} 应在泳道 ${lane}，实际 ${top}`);
+  // 四段：输入 / 模型 / 工具 / 未计入
+  const segs = await tl.locator(".tl-seg").evaluateAll((els) =>
+    els.map((e) => ({ kind: e.dataset.tlSeg, w: e.getBoundingClientRect().width })),
+  );
+  if (segs.map((s) => s.kind).join("/") !== "input/model/tool/unmeasured") {
+    throw new Error(`分段应是 input/model/tool/unmeasured，实际 ${segs.map((s) => s.kind)}`);
   }
 
-  // 整块要矮：概览条不该抢事件表格的位置
+  // 宽度按真实占比，不是等宽装饰
+  if (new Set(segs.map((s) => Math.round(s.w))).size < 3) throw new Error("四段等宽——不是按真实计时画的");
+  const bar = await tl.locator(".tl-bar").boundingBox();
+  const covered = segs.reduce((a, s) => a + s.w, 0);
+  if (covered < bar.width * 0.9) throw new Error("分段没有铺满整条：剩下的时间去哪了没有交代");
+
+  // 计时不可信的时间单独成段，不摊进前三段——沿用「不伪造 0ms」
+  const un = tl.locator('.tl-seg[data-tl-seg="unmeasured"]');
+  const bg = await un.evaluate((el) => getComputedStyle(el).backgroundImage);
+  if (!bg.includes("repeating-linear-gradient")) throw new Error("未计入段被画成了实心色，看着像实测出来的");
+  const title = await un.getAttribute("title");
+  if (!title.includes("仍在执行") || !title.includes("计时未知")) {
+    throw new Error("未计入段没说清它是由什么构成的");
+  }
+
+  // 高度恒定：固定两行（条形 + 图例），都不换行，所以不随栏宽或字号漂移。
+  // 上限留出余量——这条断言要拦的是「又变回三泳道」那一类回退（94px），
+  // 不是把某个字号锁死。
   const h = (await tl.boundingBox()).height;
-  if (h > 90) throw new Error(`概览条 ${h}px 太高，harness 的只有三行泳道`);
-
-  // 计时未知画空心，绝不伪造 0ms
-  const unknown = tl.locator(".tl-span.unknown").first();
-  const bg = await unknown.evaluate((el) => getComputedStyle(el).backgroundColor);
-  if (!/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) throw new Error(`计时未知的条被填成实心 ${bg}`);
-  if (!(await unknown.getAttribute("title")).includes("不伪造 0ms")) throw new Error("空心条没说明为什么是空的");
-  if (!(await tl.locator(".tl-span.running").count())) throw new Error("缺少进行中的条");
-
-  // 宽度按真实时长，不是等宽装饰
-  const widths = await tl.locator(".tl-span.measured").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().width));
-  if (new Set(widths.map(Math.round)).size < 3) throw new Error("条形等宽——不是按真实计时画的");
-
-  // 点条 = 选中表格里同一条事件
-  await tl.locator('[data-wf-jump*="bash npm test ·"]').first().click();
-  if (!(await page.locator(".tr-row.selected").innerText()).includes("npm test")) {
-    throw new Error("点泳道没有联动到事件表格");
+  if (h > 72) throw new Error(`概览条 ${h}px 太高：应该只有一条分段条 + 一行图例`);
+  if ((await tl.locator(".tl-legend").boundingBox()).height > 24) {
+    throw new Error("图例换行了——高度又跟栏宽绑上了");
   }
+
+  // 点一段 = 表格筛到这一类
+  const before = await page.locator("[data-tr-event]:visible").count();
+  await tl.locator('.tl-seg[data-tl-seg="tool"]').click();
+  const after = await page.locator("[data-tr-event]:visible").count();
+  if (after >= before) throw new Error("点分段没有把表格筛到这一类");
+  if (await page.locator("[data-tr-event]:visible:not(.tool)").count()) {
+    throw new Error("筛完还留着别的类型的事件");
+  }
+  await tl.locator('.tl-seg[data-tl-seg="tool"]').click();
+  if ((await page.locator("[data-tr-event]:visible").count()) !== before) throw new Error("再点一次没有取消筛选");
 });
 
 await check("轨迹是 adapter 的详细交互过程，不是会话总结（照 deepseek-harness）", async () => {

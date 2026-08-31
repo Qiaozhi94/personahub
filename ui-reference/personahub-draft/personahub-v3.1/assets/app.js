@@ -297,6 +297,33 @@
     if (el) el.textContent = `${rows.length} 条事件`;
   }
 
+  // 分段条的四类到表格行的映射。「未计入」不是一类事件，而是「计时不可信」
+  // 的那些行：计时未知的、仍在执行的。它单独成段就是为了不被当成实测时间。
+  const TRACE_KINDS = {
+    input: (row) => row.classList.contains("system") || row.classList.contains("user"),
+    model: (row) => row.classList.contains("assistant") || row.classList.contains("req"),
+    tool: (row) => row.classList.contains("tool"),
+    unmeasured: (row) =>
+      row.textContent.includes("计时未知") || row.textContent.includes("进行中"),
+  };
+  let traceKind = "";
+
+  function filterTraceByKind(kind) {
+    traceKind = kind;
+    const match = TRACE_KINDS[kind];
+    $$("[data-tr-event]").forEach((row) => {
+      row.hidden = Boolean(match) && !match(row);
+    });
+    $$(".tr-turn").forEach((t) => (t.hidden = Boolean(kind)));
+    $$("[data-tl-seg]").forEach((el) => {
+      el.classList.toggle("active", Boolean(kind) && el.dataset.tlSeg === kind);
+      if (el.classList.contains("tl-seg")) {
+        el.classList.toggle("dimmed", Boolean(kind) && el.dataset.tlSeg !== kind);
+      }
+    });
+    refreshTraceCount();
+  }
+
   function filterTrace(value) {
     const q = value.trim().toLowerCase();
     $$("[data-tr-event]").forEach((row) => {
@@ -1082,17 +1109,10 @@
       return;
     }
 
-    // 点泳道条 = 选中表格里对应的那条事件，两者是同一份数据的两种画法
-    if (target.dataset.wfJump) {
-      // 标签形如「TOOL bash npm test · 3m18s」：去掉 kind 前缀和耗时后缀才是键
-      // 表格行里 `bash` 和 `npm test` 被 JSON 入参隔开，整串匹配不到，按词匹配
-      const words = target.dataset.wfJump.replace(/^[A-Z]+\s+/, "").split(" · ")[0].split(/\s+/);
-      $$(".tl-span").forEach((sp) => sp.classList.toggle("selected", sp === target));
-      const row = $$("[data-tr-event]").find((r) => words.every((w) => r.textContent.includes(w)));
-      if (row) {
-        selectTraceEvent(row);
-        row.scrollIntoView({ block: "center", behavior: "smooth" });
-      }
+    // 点分段条（或图例）= 把表格筛到这一类事件。概览与表格是同一份数据的
+    // 两种画法：概览答「时间花在哪」，表格答「具体做了什么」。
+    if (target.dataset.tlSeg) {
+      filterTraceByKind(traceKind === target.dataset.tlSeg ? "" : target.dataset.tlSeg);
       return;
     }
 

@@ -304,7 +304,7 @@ kbd {
 }
 
 .message p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.65;
 }
 
@@ -407,7 +407,7 @@ kbd {
   border-radius: 6px;
   background: var(--text);
   color: var(--bg);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 750;
 }
 
@@ -424,13 +424,13 @@ kbd {
 
 .scope-copy small {
   color: var(--faint);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .scope-copy strong {
   overflow: hidden;
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -441,7 +441,7 @@ kbd {
   border-radius: 4px;
   background: var(--panel-3);
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .scope-divider {
@@ -469,7 +469,7 @@ kbd {
   border-radius: 5px;
   background: transparent;
   color: transparent;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: -1px;
   cursor: pointer;
 }
@@ -490,7 +490,7 @@ kbd {
   box-shadow: 0 10px 26px color-mix(in oklab, var(--text) 12%, transparent);
 }
 .session-menu[hidden] { display: none; }
-.session-menu button { padding: 6px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--text); font-size: 8px; text-align: left; cursor: pointer; }
+.session-menu button { padding: 6px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--text); font-size: 10px; text-align: left; cursor: pointer; }
 .session-menu button:hover { background: var(--panel-3); }
 .session-menu button.danger { color: var(--red); }
 
@@ -498,8 +498,8 @@ kbd {
 .work-child { margin: -2px 5px 5px 24px; display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 1px 5px; padding: 5px 7px; border: 0; border-left: 1px solid var(--border); border-radius: 0 4px 4px 0; background: transparent; color: var(--muted); text-align: left; cursor: pointer; }
 .work-child:hover { background: var(--panel-3); color: var(--text); }
 .work-child > span { grid-row: 1 / 3; color: var(--faint); }
-.work-child strong { overflow: hidden; font-size: 9px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
-.work-child small { color: var(--faint); font-size: 8px; }
+.work-child strong { overflow: hidden; font-size: 11px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.work-child small { color: var(--faint); font-size: 10px; }
 
 .explorer-heading {
   display: flex;
@@ -516,11 +516,11 @@ kbd {
 
 .explorer-heading small {
   color: var(--faint);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .explorer-heading strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -575,7 +575,7 @@ kbd {
 .room-thread-heading strong {
   min-width: 0;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -584,7 +584,7 @@ kbd {
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .room-conversation-scroll {
@@ -631,7 +631,7 @@ kbd {
 }
 
 .room-conversation .message header strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .room-conversation .message > div > p {
@@ -640,7 +640,7 @@ kbd {
   border-radius: 16px;
   background: var(--panel-3);
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -658,7 +658,7 @@ kbd {
 
 .room-event p {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .room-conversation .message > div > button {
@@ -668,7 +668,7 @@ kbd {
 .room-conversation .message footer {
   margin-top: 5px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .agent-run-details {
@@ -681,7 +681,7 @@ kbd {
 .agent-run-details summary {
   padding: 7px 8px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -703,8 +703,8 @@ kbd {
 
 .agent-run-list button:hover { background: var(--panel-3); }
 .agent-run-list button > span { min-width: 0; display: grid; gap: 1px; }
-.agent-run-list strong { font-size: 9px; }
-.agent-run-list small { overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.agent-run-list strong { font-size: 11px; }
+.agent-run-list small { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .status-dot.running { background: var(--accent); }
 
 .room-conversation .handoff-draft { margin: 5px 0 8px; }
@@ -722,7 +722,7 @@ kbd {
 
 .fixed-handoff > div { min-width: 0; }
 .fixed-handoff p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fixed-handoff p button { padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 8px; cursor: pointer; }
+.fixed-handoff p button { padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 10px; cursor: pointer; }
 .fixed-handoff > button {
   flex: none;
   display: grid;
@@ -735,8 +735,8 @@ kbd {
   cursor: pointer;
 }
 .fixed-handoff > button:hover { background: var(--panel-3); }
-.fixed-handoff > button strong { font-size: 9px; }
-.fixed-handoff > button small { color: var(--muted); font-size: 7px; }
+.fixed-handoff > button strong { font-size: 11px; }
+.fixed-handoff > button small { color: var(--muted); font-size: 10px; }
 
 .room-conversation .room-composer {
   flex: none;
@@ -772,8 +772,8 @@ kbd {
   color: var(--text);
 }
 
-.composer-pause span { font-size: 10px; }
-.composer-pause b { font-size: 8px; font-weight: 550; }
+.composer-pause span { font-size: 11px; }
+.composer-pause b { font-size: 10px; font-weight: 550; }
 
 .message-trust-link {
   width: 100%;
@@ -787,8 +787,8 @@ kbd {
   text-align: left;
 }
 .message-trust-link > span { grid-row: 1 / 3; color: var(--yellow); font-weight: 700; }
-.message-trust-link strong { color: var(--text); font-size: 8px; }
-.message-trust-link small { color: var(--muted); font-size: 7px; }
+.message-trust-link strong { color: var(--text); font-size: 10px; }
+.message-trust-link small { color: var(--muted); font-size: 10px; }
 
 /* V2.2 — Clowder-inspired session overview */
 .room-overview.active {
@@ -812,8 +812,8 @@ kbd {
   margin-bottom: 8px;
 }
 
-.overview-card > header strong { font-size: 10px; }
-.overview-card > header span { color: var(--muted); font-size: 8px; }
+.overview-card > header strong { font-size: 11px; }
+.overview-card > header span { color: var(--muted); font-size: 10px; }
 
 .agent-status-list {
   display: grid;
@@ -837,14 +837,14 @@ kbd {
   margin: 0;
 }
 
-.agent-status-row p strong { font-size: 9px; }
-.agent-status-row p small { overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.agent-status-row p strong { font-size: 11px; }
+.agent-status-row p small { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 
 .agent-state {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 8px;
+  font-size: 10px;
   white-space: nowrap;
 }
 
@@ -878,24 +878,24 @@ kbd {
 }
 
 .message-stats-grid div:last-child { border-right: 0; }
-.message-stats-grid strong { font-size: 12px; }
-.message-stats-grid small { color: var(--muted); font-size: 7px; }
-.message-stats-card p { margin: 7px 0 0; color: var(--muted); font-size: 8px; }
+.message-stats-grid strong { font-size: 13px; }
+.message-stats-grid small { color: var(--muted); font-size: 10px; }
+.message-stats-card p { margin: 7px 0 0; color: var(--muted); font-size: 10px; }
 
 .session-card { display: grid; gap: 9px; }
 .session-card > header { margin-bottom: 0; }
 .session-primary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: 8px; }
 .session-primary > div { min-width: 0; display: grid; gap: 2px; padding: 8px; border-radius: calc(var(--radius) - 2px); background: var(--panel-2); }
-.session-primary > div small, .session-primary > div span { overflow: hidden; color: var(--muted); font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
-.session-primary > div strong { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.session-primary > div small, .session-primary > div span { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.session-primary > div strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .session-primary > button { min-width: 112px; display: grid; grid-template-columns: 14px 1fr; align-content: center; gap: 1px 5px; padding: 7px; border: 1px solid color-mix(in oklab, var(--yellow) 30%, var(--border)); border-radius: calc(var(--radius) - 2px); background: color-mix(in oklab, var(--yellow) 6%, var(--bg)); text-align: left; cursor: pointer; }
 .session-primary > button > span { grid-row: 1 / 3; color: var(--yellow); font-weight: 700; }
-.session-primary > button strong { font-size: 8px; }
-.session-primary > button small { color: var(--muted); font-size: 7px; }
+.session-primary > button strong { font-size: 10px; }
+.session-primary > button small { color: var(--muted); font-size: 10px; }
 .session-card dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
 .session-card dl div { min-width: 0; display: grid; gap: 2px; }
-.session-card dt { color: var(--muted); font-size: 7px; }
-.session-card dd { overflow: hidden; margin: 0; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.session-card dt { color: var(--muted); font-size: 10px; }
+.session-card dd { overflow: hidden; margin: 0; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 
 .plan-progress {
   height: 4px;
@@ -907,20 +907,20 @@ kbd {
 .plan-progress i { display: block; height: 100%; background: var(--accent); }
 .plan-card ol { display: grid; gap: 6px; margin: 9px 0 0; padding: 0; list-style: none; }
 .plan-card .detailed-plan li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); background: var(--panel-2); }
-.plan-card .detailed-plan li > span { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; color: var(--muted); font-size: 8px; }
+.plan-card .detailed-plan li > span { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; color: var(--muted); font-size: 10px; }
 .plan-card .detailed-plan li.done > span { border-color: color-mix(in oklab, var(--green) 45%, var(--border)); background: color-mix(in oklab, var(--green) 9%, var(--bg)); color: var(--green); }
 .plan-card .detailed-plan li.waiting > span { border-color: color-mix(in oklab, var(--yellow) 45%, var(--border)); color: var(--yellow); }
 .detailed-plan li > div { min-width: 0; display: grid; gap: 3px; }
 .detailed-plan header { display: flex; justify-content: space-between; gap: 8px; }
-.detailed-plan header strong { font-size: 8px; }
-.detailed-plan header b { color: var(--muted); font-size: 7px; font-weight: 500; white-space: nowrap; }
+.detailed-plan header strong { font-size: 10px; }
+.detailed-plan header b { color: var(--muted); font-size: 10px; font-weight: 500; white-space: nowrap; }
 .detailed-plan li.waiting header b { color: var(--yellow); }
-.detailed-plan p, .detailed-plan small { overflow: hidden; margin: 0; color: var(--muted); font-size: 7px; line-height: 1.45; text-overflow: ellipsis; white-space: nowrap; }
+.detailed-plan p, .detailed-plan small { overflow: hidden; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; text-overflow: ellipsis; white-space: nowrap; }
 
 .room-info-card dl { display: grid; gap: 6px; margin: 0; }
 .room-info-card dl div { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; }
-.room-info-card dt { color: var(--muted); font-size: 8px; }
-.room-info-card dd { overflow: hidden; margin: 0; color: var(--text); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.room-info-card dt { color: var(--muted); font-size: 10px; }
+.room-info-card dd { overflow: hidden; margin: 0; color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 
 /* V2.3 — result trust and visible file changes */
 .change-navigation {
@@ -941,26 +941,26 @@ kbd {
 }
 .change-navigation > span { min-width: 0; display: flex; align-items: center; gap: 7px; }
 .change-navigation i, .code-change-tools i { width: 3px; height: 14px; display: inline-block; border-radius: 999px; background: var(--green); }
-.change-navigation strong { font-size: 9px; }
-.change-navigation small { overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.change-navigation strong { font-size: 11px; }
+.change-navigation small { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .change-navigation > div, .code-change-tools { display: flex; align-items: center; gap: 4px; }
 .change-navigation button, .code-change-tools button { width: 25px; height: 24px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--muted); cursor: pointer; }
 .change-navigation button:hover, .code-change-tools button:hover { border-color: var(--border-strong); color: var(--text); }
 .changed-block { border-radius: 0 5px 5px 0; }
 .changed-block.compact p { margin: 6px 0; }
-.changed-block[data-change-label]::after { content: attr(data-change-label); position: absolute; top: 7px; right: 8px; padding: 2px 5px; border-radius: 999px; background: color-mix(in oklab, var(--green) 12%, var(--bg)); color: var(--green); font-size: 7px; }
+.changed-block[data-change-label]::after { content: attr(data-change-label); position: absolute; top: 7px; right: 8px; padding: 2px 5px; border-radius: 999px; background: color-mix(in oklab, var(--green) 12%, var(--bg)); color: var(--green); font-size: 10px; }
 .change-focus { outline: 2px solid color-mix(in oklab, var(--green) 55%, transparent); outline-offset: 3px; }
 .code-header { position: sticky; z-index: 8; top: 0; background: color-mix(in oklab, var(--panel) 96%, transparent); backdrop-filter: blur(12px); }
-.code-change-tools > span { display: inline-flex; align-items: center; gap: 6px; margin-right: 3px; color: var(--text); font-size: 8px; }
+.code-change-tools > span { display: inline-flex; align-items: center; gap: 6px; margin-right: 3px; color: var(--text); font-size: 10px; }
 .code-change-tools i { height: 11px; }
 .code-document .line { position: relative; }
 .code-document .line.change-start::after { content: attr(data-change-label); position: absolute; right: 18px; color: var(--green); font: 7px/1.6 Inter, "Segoe UI", sans-serif; }
 
 .trust-status { display: flex; align-items: center; gap: 7px; margin-bottom: 18px; padding: 9px 11px; border: 1px solid color-mix(in oklab, var(--green) 35%, var(--border)); border-radius: calc(var(--radius) - 1px); background: color-mix(in oklab, var(--green) 7%, var(--bg)); }
 .trust-status > span { color: var(--green); font-weight: 700; }
-.trust-status strong { font-size: 10px; }
-.trust-status b { padding: 3px 6px; border-radius: 999px; background: color-mix(in oklab, var(--green) 11%, var(--bg)); color: var(--green); font-size: 8px; font-weight: 550; }
-.trust-status small { margin-left: auto; color: var(--muted); font-size: 8px; }
+.trust-status strong { font-size: 11px; }
+.trust-status b { padding: 3px 6px; border-radius: 999px; background: color-mix(in oklab, var(--green) 11%, var(--bg)); color: var(--green); font-size: 10px; font-weight: 550; }
+.trust-status small { margin-left: auto; color: var(--muted); font-size: 10px; }
 .trust-status.pending { border-color: color-mix(in oklab, var(--yellow) 35%, var(--border)); background: color-mix(in oklab, var(--yellow) 7%, var(--bg)); }
 .trust-status.pending > span, .trust-status.pending b { color: var(--yellow); }
 .trust-status.pending b { background: color-mix(in oklab, var(--yellow) 11%, var(--bg)); }
@@ -972,12 +972,12 @@ kbd {
 .evidence-chain > span { align-self: center; color: var(--faint); }
 .evidence-chain button { min-width: 115px; display: grid; gap: 4px; padding: 10px; border: 1px solid var(--border); border-radius: calc(var(--radius) - 1px); background: var(--panel); text-align: left; cursor: pointer; }
 .evidence-chain button:hover { border-color: var(--border-strong); }
-.evidence-chain button small { color: var(--muted); font-size: 8px; }
-.evidence-chain button strong { font-size: 9px; }
+.evidence-chain button small { color: var(--muted); font-size: 10px; }
+.evidence-chain button strong { font-size: 11px; }
 .evidence-chain button.missing { border-style: dashed; border-color: color-mix(in oklab, var(--yellow) 40%, var(--border)); }
 .raw-evidence { margin-top: 18px; border-top: 1px solid var(--border); }
-.raw-evidence summary { padding: 12px 0; color: var(--muted); font-size: 9px; cursor: pointer; }
-.raw-evidence p { margin: 0; padding: 10px; border-radius: 5px; background: var(--panel-2); font-family: "Cascadia Code", Consolas, monospace; font-size: 9px; }
+.raw-evidence summary { padding: 12px 0; color: var(--muted); font-size: 11px; cursor: pointer; }
+.raw-evidence p { margin: 0; padding: 10px; border-radius: 5px; background: var(--panel-2); font-family: "Cascadia Code", Consolas, monospace; font-size: 11px; }
 .output-icon.pending { background: color-mix(in oklab, var(--yellow) 12%, var(--bg)); color: var(--yellow); }
 
 @media (max-width: 1100px) {
@@ -1017,7 +1017,7 @@ kbd {
   border-radius: 5px;
   background: transparent;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
   cursor: pointer;
 }
 
@@ -1032,54 +1032,36 @@ kbd {
 
 .room-dock { grid-template-rows: 48px 38px minmax(0, 1fr); }
 
-.collaboration-dock-header {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 7px 10px 6px 12px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel-2);
-}
-
-.collaboration-dock-header > div { min-width: 0; display: grid; grid-template-columns: auto 1fr; gap: 1px 6px; }
-.collaboration-dock-header small { color: var(--faint); font-size: 7px; text-transform: uppercase; letter-spacing: 0.08em; }
-.collaboration-dock-header strong { overflow: hidden; color: var(--text); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.collaboration-dock-header span { grid-column: 1 / -1; overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.collaboration-dock-header > button { width: 25px; height: 25px; flex: none; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--muted); cursor: pointer; }
-.collaboration-dock-header > button.active { border-color: var(--accent); color: var(--accent); }
-
 .room-tabs { grid-template-columns: repeat(3, 1fr); }
 .primary-conversation .fixed-thread-handoff { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 12px 6px; padding: 9px 10px; }
 .primary-conversation .fixed-thread-handoff[hidden], .room-conversation .fixed-handoff[hidden] { display: none !important; }
 .fixed-thread-handoff > div { min-width: 0; }
 .fixed-thread-handoff p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fixed-thread-handoff > button { flex: none; display: grid; gap: 1px; padding: 6px 8px; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); background: var(--bg); text-align: left; cursor: pointer; }
-.fixed-thread-handoff > button strong { font-size: 9px; }
-.fixed-thread-handoff > button small { color: var(--muted); font-size: 7px; }
+.fixed-thread-handoff > button strong { font-size: 11px; }
+.fixed-thread-handoff > button small { color: var(--muted); font-size: 10px; }
 
 .setup-content header > button { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); cursor: pointer; }
 .setup-summary { display: grid; gap: 10px; margin-top: 28px; }
 .setup-summary section { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
 .setup-summary section.current { border-color: color-mix(in oklab, var(--accent) 38%, var(--border)); }
-.setup-summary section > span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in oklab, var(--green) 12%, var(--bg)); color: var(--green); font-size: 11px; font-weight: 700; }
+.setup-summary section > span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in oklab, var(--green) 12%, var(--bg)); color: var(--green); font-size: 12px; font-weight: 700; }
 .setup-summary section.current > span { background: var(--accent-soft); color: var(--accent); }
 .setup-summary section div { display: grid; gap: 3px; }
-.setup-summary small { color: var(--faint); font-size: 8px; }
+.setup-summary small { color: var(--faint); font-size: 10px; }
 .setup-summary h3, .setup-summary p { margin: 0; }
-.setup-summary h3 { font-size: 12px; }
-.setup-summary p { color: var(--muted); font-size: 9px; }
-.setup-summary section > button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 9px; cursor: pointer; }
+.setup-summary h3 { font-size: 13px; }
+.setup-summary p { color: var(--muted); font-size: 11px; }
+.setup-summary section > button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; }
 .setup-summary section > button.primary-button { border-color: var(--text); background: var(--text); color: var(--bg); }
 
 .automation-rules { display: grid; gap: 10px; margin-top: 28px; }
 .automation-rules article { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
 .automation-rules article > div { min-width: 0; display: flex; align-items: center; gap: 10px; }
 .automation-rules p { min-width: 0; display: grid; gap: 3px; margin: 0; }
-.automation-rules strong { font-size: 11px; }
-.automation-rules small { color: var(--muted); font-size: 8px; }
-.automation-rules article > button { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); font-size: 8px; cursor: pointer; }
+.automation-rules strong { font-size: 12px; }
+.automation-rules small { color: var(--muted); font-size: 10px; }
+.automation-rules article > button { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); font-size: 10px; cursor: pointer; }
 
 /* 账号弹层复用新建任务弹层的外壳（同一种居中表单），只是字段布局不同 */
 .account-dialog { width: min(620px, calc(100vw - 40px)); display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); box-shadow: 0 24px 70px rgb(0 0 0 / 0.18); }
@@ -1087,24 +1069,24 @@ kbd {
 .account-dialog h2 { margin: 2px 0 0; font-size: 19px; }
 .account-dialog > header > button { border: 0; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; }
 .account-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; }
-.account-dialog > footer button:not(.primary-button) { padding: 7px 14px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer; }
+.account-dialog > footer button:not(.primary-button) { padding: 7px 14px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
 .account-dialog > footer button:not(.primary-button):hover { border-color: var(--accent); color: var(--accent); }
 .task-create-dialog { width: min(620px, calc(100vw - 40px)); display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); box-shadow: 0 24px 70px rgb(0 0 0 / 0.18); }
 .task-create-dialog > header { display: flex; align-items: start; justify-content: space-between; }
 .task-create-dialog h2 { margin: 2px 0 0; font-size: 19px; }
-.task-create-dialog small { color: var(--muted); font-size: 8px; }
+.task-create-dialog small { color: var(--muted); font-size: 10px; }
 .task-create-dialog > header button { border: 0; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; }
-.task-create-dialog > label { display: grid; gap: 6px; color: var(--muted); font-size: 9px; }
+.task-create-dialog > label { display: grid; gap: 6px; color: var(--muted); font-size: 11px; }
 .task-create-dialog textarea { min-height: 92px; padding: 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel-2); color: var(--text); resize: vertical; }
 .task-create-dialog > section { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); }
 .task-create-dialog > section div { display: grid; gap: 3px; }
-.task-create-dialog > section p { margin: 0; color: var(--muted); font-size: 9px; }
-.task-create-dialog > section button, .task-create-dialog > footer > button:first-child { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); font-size: 8px; cursor: pointer; }
+.task-create-dialog > section p { margin: 0; color: var(--muted); font-size: 11px; }
+.task-create-dialog > section button, .task-create-dialog > footer > button:first-child { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); font-size: 10px; cursor: pointer; }
 .task-create-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; }
 
 @media (max-width: 1100px) {
   .layout-switcher button { width: 25px; overflow: hidden; padding: 0; font-size: 0; }
-  .layout-switcher button::after { color: var(--muted); font-size: 8px; }
+  .layout-switcher button::after { color: var(--muted); font-size: 10px; }
   .layout-switcher button.active::after { color: var(--text); }
   .layout-switcher button[data-layout-mode="balanced"]::after { content: "均"; }
   .layout-switcher button[data-layout-mode="reading"]::after { content: "读"; }
