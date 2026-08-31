@@ -154,6 +154,22 @@ for (const [surface, file, title] of [
   await capture(file, title, "top-level-surface");
 }
 
+// 记忆的另外两个 tab 各自成图：知识库承载三轴与状态，健康度承载五项债务（§3.6）
+await page.locator('.main-rail [data-surface="memory"]').click();
+for (const [tab, file, title] of [
+  ["library", "surface-memory-library.png", "记忆 · 知识库（三轴与状态）"],
+  ["health", "surface-memory-health.png", "记忆 · 健康度（五项债务）"],
+]) {
+  await page.locator(`[data-memory-tab="${tab}"]`).click();
+  await page.locator(`[data-memory-body="${tab}"]`).waitFor({ state: "visible" });
+  await capture(file, title, "top-level-surface");
+}
+await page.locator('[data-memory-tab="inbox"]').click();
+
+// 设置向导的入口在设置面里；上面切走了，回来才点得到
+await page.locator('.main-rail [data-surface="settings"]').click();
+await page.locator('[data-surface-view="settings"]').waitFor({ state: "visible" });
+
 await page.locator('[data-surface="setup"]').click();
 await page.locator('[data-surface-view="setup"]').waitFor({ state: "visible" });
 await capture("surface-setup.png", "首次设置向导", "top-level-surface");

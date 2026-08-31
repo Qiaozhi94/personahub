@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-30T16:39:46.301Z",
+  "generatedAt": "2026-08-31T15:51:54.169Z",
   "source": "file:///D:/Projects/personahub/ui-reference/personahub-draft/personahub-v3.1/index.html",
   "viewport": "1440x900",
-  "count": 29,
+  "count": 31,
   "exports": [
     {
       "file": "workbench.png",
@@ -142,6 +142,16 @@
     {
       "file": "surface-settings.png",
       "title": "设置",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-memory-library.png",
+      "title": "记忆 · 知识库（三轴与状态）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-memory-health.png",
+      "title": "记忆 · 健康度（五项债务）",
       "kind": "top-level-surface"
     },
     {

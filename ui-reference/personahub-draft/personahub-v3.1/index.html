@@ -725,6 +725,10 @@ FAIL artifact-scope.test.ts
                       <button class="res-item" type="button" data-res-open="decision"><span class="of-type">D</span><span><strong>Decision · Issue 优先的对象模型</strong><small>confirmed</small></span></button>
                       <button class="res-item" type="button" data-res-open="memory"><span class="of-type">K</span><span><strong>Memory · 先看成果再决定交给谁</strong><small>confirmed</small></span></button>
                       <button class="res-item" type="button" data-res-open="skill"><span class="of-type">S</span><span><strong>Skill · 改动前先跑 npm run verify</strong><small>confirmed · 命中 34 次</small></span></button>
+                  <p class="pa-day">本次未进入上下文</p>
+                  <button class="res-item off" type="button" data-demo="待复核：支撑它的产物 revision 已变化，复核完成前不进上下文"><span class="of-type">K</span><span><strong>Memory · 归档路径必须由 sha256 派生</strong><small>待复核 · 已退出召回</small></span></button>
+                  <button class="res-item off" type="button" data-demo="claimed 不进验证类派工的上下文（ADR 0013 §1.2.1）"><span class="of-type">K</span><span><strong>Memory · Qwen 长上下文下更容易丢格式</strong><small>claimed · 未经核对</small></span></button>
+                  <p class="pane-note">这次装配上下文<strong>过滤掉了 2 条</strong>：1 条待复核，1 条只是成员的说法。<b>过滤不能是静默的</b>——你看到一个验证结论时，必须能知道验证者当时看不到什么，否则实现者的自述会经由记忆绕回来，而且是以「项目事实」的身份。</p>
                     </div>
                   </div>
                   <div class="res-preview">
@@ -2044,6 +2048,7 @@ completed -&gt; archived</code></pre>
               <div class="mem-tabs" role="tablist" aria-label="记忆视图">
                 <button class="active" type="button" role="tab" data-memory-tab="inbox">待确认 <i>3</i></button>
                 <button type="button" role="tab" data-memory-tab="library">知识库 <i>128</i></button>
+                <button type="button" role="tab" data-memory-tab="health">健康度 <i>11</i></button>
               </div>
 
               <div class="mem-pane" data-memory-body="inbox">
@@ -2089,61 +2094,165 @@ completed -&gt; archived</code></pre>
                     <button type="button" data-memory-filter="verified">verified</button>
                     <button type="button" data-memory-filter="claimed">claimed</button>
                   </div>
+                  <div class="mem-filters">
+                    <button class="active" type="button" data-memory-state="在库">在库</button>
+                    <button type="button" data-memory-state="待复核">待复核</button>
+                    <button type="button" data-memory-state="已退役">已退役</button>
+                  </div>
                   <span class="tr-count" data-memory-count></span>
                 </div>
-                                  <div class="data-list" style="--cols: 78px minmax(0, 1fr) 116px 78px 210px 68px" data-memory-list role="table" aria-label="知识库">
-                    <div class="dl-head" role="row"><span>强度</span><span>内容</span><span>type</span><span>层级</span><span>来源</span><span></span></div>
-                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-demo="打开这条知识的来源">
+                                  <div class="data-list" style="--cols: 78px minmax(0, 1fr) 116px 74px 74px 152px 56px 68px" data-memory-list role="table" aria-label="知识库">
+                    <div class="dl-head" role="row"><span>强度</span><span>内容</span><span>type</span><span>层级</span><span>状态</span><span>验证于</span><span>引用</span><span></span></div>
+                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-state="在库" data-demo="打开这条知识的来源包与关系">
                       <span class="mem-stance confirmed">confirmed</span>
                       <span class="dl-title">验收基线 AC-002 改为允许返回 null</span>
                       <span><code>decision</code></span>
-                      <span class="dl-dim">Project 级</span>
-                      <span class="dl-dim">你批准于 08-29 14:32</span>
+                      <span class="dl-dim">Project</span>
+                      <span class="dl-dim">在库</span>
+                      <span class="dl-dim">你批准 · 08-29</span>
+                      <span class="dl-dim">12 次</span>
                       <span class="dl-go">看来源 →</span>
                     </button>
-                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-demo="打开这条知识的来源">
+                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-state="在库" data-demo="打开这条知识的来源包与关系">
                       <span class="mem-stance confirmed">confirmed</span>
                       <span class="dl-title">先看成果再决定下一步交给谁</span>
                       <span><code>user preference</code></span>
-                      <span class="dl-dim">工作区 级</span>
+                      <span class="dl-dim">工作区</span>
+                      <span class="dl-dim">在库</span>
                       <span class="dl-dim">你确认 · 08-14</span>
+                      <span class="dl-dim">31 次</span>
                       <span class="dl-go">看来源 →</span>
                     </button>
-                    <button class="dl-row" type="button" role="row" data-stance="verified" data-demo="打开这条知识的来源">
+                    <button class="dl-row" type="button" role="row" data-stance="verified" data-state="在库" data-demo="打开这条知识的来源包与关系">
                       <span class="mem-stance verified">verified</span>
                       <span class="dl-title">普通 worktree 不满足隔离要求</span>
                       <span><code>lesson</code></span>
-                      <span class="dl-dim">Project 级</span>
-                      <span class="dl-dim">AC-021 独立验证通过</span>
+                      <span class="dl-dim">Project</span>
+                      <span class="dl-dim">在库</span>
+                      <span class="dl-dim">AC-021 · 08-26</span>
+                      <span class="dl-dim">6 次</span>
                       <span class="dl-go">看来源 →</span>
+                      <p class="dl-sub"><b>来源包 ·</b> 成员产出 · 来自任务「F005 隔离核查」的第 2 轮独立验证（run_9A4）· 证据 <code>worktree-isolation.test.ts</code> — <b>使用边界 ·</b> 只作为候选出现，不自动进上下文 — <b>关系 ·</b> 引用了「代码目录是权限边界」，被 2 条引用</p>
                     </button>
-                    <button class="dl-row" type="button" role="row" data-stance="verified" data-demo="打开这条知识的来源">
+                    <button class="dl-row" type="button" role="row" data-stance="verified" data-state="待复核" data-demo="打开这条知识的来源包与关系">
                       <span class="mem-stance verified">verified</span>
                       <span class="dl-title">归档路径必须由 content_sha256 派生</span>
                       <span><code>project fact</code></span>
-                      <span class="dl-dim">Project 级</span>
-                      <span class="dl-dim">AC-002 独立验证通过</span>
-                      <span class="dl-go">看来源 →</span>
+                      <span class="dl-dim">Project</span>
+                      <span class="dl-dim">待复核</span>
+                      <span class="dl-dim">AC-002 · 08-02</span>
+                      <span class="dl-dim">9 次</span>
+                      <span class="dl-go">去复核 →</span>
+                      <p class="dl-sub"><em class="dl-warn">⚠ 待复核：支撑它的 <code>artifact:workspace-lock</code> 已从 @2 更新到 @4，这一版不再是当前状态。<b>它已退出召回</b>，复核完成前不会进入任何派工的上下文。引用 9 次不能替它续命。</em></p>
                     </button>
-                    <button class="dl-row" type="button" role="row" data-stance="claimed" data-demo="打开这条知识的来源">
+                    <button class="dl-row" type="button" role="row" data-stance="claimed" data-state="在库" data-demo="打开这条知识的来源包与关系">
                       <span class="mem-stance claimed">claimed</span>
                       <span class="dl-title">OpenCode 的 Qwen 在长上下文下更容易丢格式</span>
                       <span><code>lesson</code></span>
-                      <span class="dl-dim">Project 级</span>
-                      <span class="dl-dim">会话里的判断 · 未核对</span>
+                      <span class="dl-dim">Project</span>
+                      <span class="dl-dim">在库</span>
+                      <span class="dl-dim">— 未验证</span>
+                      <span class="dl-dim">2 次</span>
                       <span class="dl-go">看来源 →</span>
                     </button>
-                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-demo="打开这条知识的来源">
+                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-state="在库" data-demo="打开这条知识的来源包与关系">
                       <span class="mem-stance confirmed">confirmed</span>
                       <span class="dl-title">push 需要单独授权，不随任务权限一起给</span>
                       <span><code>decision</code></span>
-                      <span class="dl-dim">Project 级</span>
+                      <span class="dl-dim">Project</span>
+                      <span class="dl-dim">在库</span>
                       <span class="dl-dim">你确认 · 08-21</span>
+                      <span class="dl-dim">18 次</span>
                       <span class="dl-go">看来源 →</span>
+                    </button>
+                    <button class="dl-row off" type="button" role="row" data-stance="confirmed" data-state="已退役" data-demo="打开这条知识的来源包与关系">
+                      <span class="mem-stance confirmed">confirmed</span>
+                      <span class="dl-title">以 Canvas 为中心的对象模型</span>
+                      <span><code>decision</code></span>
+                      <span class="dl-dim">Project</span>
+                      <span class="dl-dim">已退役</span>
+                      <span class="dl-dim">你确认 · 07-30</span>
+                      <span class="dl-dim">4 次</span>
+                      <span class="dl-go">看替代 →</span>
+                      <p class="dl-sub">已被「Issue 优先的对象模型」替代（ADR 0012）。<b>退役不是删除</b>：来源与证据全部保留，指向替代它的那一条，随时可以重新启用。</p>
+                    </button>
+                    <button class="dl-row off" type="button" role="row" data-stance="" data-state="已遗忘" data-demo="打开这条知识的来源包与关系">
+                      <span class="mem-stance none">—</span>
+                      <span class="dl-title">〔内容已按授权清除〕</span>
+                      <span><code>user preference</code></span>
+                      <span class="dl-dim">工作区</span>
+                      <span class="dl-dim">已遗忘</span>
+                      <span class="dl-dim">—</span>
+                      <span class="dl-dim">—</span>
+                      <span class="dl-go">看凭证 →</span>
+                      <p class="dl-sub"><b>墓碑 ·</b> 2026-08-25 经你授权遗忘 · 原因：含个人身份信息 · 原任务 #142。只保留「它曾存在过、因何不可再取回」这一条最小事实，不偷偷留正文。遗忘前必须先退役，不能从在库一步删除。</p>
                     </button>
                   </div>
 
-                <p class="pane-note">写入受 type × stance 白名单约束：<code>project fact</code> 不允许 <code>claimed</code>，<code>decision</code> 只能 <code>confirmed</code>；违规写入被拒绝并记录拒绝事件（ADR 0013）。</p>
+                <p class="pane-note">写入受 type × stance 白名单约束：<code>project fact</code> 不允许 <code>claimed</code>，<code>decision</code> 只能 <code>confirmed</code>；违规写入被拒绝并记录拒绝事件（ADR 0013）。<strong>强度、验证于、引用是三根互不替代的轴</strong>，所以它们是三列而不是一个「可信度」分数——被用得多不等于被验证过，被验证过不等于你认可。引用次数永远不会自己写进「验证于」，也不会自己提升强度（ADR 0016）。</p>
+              </div>
+
+              <div class="mem-pane" data-memory-body="health" hidden>
+                <p class="pane-note">写入侧坏掉的时候是<strong>不会报错的</strong>——这一页是唯一能看见它坏了的地方。每一行都必须能点进去做点什么：<strong>只报数字不给动作的健康页是债务展览馆</strong>（ADR 0016 第 9 条）。</p>
+                <div class="data-list" style="--cols: 92px minmax(0, 1fr) 132px 268px" role="table" aria-label="记忆债务">
+                  <div class="dl-head" role="row"><span>条数</span><span>债务</span><span>怎么发现的</span><span>操作</span></div>
+                  <div class="dl-row" role="row" title="逐条复核：对着新版本重新验证，通过则回到在库，不通过转退役">
+                    <span class="mem-stance claimed">3 条</span>
+                    <span class="dl-title">过期 · 支撑证据已变化</span>
+                    <span class="dl-dim">产物 revision 变更</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-demo="逐条复核">逐条复核</button><button type="button" data-demo="全部转退役（可逆）">全部退役</button></span>
+                    <p class="dl-sub">已自动退出召回，不会进入任何派工的上下文。<b>退出召回这件事本身要说出来</b>——用户判断的是「我还能不能靠它」。</p>
+                  </div>
+                  <div class="dl-row" role="row" title="批量裁决：接受或否决待确认里的候选">
+                    <span class="mem-stance claimed">4 条</span>
+                    <span class="dl-title">未裁决积压 · 最久已等 12 天</span>
+                    <span class="dl-dim">待确认里超期未处理</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-demo="去待确认批量裁决">批量裁决</button></span>
+                    <p class="dl-sub">候选不会自己沉底：超过阈值仍未裁决就会出现在这里，直到你接受或否决。</p>
+                  </div>
+                  <div class="dl-row" role="row" title="试运行：2 条无入边无出边且 45 天未被引用，建议退役；退役可逆，来源全部保留">
+                    <span class="mem-stance verified">2 条</span>
+                    <span class="dl-title">孤立 · 没有任何关系且长期未被引用</span>
+                    <span class="dl-dim">无入边 / 无出边 · 45 天</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-demo="试运行批量退役，先看清单再执行">试运行退役</button></span>
+                    <p class="dl-sub">批量操作一律先试运行：列出会动哪几条、动成什么样，确认后才执行。</p>
+                  </div>
+                  <div class="dl-row" role="row" title="并排对比：内容相似但强度不一致的两组，选留哪条，另一条转退役并记录替代关系">
+                    <span class="mem-stance verified">2 组</span>
+                    <span class="dl-title">冲突 · 内容相似但强度不一致</span>
+                    <span class="dl-dim">同层级同 type 下相似</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-demo="并排对比">并排对比</button></span>
+                    <p class="dl-sub">只并排展示，<b>不自动合并</b>——判断哪条留下是语义判断，不是机器能证明的事。</p>
+                  </div>
+                  <div class="dl-row" role="row" title="未验证债：派一次独立验证，或直接退役">
+                    <span class="mem-stance claimed">3 条</span>
+                    <span class="dl-title">未验证债 · 成员的说法入库超 30 天</span>
+                    <span class="dl-dim">stance 仍为 claimed</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-demo="派一次独立验证">派验证</button><button type="button" data-demo="转退役">退役</button></span>
+                    <p class="dl-sub">它们一直不进验证类派工的上下文（ADR 0013 §1.2.1），放着不管就是一堆永远用不上的条目。</p>
+                  </div>
+                </div>
+
+                <p class="pane-note">写入侧本身是否正常：</p>
+                <div class="data-list" style="--cols: 92px minmax(0, 1fr) 268px" role="table" aria-label="写入侧健康">
+                  <div class="dl-head" role="row"><span>近 7 天</span><span>指标</span><span>读法</span></div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">6 条</span>
+                    <span class="dl-title">入库</span>
+                    <span class="dl-dim">全部来自验收事件，无一条来自对话摘取</span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance claimed">2 次</span>
+                    <span class="dl-title">写入被拒绝</span>
+                    <span class="dl-dim">type × stance 不匹配 · 已记录，未静默丢弃</span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">0 次</span>
+                    <span class="dl-title">建关系失败</span>
+                    <span class="dl-dim">目标不存在时直接拒绝，不留悬空关系</span>
+                  </div>
+                </div>
+                <p class="pane-note"><strong>「写入被拒绝」长期为 0 不一定是好事</strong>——它也可能意味着写入这条路根本没被走过。这一格必须和「入库」一起看：两个都是 0，说明记忆系统已经死了，而它不会报错。</p>
               </div>
             </section>
           </section>

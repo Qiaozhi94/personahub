@@ -1153,6 +1153,99 @@ await check("记忆面是纯 tab 切换：待确认 / 知识库（左框对它�
   await surface.locator('[data-memory-tab="inbox"]').click();
 });
 
+// §4.7 记忆：状态、三轴、健康度 ─────────────────────────────
+await check("知识库把三根轴摆成三列，不合成一个「可信度」（ADR 0016 第 4 条）", async () => {
+  await page.locator('.main-rail [data-surface="memory"]').click();
+  const surface = page.locator('[data-surface-view="memory"]');
+  await surface.locator('[data-memory-tab="library"]').click();
+  const lib = surface.locator('[data-memory-body="library"]');
+
+  const head = await lib.locator(".dl-head").innerText();
+  for (const col of ["强度", "状态", "验证于", "引用"]) {
+    if (!head.includes(col)) throw new Error(`知识库表头缺少「${col}」列`);
+  }
+  // 三轴必须是三列，不能被压成一个分数
+  if (/可信度|信任分|置信度/.test(head)) throw new Error("三根轴被合成了一个分数");
+  if (!(await lib.innerText()).includes("互不替代")) throw new Error("没有说明三根轴互不替代");
+  if (!(await lib.innerText()).includes("引用次数永远不会自己")) {
+    throw new Error("没有写明引用次数不会提升强度或写进验证时间");
+  }
+
+  // claimed 的「验证于」必须是空的——它就是没被验证过
+  const claimedRow = lib.locator('.dl-row[data-stance="claimed"]').first();
+  if (!(await claimedRow.innerText()).includes("未验证")) throw new Error("claimed 行的验证时间不该有值");
+
+  await surface.locator('[data-memory-tab="inbox"]').click();
+});
+
+await check("状态是一列：待复核退出召回、退役可逆、遗忘留墓碑（ADR 0016 第 1 条）", async () => {
+  const surface = page.locator('[data-surface-view="memory"]');
+  await surface.locator('[data-memory-tab="library"]').click();
+  const lib = surface.locator('[data-memory-body="library"]');
+
+  for (const st of ["在库", "待复核", "已退役", "已遗忘"]) {
+    if (!(await lib.locator(`.dl-row[data-state="${st}"]`).count())) throw new Error(`知识库看不到「${st}」`);
+  }
+  if ((await lib.locator("[data-memory-state]").count()) < 3) throw new Error("不能按状态过滤");
+
+  const suspect = lib.locator('.dl-row[data-state="待复核"]').first();
+  const sText = await suspect.innerText();
+  if (!sText.includes("退出召回")) throw new Error("待复核没说明它已经不进上下文了");
+  if (!sText.includes("@2") || !sText.includes("@4")) throw new Error("没说清是哪一版证据失效了");
+  if (!sText.includes("引用 9 次不能替它续命")) throw new Error("没堵住「用得多所以还能信」这条路");
+
+  const retired = lib.locator('.dl-row[data-state="已退役"]').first();
+  if (!(await retired.getAttribute("class")).includes("off")) throw new Error("退役条目没有压暗");
+  if (!(await retired.innerText()).includes("退役不是删除")) throw new Error("退役没说明来源仍然保留");
+
+  const forgotten = lib.locator('.dl-row[data-state="已遗忘"]').first();
+  const fText = await forgotten.innerText();
+  if (!fText.includes("内容已按授权清除")) throw new Error("遗忘条目仍显示正文");
+  if (!fText.includes("墓碑")) throw new Error("遗忘没留下「它曾存在过」的最小事实");
+  if (!fText.includes("必须先退役")) throw new Error("没说明遗忘是两步，不能从在库一步删除");
+
+  await surface.locator('[data-memory-tab="inbox"]').click();
+});
+
+await check("健康度每项都配可执行动作，写入侧本身可观测（ADR 0016 第 9 条）", async () => {
+  const surface = page.locator('[data-surface-view="memory"]');
+  await surface.locator('[data-memory-tab="health"]').click();
+  const health = surface.locator('[data-memory-body="health"]');
+  if (!(await health.isVisible())) throw new Error("健康度打不开");
+
+  const rows = health.locator(".data-list").first().locator(".dl-row");
+  if ((await rows.count()) < 5) throw new Error("五项债务没列全");
+  for (const row of await rows.all()) {
+    const label = (await row.locator(".dl-title").innerText()).trim();
+    if (!(await row.locator(".dl-act button").first().isVisible())) {
+      throw new Error(`「${label}」只报了数字没给动作`);
+    }
+  }
+
+  const body = await health.innerText();
+  if (!body.includes("债务展览馆")) throw new Error("没写明只报数字不给动作不算数");
+  if (!body.includes("先试运行")) throw new Error("批量操作没有先试运行");
+  if (!body.includes("写入被拒绝")) throw new Error("看不到写入被拒绝了几次，失败会静默");
+  if (!body.includes("长期为 0 不一定是好事")) throw new Error("没提醒零拒绝可能是写入路径根本没被走过");
+
+  await surface.locator('[data-memory-tab="inbox"]').click();
+});
+
+await check("资料面显示这次过滤掉了哪些记忆（ADR 0013 §1.2.1）", async () => {
+  await page.locator('.main-rail [data-surface="project"]').click();
+  await openTask("issue-view", "resource");
+  const pane = page.locator('[data-pane="resource"]');
+  await pane.locator('[data-res-dir="in"]').click();
+  const body = await pane.locator('[data-res-body="in"]').innerText();
+
+  if (!body.includes("本次未进入上下文")) throw new Error("没区分「用了」和「没用」");
+  if (!body.includes("过滤掉了")) throw new Error("过滤条数没显示，等于静默丢弃");
+  if (!body.includes("待复核")) throw new Error("看不出哪条是因为待复核被挡的");
+  if (!body.includes("claimed")) throw new Error("看不出哪条是因为只是说法被挡的");
+  if (!(await pane.locator('[data-res-body="in"] .res-item.off').count()))
+    throw new Error("被过滤的条目没有压暗——它必须在场，只是不可用");
+});
+
 await check("能力面是纯 tab 切换：编组 / Skill；执行组合下沉到设置（ADR 0012）", async () => {
   await page.locator('.main-rail [data-surface="library"]').click();
   const lib = page.locator('[data-surface-view="library"]');

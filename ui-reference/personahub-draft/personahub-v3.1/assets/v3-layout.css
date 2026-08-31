@@ -3076,6 +3076,8 @@
 .mem-stance.verified { background: color-mix(in oklch, var(--green) 14%, transparent); color: var(--green); }
 .mem-stance.confirmed { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent); }
 .mem-stance.claimed { background: color-mix(in oklch, var(--yellow) 16%, transparent); color: var(--yellow); }
+/* 已遗忘的条目没有背书可言——payload 已清除，留的是墓碑不是知识 */
+.mem-stance.none { background: var(--panel-3); color: var(--faint); }
 /* 竖栏接管一级切换后，其余工作面不再自带 sidebar，改为单列 */
 .simple-surface[data-surface-view="memory"],
 .simple-surface[data-surface-view="projects"],
@@ -4476,6 +4478,8 @@
 }
 .res-item:hover { background: var(--panel-3); }
 .res-item.active { border-left-color: var(--accent); background: var(--accent-soft); }
+/* 本次未进入上下文的条目：在场但压暗，过滤不能是静默的（ADR 0013 §1.2.1） */
+.res-item.off { opacity: 0.55; }
 .res-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; }
 .res-item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; color: var(--faint); font-size: 9px; }
 .git-block.compact { margin-top: 6px; font-size: 10px; }
