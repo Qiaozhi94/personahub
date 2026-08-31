@@ -198,7 +198,10 @@ describe("IntakeDialog", () => {
       expect(apiClient.intake.recommend).toHaveBeenCalledWith("prj_1", "Build a new feature");
     });
 
-    expect(screen.getByText("当前只有 coding 候选")).toBeInTheDocument();
+    // recommend 被调用 ≠ 面板已经渲染：mock resolve 之后还有一次 React 重渲染。
+    // 同步的 getByText 会抢在它前面——单跑看不出来，全量跑 CPU 被占满时才偶发。
+    // 这个文件里其它用例都是先 findByText 等一个锚点，再同步断言其余字段。
+    await screen.findByText("当前只有 coding 候选");
     expect(screen.getByText("Add feature")).toBeInTheDocument();
     expect(screen.getByText(/Matched rule: default_priority/i)).toBeInTheDocument();
     expect(screen.getAllByText(/candidate:/i).some((el) => el.textContent?.includes("normal"))).toBe(true);
