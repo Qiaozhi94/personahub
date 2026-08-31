@@ -15,7 +15,7 @@ topics:
   ]
 doc_kind: prd
 created: 2026-07-11
-updated: 2026-08-15
+updated: 2026-08-31
 ---
 
 # PersonaHub PRD: Personal AI Agent Team OS
@@ -26,6 +26,7 @@ updated: 2026-08-15
 
 | 日期       | 来源提交                                                              | 修订目的                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 修订内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-08-31 | `docs/decisions/0016-memory-state-machine-and-provenance.md` | ADR 0013 把 typed truth + revision 归入 B 档「结构上采纳」，但只说了要建、没说长什么样；逐项核定 clowder 借鉴清单后确定了形状，PRD 第 5 节的 Memory 定义与之不一致（无状态、无 stance 落位、`confidence` 语义含混、无归属列） | ①§5 Memory 重写：`type` / `stance` / `state` 三维正交，补 `type × stance` 白名单与 `claimed` 不进验证类上下文的硬规则；来源包新增 `origin_type` 与 `usage_policy` 并要求写入函数强制填充；归属改为 `scope_type + scope_id`（不设 collection 字段）；**删除 `confidence`**，拆为 `stance` / `verified_at` / `reference_count` 三个互不替代的轴，并规定引用次数不得写 `verified_at` 或提升 `stance`；补关系边表、检索排序（时态与背书排在匹配度之前）与健康度要求；②§7.7 候选按 `proposed` 落库，验收补来源包完整性与「每个健康指标必须配可执行动作」；③§9 新增 Memory 状态机六态与迁移规则（`forgotten` 只能从 `retired` 进入） |
 | 2026-08-15 | 产品体验重置 M3/M4 累积决策（`docs/reviews/product-experience-reset-plan.md` §7） | 旅程与页面选型定稿过程中累积了 6 项已拍板但未落地的 PRD 修订，PRD 作为真相源与旅程已有 6 处不一致，继续攒着会持续误导读者与 agent | 一次性落地：①§4.2 多人协同由"不做"改判"后移"，新增§15「远期：多人协同」（默认关闭/可选开启/向后兼容、权限边界挂 Workspace、共享先用 visibility）；②§5 新增三层归属关系 Space > Project > Workspace 及命名纪律，Workspace 明确为权限边界、UI 称"代码目录"；③§6 三栏改四栏（列表独立成栏）并给出三条扩展规则，第一屏默认落点由"最近 active Issue"改为"最需要处理的 Issue"；④§10 中间协作现场新增文件与变更视图（diff/全文、markdown 渲染、只读、锚定 Run/Attempt、不做目录树）；⑤§10 右栏 Message/event stats 移出必须项、Blockers 常驻置顶、复制/下载已持久化 Markdown 降为 P1（推翻 2026-07-19 的排期，不推翻其价值）；⑥§5 Agent 的 capability_tags 升为路由主依据、role 降为展示标签 |
 | 2026-08-14 | 产品体验重置 / 用户旅程决策                                           | 优先交付 P0 最小可用闭环，避免自动阶段流转与自动修复回路拖慢首次可用                                                                                                                                                                                                                                                                                                                                                                                                                                         | P0 改为完全手动阶段指派：系统仍自动生成 Handoff Packet、携带上下文、执行被指派的 Run、收集证据并在验证通过后进入 Done，但阶段完成和 validation fail 后均停在 Ready/“等待你指派”；自动 handoff/自动修复回路登记为 P0 dogfood 后再定版本的后续候选                                                                                                                                                                                                                                                                                                                                                                                                       |
 | 2026-08-08 | `docs/reviews/requirements-review-2026-08-08-F007-pre-development.md` | F006 完成、进入 F007 开发前的最后契约核对，发现第 15 节 P1 摘要与 v0.2 目标段仍把 Coordinator 写成"可配置 agent role"、"系统自动推荐/分派"，与同节后文及 ADR 0007 已裁定的"进程内确定性规则引擎、只推荐不派工"相矛盾                                                                                                                                                                                                                                                                                         | P1 摘要与 v0.2 目标段改为如实描述：Coordinator 是进程内确定性规则引擎而非可配置 agent role，推荐维度改为 Issue Type / Workflow Template / Collaboration Topology / Agent Roster，"自动推荐/分派"改为"推荐、用户确认后才执行"；"Agent Team Template 推荐"改称"Agent Roster 推荐"以避免暗示持久化模板                                                                                                                                                                                                                                                                                                                                                    |
@@ -567,29 +568,77 @@ Agent 是建立在通道之上的成员配置——同一个 Claude Code 可以�
 （不同模型、不同能力项、不同 system_instructions）。界面上「AI 成员」列出的是 Agent，
 CLI 与登录状态属于运行时配置，归 Settings。
 
-### Memory
+### Memory `[2026-08-31 修订]`
 
 经确认或高置信沉淀的长期知识，不是所有聊天记录。
 
-类型：
+**与 agent CLI 原生 memory 是两回事**：后者不透明、不可审计、会跨 Issue 与 Project 泄漏，默认关闭（ADR 0011）。
 
-- project fact
-- decision
-- lesson
-- user preference
-- workflow note
+**写入触发器限定为已收敛的验收事件，不得从对话自动摘取**（ADR 0013 第 4 条）：
 
-每条 memory 必须有：
+```text
+主张被独立验证通过   → project fact / decision
+两轮验证同一根因     → lesson
+用户批准了基线变更   → decision
+用户拒绝了基线变更   → lesson（连同理由）
+```
 
-- source_issue_id
-- source_thread_id
-- source_event_ids
-- author agent
-- timestamp
-- confidence
-- evidence reference
-- originating_input_trust_level
-- human_confirmed / auto_saved
+#### 三个正交维度
+
+`type`（是什么）、`stance`（谁背书）、`state`（现在处于生命周期哪一段）互相正交，不可合并。
+
+**`type`**：`project fact` / `decision` / `lesson` / `user preference` / `workflow note`
+
+**`stance`**：`claimed`（成员给出的未核对判断）/ `verified`（被独立验证支撑）/ `confirmed`（用户明确确认）
+
+`type × stance` 白名单（违反者写入被拒绝并记录拒绝事件，详见 ADR 0013 第 1.2 条）：
+
+| type | 允许的 stance |
+| --- | --- |
+| `project fact` | `verified` / `confirmed` |
+| `decision` | `confirmed` |
+| `lesson` | 三者皆可 |
+| `user preference` | `confirmed` |
+| `workflow note` | `confirmed` |
+
+> **硬规则**：`claimed` 强度的 Memory 不得进入任何验证类派工的上下文，被过滤的条数在派工记录里可见（ADR 0013 第 1.2.1 条）。
+
+**`state`**（详见第 9 节状态机）：`proposed` / `rejected` / `active` / `suspect` / `retired` / `forgotten`
+
+#### 每条 memory 必须有
+
+**来源包**（缺一不可，写入函数强制填充）：
+
+- `source_issue_id` / `source_thread_id` / `source_event_ids`
+- `evidence_refs`
+- `created_by`（author agent）
+- `origin_type`：`user_direct`（用户直接说的）/ `agent_output`（成员执行产出的）/ `external_doc`（从 Artifact 或外部文档引入的）
+- `originating_input_trust_level`
+- `usage_policy`：`auto_inject`（`never` / `only_as_candidate` / `confirmed_only`，默认 `only_as_candidate`）+ `dangerous_if_used_for`
+
+**归属**：`scope_type`（`project` / `space`）+ `scope_id`。不设独立的 collection 字段——团队协作时新增取值，不新增列（ADR 0016 第 5 条）。
+
+**三个互不替代的轴**（取代原先含混的单一 `confidence` 字段）：
+
+| 轴 | 字段 | 回答 | 不回答 |
+| --- | --- | --- | --- |
+| 背书 | `stance` | 谁为这条背书 | 它被用过几次 |
+| 验证 | `verified_at` | 何时发生过显式验证事件 | 它现在是否相关 |
+| 使用 | `reference_count` / `last_referenced_at` | 被引用过几次、最近一次何时 | 它是否为真 |
+
+> **硬规则**：`reference_count` 不得写入 `verified_at`，也不得提升 `stance`。「常被引用」不等于「是真的」。
+
+**替代关系**：`superseded_by` 指向替代它的 memory；被替代时 `state` 转 `retired`。
+
+#### 关系与检索
+
+Memory 之间的引用关系存为三列边表（`from` / `to` / `relation`），是可重建的投影而非真相源；建边时统一做目标解析，目标不存在则拒绝建边。界面上第一版只展示一跳邻居（引用了 / 被引用）。
+
+检索第一阶段为 SQLite 全文检索，排序时**时态与背书排在匹配度之前**（被替代、`retired`、`suspect` 的条目下沉）。向量召回是后续阶段的第二个 provider，个人版第一阶段不上（第 15 节）。
+
+#### 健康度
+
+Memory 提供健康度视图，指标包括过期、孤立、冲突、未验证债、未裁决积压。**每个指标必须配一个可执行的修复动作（dry-run + apply）**，只显示数字不给动作不满足验收。
 
 ### Skill
 
@@ -938,11 +987,15 @@ P0 / P1 规则：
 - 高风险或偏好类 memory 需要 operator escalation。
 - 低风险 lesson 的自动保存（无需逐条确认）不在 P0 / P1 开放，因为其安全前提——Provenance Gate——要到 v0.5 才落地（见第 15 节）；在 Provenance Gate 具备来源校验能力之前，自动保存无从判断可信度。
 
+候选以 `state='proposed'` 落库，用户接受转 `active`，否决转 `rejected`（保留记录以抑制重复提议）。超过阈值未裁决的候选进健康度视图的「未裁决积压」，不静默沉底。
+
 验收：
 
 - Memory 有来源和证据。
 - 用户可以查看 memory 来源。
 - Memory 不污染 Thread 原始记录。
+- 每条 memory 的来源包字段齐全（`origin_type` / `usage_policy` / provenance 组），缺一则写入被拒绝并记录拒绝事件。`[2026-08-31 新增]`
+- 健康度视图的每个指标都配一个可执行的修复动作。`[2026-08-31 新增]`
 
 ## 8. 功能优先级
 
@@ -1038,6 +1091,34 @@ Done 为终态；Blocked 只能回到 Ready，不会自动跳回 Running。
 | Validating | Validator agent 正在按当前 Validation Policy 验证 | 用户指派 validator 并启动 Run                                               |
 | Done       | 自动验证通过，证据完整                            | validation pass + evidence trace                                            |
 | Blocked    | 需要 operator escalation                          | 权限、不可逆风险、多轮不收敛、需求冲突                                      |
+
+### Memory 状态 `[2026-08-31 新增]`
+
+```text
+proposed   -> active      用户接受候选
+proposed   -> rejected    用户否决（保留记录，用于抑制重复提议）
+active     -> suspect     支撑证据失效（Artifact revision 变化 / 验证被推翻）
+suspect    -> active      复核后重新生效
+active     -> retired     仍真但已翻篇；被替代时同时写 superseded_by
+suspect    -> retired     复核后判定不再适用
+retired    -> active      重新启用
+retired    -> forgotten   经授权遗忘，清空 payload 保留 tombstone
+```
+
+`rejected` 与 `forgotten` 为终态。**`forgotten` 只能从 `retired` 进入**——遗忘是两步操作，不接受从 `active` 一步删除。
+
+### Memory 状态说明
+
+| Status      | 含义                                             | 可召回 |
+| ----------- | ------------------------------------------------ | ------ |
+| `proposed`  | 由验收事件生成的候选，等用户裁决                 | 否     |
+| `rejected`  | 用户否决，保留记录                               | 否     |
+| `active`    | 在库，参与召回与上下文装配                       | 是     |
+| `suspect`   | 支撑证据失效，暂停召回，等复核                   | 否     |
+| `retired`   | 移出召回，保留 provenance，可逆                  | 否     |
+| `forgotten` | payload 已清空，只留 tombstone；终态             | 否     |
+
+所有状态迁移经同一个迁移函数写入，每次迁移记录一条 revision（谁、何时、依据）；`stance` 的升降级走独立的第二条轴，同样留痕。非法迁移被拒绝并记录拒绝事件，不静默丢弃。详见 ADR 0016。
 
 ## 10. UI 需求
 

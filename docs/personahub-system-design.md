@@ -271,19 +271,60 @@ Artifact
   created_at
   updated_at
 
+# Memory —— 形状由 ADR 0016 拥有；PRD 第 5 节拥有产品语义
 Memory
   id
-  project_id
+  scope_type                     # 'project' | 'space'；团队协作时加值不加列
+  scope_id
+  type                           # project fact | decision | lesson | user preference | workflow note
+  stance                         # claimed | verified | confirmed（与 type 正交，受白名单约束）
+  state                          # proposed | rejected | active | suspect | retired | forgotten
+  content
+  origin_type                    # user_direct | agent_output | external_doc
+  usage_policy                   # json: { auto_inject, dangerous_if_used_for[] }
   source_issue_id
   source_thread_id
   source_event_ids
-  type
-  content
-  confidence
+  evidence_refs
   originating_input_trust_level
-  human_confirmed
   created_by
+  superseded_by                  # -> Memory.id；置位时 state 必为 retired
+  verified_at                    # 显式验证事件时间；不得由引用次数写入
+  reference_count
+  last_referenced_at
   created_at
+  updated_at
+# 约束：
+#   - state / stance 的迁移只能经统一迁移函数；业务代码禁止直接 UPDATE
+#   - 来源包字段（origin_type / usage_policy / provenance 组）NOT NULL
+#   - forgotten 只能从 retired 进入；forgotten 清空 content，保留 tombstone
+
+MemoryRevision                   # append-only；state 与 stance 各占一条轴
+  id
+  memory_id
+  axis                           # 'state' | 'stance'
+  from_value                     # NULL = 出生
+  to_value
+  actor                          # 'user' | agent id | 'system'
+  reason
+  evidence_ref
+  created_at
+
+MemoryWriteRejection             # 第五类病（失败无观测）的自身应用：拒绝不静默
+  id
+  attempted_type
+  attempted_stance
+  attempted_transition
+  origin_type
+  reason
+  source_issue_id
+  created_at
+
+MemoryEdge                       # 可重建的投影，不是真相源
+  from_id
+  to_id
+  relation
+  # PRIMARY KEY(from_id, to_id, relation)；建边时统一做目标解析，目标不存在则拒绝
 
 Skill
   id

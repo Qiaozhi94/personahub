@@ -227,6 +227,7 @@ clowder 写侧三条红（A1 / A3 / A4）的共同根因是「触发器缺失」
 
 ## 关联
 
+- 后续：`docs/decisions/0016-memory-state-machine-and-provenance.md`（B 档的具体形状：状态机、来源包、归属列、边表、健康度；并闭掉本文「A 档五类病检查表没有强制执行手段」这条未闭合项——第五类落 lint 门禁）
 - 依赖：`docs/decisions/0010-claim-evidence-structure.md`（主张生命周期即写入触发器）
 - 依赖：`docs/decisions/0012-object-model-simplification.md`（Memory 的 Project / Space 归属）
 - 依赖：`docs/decisions/0011-disable-native-agent-memory.md`（agent 原生 memory 是不受控的第二个记忆来源，须关闭）
