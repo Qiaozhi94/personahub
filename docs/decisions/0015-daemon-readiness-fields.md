@@ -104,7 +104,7 @@ ADR 0008 第 3 条已经答过，这里不重复论证，只重申其结论与�
 
 事件传输不用提前处理。`ThreadEvent` 已带 `event_sequence`（`shared/src/types/index.ts:63`）做游标，架构第 2 节「事件本体与传输方式解耦，v0.7 换 WebSocket 或 daemon 内部 pub/sub 不改事件模型」的判断成立，现状不构成障碍。
 
-UI 也不用提前改。设计稿的用量面已按**账号**分额度池（`ui-reference/personahub-draft/personahub-v3.1`），daemon 化后加一层「机器 × 账号」即可，multica 的运行时页是现成参照。现在就按机器分组只会多一层空壳。
+UI 也不用提前改。设计稿的运行时面已按 **adapter 配置**分额度池（`ui-reference/personahub-draft/personahub-v3.1`；ADR 0012 第 2 条把配置定为携带认证、`base_url` 与可用模型的那一层），daemon 化后加一层「机器 × 配置」即可，multica 的运行时页是现成参照。现在就按机器分组只会多一层空壳。
 
 ## 影响
 
