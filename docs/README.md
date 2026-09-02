@@ -18,6 +18,7 @@ updated: 2026-08-09
 | 产品目标、范围和路线 | `personahub-prd.md` | 产品判断的真相源 |
 | 全局模块、进程与运行时边界 | `personahub-architecture.md` | 整体软件架构 |
 | 字段、表和数据关系 | `personahub-system-design.md` | 实现级数据模型，随实现迭代 |
+| 记忆模块的完整拓扑与分期 | `personahub-memory-design.md` | 一条记忆从产生到遗忘的全过程、各环节权力边界、各部分属于哪个阶段；不拥有产品判断（PRD）、决策（ADR）与字段定义（system-design） |
 | 跨 Feature 长期决策 | `decisions/` | ADR 决策记录 |
 | Feature 行为与状态 | `features/<version>/Fxxx-*/spec.md` | 状态唯一真相源 |
 | Feature 实现方案 | `features/<version>/Fxxx-*/design.md` | 技术设计 |
@@ -35,6 +36,7 @@ updated: 2026-08-09
 - **PRD（产品判断）**：→ [`personahub-prd.md`](personahub-prd.md)
 - **架构**：→ [`personahub-architecture.md`](personahub-architecture.md)
 - **系统设计（数据模型）**：→ [`personahub-system-design.md`](personahub-system-design.md)
+- **记忆模块完整设计**：→ [`personahub-memory-design.md`](personahub-memory-design.md)
 - **开发流程 SOP**：→ [`SOP.md`](SOP.md)
 - **Feature 规格指南与状态门禁规则**：→ [`features/README.md`](features/README.md)
 - **Feature 目录（按版本分层）**：→ [`features/`](features/)
