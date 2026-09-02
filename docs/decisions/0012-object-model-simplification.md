@@ -220,12 +220,12 @@ issues.workspace_id  TEXT NOT NULL  →  可空（游离 Issue 无代码目录�
 | 4 | `server/src/repositories/agent-config-dto.ts` | DTO 投影加一行 |
 | 5 | `server/src/services/adapter-config-contract.ts` | 校验：非空时必须是 `https://`（`http://` 仅允许 loopback），且**不校验可达性**——可达性是 `validate()` 的事，契约层只管形状 |
 | 6 | `server/src/services/adapter-config-updater.ts`、`api/routes/adapters.ts` | 入参透传 |
-| 7 | `web/src/components/adapter/AdapterAuthFields.tsx` | 仅在 API Key 一支出现输入框；OAuth 一支不得出现（design.md §3.5 凭据第 1 条：出现输入框就说明抽象漏了） |
+| 7 | `web/src/components/adapter/AdapterAuthFields.tsx` | 仅在 API Key 一支出现输入框；OAuth 一支不得出现（design.md §3.5.3 凭据第 1 条：出现输入框就说明抽象漏了） |
 | 8 | `shared/src/types/validation.ts` 的 `AdapterIdentitySnapshot` | **不加**。快照已有 `adapter_config_id`，配置的当时取值可由它回查；把 base_url 冻进快照等于把一个会变的运维字段刻进证据 |
 
 **与 ADR 0015 的落地顺序**：第 1 条与 ADR 0015 的 `runtime_id` 同批改 `agent_configs`，两次 ALTER 合进同一个 schema-v11，避免为同一张表连开两个版本。但两者**不可互相等待**——ADR 0015 第 1、2 条自己是一批（列 + 快照字段），本列不进快照，不属于那一批。
 
-**adapter 能力位尚未有产品表达。** `AgentAdapterCapabilities`（`server/src/runtime/types.ts:56`）已有 `supportsApprovalHook` / `supportsStructuredTrace` / `supportsFinalMessage` / `executionTimeoutMs`，加上 ADR 0011 的「OpenCode 原生记忆关不掉」，每一位都有产品后果（该 adapter 上「等待权限确认」不会发生、轨迹视图取不到逐次明细、上下文范围三档保证不了），而界面上一条都没说。**能力不足是一种事实上的放宽，且是静默的**——ADR 0018 第 5 条硬规则二「只能加严不能放宽」只管住了能力包，管不住执行体本身。表达形态待 `design.md` §3.5 的 adapter 能力矩阵落定。
+**adapter 能力位尚未有产品表达。** `AgentAdapterCapabilities`（`server/src/runtime/types.ts:56`）已有 `supportsApprovalHook` / `supportsStructuredTrace` / `supportsFinalMessage` / `executionTimeoutMs`，加上 ADR 0011 的「OpenCode 原生记忆关不掉」，每一位都有产品后果（该 adapter 上「等待权限确认」不会发生、轨迹视图取不到逐次明细、上下文范围三档保证不了），而界面上一条都没说。**能力不足是一种事实上的放宽，且是静默的**——ADR 0018 第 5 条硬规则二「只能加严不能放宽」只管住了能力包，管不住执行体本身。表达形态已定：跨 adapter 的能力矩阵在 design.md V3.16 被删除（一张全是不可点格子的表就是债务展览馆），能力位降为**每个 adapter 诊断视图里的一块「这个 adapter 做不到什么」**，每条写后果不写能力位名字，见 design.md §3.5.3。
 
 **「深度」的取值范围未定。** `high / medium / low` 是按当前几个 CLI 的推理档位归纳的，不同 provider 的档位不一致（有的按 token 预算，有的按模式名）。需要在 Runtime 的能力探测里确认，并映射到统一取值。
 

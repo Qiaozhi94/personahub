@@ -117,3 +117,23 @@ UI 也不用提前改。设计稿的运行时面已按 **adapter 配置**分额�
 
 - 本决策只覆盖「远程执行需要哪些字段」，**不覆盖** daemon 自身的形态问题：进程如何安装与守护、本机与 daemon 之间用什么协议、鉴权怎么做、密钥如何下发到远端。这些在触发信号到达、`ExecutionProvider` 真正提取时一并设计。
 - PRD 第 15 节把 v0.7（Runtime / Daemon / Self-host）列为方向性设想而非排期承诺。本决策不改变这一点，只是让「到时候能做」的成本不因为今天的省略而变高。
+
+### 多设备的形态是「单一 server + 多端访问」，不是双向同步
+
+**来源**：使用者 2026-09-02 提出两个真实痛点——公司做完 vibe coding 回家接不上之前的会话；几台设备上 Claude Code 的配置存在细微差别。
+
+**判断**：这两条都指向多设备，但**不构成「同步」需求**，因此本决策的 daemon 路线不需要为它增加任何数据同步设计。三条理由：
+
+1. **SQLite 双向同步在本产品里无解。** Run 有状态机（`running` / `interrupted` / `done`），两台机器各写一份时冲突没有正确答案；而 Artifact / Evidence 是要当证据用的，一次错误合并会让证据链不可解释。
+2. **单一 server 保住了本决策第 3 条的推断。** `StaleRecoveryService` 的「新进程启动 = 旧进程已死」在多实例下失效（见「核查」第 3 条），这也是本决策不做 lease / heartbeat 的前提；**单一 server 模型下这条推断继续成立**，多实例 fencing 因此可以继续留在候选设计里。
+3. **参照项目已经这么做。** multica 是「云端 + 每台机器跑 daemon」，运行时页按**电脑**分组（见上方对比表），不是把每台机器的库互相同步。
+
+**因此「会话跨设备」不是同步 CLI 的原生 session。** ADR 0011 的方向是禁用 agent 原生记忆、由 PersonaHub 自己拥有上下文；换台设备打开的应该是同一个 Issue 的完整 Thread，在新设备上起一个新 Run 由 PersonaHub 喂上下文。原生 session 若也要跨设备恢复，等于把三个 CLI 的会话格式各抄一遍——与本决策第 4 条拒绝代管凭据是同一条判断。
+
+**配置差异那一半不属于 PersonaHub。** 「限额显示样式」这类是各 CLI 自己的 settings 文件，归 dotfiles 工具（git / chezmoi / syncthing）。PersonaHub 只拥有 `agent_configs`（认证 / `base_url` / 可用模型 / 额度），而单一 server 模型下它本来就只有一份，不存在同步问题。若日后要做 CLI settings 的跨机一致，那是一个**插件**：它不写核心层真相源，缺失时核心链路照常（判据见 `0018-capability-library-and-packs.md` 第 7 节）。
+
+### 明文 `api_key` 是多端访问的前置条件，不是可延后项
+
+「核查」第 4 条记的是**本机**假设下的现状：`agent_configs.api_key` 是 SQLite 明文列（`server/src/db/schema-v6.ts:6`），直接进 `AgentRunInput`。当前的风险声明也是按本机写的——`ui-reference/personahub-draft/personahub-v3.1/docs/design.md` §3.5.1「把数据目录放进同步盘或 git 仓库等于把 key 一起同步出去」。
+
+**一旦 server 要被第二台设备访问，这句话就不够了**：风险从「别把文件放错地方」变成「这台机器在网络上」。因此上一条的单一 server 形态**必须与密钥处理一起设计**，不能先开访问、后补加密。这一条与「本决策不覆盖 daemon 自身的鉴权与密钥下发」是同一个缺口的两端，届时一并解决。
