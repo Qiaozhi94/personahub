@@ -471,6 +471,30 @@
     if (views.length) views.forEach((el) => (el.hidden = el.dataset[`${group}View`] !== value));
   }
 
+  // 一个按钮可以同时指定多个层级的位置（例如「去设置 · 插件」既切面又切组），
+  // 所以这里不能命中一个就 return —— V3.21 把运行时并进设置后，
+  // 左栏的 adapter 条目正是 settings + runtime 两个 pick 同时生效。
+  function applyPicks(target) {
+    let hit = false;
+    for (const group of ["automation", "settings", "runtime"]) {
+      const value = target.dataset[`${group}Pick`];
+      if (value) {
+        pickInList(group, value);
+        hit = true;
+      }
+    }
+    return hit;
+  }
+
+  // 能力面 Skills tab 的 tag 筛选：一张表，编组只是带 steps 的 skill（design.md §3.2.3）
+  function setLibFilter(tag) {
+    $$("[data-lib-filter]").forEach((b) => b.classList.toggle("active", b.dataset.libFilter === tag));
+    $$('[data-library-body="skill"] .dl-row').forEach((row) => {
+      const tags = (row.dataset.tags || "").split(/\s+/).filter(Boolean);
+      row.hidden = tag !== "all" && !tags.includes(tag);
+    });
+  }
+
   // 项目面：点文件在右侧出预览（GitHub 式），树本身不跳走
   function openFilePreview(key) {
     $$("[data-file-view]").forEach((el) => {
@@ -1181,6 +1205,7 @@
     if (target.dataset.surface) {
       setSurface(target.dataset.surface);
       if (target.dataset.openAfter) openDocument(target.dataset.openAfter, documentMeta[target.dataset.openAfter]?.[1]);
+      applyPicks(target);
       return;
     }
 
@@ -1194,13 +1219,14 @@
       return;
     }
 
-    for (const group of ["automation", "settings", "runtime"]) {
-      const value = target.dataset[`${group}Pick`];
-      if (value) {
-        pickInList(group, value);
-        showToast(`已切换到「${$("strong", target)?.textContent ?? value}」`);
-        return;
-      }
+    if (applyPicks(target)) {
+      showToast(`已切换到「${$("strong", target)?.textContent ?? "该视图"}」`);
+      return;
+    }
+
+    if (target.dataset.libFilter) {
+      setLibFilter(target.dataset.libFilter);
+      return;
     }
 
     if (target.dataset.threadTab) {

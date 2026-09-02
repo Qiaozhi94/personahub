@@ -26,6 +26,12 @@ page.on("console", (m) => {
 });
 page.on("pageerror", (e) => consoleErrors.push(e.message));
 
+// V3.21：运行时不再是一级面，它是设置里的一组。进这一组 = 切设置面 + 选一个 adapter。
+async function gotoRuntime(adapter = "codex") {
+  await page.locator('.main-rail [data-surface="settings"]').click();
+  await page.locator(`[data-surface-view="settings"] .sp-list [data-runtime-pick="${adapter}"]`).click();
+}
+
 const checks = [];
 const failures = [];
 async function check(name, action) {
@@ -202,7 +208,7 @@ await check("主切换竖栏：日常的在上，配置类的沉到底部一排�
   if (!(await rail.isVisible())) throw new Error("没有主切换竖栏");
   const items = rail.locator("> button");
   if ((await items.count()) < 7) throw new Error("竖栏项过少");
-  for (const surface of ["project", "threads", "projects", "automation", "memory", "library", "stats", "runtime", "settings"]) {
+  for (const surface of ["project", "threads", "projects", "automation", "memory", "library", "stats", "settings"]) {
     if (!(await rail.locator(`[data-surface="${surface}"]`).isVisible())) throw new Error(`竖栏缺少 ${surface}`);
   }
   // V3.1 删掉图标活动栏的理由是「无文字，辨识度低」——这次必须带文字
@@ -214,9 +220,11 @@ await check("主切换竖栏：日常的在上，配置类的沉到底部一排�
   const y = async (k) => (await rail.locator(`[data-surface="${k}"]`).boundingBox()).y;
   if ((await y("memory")) - (await y("automation")) < 200) throw new Error("记忆与能力没有和设置一起沉到底部");
   if ((await y("settings")) < (await y("library"))) throw new Error("设置应在最下面");
-  // 运行时是高频的（派工失败第一个去的地方），但仍属治理组；它在统计之后、设置之前
-  if ((await y("runtime")) < (await y("stats"))) throw new Error("运行时应排在统计下面");
-  if ((await y("runtime")) > (await y("settings"))) throw new Error("运行时应排在设置上面——设置永远是最后一个");
+  // V3.21：运行时不再是一级入口，它并进了设置（到达它的主路径本来就是跳转，不是左栏点击）
+  if (await rail.locator('[data-surface="runtime"]').count()) {
+    throw new Error("运行时又变回一级入口了——V3.21 已把它并进设置，一级入口应为两组八个");
+  }
+  if ((await items.count()) !== 8) throw new Error(`一级入口应为 8 个，实际 ${await items.count()} 个`);
 
   // 顶栏不再有项目选择器：Issue 是工作区维度的
   if (await page.locator(".project-scope").count()) throw new Error("顶栏仍有项目选择器");
@@ -1143,7 +1151,7 @@ await check("实现与验证不能同源是硬约束（PRD 第 7.5 节）", asyn
   await picker.locator("[data-picker-close]").first().click();
 
   await page.locator('.main-rail [data-surface="library"]').click();
-  const squad = await page.locator('[data-library-body="squad"]').innerText();
+  const squad = await page.locator('[data-library-body="skill"]').innerText();
   if (!squad.includes("只给结果")) throw new Error("编组没有把验证步的上下文范围写成字段");
   if (!squad.includes("独立")) throw new Error("编组没有说明为什么要限制上下文");
   await page.locator('.main-rail [data-surface="project"]').click();
@@ -1520,7 +1528,7 @@ await check("关系页：以锚点为中心的一跳图 + 同源边表（记忆�
   await surface.locator('[data-memory-tab="inbox"]').click();
 });
 
-await check("能力面是纯 tab 切换：编组 / Skill；执行组合下沉到设置（ADR 0012）", async () => {
+await check("能力面：无左框、无成员卡、执行组合不在这里（ADR 0012）", async () => {
   await page.locator('.main-rail [data-surface="library"]').click();
   const lib = page.locator('[data-surface-view="library"]');
   if (await lib.locator(".sp-list").count()) throw new Error("能力面不该有左框");
@@ -1528,30 +1536,22 @@ await check("能力面是纯 tab 切换：编组 / Skill；执行组合下沉到
   if (await lib.locator(".runtime-table").count()) throw new Error("执行组合表还留在能力面");
   if ((await lib.innerText()).includes("做法：")) throw new Error("「做法」和 Skill 是同一个东西，不该有两个名字");
 
-  // 编组必须把每一步的上下文范围写成结构化字段
-  const squad = lib.locator('[data-library-body="squad"]');
-  if (!(await squad.isVisible())) throw new Error("默认不是编组");
-  if ((await squad.locator(".dl-row").count()) < 2) throw new Error("编组太少");
-  if (!(await squad.innerText()).includes("只给结果")) throw new Error("编组没有写明每一步的上下文范围");
-
-  // Skill 要能看出「什么时候注入」和「从哪来」，否则管理不了
-  await lib.locator('[data-library-tab="skill"]').click();
+  // 编组是带 steps 的 skill，和普通 skill 在同一张表里（V3.21 §3.2.3）
   const skill = lib.locator('[data-library-body="skill"]');
-  if ((await skill.locator(".dl-row").count()) < 4) throw new Error("Skill 太少");
-  const head = await skill.locator(".dl-head").innerText();
-  for (const want of ["工作流", "触碰路径", "命中"]) {
-    if (!head.includes(want)) throw new Error(`Skill 列表缺少「${want}」这一列`);
-  }
-  if (!(await skill.innerText()).includes("不注入验证类派工")) {
+  if (!(await skill.isVisible())) throw new Error("默认不是 Skills tab");
+  const text = await skill.innerText();
+  if (!text.includes("只给结果")) throw new Error("编组没有写明每一步的上下文范围");
+  if (!text.includes("触碰")) throw new Error("Skill 看不出什么时候注入");
+  if (!text.includes("次命中")) throw new Error("Skill 看不出命中过多少次");
+  if (!text.includes("不注入验证类派工")) {
     throw new Error("没有写明 Skill 不注入验证类派工——被喂做法的验证不独立");
   }
-  if (!(await skill.locator(".dl-row.off").count())) throw new Error("看不到已停用的 Skill");
-  await lib.locator('[data-library-tab="squad"]').click();
+  if (!(await skill.locator(".dl-row.off").count())) throw new Error("看不到已停用的行");
 });
 
-await check("执行组合是运行时面的检查结果，不是每天要挑的配置（V3.15）", async () => {
-  await page.locator('.main-rail [data-surface="runtime"]').click();
-  const st = page.locator('[data-surface-view="runtime"]');
+await check("执行组合是运行时的检查结果，不是每天要挑的配置（V3.15）", async () => {
+  await gotoRuntime();
+  const st = page.locator('[data-surface-view="settings"]');
   // V3.17：没有「全部」总览行，主面永远是某一个 adapter 的详情
   if (await st.locator('.sp-list [data-runtime-pick="all"]').count()) {
     throw new Error("「全部」总览行又回来了——它的原始理由（能力矩阵要横着比）已随矩阵一起删除");
@@ -1559,7 +1559,7 @@ await check("执行组合是运行时面的检查结果，不是每天要挑的�
   await st.locator('.sp-list [data-runtime-pick="codex"]').click();
   await st.locator('.mem-tabs [data-runtime-tab="config"]').click();
   const table = st.locator('[data-runtime-body="config"] [data-runtime-view="codex"] .runtime-table').first();
-  if (!(await table.isVisible())) throw new Error("运行时面没有执行组合表");
+  if (!(await table.isVisible())) throw new Error("运行时组没有执行组合表");
   const head = await table.locator(".rt-head").innerText();
   for (const col of ["模型", "深度", "额度", "项目可用性"]) {
     if (!head.includes(col)) throw new Error(`执行组合表缺少「${col}」列`);
@@ -1711,7 +1711,7 @@ await check("七个工作区面都挂在 surface-host 里，不越界盖住竖�
   // 一次标签失衡（工作流卡片改版时正则少吃了一层）会把 <main> 提前关掉，
   // 后面所有面被挤到 app-shell 底下，absolute inset:0 直接盖住整条竖栏，
   // 页面看着没事、就是点不动。这条断言把它变成一眼可见的红。
-  for (const v of ["project", "threads", "projects", "memory", "library", "stats", "automation", "runtime", "settings"]) {
+  for (const v of ["project", "threads", "projects", "memory", "library", "stats", "automation", "settings"]) {
     await page.locator(`.main-rail [data-surface="${v}"]`).click();
     const el = page.locator(`[data-surface-view="${v}"]`);
     const box = await el.boundingBox();
@@ -1849,16 +1849,19 @@ await check("失败页只收真故障：验证未通过与额度不足不进失�
   await surface.locator('[data-stat-tab="usage"]').click();
 });
 
-await check("额度在运行时面的配置 tab，且不在设置里（ADR 0017 第 5 条）", async () => {
+await check("额度在设置 · 运行时的配置 tab，不在统计也不单开入口（ADR 0017 第 5 条）", async () => {
   await page.locator('.main-rail [data-surface="settings"]').click();
   const list = await page.locator('[data-surface-view="settings"] .sp-list').innerText();
-  if (list.includes("额度与用量")) throw new Error("设置左列表里又出现了独立的额度入口");
-  if (list.includes("执行组合") || list.includes("凭据")) throw new Error("adapter / 凭据仍留在设置里——它们属于运行时面");
+  if (list.includes("额度与用量")) throw new Error("设置左列表里又出现了独立的额度入口——额度的消费点只有三个，总览是第四份");
+  // V3.21：adapter 与凭据现在正是设置的一组，左栏必须能看见运行时与插件两组
+  for (const group of ["运行时", "插件"]) {
+    if (!list.includes(group)) throw new Error(`设置左栏缺少「${group}」组——V3.21 把它们拆成两组，不合并`);
+  }
 
-  await page.locator('.main-rail [data-surface="runtime"]').click();
-  await page.locator('[data-surface-view="runtime"] .mem-tabs [data-runtime-tab="config"]').click();
-  const runtime = await page.locator('[data-surface-view="runtime"] [data-runtime-body="config"]').innerText();
-  if (!runtime.includes("额度池")) throw new Error("运行时面没有额度池——额度是 Runtime 的字段（ADR 0012 第 3 条）");
+  await gotoRuntime();
+  await page.locator('[data-surface-view="settings"] .mem-tabs [data-runtime-tab="config"]').click();
+  const runtime = await page.locator('[data-surface-view="settings"] [data-runtime-body="config"]').innerText();
+  if (!runtime.includes("额度池")) throw new Error("运行时组没有额度池——额度是 Runtime 的字段（ADR 0012 第 3 条）");
   if (!runtime.includes("可派次数")) throw new Error("额度没有按可派次数记，退回成 token 账单了");
   // V3.15 正名：额度按 adapter 配置分池，不按「账号」——凭据只是配置的一个字段
   if (!runtime.includes("按 adapter 配置")) throw new Error("额度池没有按 adapter 配置分，同配置下多个模型共用一个池这件事说不清");
@@ -1874,8 +1877,12 @@ await check("设置里有任务前缀与标签，且前缀改动被当成要确�
   await pick.click();
   const body = surface.locator('.sp-body[data-settings-view="labels"]');
   if (!(await body.isVisible())) throw new Error("点了没有切到标签面");
-  if (await surface.locator('.sp-body[data-settings-view="runtime"]').count()) {
-    throw new Error("设置面里还留着 runtime 面板——V3.15 已把它整体搬到运行时面");
+  // V3.21 反了过来：运行时并进设置，这个面板现在必须在
+  if (!(await surface.locator('.sp-body[data-settings-view="runtime"]').count())) {
+    throw new Error("设置面里没有运行时组——V3.21 已把原 §3.7 整体并进设置");
+  }
+  if (!(await surface.locator('.sp-body[data-settings-view="plugins"]').count())) {
+    throw new Error("设置面里没有插件组——装 CLI 与导入方法包必须分成两组");
   }
   const text = await body.innerText();
   if (!text.includes("重命名")) throw new Error("改前缀没有说清会重命名已有任务");
@@ -1926,7 +1933,7 @@ await check("能力面与记忆面用同一套列表排版", async () => {
       throw new Error(`${k} 不一致：记忆 ${memChrome[k]} ≠ 能力 ${libChrome[k]}`);
     }
   }
-  await page.locator('[data-library-tab="squad"]').click();
+  await page.locator('[data-library-tab="skill"]').click();
   await page.locator('.main-rail [data-surface="project"]').click();
 });
 
@@ -1977,13 +1984,13 @@ await check("记忆与能力用列表而不是卡片，列表铺满、段落限�
   }
   // measure 会把页面停在记忆面，先切回去再复位 tab
   await page.locator('.main-rail [data-surface="library"]').click();
-  await page.locator('[data-library-tab="squad"]').click();
+  await page.locator('[data-library-tab="skill"]').click();
   await page.locator('.main-rail [data-surface="project"]').click();
 });
 
 await check("凭据在运行时面的配置 tab：登录态不代管，API Key 才是 PersonaHub 自己存的", async () => {
-  await page.locator('.main-rail [data-surface="runtime"]').click();
-  const surface = page.locator('[data-surface-view="runtime"]');
+  await gotoRuntime();
+  const surface = page.locator('[data-surface-view="settings"]');
   await surface.locator('.mem-tabs [data-runtime-tab="config"]').click();
   // V3.17：每个 adapter 的配置视图必须自足——登录态在 OAuth 的 adapter 下，
   // API Key 在 opencode 下，不再有一张跨 adapter 的汇总表
@@ -2020,8 +2027,8 @@ await check("凭据在运行时面的配置 tab：登录态不代管，API Key �
 });
 
 await check("运行时面：左框是 adapter 列表，灯不能只有颜色（V3.15 §3.7.1）", async () => {
-  await page.locator('.main-rail [data-surface="runtime"]').click();
-  const surface = page.locator('[data-surface-view="runtime"]');
+  await gotoRuntime();
+  const surface = page.locator('[data-surface-view="settings"]');
   if (!(await surface.locator(".sp-list").count())) {
     throw new Error("运行时面没有左框——adapter 是一条条实体，有实体就有列表（§3.4 的规则）");
   }
@@ -2038,12 +2045,12 @@ await check("运行时面：左框是 adapter 列表，灯不能只有颜色（V
   // 防护条款：这一面不出现任何「偏好」字段
   const all = await surface.innerText();
   for (const word of ["设为默认", "优先级", "置顶", "重命名"]) {
-    if (all.includes(word)) throw new Error(`运行时面出现了「${word}」——偏好字段会让 adapter 长成「AI 成员」（ADR 0012 第 2 条）`);
+    if (all.includes(word)) throw new Error(`设置 · 运行时出现了「${word}」——偏好字段会让 adapter 长成「AI 成员」（ADR 0012 第 2 条）`);
   }
 });
 
-await check("运行时面只有两个 tab：能力位降为诊断里的「做不到什么」，写后果不写能力位名（V3.16 §3.7.2）", async () => {
-  const surface = page.locator('[data-surface-view="runtime"]');
+await check("设置 · 运行时只有两个 tab：能力位降为诊断里的「做不到什么」，写后果不写能力位名（V3.16 §3.7.2）", async () => {
+  const surface = page.locator('[data-surface-view="settings"]');
   // 能力 tab 已删：一张全是不可点格子的矩阵就是它自己批判过的债务展览馆
   if (await surface.locator('.mem-tabs [data-runtime-tab="capability"]').count()) {
     throw new Error("能力 tab 又回来了——V3.16 已把它删掉，能力位归各 adapter 的诊断");
@@ -2070,8 +2077,8 @@ await check("运行时面只有两个 tab：能力位降为诊断里的「做不
   await surface.locator('.sp-list [data-runtime-pick="codex"]').click();
 });
 
-await check("运行时面：同一模型两条路必须是两个执行组合（ADR 0012 第 2 条四元组）", async () => {
-  const surface = page.locator('[data-surface-view="runtime"]');
+await check("设置 · 运行时：同一模型两条路必须是两个执行组合（ADR 0012 第 2 条四元组）", async () => {
+  const surface = page.locator('[data-surface-view="settings"]');
   await surface.locator('.sp-list [data-runtime-pick="opencode"]').click();
   await surface.locator('.mem-tabs [data-runtime-tab="config"]').click();
   const body = surface.locator('[data-runtime-body="config"] [data-runtime-view="opencode"]');
@@ -2083,16 +2090,16 @@ await check("运行时面：同一模型两条路必须是两个执行组合（A
   await surface.locator('.sp-list [data-runtime-pick="codex"]').click();
 });
 
-await check("密钥存放在设置 · 数据，不在运行时面（V3.17）", async () => {
+await check("密钥存放在设置 · 数据，不在运行时组（V3.17）", async () => {
   // 它讲的是数据目录与明文列，是数据风险声明，不是某个 adapter 的属性——
   // 放在任何一个 adapter 下面都是错的
-  const rt = page.locator('[data-surface-view="runtime"]');
-  await page.locator('.main-rail [data-surface="runtime"]').click();
-  if ((await rt.innerText()).includes("没有加密")) throw new Error("密钥风险声明还留在运行时面");
+  await gotoRuntime();
+  const rt = page.locator('.sp-body[data-settings-view="runtime"]');
+  if ((await rt.innerText()).includes("没有加密")) throw new Error("密钥风险声明又回到运行时组了");
 
   await page.locator('.main-rail [data-surface="settings"]').click();
   const st = page.locator('[data-surface-view="settings"]');
-  await st.locator('[data-settings-pick="data"]').click();
+  await st.locator('.sp-list [data-settings-pick="data"]').click();
   const body = st.locator('.sp-body[data-settings-view="data"]');
   if (!(await body.isVisible())) throw new Error("设置里没有「数据与备份」面板");
   const text = await body.innerText();
@@ -2113,6 +2120,82 @@ await page.evaluate(() => document.querySelectorAll(".command-overlay").forEach(
 await page.locator('.main-rail [data-surface="project"]').click();
 await page.locator('.work-item[data-open="issue-view"]').first().click();
 await page.screenshot({ path: "shots/workbench.png", fullPage: true });
+await check("能力面是可选能力的容器：tab 由插件贡献，缺了也能跑（V3.21 §3.2）", async () => {
+  await page.locator('.main-rail [data-surface="library"]').click();
+  const lib = page.locator('[data-surface-view="library"]');
+
+  // 判据必须写在面上，否则下一版又会有人把 adapter 塞进来
+  const head = await lib.locator("header").innerText();
+  if (!head.includes("缺了也照样能干活")) throw new Error("能力面没有写出准入判据——它是这一面存在的理由");
+
+  // 三个 tab（编组 / Skill / 来源）已收成一张表；来源不再是 tab
+  if (await lib.locator('[data-library-tab="source"]').count()) {
+    throw new Error("「来源」tab 又回来了——来源是治理维度不是查找维度，它归设置 · 插件");
+  }
+  if (await lib.locator('[data-library-body="squad"]').count()) {
+    throw new Error("编组又变回独立类型了——它应该只是带 steps 的 skill（#编组 tag）");
+  }
+
+  // tab 栏末尾的「＋」是入口，不是 tab：tab 由插件装出来
+  if (!(await lib.locator(".mem-tabs .lib-tab-add").count())) {
+    throw new Error("tab 栏没有「装更多」的入口，看不出这一面是个容器");
+  }
+});
+
+await check("Skills 是一张表 + tag 筛选，编组只是带 steps 的行（V3.21 §3.2.3）", async () => {
+  await page.locator('.main-rail [data-surface="library"]').click();
+  const pane = page.locator('[data-library-body="skill"]');
+  await page.locator('[data-library-tab="skill"]').click();
+
+  const head = await pane.locator(".dl-head").innerText();
+  for (const col of ["名称", "tags", "要求", "步骤", "来源", "状态"]) {
+    if (!head.includes(col)) throw new Error(`Skills 表缺少「${col}」列`);
+  }
+  if (head.includes("表现") || head.includes("评分")) {
+    throw new Error("表里出现了表现列——Squad 不产生持久身份（ADR 0012 第 5 条），表现是展开后现算的一句");
+  }
+
+  const total = await pane.locator(".dl-row").count();
+  if (total < 8) throw new Error("Skills 表行数太少，看不出编组与普通 skill 混在同一张表里");
+
+  // tag 筛选：#编组 应该只留下带 steps 的那几行
+  await pane.locator('[data-lib-filter="编组"]').click();
+  const shown = await pane.locator(".dl-row:not([hidden])").count();
+  if (shown === total) throw new Error("按 #编组 筛选没有过滤掉任何行——筛选是假的");
+  if (shown === 0) throw new Error("按 #编组 筛选之后一行都不剩");
+  for (const row of await pane.locator(".dl-row:not([hidden])").all()) {
+    if (!(await row.innerText()).includes("步")) throw new Error("#编组 里出现了没有步骤的行");
+  }
+  await pane.locator('[data-lib-filter="all"]').click();
+  if ((await pane.locator(".dl-row:not([hidden])").count()) !== total) throw new Error("切回「全部」没有恢复所有行");
+});
+
+await check("插件的 tab 是声明出来的，动作走宿主白名单（V3.21 §3.2.6）", async () => {
+  await page.locator('.main-rail [data-surface="library"]').click();
+  await page.locator('[data-library-tab="inbox"]').click();
+  const pane = page.locator('[data-library-body="inbox"]');
+  const text = await pane.innerText();
+
+  if (!text.includes("不是插件画的")) throw new Error("没有说清界面由宿主渲染——这是允许插件开 tab 的前提");
+  if (!text.includes("host.issue.createWithRoom")) throw new Error("没有写出动作走的是宿主白名单，来源链就可能被绕开");
+  if (!text.includes("不能新增交互范式")) throw new Error("丢了「插件能新增数据、不能新增交互范式」这条代价");
+  if (!text.includes("还不属于任何项目")) throw new Error("没有交代抓来的东西归属哪个项目——资源库挂在 Project 下");
+
+  // 两个动作都必须在行上，否则这个 tab 只是个只读列表
+  const acts = await pane.locator(".dl-row .dl-act").first().innerText();
+  if (!acts.includes("归档") || !acts.includes("深入拆解")) throw new Error("订阅行缺少归档 / 深入拆解动作");
+
+  // 停用它 tab 就消失：这一条写在设置 · 插件里
+  await page.locator('.main-rail [data-surface="settings"]').click();
+  await page.locator('[data-surface-view="settings"] .sp-list [data-settings-pick="plugins"]').click();
+  const body = page.locator('.sp-body[data-settings-view="plugins"]');
+  if (!(await body.isVisible())) throw new Error("设置里打不开插件组");
+  const ptext = await body.innerText();
+  if (!ptext.includes("能力包") || !ptext.includes("插件")) throw new Error("插件组没有分成能力包与插件两个子区——风险差一个数量级的东西不能长得一样");
+  if (!ptext.includes("没有沙箱")) throw new Error("代码准入没有写出「本机没有沙箱」");
+  if (!ptext.includes("不得声明 surface")) throw new Error("没有写出 adapter 不能开 tab 的准入判据");
+});
+
 await browser.close();
 
 const result = { passed: checks.length, failed: failures.length, checks, failures, consoleErrors };

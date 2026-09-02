@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-02T12:12:27.245Z",
+  "generatedAt": "2026-09-02T14:34:14.391Z",
   "source": "file:///D:/Projects/personahub/ui-reference/personahub-draft/personahub-v3.1/index.html",
   "viewport": "1440x900",
-  "count": 42,
+  "count": 44,
   "exports": [
     {
       "file": "workbench.png",
@@ -145,11 +145,6 @@
       "kind": "top-level-surface"
     },
     {
-      "file": "surface-runtime.png",
-      "title": "运行时 · 配置（执行组合与额度池）",
-      "kind": "top-level-surface"
-    },
-    {
       "file": "surface-settings.png",
       "title": "设置",
       "kind": "top-level-surface"
@@ -185,18 +180,33 @@
       "kind": "top-level-surface"
     },
     {
+      "file": "surface-runtime.png",
+      "title": "设置 · 运行时 · 配置（执行组合与额度池）",
+      "kind": "top-level-surface"
+    },
+    {
       "file": "surface-runtime-diagnostic.png",
-      "title": "运行时 · 诊断（每行都能点）",
+      "title": "设置 · 运行时 · 诊断（每行都能点）",
       "kind": "top-level-surface"
     },
     {
       "file": "surface-runtime-limits.png",
-      "title": "运行时 · OpenCode 做不到什么",
+      "title": "设置 · 运行时 · OpenCode 做不到什么",
       "kind": "top-level-surface"
     },
     {
       "file": "surface-runtime-opencode.png",
-      "title": "运行时 · OpenCode 的两份配置（四元组）",
+      "title": "设置 · 运行时 · OpenCode 的两份配置（四元组）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-settings-plugins.png",
+      "title": "设置 · 插件（能力包与插件两种准入）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-library-inbox.png",
+      "title": "能力 · 订阅（插件声明的 tab，宿主渲染）",
       "kind": "top-level-surface"
     },
     {

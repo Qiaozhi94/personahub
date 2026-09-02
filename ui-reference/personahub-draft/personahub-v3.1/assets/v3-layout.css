@@ -5561,3 +5561,61 @@ button.dl-row { cursor: pointer; }
    必须在场但压灰——隐藏等于假装这条检查不存在，亮绿等于假装能力已经在线。 */
 .dl-row.not-yet .dl-title,
 .dl-row.not-yet .dl-dim { color: var(--faint); }
+
+
+/* ── V3.21 能力面：一张表 + tag 筛选，tab 由插件贡献 ──────────────── */
+
+/* display:grid 会盖掉 [hidden] 的 display:none，筛选必须显式复位 */
+.data-list .dl-row[hidden] { display: none; }
+
+.lib-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.lib-filter button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.lib-filter button:hover { background: var(--surface-2); color: var(--text-1); }
+
+.lib-filter button.active {
+  border-color: transparent;
+  background: var(--accent-soft, var(--surface-3));
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.lib-filter button i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.lib-filter button.active i { color: var(--text-2); }
+
+/* tab 栏末尾的「＋」：tab 是插件装出来的，这里只是入口，不是一个 tab */
+.mem-tabs .lib-tab-add {
+  margin-left: auto;
+  min-width: 30px;
+  padding: 4px 9px;
+  color: var(--text-3);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.mem-tabs .lib-tab-add:hover { color: var(--text-1); }
