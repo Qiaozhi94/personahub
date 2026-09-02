@@ -159,8 +159,9 @@ for (const [surface, file, title] of [
   ["projects", "surface-projects.png", "项目"],
   ["memory", "surface-memory.png", "记忆"],
   ["library", "surface-library.png", "能力"],
-  ["usage", "surface-usage.png", "用量"],
+  ["stats", "surface-stats.png", "统计 · 用量"],
   ["automation", "surface-automation.png", "自动化"],
+  ["runtime", "surface-runtime.png", "运行时 · 配置（执行组合与额度池）"],
   ["settings", "surface-settings.png", "设置"],
 ]) {
   await page.locator(`.main-rail [data-surface="${surface}"]`).click();
@@ -179,6 +180,35 @@ for (const [tab, file, title] of [
   await capture(file, title, "top-level-surface");
 }
 await page.locator('[data-memory-tab="inbox"]').click();
+
+// 运行时的另外三张图：配置 tab 承载执行组合与额度池，诊断 tab 承载可执行的下一步，
+// 单 adapter 视图才看得到「两份配置」这个四元组的真实场景（§3.7）
+await page.locator('.main-rail [data-surface="runtime"]').click();
+// 配置是默认 tab，上面那张 surface-runtime.png 已经是它；这里只补诊断
+await page.locator('[data-surface-view="runtime"] .mem-tabs [data-runtime-tab="diagnostic"]').click();
+await page.locator('[data-runtime-body="diagnostic"]').waitFor({ state: "visible" });
+await capture("surface-runtime-diagnostic.png", "运行时 · 诊断（每行都能点）", "top-level-surface");
+// 能力位降为各 adapter 诊断里的一块，OpenCode 那份是唯一会改变派工合法性的
+await page.locator('[data-surface-view="runtime"] .sp-list [data-runtime-pick="opencode"]').click();
+await page.locator('[data-runtime-body="diagnostic"] [data-runtime-view="opencode"]').waitFor({ state: "visible" });
+await capture("surface-runtime-limits.png", "运行时 · OpenCode 做不到什么", "top-level-surface");
+// 上面停在 diagnostic，config 那个 body 仍是隐藏的——
+// 它里面的 opencode 视图再怎么选中也不会可见，必须先切回 config
+await page.locator('[data-surface-view="runtime"] .mem-tabs [data-runtime-tab="config"]').click();
+await page.locator('[data-runtime-body="config"] [data-runtime-view="opencode"]').waitFor({ state: "visible" });
+await capture("surface-runtime-opencode.png", "运行时 · OpenCode 的两份配置（四元组）", "top-level-surface");
+
+// 统计的另外两张图：年度热力图只在「近一年」下可用（ADR 0017 第 7 条），
+// 失败页是第二个 tab。两者都不是默认态，不单独截就永远看不到。
+await page.locator('.main-rail [data-surface="stats"]').click();
+await page.locator('[data-stat-range="365"]').click();
+await page.locator('[data-statshape-body="year"]').waitFor({ state: "visible" });
+await capture("surface-stats-heatmap.png", "统计 · 年度热力图（近一年）", "top-level-surface");
+await page.locator('[data-stat-range="30"]').click();
+await page.locator('[data-stat-tab="errors"]').click();
+await page.locator('[data-stat-body="errors"]').waitFor({ state: "visible" });
+await capture("surface-stats-errors.png", "统计 · 失败", "top-level-surface");
+await page.locator('[data-stat-tab="usage"]').click();
 
 // 设置向导的入口在设置面里；上面切走了，回来才点得到
 await page.locator('.main-rail [data-surface="settings"]').click();
@@ -201,4 +231,6 @@ const result = {
 fs.writeFileSync(path.join(shotsDir, "pages-manifest.json"), `${JSON.stringify(result, null, 2)}\n`);
 console.log(JSON.stringify(result, null, 2));
 
-if (exports.length !== 24 || consoleErrors.length) process.exitCode = 1;
+// 张数写死是故意的：少截一张说明某个入口点不动了，而截图本身不会报错。
+// 加截图时必须同步改这个数——它上一次没跟上（写着 24，实际已是 34）。
+if (exports.length !== 38 || consoleErrors.length) process.exitCode = 1;

@@ -91,11 +91,15 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5A2.5 2.5 0 0 1 20 21z"/></svg>
             <small>能力</small>
               </button>
-          <button type="button" data-surface="usage" title="用量 · 额度池与消耗">
+          <button type="button" data-surface="stats" title="统计 · 用量与失败（只看过去）">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
-            <small>用量</small>
+            <small>统计</small>
               </button>
-          <button type="button" data-surface="settings" title="设置与诊断 · 运行时与数据">
+          <button type="button" data-surface="runtime" title="运行时 · adapter、配置与诊断">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
+            <small>运行时</small>
+              </button>
+          <button type="button" data-surface="settings" title="设置与诊断 · 前缀、权限与数据">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M4 12a8 8 0 0 1 .6-3l2.2.5 1.4-1.4-.5-2.2a8 8 0 0 1 3-1.3l1.1 2 2 0 1.1-2a8 8 0 0 1 3 1.3l-.5 2.2 1.4 1.4 2.2-.5a8 8 0 0 1 0 6l-2.2-.5-1.4 1.4.5 2.2a8 8 0 0 1-3 1.3l-1.1-2-2 0-1.1 2a8 8 0 0 1-3-1.3l.5-2.2-1.4-1.4-2.2.5A8 8 0 0 1 4 12Z"/></svg>
             <small>设置</small>
               </button>
@@ -1709,31 +1713,32 @@ completed -&gt; archived</code></pre>
                 <p class="rp-head">这一步需要什么　<em class="cap-tag">深度分析</em><em class="cap-tag">隔离验证</em></p>
 
                 <p class="rp-group">用哪个 adapter 与模型　<small>来自运行时的真实清单</small></p>
+                <p class="rp-quota">额度按 <b>adapter 配置</b>分池，不按模型：<code>codex</code> 剩 18% · <code>claude</code> 剩 62% · <code>opencode · coding-plan</code> 剩 88%。同一份配置下的多个模型共用一个池，所以下面各行标的是它属于哪个池，不是它自己有一个池。</p>
                 <div class="model-list" data-model-list>
                   <button class="model-row active" type="button" data-pick-model="codex-gpt5.6" data-depths="low,medium,high" data-quota="18">
                     <span class="mr-mark blue">C</span>
                     <span><strong>GPT-5.6</strong><small>Codex CLI v2.4.1</small></span>
-                    <span class="mr-quota warn">额度 18%</span>
+                    <span class="mr-quota warn">池 <code>codex</code> · 18%</span>
                   </button>
-                  <button class="model-row" type="button" data-pick-model="codex-gpt5.6-mini" data-depths="low,medium" data-quota="62">
+                  <button class="model-row" type="button" data-pick-model="codex-gpt5.6-mini" data-depths="low,medium" data-quota="18">
                     <span class="mr-mark blue">C</span>
                     <span><strong>GPT-5.6-mini</strong><small>Codex CLI v2.4.1 · 不支持 high</small></span>
-                    <span class="mr-quota">额度 62%</span>
+                    <span class="mr-quota warn">池 <code>codex</code> · 18%</span>
                   </button>
                   <button class="model-row" type="button" data-pick-model="claude-opus4.6" data-depths="low,medium,high" data-quota="62">
                     <span class="mr-mark purple">A</span>
                     <span><strong>Opus 4.6</strong><small>Claude Code v1.9.0</small></span>
-                    <span class="mr-quota">额度 62%</span>
+                    <span class="mr-quota">池 <code>claude</code> · 62%</span>
                   </button>
-                  <button class="model-row" type="button" data-pick-model="claude-sonnet4.8" data-depths="low,medium,high" data-quota="88">
+                  <button class="model-row" type="button" data-pick-model="claude-sonnet4.8" data-depths="low,medium,high" data-quota="62">
                     <span class="mr-mark purple">A</span>
                     <span><strong>Sonnet 4.8</strong><small>Claude Code v1.9.0</small></span>
-                    <span class="mr-quota">额度 88%</span>
+                    <span class="mr-quota">池 <code>claude</code> · 62%</span>
                   </button>
-                  <button class="model-row" type="button" data-pick-model="opencode-deepseekv4flash" data-depths="low" data-quota="94" data-advice="这一步要深度分析，它只有 low">
+                  <button class="model-row" type="button" data-pick-model="opencode-deepseekv4flash" data-depths="low" data-quota="88" data-advice="这一步要深度分析，它只有 low">
                     <span class="mr-mark green">O</span>
                     <span><strong>DeepSeek-V4-Flash</strong><small>OpenCode v0.7.2 · 只有 low</small></span>
-                    <span class="mr-quota">额度 94%</span>
+                    <span class="mr-quota">池 <code>opencode · coding-plan</code> · 88%</span>
                   </button>
                 </div>
 
@@ -1745,7 +1750,7 @@ completed -&gt; archived</code></pre>
                 </div>
 
                 <p class="rp-resolved">将派给　<code data-combo-preview>codex-gpt5.6-high</code><small data-room-implicit>发送到当前任务的活跃会话</small></p>
-                <p class="rp-foot">没有「成员」这一层：adapter 与模型来自运行时的真实清单，深度每次可调；历史表现记在这个组合上。</p>
+                <p class="rp-foot">没有「成员」这一层：adapter、配置与模型来自运行时的真实清单，深度每次可调；历史表现记在 <code>adapter × 配置 × 模型 × 深度</code> 这个组合上。</p>
                   </div>
               <div class="scope-popover" data-scope-popover hidden>
                 <p class="rp-head">这次给它看什么　<em class="cap-tag">这一步：独立验证</em></p>
@@ -2254,93 +2259,177 @@ completed -&gt; archived</code></pre>
           <section class="surface simple-surface" data-surface-view="library" aria-label="能力">
             <section class="surface-content">
               <header>
-                <div><small>执行组合是 adapter 装了什么决定的，归设置；这里放你真正要维护的东西</small><h1>能力</h1></div>
+                <div><small>执行组合是运行时装了什么决定的，归运行时面；这里放你真正要维护的东西</small><h1>能力</h1></div>
                 <button class="primary-button" type="button" data-demo="新建：编组或 Skill">＋ 新建</button>
               </header>
 
               <div class="mem-tabs" role="tablist" aria-label="能力视图">
-                <button class="active" type="button" role="tab" data-library-tab="squad">编组 <i>2</i></button>
+                <button class="active" type="button" role="tab" data-library-tab="squad">编组 <i>3</i></button>
                 <button type="button" role="tab" data-library-tab="skill">Skill <i>12</i></button>
+                <button type="button" role="tab" data-library-tab="source">来源 <i>4</i></button>
               </div>
 
               <div class="lib-pane" data-library-body="squad">
-                <p class="pane-note">编组不是一群常驻的人，是一串预设：每一步用哪个执行组合、给它看到什么。<strong>能力边界必须写成结构化字段</strong>（ADR 0007），写在描述里不算。</p>
-                                <div class="data-list" style="--cols: minmax(0, 1.1fr) minmax(0, 1.4fr) 190px 100px 72px 72px" role="table" aria-label="编组">
-                  <div class="dl-head" role="row"><span>编组</span><span>步骤</span><span>上下文范围</span><span>工作流</span><span>状态</span><span></span></div>
+                <p class="pane-note">编组不是一群常驻的人，是一串预设：每一步用哪个执行组合、给它看到什么。<strong>能力边界必须写成结构化字段</strong>（ADR 0007），写在描述里不算。<b>这张表没有「表现」列，也不能按表现排序</b>——编组不产生持久身份（ADR 0012 第 5 条），表现是展开后现算的一句观察，不是挂在它身上的分数。</p>
+                                <div class="data-list" style="--cols: minmax(0, 1.05fr) minmax(0, 1.2fr) 128px 152px 128px 74px 60px" role="table" aria-label="编组">
+                  <div class="dl-head" role="row"><span>编组</span><span>步骤</span><span>上下文范围</span><span>能力边界</span><span>来源</span><span>状态</span><span></span></div>
                   <div class="dl-row" role="row">
                     <span class="dl-title">代码实现 + 独立验证</span>
-                    <span class="dl-chain"><code>codex-gpt5.6-high</code><i>→</i><code>claude-sonnet5-medium</code></span>
+                    <span class="dl-chain"><code>codex-gpt5.6-high</code><i>→</i><code>claude-sonnet4.8-medium</code></span>
                     <span class="dl-dim"><b>全部</b> · <b>只给结果</b></span>
-                    <span><code>Coding</code></span>
+                    <span><em class="cap-tag">代码实现</em><em class="cap-tag">隔离验证</em></span>
+                    <span><button class="linklike" type="button" data-library-tab="source">内置</button></span>
                     <span class="pill success">已启用</span>
                     <span class="dl-act"><button type="button" data-demo="编辑这个编组">编辑</button></span>
-                    <p class="dl-sub">第 2 步强制「只给结果」：读不到实现者的自述，这次验证才算独立（PRD §7.5）。派工时校验，不满足就拒绝。</p>
+                    <p class="dl-sub">第 2 步强制「只给结果」：读不到实现者的自述，这次验证才算独立（PRD §7.5）。派工时校验，不满足就拒绝。
+                      <em class="dl-perf"><b>现算 · 统计 v3 之后的 12 次派工</b>：验收一次通过 9 次。<span class="dl-flag">样本不足 30 次</span>　成员组合各自：<code>codex-gpt5.6-high</code> 9/12 · <code>claude-sonnet4.8-medium</code> 11/12。<b>这不是评分</b>——编组改一版就是另一段样本，组合级数字回答「这几个执行者行不行」，这一句回答「这套步骤和围栏加上去之后行不行」。</em></p>
                   </div>
                   <div class="dl-row" role="row">
                     <span class="dl-title">调研 + 交叉核对</span>
-                    <span class="dl-chain"><code>claude-opus5-high</code><i>→</i><code>codex-gpt5.6-medium</code></span>
+                    <span class="dl-chain"><code>claude-opus4.6-high</code><i>→</i><code>codex-gpt5.6-medium</code></span>
                     <span class="dl-dim"><b>全部</b> · <b>只给目标</b></span>
-                    <span><code>Research</code></span>
+                    <span><em class="cap-tag">深度分析</em><em class="cap-tag">交叉核对</em></span>
+                    <span><button class="linklike" type="button" data-library-tab="source">web-research@1.4</button></span>
                     <span class="pill success">已启用</span>
-                    <span class="dl-act"><button type="button" data-demo="编辑这个编组">编辑</button></span>
-                    <p class="dl-sub">第 2 步给「只给目标」：不看第 1 步的结论，两份独立结论的分歧点才是要你拍板的地方。</p>
+                    <span class="dl-act"><button type="button" data-demo="导出为能力包 —— 导出前会剥离：3 条 Memory 原始内容、2 份 Evidence、本机路径 D:\Projects\personahub。逐条列出后才会写文件">导出</button></span>
+                    <p class="dl-sub">第 2 步给「只给目标」：不看第 1 步的结论，两份独立结论的分歧点才是要你拍板的地方。
+                      <em class="dl-perf"><b>现算 · 统计 v1 之后的 4 次派工</b>：验收一次通过 3 次。<span class="dl-flag">样本不足 30 次</span>　4 次派工不足以判断这套编排好不好，这一行现在只是记录，不是依据。</em></p>
+                  </div>
+                  <div class="dl-row off" role="row">
+                    <span class="dl-title">文档拆解 + 结构化摘录</span>
+                    <span class="dl-chain"><code>claude-opus4.6-medium</code><i>→</i><code>opencode-deepseekv4pro-low</code></span>
+                    <span class="dl-dim"><b>只给目标</b> · <b>只给结果</b></span>
+                    <span><em class="cap-tag">长文拆解</em></span>
+                    <span><button class="linklike" type="button" data-library-tab="source">book-digest@0.9</button></span>
+                    <span class="pill muted">随来源停用</span>
+                    <span class="dl-act"><button type="button" data-demo="启用来源包 book-digest@0.9 后这个编组会回到派工清单">启用</button></span>
+                    <p class="dl-sub">来源包停用后它从派工清单消失，<b>但历史不改写</b>：用过它的 7 条执行记录仍显示当时的 <code>book-digest@0.9</code>，证据链不因为今天停了一个包而断（同 §3.7.5 删除 adapter 配置的处理）。</p>
                   </div>
                 </div>
 
               </div>
 
               <div class="lib-pane" data-library-body="skill" hidden>
-                <p class="pane-note">Skill 是一条<strong>已确认的做法</strong>：命中条件成立时自动加进那次派工的上下文，省得每次重新交代。来源同样是收敛过的验收事件，不是谁在会话里说过一句。</p>
-                                <div class="data-list" style="--cols: 88px minmax(0, 1fr) 132px 176px 70px 100px 70px" role="table" aria-label="Skill">
-                  <div class="dl-head" role="row"><span>强度</span><span>做法</span><span>工作流</span><span>触碰路径</span><span>命中</span><span>最近</span><span>操作</span></div>
+                <p class="pane-note">Skill 是一条<strong>已确认的做法</strong>：命中条件成立时自动加进那次派工的上下文，省得每次重新交代。来源同样是收敛过的验收事件，不是谁在会话里说过一句。<b>「要求」写的是这条做法至少需要什么能力，不写「配哪个组合最好」</b>——后者是编组的事，写进 Skill 会长出第二套路由信号。</p>
+                                <div class="data-list" style="--cols: 84px minmax(0, 1fr) 118px 112px 146px 124px 88px 62px" role="table" aria-label="Skill">
+                  <div class="dl-head" role="row"><span>强度</span><span>做法</span><span>要求</span><span>工作流</span><span>触碰路径</span><span>来源</span><span>命中</span><span></span></div>
                   <div class="dl-row" role="row">
                     <span class="mem-stance confirmed">confirmed</span>
                     <span class="dl-title">改动前先跑 npm run verify</span>
+                    <span><em class="cap-tag">工具循环</em></span>
                     <span class="dl-dim">Coding</span>
                     <span><code>server/** · shared/**</code></span>
-                    <span class="dl-dim">34 次</span>
-                    <span class="dl-dim">08-30</span>
+                    <span><button class="linklike" type="button" data-library-tab="source">内置</button></span>
+                    <span class="dl-dim">34 次 · 08-30</span>
                     <span class="dl-act"><button type="button" data-demo="停用这个 Skill">停用</button></span>
                     <p class="dl-sub">改动 <code>server/</code> 或 <code>shared/</code> 下的文件后跑 <code>npm run verify</code>（串联 lint、typecheck、测试与文档门禁），不要只跑单个测试文件。<em class="dl-warn">不注入验证类派工 —— 验证者该自己决定怎么验，被喂做法就不独立了。</em></p>
                   </div>
                   <div class="dl-row" role="row">
                     <span class="mem-stance confirmed">confirmed</span>
                     <span class="dl-title">新增可替换点前先看 ADR 0008 的判断标准</span>
+                    <span><em class="cap-tag">架构</em></span>
                     <span class="dl-dim">Coding</span>
                     <span><code>**/providers/**</code></span>
-                    <span class="dl-dim">11 次</span>
-                    <span class="dl-dim">08-27</span>
+                    <span><button class="linklike" type="button" data-library-tab="source">内置</button></span>
+                    <span class="dl-dim">11 次 · 08-27</span>
                     <span class="dl-act"><button type="button" data-demo="停用这个 Skill">停用</button></span>
                   </div>
                   <div class="dl-row" role="row">
                     <span class="mem-stance verified">verified</span>
                     <span class="dl-title">Prettier 是增量目标，改旧文件时同步扩展 format targets</span>
+                    <span class="dl-dim">—</span>
                     <span class="dl-dim">Coding</span>
                     <span><code>—</code></span>
-                    <span class="dl-dim">6 次</span>
-                    <span class="dl-dim">08-22</span>
+                    <span><button class="linklike" type="button" data-library-tab="source">内置</button></span>
+                    <span class="dl-dim">6 次 · 08-22</span>
                     <span class="dl-act"><button type="button" data-demo="停用这个 Skill">停用</button></span>
                   </div>
                   <div class="dl-row" role="row">
                     <span class="mem-stance confirmed">confirmed</span>
                     <span class="dl-title">引用必须带章节号</span>
+                    <span><em class="cap-tag">深度分析</em></span>
                     <span class="dl-dim">Research / Docs</span>
                     <span><code>docs/**</code></span>
-                    <span class="dl-dim">22 次</span>
-                    <span class="dl-dim">08-29</span>
+                    <span><button class="linklike" type="button" data-library-tab="source">web-research@1.4</button></span>
+                    <span class="dl-dim">22 次 · 08-29</span>
                     <span class="dl-act"><button type="button" data-demo="停用这个 Skill">停用</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">verified</span>
+                    <span class="dl-title">调研结论要标注检索日期</span>
+                    <span><em class="cap-tag">深度分析</em></span>
+                    <span class="dl-dim">Research</span>
+                    <span><code>docs/research/**</code></span>
+                    <span class="pill warn">冲突 · 待你选</span>
+                    <span class="dl-dim">— 未生效</span>
+                    <span class="dl-act"><button type="button" data-demo="选定一个候选后记一条决定：从此这个名字归它，另一个保持未生效">去选</button></span>
+                    <p class="dl-sub"><b>两个来源贡献了同名 Skill，系统不替你定优先级</b>——自动覆盖会让「为什么这次结果变了」不可解释。两个候选并置，选完记一条决定：
+                      <em class="dl-perf"><code>web-research@1.4</code>：要求标注「检索日期 + 快照链接」　·　<code>coding-review-cn@2.1</code>：只要求标注检索日期。<b>在你选定之前两个都不生效</b>，这次派工的上下文里没有这条。</em></p>
                   </div>
                   <div class="dl-row off" role="row">
                     <span class="mem-stance confirmed">confirmed</span>
                     <span class="dl-title">失败用例先复现再修</span>
+                    <span class="dl-dim">—</span>
                     <span class="dl-dim">Coding</span>
                     <span><code>—</code></span>
-                    <span class="dl-dim">0 次</span>
-                    <span class="dl-dim">停用于 08-18</span>
+                    <span><button class="linklike" type="button" data-library-tab="source">内置</button></span>
+                    <span class="dl-dim">0 次 · 停用于 08-18</span>
                     <span class="dl-act"><button type="button" data-demo="启用这个 Skill">启用</button></span>
                   </div>
                 </div>
 
+              </div>
+
+              <div class="lib-pane" data-library-body="source" hidden>
+                <p class="pane-note">这一面回答的是另一个问题：上面那些东西<strong>从哪来、还能不能信、要不要停掉</strong>。<b>声明不等于授权</b>——包里写着提供什么只是候选，校验、准入、启用之后它才存在；未准入的条目不会按声明渲染成已有能力。</p>
+                <div class="data-list" style="--cols: minmax(0, 1.05fr) 118px minmax(0, 1.15fr) 88px 96px 86px" role="table" aria-label="来源">
+                  <div class="dl-head" role="row"><span>来源</span><span>类型</span><span>贡献</span><span>版本</span><span>状态</span><span></span></div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">PersonaHub 内置</span>
+                    <span class="dl-dim">内置</span>
+                    <span class="dl-dim">1 编组 · 4 Skill · 2 输出契约</span>
+                    <span class="dl-dim">随版本</span>
+                    <span class="pill success">已启用</span>
+                    <span class="dl-act"><button type="button" data-demo="内置来源不可停用：它是底座，停掉等于没有能力库">—</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">coding-review-cn</span>
+                    <span class="dl-dim">能力包 · 声明式</span>
+                    <span class="dl-dim">1 Skill · 1 输出契约 · 1 硬规则加严</span>
+                    <span class="dl-dim">2.1</span>
+                    <span class="pill success">已启用</span>
+                    <span class="dl-act"><button type="button" data-demo="停用 coding-review-cn@2.1：它贡献的条目从派工清单消失，历史执行记录保留当时的包名与版本">停用</button></span>
+                    <p class="dl-sub">读一个目录，校验通过即可启用；<b>未知字段会被拒绝，包不会被部分导入</b>。它把「验证步只读结果」这条底座规则<b>加严</b>为「验证步只读结果且不含失败日志」——<em class="dl-perf">能力包只能把规则改得更严，放宽是不可能的，因此界面上没有这个表达。</em></p>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">web-research</span>
+                    <span class="dl-dim">能力包 · 声明式</span>
+                    <span class="dl-dim">1 编组 · 1 Skill · 1 验收检查 · 1 定时规则</span>
+                    <span class="dl-dim">1.4</span>
+                    <span class="pill warn">部分可用</span>
+                    <span class="dl-act"><button type="button" data-demo="查看这个包的逐项状态">逐项</button></span>
+                    <p class="dl-sub"><b>4 项里 3 项已启用，1 项未生效</b>——不能整体显示「已启用」：
+                      <em class="dl-perf">✓ 编组「调研 + 交叉核对」　✓ Skill「引用必须带章节号」（与另一个包同名，待你选）　✓ 定时规则 → 引用本机白名单 <code>research.weekly-sweep</code>　<span class="dl-flag">✗ 验收检查「来源新鲜度」→ 它点名的白名单条目 <code>web.fetch-age</code> 本机没有</span>。<b>坏的只是它自己</b>，同包其余三项照常工作，其他来源不受影响。</em></p>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">book-digest</span>
+                    <span class="dl-dim">能力包 · 声明式</span>
+                    <span class="dl-dim">1 编组 · 3 Skill</span>
+                    <span class="dl-dim">0.9</span>
+                    <span class="pill muted">已停用</span>
+                    <span class="dl-act"><button type="button" data-demo="重新启用 book-digest@0.9">启用</button></span>
+                    <p class="dl-sub">停用于 08-24。它贡献的编组与 Skill 不再进入任何派工，<b>但用过它的 7 条历史执行记录仍显示当时的 <code>book-digest@0.9</code></b>——停用不改写历史。</p>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">deepseek-adapter</span>
+                    <span class="dl-dim">插件 · 代码</span>
+                    <span class="dl-dim">1 个 adapter · 1 个定时 factory 引用</span>
+                    <span class="dl-dim">0.3</span>
+                    <span class="pill muted">待逐项确认</span>
+                    <span class="dl-act"><button type="button" data-demo="逐项确认：先看它声明了什么，再决定是否允许它运行">逐项确认</button></span>
+                    <p class="dl-sub"><em class="dl-warn">⚠ 本机没有沙箱：启用等于让这段代码与 PersonaHub 同权运行，能读你的代码目录与本机凭据。</em>因此它和能力包<b>不是同一个导入动作</b>——能力包校验通过即可启用，插件必须逐项确认后才允许运行。它是你自己放进 <code>~/.personahub/plugins/</code> 的目录，本产品不做远程安装与信任链。</p>
+                  </div>
+                </div>
               </div>
             </section>
           </section>
@@ -2395,168 +2484,524 @@ completed -&gt; archived</code></pre>
                   <button class="rn-row" type="button" data-demo="打开这次的任务"><span>08-10 09:00</span><span class="pill success">验证通过</span><span>无更新</span><span>advisory-2026-08-10.json</span></button>
                   <button class="rn-row" type="button" data-demo="打开这次的任务"><span>08-03 09:00</span><span class="pill warn">有待处理</span><span>1 项中危依赖</span><span>advisory-2026-08-03.json</span></button>
                 </div>
-                <p class="pane-note">「未触发」和「跑了但失败」分开记：前者不是故障，但你需要知道那天其实没有跑。</p>
+                <p class="pane-note">「未触发」与「已执行但失败」分开记录：前者不属于故障，但使用者需要知晓当日实际未执行。</p>
               </div>
             </section>
           </section>
 
-          <section class="surface split-surface" data-surface-view="usage" aria-label="用量">
-            <aside class="sp-list">
-              <div class="sp-head"><p>用量<small>本机统计 · 不上传</small></p></div>
-              <div class="sp-scroll">
-              <p class="sp-group">额度池<small>按账号，不是按模型</small></p>
-              <button class="sp-item active" type="button" data-usage-pick="codex"><span class="signal green"></span><span><strong>codex · OAuth</strong><small>剩 214 次 low · 本月已用 41%</small></span></button>
-              <button class="sp-item" type="button" data-usage-pick="claude"><span class="signal yellow"></span><span><strong>claude · OAuth</strong><small>opus 剩 38 次 low · 5 小时窗口</small></span></button>
-              <button class="sp-item" type="button" data-usage-pick="opencode"><span class="signal blue"></span><span><strong>opencode · API Key</strong><small>本地无限 · 按 token 计费</small></span></button>
-              <p class="sp-group">消耗</p>
-              <button class="sp-item" type="button" data-demo="按项目看消耗分布"><span><strong>按项目</strong><small>PersonaHub 占 78%</small></span></button>
-              <button class="sp-item" type="button" data-demo="按编组看消耗：验证步骤单独计"><span><strong>按编组</strong><small>「代码实现 + 独立验证」占 52%</small></span></button>
-              <button class="sp-item" type="button" data-demo="被额度挡下的派工都记在这里"><span><strong>被额度挡下的</strong><small>近 30 天 3 次</small></span></button>
+          <section class="surface simple-surface" data-surface-view="stats" aria-label="统计">
+            <section class="surface-content">
+              <header>
+                <div><small>本机统计 · 仅呈现历史数据 · 不上传</small><h1>统计</h1></div>
+                <div class="stat-fresh"><span>本机时区 · 汇总于 14:32</span><button type="button" data-demo="重新汇总本机运行记录">刷新</button></div>
+              </header>
+
+              <div class="stat-head">
+                <div class="mem-tabs stat-tabs" role="tablist" aria-label="统计视图">
+                  <button class="active" type="button" role="tab" aria-selected="true" data-stat-tab="usage">用量</button>
+                  <button type="button" role="tab" aria-selected="false" data-stat-tab="errors">失败 <i data-stat-failed>15</i></button>
+                </div>
+                <div class="stat-filters">
+                  <div class="seg" role="group" aria-label="时间范围">
+                    <button type="button" data-stat-range="7">近 7 天</button>
+                    <button class="active" type="button" data-stat-range="30">近 30 天</button>
+                    <button type="button" data-stat-range="365">近一年</button>
+                  </div>
+                  <button class="seg-drop" type="button" data-demo="按项目筛选：全部 / PersonaHub / 无项目">项目：全部 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+                </div>
+              </div>
+
+              <div class="stat-pane" data-stat-body="usage">
+                <div class="stat-kpi">
+                  <div>
+                    <small>费用 · <b data-stat-span>30 天</b></small>
+                    <strong data-kpi="paid">$2.10</strong>
+                    <span>实付 · 仅 API Key 账号产生支出</span>
+                    <span class="kpi-sub">订阅等价 <b data-kpi="eq">$28.61</b> · 按公开 API 定价折算，<b>非实际账单</b></span>
+                  </div>
+                  <div>
+                    <small>Token · <b data-stat-span>30 天</b></small>
+                    <strong data-kpi="tok">131.6M</strong>
+                    <span>入 <b data-kpi="tin">123.7M</b> · 出 <b data-kpi="tout">7.9M</b><br>缓存命中 <b data-kpi="cache">79.0M</b>（60%）</span>
+                  </div>
+                  <div>
+                    <small>运行时长 · <b data-stat-span>30 天</b></small>
+                    <strong data-kpi="time">35h 56m</strong>
+                    <span>模型 <b data-kpi="tmodel">7h 54m</b> · 工具 <b data-kpi="ttool">22h 38m</b></span>
+                  </div>
+                  <div>
+                    <small>派工 · <b data-stat-span>30 天</b></small>
+                    <strong data-kpi="runs">206</strong>
+                    <span>失败 <b data-kpi="failed">15</b> 次 · 详见失败页</span>
+                  </div>
+                </div>
+
+                <section class="stat-card">
+                  <div class="sc-head">
+                    <h2>趋势<span class="sc-sub">同一数据集的三种呈现形式，指标与形态相互独立</span></h2>
+                    <div class="sc-switch">
+                      <div class="seg seg-sm" role="group" aria-label="指标">
+                        <button class="active" type="button" data-stat-metric="tok">Token</button>
+                        <button type="button" data-stat-metric="cost">费用</button>
+                        <button type="button" data-stat-metric="secs">时长</button>
+                        <button type="button" data-stat-metric="runs">派工</button>
+                      </div>
+                      <div class="seg seg-sm" role="group" aria-label="形态">
+                        <button class="active" type="button" data-statshape-tab="day">按天</button>
+                        <button type="button" data-statshape-tab="week">按周</button>
+                        <button type="button" data-statshape-tab="year">热力图</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sc-body" data-statshape-body="day" data-a-tok="13.5M" data-a-cost="$3.40" data-a-secs="3h" data-a-runs="27 次">
+                    <div class="sb-plot">
+                      <span class="sb-axis" data-axis-max>13.5M</span>
+                      <div class="sb-chart">
+                    <span class="sb-col" data-m="23,13,27,19" style="--h:23%" title="08-04 · 3.1M token · $0.44 · 5 次派工"></span>
+                    <span class="sb-col" data-m="24,16,23,19" style="--h:24%" title="08-05 · 3.2M token · $0.55 · 5 次派工"></span>
+                    <span class="sb-col" data-m="60,67,79,30" style="--h:60%" title="08-06 · 8.1M token · $2.27 · 8 次派工"></span>
+                    <span class="sb-col" data-m="50,72,42,37" style="--h:50%" title="08-07 · 6.8M token · $2.45 · 10 次派工"></span>
+                    <span class="sb-col" data-m="0,0,0,0" style="--h:0%" title="08-08 · 0.0M token · $0.00 · 0 次派工"></span>
+                    <span class="sb-col" data-m="20,16,12,11" style="--h:20%" title="08-09 · 2.7M token · $0.54 · 3 次派工"></span>
+                    <span class="sb-col" data-m="56,28,44,30" style="--h:56%" title="08-10 · 7.5M token · $0.97 · 8 次派工"></span>
+                    <span class="sb-col" data-m="30,29,24,30" style="--h:30%" title="08-11 · 4.1M token · $0.99 · 8 次派工"></span>
+                    <span class="sb-col" data-m="48,58,57,37" style="--h:48%" title="08-12 · 6.6M token · $1.99 · 10 次派工"></span>
+                    <span class="sb-col" data-m="33,28,42,33" style="--h:33%" title="08-13 · 4.4M token · $0.96 · 9 次派工"></span>
+                    <span class="sb-col" data-m="53,53,74,44" style="--h:53%" title="08-14 · 7.2M token · $1.80 · 12 次派工"></span>
+                    <span class="sb-col" data-m="0,0,0,0" style="--h:0%" title="08-15 · 0.0M token · $0.00 · 0 次派工"></span>
+                    <span class="sb-col" data-m="0,0,0,0" style="--h:0%" title="08-16 · 0.0M token · $0.00 · 0 次派工"></span>
+                    <span class="sb-col" data-m="60,49,37,44" style="--h:60%" title="08-17 · 8.2M token · $1.67 · 12 次派工"></span>
+                    <span class="sb-col" data-m="40,23,36,33" style="--h:40%" title="08-18 · 5.4M token · $0.78 · 9 次派工"></span>
+                    <span class="sb-col" data-m="28,22,25,15" style="--h:28%" title="08-19 · 3.8M token · $0.73 · 4 次派工"></span>
+                    <span class="sb-col" data-m="47,65,56,41" style="--h:47%" title="08-20 · 6.4M token · $2.22 · 11 次派工"></span>
+                    <span class="sb-col" data-m="36,52,42,30" style="--h:36%" title="08-21 · 4.9M token · $1.77 · 8 次派工"></span>
+                    <span class="sb-col" data-m="0,0,0,0" style="--h:0%" title="08-22 · 0.0M token · $0.00 · 0 次派工"></span>
+                    <span class="sb-col" data-m="0,0,0,0" style="--h:0%" title="08-23 · 0.0M token · $0.00 · 0 次派工"></span>
+                    <span class="sb-col" data-m="45,39,61,44" style="--h:45%" title="08-24 · 6.1M token · $1.34 · 12 次派工"></span>
+                    <span class="sb-col" data-m="56,42,68,48" style="--h:56%" title="08-25 · 7.5M token · $1.43 · 13 次派工"></span>
+                    <span class="sb-col" data-m="63,42,45,63" style="--h:63%" title="08-26 · 8.6M token · $1.45 · 17 次派工"></span>
+                    <span class="sb-col" data-m="37,48,40,22" style="--h:37%" title="08-27 · 5.0M token · $1.62 · 6 次派工"></span>
+                    <span class="sb-col" data-m="0,0,0,0" style="--h:0%" title="08-28 · 0.0M token · $0.00 · 0 次派工"></span>
+                    <span class="sb-col" data-m="16,15,22,7" style="--h:16%" title="08-29 · 2.2M token · $0.52 · 2 次派工"></span>
+                    <span class="sb-col" data-m="0,0,0,0" style="--h:0%" title="08-30 · 0.0M token · $0.00 · 0 次派工"></span>
+                    <span class="sb-col" data-m="100,100,100,100" style="--h:100%" title="08-31 · 13.5M token · $3.40 · 27 次派工"></span>
+                    <span class="sb-col" data-m="0,0,0,0" style="--h:0%" title="09-01 · 0.0M token · $0.00 · 0 次派工"></span>
+                    <span class="sb-col" data-m="47,24,66,26" style="--h:47%" title="09-02 · 6.4M token · $0.83 · 7 次派工"></span>
+                      </div>
+                    </div>
+                    <p class="sb-foot"><span>08-04</span><span>最近 30 天 · 每列为一日</span><span>09-02</span></p>
+                  </div>
+
+                  <div class="sc-body" data-statshape-body="week" hidden data-a-tok="35.7M" data-a-cost="$11.40" data-a-secs="9h" data-a-runs="59 次">
+                    <div class="sb-plot">
+                      <span class="sb-axis" data-axis-max>35.7M</span>
+                      <div class="sb-chart sb-wide">
+                    <span class="sb-col" data-m="56,44,49,47" style="--h:56%" title="06-08 起 · 20.1M token · $5.04 · 28 次派工"></span>
+                    <span class="sb-col" data-m="94,66,91,71" style="--h:94%" title="06-15 起 · 33.6M token · $7.56 · 42 次派工"></span>
+                    <span class="sb-col" data-m="100,100,100,100" style="--h:100%" title="06-22 起 · 35.7M token · $11.40 · 59 次派工"></span>
+                    <span class="sb-col" data-m="47,32,39,41" style="--h:47%" title="06-29 起 · 16.8M token · $3.65 · 24 次派工"></span>
+                    <span class="sb-col" data-m="64,46,49,47" style="--h:64%" title="07-06 起 · 22.8M token · $5.20 · 28 次派工"></span>
+                    <span class="sb-col" data-m="68,56,66,61" style="--h:68%" title="07-13 起 · 24.3M token · $6.33 · 36 次派工"></span>
+                    <span class="sb-col" data-m="96,66,74,80" style="--h:96%" title="07-20 起 · 34.2M token · $7.51 · 47 次派工"></span>
+                    <span class="sb-col" data-m="70,56,67,68" style="--h:70%" title="07-27 起 · 25.1M token · $6.38 · 40 次派工"></span>
+                    <span class="sb-col" data-m="88,78,88,71" style="--h:88%" title="08-03 起 · 31.4M token · $8.88 · 42 次派工"></span>
+                    <span class="sb-col" data-m="84,59,85,80" style="--h:84%" title="08-10 起 · 29.8M token · $6.70 · 47 次派工"></span>
+                    <span class="sb-col" data-m="80,63,69,75" style="--h:80%" title="08-17 起 · 28.6M token · $7.17 · 44 次派工"></span>
+                    <span class="sb-col" data-m="82,56,83,85" style="--h:82%" title="08-24 起 · 29.4M token · $6.36 · 50 次派工"></span>
+                    <span class="sb-col" data-m="56,37,59,58" style="--h:56%" title="08-31 起 · 19.9M token · $4.23 · 34 次派工"></span>
+                      </div>
+                    </div>
+                    <p class="sb-foot"><span>13 周前</span><span>每列为一周 · 自周一起算</span><span>本周</span></p>
+                  </div>
+
+                  <div class="sc-body" data-statshape-body="year" hidden>
+                    <div class="hm-wrap">
+                      <p class="hm-months"><span style="--col:0">9月</span><span style="--col:4">10月</span><span style="--col:8">11月</span><span style="--col:13">12月</span><span style="--col:17">1月</span><span style="--col:21">2月</span><span style="--col:25">3月</span><span style="--col:30">4月</span><span style="--col:34">5月</span><span style="--col:39">6月</span><span style="--col:43">7月</span><span style="--col:47">8月</span><span style="--col:48">8月</span></p>
+                      <div class="hm-grid">
+                        <p class="hm-days"><span>一</span><span>三</span><span>五</span></p>
+                        <div class="hm-cells">
+                    <i class="hm-cell" data-m="2213" data-l="2" title="2025-09-01 · 3.2M token · $0.63 · 0h33m · 6 次派工"></i><i class="hm-cell" data-m="2121" data-l="2" title="2025-09-02 · 2.7M token · $0.53 · 0h45m · 4 次派工"></i><i class="hm-cell" data-m="2222" data-l="2" title="2025-09-03 · 3.2M token · $0.85 · 0h42m · 5 次派工"></i><i class="hm-cell" data-m="2123" data-l="2" title="2025-09-04 · 3.7M token · $0.50 · 0h40m · 6 次派工"></i><i class="hm-cell" data-m="2322" data-l="2" title="2025-09-05 · 3.3M token · $1.10 · 0h50m · 5 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-09-06 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-09-07 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2312" data-l="2" title="2025-09-08 · 3.8M token · $1.01 · 0h38m · 5 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-09-09 · 2.1M token · $0.48 · 0h26m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-09-10 · 没有派工"></i><i class="hm-cell" data-m="1221" data-l="1" title="2025-09-11 · 2.2M token · $0.80 · 0h49m · 3 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2025-09-12 · 2.0M token · $0.64 · 0h19m · 3 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-09-13 · 1.0M token · $0.36 · 0h20m · 2 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-09-14 · 没有派工"></i>
+                    <i class="hm-cell" data-m="1111" data-l="1" title="2025-09-15 · 1.8M token · $0.49 · 0h36m · 3 次派工"></i><i class="hm-cell" data-m="3321" data-l="3" title="2025-09-16 · 4.0M token · $1.01 · 0h51m · 4 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-09-17 · 1.8M token · $0.30 · 0h37m · 3 次派工"></i><i class="hm-cell" data-m="2323" data-l="2" title="2025-09-18 · 3.7M token · $1.11 · 0h52m · 7 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-09-19 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-09-20 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-09-21 · 0.8M token · $0.30 · 0h07m · 1 次派工"></i>
+                    <i class="hm-cell" data-m="2333" data-l="2" title="2025-09-22 · 3.5M token · $1.03 · 1h11m · 6 次派工"></i><i class="hm-cell" data-m="2121" data-l="2" title="2025-09-23 · 3.0M token · $0.36 · 0h43m · 4 次派工"></i><i class="hm-cell" data-m="2221" data-l="2" title="2025-09-24 · 3.6M token · $0.65 · 0h48m · 4 次派工"></i><i class="hm-cell" data-m="2222" data-l="2" title="2025-09-25 · 2.9M token · $0.87 · 0h47m · 5 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2025-09-26 · 1.9M token · $0.62 · 0h18m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-09-27 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-09-28 · 1.0M token · $0.36 · 0h19m · 2 次派工"></i>
+                    <i class="hm-cell" data-m="1111" data-l="1" title="2025-09-29 · 1.4M token · $0.42 · 0h27m · 2 次派工"></i><i class="hm-cell" data-m="1221" data-l="1" title="2025-09-30 · 2.3M token · $0.64 · 0h42m · 4 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2025-10-01 · 2.4M token · $0.79 · 0h21m · 3 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-10-02 · 2.2M token · $0.47 · 0h21m · 4 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-10-03 · 2.0M token · $0.27 · 0h36m · 2 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-10-04 · 1.3M token · $0.33 · 0h28m · 1 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-10-05 · 没有派工"></i>
+                    <i class="hm-cell" data-m="1111" data-l="1" title="2025-10-06 · 2.0M token · $0.39 · 0h27m · 4 次派工"></i><i class="hm-cell" data-m="2212" data-l="2" title="2025-10-07 · 2.9M token · $0.62 · 0h39m · 5 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-10-08 · 1.7M token · $0.24 · 0h35m · 3 次派工"></i><i class="hm-cell" data-m="3422" data-l="3" title="2025-10-09 · 4.2M token · $1.42 · 0h48m · 5 次派工"></i><i class="hm-cell" data-m="3334" data-l="3" title="2025-10-10 · 4.1M token · $0.98 · 1h07m · 9 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-10-11 · 1.2M token · $0.22 · 0h24m · 2 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-10-12 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2121" data-l="2" title="2025-10-13 · 3.2M token · $0.46 · 0h49m · 4 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-10-14 · 2.5M token · $0.47 · 0h34m · 4 次派工"></i><i class="hm-cell" data-m="3321" data-l="3" title="2025-10-15 · 4.0M token · $0.98 · 0h46m · 4 次派工"></i><i class="hm-cell" data-m="2121" data-l="2" title="2025-10-16 · 2.7M token · $0.46 · 0h52m · 3 次派工"></i><i class="hm-cell" data-m="2223" data-l="2" title="2025-10-17 · 3.2M token · $0.64 · 0h50m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-10-18 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-10-19 · 没有派工"></i>
+                    <i class="hm-cell" data-m="1221" data-l="1" title="2025-10-20 · 2.5M token · $0.85 · 0h54m · 4 次派工"></i><i class="hm-cell" data-m="3333" data-l="3" title="2025-10-21 · 4.3M token · $1.04 · 1h05m · 7 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-10-22 · 没有派工"></i><i class="hm-cell" data-m="3221" data-l="3" title="2025-10-23 · 4.0M token · $0.80 · 0h39m · 4 次派工"></i><i class="hm-cell" data-m="2232" data-l="2" title="2025-10-24 · 2.8M token · $0.77 · 0h57m · 5 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-10-25 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-10-26 · 没有派工"></i>
+                    <i class="hm-cell" data-m="1111" data-l="1" title="2025-10-27 · 1.9M token · $0.57 · 0h33m · 4 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-10-28 · 1.5M token · $0.53 · 0h26m · 2 次派工"></i><i class="hm-cell" data-m="3321" data-l="3" title="2025-10-29 · 3.9M token · $1.30 · 0h44m · 4 次派工"></i><i class="hm-cell" data-m="3443" data-l="3" title="2025-10-30 · 4.2M token · $1.56 · 1h33m · 8 次派工"></i><i class="hm-cell" data-m="3333" data-l="3" title="2025-10-31 · 4.2M token · $1.23 · 1h16m · 6 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-11-01 · 1.1M token · $0.23 · 0h20m · 2 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-02 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2232" data-l="2" title="2025-11-03 · 3.0M token · $0.70 · 1h00m · 5 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-11-04 · 2.3M token · $0.29 · 0h33m · 3 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2025-11-05 · 2.2M token · $0.62 · 0h38m · 4 次派工"></i><i class="hm-cell" data-m="1221" data-l="1" title="2025-11-06 · 2.1M token · $0.75 · 0h41m · 3 次派工"></i><i class="hm-cell" data-m="1222" data-l="1" title="2025-11-07 · 2.2M token · $0.59 · 0h46m · 5 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-08 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-11-09 · 1.4M token · $0.26 · 0h29m · 2 次派工"></i>
+                    <i class="hm-cell" data-m="3433" data-l="3" title="2025-11-10 · 3.9M token · $1.33 · 0h59m · 6 次派工"></i><i class="hm-cell" data-m="2233" data-l="2" title="2025-11-11 · 3.1M token · $0.81 · 1h02m · 6 次派工"></i><i class="hm-cell" data-m="2121" data-l="2" title="2025-11-12 · 3.0M token · $0.42 · 0h43m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-13 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-14 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-11-15 · 1.2M token · $0.28 · 0h24m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-16 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2322" data-l="2" title="2025-11-17 · 3.8M token · $0.98 · 0h52m · 5 次派工"></i><i class="hm-cell" data-m="3222" data-l="3" title="2025-11-18 · 3.9M token · $0.58 · 0h53m · 5 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-11-19 · 1.9M token · $0.56 · 0h24m · 4 次派工"></i><i class="hm-cell" data-m="2323" data-l="2" title="2025-11-20 · 3.5M token · $1.16 · 0h46m · 6 次派工"></i><i class="hm-cell" data-m="2333" data-l="2" title="2025-11-21 · 3.5M token · $0.93 · 0h57m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-22 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-23 · 没有派工"></i>
+                    <i class="hm-cell" data-m="0000" data-l="0" title="2025-11-24 · 没有派工"></i><i class="hm-cell" data-m="2331" data-l="2" title="2025-11-25 · 3.4M token · $1.14 · 1h15m · 3 次派工"></i><i class="hm-cell" data-m="3242" data-l="3" title="2025-11-26 · 4.8M token · $0.60 · 1h30m · 5 次派工"></i><i class="hm-cell" data-m="2321" data-l="2" title="2025-11-27 · 3.8M token · $1.20 · 0h42m · 4 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-11-28 · 2.2M token · $0.47 · 0h22m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-29 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-11-30 · 没有派工"></i>
+                    <i class="hm-cell" data-m="3442" data-l="3" title="2025-12-01 · 4.0M token · $1.39 · 1h26m · 5 次派工"></i><i class="hm-cell" data-m="3233" data-l="3" title="2025-12-02 · 4.7M token · $0.75 · 1h10m · 8 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-12-03 · 1.7M token · $0.48 · 0h16m · 3 次派工"></i><i class="hm-cell" data-m="3344" data-l="3" title="2025-12-04 · 4.5M token · $0.91 · 1h40m · 9 次派工"></i><i class="hm-cell" data-m="2131" data-l="2" title="2025-12-05 · 3.1M token · $0.38 · 1h08m · 3 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-12-06 · 1.2M token · $0.43 · 0h11m · 2 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-12-07 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2222" data-l="2" title="2025-12-08 · 3.1M token · $0.64 · 0h40m · 5 次派工"></i><i class="hm-cell" data-m="3223" data-l="3" title="2025-12-09 · 3.9M token · $0.63 · 0h41m · 7 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-12-10 · 2.3M token · $0.31 · 0h29m · 3 次派工"></i><i class="hm-cell" data-m="3423" data-l="3" title="2025-12-11 · 4.4M token · $1.54 · 0h53m · 6 次派工"></i><i class="hm-cell" data-m="2321" data-l="2" title="2025-12-12 · 2.5M token · $0.89 · 0h41m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-12-13 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-12-14 · 没有派工"></i>
+                    <i class="hm-cell" data-m="1111" data-l="1" title="2025-12-15 · 1.7M token · $0.48 · 0h23m · 3 次派工"></i><i class="hm-cell" data-m="2133" data-l="2" title="2025-12-16 · 3.6M token · $0.58 · 1h20m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-12-17 · 没有派工"></i><i class="hm-cell" data-m="3234" data-l="3" title="2025-12-18 · 4.6M token · $0.83 · 1h08m · 9 次派工"></i><i class="hm-cell" data-m="3323" data-l="3" title="2025-12-19 · 4.8M token · $1.15 · 0h44m · 8 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-12-20 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-12-21 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2333" data-l="2" title="2025-12-22 · 3.7M token · $0.90 · 0h55m · 6 次派工"></i><i class="hm-cell" data-m="1221" data-l="1" title="2025-12-23 · 2.1M token · $0.58 · 0h41m · 4 次派工"></i><i class="hm-cell" data-m="4433" data-l="4" title="2025-12-24 · 5.3M token · $1.93 · 1h16m · 7 次派工"></i><i class="hm-cell" data-m="3333" data-l="3" title="2025-12-25 · 4.5M token · $1.11 · 0h58m · 7 次派工"></i><i class="hm-cell" data-m="1121" data-l="1" title="2025-12-26 · 2.4M token · $0.58 · 0h44m · 4 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2025-12-27 · 1.7M token · $0.36 · 0h22m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2025-12-28 · 没有派工"></i>
+                    <i class="hm-cell" data-m="3333" data-l="3" title="2025-12-29 · 4.1M token · $1.30 · 0h55m · 6 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2025-12-30 · 1.7M token · $0.62 · 0h20m · 2 次派工"></i><i class="hm-cell" data-m="2211" data-l="2" title="2025-12-31 · 2.7M token · $0.82 · 0h24m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-01-01 · 没有派工"></i><i class="hm-cell" data-m="3333" data-l="3" title="2026-01-02 · 4.9M token · $0.95 · 1h01m · 8 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-01-03 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-01-04 · 1.4M token · $0.49 · 0h26m · 3 次派工"></i>
+                    <i class="hm-cell" data-m="1121" data-l="1" title="2026-01-05 · 1.8M token · $0.40 · 0h40m · 4 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2026-01-06 · 1.9M token · $0.71 · 0h31m · 4 次派工"></i><i class="hm-cell" data-m="2333" data-l="2" title="2026-01-07 · 3.5M token · $0.89 · 1h12m · 6 次派工"></i><i class="hm-cell" data-m="3232" data-l="3" title="2026-01-08 · 4.9M token · $0.84 · 1h16m · 5 次派工"></i><i class="hm-cell" data-m="2133" data-l="2" title="2026-01-09 · 2.7M token · $0.46 · 0h59m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-01-10 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-01-11 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2333" data-l="2" title="2026-01-12 · 3.0M token · $0.90 · 1h00m · 6 次派工"></i><i class="hm-cell" data-m="3423" data-l="3" title="2026-01-13 · 4.4M token · $1.54 · 0h45m · 6 次派工"></i><i class="hm-cell" data-m="3433" data-l="3" title="2026-01-14 · 5.2M token · $1.64 · 1h03m · 6 次派工"></i><i class="hm-cell" data-m="3413" data-l="3" title="2026-01-15 · 3.9M token · $1.43 · 0h35m · 7 次派工"></i><i class="hm-cell" data-m="3133" data-l="3" title="2026-01-16 · 3.9M token · $0.48 · 1h06m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-01-17 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-01-18 · 1.5M token · $0.20 · 0h27m · 2 次派工"></i>
+                    <i class="hm-cell" data-m="2221" data-l="2" title="2026-01-19 · 3.1M token · $0.59 · 0h46m · 4 次派工"></i><i class="hm-cell" data-m="3323" data-l="3" title="2026-01-20 · 4.1M token · $1.15 · 0h48m · 6 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-01-21 · 11.7M token · $3.41 · 1h49m · 21 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-01-22 · 11.0M token · $3.24 · 3h00m · 15 次派工"></i><i class="hm-cell" data-m="3232" data-l="3" title="2026-01-23 · 4.0M token · $0.71 · 1h14m · 5 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-01-24 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-01-25 · 1.2M token · $0.35 · 0h20m · 2 次派工"></i>
+                    <i class="hm-cell" data-m="0000" data-l="0" title="2026-01-26 · 没有派工"></i><i class="hm-cell" data-m="2211" data-l="2" title="2026-01-27 · 2.9M token · $0.79 · 0h32m · 4 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-01-28 · 2.0M token · $0.57 · 0h35m · 2 次派工"></i><i class="hm-cell" data-m="3233" data-l="3" title="2026-01-29 · 5.0M token · $0.68 · 1h17m · 6 次派工"></i><i class="hm-cell" data-m="3333" data-l="3" title="2026-01-30 · 3.9M token · $0.99 · 1h18m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-01-31 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-02-01 · 1.8M token · $0.35 · 0h25m · 2 次派工"></i>
+                    <i class="hm-cell" data-m="3443" data-l="3" title="2026-02-02 · 4.9M token · $1.62 · 1h30m · 8 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-02-03 · 没有派工"></i><i class="hm-cell" data-m="4424" data-l="4" title="2026-02-04 · 5.3M token · $1.89 · 0h53m · 10 次派工"></i><i class="hm-cell" data-m="3232" data-l="3" title="2026-02-05 · 4.9M token · $0.78 · 1h21m · 5 次派工"></i><i class="hm-cell" data-m="2321" data-l="2" title="2026-02-06 · 2.9M token · $0.97 · 0h48m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-02-07 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-02-08 · 没有派工"></i>
+                    <i class="hm-cell" data-m="0000" data-l="0" title="2026-02-09 · 没有派工"></i><i class="hm-cell" data-m="4443" data-l="4" title="2026-02-10 · 5.9M token · $2.18 · 1h58m · 7 次派工"></i><i class="hm-cell" data-m="3444" data-l="3" title="2026-02-11 · 4.3M token · $1.40 · 1h33m · 9 次派工"></i><i class="hm-cell" data-m="3423" data-l="3" title="2026-02-12 · 4.3M token · $1.41 · 0h47m · 8 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-02-13 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-02-14 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-02-15 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2221" data-l="2" title="2026-02-16 · 2.6M token · $0.72 · 0h48m · 4 次派工"></i><i class="hm-cell" data-m="4243" data-l="4" title="2026-02-17 · 5.6M token · $0.72 · 1h21m · 7 次派工"></i><i class="hm-cell" data-m="4344" data-l="4" title="2026-02-18 · 5.3M token · $0.89 · 1h47m · 10 次派工"></i><i class="hm-cell" data-m="4333" data-l="4" title="2026-02-19 · 5.8M token · $1.25 · 1h11m · 7 次派工"></i><i class="hm-cell" data-m="3344" data-l="3" title="2026-02-20 · 4.9M token · $1.13 · 1h48m · 9 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-02-21 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-02-22 · 1.9M token · $0.37 · 0h33m · 3 次派工"></i>
+                    <i class="hm-cell" data-m="2331" data-l="2" title="2026-02-23 · 3.1M token · $0.91 · 1h04m · 4 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-02-24 · 8.8M token · $2.66 · 1h55m · 13 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-02-25 · 2.2M token · $0.40 · 0h21m · 4 次派工"></i><i class="hm-cell" data-m="4433" data-l="4" title="2026-02-26 · 5.8M token · $1.60 · 1h07m · 7 次派工"></i><i class="hm-cell" data-m="3234" data-l="3" title="2026-02-27 · 5.1M token · $0.83 · 1h04m · 11 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-02-28 · 1.5M token · $0.47 · 0h30m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-03-01 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4333" data-l="4" title="2026-03-02 · 5.3M token · $1.30 · 1h09m · 7 次派工"></i><i class="hm-cell" data-m="2331" data-l="2" title="2026-03-03 · 2.6M token · $0.89 · 0h57m · 4 次派工"></i><i class="hm-cell" data-m="3333" data-l="3" title="2026-03-04 · 4.8M token · $0.94 · 1h19m · 8 次派工"></i><i class="hm-cell" data-m="2121" data-l="2" title="2026-03-05 · 2.5M token · $0.38 · 0h48m · 4 次派工"></i><i class="hm-cell" data-m="2131" data-l="2" title="2026-03-06 · 2.7M token · $0.43 · 0h59m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-03-07 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-03-08 · 1.4M token · $0.35 · 0h18m · 3 次派工"></i>
+                    <i class="hm-cell" data-m="4234" data-l="4" title="2026-03-09 · 5.9M token · $0.73 · 0h56m · 10 次派工"></i><i class="hm-cell" data-m="4434" data-l="4" title="2026-03-10 · 6.2M token · $1.38 · 0h55m · 10 次派工"></i><i class="hm-cell" data-m="3343" data-l="3" title="2026-03-11 · 4.6M token · $0.89 · 1h42m · 8 次派工"></i><i class="hm-cell" data-m="3222" data-l="3" title="2026-03-12 · 4.8M token · $0.85 · 0h44m · 5 次派工"></i><i class="hm-cell" data-m="3223" data-l="3" title="2026-03-13 · 4.5M token · $0.70 · 0h53m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-03-14 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-03-15 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4234" data-l="4" title="2026-03-16 · 5.6M token · $0.69 · 1h00m · 10 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-03-17 · 6.2M token · $1.73 · 2h06m · 10 次派工"></i><i class="hm-cell" data-m="3323" data-l="3" title="2026-03-18 · 4.2M token · $0.88 · 0h52m · 7 次派工"></i><i class="hm-cell" data-m="2232" data-l="2" title="2026-03-19 · 3.7M token · $0.76 · 1h15m · 5 次派工"></i><i class="hm-cell" data-m="2333" data-l="2" title="2026-03-20 · 3.8M token · $0.88 · 1h18m · 6 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2026-03-21 · 1.7M token · $0.60 · 0h16m · 2 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-03-22 · 没有派工"></i>
+                    <i class="hm-cell" data-m="1311" data-l="1" title="2026-03-23 · 2.5M token · $0.90 · 0h33m · 4 次派工"></i><i class="hm-cell" data-m="3321" data-l="3" title="2026-03-24 · 4.1M token · $1.30 · 0h48m · 4 次派工"></i><i class="hm-cell" data-m="2332" data-l="2" title="2026-03-25 · 3.4M token · $1.02 · 0h56m · 5 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-03-26 · 14.1M token · $4.53 · 2h06m · 14 次派工"></i><i class="hm-cell" data-m="2221" data-l="2" title="2026-03-27 · 2.7M token · $0.66 · 0h46m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-03-28 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-03-29 · 1.3M token · $0.48 · 0h18m · 1 次派工"></i>
+                    <i class="hm-cell" data-m="3313" data-l="3" title="2026-03-30 · 3.9M token · $1.16 · 0h34m · 8 次派工"></i><i class="hm-cell" data-m="2231" data-l="2" title="2026-03-31 · 3.7M token · $0.69 · 1h07m · 4 次派工"></i><i class="hm-cell" data-m="3332" data-l="3" title="2026-04-01 · 5.2M token · $0.99 · 1h12m · 5 次派工"></i><i class="hm-cell" data-m="4343" data-l="4" title="2026-04-02 · 5.6M token · $1.13 · 1h36m · 8 次派工"></i><i class="hm-cell" data-m="3233" data-l="3" title="2026-04-03 · 4.4M token · $0.61 · 1h07m · 7 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-04-04 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-04-05 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4444" data-l="4" title="2026-04-06 · 11.2M token · $3.98 · 4h00m · 13 次派工"></i><i class="hm-cell" data-m="3323" data-l="3" title="2026-04-07 · 4.2M token · $1.02 · 0h42m · 7 次派工"></i><i class="hm-cell" data-m="4333" data-l="4" title="2026-04-08 · 6.1M token · $1.15 · 0h57m · 6 次派工"></i><i class="hm-cell" data-m="3232" data-l="3" title="2026-04-09 · 4.5M token · $0.67 · 0h55m · 5 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-04-10 · 6.3M token · $1.82 · 1h34m · 9 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2026-04-11 · 2.1M token · $0.73 · 0h29m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-04-12 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2232" data-l="2" title="2026-04-13 · 2.8M token · $0.74 · 1h01m · 5 次派工"></i><i class="hm-cell" data-m="2233" data-l="2" title="2026-04-14 · 3.4M token · $0.61 · 1h04m · 6 次派工"></i><i class="hm-cell" data-m="2322" data-l="2" title="2026-04-15 · 3.2M token · $0.92 · 0h52m · 5 次派工"></i><i class="hm-cell" data-m="2323" data-l="2" title="2026-04-16 · 3.8M token · $1.01 · 0h53m · 7 次派工"></i><i class="hm-cell" data-m="3442" data-l="3" title="2026-04-17 · 4.7M token · $1.31 · 1h31m · 5 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-04-18 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-04-19 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2223" data-l="2" title="2026-04-20 · 2.8M token · $0.65 · 0h48m · 6 次派工"></i><i class="hm-cell" data-m="2123" data-l="2" title="2026-04-21 · 3.5M token · $0.53 · 0h41m · 6 次派工"></i><i class="hm-cell" data-m="3423" data-l="3" title="2026-04-22 · 4.2M token · $1.48 · 0h41m · 7 次派工"></i><i class="hm-cell" data-m="3444" data-l="3" title="2026-04-23 · 5.1M token · $1.86 · 1h42m · 10 次派工"></i><i class="hm-cell" data-m="3441" data-l="3" title="2026-04-24 · 4.6M token · $1.58 · 1h43m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-04-25 · 没有派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-04-26 · 1.8M token · $0.23 · 0h21m · 4 次派工"></i>
+                    <i class="hm-cell" data-m="3121" data-l="3" title="2026-04-27 · 3.9M token · $0.58 · 0h42m · 4 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-04-28 · 6.7M token · $2.13 · 1h40m · 13 次派工"></i><i class="hm-cell" data-m="4332" data-l="4" title="2026-04-29 · 5.2M token · $1.14 · 0h55m · 5 次派工"></i><i class="hm-cell" data-m="4243" data-l="4" title="2026-04-30 · 5.8M token · $0.80 · 1h33m · 7 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-05-01 · 6.6M token · $1.97 · 1h33m · 11 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-05-02 · 1.4M token · $0.31 · 0h16m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-03 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2323" data-l="2" title="2026-05-04 · 3.5M token · $1.04 · 0h50m · 7 次派工"></i><i class="hm-cell" data-m="1222" data-l="1" title="2026-05-05 · 2.4M token · $0.86 · 0h40m · 5 次派工"></i><i class="hm-cell" data-m="3333" data-l="3" title="2026-05-06 · 4.4M token · $1.16 · 0h59m · 8 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-05-07 · 9.0M token · $2.53 · 2h15m · 11 次派工"></i><i class="hm-cell" data-m="4443" data-l="4" title="2026-05-08 · 7.1M token · $1.83 · 2h38m · 7 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-09 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-10 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4444" data-l="4" title="2026-05-11 · 5.6M token · $1.47 · 1h52m · 9 次派工"></i><i class="hm-cell" data-m="2332" data-l="2" title="2026-05-12 · 3.5M token · $1.25 · 1h06m · 5 次派工"></i><i class="hm-cell" data-m="4443" data-l="4" title="2026-05-13 · 6.5M token · $1.41 · 1h46m · 6 次派工"></i><i class="hm-cell" data-m="4334" data-l="4" title="2026-05-14 · 5.3M token · $1.16 · 1h02m · 10 次派工"></i><i class="hm-cell" data-m="3224" data-l="3" title="2026-05-15 · 5.1M token · $0.67 · 0h52m · 11 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-16 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-17 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4444" data-l="4" title="2026-05-18 · 16.0M token · $1.97 · 3h35m · 21 次派工"></i><i class="hm-cell" data-m="2131" data-l="2" title="2026-05-19 · 2.9M token · $0.52 · 0h58m · 3 次派工"></i><i class="hm-cell" data-m="3333" data-l="3" title="2026-05-20 · 4.9M token · $1.11 · 1h09m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-21 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-22 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-23 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-24 · 没有派工"></i>
+                    <i class="hm-cell" data-m="1111" data-l="1" title="2026-05-25 · 2.3M token · $0.31 · 0h32m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-05-26 · 没有派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-05-27 · 5.2M token · $1.70 · 1h32m · 10 次派工"></i><i class="hm-cell" data-m="4334" data-l="4" title="2026-05-28 · 5.4M token · $1.21 · 1h14m · 10 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-05-29 · 5.7M token · $1.33 · 1h59m · 11 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-05-30 · 1.5M token · $0.35 · 0h21m · 2 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-05-31 · 1.9M token · $0.55 · 0h33m · 3 次派工"></i>
+                    <i class="hm-cell" data-m="4443" data-l="4" title="2026-06-01 · 7.5M token · $2.57 · 1h29m · 8 次派工"></i><i class="hm-cell" data-m="4333" data-l="4" title="2026-06-02 · 6.5M token · $0.87 · 0h59m · 8 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-06-03 · 没有派工"></i><i class="hm-cell" data-m="4244" data-l="4" title="2026-06-04 · 6.4M token · $0.85 · 1h22m · 11 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-06-05 · 6.8M token · $2.07 · 1h29m · 14 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-06-06 · 1.8M token · $0.45 · 0h17m · 3 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-06-07 · 2.0M token · $0.42 · 0h37m · 3 次派工"></i>
+                    <i class="hm-cell" data-m="3433" data-l="3" title="2026-06-08 · 4.4M token · $1.56 · 1h13m · 7 次派工"></i><i class="hm-cell" data-m="3421" data-l="3" title="2026-06-09 · 4.1M token · $1.37 · 0h49m · 4 次派工"></i><i class="hm-cell" data-m="2121" data-l="2" title="2026-06-10 · 3.1M token · $0.40 · 0h41m · 4 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-06-11 · 6.2M token · $1.36 · 1h49m · 9 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-06-12 · 2.4M token · $0.35 · 0h20m · 4 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-06-13 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-06-14 · 没有派工"></i>
+                    <i class="hm-cell" data-m="3333" data-l="3" title="2026-06-15 · 4.7M token · $1.26 · 1h14m · 7 次派工"></i><i class="hm-cell" data-m="4343" data-l="4" title="2026-06-16 · 7.6M token · $1.18 · 2h22m · 8 次派工"></i><i class="hm-cell" data-m="4443" data-l="4" title="2026-06-17 · 6.7M token · $2.07 · 1h57m · 8 次派工"></i><i class="hm-cell" data-m="2222" data-l="2" title="2026-06-18 · 3.8M token · $0.65 · 0h40m · 5 次派工"></i><i class="hm-cell" data-m="4443" data-l="4" title="2026-06-19 · 6.7M token · $1.34 · 1h48m · 7 次派工"></i><i class="hm-cell" data-m="1211" data-l="1" title="2026-06-20 · 1.8M token · $0.60 · 0h22m · 4 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-06-21 · 2.3M token · $0.46 · 0h39m · 3 次派工"></i>
+                    <i class="hm-cell" data-m="4444" data-l="4" title="2026-06-22 · 7.1M token · $1.80 · 2h10m · 9 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-06-23 · 6.4M token · $2.22 · 1h40m · 11 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-06-24 · 7.4M token · $2.40 · 2h45m · 12 次派工"></i><i class="hm-cell" data-m="2313" data-l="2" title="2026-06-25 · 3.3M token · $1.11 · 0h30m · 6 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-06-26 · 7.1M token · $2.29 · 1h24m · 12 次派工"></i><i class="hm-cell" data-m="1221" data-l="1" title="2026-06-27 · 2.2M token · $0.76 · 0h42m · 4 次派工"></i><i class="hm-cell" data-m="1222" data-l="1" title="2026-06-28 · 2.2M token · $0.82 · 0h44m · 5 次派工"></i>
+                    <i class="hm-cell" data-m="4434" data-l="4" title="2026-06-29 · 6.1M token · $1.63 · 0h54m · 9 次派工"></i><i class="hm-cell" data-m="2242" data-l="2" title="2026-06-30 · 3.7M token · $0.70 · 1h22m · 5 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-07-01 · 没有派工"></i><i class="hm-cell" data-m="3233" data-l="3" title="2026-07-02 · 5.0M token · $0.66 · 0h54m · 7 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-07-03 · 没有派工"></i><i class="hm-cell" data-m="1221" data-l="1" title="2026-07-04 · 1.9M token · $0.67 · 0h41m · 3 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-07-05 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4444" data-l="4" title="2026-07-06 · 7.7M token · $1.55 · 2h04m · 9 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-07-07 · 没有派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-07-08 · 8.0M token · $1.71 · 1h30m · 9 次派工"></i><i class="hm-cell" data-m="3322" data-l="3" title="2026-07-09 · 4.6M token · $1.30 · 0h46m · 5 次派工"></i><i class="hm-cell" data-m="2212" data-l="2" title="2026-07-10 · 2.6M token · $0.64 · 0h35m · 5 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-07-11 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-07-12 · 没有派工"></i>
+                    <i class="hm-cell" data-m="2212" data-l="2" title="2026-07-13 · 2.6M token · $0.61 · 0h36m · 5 次派工"></i><i class="hm-cell" data-m="3343" data-l="3" title="2026-07-14 · 4.6M token · $1.11 · 1h39m · 7 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-07-15 · 7.8M token · $1.73 · 1h39m · 12 次派工"></i><i class="hm-cell" data-m="2322" data-l="2" title="2026-07-16 · 3.2M token · $1.17 · 0h44m · 5 次派工"></i><i class="hm-cell" data-m="3442" data-l="3" title="2026-07-17 · 4.4M token · $1.33 · 1h27m · 5 次派工"></i><i class="hm-cell" data-m="1111" data-l="1" title="2026-07-18 · 1.7M token · $0.38 · 0h31m · 2 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-07-19 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4343" data-l="4" title="2026-07-20 · 6.7M token · $1.26 · 1h27m · 8 次派工"></i><i class="hm-cell" data-m="3434" data-l="3" title="2026-07-21 · 4.5M token · $1.36 · 0h57m · 9 次派工"></i><i class="hm-cell" data-m="4434" data-l="4" title="2026-07-22 · 7.4M token · $2.54 · 1h16m · 13 次派工"></i><i class="hm-cell" data-m="4343" data-l="4" title="2026-07-23 · 7.0M token · $0.88 · 1h45m · 7 次派工"></i><i class="hm-cell" data-m="4343" data-l="4" title="2026-07-24 · 6.2M token · $1.10 · 1h34m · 7 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-07-25 · 没有派工"></i><i class="hm-cell" data-m="2111" data-l="2" title="2026-07-26 · 2.5M token · $0.37 · 0h22m · 3 次派工"></i>
+                    <i class="hm-cell" data-m="2313" data-l="2" title="2026-07-27 · 3.9M token · $1.24 · 0h37m · 7 次派工"></i><i class="hm-cell" data-m="4434" data-l="4" title="2026-07-28 · 7.0M token · $1.47 · 1h09m · 14 次派工"></i><i class="hm-cell" data-m="2231" data-l="2" title="2026-07-29 · 3.2M token · $0.59 · 1h02m · 4 次派工"></i><i class="hm-cell" data-m="3343" data-l="3" title="2026-07-30 · 4.8M token · $1.08 · 1h39m · 8 次派工"></i><i class="hm-cell" data-m="4443" data-l="4" title="2026-07-31 · 6.2M token · $2.00 · 2h14m · 7 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-01 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-02 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4444" data-l="4" title="2026-08-03 · 7.6M token · $2.63 · 2h23m · 11 次派工"></i><i class="hm-cell" data-m="2132" data-l="2" title="2026-08-04 · 3.1M token · $0.44 · 0h57m · 5 次派工"></i><i class="hm-cell" data-m="2122" data-l="2" title="2026-08-05 · 3.2M token · $0.55 · 0h48m · 5 次派工"></i><i class="hm-cell" data-m="4443" data-l="4" title="2026-08-06 · 8.1M token · $2.27 · 2h45m · 8 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-08-07 · 6.8M token · $2.45 · 1h28m · 10 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-08 · 没有派工"></i><i class="hm-cell" data-m="2111" data-l="2" title="2026-08-09 · 2.7M token · $0.54 · 0h25m · 3 次派工"></i>
+                    <i class="hm-cell" data-m="4343" data-l="4" title="2026-08-10 · 7.5M token · $0.97 · 1h32m · 8 次派工"></i><i class="hm-cell" data-m="3323" data-l="3" title="2026-08-11 · 4.1M token · $0.99 · 0h51m · 8 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-08-12 · 6.6M token · $1.99 · 2h00m · 10 次派工"></i><i class="hm-cell" data-m="3344" data-l="3" title="2026-08-13 · 4.4M token · $0.96 · 1h29m · 9 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-08-14 · 7.2M token · $1.80 · 2h36m · 12 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-15 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-16 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4434" data-l="4" title="2026-08-17 · 8.2M token · $1.67 · 1h17m · 12 次派工"></i><i class="hm-cell" data-m="4234" data-l="4" title="2026-08-18 · 5.4M token · $0.78 · 1h14m · 9 次派工"></i><i class="hm-cell" data-m="2221" data-l="2" title="2026-08-19 · 3.8M token · $0.73 · 0h53m · 4 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-08-20 · 6.4M token · $2.22 · 1h57m · 11 次派工"></i><i class="hm-cell" data-m="3443" data-l="3" title="2026-08-21 · 4.9M token · $1.77 · 1h27m · 8 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-22 · 没有派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-23 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4444" data-l="4" title="2026-08-24 · 6.1M token · $1.34 · 2h08m · 12 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-08-25 · 7.5M token · $1.43 · 2h24m · 13 次派工"></i><i class="hm-cell" data-m="4444" data-l="4" title="2026-08-26 · 8.6M token · $1.45 · 1h35m · 17 次派工"></i><i class="hm-cell" data-m="3443" data-l="3" title="2026-08-27 · 5.0M token · $1.62 · 1h23m · 6 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-28 · 没有派工"></i><i class="hm-cell" data-m="1121" data-l="1" title="2026-08-29 · 2.2M token · $0.52 · 0h45m · 2 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-08-30 · 没有派工"></i>
+                    <i class="hm-cell" data-m="4444" data-l="4" title="2026-08-31 · 13.5M token · $3.40 · 3h31m · 27 次派工"></i><i class="hm-cell" data-m="0000" data-l="0" title="2026-09-01 · 没有派工"></i><i class="hm-cell" data-m="4243" data-l="4" title="2026-09-02 · 6.4M token · $0.83 · 2h20m · 7 次派工"></i><i class="hm-cell hm-void" data-m="0000"></i><i class="hm-cell hm-void" data-m="0000"></i><i class="hm-cell hm-void" data-m="0000"></i><i class="hm-cell hm-void" data-m="0000"></i>
+                        </div>
+                      </div>
+                      <p class="hm-foot">
+                        <span class="hm-legend">少 <i data-l="0"></i><i data-l="1"></i><i data-l="2"></i><i data-l="3"></i><i data-l="4"></i> 多</span>
+                        <span>过去一年 <b>277 天</b>存在派工记录，最长连续 <b>16 天</b></span>
+                      </p>
+                    </div>
+                    <p class="pane-note sc-note">热力图仅在「近一年」下可选：365 根柱子在单屏内无法读出有效信息，而按天 / 按周在一年尺度上又过于粗糙。空白格表示<strong>当日无派工记录</strong>，而非当日未计量。</p>
+                  </div>
+                </section>
+
+                <section class="stat-card">
+                  <div class="sc-head">
+                    <h2>详情<span class="sc-sub">同一张表切换维度，不新开页面</span></h2>
+                    <div class="sc-switch">
+                      <div class="seg seg-sm" role="group" aria-label="维度">
+                        <button class="active" type="button" data-statdim-tab="task">任务</button>
+                        <button type="button" data-statdim-tab="project">项目</button>
+                        <button type="button" data-statdim-tab="combo">组合</button>
+                        <button type="button" data-statdim-tab="step">用途</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sc-body" data-statdim-body="task">
+                    <div class="data-list" style="--cols: minmax(0, 1fr) 72px 92px 92px 88px 96px 84px 100px 100px" role="table" aria-label="按任务">
+                      <div class="dl-head" role="row"><span>任务</span><span>派工</span><span>缓存命中</span><span>未命中</span><span>返工占比</span><span>订阅等价</span><span>实付</span><span>运行时长</span><span>状态</span></div>
+                      <div class="dl-row dl-total" role="row" data-v7="42|16.3M|10.8M|$5.93|$0.44|8h 00m" data-v30="206|79.0M|52.6M|$28.61|$2.10|35h 56m" data-v365="1707|684.0M|456.0M|$262.57|$19.31|291h 35m"><span class="dl-title">合计 · 17 个任务</span><span class="dl-num">206</span><span class="dl-num">79.0M</span><span class="dl-num">52.6M</span><span class="dl-pct">18%</span><span class="dl-num">$28.61</span><span class="dl-num">$2.10</span><span class="dl-num">35h 56m</span><span class="dl-dim">—</span></div>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="8|3.0M|2.0M|$1.11|—|1h 29m" data-v30="39|14.4M|10.0M|$5.31|—|6h 40m" data-v365="318|123.3M|88.8M|$48.80|—|54h 13m" data-surface="project" data-open-after="issue-view" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">artifact 引用不漂移与来源可追</span><span class="dl-num">39</span><span class="dl-num">14.4M</span><span class="dl-num">10.0M</span><span class="dl-pct hot">62%</span><span class="dl-num">$5.31</span><span class="dl-num">—</span><span class="dl-num">6h 40m</span><span class="pill warn">等待指派</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="6|1.8M|1.9M|$0.81|—|1h 06m" data-v30="28|8.8M|9.2M|$3.92|—|4h 55m" data-v365="234|76.7M|79.5M|$35.97|—|39h 57m" data-surface="project" data-open-after="issue-validation" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">修复图重启的并发认领</span><span class="dl-num">28</span><span class="dl-num">8.8M</span><span class="dl-num">9.2M</span><span class="dl-pct">34%</span><span class="dl-num">$3.92</span><span class="dl-num">—</span><span class="dl-num">4h 55m</span><span class="pill warn">验证未收敛</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="5|1.9M|1.0M|$0.64|—|0h 52m" data-v30="22|9.4M|4.8M|$3.08|—|3h 52m" data-v365="184|81.2M|41.5M|$28.26|—|31h 23m" data-surface="project" data-open-after="issue-done" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">记忆状态机六态落库</span><span class="dl-num">22</span><span class="dl-num">9.4M</span><span class="dl-num">4.8M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$3.08</span><span class="dl-num">—</span><span class="dl-num">3h 52m</span><span class="pill success">已完成</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="4|2.0M|0.8M|$0.61|$0.20|0h 49m" data-v30="21|9.6M|3.9M|$2.94|$0.97|3h 42m" data-v365="175|83.3M|33.8M|$26.98|$8.97|29h 57m" data-surface="project" data-open-after="issue-research" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">Agent session 生命周期调研</span><span class="dl-num">21</span><span class="dl-num">9.6M</span><span class="dl-num">3.9M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$2.94</span><span class="dl-num">$0.97</span><span class="dl-num">3h 42m</span><span class="pill muted">已归档</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="3|1.3M|0.8M|$0.46|—|0h 38m" data-v30="16|6.5M|3.8M|$2.24|—|2h 49m" data-v365="134|56.3M|32.9M|$20.55|—|22h 49m" data-surface="project" data-open-after="issue-running" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">补齐 Inspector 的 artifact 状态</span><span class="dl-num">16</span><span class="dl-num">6.5M</span><span class="dl-num">3.8M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$2.24</span><span class="dl-num">—</span><span class="dl-num">2h 49m</span><span class="pill blue">正在执行</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="3|1.0M|0.9M|$0.42|—|0h 34m" data-v30="15|4.8M|4.5M|$2.02|—|2h 32m" data-v365="120|41.9M|38.4M|$18.50|—|20h 33m" data-surface="project" data-open-after="issue-validation" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">type × stance 白名单门禁</span><span class="dl-num">15</span><span class="dl-num">4.8M</span><span class="dl-num">4.5M</span><span class="dl-pct">26%</span><span class="dl-num">$2.02</span><span class="dl-num">—</span><span class="dl-num">2h 32m</span><span class="pill success">已完成</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="2|1.1M|0.5M|$0.35|$0.12|0h 28m" data-v30="12|5.2M|2.5M|$1.68|$0.56|2h 07m" data-v365="100|45.6M|21.3M|$15.42|$5.13|17h 07m" data-surface="project" data-open-after="issue-done" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">Graph 启动恢复</span><span class="dl-num">12</span><span class="dl-num">5.2M</span><span class="dl-num">2.5M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$1.68</span><span class="dl-num">$0.56</span><span class="dl-num">2h 07m</span><span class="pill success">已完成</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="2|0.8M|0.6M|$0.31|—|0h 25m" data-v30="11|3.9M|3.1M|$1.51|—|1h 54m" data-v365="90|33.2M|27.0M|$13.87|—|15h 24m" data-surface="project" data-open-after="issue-view" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">Handoff Packet 上下文范围三档</span><span class="dl-num">11</span><span class="dl-num">3.9M</span><span class="dl-num">3.1M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$1.51</span><span class="dl-num">—</span><span class="dl-num">1h 54m</span><span class="pill success">已完成</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="2|0.7M|0.5M|$0.27|—|0h 22m" data-v30="9|3.6M|2.3M|$1.29|—|1h 37m" data-v365="77|31.4M|19.9M|$11.82|—|13h 07m" data-surface="project" data-open-after="issue-view" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">Room 暂停与恢复的介入点</span><span class="dl-num">9</span><span class="dl-num">3.6M</span><span class="dl-num">2.3M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$1.29</span><span class="dl-num">—</span><span class="dl-num">1h 37m</span><span class="pill success">已完成</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="1" data-v7="2|0.8M|0.3M|$0.23|$0.08|0h 19m" data-v30="8|3.6M|1.6M|$1.12|$0.37|1h 24m" data-v365="67|31.3M|13.3M|$10.28|$3.42|11h 25m" data-surface="project" data-open-after="issue-research" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">用量口径与统计模块设计</span><span class="dl-num">8</span><span class="dl-num">3.6M</span><span class="dl-num">1.6M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$1.12</span><span class="dl-num">$0.37</span><span class="dl-num">1h 24m</span><span class="pill muted">已归档</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="2" hidden data-v7="1|0.5M|0.4M|$0.19|—|0h 15m" data-v30="7|2.5M|1.7M|$0.92|—|1h 10m" data-v365="55|21.8M|15.0M|$8.48|—|9h 25m" data-surface="project" data-open-after="issue-running" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">证据引用解析器的 missing 态</span><span class="dl-num">7</span><span class="dl-num">2.5M</span><span class="dl-num">1.7M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$0.92</span><span class="dl-num">—</span><span class="dl-num">1h 10m</span><span class="pill blue">正在执行</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="2" hidden data-v7="1|0.3M|0.4M|$0.15|—|0h 12m" data-v30="5|1.5M|1.8M|$0.73|—|0h 55m" data-v365="43|13.4M|15.6M|$6.68|—|7h 25m" data-surface="project" data-open-after="issue-new" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">Squad 能力边界结构化</span><span class="dl-num">5</span><span class="dl-num">1.5M</span><span class="dl-num">1.8M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$0.73</span><span class="dl-num">—</span><span class="dl-num">0h 55m</span><span class="pill muted">刚创建</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="2" hidden data-v7="1|0.4M|0.2M|$0.12|$0.04|0h 10m" data-v30="4|1.9M|0.8M|$0.59|$0.20|0h 44m" data-v365="35|16.9M|6.5M|$5.40|$1.79|5h 59m" data-surface="project" data-open-after="issue-research" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">插件贡献点清单核对</span><span class="dl-num">4</span><span class="dl-num">1.9M</span><span class="dl-num">0.8M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$0.59</span><span class="dl-num">$0.20</span><span class="dl-num">0h 44m</span><span class="pill muted">已归档</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="2" hidden data-v7="1|0.3M|0.2M|$0.10|—|0h 08m" data-v30="3|1.1M|1.1M|$0.48|—|0h 36m" data-v365="28|9.7M|9.3M|$4.37|—|4h 51m" data-surface="project" data-open-after="issue-permission" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">OpenCode 原生记忆降级提示</span><span class="dl-num">3</span><span class="dl-num">1.1M</span><span class="dl-num">1.1M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$0.48</span><span class="dl-num">—</span><span class="dl-num">0h 36m</span><span class="pill warn">等待权限确认</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="2" hidden data-v7="1|0.2M|0.1M|$0.08|—|0h 06m" data-v30="3|1.1M|0.6M|$0.36|—|0h 27m" data-v365="22|9.3M|5.2M|$3.34|—|3h 43m" data-surface="project" data-open-after="issue-done" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">每周依赖与安全检查</span><span class="dl-num">3</span><span class="dl-num">1.1M</span><span class="dl-num">0.6M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$0.36</span><span class="dl-num">—</span><span class="dl-num">0h 27m</span><span class="pill success">已完成</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="2" hidden data-v7="0|0.1M|0.1M|$0.05|—|0h 04m" data-v30="2|0.6M|0.6M|$0.25|—|0h 19m" data-v365="15|4.7M|5.3M|$2.31|—|2h 34m" data-surface="project" data-open-after="issue-new" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">daemon 就绪字段提前准备</span><span class="dl-num">2</span><span class="dl-num">0.6M</span><span class="dl-num">0.6M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$0.25</span><span class="dl-num">—</span><span class="dl-num">0h 19m</span><span class="pill muted">刚创建</span></button>
+                      <button class="dl-row" type="button" role="row" data-page="2" hidden data-v7="0|0.1M|0.1M|$0.03|—|0h 03m" data-v30="1|0.5M|0.3M|$0.17|—|0h 13m" data-v365="10|4.0M|2.7M|$1.54|—|1h 43m" data-surface="project" data-open-after="issue-done" title="进入该任务——逐次调用的 token 明细在它的轨迹视图"><span class="dl-title">Markdown 导出与备份快照</span><span class="dl-num">1</span><span class="dl-num">0.5M</span><span class="dl-num">0.3M</span><span class="dl-pct dl-dim">—</span><span class="dl-num">$0.17</span><span class="dl-num">—</span><span class="dl-num">0h 13m</span><span class="pill success">已完成</span></button>
+                    </div>
+                    <p class="dl-pager">
+                      <span>按 Token 降序 · 每页 10 条 · 共 17 个任务</span>
+                      <span class="dl-pager-nav">
+                        <button type="button" data-stat-page="prev" aria-label="上一页" disabled>‹</button>
+                        <b><i data-page-now>1</i> / 2</b>
+                        <button type="button" data-stat-page="next" aria-label="下一页">›</button>
+                      </span>
+                    </p>
+                    <p class="pane-note sc-note">点击任意行进入该任务——<strong>逐次调用的 token 明细位于该任务的轨迹视图</strong>，统计模块不重复维护一份。表头下第一行是<strong>合计</strong>，不随翻页变化，始终是整个周期的数，与上方 KPI 逐格对得上——分页不得让各列与 KPI 对不上账。<br><strong>Token 拆成两列</strong>：<strong>缓存命中</strong>是从 prompt cache 读取、按折扣价计费的部分；<strong>未命中</strong>是本次真正处理的输入加上全部输出（<b>输出永远不进缓存</b>，因此计入未命中）。两列相加等于该行的全部 token。<br><strong>返工占比</strong> = 该任务 <code>step_kind</code> 为「返工重试」的派工所消耗的 token ÷ 该任务<b>全部</b> token（命中 + 未命中，即拆分前的总量）。分母不排除缓存命中，否则命中率高的任务会显得返工更严重。口径与「用途」维度一致：本表 17 行按 token 加权后是 17.98%，等于该维度写的 18%。「订阅等价」与「实付」分为两列而非合并为一列：订阅账号消耗的 token 不产生新增支出，只消耗额度；API Key 账号不消耗额度，但每个 token 都构成实际支出。</p>
+                  </div>
+
+                  <div class="sc-body" data-statdim-body="project" hidden>
+                    <div class="data-list" style="--cols: minmax(0, 1fr) 72px 92px 92px 96px 84px 100px 96px" role="table" aria-label="按项目">
+                      <div class="dl-head" role="row"><span>项目</span><span>派工</span><span>缓存命中</span><span>未命中</span><span>订阅等价</span><span>实付</span><span>运行时长</span><span>任务数</span></div>
+                      <div class="dl-row dl-total" role="row" data-v7="42|16.3M|10.8M|$5.93|$0.44|8h 00m" data-v30="206|79.0M|52.6M|$28.61|$2.10|35h 56m" data-v365="1707|684.0M|456.0M|$262.57|$19.31|291h 35m"><span class="dl-title">合计 · 2 个项目</span><span class="dl-num">206</span><span class="dl-num">79.0M</span><span class="dl-num">52.6M</span><span class="dl-num">$28.61</span><span class="dl-num">$2.10</span><span class="dl-num">35h 56m</span><span class="dl-dim">17 个任务</span></div>
+                      <div class="dl-row" role="row" data-v7="35|13.8M|8.6M|$4.91|—|6h 37m" data-v30="171|67.1M|41.9M|$23.69|—|29h 45m" data-v365="1413|580.8M|363.1M|$217.41|—|241h 26m"><span class="dl-title">PersonaHub</span><span class="dl-num">171</span><span class="dl-num">67.1M</span><span class="dl-num">41.9M</span><span class="dl-num">$23.69</span><span class="dl-num">—</span><span class="dl-num">29h 45m</span><span class="dl-dim">6 个任务</span></div>
+                      <div class="dl-row" role="row" data-v7="7|2.5M|2.2M|$1.02|$0.44|1h 23m" data-v30="35|11.9M|10.7M|$4.92|$2.10|6h 11m" data-v365="294|103.2M|92.9M|$45.16|$19.31|50h 09m"><span class="dl-title">未归属项目</span><span class="dl-num">35</span><span class="dl-num">11.9M</span><span class="dl-num">10.7M</span><span class="dl-num">$4.92</span><span class="dl-num">$2.10</span><span class="dl-num">6h 11m</span><span class="dl-dim">11 个任务</span></div>
+                    </div>
+                    <p class="pane-note sc-note">未归属项目的任务（<code>project_id</code> 为空）单独成行，不分摊至任何项目——它们本就不属于任何项目，分摊等同于代替使用者完成了归类。</p>
+                  </div>
+
+                  <div class="sc-body" data-statdim-body="combo" hidden>
+                    <div class="data-list" style="--cols: minmax(0, 1fr) 72px 92px 92px 96px 84px 112px 76px" role="table" aria-label="按执行组合">
+                      <div class="dl-head" role="row"><span>执行组合</span><span>派工</span><span>缓存命中</span><span>未命中</span><span>订阅等价</span><span>实付</span><span>计价来源</span><span>计费</span></div>
+                      <div class="dl-row dl-total" role="row" data-v7="42|16.3M|10.8M|$5.93|$0.44" data-v30="206|79.0M|52.6M|$28.61|$2.10" data-v365="1707|684.0M|456.0M|$262.57|$19.31"><span class="dl-title">合计 · 6 个执行组合</span><span class="dl-num">206</span><span class="dl-num">79.0M</span><span class="dl-num">52.6M</span><span class="dl-num">$28.61</span><span class="dl-num">$2.10</span><span class="dl-dim">—</span><span class="dl-dim">—</span></div>
+                      <div class="dl-row" role="row" data-v7="15|6.1M|3.3M|$2.08|—" data-v30="72|29.6M|16.7M|$10.05|—" data-v365="599|255.4M|144.7M|$92.17|—"><span class="dl-title"><code>codex-gpt5.6-high</code></span><span class="dl-num">72</span><span class="dl-num">29.6M</span><span class="dl-num">16.7M</span><span class="dl-num">$10.05</span><span class="dl-num">—</span><span class="dl-dim">本地价表</span><span class="pill muted">订阅</span></div>
+                      <div class="dl-row" role="row" data-v7="11|3.9M|3.3M|$1.57|—" data-v30="54|19.0M|15.7M|$7.55|—" data-v365="451|165.1M|135.9M|$69.32|—"><span class="dl-title"><code>claude-opus5-high</code></span><span class="dl-num">54</span><span class="dl-num">19.0M</span><span class="dl-num">15.7M</span><span class="dl-num">$7.55</span><span class="dl-num">—</span><span class="dl-dim">adapter 自报</span><span class="pill muted">订阅</span></div>
+                      <div class="dl-row" role="row" data-v7="8|3.4M|1.7M|$1.11|—" data-v30="39|16.4M|8.2M|$5.35|—" data-v365="319|142.4M|70.8M|$49.10|—"><span class="dl-title"><code>codex-gpt5.6-medium</code></span><span class="dl-num">39</span><span class="dl-num">16.4M</span><span class="dl-num">8.2M</span><span class="dl-num">$5.35</span><span class="dl-num">—</span><span class="dl-dim">本地价表</span><span class="pill muted">订阅</span></div>
+                      <div class="dl-row" role="row" data-v7="4|1.6M|1.1M|$0.58|—" data-v30="20|7.8M|5.1M|$2.80|—" data-v365="167|67.9M|43.8M|$25.73|—"><span class="dl-title"><code>claude-sonnet5-medium</code></span><span class="dl-num">20</span><span class="dl-num">7.8M</span><span class="dl-num">5.1M</span><span class="dl-num">$2.80</span><span class="dl-num">—</span><span class="dl-dim">adapter 自报</span><span class="pill muted">订阅</span></div>
+                      <div class="dl-row" role="row" data-v7="3|0.9M|1.0M|$0.42|$0.31" data-v30="15|4.5M|4.8M|$2.03|$1.49" data-v365="121|38.7M|42.2M|$18.64|$13.71"><span class="dl-title"><code>opencode-qwen3max-medium</code></span><span class="dl-num">15</span><span class="dl-num">4.5M</span><span class="dl-num">4.8M</span><span class="dl-num">$2.03</span><span class="dl-num">$1.49</span><span class="dl-dim">provider 自报</span><span class="pill blue">API Key</span></div>
+                      <div class="dl-row" role="row" data-v7="1|0.4M|0.4M|$0.17|$0.13" data-v30="6|1.7M|2.1M|$0.83|$0.61" data-v365="50|14.5M|18.6M|$7.61|$5.60"><span class="dl-title"><code>opencode-qwen3max-low</code></span><span class="dl-num">6</span><span class="dl-num">1.7M</span><span class="dl-num">2.1M</span><span class="dl-num">$0.83</span><span class="dl-num">$0.61</span><span class="dl-dim">provider 自报</span><span class="pill blue">API Key</span></div>
+                    </div>
+                    <p class="pane-note sc-note">本表为<strong>单价基准</strong>，用于派工前预估本次消耗，<strong>不是排行榜</strong>：更换执行组合会改变结果质量，这属于使用者的质量判断，而非降低成本的手段。「计价来源」必须显式标注——adapter 自报为权威值，本地价表折算为估算值，两者合并为单一数字后将无法区分可信部分。缓存命中率反映 resume 是否真的生效：resume 的键是（执行组合，Issue，上下文范围），换了任一项都会冷启动，命中率随之掉下来。</p>
+                  </div>
+
+                  <div class="sc-body" data-statdim-body="step" hidden>
+                    <div class="data-list" style="--cols: minmax(0, 140px) 68px 92px 92px 92px minmax(0, 1fr) 260px" role="table" aria-label="按用途">
+                      <div class="dl-head" role="row"><span>用途</span><span>派工</span><span>缓存命中</span><span>未命中</span><span>订阅等价</span><span>占比</span><span>说明</span></div>
+                      <div class="dl-row dl-total" role="row" data-v7="42|16.3M|10.8M|$5.93" data-v30="206|79.0M|52.6M|$28.61" data-v365="1707|684.0M|456.0M|$262.57"><span class="dl-title">合计 · 4 类用途</span><span class="dl-num">206</span><span class="dl-num">79.0M</span><span class="dl-num">52.6M</span><span class="dl-num">$28.61</span><span class="dl-bar"><b>100%</b></span><span class="dl-dim">—</span></div>
+                      <div class="dl-row" role="row" data-v7="18|8.6M|3.3M|$2.61" data-v30="90|41.8M|16.1M|$12.59" data-v365="751|361.9M|139.7M|$115.53"><span class="dl-title">实现</span><span class="dl-num">90</span><span class="dl-num">41.8M</span><span class="dl-num">16.1M</span><span class="dl-num">$12.59</span><span class="dl-bar"><i style="--w:44%"></i><b>44%</b></span><span class="dl-dim">首次实现</span></div>
+                      <div class="dl-row" role="row" data-v7="12|3.5M|4.1M|$1.66" data-v30="58|16.9M|19.9M|$8.01" data-v365="478|146.6M|172.6M|$73.52"><span class="dl-title">验证</span><span class="dl-num">58</span><span class="dl-num">16.9M</span><span class="dl-num">19.9M</span><span class="dl-num">$8.01</span><span class="dl-bar"><i style="--w:28%"></i><b>28%</b></span><span class="dl-dim">独立验证与复核 · 冷启动，命中天然低</span></div>
+                      <div class="dl-row" role="row" data-v7="8|3.8M|1.1M|$1.07" data-v30="37|18.4M|5.3M|$5.15" data-v365="307|159.3M|45.9M|$47.26"><span class="dl-title">返工重试</span><span class="dl-num">37</span><span class="dl-num">18.4M</span><span class="dl-num">5.3M</span><span class="dl-num">$5.15</span><span class="dl-bar"><i style="--w:18%"></i><b>18%</b></span><span class="dl-dim">验证未通过后的重新实现 · 同组合续跑</span></div>
+                      <div class="dl-row" role="row" data-v7="4|0.4M|2.3M|$0.59" data-v30="21|1.9M|11.3M|$2.86" data-v365="171|16.2M|97.8M|$26.26"><span class="dl-title">上下文重传</span><span class="dl-num">21</span><span class="dl-num">1.9M</span><span class="dl-num">11.3M</span><span class="dl-num">$2.86</span><span class="dl-bar"><i style="--w:10%"></i><b>10%</b></span><span class="dl-dim">更换执行组合时重新传输的上下文</span></div>
+                    </div>
+                    <p class="pane-note sc-note">该维度按<strong>派工的目的</strong>分账，是本项目相对参考项目的增量。缓存命中率在这里最能说明问题：「验证」按 ADR 0009 跨上下文围栏冷启动，命中天然低；「上下文重传」按定义就是重新发一遍，命中率只有个位数——这一行的未命中量就是把上下文范围从「全部」收窄到「只给结果」能省下的上限。「返工重试」占比偏高，说明消耗集中在验证轮次上，对应的处置是调整验证策略而非更换模型；「上下文重传」是更换执行组合接手时重新传输的部分，对应的处置是将派工的上下文范围由「全部」收窄至「只给结果」。</p>
+                  </div>
+                </section>
+              </div>
+
+              <div class="stat-pane" data-stat-body="errors" hidden>
+                <div class="stat-kpi stat-kpi-3">
+                  <div>
+                    <small>失败派工 · <b data-stat-span>30 天</b></small>
+                    <strong data-kpi="failed">15</strong>
+                    <span>共 <b data-kpi="runs">206</b> 次派工</span>
+                  </div>
+                  <div>
+                    <small>失败率 · <b data-stat-span>30 天</b></small>
+                    <strong data-kpi="failrate">7.3%</strong>
+                    <span><b data-kpi="failed">15</b> / <b data-kpi="runs">206</b></span>
+                  </div>
+                  <div>
+                    <small>受影响执行组合 · <b data-stat-span>30 天</b></small>
+                    <strong data-kpi="failcombo">4</strong>
+                    <span>最多 <code>codex-gpt5.6-high</code> · <b data-kpi="failtop">6</b> 次</span>
+                  </div>
+                </div>
+
+                <section class="stat-card">
+                  <div class="sc-head"><h2>失败构成<span class="sc-sub">按进程与 adapter 的故障类型分类</span></h2></div>
+                  <div class="sc-body">
+                    <div class="fail-mix">
+                      <button type="button" data-v7="33|1" data-v30="47|7" data-v365="45|58" data-demo="筛选「进程异常退出」的派工记录"><i data-fill="width" style="--w:47%"></i><span>进程异常退出</span><b data-fill>7</b></button>
+                      <button type="button" data-v7="33|1" data-v30="27|4" data-v365="27|35" data-demo="筛选「权限拒绝」的派工记录"><i data-fill="width" style="--w:27%"></i><span>权限拒绝</span><b data-fill>4</b></button>
+                      <button type="button" data-v7="33|1" data-v30="20|3" data-v365="21|27" data-demo="筛选「执行超时」的派工记录"><i data-fill="width" style="--w:20%"></i><span>执行超时</span><b data-fill>3</b></button>
+                      <button type="button" data-v7="0|0" data-v30="7|1" data-v365="6|8" data-demo="筛选「adapter 错误」的派工记录"><i data-fill="width" style="--w:7%"></i><span>adapter 错误</span><b data-fill>1</b></button>
+                    </div>
+                    <p class="pane-note sc-note"><strong>「验证未通过」与「额度不足」不计入本页</strong>——两者属于正常过程，不属于故障。验证未通过体现在用量页的「返工重试」；额度不足当日未执行，记录在自动化面的「未触发 · 额度不足」。将其计入失败率后，该指标将无法再用于判断系统是否存在故障。</p>
+                  </div>
+                </section>
+
+                <section class="stat-card">
+                  <div class="sc-head"><h2>失败分布 · 按执行组合<span class="sc-sub">失败归因于执行组合，不归因于任务</span></h2></div>
+                  <div class="sc-body">
+                    <div class="data-list" style="--cols: minmax(0, 1fr) 88px 88px 96px 220px" role="table" aria-label="按组合的失败">
+                      <div class="dl-head" role="row"><span>执行组合</span><span>失败</span><span>派工</span><span>失败率</span><span>主要原因</span></div>
+                      <div class="dl-row" role="row" data-v7="1|12|8.3%" data-v30="6|58|10.3%" data-v365="50|480|10.4%"><span class="dl-title"><code>codex-gpt5.6-high</code></span><span class="dl-num">6</span><span class="dl-num">58</span><span class="dl-num">10.3%</span><span class="dl-dim">进程异常退出 4 · 执行超时 2</span></div>
+                      <div class="dl-row" role="row" data-v7="1|5|20.0%" data-v30="4|23|17.4%" data-v365="35|187|18.7%"><span class="dl-title"><code>opencode-qwen3max-medium</code></span><span class="dl-num">4</span><span class="dl-num">23</span><span class="dl-num">17.4%</span><span class="dl-dim">样本不足，仅供参考</span></div>
+                      <div class="dl-row" role="row" data-v7="1|11|9.1%" data-v30="3|51|5.9%" data-v365="28|426|6.6%"><span class="dl-title"><code>codex-gpt5.6-medium</code></span><span class="dl-num">3</span><span class="dl-num">51</span><span class="dl-num">5.9%</span><span class="dl-dim">权限拒绝 3</span></div>
+                      <div class="dl-row" role="row" data-v7="0|7|0%" data-v30="2|33|6.1%" data-v365="15|275|5.5%"><span class="dl-title"><code>claude-opus5-high</code></span><span class="dl-num">2</span><span class="dl-num">33</span><span class="dl-num">6.1%</span><span class="dl-dim">adapter 错误 1 · 执行超时 1</span></div>
+                    </div>
+                    <p class="pane-note sc-note">派工次数低于 30 次的执行组合标注「样本不足」：在该样本量下 17% 与 10% 不具备统计意义上的差异，不标注则会被当作结论采信。</p>
+                  </div>
+                </section>
+              </div>
+            </section>
+          </section>
+
+          <section class="surface split-surface" data-surface-view="runtime" aria-label="运行时">
+            <aside class="sp-side">
+              <div class="sp-list">
+              <p class="sp-group">adapter<small>CLI 安装 · 每台机器一份</small></p>
+              <button class="sp-item active" type="button" data-runtime-pick="codex"><span class="signal green"></span><span><strong>Codex CLI</strong><small>0.42.0 · 可派工</small></span></button>
+              <button class="sp-item" type="button" data-runtime-pick="claude"><span class="signal green"></span><span><strong>Claude Code</strong><small>1.0.88 · 可派工</small></span></button>
+              <button class="sp-item" type="button" data-runtime-pick="opencode"><span class="signal yellow"></span><span><strong>OpenCode</strong><small>0.7.2 · 一个代码目录待重新检查</small></span></button>
+              <p class="sp-group">扩展</p>
+              <button class="sp-item" type="button" data-demo="添加 adapter 是代码准入（T2）：手工放进本地目录 + 逐项确认。本机没有沙箱，它与 PersonaHub 同权运行"><span><strong>＋ 添加 adapter</strong><small>代码准入 · 无沙箱</small></span></button>
               </div>
             </aside>
             <section class="sp-main">
               <div class="sp-bar">
-                <div><h1>codex · OAuth</h1><p>额度是<strong>约束</strong>，不是账单：它决定你今天还能派几次 high。所以这里按「还能跑几次」记，不按 token 记。</p></div>
-                <div class="sp-bar-actions"><span class="health-badge"><i></i>充足</span><button type="button" data-demo="刷新账号额度">刷新</button></div>
+                <div><h1>运行时</h1><p>这一面回答两件事：<strong>现在能不能派工</strong>、<strong>派不出去是因为什么</strong>。adapter 与配置都是<strong>检查结果</strong>，不是你的偏好——「默认用哪个」属于派工弹层和编组，不在这里。</p></div>
+                <div class="sp-bar-actions"><span class="health-badge"><i></i>2 个正常 · 1 个待检查</span><button type="button" data-demo="重新检查全部 adapter：读取版本、登录态与可用模型，不启动任何任务">重新检查</button></div>
               </div>
               <div class="sp-body">
-                <h2 class="pane-h">还能跑多少</h2>
-                <p class="pane-note">深度折算固定：<code>high ≈ 5 次 low</code>、<code>medium ≈ 2 次 low</code>。同一个池子被这个账号下的所有模型共用，所以下面是「或者」不是「以及」。</p>
-                <div class="runtime-table">
-                  <div class="rt-head"><span>执行组合</span><span>折算</span><span>还能派</span><span>近 7 天用了</span><span>状态</span></div>
-                  <div class="rt-row"><span><code>codex-gpt5.6-high</code></span><span>5×</span><span>42 次</span><span>31 次</span><span class="pill success">可用</span></div>
-                  <div class="rt-row"><span><code>codex-gpt5.6-medium</code></span><span>2×</span><span>107 次</span><span>18 次</span><span class="pill success">可用</span></div>
-                  <div class="rt-row"><span><code>codex-gpt5.6-low</code></span><span>1×</span><span>214 次</span><span>64 次</span><span class="pill success">可用</span></div>
+
+                <div class="mem-tabs" role="tablist" aria-label="运行时视图">
+                  <button class="active" type="button" role="tab" data-runtime-tab="config" aria-selected="true">配置 <i>4</i></button>
+                  <button type="button" role="tab" data-runtime-tab="diagnostic" aria-selected="false">诊断</button>
                 </div>
 
-                <h2 class="pane-h">告警阈值</h2>
-                <div class="git-block">
-                  <div><span>提醒</span><span>剩余低于 <b>20%</b> 时在状态栏提示</span></div>
-                  <div><span>自动化规则</span><span class="git-warn">剩余低于 <b>10%</b> 时不再触发定时规则 —— 记一条「未触发 · 额度不足」，不降级换个便宜组合替你跑</span></div>
-                  <div><span>手动派工</span><span>永远允许，只是会先告诉你还剩几次</span></div>
-                </div>
-                <p class="pane-note">系统不会为了跑完而自动换更便宜的组合：换组合会改变结果质量，那是你的判断，不是省额度的手段。</p>
+                <!-- ─────────── 能力 tab ─────────── -->
+                <!-- ─────────── 配置 tab ─────────── -->
+                <div data-runtime-body="config">
 
-                <h2 class="pane-h">近 30 天</h2>
-                <div class="run-table">
-                  <div class="rn-head"><span>日期</span><span>折算次数</span><span>去向</span><span>结果</span></div>
-                  <button class="rn-row" type="button" data-demo="打开这天的任务"><span>08-30</span><span>18 次 low</span><span>修复图重启的并发认领</span><span class="pill success">验证通过</span></button>
-                  <button class="rn-row" type="button" data-demo="打开这天的任务"><span>08-29</span><span>25 次 low</span><span>artifact 引用不漂移</span><span class="pill warn">有待处理</span></button>
-                  <button class="rn-row" type="button" data-demo="这次派工被额度挡下了"><span>08-26</span><span>0 次</span><span>每周依赖与安全检查</span><span class="pill muted">未触发 · 额度不足</span></button>
-                  <button class="rn-row" type="button" data-demo="打开这天的任务"><span>08-24</span><span>12 次 low</span><span>依赖与安全检查</span><span class="pill success">验证通过</span></button>
+                  <div class="git-block">
+                    <div><span>配置是什么</span><span><b>一份驱动这个 CLI 的方式</b>：一种认证 + 一个 base URL + 一组可用模型 + 一个额度池。额度<b>按 adapter 配置</b>分池、不按模型——同一份配置下的多个模型共用一个池，彼此是「或者」不是「以及」。<b>不叫「账号」</b>——凭据只是它的一个字段。<button class="linklike" type="button" data-account-new>＋ 新增一份配置</button></span></div>
+                    <div><span>登录态不代管</span><span>OAuth 那一支的 token 由各个 CLI 自己存在它自己的目录里，PersonaHub <b>只做只读检查</b>——登录、续期、切账号都在终端完成，这里给命令，不接管。代管等于把三个 CLI 的凭据格式和过期策略全抄一遍，抄错一次就是静默失败。</span></div>
+                    <div><span>执行组合怎么来的</span><span>已安装的 adapter 与已登录的配置<b>算出</b>可用组合，深度由模型自身能力决定——<b>这是检查结果，不是配置项</b>。一个 adapter 只有一份配置时组合名省略配置段（codex / claude 各只有一份）；OpenCode 挂了两份，它的组合必须带配置名。</span></div>
+                  </div>
+
+                  <div data-runtime-view="codex">
+                    <h2 class="pane-h">Codex CLI · 配置<span class="pane-h-note">1 份</span></h2>
+                    <div class="account-list">
+                      <article class="account-row">
+                        <span class="runtime-icon">C</span>
+                        <div class="ac-body">
+                          <div class="ac-head"><strong>codex</strong><span class="pill blue">oauth</span><span class="pill success">已登录</span></div>
+                          <small>CLI 自管 · 有效期至 2026-10-08 · gpt-5.6 / gpt-5.6-codex · base URL 用官方默认</small>
+                        </div>
+                        <div class="ac-actions"><button type="button" data-demo="重新检查 codex 登录态">重新检查</button><button type="button" data-demo="在终端里跑：codex login">登录命令</button></div>
+                      </article>
+                    </div>
+                    <div class="runtime-table">
+                      <div class="rt-head"><span>模型</span><span>可用深度</span><span>额度</span><span>项目可用性</span><span>状态</span></div>
+                      <div class="rt-row"><span><code>gpt-5.6</code></span><span>low · medium · high</span><span>剩 214 次</span><span>3 个项目</span><span class="pill success">可用</span></div>
+                      <div class="rt-row"><span><code>gpt-5.6-codex</code></span><span>medium · high</span><span>同池</span><span>3 个项目</span><span class="pill success">可用</span></div>
+                    </div>
+                    <h2 class="pane-h">额度池<span class="pane-h-note">一份配置一个池</span></h2>
+                    <div class="runtime-table">
+                      <div class="rt-head"><span>配置</span><span>认证</span><span>可派次数（按 low 折算）</span><span>计量窗口</span><span>状态</span></div>
+                      <div class="rt-row"><span><code>codex</code></span><span>OAuth</span><span>214 次 low ／ 107 次 medium ／ 42 次 high</span><span>本月 · 已用 41%</span><span class="pill success">充足</span></div>
+                    </div>
+                    <p class="pane-note">上表两个模型共用这一个池，所以它们之间是「<strong>或者</strong>」不是「以及」。深度折算系数固定：<code>high ≈ 5 次 low</code>、<code>medium ≈ 2 次 low</code>；派工弹层的「派工后剩余次数」按此折算。<br><strong>「项目可用性」是一列，不是灯。</strong>可用性本来就是按项目的（还能被单个代码目录再改一次），而左框那个灯是一个全局符号，表达不了「这里可用、那里被停了」。</p>
+                  </div>
+
+                  <div data-runtime-view="claude" hidden>
+                    <h2 class="pane-h">Claude Code · 配置<span class="pane-h-note">1 份</span></h2>
+                    <div class="account-list">
+                      <article class="account-row">
+                        <span class="runtime-icon purple">A</span>
+                        <div class="ac-body">
+                          <div class="ac-head"><strong>claude-code</strong><span class="pill blue">oauth</span><span class="pill success">已登录</span></div>
+                          <small>CLI 自管 · opus-5 / sonnet-5 / haiku-4.5 · base URL 用官方默认</small>
+                        </div>
+                        <div class="ac-actions"><button type="button" data-demo="重新检查 claude 登录态">重新检查</button><button type="button" data-demo="在终端里跑：claude">登录命令</button></div>
+                      </article>
+                    </div>
+                    <div class="runtime-table">
+                      <div class="rt-head"><span>模型</span><span>可用深度</span><span>额度</span><span>项目可用性</span><span>状态</span></div>
+                      <div class="rt-row"><span><code>opus-5</code></span><span>low · medium · high</span><span>剩 38 次</span><span>3 个项目</span><span class="pill success">可用</span></div>
+                      <div class="rt-row"><span><code>sonnet-5</code></span><span>low · medium · high</span><span>剩 902 次</span><span>3 个项目</span><span class="pill success">可用</span></div>
+                      <div class="rt-row"><span><code>haiku-4.5</code></span><span>只有 low</span><span>剩 5.2k 次</span><span>3 个项目</span><span class="pill success">可用</span></div>
+                    </div>
+                    <h2 class="pane-h">额度池<span class="pane-h-note">一份配置一个池</span></h2>
+                    <div class="runtime-table">
+                      <div class="rt-head"><span>配置</span><span>认证</span><span>可派次数（按 low 折算）</span><span>计量窗口</span><span>状态</span></div>
+                      <div class="rt-row"><span><code>claude</code></span><span>OAuth</span><span>38 次 low（opus）／ 902 次 low（sonnet）</span><span>5 小时窗口</span><span class="pill warn">偏紧</span></div>
+                    </div>
+                    <p class="pane-note">三个模型共用这一个池（5 小时窗口），所以上表的额度列是「或者」不是「以及」：多派一次 opus 就少几次 sonnet。</p>
+                  </div>
+
+                  <div data-runtime-view="opencode" hidden>
+                    <h2 class="pane-h">OpenCode · 配置<span class="pane-h-note">2 份 —— 唯一一个多配置的 adapter</span></h2>
+                    <p class="pane-note">一份配置只能有一种认证方式。想两种都用就建两份配置，否则失败时分不清是哪条路断的。<strong>正名之后这条规则自解释了</strong>：配置就是「驱动这个 CLI 的一种方式」，一种方式当然只有一种认证。</p>
+                    <div class="label-table">
+                      <div class="rt-head"><span>配置</span><span>认证</span><span>Base URL</span><span>可用模型</span><span>状态</span></div>
+                      <button class="rt-row" type="button" data-demo="编辑 opencode · coding-plan 配置"><span><code>coding-plan</code></span><span><span class="pill muted">api_key</span></span><span><code>api.deepseek.com/v1</code></span><span>deepseek-v4-pro · -flash</span><span class="pill success">已配置</span></button>
+                      <button class="rt-row" type="button" data-demo="编辑 opencode · official-api 配置"><span><code>official-api</code></span><span><span class="pill muted">api_key</span></span><span><code>127.0.0.1:11434/v1</code></span><span>deepseek-v4-pro · qwen3-max</span><span class="pill warn">连不上</span></button>
+                    </div>
+                    <p class="pane-note"><strong>同一个 <code>deepseek-v4-pro</code>，这里有两条路</strong>——这就是执行组合必须带配置段的那个真实场景：<code>opencode-coding-plan-deepseekv4pro-medium</code> 与 <code>opencode-official-api-deepseekv4pro-medium</code> 是两个不同的东西，额度性质、计费方式与失败模式都不同。区分依据是这张表的 <strong>Base URL 与配置名</strong>，它们是配置的字段，不是 CLI 安装的字段。</p>
+                    <h2 class="pane-h">额度池<span class="pane-h-note">两份配置两个池</span></h2>
+                    <div class="runtime-table">
+                      <div class="rt-head"><span>配置</span><span>认证</span><span>可派次数（按 low 折算）</span><span>计量窗口</span><span>状态</span></div>
+                      <div class="rt-row"><span><code>coding-plan</code></span><span>API Key</span><span>1.4k 次 low ／ 700 次 medium</span><span>本月 · 已用 12%</span><span class="pill success">充足</span></div>
+                      <div class="rt-row"><span><code>official-api</code></span><span>API Key</span><span>不设上限 · 按 token 计费</span><span>—</span><span class="pill muted">不受额度约束</span></div>
+                    </div>
+                    <p class="pane-note">两份配置两个池，互不相干——这是它们必须是两个执行组合的另一半理由：额度性质都不一样。<br>「连不上」和「key 不对」分开报：前者是网络或服务没起，后者才需要你换 key。两者都不会把配置自动停用——停用是你的决定。</p>
+                  </div>
+
+
+                  <h2 class="pane-h">额度告警<span class="pane-h-note">一条策略，不属于任何 adapter</span></h2>
+                  <div class="git-block">
+                    <div><span>提醒</span><span>任一配置剩余低于 <b>20%</b> 时在状态栏提示</span></div>
+                    <div><span>自动化规则</span><span class="git-warn">剩余低于 <b>10%</b> 时停止触发定时规则 —— 记录一条「未触发 · 额度不足」，<b>不自动降级为更低成本的执行组合</b></span></div>
+                    <div><span>手动派工</span><span>始终允许，但会先提示剩余次数</span></div>
+                  </div>
+                  <p class="pane-note">系统不会为了执行完成而自动更换更低成本的执行组合：更换组合会改变结果质量，这属于使用者的质量判断，而非节省额度的手段。「因额度不足未执行」的记录在<button class="linklike" type="button" data-surface="automation">自动化</button>面，与「已执行但失败」分开记录——前者不属于故障，但使用者需要知晓当日实际未执行。<br>「已消耗多少」在<button class="linklike" type="button" data-surface="stats">统计</button>面：额度是<strong>约束</strong>，统计是<strong>账本</strong>，二者不得相加。<strong>密钥存在哪</strong>属于数据风险，在<button class="linklike" type="button" data-surface="settings">设置 · 数据</button>。</p>
+
                 </div>
-                <p class="pane-note">「被额度挡下」和「跑了但失败」分开记，和自动化面里的口径一致：前者不是故障，但你需要知道那天其实没有跑。</p>
+
+                <!-- ─────────── 诊断 tab ─────────── -->
+                <div data-runtime-body="diagnostic" hidden>
+
+                  <div data-runtime-view="codex">
+                    <h2 class="pane-h">Codex CLI · 诊断</h2>
+                    <div class="git-block">
+                      <div><span>最近一次检查</span><span>今天 09:12 · 通过 · 0.42.0 · 已登录</span></div>
+                      <div><span>近 30 天派工</span><span>74 次 · 失败 2 次（执行超时 1 · adapter 错误 1）</span></div>
+                      <div><span>登录态到期</span><span>2026-10-08</span></div>
+                    </div>
+                    <h2 class="pane-h">这个 adapter 做不到什么</h2>
+                    <p class="pane-note">没有。权限拦截、结构化轨迹、完成摘要、MCP 注入都支持，原生记忆已按 ADR 0011 关闭——因此它<strong>可以</strong>当独立验证员。</p>
+                    <p class="pane-note">失败归因于执行组合，不归因于任务；逐条记录在<button class="linklike" type="button" data-surface="stats">统计</button>的失败页。</p>
+                  </div>
+
+                  <div data-runtime-view="claude" hidden>
+                    <h2 class="pane-h">Claude Code · 诊断</h2>
+                    <div class="git-block">
+                      <div><span>最近一次检查</span><span>今天 09:12 · 通过 · 1.0.88 · 已登录</span></div>
+                      <div><span>近 30 天派工</span><span>54 次 · 失败 2 次（adapter 错误 1 · 执行超时 1）</span></div>
+                      <div><span>额度</span><span class="git-warn">⚠ 5 小时窗口偏紧：opus 只剩 38 次 low 折算</span></div>
+                    </div>
+                    <h2 class="pane-h">这个 adapter 做不到什么</h2>
+                    <div class="git-block">
+                      <div><span>远端执行时的权限拦截</span><span>它的权限拦截靠 <code>PreToolUse</code> hook 注入，<b>依赖本地文件路径</b>——本机执行没问题，daemon 化之后这条会掉（ADR 0008 第 3 条已记录）。当前只有本机一个执行位置，所以现在不影响任何判断。</span></div>
+                    </div>
+                    <p class="pane-note">原生记忆已按 ADR 0011 关闭，因此它<strong>可以</strong>当独立验证员。</p>
+                  </div>
+
+                  <div data-runtime-view="opencode" hidden>
+                    <h2 class="pane-h">OpenCode · 诊断</h2>
+                    <div class="git-block">
+                      <div><span>最近一次检查</span><span class="git-warn">⚠ 部分可用 —— coding-plan 正常，official-api 连不上（<code>127.0.0.1:11434</code> 无响应）</span></div>
+                      <div><span>近 30 天派工</span><span>18 次 · 失败 3 次 · <b>样本不足</b>（低于 30 次，失败率不具备统计意义）</span></div>
+                    </div>
+
+                    <h2 class="pane-h">这个 adapter 做不到什么<span class="pane-h-note">写后果，不写能力位名字</span></h2>
+                    <div class="git-block">
+                      <div><span class="git-warn">不能当独立验证员</span><span class="git-warn">⚠ 它的<b>原生记忆关不掉</b>（ADR 0011），可能读得到上一轮的实现细节，上下文范围三档在它身上保证不了。因此它在「独立验证员」角色下<b>永远不可选</b>——这一条不随时间、不随任务变化，换个账号换个模型都不会变。</span></div>
+                      <div><span>写操作不会先停下来问你</span><span>派给它的活<b>不会出现「等待权限确认」</b>，写操作直接落盘——七个任务态在它身上少一个。</span></div>
+                      <div><span>统计点不进逐次明细</span><span>它只报整次执行的合计，不报逐次调用；它的任务行在统计里下钻不到 token 明细。</span></div>
+                      <div><span>能力包声明的 MCP 工具会缺席</span><span>而且是<b>静默</b>缺席——两次执行看起来一样，结论却可能不同。这一条会写进「本次生效组合」视图。</span></div>
+                    </div>
+                    <p class="pane-note"><strong>这四条是能力边界，不是故障，不进失败率。</strong>把「能力不具备」计入失败率，这个指标就不能再用来判断系统是否存在故障了——同 §3.4 失败页把「验证未通过」和「额度不足」排除在外的那条判断。<br><strong>第一条是唯一一条改变派工合法性的</strong>：其余三条影响的是体验与可观测性，只有它会让一条主张失效。派工弹层的「结构性不具备」与成果面的「该执行体无法保证独立性」都落在这里。</p>
+                  </div>
+
+                </div>
+
               </div>
             </section>
           </section>
-
           <section class="surface split-surface" data-surface-view="settings" aria-label="设置与诊断">
             <aside class="sp-list">
               <div class="sp-head"><p>设置<small>本机 · 不上传</small></p></div>
               <div class="sp-scroll">
-              <p class="sp-group">运行时</p>
-              <button class="sp-item active" type="button" data-settings-pick="runtime"><span><strong>Adapter 与执行组合</strong><small>3 个 adapter · 6 个可用组合</small></span></button>
-              <button class="sp-item" type="button" data-settings-pick="credential"><span><strong>模型与凭据</strong><small>2 个登录态 · 3 个 API Key 账号</small></span></button>
               <p class="sp-group">工作区</p>
-              <button class="sp-item" type="button" data-settings-pick="labels"><span><strong>任务前缀与标签</strong><small>PH- · 9 个标签</small></span></button>
+              <button class="sp-item active" type="button" data-settings-pick="labels"><span><strong>任务前缀与标签</strong><small>PH- · 9 个标签</small></span></button>
               <p class="sp-group">数据</p>
               <button class="sp-item" type="button" data-demo="代码目录权限按真实路径隔离"><span><strong>代码目录权限</strong><small>按真实路径隔离</small></span></button>
-              <button class="sp-item" type="button" data-demo="数据、备份与 Markdown 导出"><span><strong>数据与备份</strong><small>SQLite · 每日快照</small></span></button>
+              <button class="sp-item" type="button" data-settings-pick="data"><span><strong>数据与备份</strong><small>SQLite · 每日快照 · 密钥存放</small></span></button>
               <button class="sp-item" type="button" data-demo="诊断会显示服务、数据库与事件流状态"><span><strong>健康诊断</strong><small>服务 / 数据库 / 事件流</small></span></button>
               <p class="sp-group">其他</p>
               <button class="sp-item" type="button" data-surface="setup"><span><strong>首次设置向导</strong><small>重新走一遍</small></span></button>
               </div>
             </aside>
             <section class="sp-main">
-              <div class="sp-bar" data-settings-view="runtime">
-                <div><h1>Adapter 与执行组合</h1><p>执行组合不是你要天天挑的东西——它由 adapter 装了什么决定。这里只回答一件事：装好了没有。</p></div>
-                <div class="sp-bar-actions"><span class="health-badge"><i></i>全部正常</span><button type="button" data-demo="重新检查全部 adapter">重新检查</button></div>
-              </div>
-              <div class="sp-body" data-settings-view="runtime">
-                <h2 class="pane-h">Adapter</h2>
-                <div class="runtime-list">
-                  <article><span class="runtime-icon">C</span><div><h3>Codex CLI</h3><p>OAuth 已登录 · 0.42.0 · 原生记忆已关闭</p></div><span class="pill success">3 个项目可用</span><button type="button" data-demo="Codex CLI 诊断通过">检查</button></article>
-                  <article><span class="runtime-icon purple">A</span><div><h3>Claude Code</h3><p>OAuth 已登录 · 1.0.88 · 原生记忆已关闭</p></div><span class="pill success">3 个项目可用</span><button type="button" data-demo="Claude Code 诊断通过">检查</button></article>
-                  <article><span class="runtime-icon amber">O</span><div><h3>OpenCode</h3><p>API Key · Qwen provider</p></div><span class="pill muted">2 个项目可用</span><button type="button" data-demo="OpenCode 在一个代码目录中需要重新检查">检查</button></article>
-                </div>
-                <div class="git-block">
-                  <div><span>原生记忆</span><span class="git-warn">⚠ 已按 ADR 0011 双向关闭；OpenCode 不支持关闭，派工时会明示降级 —— 关不掉不是事故，关不掉却假装关掉了才是</span></div>
-                </div>
-
-                <h2 class="pane-h">由此得到的执行组合</h2>
-                <p class="pane-note">这张表是<strong>检查结果</strong>，不是配置项：装了哪个 adapter、登录了哪个账号，就有哪些组合。深度由模型自身能力决定，额度按深度折算成可用次数。</p>
-                <div class="runtime-table">
-                  <div class="rt-head"><span>adapter</span><span>模型</span><span>可用深度</span><span>额度（按 low 折算）</span><span>状态</span></div>
-                  <div class="rt-row"><span><code>codex</code></span><span>gpt-5.6</span><span>low · medium · high</span><span>剩 214 次</span><span class="pill success">可用</span></div>
-                  <div class="rt-row"><span><code>codex</code></span><span>gpt-5.6-codex</span><span>medium · high</span><span>剩 214 次</span><span class="pill success">可用</span></div>
-                  <div class="rt-row"><span><code>claude</code></span><span>opus-5</span><span>low · medium · high</span><span>剩 38 次</span><span class="pill success">可用</span></div>
-                  <div class="rt-row"><span><code>claude</code></span><span>sonnet-5</span><span>low · medium · high</span><span>剩 902 次</span><span class="pill success">可用</span></div>
-                  <div class="rt-row"><span><code>claude</code></span><span>haiku-4.5</span><span>只有 low</span><span>剩 5.2k 次</span><span class="pill success">可用</span></div>
-                  <div class="rt-row"><span><code>opencode</code></span><span>qwen3-max</span><span>low · medium</span><span>本地无限</span><span class="pill muted">需检查</span></div>
-                </div>
-                <p class="pane-note">这里只说「有没有」；「还剩多少、花在哪」在<button class="linklike" type="button" data-surface="usage">用量</button>面。</p>
-              </div>
-
-              <div class="sp-bar" data-settings-view="credential" hidden>
-                <div><h1>模型与凭据</h1><p>账号是<strong>凭据的归属单位</strong>：一个账号带一种认证方式和一组可用模型。执行组合是账号 × 模型 × 深度算出来的，不在这里配。</p></div>
-                <div class="sp-bar-actions"><span class="health-badge"><i></i>5 个账号可用</span><button class="primary-button" type="button" data-account-new>＋ 新增账号</button></div>
-              </div>
-              <div class="sp-body" data-settings-view="credential" hidden>
-                <h2 class="pane-h">CLI 登录态<span class="pane-h-note">OAuth · PersonaHub 不代管</span></h2>
-                <p class="pane-note">这一组的 token 由 CLI 自己存在它自己的目录里。PersonaHub <strong>只做只读检查</strong>——登录、续期、切账号都在终端完成，这里给命令，不接管。代管等于把三个 CLI 的凭据格式和过期策略全抄一遍，抄错一次就是静默失败。</p>
-                <div class="account-list">
-                  <article class="account-row">
-                    <span class="runtime-icon">C</span>
-                    <div class="ac-body">
-                      <div class="ac-head"><strong>codex</strong><span class="pill blue">oauth</span><span class="pill success">已登录</span></div>
-                      <small>CLI 自管 · 有效期至 2026-10-08 · gpt-5.6 / gpt-5.6-codex</small>
-                    </div>
-                    <div class="ac-actions"><button type="button" data-demo="重新检查 codex 登录态">重新检查</button><button type="button" data-demo="在终端里跑：codex login">登录命令</button></div>
-                  </article>
-                  <article class="account-row">
-                    <span class="runtime-icon purple">A</span>
-                    <div class="ac-body">
-                      <div class="ac-head"><strong>claude-code</strong><span class="pill blue">oauth</span><span class="pill success">已登录</span></div>
-                      <small>CLI 自管 · opus-5 / sonnet-5 / haiku-4.5</small>
-                    </div>
-                    <div class="ac-actions"><button type="button" data-demo="重新检查 claude 登录态">重新检查</button><button type="button" data-demo="在终端里跑：claude">登录命令</button></div>
-                  </article>
-                  <article class="account-row off">
-                    <span class="runtime-icon amber">O</span>
-                    <div class="ac-body">
-                      <div class="ac-head"><strong>opencode</strong><span class="pill blue">oauth</span><span class="pill warn">未登录</span></div>
-                      <small class="ac-warn">没有登录态，也没配 API Key —— 这个 adapter 的组合不会出现在派工清单里</small>
-                    </div>
-                    <div class="ac-actions"><button type="button" data-demo="在终端里跑：opencode auth login">登录命令</button></div>
-                  </article>
-                </div>
-
-                <h2 class="pane-h">API Key 账号<span class="pane-h-note">PersonaHub 自己存</span></h2>
-                <p class="pane-note">点一行进编辑。一个账号可以带多个模型，但<strong>只能有一种认证方式</strong>：同一个 provider 既想用登录态又想用 key，建两个账号，否则出问题时分不清是哪条路失败的。</p>
-                <div class="label-table">
-                  <div class="rt-head"><span>账号</span><span>认证</span><span>Base URL</span><span>可用模型</span><span>状态</span></div>
-                  <button class="rt-row" type="button" data-account-edit="deepseek"><span><code>deepseek</code></span><span><span class="pill muted">api_key</span></span><span><code>api.deepseek.com/v1</code></span><span>deepseek-v4-pro · -flash</span><span class="pill success">已配置</span></button>
-                  <button class="rt-row" type="button" data-account-edit="volcengine"><span><code>volcengine</code></span><span><span class="pill muted">api_key</span></span><span><code>ark.cn-beijing.volces.com</code></span><span>glm-5.2 · doubao-seed-2.1</span><span class="pill success">已配置</span></button>
-                  <button class="rt-row" type="button" data-account-edit="qwen-local"><span><code>qwen-local</code></span><span><span class="pill muted">api_key</span></span><span><code>127.0.0.1:11434/v1</code></span><span>qwen3-max</span><span class="pill warn">连不上</span></button>
-                </div>
-                <p class="pane-note">「连不上」和「key 不对」分开报：前者是网络或服务没起，后者才需要你换 key。两者都不会把账号自动停用——停用是你的决定。</p>
-
-                <h2 class="pane-h">密钥存在哪</h2>
-                <div class="git-block">
-                  <div><span>存储位置</span><span>本机 SQLite 的 <code>agent_configs.api_key</code>，在数据目录里</span></div>
-                  <div><span>读回</span><span>接口只回<b>是否已配置</b>，不回原值；界面上永远是 <code>••••••</code></span></div>
-                  <div><span>备份</span><span>跟着「数据与备份」一起走；Markdown 导出<b>不含密钥</b></span></div>
-                  <div><span>换 key</span><span>只影响之后的派工；已经跑过的 Run 记录保留当时的账号名，不回填</span></div>
-                  <div><span>注意</span><span class="git-warn">⚠ 数据库文件本身没有加密。把数据目录放进同步盘或 git 仓库，等于把 key 一起同步出去</span></div>
-                </div>
-                <p class="pane-note">删除账号会让依赖它的执行组合从派工清单里消失，但历史 Run 记录保留当时的组合名——证据链不能因为你今天删了个账号就断掉。</p>
-              </div>
-
-              <div class="sp-bar" data-settings-view="labels" hidden>
+              <div class="sp-bar" data-settings-view="labels">
                 <div><h1>任务前缀与标签</h1><p>任务编号一旦发出去就会被引用——commit message、证据文件名、外部链接都带着它，所以前缀改一次全仓重命名，这里做成要确认的操作。</p></div>
                 <div class="sp-bar-actions"><button class="primary-button" type="button" data-demo="新建标签：静态原型不保存">＋ 新建标签</button></div>
               </div>
-              <div class="sp-body" data-settings-view="labels" hidden>
+              <div class="sp-body" data-settings-view="labels">
                 <h2 class="pane-h">任务前缀</h2>
                 <div class="git-block">
                   <div><span>当前前缀</span><span><code>PH-</code> · 最新 <code>PH-412</code></span></div>
@@ -2580,6 +3025,28 @@ completed -&gt; archived</code></pre>
                   <button class="rt-row" type="button" data-demo="这个标签 90 天没用过，建议合并或删除"><span><span class="signal"></span> <code>perf</code></span><span>性能</span><span>2 个任务</span><span>05-11</span><span class="pill warn">90 天未用</span></button>
                 </div>
                 <p class="pane-note">被自动化规则引用的标签删不掉：先解掉引用，否则规则会变成筛不到任何东西还照常触发。</p>
+              </div>
+
+              <div class="sp-bar" data-settings-view="data" hidden>
+                <div><h1>数据与备份</h1><p>本机 SQLite 一个文件装下全部：任务、证据、记忆、以及<strong>明文的 API Key</strong>。所以「数据放在哪」和「密钥放在哪」是同一个问题。</p></div>
+                <div class="sp-bar-actions"><button type="button" data-demo="立即做一次快照">立即快照</button><button type="button" data-demo="导出为 Markdown：不含密钥">导出 Markdown</button></div>
+              </div>
+              <div class="sp-body" data-settings-view="data" hidden>
+                <h2 class="pane-h">数据位置与备份</h2>
+                <div class="git-block">
+                  <div><span>数据目录</span><span><code>D:\Projects\personahub\.data</code> · SQLite 单文件</span></div>
+                  <div><span>快照</span><span>每日一次，保留 14 份</span></div>
+                  <div><span>Markdown 导出</span><span>任务、证据与完成摘要可导出；<b>不含密钥</b></span></div>
+                </div>
+
+                <h2 class="pane-h">密钥存在哪<span class="pane-h-note">从运行时面搬来：这是数据风险，不是某个 adapter 的属性</span></h2>
+                <div class="git-block">
+                  <div><span>存储位置</span><span>就在上面那个数据目录里，SQLite 的 <code>agent_configs.api_key</code> 列，<b>明文</b></span></div>
+                  <div><span>读回</span><span>接口只回<b>是否已配置</b>，不回原值；界面上永远是 <code>••••••</code></span></div>
+                  <div><span>换 key</span><span>只影响之后的派工；已经跑过的 Run 记录保留当时的组合名，不回填</span></div>
+                  <div><span>注意</span><span class="git-warn">⚠ 数据库文件本身没有加密。<b>把数据目录放进同步盘或 git 仓库，等于把 key 一起同步出去。</b></span></div>
+                </div>
+                <p class="pane-note">这一条必须出现在页面上，不能只躺在架构文档里——它是使用者唯一能看见这个风险的地方。<br>删除一份配置会让依赖它的执行组合从派工清单里消失，但历史 Run 记录保留当时的组合名——证据链不能因为你今天删了份配置就断掉（快照冻的是 <code>adapter_config_id</code>）。配置本身在<button class="linklike" type="button" data-surface="runtime">运行时</button>面维护。</p>
               </div>
             </section>
           </section>
@@ -2663,6 +3130,7 @@ completed -&gt; archived</code></pre>
           <div><small data-picker-context>为「独立验证」挑一个执行组合</small><h2 data-picker-title>选择执行组合</h2></div>
           <button type="button" data-picker-close aria-label="关闭执行组合选择器">×</button>
         </header>
+        <p class="picker-needs" data-picker-needs></p>
         <p class="picker-rule" data-picker-rule></p>
         <div class="picker-list" data-picker-list></div>
         <footer>

@@ -375,7 +375,7 @@
     const cost = { low: 1, medium: 2.5, high: 5 }[comboState.depth] || 1;
     if (est) {
       const calls = Math.max(1, Math.round((quota * 2) / cost));
-      est.innerHTML = `当前 <b>${comboState.depth}</b> · 剩余额度 ${quota}% 约够 <b>${calls}</b> 次调用`;
+      est.innerHTML = `当前 <b>${comboState.depth}</b> · 该配置池剩余 ${quota}% 约够 <b>${calls}</b> 次调用`;
       est.classList.toggle("warn", calls < 20);
     }
 
@@ -513,6 +513,99 @@
       if (b.getAttribute("role") === "tab") b.setAttribute("aria-selected", String(on));
     });
     $$(`[data-${group}-body]`).forEach((el) => (el.hidden = el.dataset[`${group}Body`] !== value));
+  }
+
+  // ── 统计面 ────────────────────────────────────────────────
+  // 三个开关互不影响：周期（页级）决定看哪一段时间、指标（卡内）决定
+  // 画什么、形态（卡内）决定怎么画。周期同时决定哪些形态可用——365 根
+  // 柱子挤在一屏里读不出东西，30 天的热力图又只有 5 列。
+  const statRanges = {
+    "7": { span: "7 天", paid: "$0.44", eq: "$5.93", tok: "27.1M", tin: "25.4M", tout: "1.6M",
+      time: "8h 00m", tmodel: "1h 46m", ttool: "5h 02m", runs: "42", failed: "3", cache: "16.3M",
+      failrate: "7.1%", failcombo: "3", failtop: "1", shapes: ["day"], defaultShape: "day" },
+    "30": { span: "30 天", paid: "$2.10", eq: "$28.61", tok: "131.6M", tin: "123.7M", tout: "7.9M",
+      time: "35h 56m", tmodel: "7h 54m", ttool: "22h 38m", runs: "206", failed: "15", cache: "79.0M",
+      failrate: "7.3%", failcombo: "4", failtop: "6", shapes: ["day", "week"], defaultShape: "day" },
+    "365": { span: "一年", paid: "$19.31", eq: "$262.57", tok: "1.14B", tin: "1.07B", tout: "68.5M",
+      time: "291h 35m", tmodel: "64h 09m", ttool: "183h 42m", runs: "1,707", failed: "128", cache: "684.0M",
+      failrate: "7.5%", failcombo: "6", failtop: "50", shapes: ["week", "year"], defaultShape: "year" },
+  };
+  const statMetricAxis = { tok: "aTok", cost: "aCost", secs: "aSecs", runs: "aRuns" };
+  const statMetricOrder = ["tok", "cost", "secs", "runs"];
+  let statRange = "30";
+
+  function setStatMetric(metric) {
+    const at = statMetricOrder.indexOf(metric);
+    if (at < 0) return;
+    $$("[data-stat-metric]").forEach((b) => b.classList.toggle("active", b.dataset.statMetric === metric));
+    $$("[data-statshape-body] .sb-col").forEach((col) => {
+      const v = (col.dataset.m ?? "").split(",")[at];
+      if (v !== undefined) col.style.setProperty("--h", `${v}%`);
+    });
+    // 热力图每格把四个指标的档位压在一个 data-m 里（一位一个指标），
+    // 换指标就是换读第几位——不重画 371 个格子。
+    $$(".hm-cell").forEach((cell) => {
+      const code = cell.dataset.m ?? "";
+      if (code.length > at) cell.dataset.l = code[at];
+    });
+    $$("[data-statshape-body]").forEach((body) => {
+      const label = body.dataset[statMetricAxis[metric]];
+      const axis = $("[data-axis-max]", body);
+      if (label && axis) axis.textContent = label;
+    });
+  }
+
+  function fillByRange(scope) {
+    $$("[data-v30]", scope).forEach((row) => {
+      const values = (row.dataset[`v${statRange}`] ?? "").split("|");
+      const slots = $$(".dl-num, [data-fill]", row);
+      slots.forEach((slot, i) => {
+        const value = values[i];
+        if (value === undefined) return;
+        if (slot.dataset.fill === "width") slot.style.setProperty("--w", `${value}%`);
+        else slot.textContent = value;
+      });
+    });
+  }
+
+  // 详情表按页翻，每页 10 条。「本页合计」跟着页码走，「合计」不带页码——
+  // 分页最容易翻掉的就是对账关系：合计行必须始终是整个周期的数。
+  const STAT_PAGES = 2;
+  let statPage = 1;
+
+  function setStatPage(page) {
+    statPage = Math.min(STAT_PAGES, Math.max(1, page));
+    $$("[data-page]").forEach((el) => (el.hidden = Number(el.dataset.page) !== statPage));
+    const now = $("[data-page-now]");
+    if (now) now.textContent = String(statPage);
+    const prev = $('[data-stat-page="prev"]');
+    const next = $('[data-stat-page="next"]');
+    if (prev) prev.disabled = statPage === 1;
+    if (next) next.disabled = statPage === STAT_PAGES;
+  }
+
+  function setStatRange(days) {
+    const preset = statRanges[days];
+    if (!preset) return;
+    statRange = days;
+    $$("[data-stat-range]").forEach((b) => b.classList.toggle("active", b.dataset.statRange === days));
+    $$("[data-stat-span]").forEach((el) => (el.textContent = preset.span));
+    $$("[data-kpi]").forEach((el) => {
+      const value = preset[el.dataset.kpi];
+      if (value !== undefined) el.textContent = value;
+    });
+    const failedBadge = $("[data-stat-failed]");
+    if (failedBadge) failedBadge.textContent = preset.failed;
+    fillByRange($('[data-surface-view="stats"]'));
+    // 形态跟着周期开关：不可用的置灰而不是隐藏——藏起来等于替用户
+    // 决定了他不需要它，而这里要说明白的恰恰是「为什么这个周期没有它」。
+    const active = $("[data-statshape-tab].active")?.dataset.statshapeTab;
+    $$("[data-statshape-tab]").forEach((b) => {
+      const ok = preset.shapes.includes(b.dataset.statshapeTab);
+      b.disabled = !ok;
+      b.title = ok ? "" : `「${b.textContent.trim()}」在${preset.span}这个周期下读不出东西`;
+    });
+    if (!preset.shapes.includes(active)) setLocalTab("statshape", preset.defaultShape);
   }
 
   // 会话面复用任务面的骨架：左列表 + 上 tab + 消息流 + 漂浮输入框。
@@ -839,10 +932,46 @@
   // 本阶段检索用过的组合（对应协作现场那两条已交付/执行中的泳道），综合步据此判定兼任。
   const RESEARCH_USED = ["codex-gpt5.6-high", "claude-sonnet5-medium"];
 
+  // ── 「这一步需要什么」：两个来源，取并集（design.md §4.6 第 2 条）──────
+  // A = 本次命中的 Skill 各自声明的要求；B = 工作流 / 编组这一步声明的要求。
+  // 不设优先级：要求的语义是「至少要满足什么」，并集只会更严不会更松，
+  // 因此天然没有「冲突时听谁的」——同 ADR 0018 第 5 条「只能加严，不能放宽」。
+  //
+  // 两个来源互补对方的洞：B 最准，但 ad-hoc 派工（直接在会话里说一句）没有
+  // 步骤，等于不设防；A 覆盖 ad-hoc，但只有**派工前就能确定命中**的 Skill 才
+  // 算数——按触碰路径命中的那类，派工时还不知道会改哪些文件，算不出来。
+  // **算不出来的不猜，不进这一排。**
+  const SKILL_REQUIREMENTS = {
+    implementer: [{ tag: "代码实现", from: "skill", label: "改动前先跑 npm run verify" }],
+    validator: [{ tag: "验证", from: "skill", label: "验证结论必须逐条挂证据" }],
+    synthesizer: [{ tag: "架构", from: "skill", label: "架构设计：先列约束再给两个方案" }],
+  };
+  const STEP_REQUIREMENTS = {
+    implementer: [{ tag: "代码实现", from: "step", label: "Coding · 实现" }],
+    validator: [{ tag: "验证", from: "step", label: "Coding · 独立验证" }, { tag: "隔离验证", from: "step", label: "Coding · 独立验证" }],
+    synthesizer: [{ tag: "综合", from: "step", label: "Research · 收敛" }],
+  };
+  function requirementsFor(role) {
+    const merged = new Map();
+    for (const r of [...(SKILL_REQUIREMENTS[role] ?? []), ...(STEP_REQUIREMENTS[role] ?? [])]) {
+      const hit = merged.get(r.tag);
+      // 同一个 tag 两边都要求 → 合并来源，不是二选一
+      if (hit) hit.sources.push(r);
+      else merged.set(r.tag, { tag: r.tag, sources: [r] });
+    }
+    return [...merged.values()];
+  }
+  const SOURCE_LABEL = { skill: "来自 Skill", step: "来自步骤" };
+
+  // 组合满足了哪些要求、缺哪些。缺 ≠ 不能选：那是质量判断，归使用者（§4.6 第 6 条）
+  function unmetRequirements(c, role) {
+    return requirementsFor(role).filter((r) => !c.tags.includes(r.tag)).map((r) => r.tag);
+  }
+
   // 所有角色共用的前置：组合本身能不能派出去，和这一步要什么无关。
   function comboBlocked(c) {
     if (c.status === "unchecked") return "adapter 登录状态需要重新检查，现在派过去会直接失败";
-    if (c.status === "quota") return "额度只剩 3 次 low 折算，跑不完一次 high（要 5 次）——去用量面看还剩多少";
+    if (c.status === "quota") return "额度剩余 3 次 low 折算，不足以完成一次 high（需 5 次）——额度池见设置 · 运行时";
     return null;
   }
 
@@ -854,9 +983,10 @@
       judge: (c) => {
         const stop = comboBlocked(c);
         if (stop) return { level: "blocked", why: stop };
-        return c.tags.includes("代码实现")
-          ? { level: "good", why: "能力匹配：代码实现、重构、测试" }
-          : { level: "weak", why: "能力项里没有代码实现，可以选但不是这一步的强项" };
+        const miss = unmetRequirements(c, "implementer");
+        return miss.length
+          ? { level: "weak", why: "不满足要求：" + miss.join(" · ") + "。可以选——这是质量判断，但主张上会留一条标注" }
+          : { level: "good", why: "满足全部要求：" + c.tags.join(" · ") };
       },
     },
     validator: {
@@ -869,9 +999,10 @@
         }
         const stop = comboBlocked(c);
         if (stop) return { level: "blocked", why: stop };
-        return c.tags.includes("验证")
-          ? { level: "good", why: "能力匹配：代码审查、验证 · 与实现者不同模型" }
-          : { level: "weak", why: "与实现者不同源，满足硬要求；但没有验证能力项" };
+        const miss = unmetRequirements(c, "validator");
+        return miss.length
+          ? { level: "weak", why: "与实现者不同源，硬约束过了；但不满足要求：" + miss.join(" · ") }
+          : { level: "good", why: "满足全部要求 · 与实现者不同模型" };
       },
     },
     synthesizer: {
@@ -884,14 +1015,18 @@
         }
         const stop = comboBlocked(c);
         if (stop) return { level: "blocked", why: stop };
-        return c.tags.includes("综合")
-          ? { level: "good", why: "能力匹配：综合 · 未参与本阶段检索" }
-          : { level: "weak", why: "未参与本阶段检索，可以选；但没有综合能力项" };
+        const miss = unmetRequirements(c, "synthesizer");
+        return miss.length
+          ? { level: "weak", why: "未参与本阶段检索，硬约束过了；但不满足要求：" + miss.join(" · ") + "。拿 low 深度跑架构设计属于这一档——不挡，但会留痕" }
+          : { level: "good", why: "满足全部要求 · 未参与本阶段检索" };
       },
     },
   };
 
-  const LEVEL_LABEL = { good: "建议", weak: "可选", blocked: "不建议" };
+    // 三档的分界是「能不能」，不是「好不好」（§4.6 第 4 条）。
+  // 早期版本把硬禁止那一档标成「不建议」——读到「不建议」的人会以为自己能
+  // 坚持选，实际点不动，这与「硬约束先说」的意图相反。
+  const LEVEL_LABEL = { good: "建议", weak: "可选", blocked: "不可选" };
 
   function setComboPicker(role) {
     const overlay = $("[data-combo-picker]");
@@ -906,6 +1041,26 @@
     $("[data-picker-title]").textContent = spec.title;
     $("[data-picker-context]").textContent = spec.context;
     $("[data-picker-rule]").textContent = spec.rule;
+    // 「这一步需要什么」：每个 tag 必须标出它从哪来——没有来源的行不允许出现
+    // 在决定上下文的视图里（同 §3.2.4）。两处都要求同一个 tag 时并列两个来源。
+    const needs = $("[data-picker-needs]");
+    if (needs) {
+      const reqs = requirementsFor(role);
+      needs.innerHTML = reqs.length
+        ? "<span class=\"pn-label\">这一步需要什么</span>" +
+          reqs
+            .map(
+              (r) =>
+                '<em class="cap-tag" title="' +
+                r.sources.map((x) => SOURCE_LABEL[x.from] + "：" + x.label).join(" ／ ") +
+                '">' + r.tag +
+                r.sources.map((x) => '<i class="ct-src">' + SOURCE_LABEL[x.from] + "</i>").join("") +
+                "</em>",
+            )
+            .join("") +
+          '<small class="pn-note">两处贡献取<b>并集</b>，不设优先级——要求的语义是「至少要满足什么」，并集只会更严。</small>'
+        : '<span class="pn-label">这一步没有声明要求</span><small class="pn-note">ad-hoc 派工且没有命中可预判的 Skill 时会这样；此时不猜，全部落「可选」。</small>';
+    }
     const list = $("[data-picker-list]");
     list.innerHTML = "";
     const rows = COMBOS.map((c) => ({ c, v: spec.judge(c) }));
@@ -1005,7 +1160,7 @@
       return;
     }
 
-    for (const group of ["automation", "settings", "usage"]) {
+    for (const group of ["automation", "settings", "runtime"]) {
       const value = target.dataset[`${group}Pick`];
       if (value) {
         pickInList(group, value);
@@ -1090,12 +1245,27 @@
       return;
     }
 
-    for (const group of ["project", "memory", "library", "automation"]) {
+    for (const group of ["project", "memory", "library", "automation", "runtime", "stat", "statshape", "statdim"]) {
       const value = target.dataset[`${group}Tab`];
       if (value) {
         setLocalTab(group, value);
         return;
       }
+    }
+
+    if (target.dataset.statRange) {
+      setStatRange(target.dataset.statRange);
+      return;
+    }
+
+    if (target.dataset.statMetric) {
+      setStatMetric(target.dataset.statMetric);
+      return;
+    }
+
+    if (target.dataset.statPage) {
+      setStatPage(statPage + (target.dataset.statPage === "next" ? 1 : -1));
+      return;
     }
 
     if (target.hasAttribute("data-group-toggle")) {
@@ -1352,8 +1522,17 @@
 
     if (target.dataset.pickComboId) {
       const combo = COMBOS.find((c) => c.id === target.dataset.pickComboId);
+      const role = state.pickerRole;
       setComboPicker(null);
-      if (combo) startDispatch(combo.id);
+      if (combo) {
+        // §4.6 第 6 条：不满足要求不挡，但不能静默——这次产出的主张上要留一条
+        // 标注。形态照 ADR 0012 第 4 条的保护条款（推翻默认可以，但会降级）。
+        const miss = role ? unmetRequirements(combo, role) : [];
+        startDispatch(combo.id);
+        if (miss.length) {
+          showToast("已派给 " + combo.id + "：它不满足「" + miss.join("、") + "」，这条会记在本次主张上");
+        }
+      }
       return;
     }
 
@@ -1645,6 +1824,11 @@
   });
 
   setThreadTab("solo");
+  // 统计面的默认态由数据决定而不是由 HTML 决定：热力图在 30 天下不可用，
+  // 这个置灰必须在首屏就成立，否则点进去才发现按不动。
+  setStatRange("30");
+  setStatMetric("tok");
+  setStatPage(1);
   setLayout(state.layout);
   setExplorer(state.explorer);
   openDocument(state.document, documentMeta[state.document][1]);

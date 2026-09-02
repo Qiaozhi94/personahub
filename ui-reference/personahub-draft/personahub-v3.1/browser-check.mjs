@@ -202,7 +202,7 @@ await check("主切换竖栏：日常的在上，配置类的沉到底部一排�
   if (!(await rail.isVisible())) throw new Error("没有主切换竖栏");
   const items = rail.locator("> button");
   if ((await items.count()) < 7) throw new Error("竖栏项过少");
-  for (const surface of ["project", "threads", "projects", "automation", "memory", "library", "usage", "settings"]) {
+  for (const surface of ["project", "threads", "projects", "automation", "memory", "library", "stats", "runtime", "settings"]) {
     if (!(await rail.locator(`[data-surface="${surface}"]`).isVisible())) throw new Error(`竖栏缺少 ${surface}`);
   }
   // V3.1 删掉图标活动栏的理由是「无文字，辨识度低」——这次必须带文字
@@ -214,6 +214,9 @@ await check("主切换竖栏：日常的在上，配置类的沉到底部一排�
   const y = async (k) => (await rail.locator(`[data-surface="${k}"]`).boundingBox()).y;
   if ((await y("memory")) - (await y("automation")) < 200) throw new Error("记忆与能力没有和设置一起沉到底部");
   if ((await y("settings")) < (await y("library"))) throw new Error("设置应在最下面");
+  // 运行时是高频的（派工失败第一个去的地方），但仍属治理组；它在统计之后、设置之前
+  if ((await y("runtime")) < (await y("stats"))) throw new Error("运行时应排在统计下面");
+  if ((await y("runtime")) > (await y("settings"))) throw new Error("运行时应排在设置上面——设置永远是最后一个");
 
   // 顶栏不再有项目选择器：Issue 是工作区维度的
   if (await page.locator(".project-scope").count()) throw new Error("顶栏仍有项目选择器");
@@ -985,16 +988,31 @@ await check("执行组合选择器把判断依据摊开，不建议的不隐藏�
   const rows = picker.locator(".picker-row");
   if ((await rows.count()) !== 7) throw new Error(`应列出设置里检查出的全部 7 个执行组合，实际 ${await rows.count()}`);
   const blocked = picker.locator(".picker-row.blocked");
-  if ((await blocked.count()) < 1) throw new Error("不建议的组合应保留在列表里，而不是被藏掉");
-  if (!(await blocked.first().isDisabled())) throw new Error("不建议的组合应不可选");
+  if ((await blocked.count()) < 1) throw new Error("不可选的组合应保留在列表里，而不是被藏掉");
+  if (!(await blocked.first().isDisabled())) throw new Error("硬约束挡住的组合应不可选");
+  // V3.18：三档的分界是「能不能」不是「好不好」。硬禁止那一档不能再叫「不建议」——
+  // 读到「不建议」的人会以为自己能坚持选，实际点不动
+  if ((await blocked.first().innerText()).includes("不建议")) {
+    throw new Error("硬禁止那一档仍标着「不建议」，措辞与行为对不上（§4.6 第 4 条）");
+  }
+  // 不满足要求是质量判断，归使用者：必须可选，不能被挡
+  const weak = picker.locator(".picker-row.weak");
+  if ((await weak.count()) < 1) throw new Error("没有「可选」档——不满足要求的组合被错误地挡掉了");
+  if (await weak.first().isDisabled()) {
+    throw new Error("不满足要求的组合被禁用了；§3.5 已裁定「更换组合会改变结果质量，属于使用者的质量判断」");
+  }
+  if (!(await weak.first().innerText()).includes("不满足要求")) {
+    throw new Error("「可选」档没有写出缺哪一项要求");
+  }
   // 这里没有「成员」这种常驻角色，最小可派单位是 adapter × 模型 × 深度
   const listText = await picker.locator(".picker-list").innerText();
   if (!listText.includes("codex-gpt5.6-high")) throw new Error("行标题不是执行组合 id");
   if ((await picker.innerText()).includes("成员")) throw new Error("弹层里还留着「成员」这个不存在的概念");
-  // 额度不够也是不能选的理由之一，且要指回用量面
+  // 额度不够也是不能选的理由之一，且要指回额度的所在地（ADR 0017：
+  // 额度是 Runtime 的实时状态，归设置 · 运行时，不在统计面）
   const quota = picker.locator('.picker-row[data-pick-combo-id="claude-opus5-high"]');
   if (!(await quota.getAttribute("class")).includes("blocked")) throw new Error("额度不够跑完一次 high 的组合仍可选");
-  if (!(await quota.locator(".pr-why").innerText()).includes("用量")) throw new Error("额度挡下时没有指回用量面");
+  if (!(await quota.locator(".pr-why").innerText()).includes("运行时")) throw new Error("额度挡下时没有指回设置 · 运行时");
   for (const row of await rows.all()) {
     if (!(await row.locator(".pr-why").innerText()).trim()) throw new Error("每一行都必须写明理由");
   }
@@ -1003,6 +1021,30 @@ await check("执行组合选择器把判断依据摊开，不建议的不隐藏�
   for (let i = 1; i < levels.length; i += 1) {
     if (rank[levels[i]] < rank[levels[i - 1]]) throw new Error("建议的应排在不建议的前面");
   }
+  await picker.locator("[data-picker-close]").first().click();
+});
+
+await check("「这一步需要什么」由 Skill 与步骤两处贡献并取并集，每个 tag 标来源（V3.18 §4.6 第 2 条）", async () => {
+  await openTask("issue-research", "thread");
+  await page.locator('[data-pane="thread"] [data-open="room-view"]').first().click();
+  await page.locator('[data-pane-tabs] [data-pane-tab="acceptance"]').click();
+  await page.locator('[data-pick-combo="synthesizer"]').click();
+  const picker = page.locator("[data-combo-picker]:visible");
+  if (!(await picker.isVisible())) throw new Error("执行组合选择器未打开");
+  const needs = picker.locator("[data-picker-needs]");
+  if (!(await needs.isVisible())) throw new Error("弹层顶部没有「这一步需要什么」");
+  const text = await needs.innerText();
+  if (!text.includes("这一步需要什么")) throw new Error("要求排缺标题");
+  // 没有来源标记的行不允许出现在决定上下文的视图里（同 §3.2.4）
+  const tags = needs.locator(".cap-tag");
+  if ((await tags.count()) < 1) throw new Error("要求排里一个 tag 都没有");
+  for (const t of await tags.all()) {
+    if (!(await t.locator(".ct-src").count())) throw new Error("要求 tag 没有标出它从哪来（Skill 还是步骤）");
+  }
+  // 取并集而非定优先级：并集只会更严，因此没有「冲突时听谁的」
+  if (!text.includes("并集")) throw new Error("没有说清两处贡献是取并集，会被当成谁覆盖谁");
+  const src = await tags.first().locator(".ct-src").first().innerText();
+  if (!["来自 Skill", "来自步骤"].includes(src.trim())) throw new Error(`来源标记异常：${src}`);
   await picker.locator("[data-picker-close]").first().click();
 });
 
@@ -1286,19 +1328,25 @@ await check("能力面是纯 tab 切换：编组 / Skill；执行组合下沉到
   await lib.locator('[data-library-tab="squad"]').click();
 });
 
-await check("执行组合是设置里的检查结果，不是每天要挑的配置", async () => {
-  await page.locator('.main-rail [data-surface="settings"]').click();
-  const st = page.locator('[data-surface-view="settings"]');
-  const table = st.locator(".runtime-table");
-  if (!(await table.isVisible())) throw new Error("设置里没有执行组合表");
+await check("执行组合是运行时面的检查结果，不是每天要挑的配置（V3.15）", async () => {
+  await page.locator('.main-rail [data-surface="runtime"]').click();
+  const st = page.locator('[data-surface-view="runtime"]');
+  // V3.17：没有「全部」总览行，主面永远是某一个 adapter 的详情
+  if (await st.locator('.sp-list [data-runtime-pick="all"]').count()) {
+    throw new Error("「全部」总览行又回来了——它的原始理由（能力矩阵要横着比）已随矩阵一起删除");
+  }
+  await st.locator('.sp-list [data-runtime-pick="codex"]').click();
+  await st.locator('.mem-tabs [data-runtime-tab="config"]').click();
+  const table = st.locator('[data-runtime-body="config"] [data-runtime-view="codex"] .runtime-table').first();
+  if (!(await table.isVisible())) throw new Error("运行时面没有执行组合表");
   const head = await table.locator(".rt-head").innerText();
-  for (const col of ["adapter", "模型", "深度", "额度"]) {
+  for (const col of ["模型", "深度", "额度", "项目可用性"]) {
     if (!head.includes(col)) throw new Error(`执行组合表缺少「${col}」列`);
   }
-  if (!(await table.locator(".rt-row").filter({ hasText: "只有 low" }).count())) {
-    throw new Error("没有体现出模型的可用深度不同");
-  }
-  if (!(await st.innerText()).includes("关不掉却假装关掉了")) throw new Error("没有说明原生记忆关不掉时的降级（ADR 0011）");
+  await st.locator('.mem-tabs [data-runtime-tab="diagnostic"]').click();
+  await st.locator('.sp-list [data-runtime-pick="opencode"]').click();
+  if (!(await st.innerText()).includes("原生记忆关不掉")) throw new Error("没有说明原生记忆关不掉时的降级（ADR 0011）");
+  await st.locator('.sp-list [data-runtime-pick="codex"]').click();
 });
 
 await check("自动化：左框是规则清单，右侧摊开链路与能力边界", async () => {
@@ -1411,7 +1459,7 @@ await check("七个工作区面都挂在 surface-host 里，不越界盖住竖�
   // 一次标签失衡（工作流卡片改版时正则少吃了一层）会把 <main> 提前关掉，
   // 后面所有面被挤到 app-shell 底下，absolute inset:0 直接盖住整条竖栏，
   // 页面看着没事、就是点不动。这条断言把它变成一眼可见的红。
-  for (const v of ["project", "threads", "projects", "memory", "library", "usage", "automation", "settings"]) {
+  for (const v of ["project", "threads", "projects", "memory", "library", "stats", "automation", "runtime", "settings"]) {
     await page.locator(`.main-rail [data-surface="${v}"]`).click();
     const el = page.locator(`[data-surface-view="${v}"]`);
     const box = await el.boundingBox();
@@ -1432,23 +1480,138 @@ await check("[hidden] 一定生效：视图之间不叠加", async () => {
   if (leaked) throw new Error(`${leaked} 个带 hidden 的元素仍然占位`);
 });
 
-await check("用量独立成面，夹在能力和设置之间：额度是天天要看的约束，不是配置", async () => {
+await check("统计独立成面，夹在能力和设置之间；无左列表、两个 tab（ADR 0017）", async () => {
   const rail = page.locator(".main-rail");
   const y = async (k) => (await rail.locator(`[data-surface="${k}"]`).boundingBox()).y;
-  if ((await y("usage")) < (await y("library"))) throw new Error("用量应排在能力下面");
-  if ((await y("usage")) > (await y("settings"))) throw new Error("用量应排在设置上面");
-  await rail.locator('[data-surface="usage"]').click();
-  const surface = page.locator('[data-surface-view="usage"]');
-  if (!(await surface.isVisible())) throw new Error("没有用量面");
-  // 额度按账号分池，不按模型——同账号下多个模型共用一个池
-  if ((await surface.locator("[data-usage-pick]").count()) < 3) throw new Error("用量面缺少按账号的额度池");
-  const body = await surface.locator(".sp-body").innerText();
-  if (!body.includes("还能派")) throw new Error("额度没有按「还能跑几次」记，退回成 token 账单了");
-  if (!body.includes("未触发")) throw new Error("被额度挡下的派工没有和跑失败分开记");
-  // 设置面不该再重复一份额度入口
-  await rail.locator('[data-surface="settings"]').click();
+  if ((await y("stats")) < (await y("library"))) throw new Error("统计应排在能力下面");
+  if ((await y("stats")) > (await y("settings"))) throw new Error("统计应排在设置上面");
+  await rail.locator('[data-surface="stats"]').click();
+  const surface = page.locator('[data-surface-view="stats"]');
+  if (!(await surface.isVisible())) throw new Error("没有统计面");
+  // 与记忆面同构：统计没有实体可列，进来就是 tab 页，不是左列表
+  if (await surface.locator(".sp-list").count()) throw new Error("统计面不该有左列表——它没有一条条实体可列");
+  if ((await surface.locator("[data-stat-tab]").count()) !== 2) throw new Error("统计面应当只有「用量」「失败」两个 tab");
+  // 控件位置即作用域：tab 在左、页级筛选（周期 / 项目）在右
+  const tabsBox = await surface.locator(".stat-tabs").boundingBox();
+  const filterBox = await surface.locator(".stat-filters").boundingBox();
+  if (filterBox.x <= tabsBox.x) throw new Error("页级筛选应在 tab 行右侧");
+  // 全屏不出现实时余量：统计只回顾，额度归运行时
+  const usageText = await surface.locator('[data-stat-body="usage"]').innerText();
+  if (usageText.includes("可派次数")) throw new Error("统计面出现了实时额度，回顾与前瞻的口径混了");
+  // 实付与订阅等价必须是两个数字，且等价要写明不是账单
+  if (!usageText.includes("实付")) throw new Error("费用卡没有区分实付");
+  if (!usageText.includes("非实际账单")) throw new Error("订阅等价没有标注它不是账单");
+});
+
+await check("趋势卡：形态由周期决定，热力图只在近一年可用（ADR 0017 第 7 条）", async () => {
+  const surface = page.locator('[data-surface-view="stats"]');
+  await page.locator('.main-rail [data-surface="stats"]').click();
+  const heat = surface.locator('[data-statshape-tab="year"]');
+  if (!(await heat.isDisabled())) throw new Error("近 30 天下热力图仍可选——365 个格子只有 5 列");
+  if (!(await heat.isVisible())) throw new Error("不可用的形态应置灰而不是隐藏");
+  await surface.locator('[data-stat-range="365"]').click();
+  if (await heat.isDisabled()) throw new Error("切到近一年后热力图仍不可用");
+  if ((await surface.locator('[data-statshape-body="year"]').isVisible()) === false) throw new Error("近一年应默认落在热力图");
+  if (!(await surface.locator('[data-statshape-tab="day"]').isDisabled())) throw new Error("近一年下「按天」应不可用");
+  const cells = await surface.locator(".hm-cell:not(.hm-void)").count();
+  if (cells < 360) throw new Error(`热力图只有 ${cells} 个格子，画不满一年`);
+  // KPI 跟着周期走，且分布表也跟着换——数字对不上账是评审第一个抓的
+  if (!(await surface.locator('[data-kpi="runs"]').first().innerText()).includes("1,707")) throw new Error("切周期后 KPI 没有跟着变");
+  const firstRow = surface.locator('[data-statdim-body="task"] .dl-row').first();
+  if ((await firstRow.locator(".dl-num").first().innerText()) === "41") throw new Error("切周期后分布表还停在 30 天的数字");
+  await surface.locator('[data-stat-range="30"]').click();
+});
+
+await check("统计的第三级明细不在统计面里造，回任务的轨迹（ADR 0017 第 6 条）", async () => {
+  const surface = page.locator('[data-surface-view="stats"]');
+  await page.locator('.main-rail [data-surface="stats"]').click();
+  // 合计行按设计不带页码、不随翻页变化，也不该跳转——取第一条真正的任务行
+  const row = surface.locator('[data-statdim-body="task"] .dl-row:not(.dl-total)').first();
+  if ((await row.getAttribute("data-surface")) !== "project") throw new Error("任务行没有跳回任务模块");
+  // 四个维度共用一张表，不新开页
+  if ((await surface.locator("[data-statdim-tab]").count()) !== 4) throw new Error("「详情」应当是一张表切四个维度");
+  await surface.locator('[data-statdim-tab="combo"]').click();
+  const combo = await surface.locator('[data-statdim-body="combo"]').innerText();
+  if (!combo.includes("计价来源")) throw new Error("组合表没有写明计价来源，权威值与估算值混在一个数字里");
+  await surface.locator('[data-statdim-tab="step"]').click();
+  const step = await surface.locator('[data-statdim-body="step"]').innerText();
+  if (!step.includes("返工重试")) throw new Error("用途维度缺少「返工重试」——这是本项目相对参考项目的增量");
+  await surface.locator('[data-statdim-tab="task"]').click();
+});
+
+await check("详情表按页翻，每页 10 条；合计行置顶且不随翻页变化", async () => {
+  const surface = page.locator('[data-surface-view="stats"]');
+  await page.locator('.main-rail [data-surface="stats"]').click();
+  const body = surface.locator('[data-statdim-body="task"]');
+  const shown = body.locator(".dl-row:not(.dl-total):not([hidden])");
+  if ((await shown.count()) !== 10) throw new Error(`首页应显示 10 行明细，实际 ${await shown.count()}`);
+  // 合计置顶：紧贴表头的第一行，不带页码，翻页后仍在
+  const total = body.locator(".dl-total");
+  if (!(await total.isVisible())) throw new Error("没有合计行");
+  if (await total.getAttribute("data-page")) throw new Error("合计行带了页码，翻页时会被藏掉");
+  const firstRowIsTotal = await body.evaluate((el) => {
+    const rows = [...el.querySelectorAll(".data-list > *")];
+    return rows[1]?.classList.contains("dl-total");
+  });
+  if (!firstRowIsTotal) throw new Error("合计行不在表头下面第一行");
+  const kpiRuns = await surface.locator('[data-kpi="runs"]').first().innerText();
+  if ((await total.locator(".dl-num").first().innerText()) !== kpiRuns) throw new Error("合计行与 KPI 的派工数对不上");
+  await surface.locator('[data-stat-page="next"]').click();
+  if ((await shown.count()) !== 7) throw new Error("第二页应显示剩余 7 行");
+  if ((await total.locator(".dl-num").first().innerText()) !== kpiRuns) throw new Error("翻页后合计行变了——它应该始终是整个周期的数");
+  if (!(await surface.locator('[data-stat-page="next"]').isDisabled())) throw new Error("最后一页的下一页仍可点");
+  await surface.locator('[data-stat-page="prev"]').click();
+  // 返工占比是指标，必须独立成列并写明口径——不能混进状态列
+  const head = await body.locator(".dl-head").innerText();
+  if (!head.includes("返工占比")) throw new Error("返工占比没有独立成列");
+  if (!head.includes("状态")) throw new Error("状态列被指标顶掉了");
+  // Token 拆成命中 / 未命中，且必须说明输出算在哪一边
+  if (!head.includes("缓存命中") || !head.includes("未命中")) throw new Error("Token 没有拆成缓存命中与未命中");
+  const note = await body.locator(".sc-note").innerText();
+  if (!note.includes("step_kind")) throw new Error("返工占比没有写明口径，读者无法核对它怎么来的");
+  if (!note.includes("命中 + 未命中")) throw new Error("返工占比没有写明分母是拆分前的总量");
+  if (!note.includes("输出永远不进缓存")) throw new Error("没有说明输出计入未命中——两列相加为什么等于总量就说不通了");
+  // 行数少的维度不分页，但同样要有置顶合计
+  // 四个维度是同一批 token 的四种切法，命中 / 未命中的合计必须完全一致
+  const taskTotal = await body.locator(".dl-total").innerText();
+  const taskCache = taskTotal.match(/(\d+\.\d+M)\s+(\d+\.\d+M)/);
+  for (const dim of ["project", "combo", "step"]) {
+    await surface.locator(`[data-statdim-tab="${dim}"]`).click();
+    const dimTotal = surface.locator(`[data-statdim-body="${dim}"] .dl-total`);
+    if (!(await dimTotal.isVisible())) throw new Error(`${dim} 维度缺少合计行`);
+    const text = await dimTotal.innerText();
+    if (taskCache && !(text.includes(taskCache[1]) && text.includes(taskCache[2]))) {
+      throw new Error(`${dim} 维度的命中 / 未命中合计与任务维度对不上——同一批 token 切出了两个总量`);
+    }
+  }
+  await surface.locator('[data-statdim-tab="task"]').click();
+});
+
+await check("失败页只收真故障：验证未通过与额度不足不进失败率", async () => {
+  const surface = page.locator('[data-surface-view="stats"]');
+  await page.locator('.main-rail [data-surface="stats"]').click();
+  await surface.locator('[data-stat-tab="errors"]').click();
+  const body = await surface.locator('[data-stat-body="errors"]').innerText();
+  if (!body.includes("不计入本页")) throw new Error("没有写明验证未通过与额度不足不算失败");
+  if (!body.includes("样本不足")) throw new Error("小样本的失败率没有标注，会被当成结论读");
+  await surface.locator('[data-stat-tab="usage"]').click();
+});
+
+await check("额度在运行时面的配置 tab，且不在设置里（ADR 0017 第 5 条）", async () => {
+  await page.locator('.main-rail [data-surface="settings"]').click();
   const list = await page.locator('[data-surface-view="settings"] .sp-list').innerText();
-  if (list.includes("额度与用量")) throw new Error("设置里仍留着额度入口，和用量面重复");
+  if (list.includes("额度与用量")) throw new Error("设置左列表里又出现了独立的额度入口");
+  if (list.includes("执行组合") || list.includes("凭据")) throw new Error("adapter / 凭据仍留在设置里——它们属于运行时面");
+
+  await page.locator('.main-rail [data-surface="runtime"]').click();
+  await page.locator('[data-surface-view="runtime"] .mem-tabs [data-runtime-tab="config"]').click();
+  const runtime = await page.locator('[data-surface-view="runtime"] [data-runtime-body="config"]').innerText();
+  if (!runtime.includes("额度池")) throw new Error("运行时面没有额度池——额度是 Runtime 的字段（ADR 0012 第 3 条）");
+  if (!runtime.includes("可派次数")) throw new Error("额度没有按可派次数记，退回成 token 账单了");
+  // V3.15 正名：额度按 adapter 配置分池，不按「账号」——凭据只是配置的一个字段
+  if (!runtime.includes("按 adapter 配置")) throw new Error("额度池没有按 adapter 配置分，同配置下多个模型共用一个池这件事说不清");
+  if (runtime.includes("按账号分池")) throw new Error("「账号」这个词回来了，与 ADR 0012 第 8 条命名纪律冲突");
+  if (!runtime.includes("不自动降级")) throw new Error("丢了「额度不足不自动降级」这条");
 });
 
 await check("设置里有任务前缀与标签，且前缀改动被当成要确认的操作", async () => {
@@ -1459,8 +1622,8 @@ await check("设置里有任务前缀与标签，且前缀改动被当成要确�
   await pick.click();
   const body = surface.locator('.sp-body[data-settings-view="labels"]');
   if (!(await body.isVisible())) throw new Error("点了没有切到标签面");
-  if (await surface.locator('.sp-body[data-settings-view="runtime"]').isVisible()) {
-    throw new Error("切走后 runtime 面还留在页面上");
+  if (await surface.locator('.sp-body[data-settings-view="runtime"]').count()) {
+    throw new Error("设置面里还留着 runtime 面板——V3.15 已把它整体搬到运行时面");
   }
   const text = await body.innerText();
   if (!text.includes("重命名")) throw new Error("改前缀没有说清会重命名已有任务");
@@ -1566,20 +1729,26 @@ await check("记忆与能力用列表而不是卡片，列表铺满、段落限�
   await page.locator('.main-rail [data-surface="project"]').click();
 });
 
-await check("模型与凭据：登录态不代管，API Key 才是 PersonaHub 自己存的", async () => {
-  await page.locator('.main-rail [data-surface="settings"]').click();
-  const surface = page.locator('[data-surface-view="settings"]');
-  await surface.locator('[data-settings-pick="credential"]').click();
-  const body = surface.locator('.sp-body[data-settings-view="credential"]');
-  if (!(await body.isVisible())) throw new Error("没有「模型与凭据」面");
-  const text = await body.innerText();
-  // 两组必须分开：OAuth 由 CLI 自管，混在一起会让人以为登录态也要填 key
-  if (!text.includes("只做只读检查")) throw new Error("没有说清登录态不由 PersonaHub 代管");
-  if ((await body.locator(".account-row").count()) < 3) throw new Error("CLI 登录态一组应逐个 adapter 列出");
-  if ((await body.locator(".label-table .rt-row").count()) < 3) throw new Error("API Key 账号应单独成表");
-  // 密钥落在明文 SQLite 列上，这条风险必须写在界面上而不是只写在文档里
-  if (!text.includes("不回原值")) throw new Error("没有说明 key 不回显");
-  if (!text.includes("没有加密")) throw new Error("数据库明文存 key 这条风险没有摊开");
+await check("凭据在运行时面的配置 tab：登录态不代管，API Key 才是 PersonaHub 自己存的", async () => {
+  await page.locator('.main-rail [data-surface="runtime"]').click();
+  const surface = page.locator('[data-surface-view="runtime"]');
+  await surface.locator('.mem-tabs [data-runtime-tab="config"]').click();
+  // V3.17：每个 adapter 的配置视图必须自足——登录态在 OAuth 的 adapter 下，
+  // API Key 在 opencode 下，不再有一张跨 adapter 的汇总表
+  for (const a of ["codex", "claude"]) {
+    await surface.locator(`.sp-list [data-runtime-pick="${a}"]`).click();
+    const one = surface.locator(`[data-runtime-body="config"] [data-runtime-view="${a}"]`);
+    if (!(await one.locator(".account-row").count())) throw new Error(`${a} 的配置视图里没有它自己的登录态`);
+    // 两组必须分开：OAuth 由 CLI 自管，混在一起会让人以为登录态也要填 key
+  }
+  // 「PersonaHub 不代管登录态」是一条全局策略，不是某个 adapter 的事实，放在 tab 的共用页首
+  {
+    const cfg = await surface.locator('[data-runtime-body="config"]').innerText();
+    if (!cfg.includes("只做只读检查")) throw new Error("没有说清登录态不由 PersonaHub 代管");
+  }
+  await surface.locator('.sp-list [data-runtime-pick="opencode"]').click();
+  const body = surface.locator('[data-runtime-body="config"] [data-runtime-view="opencode"]');
+  if ((await body.locator(".label-table .rt-row").count()) < 2) throw new Error("API Key 配置应单独成表，且 opencode 的两份要都在");
 
   // 弹层：登录态那一支不应出现任何 key 输入框
   await surface.locator("[data-account-new]").first().click();
@@ -1596,6 +1765,89 @@ await check("模型与凭据：登录态不代管，API Key 才是 PersonaHub �
   if (!(await keyPane.locator("select").count())) throw new Error("API Key 这一支没有选 adapter");
   if (await oauthPane.isVisible()) throw new Error("切换后登录态面板还留在页面上");
   await dialog.locator("[data-account-close]").first().click();
+});
+
+await check("运行时面：左框是 adapter 列表，灯不能只有颜色（V3.15 §3.7.1）", async () => {
+  await page.locator('.main-rail [data-surface="runtime"]').click();
+  const surface = page.locator('[data-surface-view="runtime"]');
+  if (!(await surface.locator(".sp-list").count())) {
+    throw new Error("运行时面没有左框——adapter 是一条条实体，有实体就有列表（§3.4 的规则）");
+  }
+  // V3.17：左框只列 adapter，没有「全部」——聚合视图的价值随 adapter 数量增长，N=3 时它只是三次点击的替代品
+  if (await surface.locator('.sp-list [data-runtime-pick="all"]').count()) throw new Error("「全部」总览行又回来了");
+  for (const a of ["codex", "claude", "opencode"]) {
+    const row = surface.locator(`.sp-list [data-runtime-pick="${a}"]`);
+    if (!(await row.isVisible())) throw new Error(`左框缺少 adapter ${a}`);
+    if (!(await row.locator(".signal").count())) throw new Error(`${a} 那一行没有状态灯`);
+    // 纯色块既过不了无障碍，也不满足「能力缺失提前标注」
+    const sub = (await row.locator("small").innerText()).trim();
+    if (!sub) throw new Error(`${a} 的灯旁没有文字说明，只剩一个颜色`);
+  }
+  // 防护条款：这一面不出现任何「偏好」字段
+  const all = await surface.innerText();
+  for (const word of ["设为默认", "优先级", "置顶", "重命名"]) {
+    if (all.includes(word)) throw new Error(`运行时面出现了「${word}」——偏好字段会让 adapter 长成「AI 成员」（ADR 0012 第 2 条）`);
+  }
+});
+
+await check("运行时面只有两个 tab：能力位降为诊断里的「做不到什么」，写后果不写能力位名（V3.16 §3.7.2）", async () => {
+  const surface = page.locator('[data-surface-view="runtime"]');
+  // 能力 tab 已删：一张全是不可点格子的矩阵就是它自己批判过的债务展览馆
+  if (await surface.locator('.mem-tabs [data-runtime-tab="capability"]').count()) {
+    throw new Error("能力 tab 又回来了——V3.16 已把它删掉，能力位归各 adapter 的诊断");
+  }
+  if ((await surface.locator(".mem-tabs > button").count()) !== 2) throw new Error("运行时面应当只有配置 / 诊断两个 tab");
+
+  await surface.locator('.mem-tabs [data-runtime-tab="diagnostic"]').click();
+  await surface.locator('.sp-list [data-runtime-pick="opencode"]').click();
+  const one = surface.locator('[data-runtime-body="diagnostic"] [data-runtime-view="opencode"]');
+  if (!(await one.isVisible())) throw new Error("选中 opencode 后没有它的诊断视图");
+  const text = await one.innerText();
+  if (!text.includes("这个 adapter 做不到什么")) throw new Error("诊断里没有「做不到什么」这一块——§4.6 第 5 条的落点没了");
+  // 写后果，不写能力位名字
+  if (!text.includes("不能当独立验证员")) throw new Error("原生记忆关不掉这条没有写出它对独立验证的后果");
+  if (!text.includes("等待权限确认")) throw new Error("没写清不支持权限拦截会导致哪个任务态不会发生");
+  // 能力边界不是故障，不能混进失败率
+  if (!text.includes("不进失败率")) throw new Error("没有把「能力边界」和「故障」分开，失败率会被污染");
+  // 三个 adapter 都要有这一块，否则「没有做不到的」也是一条信息
+  for (const a of ["codex", "claude"]) {
+    await surface.locator(`.sp-list [data-runtime-pick="${a}"]`).click();
+    const t = await surface.locator(`[data-runtime-body="diagnostic"] [data-runtime-view="${a}"]`).innerText();
+    if (!t.includes("这个 adapter 做不到什么")) throw new Error(`${a} 的诊断缺少「做不到什么」——空着和没有这一块不是一回事`);
+  }
+  await surface.locator('.sp-list [data-runtime-pick="codex"]').click();
+});
+
+await check("运行时面：同一模型两条路必须是两个执行组合（ADR 0012 第 2 条四元组）", async () => {
+  const surface = page.locator('[data-surface-view="runtime"]');
+  await surface.locator('.sp-list [data-runtime-pick="opencode"]').click();
+  await surface.locator('.mem-tabs [data-runtime-tab="config"]').click();
+  const body = surface.locator('[data-runtime-body="config"] [data-runtime-view="opencode"]');
+  if (!(await body.isVisible())) throw new Error("没有 opencode 的配置视图");
+  const text = await body.innerText();
+  if ((await body.locator(".label-table .rt-row").count()) < 2) throw new Error("opencode 应有两份配置——这是四元组存在的那个真实场景");
+  if (!text.includes("Base URL")) throw new Error("配置表没有 Base URL 列，两条路就分不开了");
+  if (!text.includes("两条路")) throw new Error("没有说清同一个模型两条路为什么必须是两个组合");
+  await surface.locator('.sp-list [data-runtime-pick="codex"]').click();
+});
+
+await check("密钥存放在设置 · 数据，不在运行时面（V3.17）", async () => {
+  // 它讲的是数据目录与明文列，是数据风险声明，不是某个 adapter 的属性——
+  // 放在任何一个 adapter 下面都是错的
+  const rt = page.locator('[data-surface-view="runtime"]');
+  await page.locator('.main-rail [data-surface="runtime"]').click();
+  if ((await rt.innerText()).includes("没有加密")) throw new Error("密钥风险声明还留在运行时面");
+
+  await page.locator('.main-rail [data-surface="settings"]').click();
+  const st = page.locator('[data-surface-view="settings"]');
+  await st.locator('[data-settings-pick="data"]').click();
+  const body = st.locator('.sp-body[data-settings-view="data"]');
+  if (!(await body.isVisible())) throw new Error("设置里没有「数据与备份」面板");
+  const text = await body.innerText();
+  if (!text.includes("不回原值")) throw new Error("没有说明 key 不回显");
+  if (!text.includes("没有加密")) throw new Error("数据库明文存 key 这条风险没有摊开");
+  if (!text.includes("同步盘")) throw new Error("没有写出「数据目录进同步盘等于把 key 同步出去」");
+  await page.locator('.main-rail [data-surface="project"]').click();
 });
 
 await check("页面无横向溢出", async () => {

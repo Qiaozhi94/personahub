@@ -1057,6 +1057,30 @@
 }
 .combo-picker > header > button:hover { background: var(--panel-3); color: var(--text); }
 
+/* 「这一步需要什么」排在硬约束之上：先说要什么，再说不许什么，最后才给名单。
+   每个 tag 自带来源徽标——没有来源的行不允许出现在决定上下文的视图里（§3.2.4）。 */
+.picker-needs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 18px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.picker-needs:empty { display: none; }
+.picker-needs .pn-label { font-weight: 600; color: var(--text); }
+.picker-needs .cap-tag { margin-left: 0; }
+.picker-needs .ct-src {
+  margin-left: 5px;
+  padding-left: 5px;
+  border-left: 1px solid var(--border);
+  color: var(--faint);
+  font-size: 10px;
+  font-style: normal;
+}
+.picker-needs .pn-note { flex: 1 0 100%; color: var(--faint); font-size: 11px; line-height: 1.7; }
+
 /* 约束先说，再给名单——否则用户读完名单才知道有硬规则 */
 .picker-rule {
   margin: 0 18px 12px;
@@ -2935,12 +2959,14 @@
 .mem-stance.none { background: var(--panel-3); color: var(--faint); }
 /* 竖栏接管一级切换后，其余工作面不再自带 sidebar，改为单列 */
 .simple-surface[data-surface-view="memory"],
+.simple-surface[data-surface-view="stats"],
 .simple-surface[data-surface-view="projects"],
 .simple-surface[data-surface-view="library"],
 .simple-surface[data-surface-view="automation"],
 .simple-surface[data-surface-view="settings"] { grid-template-columns: minmax(0, 1fr); }
 
 .simple-surface[data-surface-view="memory"] > .surface-content,
+.simple-surface[data-surface-view="stats"] > .surface-content,
 .simple-surface[data-surface-view="library"] > .surface-content,
 .simple-surface[data-surface-view="projects"] > .surface-content {
   max-width: none;
@@ -2948,6 +2974,7 @@
   overflow: auto;
 }
 .simple-surface[data-surface-view="memory"] > .surface-content > header,
+.simple-surface[data-surface-view="stats"] > .surface-content > header,
 .simple-surface[data-surface-view="library"] > .surface-content > header,
 .simple-surface[data-surface-view="projects"] > .surface-content > header {
   display: grid;
@@ -2957,12 +2984,15 @@
   margin-bottom: 20px;
 }
 .simple-surface[data-surface-view="memory"] h1,
+.simple-surface[data-surface-view="stats"] h1,
 .simple-surface[data-surface-view="library"] h1,
 .simple-surface[data-surface-view="projects"] h1 { margin: 4px 0 6px; font-size: 20px; }
 .simple-surface[data-surface-view="memory"] header small,
+.simple-surface[data-surface-view="stats"] header small,
 .simple-surface[data-surface-view="library"] header small,
 .simple-surface[data-surface-view="projects"] header small { color: var(--faint); font-size: 11px; }
 .simple-surface[data-surface-view="memory"] header p,
+.simple-surface[data-surface-view="stats"] header p,
 .simple-surface[data-surface-view="library"] header p,
 .simple-surface[data-surface-view="projects"] header p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 
@@ -4867,6 +4897,7 @@ button.dl-row { cursor: pointer; }
  * 结论段落，贴着视口下沿读不动；也顺便让开右下角的 toast。
  */
 [data-surface-view="memory"] .surface-content,
+[data-surface-view="stats"] .surface-content,
 [data-surface-view="library"] .surface-content { padding-bottom: 72px; }
 
 /* ── 62. 轨迹概览条在新字号下重新压回三行泳道的高度 ───────────
@@ -4989,3 +5020,233 @@ button.dl-row { cursor: pointer; }
 .tl-key:hover { background: var(--panel-2); }
 .tl-key.active { background: var(--accent-soft); color: var(--text); }
 .tl-total { flex: none; color: var(--faint); font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* ── 62. 统计面：无列表 + 两个 tab（ADR 0017）──────────────
+ * 与记忆面同构：统计没有「一条条实体」可列，选的不是哪一条，
+ * 而是看哪一类问题，所以进来就是 tab 页而不是左列表。
+ * 控件位置即作用域：tab 行左边切视图、右边放页级筛选（周期、项目），
+ * 每张卡自带自己的形态 / 维度切换。这条语法照 multica 的统计页。
+ */
+.stat-fresh { display: flex; align-items: center; gap: 10px; color: var(--faint); font-size: 11px; }
+.stat-fresh button {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.stat-fresh button:hover { color: var(--text); background: var(--panel-2); }
+
+.stat-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  border-bottom: 1px solid var(--border);
+}
+.stat-head .mem-tabs { margin: 0; border-bottom: 0; }
+.stat-filters { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; }
+
+/* 分段开关：周期（页级）与指标 / 形态 / 维度（卡内）共用一个原语，
+   区别只在尺寸——它们是同一类控件，长得不一样只会让人以为不是。 */
+.seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 7px; background: var(--panel-2); }
+.seg > button {
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.seg > button:hover:not(:disabled) { color: var(--text); }
+.seg > button.active { background: var(--panel-3); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
+/* 不可用的形态置灰而不是隐藏：藏起来等于替使用者决定他不需要它，
+   而这里要说明白的恰恰是「为什么这个周期下没有它」。 */
+.seg > button:disabled { opacity: 0.38; cursor: not-allowed; }
+.seg-sm > button { height: 22px; padding: 0 9px; font-size: 11px; }
+.seg-drop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.seg-drop:hover { color: var(--text); }
+.seg-drop svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+/* KPI 四格共用一个外框（照 §60 那条：三个边框换三个数字不划算） */
+.stat-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  margin: 0 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.stat-kpi-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.stat-kpi > div { padding: 12px 16px; border-left: 1px solid var(--border); }
+.stat-kpi > div:first-child { border-left: 0; }
+.stat-kpi small { display: block; color: var(--faint); font-size: 11px; }
+.stat-kpi strong {
+  display: block;
+  margin: 5px 0 6px;
+  font-size: 22px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.stat-kpi span { display: block; color: var(--muted); font-size: 11px; line-height: 1.65; }
+.stat-kpi .kpi-sub { margin-top: 3px; color: var(--faint); }
+.stat-kpi b { color: var(--text); font-weight: 600; }
+
+.stat-card { margin: 0 0 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.sc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.sc-head h2 { margin: 0; font-size: 13px; font-weight: 650; }
+.sc-sub { margin-left: 8px; color: var(--faint); font-size: 11px; font-weight: 400; }
+.sc-switch { display: flex; flex-shrink: 0; gap: 8px; }
+.sc-body { padding: 14px; }
+.sc-note { margin: 12px 0 0; }
+.sc-body > .data-list { margin: 0; }
+
+/* 柱状图：按天 30 根、按周 13 根，同一套类名，只有间距不同 */
+.sb-plot { position: relative; }
+.sb-axis { position: absolute; top: 0; left: 0; color: var(--faint); font-size: 10px; font-variant-numeric: tabular-nums; }
+.sb-chart { display: flex; align-items: flex-end; gap: 3px; height: 140px; padding-top: 16px; }
+.sb-col {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--h, 0%);
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  opacity: 0.72;
+}
+.sb-col:hover { opacity: 1; }
+.sb-wide { gap: 8px; }
+.sb-foot { display: flex; justify-content: space-between; margin: 8px 0 0; color: var(--faint); font-size: 11px; }
+
+/* 年度热力图：逻辑与样式照 GitHub 的贡献图——0 单独一档，
+   非零按四分位分四档。空格子是「那天没有派工」。 */
+.hm-wrap { overflow-x: auto; padding-bottom: 2px; }
+.hm-months { position: relative; height: 15px; margin: 0 0 3px 20px; color: var(--faint); font-size: 10px; }
+.hm-months span { position: absolute; left: calc(var(--col) * 13px); }
+.hm-grid { display: flex; gap: 6px; }
+.hm-days {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 14px;
+  margin: 0;
+  color: var(--faint);
+  font-size: 10px;
+}
+.hm-cells {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 11px);
+  grid-auto-columns: 11px;
+  gap: 2px;
+}
+.hm-cell { width: 11px; height: 11px; border-radius: 2px; background: var(--panel-3); }
+.hm-cell[data-l="1"] { background: rgba(128, 156, 255, 0.24); }
+.hm-cell[data-l="2"] { background: rgba(128, 156, 255, 0.44); }
+.hm-cell[data-l="3"] { background: rgba(128, 156, 255, 0.68); }
+.hm-cell[data-l="4"] { background: rgba(128, 156, 255, 0.95); }
+.hm-cell.hm-void { background: transparent; }
+.hm-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 10px 0 0; color: var(--faint); font-size: 11px; }
+.hm-foot b { color: var(--text); font-weight: 600; }
+.hm-legend { display: inline-flex; align-items: center; gap: 3px; }
+.hm-legend i { width: 11px; height: 11px; border-radius: 2px; background: var(--panel-3); }
+.hm-legend i[data-l="1"] { background: rgba(128, 156, 255, 0.24); }
+.hm-legend i[data-l="2"] { background: rgba(128, 156, 255, 0.44); }
+.hm-legend i[data-l="3"] { background: rgba(128, 156, 255, 0.68); }
+.hm-legend i[data-l="4"] { background: rgba(128, 156, 255, 0.95); }
+
+/* 表格里的数字列与占比条 */
+.dl-num { color: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.dl-bar { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dl-bar i { flex: 0 0 auto; width: var(--w, 0%); max-width: 100%; height: 8px; border-radius: 4px; background: var(--accent); opacity: 0.7; }
+.dl-bar b { color: var(--muted); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* 失败构成：标签在前、条在中、计数在后 */
+.fail-mix { display: grid; gap: 6px; }
+.fail-mix button {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.fail-mix button:hover { background: var(--panel-2); }
+.fail-mix span { order: 1; }
+.fail-mix i { order: 2; width: var(--w, 0%); max-width: 100%; height: 8px; border-radius: 4px; background: var(--red); opacity: 0.72; }
+.fail-mix b { order: 3; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+
+/* ── 63. 详情表的分页与置顶合计行 ────────────────────────
+ * 任务维度会长到上百行，按页翻；但分页会把「每一列都能加到 KPI 上」
+ * 这条性质翻没——所以合计行置顶：紧贴表头、不带页码、不随翻页变化，
+ * 读者第一眼看到的就是整个周期的总量，往下才是这一页的明细。
+ * .dl-row 是 display:grid，[hidden] 在它身上默认不生效（V3.10
+ * 栽过同一个坑），这里必须显式关掉。
+ */
+.dl-row[hidden] { display: none; }
+.dl-total {
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--panel-3);
+  color: var(--text);
+}
+.dl-total:hover { background: var(--panel-3); }
+.dl-total .dl-title { font-weight: 600; }
+/* 返工占比是比例不是金额，不参与周期填充，所以不用 .dl-num */
+.dl-pct { color: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.dl-pct.hot { color: var(--yellow); font-weight: 600; }
+.dl-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 10px 2px 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+.dl-pager-nav { display: inline-flex; align-items: center; gap: 6px; }
+.dl-pager-nav b { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.dl-pager-nav button {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dl-pager-nav button:hover:not(:disabled) { color: var(--text); background: var(--panel-2); }
+.dl-pager-nav button:disabled { opacity: 0.38; cursor: not-allowed; }
