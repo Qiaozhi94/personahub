@@ -276,19 +276,34 @@
   // 它是组织单位（谁一起干、交付什么），那些结构信息在舞台的执行组合泳道上。
   // ── 轨迹：adapter 的详细交互过程 ────────────────────────
   //
-  // 形态取自 deepseek-harness 的 trajectory：事件表格 + 折叠开关 + 选中出详情。
+  // 形态取自 deepseek-harness 的 trajectory：事件表格 + 折叠开关 + 点行出详情。
   // 会话视图看「说了什么」，这里看「实际做了什么」——每次模型调用、每个
   // 工具调用的入参与结果。
-  function selectTraceEvent(row) {
+  //
+  // 详情长在行下面，不去右边开第二栏：轨迹本身多数时候就是副栏，再切一栏
+  // 就只剩两条窄缝。行内展开还让「上一行发生了什么」始终在视野里。
+  // 详情的分页按事件类型给：SYSTEM 要看拼进去了什么，Request 要看用量与
+  // 上下文血统，TOOL 要看入参与结果——用同一组固定 tab 会有一半是空的。
+  function collapseTraceDetails() {
+    $$("[data-tr-panel]").forEach((p) => (p.hidden = true));
+    $$("[data-tr-event]").forEach((r) => {
+      r.classList.remove("selected");
+      r.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function toggleTraceEvent(row) {
     if (!row) return;
-    $$("[data-tr-event]").forEach((r) => r.classList.toggle("selected", r === row));
-    const detail = $("[data-trace-detail]");
-    if (!detail) return;
-    detail.hidden = false;
-    const kind = $(".tr-kind", row)?.textContent || "";
-    const main = $(".tr-main", row)?.textContent || "";
-    $("[data-tr-detail-kind]").textContent = `${kind} · ${main.slice(0, 42)}`;
-    $("[data-td-body]").textContent = row.dataset.trDetail || "这一行没有更多细节。";
+    const panel = row.nextElementSibling?.matches?.("[data-tr-panel]")
+      ? row.nextElementSibling
+      : null;
+    const willOpen = Boolean(panel) && panel.hidden;
+    // 一次只开一条：同时开三条，表格就又变回一叠卡片，横着比的能力就没了。
+    collapseTraceDetails();
+    if (!panel || !willOpen) return;
+    panel.hidden = false;
+    row.classList.add("selected");
+    row.setAttribute("aria-expanded", "true");
   }
 
   function refreshTraceCount() {
@@ -309,6 +324,7 @@
   let traceKind = "";
 
   function filterTraceByKind(kind) {
+    collapseTraceDetails();
     traceKind = kind;
     const match = TRACE_KINDS[kind];
     $$("[data-tr-event]").forEach((row) => {
@@ -325,6 +341,7 @@
   }
 
   function filterTrace(value) {
+    collapseTraceDetails();
     const q = value.trim().toLowerCase();
     $$("[data-tr-event]").forEach((row) => {
       row.hidden = Boolean(q) && !row.textContent.toLowerCase().includes(q);
@@ -884,6 +901,13 @@
     if (open) window.setTimeout(() => $("[data-task-goal]")?.focus(), 0);
   }
 
+  function setAutomationDialog(open) {
+    const overlay = $("[data-automation-dialog]");
+    if (!overlay) return;
+    overlay.hidden = !open;
+    if (open) window.setTimeout(() => $("[data-automation-form] input")?.focus(), 0);
+  }
+
 
   // ── 账号与凭据弹层 ─────────────────────────────────────────
   // 认证方式决定要填什么：登录态那一支**没有输入项**，PersonaHub 不代管
@@ -1140,6 +1164,16 @@
     // 点弹层外部即关闭——弹层比触发按钮高，不能只靠再点一次按钮
     if (!event.target.closest("[data-recipient-popover],[data-recipient-open]")) setRecipientPopover(false);
     if (!event.target.closest("[data-scope-popover],[data-scope-open]")) setScopePopover(false);
+    // 记忆详情行内展开。一次只开一条：同时开三条就又变回卡片了，
+    // 而列表的全部意义在于能横着比。
+    const memoryRow = event.target.closest("[data-memory-row]");
+    if (memoryRow && !event.target.closest(".dd-acts")) {
+      const wasOpen = memoryRow.classList.contains("open");
+      $$("[data-memory-row].open").forEach((r) => r.classList.remove("open"));
+      memoryRow.classList.toggle("open", !wasOpen);
+      return;
+    }
+
     if (!target) return;
 
     if (target.matches("a[href='#']")) event.preventDefault();
@@ -1287,26 +1321,23 @@
     }
 
     if (target.hasAttribute("data-tr-event")) {
-      selectTraceEvent(target);
+      toggleTraceEvent(target);
       return;
     }
 
-    if (target.hasAttribute("data-tr-detail-close")) {
-      $("[data-trace-detail]").hidden = true;
-      $$("[data-tr-event]").forEach((r) => r.classList.remove("selected"));
+    if (target.hasAttribute("data-td-close")) {
+      collapseTraceDetails();
       return;
     }
 
+    // 详情内的分页：每个面板自带自己的 tab 与内容，切换只在这一个面板里发生。
     if (target.dataset.tdTab) {
-      $$("[data-td-tab]").forEach((b) => b.classList.toggle("active", b === target));
-      const row = $("[data-tr-event].selected");
-      const body = $("[data-td-body]");
-      const map = {
-        result: row?.dataset.trDetail || "这一行没有结果。",
-        payload: ($(".tr-main", row)?.textContent || "").replace(/^\S+\s*/, "") || "无入参",
-        timing: $(".tr-extra", row)?.textContent || "无耗时记录",
-      };
-      if (body) body.textContent = map[target.dataset.tdTab];
+      const panel = target.closest("[data-tr-panel]");
+      if (!panel) return;
+      $$("[data-td-tab]", panel).forEach((b) => b.classList.toggle("active", b === target));
+      $$("[data-td-pane]", panel).forEach((pane) => {
+        pane.hidden = pane.dataset.tdPane !== target.dataset.tdTab;
+      });
       return;
     }
 
@@ -1314,6 +1345,7 @@
       const key = target.dataset.trToggle;
       const on = target.classList.toggle("active");
       const shell = target.closest(".trace-main");
+      if (key !== "duration") collapseTraceDetails();
       if (key === "duration") shell.classList.toggle("no-duration", !on);
       if (key === "turns") $$(".tr-row.user, .tr-row.system", shell).forEach((r) => (r.hidden = on));
       if (key === "calls") $$(".tr-row.tool", shell).forEach((r) => (r.hidden = on));
@@ -1669,6 +1701,16 @@
       return;
     }
 
+    if (target.hasAttribute("data-automation-create")) {
+      setAutomationDialog(true);
+      return;
+    }
+
+    if (target.hasAttribute("data-automation-close")) {
+      setAutomationDialog(false);
+      return;
+    }
+
     if (target.dataset.commandAction) {
       const action = target.dataset.commandAction;
       setCommand(false);
@@ -1759,6 +1801,12 @@
     showToast("静态原型不保存凭据；真实实现会保存后立刻做一次连通与 key 有效性检查");
   });
 
+  $("[data-automation-form]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setAutomationDialog(false);
+    showToast("自动化已保存为暂停；预检通过后由你明确启用");
+  });
+
   $("[data-task-create-form]")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const combo = $("[data-task-model]")?.textContent ?? "codex-gpt5.6-high";
@@ -1773,6 +1821,10 @@
 
   $("[data-account-dialog]")?.addEventListener("click", (event) => {
     if (event.target === event.currentTarget) setAccountDialog(false);
+  });
+
+  $("[data-automation-dialog]")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) setAutomationDialog(false);
   });
 
   $("[data-combo-picker]")?.addEventListener("click", (event) => {
@@ -1791,6 +1843,7 @@
     if (event.key === "Escape") {
       setCommand(false);
       setTaskCreate(false);
+      setAutomationDialog(false);
     }
   });
 

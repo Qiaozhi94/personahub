@@ -842,17 +842,31 @@ await check("轨迹并入会话：默认陪着会话，按 ⤢ 放大成全宽�
   const split = page.locator('[data-split="thread"]');
   if ((await split.getAttribute("data-layout")) !== "both") throw new Error("会话面默认不是「会话 + 轨迹」");
 
-  // 副栏尺寸下只留泳道 + 事件流；工具栏与详情栏是复盘用的，先收起来
+  // 副栏尺寸下只留泳道 + 事件流；复盘工具栏收起来
   if (await page.locator(".trace-toolbar").isVisible()) throw new Error("副栏尺寸下不该显示复盘工具栏");
   if (!(await page.locator("[data-waterfall]").isVisible())) throw new Error("副栏里没有泳道");
   if (!(await page.locator("[data-trace-rows]").isVisible())) throw new Error("副栏里没有事件流");
+
+  // 副栏这么窄也要点得开：详情长在行下面，不需要第二栏
+  const asideRow = page.locator('[data-aside="thread"] .tr-row.req').first();
+  await asideRow.click();
+  const asidePanel = page.locator('[data-aside="thread"] [data-tr-panel]:visible').first();
+  if (!(await asidePanel.isVisible())) throw new Error("副栏里点行没有展开详情");
+  if (!(await asidePanel.locator('[data-td-tab="timing"]').isVisible()))
+    throw new Error("副栏里的详情缺了分页");
+  await page.screenshot({ path: "shots/task-trace-inline.png" });
+  await asideRow.click();
 
   // 放大后功能要和原来那个独立 tab 完全一样
   await page.locator('[data-aside-zoom="thread"]').click();
   if ((await split.getAttribute("data-layout")) !== "aside") throw new Error("放大没有生效");
   if (!(await page.locator(".trace-toolbar").isVisible())) throw new Error("放大后工具栏没有回来");
   if (!(await page.locator("[data-tr-search]").isVisible())) throw new Error("放大后搜索没有回来");
-  if (!(await page.locator("[data-trace-detail]").isVisible())) throw new Error("放大后详情栏没有回来");
+  // 详情不再是独立栏，它长在行下面——放大与否都点得开
+  await page.locator('[data-aside="thread"] .tr-row.tool').first().click();
+  if (!(await page.locator("[data-tr-panel]:visible").count())) throw new Error("放大后点行没有展开详情");
+  await page.locator('[data-aside="thread"] .tr-row.tool').first().click();
+  if (await page.locator("[data-tr-panel]:visible").count()) throw new Error("再点一次没有收起详情");
   if (await page.locator('[data-split="thread"] .pane-main').isVisible()) throw new Error("放大后会话应该让位");
 
   await page.locator('[data-aside-zoom="thread"]').click();
@@ -931,7 +945,12 @@ await check("轨迹是 adapter 的详细交互过程，不是会话总结（照 
 
   // 按回合分组
   if ((await trace.locator(".tr-turn").count()) < 2) throw new Error("没有按 Turn 分组");
+
+  // 截图带上一条展开的详情：行内展开是这一版轨迹的主交互
+  const shotRow = trace.locator(".tr-row.tool").first();
+  await shotRow.click();
   await page.screenshot({ path: "shots/task-trace.png" });
+  await shotRow.click();
 });
 
 await check("每次模型调用标出执行组合与上下文血统（ADR 0009）", async () => {
@@ -949,14 +968,69 @@ await check("每次模型调用标出执行组合与上下文血统（ADR 0009�
   const resume = trace.locator(".tr-lineage.resume").first();
   if (!(await resume.isVisible())) throw new Error("续跑的调用没有标出来");
 
-  // 原始 session 只在诊断层
-  await trace.locator(".tr-row.tool").first().click();
-  const detail = page.locator("[data-trace-detail]");
-  if (!(await detail.isVisible())) throw new Error("选中事件后没有出详情");
-  if (!(await detail.locator("[data-td-body]").innerText()).length) throw new Error("详情为空");
+  // TOOL 的五页照 harness：Summary / Payload / Result / Schema / Timing
+  const toolRow = trace.locator(".tr-row.tool").first();
+  await toolRow.click();
+  const detail = trace.locator("[data-tr-panel]:visible").first();
+  if (!(await detail.isVisible())) throw new Error("点行后没有在行下面展开详情");
+  if (!(await detail.locator('[data-td-pane="summary"]').innerText()).length) throw new Error("详情为空");
   await detail.locator('[data-td-tab="timing"]').click();
-  if (!(await detail.locator("[data-td-body]").innerText()).includes("ms")) throw new Error("耗时页没有耗时");
-  await detail.locator('[data-td-tab="result"]').click();
+  if (!(await detail.locator('[data-td-pane="timing"]').innerText()).includes("ms"))
+    throw new Error("Timing 页没有耗时");
+  await detail.locator('[data-td-tab="summary"]').click();
+  await toolRow.click();
+
+  // 原始 session 在 Request 的 Source 页——它是诊断层，不该混进 Summary
+  const reqRow = trace.locator(".tr-row.req").first();
+  await reqRow.click();
+  const reqDetail = trace.locator("[data-tr-panel]:visible").first();
+  await reqDetail.locator('[data-td-tab="source"]').click();
+  if (!(await reqDetail.locator('[data-td-pane="source"]').innerText()).includes("session"))
+    throw new Error("Source 页没有 session");
+  await reqDetail.locator('[data-td-tab="summary"]').click();
+  await reqRow.click();
+});
+
+await check("展开详情的分页照 harness 按事件类型给，不是一套固定 tab", async () => {
+  const trace = page.locator('[data-aside="thread"]');
+  const tabsOf = async (row) => {
+    await row.click();
+    const panel = trace.locator("[data-tr-panel]:visible").first();
+    const tabs = await panel.locator("[data-td-tab]").allInnerTexts();
+    await row.click();
+    return tabs.map((t) => t.trim()).join(" / ");
+  };
+
+  const tool = await tabsOf(trace.locator(".tr-row.tool").first());
+  const req = await tabsOf(trace.locator(".tr-row.req").first());
+  const system = await tabsOf(trace.locator(".tr-row.system").first());
+  const assistant = await tabsOf(trace.locator(".tr-row.assistant").first());
+  const user = await tabsOf(trace.locator(".tr-row.user").first());
+  if (new Set([tool, req, system, assistant, user]).size !== 5)
+    throw new Error("不同类型的事件用了同一套 tab");
+
+  // 与 deepseek-harness 实测的 tab 组逐字对齐（探针 probe-dsh-detail5.mjs）
+  if (tool !== "Summary / Payload / Result / Schema / Timing") throw new Error(`TOOL 的 tab 组不对：${tool}`);
+  if (system !== "System Prompt / Tools") throw new Error(`SYSTEM 的 tab 组不对：${system}`);
+  if (assistant !== "Summary / Preview / Raw") throw new Error(`ASSISTANT 的 tab 组不对：${assistant}`);
+  if (user !== "Summary / Preview / Raw / Source") throw new Error(`USER 的 tab 组不对：${user}`);
+  if (req !== "Summary / Timing / Source") throw new Error(`Request 的 tab 组不对：${req}`);
+
+  // 头部：kind 徽标 ＋ Turn·Step 定位（harness 的 detailsHeader）
+  const toolRow = trace.locator(".tr-row.tool").first();
+  await toolRow.click();
+  const head = trace.locator("[data-tr-panel]:visible .td-head").first();
+  if ((await head.locator(".td-chip").innerText()) !== "TOOL") throw new Error("详情头部没有 kind 徽标");
+  if (!/Turn \d+ · Step \d+/.test(await head.locator(".td-where").innerText()))
+    throw new Error("详情头部没有 Turn · Step 定位");
+  await toolRow.click();
+
+  // 一次只开一条：展开另一行，前一行自动收起
+  await trace.locator(".tr-row.tool").first().click();
+  await trace.locator(".tr-row.req").first().click();
+  if ((await trace.locator("[data-tr-panel]:visible").count()) !== 1)
+    throw new Error("同时展开了多条详情");
+  await trace.locator(".tr-row.req").first().click();
 });
 
 await check("轨迹可折叠与搜索（照 deepseek-harness 的工具栏）", async () => {
@@ -1299,6 +1373,153 @@ await check("资料面显示这次过滤掉了哪些记忆（ADR 0013 §1.2.1）
     throw new Error("被过滤的条目没有压暗——它必须在场，只是不可用");
 });
 
+await check("记忆详情行内展开，来源包能走回；一次只开一条（记忆设计 §3.6.2）", async () => {
+  await page.locator('.main-rail [data-surface="memory"]').click();
+  const surface = page.locator('[data-surface-view="memory"]');
+  await surface.locator('[data-memory-tab="library"]').click();
+  const lib = surface.locator('[data-memory-body="library"]');
+
+  if (await lib.locator(".pane-aside").count()) throw new Error("记忆面不该有副栏——它是纯 tab 切换");
+
+  const row = lib.locator('[data-memory-row][data-state="在库"]').first();
+  await row.click();
+  const detail = row.locator(".dl-detail");
+  if (!(await detail.isVisible())) throw new Error("点行没有展开详情");
+
+  const text = await detail.innerText();
+  for (const field of ["来源包", "怎么进来的", "来源任务", "支撑证据", "使用边界"]) {
+    if (!text.includes(field)) throw new Error(`详情缺少来源包字段「${field}」`);
+  }
+  if (!text.includes("只显示一跳")) throw new Error("关系没有限定为一跳");
+  if (!text.includes("变更记录")) throw new Error("没有状态与背书的变更记录");
+
+  // 一次只开一条：同时开多条就又变回卡片了
+  await lib.locator('[data-memory-row][data-state="待复核"]').first().click();
+  if ((await lib.locator("[data-memory-row].open").count()) !== 1) throw new Error("同时展开了多条");
+
+  // 遗忘必须两步：在库状态下入口可见但不可用
+  await row.click();
+  const forget = row.locator('.dd-acts button:text-is("遗忘")');
+  if (!(await forget.isVisible())) throw new Error("遗忘入口被藏起来了——不可逆操作要在场");
+  if (!(await forget.isDisabled())) throw new Error("在库状态下遗忘不该可用（必须先退役）");
+
+  // 已退役的那条则可以直接遗忘：两步里的第一步已经走过
+  const retired = lib.locator('[data-memory-row][data-state="已退役"]').first();
+  await retired.click();
+  if (await retired.locator('.dd-acts button:text-is("遗忘")').isDisabled()) {
+    throw new Error("已退役的条目应当可以授权遗忘");
+  }
+  await retired.click();
+  await surface.locator('[data-memory-tab="inbox"]').click();
+});
+
+await check("检索三档全可用，自动入库是策略区不是免责声明（记忆设计 §3.6）", async () => {
+  const surface = page.locator('[data-surface-view="memory"]');
+
+  // 自动入库：一块能看清「替你省了什么、又绝不替你做什么」的策略区
+  const inbox = surface.locator('[data-memory-body="inbox"]');
+  const auto = inbox.locator(".auto-save");
+  if (!(await auto.isVisible())) throw new Error("没有自动入库策略区");
+  if (!(await auto.locator("[data-auto-save]").isEnabled())) throw new Error("自动入库开关不可用");
+  if (!(await auto.locator('.linklike:text-is("调整策略")').isVisible())) throw new Error("策略不可调整");
+  const note = await auto.innerText();
+  if (!note.includes("自动入库不等于自动确认")) throw new Error("没把「入库」和「确认」分开");
+  if (!note.includes("永远需要人")) throw new Error("没堵住「机器伪造用户确认」");
+
+  // 检索三档：关键词 / 语义 / 混合，全部可点——设计稿画完整形态，分期不体现为置灰
+  await surface.locator('[data-memory-tab="library"]').click();
+  for (const mode of ["keyword", "semantic", "hybrid"]) {
+    const btn = surface.locator(`[data-memory-mode="${mode}"]`);
+    if (!(await btn.isVisible())) throw new Error(`检索模式缺少 ${mode}`);
+    if (await btn.isDisabled()) throw new Error(`检索模式 ${mode} 不该不可用`);
+  }
+  await surface.locator('[data-memory-tab="inbox"]').click();
+});
+
+await check("服务活着不等于记忆能用：索引探针与顶栏降级标（记忆设计 §10.4）", async () => {
+  // 顶栏：绿点只管服务存活，记忆降级必须在它旁边显式说出来
+  const dot = page.locator(".local-state");
+  const degraded = page.locator(".local-degraded");
+  if (!(await dot.isVisible())) throw new Error("顶栏没有服务状态");
+  if (!(await degraded.isVisible())) throw new Error("记忆降级时顶栏没有降级标——绿点会撒谎");
+  const dotBox = await dot.boundingBox();
+  const degBox = await degraded.boundingBox();
+  if (Math.abs(dotBox.y - degBox.y) > 6) throw new Error("降级标没有和绿点并排，读不出它在修正绿点");
+
+  await page.locator('.main-rail [data-surface="memory"]').click();
+  const surface = page.locator('[data-surface-view="memory"]');
+  await surface.locator('[data-memory-tab="health"]').click();
+  const health = surface.locator('[data-memory-body="health"]');
+  const body = await health.innerText();
+
+  if (!body.includes("不等于「记忆能用」")) throw new Error("没有把服务存活与记忆可用分开");
+  if (!body.includes("静默返回空")) throw new Error("没说明索引坏掉时的表现是静默返回空");
+
+  // 探针：同步 / 分词回退 / 关系；语义那条置灰
+  for (const probe of ["索引与记忆同步", "unicode61", "关系已建立"]) {
+    if (!body.includes(probe)) throw new Error(`缺少探针「${probe}」`);
+  }
+  if (!body.includes("组合条件")) throw new Error("没说明探针是组合条件而不是裸计数");
+  if (!body.includes("空库不报警")) throw new Error("没说明为什么空库不报警");
+
+  const semanticProbe = health.locator('.dl-row.not-yet:has-text("语义召回")');
+  if (!(await semanticProbe.isVisible())) throw new Error("语义召回探针应置灰可见，不隐藏");
+
+  // 每条降级都要能点
+  const fallback = health.locator('.dl-row:has-text("unicode61")');
+  if (!(await fallback.locator(".dl-act button").first().isVisible())) {
+    throw new Error("分词回退没有给可点的修复动作");
+  }
+  await surface.locator('[data-memory-tab="inbox"]').click();
+});
+
+await check("效用四层不可互相代证；helped 给证据链而不是分数（记忆设计 §10.5）", async () => {
+  const surface = page.locator('[data-surface-view="memory"]');
+  await surface.locator('[data-memory-tab="health"]').click();
+  const health = surface.locator('[data-memory-body="health"]');
+  const body = await health.innerText();
+
+  for (const layer of ["被展示", "被引用", "被采纳", "帮到了"]) {
+    if (!body.includes(layer)) throw new Error(`效用观测缺少「${layer}」层`);
+  }
+  if (!body.includes("不可互相代证")) throw new Error("没说明四层不可互相代证");
+
+  // helped 不给分数，但要给可下钻的证据链——不是占位，是设计好的诚实表达
+  const helped = health.locator('.dl-row:has-text("帮到了")');
+  const ht = await helped.innerText();
+  if (!ht.includes("不给分")) throw new Error("helped 给了一个分数");
+  if (!ht.includes("加权本身就是把不知道的当成知道的")) throw new Error("没说明为什么不给分数");
+  if (!(await helped.locator(".linklike").isVisible())) throw new Error("helped 没有给可下钻的证据链");
+  await surface.locator('[data-memory-tab="inbox"]').click();
+});
+
+await check("关系页：以锚点为中心的一跳图 + 同源边表（记忆设计 §8.3）", async () => {
+  const surface = page.locator('[data-surface-view="memory"]');
+  await surface.locator('[data-memory-tab="graph"]').click();
+  const graph = surface.locator('[data-memory-body="graph"]');
+  if (!(await graph.isVisible())) throw new Error("关系页打不开");
+
+  const body = await graph.innerText();
+  if (!body.includes("改这条会影响谁")) throw new Error("没说清关系页回答什么问题");
+  if (!body.includes("毛球")) throw new Error("没说明为什么不铺全局节点云");
+
+  const svg = graph.locator(".ego-graph");
+  if (!(await svg.isVisible())) throw new Error("没有图");
+  if ((await svg.locator(".eg-node").count()) < 5) throw new Error("邻居太少，看不出这是一跳图");
+  if (!(await svg.locator(".eg-node.anchor").isVisible())) throw new Error("看不出哪个是锚点");
+  if (!body.includes("同一份数据的两种画法")) throw new Error("没说明图与表同源");
+
+  // 图上的文字必须只填不描：全局线性图标规则会把 stroke 继承给 <text>，小字会糊
+  const stroke = await svg.locator("text").first().evaluate((el) => getComputedStyle(el).stroke);
+  if (stroke !== "none") throw new Error(`图上文字被描边（stroke=${stroke}），小字会糊`);
+
+  if ((await graph.locator("[data-graph-depth]").count()) < 2) throw new Error("不能切换深度");
+  if ((await graph.locator("[data-graph-rel]").count()) < 4) throw new Error("不能按关系类型筛选");
+  if (!body.includes("不会自动消解")) throw new Error("没说明冲突边由人判断");
+  if (!body.includes("指不到的关系建不出来")) throw new Error("没说明写入时防悬空");
+  await surface.locator('[data-memory-tab="inbox"]').click();
+});
+
 await check("能力面是纯 tab 切换：编组 / Skill；执行组合下沉到设置（ADR 0012）", async () => {
   await page.locator('.main-rail [data-surface="library"]').click();
   const lib = page.locator('[data-surface-view="library"]');
@@ -1349,22 +1570,53 @@ await check("执行组合是运行时面的检查结果，不是每天要挑的�
   await st.locator('.sp-list [data-runtime-pick="codex"]').click();
 });
 
-await check("自动化：左框是规则清单，右侧摊开链路与能力边界", async () => {
+await check("自动化：规则、触发、运行与投递分层，所有结果回到普通任务", async () => {
   await page.locator('.main-rail [data-surface="automation"]').click();
   const surface = page.locator('[data-surface-view="automation"]');
 
   if ((await surface.locator("[data-automation-pick]").count()) < 3) throw new Error("左框规则太少");
+  if ((await surface.locator(".automation-tabs > button").count()) !== 4) throw new Error("自动化详情没有分成四个信息层");
+  if ((await surface.locator(".automation-list").innerText()).includes("执行历史")) throw new Error("运行历史仍混在规则清单里");
 
-  const main = await surface.locator(".sp-body").innerText();
+  const main = await surface.locator('[data-automation-body="overview"]').innerText();
   if (!(await surface.locator(".ar-step").count())) throw new Error("没有摊开执行链路");
-  for (const want of ["触发", "在项目", "工作流", "派给"]) {
+  for (const want of ["触发", "准入检查", "在项目建任务", "工作流", "派给", "任务验收面"]) {
     if (!main.includes(want)) throw new Error(`执行链路缺少「${want}」`);
   }
+  if (!main.includes("不提供「仅运行、不建任务」模式")) throw new Error("没有裁掉会形成第二套结果体系的静默运行模式");
   // 自动化最危险的是权限，所以能力边界必须写在脸上
   if (!main.includes("能力边界")) throw new Error("没有写明能力边界");
   if (!main.includes("不会自己降级去跑")) throw new Error("没有说明缺权限时是停下来问，而不是降权限硬跑");
-  // 「没触发」和「跑了但失败」要分开记
-  if (!main.includes("未触发")) throw new Error("执行历史没有区分「未触发」——那不是故障，但你需要知道那天没跑");
+
+  await surface.locator('[data-automation-tab="triggers"]').click();
+  const triggers = await surface.locator('[data-automation-body="triggers"]').innerText();
+  for (const want of ["接下来", "Asia/Singapore", "Webhook URL", "HMAC-SHA256", "Idempotency-Key"]) {
+    if (!triggers.includes(want)) throw new Error(`触发器设计缺少「${want}」`);
+  }
+
+  await surface.locator('[data-automation-tab="runs"]').click();
+  const runs = await surface.locator('[data-automation-body="runs"]').innerText();
+  for (const want of ["未触发", "失败", "重复", "关联任务", "Attempt"]) {
+    if (!runs.includes(want)) throw new Error(`运行记录没有讲清「${want}」`);
+  }
+
+  await surface.locator('[data-automation-tab="deliveries"]').click();
+  const deliveries = await surface.locator('[data-automation-body="deliveries"]').innerText();
+  for (const want of ["签名", "去重键", "已拒绝", "重放为新投递", "replayed_from"]) {
+    if (!deliveries.includes(want)) throw new Error(`Webhook 投递审计缺少「${want}」`);
+  }
+
+  await surface.locator("[data-automation-create]").click();
+  const dialog = page.locator("[data-automation-dialog]");
+  if (!(await dialog.isVisible())) throw new Error("新建自动化入口没有打开创建器");
+  const dialogText = await dialog.innerText();
+  for (const want of ["Runbook", "第一个触发器", "接下来", "保存为暂停", "保存前预检"]) {
+    if (!dialogText.includes(want)) throw new Error(`自动化创建器缺少「${want}」`);
+  }
+  await dialog.locator("[data-automation-close]").first().click();
+
+  // 离开前归位，后续截图与测试都从概览开始。
+  await surface.locator('[data-automation-tab="overview"]').click();
 
   await page.locator('.main-rail [data-surface="project"]').click();
 });

@@ -33,7 +33,7 @@
           <kbd>Ctrl K</kbd>
         </button>
         <div class="title-actions">
-          <span class="local-state"><i></i> 本地服务正常</span>
+          <span class="local-state"><i></i> 本地服务正常</span><button class="local-degraded" type="button" data-surface="memory" data-demo="记忆能力降级：中文分词已回退到 unicode61，检索会静默退化。点开记忆 → 健康度看索引与运行时" title="服务在运行，但记忆能力降级">记忆降级 1</button>
           <button class="icon-button" type="button" data-demo="通知中心暂无新消息" aria-label="通知">◌</button>
           <button class="avatar" type="button" data-demo="单用户本地模式" aria-label="用户">G</button>
         </div>
@@ -589,111 +589,403 @@
 
                     <p class="pane-note">这是执行过程本身：每次模型调用、每个工具调用的入参与结果。会话视图看的是「说了什么」，这里看的是「实际做了什么」。</p>
                     <div class="trace-rows" data-trace-rows>
-                    <button class="tr-row system" type="button" data-tr-event data-tr-detail="系统提示：包含任务目标、3 条主张、产物与证据引用；<b>不含</b>实现者的过程对话（上下文范围「只给结果」）。">
+                    <button class="tr-row system" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">SYSTEM</span>
                       <span class="tr-main">初始系统提示 ＋ 上下文范围 <b>只给结果</b></span>
                       <span class="tr-extra">12.4k tokens</span>
                     </button>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip system">SYSTEM</span><span class="td-where">Initial System Prompt</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="prompt" role="tab">System Prompt</button><button type="button" data-td-tab="tools" role="tab">Tools</button></div>
+                      <div class="td-body" data-td-pane="prompt"><div class="td-prose"><p>你是这个任务的验证者。只依据下面给出的结果判断，不要引用未列出的材料。</p>
+<p><b>任务目标</b>：artifact 引用不漂移与来源可追。<code>artifact:&lt;id&gt;@&lt;revision&gt;</code> 的解析必须稳定，创建新 revision 后旧引用仍解析到原内容。</p>
+<p><b>完成要求</b>：1 旧引用解析到 r1 原文；2 archived locator 由 <code>content_sha256</code> 派生、调用方不可指定；3 反向查询不跨 Project scope。</p>
+<p><b>可用产物</b>：<code>synthesis_plan@r3</code>、<code>research_findings@r1</code>。两者都是固定版本引用，不会跟着后续 revision 漂。</p>
+<p><b>上下文范围：只给结果。</b>本次调用不包含实现者的过程对话与自评（11.7k tok 被裁掉）。这一步是独立验证，验证者看见实现者的自述，结论就不再独立（PRD §7.5）。</p>
+<p><b>运行时</b>：工作目录 <code>D:\Projects\personahub</code>，分支 <code>main</code>，权限档「只读 ＋ 测试命令白名单」。</p></div></div>
+                      <div class="td-body" data-td-pane="tools" hidden><div class="td-tools">
+<div><b>read</b><p>读取一个文本文件，返回带行号的内容。用 offset / limit 续读大文件。</p></div>
+<div><b>grep</b><p>用正则搜索文件内容，按文件分组返回命中行与行号。命中过多时只返回前 250 条。</p></div>
+<div><b>write</b><p>新建文件或整体覆盖。本次权限档只放开 <code>server/test/**</code>，其余路径写入会被拒绝。</p></div>
+<div><b>bash</b><p>执行命令并返回 stdout/stderr。只有测试命令白名单内的命令免确认，其余需要你确认后才会执行。</p></div>
+</div></div>
+                    </div>
                     <p class="tr-turn">Turn 1</p>
-                    <button class="tr-row user" type="button" data-tr-event>
+                    <button class="tr-row user" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">USER</span>
                       <span class="tr-main">验证反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。</span>
                       <span class="tr-extra">10:31:02</span>
                     </button>
-                    <button class="tr-row req" type="button" data-tr-event data-tr-detail="冷启动原因：这一步是验证类，跨上下文围栏（ADR 0009 第 1 层）。未继承任何既有 session。">
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip user">USER</span><span class="td-where">Turn 1 · Message</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="preview" role="tab">Preview</button><button type="button" data-td-tab="raw" role="tab">Raw</button><button type="button" data-td-tab="source" role="tab">Source</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd>You · 会话「实现」</dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Duration</dt><dd>0 ms</dd></div></dl><p class="td-section">Preview<span aria-hidden="true">›</span></p><div class="td-quote">验证上一步实现，重点检查反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。</div></div>
+                      <div class="td-body" data-td-pane="preview" hidden><div class="td-quote">验证上一步实现，重点检查反向查询的 scope 泄露与 archived locator 的 TOCTOU 边界。</div></div>
+                      <div class="td-body" data-td-pane="raw" hidden><p class="td-block">Block #1 <span>text</span></p><pre class="td-code">验证上一步实现，重点检查反向查询的 scope 泄露与
+archived locator 的 TOCTOU 边界。</pre><p class="td-block">Block #2 <span>artifact-ref</span></p><pre class="td-code"><em class="ck">artifact</em>:synthesis_plan@r3  (pinned)</pre></div>
+                      <div class="td-body" data-td-pane="source" hidden><pre class="td-code">{
+  <em class="ck">kind</em>: <em class="cs">"user"</em>,
+  <em class="ck">rpcId</em>: <em class="cs">"24dd3739-eeae-44be-849e-3954b2523fd1"</em>,
+  <em class="ck">taskId</em>: <em class="cs">"F009-artifact-ref"</em>,
+  <em class="ck">contextScope</em>: <em class="cs">"results-only"</em>
+}</pre></div>
+                    </div>
+                    <button class="tr-row req" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">Request #1</span>
                       <span class="tr-main"><code>codex-gpt5.6-high</code> <em class="tr-lineage cold">⊘ 冷启动</em></span>
                       <span class="tr-extra">TTFT 820ms · 4.2s</span>
                     </button>
-                    <button class="tr-row assistant" type="button" data-tr-event>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip req">REQUEST</span><span class="td-where">Turn 1 · Request #1</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="timing" role="tab">Timing</button><button type="button" data-td-tab="source" role="tab">Source</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">codex-gpt5.6-high<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Context</dt><dd>只给结果</dd></div><div><dt>Lineage</dt><dd>⊘ Cold start</dd></div><div><dt>Tokens</dt><dd>14.0k tok</dd></div><div class="sub"><dt>Input</dt><dd>12.9k tok</dd></div><div class="sub"><dt>Output</dt><dd>1.1k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.6k tok</dd></div><div class="sub"><dt>Cached</dt><dd>0 %</dd></div></dl><p class="td-section">Lineage<span aria-hidden="true">›</span></p><div class="td-prose"><p>这一步是验证类，跨上下文围栏（ADR 0009 第 1 层），不继承任何既有 session，新建 run_a3f2。冷启动没有缓存可命中——代价写在 Tokens 里，好让「要不要 resume」有数可依。</p></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:02.418</dd></div><div><dt>Total duration</dt><dd>4.20 s</dd></div><div><dt>TTFT</dt><dd>820 ms</dd></div><div><dt>Generation</dt><dd>3.38 s</dd></div><div><dt>Throughput</dt><dd>325.4 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:02.418</dd></div><div><dt>Total duration</dt><dd>4.20 s</dd></div><div><dt>TTFT</dt><dd>820 ms</dd></div><div><dt>Generation</dt><dd>3.38 s</dd></div><div><dt>Throughput</dt><dd>325.4 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="source" hidden><pre class="td-code">{
+  <em class="ck">adapter</em>: <em class="cs">"Codex CLI 0.48.1"</em>,
+  <em class="ck">model</em>: <em class="cs">"gpt-5.6"</em>,
+  <em class="ck">reasoning</em>: <em class="cs">"high"</em>,
+  <em class="ck">session</em>: null,
+  <em class="ck">tools</em>: ["read", "grep", "write", "bash"],
+  <em class="ck">permissionProfile</em>: <em class="cs">"readonly+test-allowlist"</em>,
+  <em class="ck">messages</em>: 3
+}</pre></div>
+                    </div>
+                    <button class="tr-row assistant" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">ASSISTANT</span>
                       <span class="tr-main">先看 artifact.ts 里 revision 解析与归档路径的实现，再确认反向查询有没有 scope 约束。</span>
                       <span class="tr-extra">1.1k tokens</span>
                     </button>
-                    <button class="tr-row tool selected" type="button" data-tr-event data-tr-detail="结果（截断）：
-export async function createRevision(input: CreateRevisionInput) {
-  const sha = await contentSha256(input.source);
-  const archived = archivePath(sha);   // 调用方不可指定、不可覆盖">
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip assistant">ASSISTANT</span><span class="td-where">Turn 1 · Step 1</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="preview" role="tab">Preview</button><button type="button" data-td-tab="raw" role="tab">Raw</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">Request #1<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Tokens</dt><dd>1.1k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.6k tok</dd></div><div class="sub"><dt>Content</dt><dd>0.5k tok</dd></div></dl><p class="td-section">Preview<span aria-hidden="true">›</span></p><div class="td-preview"><p class="td-block">Thinking <span aria-hidden="true">›</span></p><div class="td-quote">要验两件事，先分清哪件能靠读代码定、哪件必须跑用例：归档路径是纯函数，读实现就能定；scope 泄露是查询行为，必须有用例。先读实现，再看现有用例覆盖到哪。</div><p class="td-call">🔧 <code>read</code> {"file_path": "server/src/services/artifact.ts"} …</p></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:03.238</dd></div><div><dt>Total duration</dt><dd>4.20 s</dd></div><div><dt>TTFT</dt><dd>820 ms</dd></div><div><dt>Generation</dt><dd>3.38 s</dd></div><div><dt>Throughput</dt><dd>325.4 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="preview" hidden><div class="td-preview"><p class="td-block">Thinking <span aria-hidden="true">›</span></p><div class="td-quote">要验两件事，先分清哪件能靠读代码定、哪件必须跑用例：归档路径是纯函数，读实现就能定；scope 泄露是查询行为，必须有用例。先读实现，再看现有用例覆盖到哪。</div><p class="td-call">🔧 <code>read</code> {"file_path": "server/src/services/artifact.ts"} …</p><div class="td-quote">先看 artifact.ts 里 revision 解析与归档路径的实现，再确认反向查询有没有 scope 约束。</div></div></div>
+                      <div class="td-body" data-td-pane="raw" hidden><p class="td-block">Block #1 <span>thinking</span></p><pre class="td-code">要验两件事，先分清哪件能靠读代码定、哪件必须跑用例：
+归档路径是纯函数，读实现就能定；scope 泄露是查询行为，
+必须有用例。先读实现，再看现有用例覆盖到哪。</pre><p class="td-block">Block #2 <span>text</span></p><pre class="td-code">先看 artifact.ts 里 revision 解析与归档路径的实现，
+再确认反向查询有没有 scope 约束。</pre><p class="td-block">Block #3 <span>tool-call</span></p><pre class="td-code">{<em class="ck">"file_path"</em>: <em class="cs">"server/src/services/artifact.ts"</em>}</pre></div>
+                    </div>
+                    <button class="tr-row tool" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">TOOL</span>
                       <span class="tr-main"><code>read</code> {"file_path":"server/src/services/artifact.ts"}</span>
                       <span class="tr-extra">→ 218 行 · 42ms</span>
                     </button>
-                    <button class="tr-row tool" type="button" data-tr-event>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip tool">TOOL</span><span class="td-where">Turn 1 · Step 1</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="payload" role="tab">Payload</button><button type="button" data-td-tab="result" role="tab">Result</button><button type="button" data-td-tab="schema" role="tab">Schema</button><button type="button" data-td-tab="timing" role="tab">Timing</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Hierarchy</dt><dd><button class="td-link" type="button">Assistant Message<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div></dl><p class="td-section">Payload<span aria-hidden="true">›</span></p><pre class="td-code">{
+  <em class="ck">file_path</em>: <em class="cs">"server/src/services/artifact.ts"</em>
+}</pre><p class="td-section">Result<span aria-hidden="true">›</span></p><pre class="td-code">1  import { contentSha256 } from "../storage/hash";
+…
+41   const archived = archivePath(sha);   // 调用方不可指定、不可覆盖
+42   await db.insert(artifactRevision).values({ sha, archived });
+…
+（共 218 行，截断至命中处前后各 2 行）</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>read</b><p>读取一个文本文件，返回带行号的内容。结果按行截断到 2000 行；用 offset 与 limit 续读大文件。读取不受权限档限制，写入才受。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:07.412</dd></div><div><dt>Duration</dt><dd>42 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="payload" hidden><pre class="td-code">{
+  <em class="ck">file_path</em>: <em class="cs">"server/src/services/artifact.ts"</em>
+}</pre></div>
+                      <div class="td-body" data-td-pane="result" hidden><pre class="td-code">1  import { contentSha256 } from "../storage/hash";
+…
+41   const archived = archivePath(sha);   // 调用方不可指定、不可覆盖
+42   await db.insert(artifactRevision).values({ sha, archived });
+…
+（共 218 行，截断至命中处前后各 2 行）</pre></div>
+                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>read</b><p>读取一个文本文件，返回带行号的内容。结果按行截断到 2000 行；用 offset 与 limit 续读大文件。读取不受权限档限制，写入才受。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
+  <em class="ck">type</em>: <em class="cs">"object"</em>,
+  <em class="ck">properties</em>: {
+    <em class="ck">file_path</em>: { type: <em class="cs">"string"</em>, description: <em class="cs">"绝对或仓库相对路径"</em> },
+    <em class="ck">offset</em>: { type: <em class="cs">"number"</em> },
+    <em class="ck">limit</em>: { type: <em class="cs">"number"</em> }
+  },
+  <em class="ck">required</em>: ["file_path"]
+}</pre></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:07.412</dd></div><div><dt>Duration</dt><dd>42 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                    </div>
+                    <button class="tr-row tool" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">TOOL</span>
                       <span class="tr-main"><code>grep</code> {"pattern":"archivePath","path":"server/src"}</span>
                       <span class="tr-extra">→ 3 处命中 · 18ms</span>
                     </button>
-                    <button class="tr-row req" type="button" data-tr-event data-tr-detail="续跑自 Request #1：同组合、同上下文范围，可 resume（ADR 0009 第 2 层）。">
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip tool">TOOL</span><span class="td-where">Turn 1 · Step 2</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="payload" role="tab">Payload</button><button type="button" data-td-tab="result" role="tab">Result</button><button type="button" data-td-tab="schema" role="tab">Schema</button><button type="button" data-td-tab="timing" role="tab">Timing</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Hierarchy</dt><dd><button class="td-link" type="button">Assistant Message<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div></dl><p class="td-section">Payload<span aria-hidden="true">›</span></p><pre class="td-code">{
+  <em class="ck">pattern</em>: <em class="cs">"archivePath"</em>,
+  <em class="ck">path</em>: <em class="cs">"server/src"</em>
+}</pre><p class="td-section">Result<span aria-hidden="true">›</span></p><pre class="td-code">server/src/services/artifact.ts:41   const archived = archivePath(sha);
+server/src/services/artifact.ts:88   return archivePath(row.content_sha256);
+server/src/storage/paths.ts:12       export function archivePath(sha: string) {
+
+3 处命中，没有第四个写入点——归档路径只有一条派生链。</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>grep</b><p>用 ripgrep 正则搜索文件内容，按文件分组返回命中行与行号。默认返回前 250 条命中，超出时报告完整结果保存在哪。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:07.461</dd></div><div><dt>Duration</dt><dd>18 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="payload" hidden><pre class="td-code">{
+  <em class="ck">pattern</em>: <em class="cs">"archivePath"</em>,
+  <em class="ck">path</em>: <em class="cs">"server/src"</em>
+}</pre></div>
+                      <div class="td-body" data-td-pane="result" hidden><pre class="td-code">server/src/services/artifact.ts:41   const archived = archivePath(sha);
+server/src/services/artifact.ts:88   return archivePath(row.content_sha256);
+server/src/storage/paths.ts:12       export function archivePath(sha: string) {
+
+3 处命中，没有第四个写入点——归档路径只有一条派生链。</pre></div>
+                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>grep</b><p>用 ripgrep 正则搜索文件内容，按文件分组返回命中行与行号。默认返回前 250 条命中，超出时报告完整结果保存在哪。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
+  <em class="ck">type</em>: <em class="cs">"object"</em>,
+  <em class="ck">properties</em>: {
+    <em class="ck">pattern</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">path</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">glob</em>: { type: <em class="cs">"string"</em> }
+  },
+  <em class="ck">required</em>: ["pattern"]
+}</pre></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:07.461</dd></div><div><dt>Duration</dt><dd>18 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                    </div>
+                    <button class="tr-row req" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">Request #2</span>
                       <span class="tr-main"><code>codex-gpt5.6-high</code> <em class="tr-lineage resume">⟳ 续跑</em></span>
                       <span class="tr-extra">TTFT 640ms · 12.8s</span>
                     </button>
-                    <button class="tr-row assistant" type="button" data-tr-event>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip req">REQUEST</span><span class="td-where">Turn 1 · Request #2</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="timing" role="tab">Timing</button><button type="button" data-td-tab="source" role="tab">Source</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">codex-gpt5.6-high<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Context</dt><dd>只给结果</dd></div><div><dt>Lineage</dt><dd>⟳ Resumed from Request #1</dd></div><div><dt>Tokens</dt><dd>15.2k tok</dd></div><div class="sub"><dt>Input</dt><dd>14.6k tok</dd></div><div class="sub"><dt>Output</dt><dd>0.6k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.4k tok</dd></div><div class="sub"><dt>Cached</dt><dd>88 %</dd></div></dl><p class="td-section">Lineage<span aria-hidden="true">›</span></p><div class="td-prose"><p>同一执行组合、同一上下文范围，可以 resume（ADR 0009 第 2 层）：历史由 session run_a3f2 持有，未重发。省下的就是 Cached 那 88%。换执行组合或换上下文范围都会强制冷启动。</p></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:07.480</dd></div><div><dt>Total duration</dt><dd>12.80 s</dd></div><div><dt>TTFT</dt><dd>640 ms</dd></div><div><dt>Generation</dt><dd>12.16 s</dd></div><div><dt>Throughput</dt><dd>49.3 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:07.480</dd></div><div><dt>Total duration</dt><dd>12.80 s</dd></div><div><dt>TTFT</dt><dd>640 ms</dd></div><div><dt>Generation</dt><dd>12.16 s</dd></div><div><dt>Throughput</dt><dd>49.3 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="source" hidden><pre class="td-code">{
+  <em class="ck">adapter</em>: <em class="cs">"Codex CLI 0.48.1"</em>,
+  <em class="ck">model</em>: <em class="cs">"gpt-5.6"</em>,
+  <em class="ck">reasoning</em>: <em class="cs">"high"</em>,
+  <em class="ck">session</em>: <em class="cs">"run_a3f2"</em>,
+  <em class="ck">resumedFrom</em>: <em class="cs">"Request #1"</em>,
+  <em class="ck">newMessages</em>: 2
+}</pre></div>
+                    </div>
+                    <button class="tr-row assistant" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">ASSISTANT</span>
                       <span class="tr-main">归档路径确实由 content_sha256 派生。跑一遍现有用例确认没有回归。</span>
                       <span class="tr-extra">0.6k tokens</span>
                     </button>
-                    <button class="tr-row tool" type="button" data-tr-event data-tr-detail="结果：
-PASS server/test/integration/artifact-ref.test.ts
-  ✓ old ref resolves to r1  (412 ms)
-  ✓ content survives mutation  (188 ms)
-  … 16 more
-Tests: 18 passed, 18 total">
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip assistant">ASSISTANT</span><span class="td-where">Turn 1 · Step 3</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="preview" role="tab">Preview</button><button type="button" data-td-tab="raw" role="tab">Raw</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">Request #2<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Tokens</dt><dd>0.6k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.4k tok</dd></div><div class="sub"><dt>Content</dt><dd>0.2k tok</dd></div></dl><p class="td-section">Preview<span aria-hidden="true">›</span></p><div class="td-preview"><p class="td-block">Thinking <span aria-hidden="true">›</span></p><div class="td-quote">完成要求 2 靠读实现已经能定：只有一条派生链，调用方拿不到写入点。完成要求 1 需要现有用例支撑，先跑再说；完成要求 3 大概率没有覆盖，留到跑完看报告。</div><p class="td-call">🔧 <code>bash</code> {"command": "npm test -w @personahub/server -- artifact-ref"} …</p></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:08.120</dd></div><div><dt>Total duration</dt><dd>12.80 s</dd></div><div><dt>TTFT</dt><dd>640 ms</dd></div><div><dt>Generation</dt><dd>12.16 s</dd></div><div><dt>Throughput</dt><dd>49.3 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="preview" hidden><div class="td-preview"><p class="td-block">Thinking <span aria-hidden="true">›</span></p><div class="td-quote">完成要求 2 靠读实现已经能定：只有一条派生链，调用方拿不到写入点。完成要求 1 需要现有用例支撑，先跑再说；完成要求 3 大概率没有覆盖，留到跑完看报告。</div><p class="td-call">🔧 <code>bash</code> {"command": "npm test -w @personahub/server -- artifact-ref"} …</p><div class="td-quote">归档路径确实由 content_sha256 派生，三处命中都走同一个 paths.ts。完成要求 2 可以判成立。跑一遍现有用例确认没有回归。</div></div></div>
+                      <div class="td-body" data-td-pane="raw" hidden><p class="td-block">Block #1 <span>thinking</span></p><pre class="td-code">完成要求 2 靠读实现已经能定：只有一条派生链，调用方拿不到写入点。
+完成要求 1 需要现有用例支撑，先跑再说。</pre><p class="td-block">Block #2 <span>text</span></p><pre class="td-code">归档路径确实由 content_sha256 派生，三处命中都走同一个 paths.ts。
+完成要求 2 可以判成立。跑一遍现有用例确认没有回归。</pre><p class="td-block">Block #3 <span>tool-call</span></p><pre class="td-code">{<em class="ck">"command"</em>: <em class="cs">"npm test -w @personahub/server -- artifact-ref"</em>}</pre></div>
+                    </div>
+                    <button class="tr-row tool" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">TOOL</span>
                       <span class="tr-main"><code>bash</code> {"command":"npm test -w @personahub/server -- artifact-ref"}</span>
                       <span class="tr-extra">→ exit 0 · 3m18s</span>
                     </button>
-                    <button class="tr-row req" type="button" data-tr-event>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip tool">TOOL</span><span class="td-where">Turn 1 · Step 4</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="payload" role="tab">Payload</button><button type="button" data-td-tab="result" role="tab">Result</button><button type="button" data-td-tab="schema" role="tab">Schema</button><button type="button" data-td-tab="timing" role="tab">Timing</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Hierarchy</dt><dd><button class="td-link" type="button">Assistant Message<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div></dl><p class="td-section">Payload<span aria-hidden="true">›</span></p><pre class="td-code">{
+  <em class="ck">command</em>: <em class="cs">"npm test -w @personahub/server -- artifact-ref"</em>,
+  <em class="ck">description</em>: <em class="cs">"跑 artifact 引用解析的集成用例"</em>,
+  <em class="ck">workdir</em>: <em class="cs">"D:\\Projects\\personahub"</em>
+}</pre><p class="td-section">Result<span aria-hidden="true">›</span></p><pre class="td-code">PASS server/test/integration/artifact-ref.test.ts
+  ✓ old ref resolves to r1  (412 ms)
+  ✓ content survives mutation  (188 ms)
+  … 16 more
+
+<em class="ck">Tests</em>: 18 passed, 18 total
+[exit code: 0]</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>bash</b><p>执行命令并返回 stdout/stderr。命令在权限档白名单内免确认，其余需要你确认后才执行；非零退出以 [exit code: N] 标记回报，不当成工具失败。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:20.031</dd></div><div><dt>Duration</dt><dd>198,150 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="payload" hidden><pre class="td-code">{
+  <em class="ck">command</em>: <em class="cs">"npm test -w @personahub/server -- artifact-ref"</em>,
+  <em class="ck">description</em>: <em class="cs">"跑 artifact 引用解析的集成用例"</em>,
+  <em class="ck">workdir</em>: <em class="cs">"D:\\Projects\\personahub"</em>
+}</pre></div>
+                      <div class="td-body" data-td-pane="result" hidden><pre class="td-code">PASS server/test/integration/artifact-ref.test.ts
+  ✓ old ref resolves to r1  (412 ms)
+  ✓ content survives mutation  (188 ms)
+  … 16 more
+
+<em class="ck">Tests</em>: 18 passed, 18 total
+[exit code: 0]</pre></div>
+                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>bash</b><p>执行命令并返回 stdout/stderr。命令在权限档白名单内免确认，其余需要你确认后才执行；非零退出以 [exit code: N] 标记回报，不当成工具失败。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
+  <em class="ck">type</em>: <em class="cs">"object"</em>,
+  <em class="ck">properties</em>: {
+    <em class="ck">command</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">description</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">workdir</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">timeoutMs</em>: { type: <em class="cs">"number"</em> }
+  },
+  <em class="ck">required</em>: ["command", "description"]
+}</pre></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:20.031</dd></div><div><dt>Duration</dt><dd>198,150 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                    </div>
+                    <button class="tr-row req" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">Request #3</span>
                       <span class="tr-main"><code>codex-gpt5.6-high</code></span>
                       <span class="tr-extra">TTFT 510ms · 2.1s</span>
                     </button>
-                    <button class="tr-row assistant" type="button" data-tr-event>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip req">REQUEST</span><span class="td-where">Turn 1 · Request #3</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="timing" role="tab">Timing</button><button type="button" data-td-tab="source" role="tab">Source</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">codex-gpt5.6-high<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Context</dt><dd>只给结果</dd></div><div><dt>Lineage</dt><dd>⟳ Resumed from Request #2</dd></div><div><dt>Tokens</dt><dd>15.8k tok</dd></div><div class="sub"><dt>Input</dt><dd>15.4k tok</dd></div><div class="sub"><dt>Output</dt><dd>0.4k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.2k tok</dd></div><div class="sub"><dt>Cached</dt><dd>91 %</dd></div></dl><p class="td-section">Lineage<span aria-hidden="true">›</span></p><div class="td-prose"><p>同组合、同范围的连续调用默认续跑，所以事件行上没有单独标记——只有冷启动和跨围栏才需要写在行上。</p></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:34:38.190</dd></div><div><dt>Total duration</dt><dd>2.10 s</dd></div><div><dt>TTFT</dt><dd>510 ms</dd></div><div><dt>Generation</dt><dd>1.59 s</dd></div><div><dt>Throughput</dt><dd>251.6 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:34:38.190</dd></div><div><dt>Total duration</dt><dd>2.10 s</dd></div><div><dt>TTFT</dt><dd>510 ms</dd></div><div><dt>Generation</dt><dd>1.59 s</dd></div><div><dt>Throughput</dt><dd>251.6 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="source" hidden><pre class="td-code">{
+  <em class="ck">adapter</em>: <em class="cs">"Codex CLI 0.48.1"</em>,
+  <em class="ck">model</em>: <em class="cs">"gpt-5.6"</em>,
+  <em class="ck">reasoning</em>: <em class="cs">"high"</em>,
+  <em class="ck">session</em>: <em class="cs">"run_a3f2"</em>,
+  <em class="ck">resumedFrom</em>: <em class="cs">"Request #2"</em>,
+  <em class="ck">newMessages</em>: 1
+}</pre></div>
+                    </div>
+                    <button class="tr-row assistant" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">ASSISTANT</span>
                       <span class="tr-main">18 / 18 通过。但反向查询的 scope 约束没有任何用例覆盖，我无法给出结论。</span>
                       <span class="tr-extra">0.4k tokens</span>
                     </button>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip assistant">ASSISTANT</span><span class="td-where">Turn 1 · Step 5</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="preview" role="tab">Preview</button><button type="button" data-td-tab="raw" role="tab">Raw</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">Request #3<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Tokens</dt><dd>0.4k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.2k tok</dd></div><div class="sub"><dt>Content</dt><dd>0.2k tok</dd></div></dl><p class="td-section">Preview<span aria-hidden="true">›</span></p><div class="td-preview"><p class="td-block">Thinking <span aria-hidden="true">›</span></p><div class="td-quote">18 个用例里没有一个跨 Project 造数据，所以「不泄露」这句话现在只有实现读出来的印象，没有证据。宁可说不知道，也不要把印象写成结论。</div></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:34:38.700</dd></div><div><dt>Total duration</dt><dd>2.10 s</dd></div><div><dt>TTFT</dt><dd>510 ms</dd></div><div><dt>Generation</dt><dd>1.59 s</dd></div><div><dt>Throughput</dt><dd>251.6 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="preview" hidden><div class="td-preview"><p class="td-block">Thinking <span aria-hidden="true">›</span></p><div class="td-quote">18 个用例里没有一个跨 Project 造数据，所以「不泄露」这句话现在只有实现读出来的印象，没有证据。宁可说不知道，也不要把印象写成结论。</div><div class="td-quote">18 / 18 通过，完成要求 1 与 2 成立。但反向查询的 scope 约束没有任何用例覆盖，我无法给出结论——要么补一条用例，要么这一条只能留作未验证。</div></div></div>
+                      <div class="td-body" data-td-pane="raw" hidden><p class="td-block">Block #1 <span>thinking</span></p><pre class="td-code">18 个用例里没有一个跨 Project 造数据，
+所以「不泄露」这句话现在只有印象，没有证据。</pre><p class="td-block">Block #2 <span>text</span></p><pre class="td-code">18 / 18 通过，完成要求 1 与 2 成立。
+但反向查询的 scope 约束没有任何用例覆盖，我无法给出结论。</pre></div>
+                    </div>
                     <p class="tr-turn">Turn 2</p>
-                    <button class="tr-row user" type="button" data-tr-event>
+                    <button class="tr-row user" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">USER</span>
                       <span class="tr-main">那就先补一条用例，不要直接下结论。</span>
                       <span class="tr-extra">11:04:18</span>
                     </button>
-                    <button class="tr-row req" type="button" data-tr-event>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip user">USER</span><span class="td-where">Turn 2 · Message</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="preview" role="tab">Preview</button><button type="button" data-td-tab="raw" role="tab">Raw</button><button type="button" data-td-tab="source" role="tab">Source</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd>You · 会话「实现」</dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Duration</dt><dd>0 ms</dd></div></dl><p class="td-section">Preview<span aria-hidden="true">›</span></p><div class="td-quote">那就先补一条用例，不要直接下结论。</div></div>
+                      <div class="td-body" data-td-pane="preview" hidden><div class="td-quote">那就先补一条用例，不要直接下结论。</div></div>
+                      <div class="td-body" data-td-pane="raw" hidden><p class="td-block">Block #1 <span>text</span></p><pre class="td-code">那就先补一条用例，不要直接下结论。</pre></div>
+                      <div class="td-body" data-td-pane="source" hidden><pre class="td-code">{
+  <em class="ck">kind</em>: <em class="cs">"user"</em>,
+  <em class="ck">rpcId</em>: <em class="cs">"9f21c0a4-1d7b-4f02-9c55-0be18a77e4c2"</em>,
+  <em class="ck">taskId</em>: <em class="cs">"F009-artifact-ref"</em>,
+  <em class="ck">permissionProfile</em>: <em class="cs">"readonly+test-allowlist → write:server/test/**"</em>
+}</pre></div>
+                    </div>
+                    <button class="tr-row req" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">Request #4</span>
                       <span class="tr-main"><code>codex-gpt5.6-high</code> <em class="tr-lineage resume">⟳ 续跑</em></span>
                       <span class="tr-extra">TTFT 700ms · 6.4s</span>
                     </button>
-                    <button class="tr-row tool" type="button" data-tr-event>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip req">REQUEST</span><span class="td-where">Turn 2 · Request #4</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="timing" role="tab">Timing</button><button type="button" data-td-tab="source" role="tab">Source</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">codex-gpt5.6-high<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Context</dt><dd>只给结果</dd></div><div><dt>Lineage</dt><dd>⟳ Resumed from Request #3</dd></div><div><dt>Tokens</dt><dd>17.0k tok</dd></div><div class="sub"><dt>Input</dt><dd>16.1k tok</dd></div><div class="sub"><dt>Output</dt><dd>0.9k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.5k tok</dd></div><div class="sub"><dt>Cached</dt><dd>93 %</dd></div></dl><p class="td-section">Lineage<span aria-hidden="true">›</span></p><div class="td-prose"><p>放宽权限档不触发冷启动：围栏管的是上下文范围与执行组合，不是工具权限（ADR 0009 第 2 层）。这次多了 write:server/test/**。</p></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:18.940</dd></div><div><dt>Total duration</dt><dd>6.40 s</dd></div><div><dt>TTFT</dt><dd>700 ms</dd></div><div><dt>Generation</dt><dd>5.70 s</dd></div><div><dt>Throughput</dt><dd>157.9 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:18.940</dd></div><div><dt>Total duration</dt><dd>6.40 s</dd></div><div><dt>TTFT</dt><dd>700 ms</dd></div><div><dt>Generation</dt><dd>5.70 s</dd></div><div><dt>Throughput</dt><dd>157.9 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="source" hidden><pre class="td-code">{
+  <em class="ck">adapter</em>: <em class="cs">"Codex CLI 0.48.1"</em>,
+  <em class="ck">model</em>: <em class="cs">"gpt-5.6"</em>,
+  <em class="ck">reasoning</em>: <em class="cs">"high"</em>,
+  <em class="ck">session</em>: <em class="cs">"run_a3f2"</em>,
+  <em class="ck">resumedFrom</em>: <em class="cs">"Request #3"</em>,
+  <em class="ck">permissionProfile</em>: <em class="cs">"readonly+test-allowlist+write:server/test/**"</em>
+}</pre></div>
+                    </div>
+                    <button class="tr-row tool" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">TOOL</span>
                       <span class="tr-main"><code>write</code> {"file_path":"server/test/integration/artifact-scope.test.ts"}</span>
                       <span class="tr-extra">→ 新建 34 行 · 31ms</span>
                     </button>
-                    <button class="tr-row tool" type="button" data-tr-event data-tr-detail="结果：
-FAIL artifact-scope.test.ts
-  ✗ reverse lookup does not leak across projects
-    expected 0 rows, received 2">
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip tool">TOOL</span><span class="td-where">Turn 2 · Step 1</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="payload" role="tab">Payload</button><button type="button" data-td-tab="result" role="tab">Result</button><button type="button" data-td-tab="schema" role="tab">Schema</button><button type="button" data-td-tab="timing" role="tab">Timing</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Hierarchy</dt><dd><button class="td-link" type="button">Assistant Message<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div></dl><p class="td-section">Payload<span aria-hidden="true">›</span></p><pre class="td-code">{
+  <em class="ck">file_path</em>: <em class="cs">"server/test/integration/artifact-scope.test.ts"</em>,
+  <em class="ck">content</em>: <em class="cs">"…34 行，见 Result"</em>
+}</pre><p class="td-section">Result<span aria-hidden="true">›</span></p><pre class="td-code">新建 server/test/integration/artifact-scope.test.ts · 34 行
+
+it("reverse lookup does not leak across projects", async () =&gt; {
+  const a = await seedArtifact({ project: <em class="cs">"A"</em> });
+  await seedArtifact({ project: <em class="cs">"B"</em>, source: a.source });
+  const rows = await reverseLookup(a.content_sha256, { project: <em class="cs">"A"</em> });
+  expect(rows).toHaveLength(1);
+});</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>write</b><p>新建文件或整体覆盖已有文件。覆盖前必须先 read（默认 fs-observation-policy 要求）；本次权限档只放开 server/test/**。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:26.180</dd></div><div><dt>Duration</dt><dd>31 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="payload" hidden><pre class="td-code">{
+  <em class="ck">file_path</em>: <em class="cs">"server/test/integration/artifact-scope.test.ts"</em>,
+  <em class="ck">content</em>: <em class="cs">"…34 行，见 Result"</em>
+}</pre></div>
+                      <div class="td-body" data-td-pane="result" hidden><pre class="td-code">新建 server/test/integration/artifact-scope.test.ts · 34 行
+
+it("reverse lookup does not leak across projects", async () =&gt; {
+  const a = await seedArtifact({ project: <em class="cs">"A"</em> });
+  await seedArtifact({ project: <em class="cs">"B"</em>, source: a.source });
+  const rows = await reverseLookup(a.content_sha256, { project: <em class="cs">"A"</em> });
+  expect(rows).toHaveLength(1);
+});</pre></div>
+                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>write</b><p>新建文件或整体覆盖已有文件。覆盖前必须先 read（默认 fs-observation-policy 要求）；本次权限档只放开 server/test/**。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
+  <em class="ck">type</em>: <em class="cs">"object"</em>,
+  <em class="ck">properties</em>: {
+    <em class="ck">file_path</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">content</em>: { type: <em class="cs">"string"</em> }
+  },
+  <em class="ck">required</em>: ["file_path", "content"]
+}</pre></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:26.180</dd></div><div><dt>Duration</dt><dd>31 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                    </div>
+                    <button class="tr-row tool" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">TOOL</span>
                       <span class="tr-main"><code>bash</code> {"command":"npm test -- artifact-scope"}</span>
                       <span class="tr-extra">→ exit 1 · 12s</span>
                     </button>
-                    <button class="tr-row assistant" type="button" data-tr-event>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip tool">TOOL</span><span class="td-where">Turn 2 · Step 2</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="payload" role="tab">Payload</button><button type="button" data-td-tab="result" role="tab">Result</button><button type="button" data-td-tab="schema" role="tab">Schema</button><button type="button" data-td-tab="timing" role="tab">Timing</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Hierarchy</dt><dd><button class="td-link" type="button">Assistant Message<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Failed · exit 1</dd></div></dl><p class="td-section">Payload<span aria-hidden="true">›</span></p><pre class="td-code">{
+  <em class="ck">command</em>: <em class="cs">"npm test -- artifact-scope"</em>,
+  <em class="ck">description</em>: <em class="cs">"跑刚补的 scope 用例"</em>,
+  <em class="ck">workdir</em>: <em class="cs">"D:\\Projects\\personahub"</em>
+}</pre><p class="td-section">Result<span aria-hidden="true">›</span></p><pre class="td-code">FAIL server/test/integration/artifact-scope.test.ts
+  ✗ reverse lookup does not leak across projects
+    expected 0 rows, received 2
+
+<em class="ck">Tests</em>: 1 failed, 1 total
+[exit code: 1]
+
+失败是有效结果：它把完成要求 3 从「没覆盖」变成「已证伪」。</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>bash</b><p>执行命令并返回 stdout/stderr。非零退出以 [exit code: N] 标记回报——这是被断言的结果，不是工具本身失败。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:26.240</dd></div><div><dt>Duration</dt><dd>12,050 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="payload" hidden><pre class="td-code">{
+  <em class="ck">command</em>: <em class="cs">"npm test -- artifact-scope"</em>,
+  <em class="ck">description</em>: <em class="cs">"跑刚补的 scope 用例"</em>,
+  <em class="ck">workdir</em>: <em class="cs">"D:\\Projects\\personahub"</em>
+}</pre></div>
+                      <div class="td-body" data-td-pane="result" hidden><pre class="td-code">FAIL server/test/integration/artifact-scope.test.ts
+  ✗ reverse lookup does not leak across projects
+    expected 0 rows, received 2
+
+<em class="ck">Tests</em>: 1 failed, 1 total
+[exit code: 1]
+
+失败是有效结果：它把完成要求 3 从「没覆盖」变成「已证伪」。</pre></div>
+                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>bash</b><p>执行命令并返回 stdout/stderr。非零退出以 [exit code: N] 标记回报——这是被断言的结果，不是工具本身失败。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
+  <em class="ck">type</em>: <em class="cs">"object"</em>,
+  <em class="ck">properties</em>: {
+    <em class="ck">command</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">description</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">workdir</em>: { type: <em class="cs">"string"</em> },
+    <em class="ck">timeoutMs</em>: { type: <em class="cs">"number"</em> }
+  },
+  <em class="ck">required</em>: ["command", "description"]
+}</pre></div>
+                      <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:26.240</dd></div><div><dt>Duration</dt><dd>12,050 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+                    </div>
+                    <button class="tr-row assistant" type="button" data-tr-event aria-expanded="false">
                       <span class="tr-kind">ASSISTANT</span>
                       <span class="tr-main">新用例失败：反向查询确实跨 scope 返回了别的 Project 的行。这是一个真实缺陷。</span>
                       <span class="tr-extra">0.5k tokens</span>
                     </button>
+                    <div class="tr-detail" data-tr-panel hidden>
+                      <header class="td-head"><span class="td-chip assistant">ASSISTANT</span><span class="td-where">Turn 2 · Step 3</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
+                      <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="preview" role="tab">Preview</button><button type="button" data-td-tab="raw" role="tab">Raw</button></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">Request #4<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Tokens</dt><dd>0.5k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.3k tok</dd></div><div class="sub"><dt>Content</dt><dd>0.2k tok</dd></div></dl><p class="td-section">Preview<span aria-hidden="true">›</span></p><div class="td-preview"><p class="td-block">Thinking <span aria-hidden="true">›</span></p><div class="td-quote">先排除用例本身写错的可能：两个 Project 的数据是我造的，sha 不同，查询条件里确实没有 project_id。所以失败指向实现，不指向用例。修实现会让我同时是实现者和验证者，这一步该停。</div></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:38.290</dd></div><div><dt>Total duration</dt><dd>6.40 s</dd></div><div><dt>TTFT</dt><dd>700 ms</dd></div><div><dt>Generation</dt><dd>5.70 s</dd></div><div><dt>Throughput</dt><dd>157.9 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="preview" hidden><div class="td-preview"><p class="td-block">Thinking <span aria-hidden="true">›</span></p><div class="td-quote">先排除用例本身写错的可能：两个 Project 的数据是我造的，sha 不同，查询条件里确实没有 project_id。所以失败指向实现，不指向用例。修实现会让我同时是实现者和验证者，这一步该停。</div><div class="td-quote">新用例失败：反向查询确实跨 scope 返回了别的 Project 的行。这是一个真实缺陷，不是用例写错——断言的就是完成要求 3 的原话。建议把这条挂回验收面，由实现者修，不要我一个人既改又验。</div></div></div>
+                      <div class="td-body" data-td-pane="raw" hidden><p class="td-block">Block #1 <span>thinking</span></p><pre class="td-code">两个 Project 的数据是我造的，sha 不同，
+查询条件里确实没有 project_id——失败指向实现，不指向用例。</pre><p class="td-block">Block #2 <span>text</span></p><pre class="td-code">新用例失败：反向查询确实跨 scope 返回了别的 Project 的行。
+这是一个真实缺陷，建议挂回验收面由实现者修。</pre></div>
                     </div>
                     </div>
-                    <aside class="trace-detail" data-trace-detail>
-                    <header><span data-tr-detail-kind>TOOL · Turn 1 · Step 1</span><button type="button" data-tr-detail-close aria-label="关闭详情">×</button></header>
-                    <div class="td-tabs" role="tablist">
-                      <button class="active" type="button" data-td-tab="result">结果</button>
-                      <button type="button" data-td-tab="payload">入参</button>
-                      <button type="button" data-td-tab="timing">耗时</button>
                     </div>
-                    <pre class="td-body" data-td-body></pre>
-                    <p class="td-foot">诊断 · <code>run_a3f2 · exit 0 · 原始 session ~/.codex/sessions/01J8…</code><br />PersonaHub 的记录才是复盘真相源；这一行只是它失灵时的逃生口（ADR 0009）。</p>
-                    </aside>
                   </aside>
                   <button class="aside-reopen" type="button" data-aside-open="thread" title="展开轨迹" hidden>轨迹</button>
                 </div>
@@ -2049,9 +2341,18 @@ completed -&gt; archived</code></pre>
                 <button class="active" type="button" role="tab" data-memory-tab="inbox">待确认 <i>3</i></button>
                 <button type="button" role="tab" data-memory-tab="library">知识库 <i>128</i></button>
                 <button type="button" role="tab" data-memory-tab="health">健康度 <i>11</i></button>
+                <button type="button" role="tab" data-memory-tab="graph">关系 <i>96</i></button>
               </div>
 
               <div class="mem-pane" data-memory-body="inbox">
+                <div class="auto-save">
+                  <div class="as-head">
+                    <label class="as-switch"><input type="checkbox" data-auto-save checked /><span>低风险自动入库</span></label>
+                    <span class="as-sum">近 7 天自动入库 <b>4</b> 条 · 全部为 <code>verified</code> · 仍在这里等你确认</span>
+                    <button class="linklike" type="button" data-demo="自动入库策略：来源必须通过 Provenance Gate 校验；只允许 lesson 与 project fact；stance 上限 verified">调整策略</button>
+                  </div>
+                  <p class="as-note"><b>自动入库不等于自动确认。</b>它只把已经通过来源校验的候选直接落成 <code>claimed</code> 或 <code>verified</code>，省掉你逐条点「接受」；<b><code>confirmed</code> 永远需要人</b>——机器可以验证一件事为真，「值得让以后所有任务都按它办」是判断，不是事实。关掉它，所有候选都退回逐条裁决。</p>
+                </div>
                 <p class="pane-note">这里是<strong>唯一</strong>能把知识提升为 <code>confirmed</code> 的地方。写入触发器来自验收事件，不需要你手动记——但升级这一步只能人来做：机器可以验证一件事为真，「值得让以后所有任务都按它办」是判断，不是事实。</p>
                                 <div class="data-list" style="--cols: 88px minmax(0, 1fr) 108px 250px 104px 258px" role="table" aria-label="待确认的记忆">
                   <div class="dl-head" role="row"><span>强度</span><span>内容</span><span>type</span><span>来源</span><span>时间</span><span>操作</span></div>
@@ -2089,6 +2390,11 @@ completed -&gt; archived</code></pre>
                 <div class="mem-search">
                   <label class="tr-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="搜索知识：worktree、push 授权、artifact…" data-memory-search /></label>
                   <div class="mem-filters">
+                    <button type="button" data-memory-mode="keyword">关键词</button>
+                    <button type="button" data-memory-mode="semantic">语义</button>
+                    <button class="active" type="button" data-memory-mode="hybrid">混合</button>
+                  </div>
+                  <div class="mem-filters">
                     <button class="active" type="button" data-memory-filter="全部">全部</button>
                     <button type="button" data-memory-filter="confirmed">confirmed</button>
                     <button type="button" data-memory-filter="verified">verified</button>
@@ -2103,7 +2409,7 @@ completed -&gt; archived</code></pre>
                 </div>
                                   <div class="data-list" style="--cols: 88px minmax(0, 1fr) 130px 84px 84px 152px 64px 76px" data-memory-list role="table" aria-label="知识库">
                     <div class="dl-head" role="row"><span>强度</span><span>内容</span><span>type</span><span>层级</span><span>状态</span><span>验证于</span><span>引用</span><span></span></div>
-                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-state="在库" data-demo="打开这条知识的来源包与关系">
+                    <div class="dl-row" role="row" data-memory-row data-stance="confirmed" data-state="在库">
                       <span class="mem-stance confirmed">confirmed</span>
                       <span class="dl-title">验收基线 AC-002 改为允许返回 null</span>
                       <span><code>decision</code></span>
@@ -2112,8 +2418,22 @@ completed -&gt; archived</code></pre>
                       <span class="dl-dim">你批准 · 08-29</span>
                       <span class="dl-dim">12 次</span>
                       <span class="dl-go">看来源 →</span>
-                    </button>
-                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-state="在库" data-demo="打开这条知识的来源包与关系">
+                      <div class="dl-detail">
+                        <div><h4>来源包</h4><dl>
+                          <dt>怎么进来的</dt><dd>你批准基线变更 → 生成候选 → 你接受。<b>只由已收敛的验收事件触发，不从对话摘取</b>。</dd>
+                          <dt>来源任务</dt><dd>#138 artifact 引用不漂移</dd>
+                          <dt>支撑证据</dt><dd>基线变更批准事件 · run_7F2</dd>
+                          <dt>使用边界</dt><dd><code>auto_inject: confirmed_only</code> · 不得单独用于判定项目基线</dd>
+                        </dl></div>
+                        <div><h4>关系 · 只显示一跳</h4><dl>
+                          <dt>引用了</dt><dd>归档路径必须由 content_sha256 派生</dd>
+                          <dt>被引用</dt><dd>2 条（F009 spec §US-002 · 任务 #142）</dd>
+                        </dl><p class="why">关系是可重建的投影，不是记忆本身；建关系时会检查目标是否存在，指不到的关系建不出来。一跳回答的是「改这条会影响谁」。</p></div>
+                        <div><h4>接下来能做什么</h4><div class="dd-acts"><button type="button" data-demo="已退役：移出召回，来源保留，可随时重新启用">退役</button><button type="button" disabled data-demo="遗忘需要两步：必须先退役。当前是「在库」，不可用">遗忘</button><button type="button" data-demo="打开 run_7F2 的命令与输出">看原始记录</button></div><p class="why">遗忘入口<b>可见但不可用</b>——把不可逆操作藏起来和让它一键可达都是错的。</p></div>
+                        <div><h4>状态与背书的变更记录</h4><ol><li>2026-08-29 出生 · 候选 · confirmed（你批准基线变更）</li><li>2026-08-29 状态 候选 → 在库 · 你接受候选</li></ol></div>
+                      </div>
+                    </div>
+                    <div class="dl-row" role="row" data-memory-row data-stance="confirmed" data-state="在库">
                       <span class="mem-stance confirmed">confirmed</span>
                       <span class="dl-title">先看成果再决定下一步交给谁</span>
                       <span><code>user preference</code></span>
@@ -2122,8 +2442,22 @@ completed -&gt; archived</code></pre>
                       <span class="dl-dim">你确认 · 08-14</span>
                       <span class="dl-dim">31 次</span>
                       <span class="dl-go">看来源 →</span>
-                    </button>
-                    <button class="dl-row" type="button" role="row" data-stance="verified" data-state="在库" data-demo="打开这条知识的来源包与关系">
+                      <div class="dl-detail">
+                        <div><h4>来源包</h4><dl>
+                          <dt>怎么进来的</dt><dd>你在验收面显式标记「这条要记住」。<b>偏好只能来自你本人</b>，所以它一出生就是 confirmed。</dd>
+                          <dt>来源任务</dt><dd>#121 工作台首屏落点</dd>
+                          <dt>支撑证据</dt><dd>你的原话 · thread_8823 · 可回到原文</dd>
+                          <dt>使用边界</dt><dd><code>auto_inject: confirmed_only</code> · 工作区级，跨 Project 可见</dd>
+                        </dl></div>
+                        <div><h4>关系 · 只显示一跳</h4><dl>
+                          <dt>引用了</dt><dd>—</dd>
+                          <dt>被引用</dt><dd>3 条（工作台首屏 · 任务列表排序 · 派工面板）</dd>
+                        </dl><p class="why">关系是可重建的投影，不是记忆本身；建关系时会检查目标是否存在，指不到的关系建不出来。一跳回答的是「改这条会影响谁」。</p></div>
+                        <div><h4>接下来能做什么</h4><div class="dd-acts"><button type="button" data-demo="已退役">退役</button><button type="button" disabled data-demo="必须先退役">遗忘</button><button type="button" data-demo="改写后需要你重新确认">改写</button></div></div>
+                        <div><h4>状态与背书的变更记录</h4><ol><li>2026-08-14 出生 · 候选 · confirmed（你显式标记）</li><li>2026-08-14 状态 候选 → 在库</li></ol></div>
+                      </div>
+                    </div>
+                    <div class="dl-row" role="row" data-memory-row data-stance="verified" data-state="在库">
                       <span class="mem-stance verified">verified</span>
                       <span class="dl-title">普通 worktree 不满足隔离要求</span>
                       <span><code>lesson</code></span>
@@ -2133,8 +2467,22 @@ completed -&gt; archived</code></pre>
                       <span class="dl-dim">6 次</span>
                       <span class="dl-go">看来源 →</span>
                       <p class="dl-sub"><b>来源包 ·</b> 成员产出 · 来自任务「F005 隔离核查」的第 2 轮独立验证（run_9A4）· 证据 <code>worktree-isolation.test.ts</code> — <b>使用边界 ·</b> 只作为候选出现，不自动进上下文 — <b>关系 ·</b> 引用了「代码目录是权限边界」，被 2 条引用</p>
-                    </button>
-                    <button class="dl-row" type="button" role="row" data-stance="verified" data-state="待复核" data-demo="打开这条知识的来源包与关系">
+                      <div class="dl-detail">
+                        <div><h4>来源包</h4><dl>
+                          <dt>怎么进来的</dt><dd>两轮独立验证得出同一根因 → 生成候选 → 你接受。</dd>
+                          <dt>来源任务</dt><dd>#96 F005 隔离核查</dd>
+                          <dt>支撑证据</dt><dd>run_9A4 · <code>worktree-isolation.test.ts</code> · 第 2 轮独立验证</dd>
+                          <dt>使用边界</dt><dd><code>auto_inject: only_as_candidate</code> · 不自动进上下文</dd>
+                        </dl></div>
+                        <div><h4>关系 · 只显示一跳</h4><dl>
+                          <dt>引用了</dt><dd>代码目录是权限边界</dd>
+                          <dt>被引用</dt><dd>2 条（ADR 0006 并行边界 · 任务 #133）</dd>
+                        </dl><p class="why">关系是可重建的投影，不是记忆本身；建关系时会检查目标是否存在，指不到的关系建不出来。一跳回答的是「改这条会影响谁」。</p></div>
+                        <div><h4>接下来能做什么</h4><div class="dd-acts"><button type="button" data-demo="升级到 confirmed 需要你背书，机器不能替你确认">升为你确认</button><button type="button" data-demo="已退役">退役</button><button type="button" disabled data-demo="必须先退役">遗忘</button></div><p class="why">机器可以验证一件事为真，<b>「值得让以后所有任务都按它办」是判断，不是事实</b>——只有你能把 verified 升成 confirmed。</p></div>
+                        <div><h4>状态与背书的变更记录</h4><ol><li>2026-08-24 出生 · 候选 · claimed（成员产出）</li><li>2026-08-26 背书 claimed → verified · 第 2 轮独立验证同根因 · run_9A4</li><li>2026-08-26 状态 候选 → 在库 · 你接受候选</li></ol></div>
+                      </div>
+                    </div>
+                    <div class="dl-row" role="row" data-memory-row data-stance="verified" data-state="待复核">
                       <span class="mem-stance verified">verified</span>
                       <span class="dl-title">归档路径必须由 content_sha256 派生</span>
                       <span><code>project fact</code></span>
@@ -2144,8 +2492,22 @@ completed -&gt; archived</code></pre>
                       <span class="dl-dim">9 次</span>
                       <span class="dl-go">去复核 →</span>
                       <p class="dl-sub"><em class="dl-warn">⚠ 待复核：支撑它的 <code>artifact:workspace-lock</code> 已从 @2 更新到 @4，这一版不再是当前状态。<b>它已退出召回</b>，复核完成前不会进入任何派工的上下文。引用 9 次不能替它续命。</em></p>
-                    </button>
-                    <button class="dl-row" type="button" role="row" data-stance="claimed" data-state="在库" data-demo="打开这条知识的来源包与关系">
+                      <div class="dl-detail">
+                        <div><h4>来源包</h4><dl>
+                          <dt>怎么进来的</dt><dd>主张被独立验证通过 → 生成候选 → 你接受。</dd>
+                          <dt>来源任务</dt><dd>#142 补齐 Inspector 的 artifact 状态</dd>
+                          <dt>支撑证据</dt><dd>AC-002 · Claude Sonnet 独立验证 · 与实现者不同源</dd>
+                          <dt>使用边界</dt><dd><code>auto_inject: only_as_candidate</code> · 当前<b>已退出召回</b></dd>
+                        </dl></div>
+                        <div><h4>关系 · 只显示一跳</h4><dl>
+                          <dt>引用了</dt><dd>验收基线 AC-002 改为允许返回 null</dd>
+                          <dt>被引用</dt><dd>1 条（任务 #142）</dd>
+                        </dl><p class="why">关系是可重建的投影，不是记忆本身；建关系时会检查目标是否存在，指不到的关系建不出来。一跳回答的是「改这条会影响谁」。</p></div>
+                        <div><h4>接下来能做什么</h4><div class="dd-acts"><button type="button" data-demo="通过则回到在库并记一条新的验证时间；不通过转退役">对新版本重新验证</button><button type="button" data-demo="新记忆入库，本条转退役并记录 superseded_by">改写为新记忆</button><button type="button" data-demo="已退役">退役</button></div><p class="why">复核通过才回「在库」。<b>引用 9 次不能替它续命</b>——使用次数不是验证。</p></div>
+                        <div><h4>状态与背书的变更记录</h4><ol><li>2026-08-02 出生 · 候选 · claimed</li><li>2026-08-02 背书 claimed → verified · Claude Sonnet 独立验证 · run_5C1</li><li>2026-08-02 状态 候选 → 在库</li><li>2026-08-30 状态 在库 → 待复核 · 系统 · 依据产物 artifact:workspace-lock 从 @2 变为 @4</li></ol></div>
+                      </div>
+                    </div>
+                    <div class="dl-row" role="row" data-memory-row data-stance="claimed" data-state="在库">
                       <span class="mem-stance claimed">claimed</span>
                       <span class="dl-title">OpenCode 的 Qwen 在长上下文下更容易丢格式</span>
                       <span><code>lesson</code></span>
@@ -2154,8 +2516,22 @@ completed -&gt; archived</code></pre>
                       <span class="dl-dim">— 未验证</span>
                       <span class="dl-dim">2 次</span>
                       <span class="dl-go">看来源 →</span>
-                    </button>
-                    <button class="dl-row" type="button" role="row" data-stance="confirmed" data-state="在库" data-demo="打开这条知识的来源包与关系">
+                      <div class="dl-detail">
+                        <div><h4>来源包</h4><dl>
+                          <dt>怎么进来的</dt><dd>成员在会话里给出的判断，<b>未经核对</b>。只能是 lesson——未经核对的断言不是事实。</dd>
+                          <dt>来源任务</dt><dd>#129 多 adapter 输出一致性</dd>
+                          <dt>支撑证据</dt><dd>仅有成员自述 · 无独立验证</dd>
+                          <dt>使用边界</dt><dd><code>auto_inject: never</code> · <b>不进任何验证类派工的上下文</b>（ADR 0013 §1.2.1）</dd>
+                        </dl></div>
+                        <div><h4>关系 · 只显示一跳</h4><dl>
+                          <dt>引用了</dt><dd>—</dd>
+                          <dt>被引用</dt><dd>—（孤立：无入边无出边）</dd>
+                        </dl><p class="why">关系是可重建的投影，不是记忆本身；建关系时会检查目标是否存在，指不到的关系建不出来。一跳回答的是「改这条会影响谁」。</p></div>
+                        <div><h4>接下来能做什么</h4><div class="dd-acts"><button type="button" data-demo="验证通过后可升为 verified，升级留痕">派一次独立核对</button><button type="button" data-demo="已退役">退役</button><button type="button" disabled data-demo="必须先退役">遗忘</button></div><p class="why">它一直不进验证类上下文，放着不管就是一条永远用不上的条目——健康度会把它记进「未验证债」。</p></div>
+                        <div><h4>状态与背书的变更记录</h4><ol><li>2026-08-28 出生 · 候选 · claimed（成员产出）</li><li>2026-08-28 状态 候选 → 在库 · 你接受候选</li></ol></div>
+                      </div>
+                    </div>
+                    <div class="dl-row" role="row" data-memory-row data-stance="confirmed" data-state="在库">
                       <span class="mem-stance confirmed">confirmed</span>
                       <span class="dl-title">push 需要单独授权，不随任务权限一起给</span>
                       <span><code>decision</code></span>
@@ -2164,8 +2540,22 @@ completed -&gt; archived</code></pre>
                       <span class="dl-dim">你确认 · 08-21</span>
                       <span class="dl-dim">18 次</span>
                       <span class="dl-go">看来源 →</span>
-                    </button>
-                    <button class="dl-row off" type="button" role="row" data-stance="confirmed" data-state="已退役" data-demo="打开这条知识的来源包与关系">
+                      <div class="dl-detail">
+                        <div><h4>来源包</h4><dl>
+                          <dt>怎么进来的</dt><dd>你批准基线变更 → 生成候选 → 你接受。</dd>
+                          <dt>来源任务</dt><dd>#118 危险操作边界</dd>
+                          <dt>支撑证据</dt><dd>你的确认事件 · thread_9012</dd>
+                          <dt>使用边界</dt><dd><code>auto_inject: confirmed_only</code> · 会进入所有涉及 git 的派工</dd>
+                        </dl></div>
+                        <div><h4>关系 · 只显示一跳</h4><dl>
+                          <dt>引用了</dt><dd>代码目录是权限边界</dd>
+                          <dt>被引用</dt><dd>4 条（设置 · 自动化规则 · 任务 #131 · #140）</dd>
+                        </dl><p class="why">关系是可重建的投影，不是记忆本身；建关系时会检查目标是否存在，指不到的关系建不出来。一跳回答的是「改这条会影响谁」。</p></div>
+                        <div><h4>接下来能做什么</h4><div class="dd-acts"><button type="button" data-demo="已退役">退役</button><button type="button" disabled data-demo="必须先退役">遗忘</button><button type="button" data-demo="打开 thread_9012">看原始记录</button></div></div>
+                        <div><h4>状态与背书的变更记录</h4><ol><li>2026-08-21 出生 · 候选 · confirmed（你批准）</li><li>2026-08-21 状态 候选 → 在库</li></ol></div>
+                      </div>
+                    </div>
+                    <div class="dl-row off" role="row" data-memory-row data-stance="confirmed" data-state="已退役">
                       <span class="mem-stance confirmed">confirmed</span>
                       <span class="dl-title">以 Canvas 为中心的对象模型</span>
                       <span><code>decision</code></span>
@@ -2175,8 +2565,22 @@ completed -&gt; archived</code></pre>
                       <span class="dl-dim">4 次</span>
                       <span class="dl-go">看替代 →</span>
                       <p class="dl-sub">已被「Issue 优先的对象模型」替代（ADR 0012）。<b>退役不是删除</b>：来源与证据全部保留，指向替代它的那一条，随时可以重新启用。</p>
-                    </button>
-                    <button class="dl-row off" type="button" role="row" data-stance="" data-state="已遗忘" data-demo="打开这条知识的来源包与关系">
+                      <div class="dl-detail">
+                        <div><h4>来源包</h4><dl>
+                          <dt>怎么进来的</dt><dd>你批准基线变更 → 入库。后被 ADR 0012 推翻。</dd>
+                          <dt>来源任务</dt><dd>#77 对象模型定型</dd>
+                          <dt>支撑证据</dt><dd>你的确认事件 · thread_4410</dd>
+                          <dt>使用边界</dt><dd><code>auto_inject: never</code> · 已退役，不参与召回</dd>
+                        </dl></div>
+                        <div><h4>关系 · 只显示一跳</h4><dl>
+                          <dt>引用了</dt><dd>被「Issue 优先的对象模型」替代</dd>
+                          <dt>被引用</dt><dd>1 条（ADR 0012）</dd>
+                        </dl><p class="why">关系是可重建的投影，不是记忆本身；建关系时会检查目标是否存在，指不到的关系建不出来。一跳回答的是「改这条会影响谁」。</p></div>
+                        <div><h4>接下来能做什么</h4><div class="dd-acts"><button type="button" data-demo="退役可逆：重新启用后回到在库">重新启用</button><button type="button" data-demo="已退役，可以授权遗忘——注意这一步不可逆">遗忘</button><button type="button" data-demo="打开 Issue 优先的对象模型">看替代它的那条</button></div><p class="why"><b>退役不是删除</b>：来源与证据全部保留，并留下指向替代它的那一条。这也是它现在可以直接遗忘的原因——两步里的第一步已经走过了。</p></div>
+                        <div><h4>状态与背书的变更记录</h4><ol><li>2026-07-30 出生 · 候选 · confirmed（你批准）</li><li>2026-07-30 状态 候选 → 在库</li><li>2026-08-27 状态 在库 → 已退役 · 你 · 被 ADR 0012 替代，记录 superseded_by</li></ol></div>
+                      </div>
+                    </div>
+                    <div class="dl-row off" role="row" data-memory-row data-stance="" data-state="已遗忘">
                       <span class="mem-stance none">—</span>
                       <span class="dl-title">〔内容已按授权清除〕</span>
                       <span><code>user preference</code></span>
@@ -2186,10 +2590,96 @@ completed -&gt; archived</code></pre>
                       <span class="dl-dim">—</span>
                       <span class="dl-go">看凭证 →</span>
                       <p class="dl-sub"><b>墓碑 ·</b> 2026-08-25 经你授权遗忘 · 原因：含个人身份信息 · 原任务 #142。只保留「它曾存在过、因何不可再取回」这一条最小事实，不偷偷留正文。遗忘前必须先退役，不能从在库一步删除。</p>
-                    </button>
+                      <div class="dl-detail">
+                        <div><h4>来源包</h4><dl>
+                          <dt>怎么进来的</dt><dd>原为你在会话里给出的偏好，含个人身份信息。</dd>
+                          <dt>来源任务</dt><dd>#142（原任务保留）</dd>
+                          <dt>支撑证据</dt><dd><b>正文与索引已物理清除</b>；原始 Thread 事件按历史层规则保留，敏感行已遮蔽</dd>
+                          <dt>使用边界</dt><dd>—（已无正文可用）</dd>
+                        </dl></div>
+                        <div><h4>关系 · 只显示一跳</h4><dl>
+                          <dt>引用了</dt><dd>—</dd>
+                          <dt>被引用</dt><dd>—</dd>
+                        </dl><p class="why">关系是可重建的投影，不是记忆本身；建关系时会检查目标是否存在，指不到的关系建不出来。一跳回答的是「改这条会影响谁」。</p></div>
+                        <div><h4>接下来能做什么</h4><div class="dd-acts"><button type="button" data-demo="墓碑：它曾存在过、何时、经谁授权、因何原因">看凭证</button><button type="button" disabled data-demo="遗忘不可逆。这不是保护措施不足，是设计如此">恢复</button></div><p class="why">遗忘分两层：<b>结论层</b>（记忆本体）物理清除；<b>历史层</b>（Thread / Run 原始事件）退役封存、不物理改写——删掉历史等于改变过去的事实，provenance 链断了，所有「当时凭什么这么判断」都答不出来。</p></div>
+                        <div><h4>状态与背书的变更记录</h4><ol><li>2026-08-19 出生 · 候选 · confirmed</li><li>2026-08-19 状态 候选 → 在库</li><li>2026-08-25 状态 在库 → 已退役 · 你</li><li>2026-08-25 状态 已退役 → 已遗忘 · 你授权 · 原因：含个人身份信息</li></ol></div>
+                      </div>
+                    </div>
                   </div>
 
                 <p class="pane-note">写入受 type × stance 白名单约束：<code>project fact</code> 不允许 <code>claimed</code>，<code>decision</code> 只能 <code>confirmed</code>；违规写入被拒绝并记录拒绝事件（ADR 0013）。<strong>强度、验证于、引用是三根互不替代的轴</strong>，所以它们是三列而不是一个「可信度」分数——被用得多不等于被验证过，被验证过不等于你认可。引用次数永远不会自己写进「验证于」，也不会自己提升强度（ADR 0016）。</p>
+              </div>
+
+              <div class="mem-pane" data-memory-body="graph" hidden>
+                <p class="pane-note">关系回答的是<strong>「改这条会影响谁」</strong>，不是「把库画成一张图」。所以这里不铺全局节点云——个人规模下那是毛球，看着壮观、答不了任何具体问题。默认落在<b>最近被引用的那条</b>上，从它往外看。</p>
+
+                <div class="graph-bar">
+                  <label class="tr-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="换一个锚点：worktree、push 授权、AC-002…" data-graph-anchor /></label>
+                  <div class="mem-filters">
+                    <button class="active" type="button" data-graph-depth="1">一跳</button>
+                    <button type="button" data-graph-depth="2">二跳</button>
+                  </div>
+                  <div class="mem-filters">
+                    <button class="active" type="button" data-graph-rel="all">全部关系</button>
+                    <button type="button" data-graph-rel="supersedes">替代</button>
+                    <button type="button" data-graph-rel="derived_from">推出</button>
+                    <button type="button" data-graph-rel="contradicts">冲突</button>
+                    <button type="button" data-graph-rel="evidenced_by">证据</button>
+                  </div>
+                  <span class="tr-count">锚点 1 · 邻居 5 · 边 6</span>
+                </div>
+
+                <div class="graph-stage">
+                  <svg viewBox="0 0 900 330" class="ego-graph" role="img" aria-label="以「代码目录是权限边界」为锚点的一跳关系图">
+                    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+                    <g class="eg-edges">
+                      <line x1="450" y1="150" x2="190" y2="60" marker-end="url(#ah)"/>
+                      <line x1="450" y1="150" x2="190" y2="240" marker-end="url(#ah)"/>
+                      <line x1="710" y1="60" x2="470" y2="140" marker-end="url(#ah)"/>
+                      <line x1="710" y1="150" x2="470" y2="150" marker-end="url(#ah)"/>
+                      <line x1="710" y1="240" x2="470" y2="162" marker-end="url(#ah)"/>
+                      <line class="eg-contra" x1="450" y1="150" x2="450" y2="286" marker-end="url(#ah)"/>
+                    </g>
+                    <g class="eg-nodes">
+                      <g class="eg-node anchor" transform="translate(450,150)"><rect x="-96" y="-25" width="192" height="50" rx="7"/><text x="0" y="-6">代码目录是权限边界</text><text class="eg-meta" x="0" y="14">project fact · 待复核</text></g>
+                      <g class="eg-node" transform="translate(190,60)"><rect x="-88" y="-22" width="176" height="44" rx="7"/><text x="0" y="-4">worktree 不满足隔离</text><text class="eg-meta" x="0" y="14">引用了 · lesson</text></g>
+                      <g class="eg-node" transform="translate(190,240)"><rect x="-88" y="-22" width="176" height="44" rx="7"/><text x="0" y="-4">artifact:workspace-lock@4</text><text class="eg-meta" x="0" y="14">证据 · 产物</text></g>
+                      <g class="eg-node" transform="translate(710,60)"><rect x="-88" y="-22" width="176" height="44" rx="7"/><text x="0" y="-4">push 需单独授权</text><text class="eg-meta" x="0" y="14">被引用 · decision</text></g>
+                      <g class="eg-node" transform="translate(710,150)"><rect x="-88" y="-22" width="176" height="44" rx="7"/><text x="0" y="-4">任务 #133</text><text class="eg-meta" x="0" y="14">被引用 · 任务</text></g>
+                      <g class="eg-node" transform="translate(710,240)"><rect x="-88" y="-22" width="176" height="44" rx="7"/><text x="0" y="-4">ADR 0006 并行边界</text><text class="eg-meta" x="0" y="14">被引用 · 文档</text></g>
+                      <g class="eg-node contra" transform="translate(450,286)"><rect x="-100" y="-14" width="200" height="28" rx="7"/><text x="0" y="4">⚠ 与「worktree 可作隔离」冲突</text></g>
+                    </g>
+                  </svg>
+                  <p class="graph-legend"><span class="lg in">左：它引用了谁</span><span class="lg out">右：谁引用了它</span><span class="lg warn">下：冲突</span> · 节点写全称不写编号：<b>看不懂的图等于没有图</b>。锚点变色即状态——待复核的锚点在这里也是黄的，不用回列表查。</p>
+                </div>
+
+                <p class="pane-note">图和下面这张表<strong>是同一份数据的两种画法</strong>：图回答「有没有边、往哪边走」，表回答「这条边凭什么存在」。点图上任一节点，表跟着筛。</p>
+                <div class="data-list" style="--cols: 200px 96px minmax(0, 1fr) 128px 108px" role="table" aria-label="关系明细">
+                  <div class="dl-head" role="row"><span>从</span><span>关系</span><span>到</span><span>怎么来的</span><span>操作</span></div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">代码目录是权限边界</span><span><code>derived_from</code></span>
+                    <span class="dl-dim">worktree 不满足隔离要求</span><span class="dl-dim">裁决时你标的</span>
+                    <span class="dl-act"><button type="button" data-demo="解除这条关系：边是投影，解除不影响两端的记忆本身">解除</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">代码目录是权限边界</span><span><code>evidenced_by</code></span>
+                    <span class="dl-dim">artifact:workspace-lock@4</span><span class="dl-dim">写入时自动</span>
+                    <span class="dl-act"><button type="button" data-demo="产物已从 @2 变到 @4，这正是锚点转「待复核」的原因">看产物</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">push 需单独授权</span><span><code>derived_from</code></span>
+                    <span class="dl-dim">代码目录是权限边界</span><span class="dl-dim">裁决时你标的</span>
+                    <span class="dl-act"><button type="button" data-demo="解除这条关系">解除</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">代码目录是权限边界</span><span><code>contradicts</code></span>
+                    <span class="dl-dim">worktree 可作隔离（已退役）</span><span class="dl-dim">健康度并排对比后标的</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-demo="并排对比：留哪条是语义判断，机器不自动合并">并排对比</button></span>
+                    <p class="dl-sub">冲突边<b>不会自动消解</b>：留哪条是语义判断。被替代的一方转退役并记 <code>superseded_by</code>，冲突边随之变成替代边——<b>这条链要能读出来，否则以后没人知道当时为什么选了这条</b>。</p>
+                  </div>
+                </div>
+
+                <p class="pane-note">建边时统一做目标解析，<strong>指不到的关系建不出来</strong>——所以这里不会出现悬空边。近 7 天建关系失败 <b>0</b> 次；真出现了会记进健康度，而不是留下一条点了没反应的边。</p>
               </div>
 
               <div class="mem-pane" data-memory-body="health" hidden>
@@ -2252,6 +2742,70 @@ completed -&gt; archived</code></pre>
                     <span class="dl-dim">目标不存在时直接拒绝，不留悬空关系</span>
                   </div>
                 </div>
+                <p class="pane-note">取内容的机器还在不在转：</p>
+                <div class="stage-note"><b>「本地服务正常」不等于「记忆能用」。</b>顶栏那个绿点只说明服务和数据库活着；索引没建好时检索会<b>静默返回空</b>——你看到的是「没有相关记忆」，真相是「记忆取不出来」。记忆降级时顶栏绿点旁会出现降级标记并指到这里，<b>绿点撒谎比没有绿点更糟</b>。</div>
+                <div class="data-list" style="--cols: 104px minmax(0, 1fr) 236px 200px" role="table" aria-label="索引与运行时">
+                  <div class="dl-head" role="row"><span>状态</span><span>探针</span><span>怎么判的</span><span>操作</span></div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">正常</span>
+                    <span class="dl-title">索引与记忆同步</span>
+                    <span class="dl-dim">FTS 128 行 = 在库 128 条 · 上次重建 08-31 02:14</span>
+                    <span class="dl-act"><button type="button" data-demo="重建索引：索引是可重建的投影，重建不改写记忆本身">重建索引</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance claimed">降级</span>
+                    <span class="dl-title">中文分词回退到 unicode61</span>
+                    <span class="dl-dim">建表时 trigram 不可用，已回退</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-demo="回退原因：本机 SQLite 未启用 trigram。中文按字切，「代码目录」搜不到「目录」——这是静默退化，不报错">看回退原因</button></span>
+                    <p class="dl-sub"><em class="dl-warn">⚠ 中文召回会退化且<b>不报错</b>：unicode61 对中文近似按字切。这类「关不掉却假装关掉了」的问题，只有探针能发现。</em></p>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">正常</span>
+                    <span class="dl-title">关系已建立</span>
+                    <span class="dl-dim">128 条记忆 · 96 条边</span>
+                    <span class="dl-act"><button type="button" data-demo="重建关系：边是可重建的投影">重建关系</button></span>
+                  </div>
+                  <div class="dl-row not-yet" role="row">
+                    <span class="mem-stance none">未接入</span>
+                    <span class="dl-title">语义召回（未接入）</span>
+                    <span class="dl-dim">semantic_offline 探针随阶段三（v0.5+）接入；接入前必须置灰可见——不隐藏，也不假装可用</span>
+                    <span class="dl-act"><button type="button" data-demo="接入判据见记忆设计 §6.4：向量第二路 + 两路 RRF 融合，不满足判据不做；在此之前这里置灰预留">看接入判据</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">正常</span>
+                    <span class="dl-title">单路召回在跑（RRF 形状）</span>
+                    <span class="dl-dim">关键词单路 · RRF k=60 · 近 7 天 zero-hit 3 次</span>
+                    <span class="dl-act"><button type="button" data-demo="看 zero-hit 明细：搜不到的查询会留痕，它是判断要不要加召回路的唯一数据来源">看 zero-hit</button></span>
+                    <p class="dl-sub">融合层第一版就写成 RRF 形状，即使只有一路；语义第二路按记忆设计 §6.4 的判据接入（阶段三），接入后这里升级成两路融合，语义挂了退回纯关键词并标成降级——<b>不会静默降级</b>。关键词那一路是全管线唯一不经过模型的召回路，永远保留。</p>
+                  </div>
+                </div>
+                <p class="pane-note">探针都是<strong>组合条件</strong>而不是裸计数：<code>记忆数 &gt; 0 且索引行数 ≠ 在库数</code> 才报警。空库不报警——否则新装的系统一片红，警告很快就被无视，<b>那等于没有警告</b>。每条降级都必须带一个可点的修复动作，写成不可点的说明文字不算数。</p>
+                <p class="pane-note">这条记忆到底有没有用：</p>
+                <div class="data-list" style="--cols: 104px minmax(0, 1fr) 300px" role="table" aria-label="效用观测">
+                  <div class="dl-head" role="row"><span>近 30 天</span><span>观测层</span><span>它能证明什么</span></div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">312 次</span>
+                    <span class="dl-title">被展示 · presented</span>
+                    <span class="dl-dim">进入过某次派工的上下文</span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">47 次</span>
+                    <span class="dl-title">被引用 · referenced</span>
+                    <span class="dl-dim">结论里显式引用了它 · 这是「引用」列的来源</span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">11 次</span>
+                    <span class="dl-title">被采纳 · applied</span>
+                    <span class="dl-dim">你在验收面勾了「这条改变了做法」· 只能人来标</span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance claimed">不给分</span>
+                    <span class="dl-title">帮到了 · helped</span>
+                    <span class="dl-dim">这次因此做得更好 · <b>刻意不给数字</b></span>
+                    <p class="dl-sub">要证明它，得知道「不带这条记忆会怎样」——那次任务没有发生过。任何一个 helped 分数都只能靠把前三层加权凑出来，而<b>加权本身就是把不知道的当成知道的</b>。这里给的是可以下钻的证据链：11 次被采纳各自落在哪个任务、当时的验收结论是什么，你自己判断。<button class="linklike" type="button" data-demo="下钻：11 次采纳逐条列出所在任务、采纳时的验收结论与后续是否返工">逐条看这 11 次 →</button></p>
+                  </div>
+                </div>
+                <p class="pane-note">这四层<strong>不可互相代证</strong>：被展示不等于被引用，被引用不等于被采纳，被采纳不等于帮到了。参考系统建了完整观测设施，最终结论是「能证明记忆被展示过、被打开过，但证明不了它帮到了任何一次任务」。<b>诚实底线是不把 presented 说成 helped</b>——所以最后一层给的是可下钻的证据链，而不是一个把前三层加权凑出来的分数。</p>
                 <p class="pane-note"><strong>「写入被拒绝」长期为 0 不一定是好事</strong>——它也可能意味着写入这条路根本没被走过。这一格必须和「入库」一起看：两个都是 0，说明记忆系统已经死了，而它不会报错。</p>
               </div>
             </section>
@@ -2435,56 +2989,128 @@ completed -&gt; archived</code></pre>
           </section>
 
           <section class="surface split-surface" data-surface-view="automation" aria-label="自动化">
-            <aside class="sp-list">
-              <div class="sp-head"><p>自动化<small>3 条规则</small></p><button type="button" data-demo="新建规则：静态原型不保存" aria-label="新建规则" title="新建规则">＋</button></div>
-              <div class="sp-scroll">
-              <p class="sp-group">规则</p>
-              <button class="sp-item active" type="button" data-automation-pick="dep"><span class="signal green"></span><span><strong>每周依赖与安全检查</strong><small>每周一 09:00 · 下一次 明天</small></span></button>
-              <button class="sp-item" type="button" data-automation-pick="dog"><span class="signal blue"></span><span><strong>每日 dogfooding 归档</strong><small>每天 22:00 · 今天已完成</small></span></button>
-              <button class="sp-item" type="button" data-automation-pick="push"><span class="signal yellow"></span><span><strong>发布前推送检查</strong><small>已暂停 · 缺 push 授权</small></span></button>
-              <p class="sp-group">执行历史<small>近 30 天</small></p>
-              <button class="sp-item" type="button" data-demo="打开它建的任务"><span><strong>今天 22:00 · dogfooding 归档</strong><small>已建任务</small></span></button>
-              <button class="sp-item" type="button" data-demo="打开上周的检查任务"><span><strong>周一 09:00 · 依赖与安全检查</strong><small>验证通过</small></span></button>
-              <button class="sp-item" type="button" data-demo="那天没有跑：不是故障，但你需要知道"><span><strong>上周一 09:00 · 依赖与安全检查</strong><small>未触发 · 额度不足</small></span></button>
-              <button class="sp-item" type="button" data-surface="project" data-open-after="issue-permission"><span><strong>昨天 18:22 · 发布前推送检查</strong><small>已暂停 · 缺 push 授权</small></span></button>
+            <aside class="sp-list automation-list">
+              <div class="sp-head"><p>自动化<small>3 条规则</small></p><button type="button" data-automation-create aria-label="新建自动化" title="新建自动化">＋</button></div>
+              <div class="automation-filter" role="tablist" aria-label="自动化筛选">
+                <button class="active" type="button" data-demo="当前显示全部 3 条自动化">全部 <b>3</b></button>
+                <button type="button" data-demo="筛出 1 条需要处理的自动化">需处理 <b>1</b></button>
               </div>
+              <div class="sp-scroll">
+                <p class="sp-group">按下次动作排序</p>
+                <button class="sp-item active" type="button" data-automation-pick="dep"><span class="signal green"></span><span><strong>每周依赖与安全检查</strong><small>定时 + Webhook · 下一次 明天 09:00</small></span></button>
+                <button class="sp-item" type="button" data-automation-pick="dog"><span class="signal blue"></span><span><strong>每日 dogfooding 归档</strong><small>每天 22:00 · 今天已建任务</small></span></button>
+                <button class="sp-item" type="button" data-automation-pick="push"><span class="signal yellow"></span><span><strong>发布前推送检查</strong><small>已暂停 · 缺 push 授权</small></span></button>
+              </div>
+              <p class="automation-list-note">运行记录属于具体规则，不和规则混在一个列表里。黄点只表示要你处理；失败但无需你动作时不会抢到最前。</p>
             </aside>
-            <section class="sp-main">
+            <section class="sp-main automation-main">
               <div class="sp-bar">
-                <div><h1>每周依赖与安全检查</h1><p>自动化不直接改东西，它只是替你建任务；结论仍然回到验收面等你判。</p></div>
+                <div><h1>每周依赖与安全检查</h1><p>自动化只负责触发并建立普通任务；执行、证据、验收和人工介入仍回到同一条任务链。</p></div>
                 <div class="sp-bar-actions">
                   <span class="pill success">已启用</span>
-                  <button type="button" data-demo="暂停这条规则">暂停</button>
-                  <button type="button" data-demo="立刻跑一次">立刻运行</button>
+                  <button type="button" data-demo="编辑名称、Runbook、项目、工作流与执行组合">编辑</button>
+                  <button type="button" data-demo="已暂停。正在运行的任务不受影响；定时与 Webhook 停止受理">暂停</button>
+                  <button class="primary-button" type="button" data-demo="会先做额度、运行时、权限与重复运行检查；通过后建立一条普通任务">立即运行</button>
                 </div>
               </div>
-              <div class="sp-body">
-                <h2 class="pane-h">执行链路</h2>
+
+              <div class="automation-tabs" role="tablist" aria-label="自动化详情">
+                <button class="active" type="button" role="tab" aria-selected="true" data-automation-tab="overview">概览</button>
+                <button type="button" role="tab" aria-selected="false" data-automation-tab="triggers">触发器 <b>2</b></button>
+                <button type="button" role="tab" aria-selected="false" data-automation-tab="runs">运行记录 <b>18</b></button>
+                <button type="button" role="tab" aria-selected="false" data-automation-tab="deliveries">Webhook 投递 <b>7</b></button>
+              </div>
+
+              <div class="sp-body automation-body" data-automation-body="overview">
+                <div class="automation-brief">
+                  <article><small>下一次</small><strong>明天 09:00</strong><span>Asia/Singapore</span></article>
+                  <article><small>最近一次</small><strong>验证通过</strong><span>PH-412 · 2 小时前</span></article>
+                  <article><small>近 30 天</small><strong>16 / 18 已运行</strong><span>1 未触发 · 1 失败</span></article>
+                </div>
+
+                <h2 class="pane-h">每次触发会发生什么</h2>
                 <div class="ar-flow">
-                  <span class="ar-step"><small>触发</small>每周一 09:00</span><i>→</i>
-                  <span class="ar-step"><small>在项目</small>PersonaHub</span><i>→</i>
-                  <span class="ar-step"><small>建任务并按工作流</small>Coding</span><i>→</i>
+                  <span class="ar-step"><small>触发</small>定时 / Webhook</span><i>→</i>
+                  <span class="ar-step"><small>准入检查</small>额度 · 运行时 · 去重</span><i>→</i>
+                  <span class="ar-step"><small>在项目建任务</small>PersonaHub</span><i>→</i>
+                  <span class="ar-step"><small>工作流</small>Coding · 独立验证</span><i>→</i>
                   <span class="ar-step"><small>派给</small><code>claude-sonnet5-low</code></span><i>→</i>
-                  <span class="ar-step"><small>上下文范围</small>只给目标</span>
+                  <span class="ar-step"><small>最后去向</small>任务验收面</span>
+                </div>
+                <p class="pane-note"><strong>不提供「仅运行、不建任务」模式。</strong> PersonaHub 的可信交付依赖 Issue / Run / Artifact / Evidence 的来源链；后台静默跑会形成第二套不可验收的结果体系。</p>
+
+                <div class="automation-overview-grid">
+                  <section>
+                    <h2 class="pane-h">Runbook</h2>
+                    <div class="automation-runbook">
+                      <h3>目标</h3><p>检查直接与传递依赖的已知漏洞、过期版本和许可证变化。</p>
+                      <h3>完成要求</h3><ol><li>保存 advisory 原始结果；</li><li>按高 / 中 / 低说明影响；</li><li>有更新建议时给出可回滚方案；</li><li>由不同模型独立验证结论。</li></ol>
+                    </div>
+                  </section>
+                  <section>
+                    <h2 class="pane-h">任务模板</h2>
+                    <div class="git-block">
+                      <div><span>项目</span><span>PersonaHub</span></div>
+                      <div><span>标题</span><span><code>依赖与安全检查 · {{date}}</code></span></div>
+                      <div><span>标签</span><span><code>maintenance</code> · <code>security</code></span></div>
+                      <div><span>上下文</span><span>Runbook + 触发 payload；不自动带上一次会话</span></div>
+                      <div><span>并发</span><span>同规则同时只允许 1 条；重复触发合并进现有任务</span></div>
+                    </div>
+                  </section>
                 </div>
 
                 <h2 class="pane-h">能力边界</h2>
                 <div class="git-block">
                   <div><span>可读</span><span>整个代码目录</span></div>
-                  <div><span>可写</span><span class="git-warn">不可写 —— 这条规则只产出结论</span></div>
-                  <div><span>网络</span><span>允许（要查 advisory 数据库）</span></div>
-                  <div><span>git push</span><span class="git-warn">未授权。规则要求什么权限就停在什么地方，不会自己降级去跑</span></div>
+                  <div><span>可写</span><span class="git-warn">不可写 —— 这条规则只产出检查结论与证据</span></div>
+                  <div><span>网络</span><span>允许访问 advisory 数据源；其他目标仍按项目网络边界拦截</span></div>
+                  <div><span>git push</span><span class="git-warn">未授权。缺权限时记「未触发 · 缺授权」并请你处理，不会自己降级去跑</span></div>
                 </div>
+              </div>
 
-                <h2 class="pane-h">最近 4 次</h2>
-                <div class="run-table">
-                  <div class="rn-head"><span>时间</span><span>结果</span><span>建的任务</span><span>证据</span></div>
-                  <button class="rn-row" type="button" data-demo="打开这次的任务"><span>周一 09:00</span><span class="pill success">验证通过</span><span>依赖更新 3 项，无高危</span><span>advisory-2026-08-24.json</span></button>
-                  <button class="rn-row" type="button" data-demo="那天额度不足，没有触发"><span>上周一</span><span class="pill muted">未触发</span><span>—</span><span>额度不足</span></button>
-                  <button class="rn-row" type="button" data-demo="打开这次的任务"><span>08-10 09:00</span><span class="pill success">验证通过</span><span>无更新</span><span>advisory-2026-08-10.json</span></button>
-                  <button class="rn-row" type="button" data-demo="打开这次的任务"><span>08-03 09:00</span><span class="pill warn">有待处理</span><span>1 项中危依赖</span><span>advisory-2026-08-03.json</span></button>
+              <div class="sp-body automation-body" data-automation-body="triggers" hidden>
+                <div class="automation-section-head"><div><h2>触发器</h2><p>一条自动化可以有多个入口；入口只决定何时开始，不改变 Runbook 与能力边界。</p></div><button type="button" data-demo="添加定时或 Webhook 触发器">＋ 添加触发器</button></div>
+                <article class="trigger-card">
+                  <header><div><span class="trigger-icon">◷</span><p><strong>工作日早晨</strong><small>时间表 · 已启用</small></p></div><button type="button" data-demo="编辑这个时间表">编辑</button></header>
+                  <div class="trigger-grid"><div><small>规则</small><strong>每周一 09:00</strong><code>0 9 * * 1</code></div><div><small>时区</small><strong>Asia/Singapore</strong><span>夏令时按本地 09:00 保持</span></div><div><small>接下来</small><strong>09-07 · 09-14 · 09-21</strong><span>保存前必须能预览至少 3 次</span></div></div>
+                </article>
+                <article class="trigger-card">
+                  <header><div><span class="trigger-icon">⌁</span><p><strong>依赖清单变化</strong><small>Webhook · 已启用</small></p></div><button type="button" data-demo="编辑事件过滤与签名策略">编辑</button></header>
+                  <div class="webhook-secret"><span><small>Webhook URL · 凭证默认隐藏</small><code>http://localhost:3847/hooks/automation/••••••••7ad2</code></span><button type="button" data-demo="已复制完整 URL；它等同密码，不会显示在通知或任务正文里">复制</button><button type="button" data-demo="重新生成会让旧 URL 立即失效；真实操作需要二次确认">重新生成</button></div>
+                  <div class="trigger-grid"><div><small>事件过滤</small><strong><code>dependency.changed</code></strong><span>action: added, updated, removed</span></div><div><small>签名</small><strong>HMAC-SHA256 · 必须</strong><span>无效或缺失直接拒绝，不进入运行队列</span></div><div><small>去重</small><strong>Idempotency-Key</strong><span>同 key 返回原投递，不重复建任务</span></div></div>
+                  <p class="pane-note">Payload 最大 256 KiB，只保存允许的请求头；完整 URL 不进入任务、日志截图或导出文件。</p>
+                </article>
+              </div>
+
+              <div class="sp-body automation-body" data-automation-body="runs" hidden>
+                <div class="automation-section-head"><div><h2>运行记录</h2><p>一行代表一次触发意图。先看有没有真正运行，再看任务最终结果。</p></div><button type="button" data-demo="筛选来源、状态或时间范围">筛选</button></div>
+                <div class="run-table automation-runs">
+                  <div class="rn-head"><span>触发时间 / 来源</span><span>准入</span><span>关联任务</span><span>任务结果</span><span>耗时</span></div>
+                  <button class="rn-row" type="button" data-demo="打开 PH-412 的验收面"><span>今天 09:00 <small>时间表</small></span><span class="pill success">已运行</span><span>PH-412</span><span>验证通过</span><span>12m 41s</span></button>
+                  <button class="rn-row" type="button" data-demo="同一个幂等键命中已有投递，没有建立第二条任务"><span>昨天 18:22 <small>Webhook</small></span><span class="pill muted">重复 · 未触发</span><span>PH-409</span><span>沿用已有任务</span><span>—</span></button>
+                  <button class="rn-row" type="button" data-demo="额度不足发生在派工前：没有任务、没有 Run，也不算执行失败"><span>08-25 09:00 <small>时间表</small></span><span class="pill muted">未触发</span><span>—</span><span>额度不足</span><span>—</span></button>
+                  <button class="rn-row" type="button" data-demo="打开 PH-401：任务确实运行过，但验证命令退出 1"><span>08-18 09:00 <small>时间表</small></span><span class="pill success">已运行</span><span>PH-401</span><span class="pill warn">失败</span><span>08m 03s</span></button>
                 </div>
                 <p class="pane-note">「未触发」与「已执行但失败」分开记录：前者不属于故障，但使用者需要知晓当日实际未执行。</p>
+                <div class="automation-state-key"><span><b>未触发</b>：准入检查挡下，没有执行</span><span><b>失败</b>：已经执行，任务或验证失败</span><span><b>已暂停</b>：规则不再接受新的触发</span></div>
+                <p class="pane-note">手动重跑会新增一条运行记录并建立新任务，不改写旧记录。基础设施重试属于同一次 Run 的 Attempt，不在这里伪装成一次新的规则触发。</p>
+              </div>
+
+              <div class="sp-body automation-body" data-automation-body="deliveries" hidden>
+                <div class="automation-section-head"><div><h2>Webhook 投递</h2><p>这里审计入口是否收到、鉴权、去重与分发；真正的执行结论仍在关联任务。</p></div><button type="button" data-demo="只显示拒绝或失败的投递">只看异常</button></div>
+                <div class="run-table delivery-table">
+                  <div class="rn-head"><span>收到时间 / 事件</span><span>签名</span><span>投递</span><span>去重键</span><span>关联运行</span></div>
+                  <button class="rn-row" type="button" data-demo="展开投递 dly_7ad2：只显示允许的请求头与截断后的 JSON"><span>昨天 18:22 <small>dependency.changed</small></span><span class="pill success">通过</span><span>已分发 · 1 次</span><span><code>lock-8f21</code></span><span>PH-409</span></button>
+                  <button class="rn-row" type="button" data-demo="命中 lock-8f21，返回原投递 ID；没有重复运行"><span>昨天 18:22 <small>dependency.changed</small></span><span class="pill success">通过</span><span class="pill muted">已忽略 · 重复</span><span><code>lock-8f21</code></span><span>沿用上一条</span></button>
+                  <button class="rn-row" type="button" data-demo="签名失败，原始 body 不可重放"><span>08-27 11:04 <small>dependency.changed</small></span><span class="pill warn">无效</span><span class="pill warn">已拒绝</span><span>—</span><span>—</span></button>
+                  <button class="rn-row" type="button" data-demo="下游临时失败，可从详情重放；重放会新建投递并指回本条"><span>08-20 08:58 <small>dependency.changed</small></span><span class="pill success">通过</span><span class="pill warn">失败 · 3 次</span><span><code>lock-7c03</code></span><span>—</span></button>
+                </div>
+                <div class="delivery-detail">
+                  <h3>投递 dly_7ad2</h3>
+                  <dl><dt>Content-Type</dt><dd><code>application/json</code></dd><dt>保留的请求头</dt><dd><code>x-event-type</code>、<code>idempotency-key</code>、<code>x-signature</code>（值已隐藏）</dd><dt>Payload</dt><dd><code>{"event":"dependency.changed","action":"updated","files":["package-lock.json"]}</code></dd><dt>响应</dt><dd><code>202 accepted · run=autrun_183 · issue=PH-409</code></dd></dl>
+                  <div><button type="button" data-demo="复制经过脱敏的投递详情">复制脱敏详情</button><button type="button" data-demo="重放会创建一条新投递并指回 dly_7ad2；原记录不会改变">重放为新投递</button></div>
+                </div>
+                <p class="pane-note">签名失败、仍在排队或已被过滤的投递不能重放。重放不参与原幂等键去重，但必须保留 <code>replayed_from</code> 来源。</p>
               </div>
             </section>
           </section>
@@ -3066,6 +3692,44 @@ completed -&gt; archived</code></pre>
         <button type="button" data-bottom-toggle>2 项执行</button>
         <span>本地</span>
       </footer>
+    </div>
+
+    <div class="command-overlay center" data-automation-dialog hidden>
+      <form class="automation-dialog" data-automation-form>
+        <header><div><small>新规则默认暂停 · 保存后先做一次完整预检</small><h2>新建自动化</h2></div><button type="button" data-automation-close aria-label="关闭新建自动化">×</button></header>
+        <div class="automation-template-row" aria-label="从模板开始">
+          <button class="active" type="button" data-demo="已选依赖审计模板；会预填 Runbook、标签与只读权限">依赖审计<small>代码项目</small></button>
+          <button type="button" data-demo="预填 dogfooding 归档模板">使用记录归档<small>每日汇总</small></button>
+          <button type="button" data-demo="预填 Webhook 分诊模板">Webhook 分诊<small>外部事件</small></button>
+          <button type="button" data-demo="清空全部预填，从空白开始">从空白开始<small>不带默认值</small></button>
+        </div>
+        <div class="automation-form-grid">
+          <label class="ad-field wide"><span>名称</span><input type="text" value="每周依赖与安全检查" /></label>
+          <label class="ad-field wide"><span>Runbook <small>每次触发都读取同一份版本化说明</small></span><textarea rows="7"># 目标
+检查直接与传递依赖的漏洞、过期版本和许可证变化。
+
+# 完成要求
+1. 保存 advisory 原始结果
+2. 按严重度说明影响
+3. 给出可回滚方案
+4. 由不同模型独立验证</textarea></label>
+          <label class="ad-field"><span>项目</span><select><option>PersonaHub</option><option>Market Game Sim</option></select></label>
+          <label class="ad-field"><span>工作流</span><select><option>Coding · 独立验证</option><option>Research · 多源综合</option></select></label>
+          <label class="ad-field"><span>执行组合</span><select><option>claude-sonnet5-low</option><option>codex-gpt5.6-medium</option></select><small>工作流内其他步骤仍按各自的组合配置</small></label>
+          <label class="ad-field"><span>任务标题</span><input type="text" value="依赖与安全检查 · {{date}}" /></label>
+        </div>
+        <div class="automation-dialog-section">
+          <div><h3>第一个触发器</h3><p>保存后还可以为同一规则添加更多时间表或 Webhook。</p></div>
+          <div class="automation-kind"><button class="active" type="button" data-demo="使用可视化时间表编辑器">时间表</button><button type="button" data-demo="改用 Webhook；保存后才生成凭证 URL">Webhook</button></div>
+          <div class="schedule-line"><label><span>重复</span><select><option>每周一</option><option>每天</option><option>每月</option></select></label><label><span>时间</span><input type="text" value="09:00" /></label><label><span>时区</span><select><option>Asia/Singapore</option><option>UTC</option></select></label></div>
+          <p class="schedule-preview"><b>接下来：</b> 09-07 09:00 · 09-14 09:00 · 09-21 09:00　<code>0 9 * * 1</code></p>
+        </div>
+        <div class="automation-preflight">
+          <strong>保存前预检</strong><span>✓ 项目可用</span><span>✓ 运行时在线</span><span>✓ 预计额度足够</span><span class="warn">! git push 未授权；当前 Runbook 不需要</span>
+          <p>自动化建立的永远是普通任务。没有“仅运行”开关，也不会在额度不足时偷偷换便宜模型。</p>
+        </div>
+        <footer><button type="button" data-automation-close>取消</button><button class="primary-button" type="submit">保存为暂停并查看详情</button></footer>
+      </form>
     </div>
 
     <div class="command-overlay center" data-task-create-overlay hidden>

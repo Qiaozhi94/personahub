@@ -3116,31 +3116,51 @@
 .tr-lineage.cold { color: var(--green); }
 .tr-lineage.resume { color: var(--accent); }
 
-/* 详情栏：选中一行才有内容 */
-.trace-detail {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-left: 1px solid var(--border);
+/* 详情：点一行，详情就长在这一行下面 ──────────────────────
+   不去右边开第二栏：轨迹多数时候本身就是副栏，再切一栏只剩两条窄缝；
+   行内展开还让「上一行发生了什么」始终留在视野里。
+   头部、分页与字段排版照 deepseek-harness 的轨迹详情（真值探针见
+   ui-reference/scripts/tmp/probe-dsh-detail5.mjs）：kind 徽标 + Turn·Step
+   定位、tab 下划线选中、Summary 页把各分节聚合起来，标题带 › 指向对应 tab。 */
+.tr-detail {
+  margin: 2px 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   background: var(--panel-2);
+  overflow: hidden;
 }
-.trace-detail[hidden] { display: none; }
-.trace-detail > header {
+.tr-detail[hidden] { display: none; }
+
+.td-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 22px;
+  grid-template-columns: auto minmax(0, 1fr) 22px;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  padding: 9px 10px 9px 12px;
 }
-.trace-detail > header > span {
+.td-chip {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--panel-3);
+  color: var(--muted);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.td-chip.user { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent); }
+.td-chip.req { background: color-mix(in oklch, var(--purple) 14%, transparent); color: var(--purple); }
+.td-chip.assistant { background: color-mix(in oklch, var(--purple) 10%, transparent); color: var(--purple); }
+.td-chip.tool { background: color-mix(in oklch, var(--orange, #c2650a) 14%, transparent); color: var(--orange, #c2650a); }
+.td-where {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--muted);
+  color: var(--faint);
+  font-family: "Cascadia Code", Consolas, monospace;
   font-size: 11px;
 }
-.trace-detail > header > button {
+.td-close {
   width: 22px;
   height: 22px;
   border: 0;
@@ -3148,13 +3168,21 @@
   background: transparent;
   color: var(--faint);
   font-size: 14px;
+  line-height: 1;
   cursor: pointer;
 }
+.td-close:hover { background: var(--panel-3); color: var(--text); }
 
-.td-tabs { display: flex; gap: 2px; padding: 8px 12px 0; }
-.td-tabs > button {
-  height: 24px;
+.td-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
   padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.td-tabs > button {
+  height: 28px;
+  padding: 0 9px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -3163,35 +3191,97 @@
   font-size: 12px;
   cursor: pointer;
 }
-.td-tabs > button.active { border-bottom-color: var(--accent); color: var(--text); font-weight: 600; }
+.td-tabs > button.active { border-bottom-color: var(--accent); color: var(--accent); font-weight: 600; }
 
 .td-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  margin: 10px 12px;
-  padding: 10px 12px;
+  max-height: 340px;
+  padding: 12px;
   overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--bg);
-  color: var(--text);
-  font: 11px/1.75 "Cascadia Code", Consolas, monospace;
-  white-space: pre-wrap;
 }
+.td-body[hidden] { display: none; }
 
-.td-foot {
-  margin: 0;
-  padding: 10px 14px 14px;
-  border-top: 1px solid var(--border);
-  color: var(--faint);
-  font-size: 11px;
-  line-height: 1.7;
+/* 字段表：左标签右值，子项缩进一档（照 harness 的 Tokens → Reasoning/Content） */
+.td-fields { display: grid; gap: 3px; margin: 0; }
+.td-fields > div { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.td-fields > div.sub > dt { padding-left: 10px; }
+.td-fields dt { margin: 0; color: var(--faint); font-size: 12px; }
+.td-fields dd { margin: 0; color: var(--text); font-size: 12px; overflow-wrap: anywhere; }
+
+/* 分节标题：Summary 页把别的 tab 的内容摘一段过来，› 表示「那边有全文」 */
+.td-section {
+  margin: 16px 0 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
 }
-.td-foot code { font-family: "Cascadia Code", Consolas, monospace; font-size: 11px; overflow-wrap: anywhere; }
+.td-section > span { margin-left: 4px; color: var(--faint); font-weight: 400; }
+.td-section:first-child { margin-top: 0; }
+
+.td-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.td-link > span { margin-left: 4px; color: var(--faint); }
+.td-link:hover { color: var(--accent); }
+
+.td-code {
+  margin: 0;
+  color: var(--text);
+  font: 11px/1.7 "Cascadia Code", Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.td-code .ck { color: var(--purple); font-style: normal; }
+.td-code .cs { color: var(--danger, #b5432f); font-style: normal; }
+
+/* 正文预览：左侧竖线，正文本身按段落排（harness 的 Preview / Thinking） */
+.td-quote {
+  margin: 4px 0;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.75;
+}
+.td-block {
+  margin: 12px 0 4px;
+  color: var(--faint);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+}
+.td-block:first-child { margin-top: 0; }
+.td-block > span { color: var(--purple); }
+.td-call {
+  margin: 6px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+}
+.td-call code { color: var(--text); font-family: inherit; }
+
+.td-prose { color: var(--text); font-size: 12px; line-height: 1.8; }
+.td-prose p { margin: 0 0 8px; }
+.td-prose p:last-child { margin-bottom: 0; }
+.td-prose code,
+.td-schema code { font-family: "Cascadia Code", Consolas, monospace; font-size: 11px; }
+
+/* 工具清单与 schema：名字一行、说明一段（harness 的 Tools / Schema 页） */
+.td-tools { display: grid; gap: 12px; }
+.td-tools b,
+.td-schema b { color: var(--text); font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; }
+.td-tools p,
+.td-schema p { margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 
 @media (max-width: 1240px) {
   .trace-shell { grid-template-columns: minmax(0, 1fr); }
-  .trace-detail { border-left: 0; border-top: 1px solid var(--border); }
 }
 
 /* ── 31. 概览顶部的 issue 元信息 ─────────────────────────────
@@ -3570,6 +3660,125 @@
 .rn-row:hover { background: var(--panel-3); }
 .rn-row > span:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* V3.20 自动化：规则清单只做定位，具体规则在右侧按
+   概览 / 触发器 / 运行 / Webhook 投递分层。运行历史不再混进左框。 */
+.automation-list .sp-scroll { padding-top: 4px; }
+.automation-filter { display: flex; gap: 5px; padding: 0 12px 8px; border-bottom: 1px solid var(--border); }
+.automation-filter > button {
+  padding: 4px 8px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--faint); font: inherit; font-size: 11px; cursor: pointer;
+}
+.automation-filter > button.active { background: var(--panel-3); color: var(--text); }
+.automation-filter b { margin-left: 3px; font-weight: 600; }
+.automation-list-note { margin: 0; padding: 10px 12px 12px; border-top: 1px solid var(--border); color: var(--faint); font-size: 10px; line-height: 1.65; }
+
+.sp-main.automation-main { grid-template-rows: auto auto minmax(0, 1fr); }
+.automation-tabs { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid var(--border); }
+.automation-tabs > button {
+  height: 34px; padding: 0 9px; border: 0; border-bottom: 2px solid transparent;
+  background: transparent; color: var(--faint); font: inherit; font-size: 12px; cursor: pointer;
+}
+.automation-tabs > button.active { border-bottom-color: var(--accent); color: var(--accent); font-weight: 650; }
+.automation-tabs b { margin-left: 3px; padding: 1px 5px; border-radius: 8px; background: var(--panel-3); color: var(--faint); font-size: 10px; }
+.automation-body { padding-top: 20px; }
+.automation-body code { font-family: "Cascadia Code", Consolas, monospace; font-size: 11px; }
+
+.automation-brief { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 900px; margin-bottom: 22px; }
+.automation-brief article { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.automation-brief small { color: var(--faint); font-size: 10px; }
+.automation-brief strong { font-size: 14px; font-weight: 650; }
+.automation-brief span { color: var(--muted); font-size: 11px; }
+.automation-overview-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); gap: 18px; max-width: 900px; }
+.automation-runbook { padding: 13px 15px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); color: var(--muted); font-size: 12px; line-height: 1.7; }
+.automation-runbook h3 { margin: 0 0 3px; color: var(--text); font-size: 11px; }
+.automation-runbook h3:not(:first-child) { margin-top: 11px; }
+.automation-runbook p, .automation-runbook ol { margin: 0; }
+.automation-runbook ol { padding-left: 18px; }
+
+.automation-section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; max-width: 900px; margin-bottom: 14px; }
+.automation-section-head h2 { margin: 0; font-size: 15px; }
+.automation-section-head p { margin: 4px 0 0; color: var(--faint); font-size: 11px; }
+.automation-section-head > button,
+.trigger-card > header > button,
+.webhook-secret > button,
+.delivery-detail > div > button {
+  height: 27px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: transparent; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer;
+}
+.trigger-card { max-width: 900px; margin-bottom: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 9px; background: var(--panel); }
+.trigger-card > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.trigger-card > header > div { display: flex; align-items: center; gap: 10px; }
+.trigger-card p { margin: 0; }
+.trigger-card strong { display: block; font-size: 13px; }
+.trigger-card small { color: var(--faint); font-size: 10px; }
+.trigger-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-size: 15px; }
+.trigger-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.trigger-grid > div { display: grid; gap: 4px; min-width: 0; padding: 9px 10px; border-radius: 7px; background: var(--panel-2); }
+.trigger-grid strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.trigger-grid span { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.webhook-secret { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; margin-bottom: 9px; padding: 9px 10px; border: 1px dashed var(--border-strong); border-radius: 7px; }
+.webhook-secret > span { min-width: 0; }
+.webhook-secret small { display: block; margin-bottom: 4px; }
+.webhook-secret code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.automation-runs, .delivery-table { max-width: 1000px; }
+.automation-runs .rn-head, .automation-runs .rn-row,
+.delivery-table .rn-head, .delivery-table .rn-row { grid-template-columns: 180px 136px 120px minmax(140px, 1fr) 90px; }
+.automation-runs .rn-row small, .delivery-table .rn-row small { display: block; margin-top: 2px; color: var(--faint); font-size: 10px; }
+.automation-state-key { display: flex; flex-wrap: wrap; gap: 7px 18px; max-width: 900px; margin: 13px 0 0; padding: 10px 12px; border-radius: 7px; background: var(--panel-2); color: var(--muted); font-size: 10px; }
+.automation-state-key b { color: var(--text); }
+.delivery-detail { max-width: 900px; margin-top: 16px; padding: 13px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); }
+.delivery-detail h3 { margin: 0 0 10px; font-size: 13px; }
+.delivery-detail dl { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 11px; }
+.delivery-detail dt { color: var(--faint); }
+.delivery-detail dd { margin: 0; overflow-wrap: anywhere; color: var(--text); }
+.delivery-detail > div { display: flex; justify-content: flex-end; gap: 7px; margin-top: 12px; }
+
+/* 自动化创建器：先写 Runbook 和任务契约，再选触发器。保存为暂停，
+   让用户有机会读完预检；启用是第二个明确动作。 */
+.command-overlay.center > .automation-dialog { margin: 0; max-height: 100%; overflow: auto; }
+.automation-dialog { width: min(820px, calc(100vw - 40px)); display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); box-shadow: 0 24px 70px rgb(0 0 0 / .18); }
+.automation-dialog > header { display: flex; align-items: start; justify-content: space-between; }
+.automation-dialog h2 { margin: 2px 0 0; font-size: 19px; }
+.automation-dialog > header small { color: var(--muted); font-size: 10px; }
+.automation-dialog > header > button { border: 0; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; }
+.automation-template-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.automation-template-row > button { display: grid; gap: 2px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--text); font: inherit; font-size: 11px; text-align: left; cursor: pointer; }
+.automation-template-row > button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.automation-template-row small { color: var(--faint); font-size: 10px; }
+.automation-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.automation-form-grid .wide { grid-column: 1 / -1; }
+.automation-dialog .ad-field { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
+.automation-dialog .ad-field > span small { margin-left: 4px; color: var(--faint); }
+.automation-dialog input, .automation-dialog select, .automation-dialog textarea {
+  width: 100%; padding: 0 9px; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--bg); color: var(--text); font: inherit; font-size: 12px;
+}
+.automation-dialog input, .automation-dialog select { height: 32px; }
+.automation-dialog textarea { padding: 9px; line-height: 1.65; resize: vertical; }
+.automation-dialog-section { padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.automation-dialog-section > div:first-child { display: flex; align-items: baseline; gap: 10px; }
+.automation-dialog-section h3 { margin: 0; font-size: 13px; }
+.automation-dialog-section p { margin: 0; color: var(--faint); font-size: 10px; }
+.automation-kind { display: flex; gap: 5px; margin: 10px 0; }
+.automation-kind > button { padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer; }
+.automation-kind > button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.schedule-line { display: grid; grid-template-columns: 1.2fr .8fr 1fr; gap: 9px; }
+.schedule-line > label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
+.schedule-preview { margin-top: 9px !important; padding: 8px 10px; border-radius: 6px; background: var(--panel-2); color: var(--muted) !important; }
+.automation-preflight { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 12px; border-radius: 8px; background: var(--panel-3); color: var(--muted); font-size: 10px; }
+.automation-preflight strong { color: var(--text); }
+.automation-preflight .warn { color: var(--orange, #c2650a); }
+.automation-preflight p { flex-basis: 100%; margin: 2px 0 0; color: var(--faint); line-height: 1.6; }
+.automation-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; }
+.automation-dialog > footer > button:not(.primary-button) { padding: 7px 14px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+
+@media (max-width: 1100px) {
+  .automation-overview-grid { grid-template-columns: 1fr; }
+  .automation-runs .rn-head, .automation-runs .rn-row,
+  .delivery-table .rn-head, .delivery-table .rn-row { grid-template-columns: 155px 120px 95px minmax(120px, 1fr) 72px; }
+}
+
 @media (max-width: 1100px) {
   .project-manage.active { grid-template-columns: 180px minmax(0, 1fr); }
   .rt-head, .rt-row { grid-template-columns: 90px minmax(0, 1fr) 120px 100px 60px; }
@@ -3813,6 +4022,7 @@
   font-size: 12px;
   cursor: pointer;
 }
+.sp-bar-actions > button.primary-button { border-color: var(--text); background: var(--text); color: var(--bg); }
 
 .sp-body { min-height: 0; padding: 18px 24px 40px; overflow: auto; }
 .sp-body[hidden] { display: none; }
@@ -4376,19 +4586,27 @@
 .trace-aside { grid-template-rows: auto minmax(0, 1fr) auto; }
 .trace-aside > .pa-body { padding: 12px 12px 20px; }
 .trace-split[data-layout="both"] .trace-toolbar,
-.trace-split[data-layout="both"] .trace-detail,
 .trace-split[data-layout="both"] .trace-aside .pane-note { display: none; }
-.trace-split[data-layout="both"] .tr-row { grid-template-columns: 62px minmax(0, 1fr) auto; padding: 6px 7px; gap: 8px; }
+/* 副栏窄，详情压一档：tab 更紧、正文更小、展开高度更矮 */
+.trace-split[data-layout="both"] .td-head { padding: 7px 8px 7px 10px; }
+.trace-split[data-layout="both"] .td-tabs { padding: 0 8px; }
+.trace-split[data-layout="both"] .td-tabs > button { height: 24px; padding: 0 6px; font-size: 11px; }
+.trace-split[data-layout="both"] .td-body { max-height: 240px; padding: 10px; }
+.trace-split[data-layout="both"] .td-fields > div { grid-template-columns: 92px minmax(0, 1fr); gap: 8px; }
+.trace-split[data-layout="both"] .td-fields dt,
+.trace-split[data-layout="both"] .td-fields dd,
+.trace-split[data-layout="both"] .td-quote,
+.trace-split[data-layout="both"] .td-prose,
+.trace-split[data-layout="both"] .td-tools p,
+.trace-split[data-layout="both"] .td-schema p { font-size: 11px; }
+.trace-split[data-layout="both"] .td-code { font-size: 10px; }
+.trace-split[data-layout="both"] .tr-row { grid-template-columns: minmax(62px, auto) minmax(0, 1fr) auto; padding: 6px 7px; gap: 8px; }
 .trace-split[data-layout="both"] .tr-main { font-size: 11px; }
 .trace-split[data-layout="both"] .tl-track { height: 34px; }
 
 .trace-split[data-layout="aside"] > .trace-aside { border-left: 0; }
-.trace-split[data-layout="aside"] .trace-aside {
-  grid-template-columns: minmax(0, 1fr) 340px;
-  grid-template-rows: auto minmax(0, 1fr);
-}
-.trace-split[data-layout="aside"] .trace-aside > header { grid-column: 1 / -1; }
-.trace-split[data-layout="aside"] .trace-detail { grid-row: 2; }
+.trace-split[data-layout="aside"] .trace-aside { grid-template-rows: auto minmax(0, 1fr); }
+.trace-split[data-layout="aside"] .td-body { max-height: 460px; }
 
 @media (max-width: 1280px) {
   .pane-split { grid-template-columns: minmax(0, 1fr) 280px; }
@@ -4774,6 +4992,75 @@ button.dl-row { cursor: pointer; }
 
 /* 次行是要读的句子，不跟着列表铺满——一行 100+ 字读不动 */
 .dl-sub { max-width: 900px; }
+
+/* 记忆详情：行内展开，不另开页面也不加副栏（记忆面是纯 tab 切换）。
+   来源包 / 使用边界 / 一跳关系 / 状态动作 / 变更记录都在这里，
+   点行才展开——列表的意义在于能横着比，详情不能常驻把行撑高。 */
+.dl-row[data-memory-row] { cursor: pointer; }
+/* 退役/遗忘行整体压暗，但展开后详情要读得清：压暗改挂到单元格上，
+   否则父级 opacity 会把详情一起吃掉（子元素改不回来） */
+.dl-row.off.open { opacity: 1; }
+.dl-row.off.open > span { opacity: 0.55; }
+.dl-detail { display: none; }
+.dl-row.open > .dl-detail {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 9px;
+  max-width: 900px;
+  margin: 9px 0 2px;
+  padding: 11px 13px;
+  border-radius: 6px;
+  background: var(--panel-2);
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--dim);
+}
+.dl-detail h4 { margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: var(--faint); text-transform: uppercase; }
+.dl-detail dl { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 3px 11px; margin: 0; }
+.dl-detail dt { color: var(--faint); }
+.dl-detail dd { margin: 0; color: var(--text); }
+.dl-detail .dd-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.dl-detail .dd-acts > button {
+  height: 22px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px;
+  background: var(--panel); color: var(--text); font-size: 11px; cursor: pointer;
+}
+.dl-detail .dd-acts > button:hover:not([disabled]) { background: var(--panel-3); }
+.dl-detail .dd-acts > button[disabled] { cursor: not-allowed; opacity: 0.5; }
+.dl-detail ol { margin: 0; padding-left: 15px; }
+.dl-detail .why { color: var(--faint); }
+
+/* 自动入库：不是一个开关加一句免责声明，而是一块能看清「它替你省了什么、
+   又绝不替你做什么」的策略区 */
+.auto-save { margin: 0 0 13px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); }
+.as-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.as-switch { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 650; color: var(--text); cursor: pointer; }
+.as-sum { font-size: 11px; color: var(--faint); }
+.as-head > .linklike { margin-left: auto; font-size: 11px; }
+.as-note { margin: 8px 0 0; max-width: 900px; font-size: 11px; line-height: 1.75; color: var(--dim); }
+
+/* 关系：一张以锚点为中心的一跳图 + 与它同源的边表。
+   不做全局节点云——个人规模下那是毛球，看着壮观、答不了具体问题。 */
+.graph-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 11px; }
+.graph-bar > .tr-search { min-width: 260px; }
+.graph-bar > .tr-count { margin-left: auto; }
+.graph-stage { margin-bottom: 13px; padding: 9px 11px 5px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); }
+.ego-graph { display: block; width: 100%; height: auto; }
+.ego-graph .eg-edges line { stroke: var(--line-strong, var(--line)); stroke-width: 1.2; color: var(--faint); }
+.ego-graph .eg-edges .eg-contra { stroke: var(--yellow); stroke-dasharray: 4 3; color: var(--yellow); }
+.ego-graph .eg-node rect { fill: var(--panel); stroke: var(--line); stroke-width: 1; }
+.ego-graph text {
+  stroke: none;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.ego-graph .eg-node text { fill: var(--text); font-size: 11px; font-weight: 600; text-anchor: middle; }
+.ego-graph .eg-node .eg-meta { fill: var(--faint); font-size: 9px; font-weight: 400; }
+.ego-graph .eg-node.anchor rect { fill: color-mix(in oklch, var(--yellow) 12%, var(--panel)); stroke: color-mix(in oklch, var(--yellow) 55%, transparent); stroke-width: 1.5; }
+.ego-graph .eg-node.contra rect { fill: color-mix(in oklch, var(--yellow) 10%, var(--panel)); stroke: color-mix(in oklch, var(--yellow) 40%, transparent); }
+.ego-graph .eg-node.contra text { fill: var(--yellow); font-size: 11px; }
+.graph-legend { margin: 6px 0 2px; font-size: 11px; color: var(--faint); }
+.graph-legend .lg { margin-right: 12px; }
+.graph-legend .lg.warn { color: var(--yellow); }
 
 /* ── 55. 键盘可达性与悬停过渡 ────────────────────────────────
  * multica-theme.css §基础 已经给 <button> 配了 transition 与 focus-visible。
@@ -5250,3 +5537,23 @@ button.dl-row { cursor: pointer; }
 }
 .dl-pager-nav button:hover:not(:disabled) { color: var(--text); background: var(--panel-2); }
 .dl-pager-nav button:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* 顶栏：服务存活与记忆可用是两件事。绿点只管前者；后者降级时必须在它
+   旁边显式说出来，否则索引坏了界面还是一片绿——绿点撒谎比没有绿点更糟。 */
+.local-degraded {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in oklch, var(--yellow) 45%, transparent);
+  border-radius: 5px;
+  background: color-mix(in oklch, var(--yellow) 14%, transparent);
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.local-degraded:hover { background: color-mix(in oklch, var(--yellow) 22%, transparent); }
+
+/* 探针的置灰预留（记忆设计 §10.4）：阶段三才接入的探针（semantic_offline）
+   必须在场但压灰——隐藏等于假装这条检查不存在，亮绿等于假装能力已经在线。 */
+.dl-row.not-yet .dl-title,
+.dl-row.not-yet .dl-dim { color: var(--faint); }
