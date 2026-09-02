@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-31T17:44:40.022Z",
+  "generatedAt": "2026-09-02T12:12:27.245Z",
   "source": "file:///D:/Projects/personahub/ui-reference/personahub-draft/personahub-v3.1/index.html",
   "viewport": "1440x900",
-  "count": 32,
+  "count": 42,
   "exports": [
     {
       "file": "workbench.png",
@@ -135,8 +135,8 @@
       "kind": "top-level-surface"
     },
     {
-      "file": "surface-usage.png",
-      "title": "用量",
+      "file": "surface-stats.png",
+      "title": "统计 · 用量",
       "kind": "top-level-surface"
     },
     {
@@ -145,9 +145,34 @@
       "kind": "top-level-surface"
     },
     {
+      "file": "surface-runtime.png",
+      "title": "运行时 · 配置（执行组合与额度池）",
+      "kind": "top-level-surface"
+    },
+    {
       "file": "surface-settings.png",
       "title": "设置",
       "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-automation-triggers.png",
+      "title": "自动化 · 触发器（定时与 Webhook）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-automation-runs.png",
+      "title": "自动化 · 运行记录（准入与任务结果）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-automation-deliveries.png",
+      "title": "自动化 · Webhook 投递审计",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-automation-create.png",
+      "title": "自动化 · 新建规则与预检",
+      "kind": "overlay"
     },
     {
       "file": "surface-memory-library.png",
@@ -157,6 +182,31 @@
     {
       "file": "surface-memory-health.png",
       "title": "记忆 · 健康度（五项债务）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-runtime-diagnostic.png",
+      "title": "运行时 · 诊断（每行都能点）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-runtime-limits.png",
+      "title": "运行时 · OpenCode 做不到什么",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-runtime-opencode.png",
+      "title": "运行时 · OpenCode 的两份配置（四元组）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-stats-heatmap.png",
+      "title": "统计 · 年度热力图（近一年）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-stats-errors.png",
+      "title": "统计 · 失败",
       "kind": "top-level-surface"
     },
     {
