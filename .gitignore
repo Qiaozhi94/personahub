@@ -3,6 +3,7 @@
 .claude/settings.local.json
 .claude/worktrees/
 .sisyphus/
+.omo/
 .playwright-mcp/
 
 # Local SQLite runtime files
