@@ -3770,7 +3770,11 @@
 .automation-preflight strong { color: var(--text); }
 .automation-preflight .warn { color: var(--orange, #c2650a); }
 .automation-preflight p { flex-basis: 100%; margin: 2px 0 0; color: var(--faint); line-height: 1.6; }
-.automation-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; }
+.automation-dialog > footer {
+  position: sticky; bottom: -18px; z-index: 2; display: flex; justify-content: flex-end; gap: 8px;
+  margin: 0 -18px -18px; padding: 10px 18px 18px; border-top: 1px solid var(--border);
+  background: var(--bg);
+}
 .automation-dialog > footer > button:not(.primary-button) { padding: 7px 14px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
 
 @media (max-width: 1100px) {

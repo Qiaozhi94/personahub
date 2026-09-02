@@ -169,6 +169,24 @@ for (const [surface, file, title] of [
   await capture(file, title, "top-level-surface");
 }
 
+// 自动化不是一张概览就能表达的对象：触发配置、运行准入与 Webhook
+// 投递是三种不同的审计问题；创建器还决定了规则保存时的安全默认值。
+await page.locator('.main-rail [data-surface="automation"]').click();
+for (const [tab, file, title] of [
+  ["triggers", "surface-automation-triggers.png", "自动化 · 触发器（定时与 Webhook）"],
+  ["runs", "surface-automation-runs.png", "自动化 · 运行记录（准入与任务结果）"],
+  ["deliveries", "surface-automation-deliveries.png", "自动化 · Webhook 投递审计"],
+]) {
+  await page.locator(`[data-automation-tab="${tab}"]`).click();
+  await page.locator(`[data-automation-body="${tab}"]`).waitFor({ state: "visible" });
+  await capture(file, title, "top-level-surface");
+}
+await page.locator("[data-automation-create]").click();
+await page.locator("[data-automation-dialog]").waitFor({ state: "visible" });
+await capture("surface-automation-create.png", "自动化 · 新建规则与预检", "overlay");
+await page.locator("[data-automation-close]").first().click();
+await page.locator('[data-automation-tab="overview"]').click();
+
 // 记忆的另外两个 tab 各自成图：知识库承载三轴与状态，健康度承载五项债务（§3.6）
 await page.locator('.main-rail [data-surface="memory"]').click();
 for (const [tab, file, title] of [
