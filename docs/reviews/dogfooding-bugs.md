@@ -15,6 +15,8 @@
 | BUG-001 | fixed | 2026-08-11 22:27 | 高 | 任务级 | — | 调度器 claim validator 后不派工，验证卡 queued | scheduler tick claim 后未 drainWorkspace | validation | validation-dispatch-scheduler.ts / index.ts / test | validation-dispatch-scheduler.test.ts::dispatches_the_claimed_validator | 7b81076 |
 | BUG-002 | fixed | 2026-08-11 22:34 | 中 | 任务级 | — | web cancel 空 body 带 JSON content-type → 500 | apiFetch 无条件设 Content-Type，Fastify 拒空 body | web | api-client.ts | f002-ui-flows.test.tsx | 89ed06d |
 | BUG-003 | open | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | interrupted 不推进 round_count 且仍占 round 槽 | validation | result-processor.ts | — | — |
+| BUG-004 | open | 2026-09-03 17:02 | 中 | 任务级 | — | 装了 agent CLI 的机器上 executable-resolver 单测 7 例必红，`npm run verify` 长期红灯 | 用例没隔离 PATH，解析命中真实二进制而非临时 fixture | runtime | server/tests/unit/executable-resolver.test.ts | — | — |
+| BUG-005 | open | 2026-09-03 17:02 | 中 | 任务级 | — | 以 root 运行时权限拒绝扫描用例必红（T089） | 用 chmod 000 构造权限拒绝，但 root 无视 DAC 位；守卫只排除了 win32，没排除 root | workspace | server/tests/integration/filesystem-scanner.test.ts | — | — |
 
 ## 详情
 
@@ -46,3 +48,31 @@
 - **当前缓解**：新建 coding Issue 重跑（旧 Issue 有 stale interrupted validator 卡着）；或等修复后清理 DB。
 - **发现方式**：人工 dogfood（中断 validator 后重跑观察到卡死）。
 - **备注**：修复后回填「中断 → unblock → 重跑」能否干净恢复的验证证据。
+
+### BUG-004：装了 agent CLI 的机器上，executable-resolver 单测 7 例必红
+
+- **现象**：`npm run verify` 在 server 单测阶段红灯。`tests/unit/executable-resolver.test.ts` 的 `resolveExecutable (T009a)` 有 7 例失败，断言期望解析到临时 fixture，实得宿主真实二进制：
+
+  ```text
+  - Expected: "executable": "/tmp/resolver-test-Yepd56/bin/claude.exe"
+  + Received: "executable": "/root/.nvm/versions/node/v24.20.0/bin/claude"
+  ```
+
+- **复现**：在**装有 `claude` / `codex` 可执行文件**的机器上跑 `npx vitest run --root server tests/unit/executable-resolver.test.ts`。未装 agent CLI 的机器上不复现——这正是问题本身。
+- **根因**：用例在 `/tmp/resolver-test-XXXX/bin/` 下造 `claude.exe` / `tool.exe` 等 fixture，然后调用 `resolveExecutable()`，但**没有把 PATH 隔离到该临时目录**。`resolveExecutable` 走真实 PATH 查找，于是先命中宿主上真装的 agent CLI。测试结果依赖"这台机器有没有装 agent CLI"，而 PersonaHub 的开发者机器上**必然装着** agent CLI。
+- **修复方向（待实施）**：用例内注入受控 PATH（或给 `resolveExecutable` 开一个可注入的 lookup 环境参数），让解析完全不依赖宿主 PATH。**开发冻结期内不改代码，仅登记。**
+- **回归测试**：修复后这 7 例需在「装有 agent CLI」与「未装」两种环境下都通过；建议在用例里显式断言"没有读到宿主 PATH"。
+- **发现方式**：自动化测试——2026-09-03 提交文档改动前的例行 `npm run verify`。
+- **备注**：这是**门禁可靠性缺陷，不是产品旅程缺陷**，故「旅程步骤」填 `—`。真正的危害是 `verify` 在真实开发机上长期红灯；红灯一旦常态化，门禁就失去意义，后续真实回归会被淹没在既有失败里。本次文档提交就是在这个红灯下推的 main。
+
+### BUG-005：以 root 运行时，权限拒绝扫描用例必红（T089）
+
+- **现象**：`server/tests/integration/filesystem-scanner.test.ts:132` 的
+  `does not produce false added/deleted when subdirectory is permission denied (T089)` 失败，
+  `after.scanComplete` 仍为 `true`（期望 `false`）。
+- **复现**：以 root 身份跑 `npx vitest run --root server tests/integration/filesystem-scanner.test.ts`。
+- **根因**：用例用 `chmodSync(join(dir, "sub"), 0o000)` 构造"权限拒绝"场景，但 **root 无视 DAC 权限位**，仍能遍历该目录，因此 `scanComplete` 不会变 false、`stopReason` 也不是 `permission_denied`。用例的运行守卫只排除了 Windows（`it.runIf(process.platform !== "win32")`），没有排除 root。
+- **修复方向（待实施）**：**不要**只加 uid 守卫跳过——容器与 CI 常以 root 跑，跳过等于这条守卫在最需要它的环境里从不生效。更可取的是改用不依赖 DAC 的方式模拟遍历失败（注入 fs 错误 / 用可替换的目录读取 seam），让用例在任何 uid 下都真实覆盖 `permission_denied` 分支。**开发冻结期内不改代码，仅登记。**
+- **回归测试**：修复后该用例需在 root 与非 root 两种身份下都真实执行（而非 skip）并通过。
+- **发现方式**：同 BUG-004，同一次 `npm run verify`。
+- **备注**：与 BUG-004 同源于一类问题——**用例把"宿主环境恰好是什么样"当成了测试前提**。若第三例同型缺陷出现，应按 `self-test-system-plan.md` §7.2「重复即升级」补一条需求级约束：单测与集成测试不得依赖宿主 PATH、uid 或已安装的外部 CLI。
