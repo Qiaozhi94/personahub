@@ -2,14 +2,15 @@
 topics: [v0.3, artifact, room, squad, planning]
 doc_kind: plan
 created: 2026-08-09
-updated: 2026-08-09
+updated: 2026-09-03
 ---
 
 # v0.3 Artifact-Centered Collaboration 规划审查稿
 
 > **暂停（2026-08-12）**：v0.2 首轮 dogfood 暴露了阻塞性用户旅程与操作可发现性缺口，
 > 因此本版本停止需求评审和开发排期。F009-F012 保持 `draft`，不得推进到
-> `ready-for-development`，原有 25-40 日时间线作废。恢复条件和当前执行顺序以
+> `ready-for-development`，原有 25-40 日时间线作废；2026-09-03 预留的旅程闭环 owner（F013，见 1.1）
+> 同样只是登记，旅程定稿前不建三件套。恢复条件和当前执行顺序以
 > <a href="../../reviews/product-experience-reset-plan.md">`docs/reviews/product-experience-reset-plan.md`</a>
 > 为准：先批准用户旅程，再批准 HTML 原型，最后依据影响面分析重估 v0.3。
 >
@@ -29,6 +30,37 @@ v0.3 不应被实现成“再加一个聊天页面”。它要验证的产品判
 | [F012](F012-reusable-agent-squads/spec.md)          | Reusable Agent Squads            | 保存并复用静态 agent 分组                              | 用户能创建 Squad，并在 Room/推荐确认时选用；执行前重新校验成员              | F007、F011             |
 
 F009 + F010 构成版本的最小价值闭环；F011 + F012 完成 PRD 对 v0.3 的完整承诺。不要并行设计 F011/F012 的持久化契约：Room 的成员变更语义应先稳定，再抽取可复用 Squad。
+
+### 1.1 旅程闭环 owner（预留 F013）`[2026-09-03 新增]`
+
+上表四个 Feature 是**按领域能力**拆的（Artifact / 切片 / Room / Squad）。这种拆法有一个结构性缺陷：
+**四条线各自都能"完成"，但没有任何一条的完成声明必须证明整条旅程走通了**——用户从派活、
+执行、交接、验证到关单，中间任何一段掉地上，四个 Feature 的 AC 仍然可以全绿。
+
+这不是假想风险。clowder-ai 在 2026-08-29 用 F313 纠正过同型错误，其结论是把
+"canonical truth 必须留在原 owner"误译成了"实施也要拆成各自的 Feature 线"，结果每条线都可能
+局部完成、却没有一条必须证明整条链接通。它的处置是**再立一个 Feature 对整条旅程持续负责，
+其余 Feature 降为 linked contract**。证据与逐项论证见
+<a href="../../reviews/clowder-governance-borrowing.md">`docs/reviews/clowder-governance-borrowing.md`</a> 第 4.3 节。
+
+**v0.3 采用同一处置**：
+
+| 项 | 结论 |
+| --- | --- |
+| 角色 | 单一交付、集成与验收 owner。它拥有：一份端到端旅程 AC、跨 Feature 的交付顺序、真实验收证据、最终关账 |
+| 不拥有 | 任何 canonical 状态。artifact 模型仍归 F009、执行图仍归 F006/F010、Room 控制边界仍归 F011、Squad 仍归 F012 |
+| 明确禁止 | 用「F009 完成」「F011 完成」等局部声明代替整条旅程的完成声明；在该 Feature 内新建第二套 store / 状态机 |
+| F009–F012 的变化 | 从"四条并列交付线"改为"linked contract"：各自仍拥有自己的契约与实现，但不再各自成为待追赶的项目线 |
+| 验收口径 | 复用第 4 节「版本验收旅程」，但该旅程的 owner 从"版本"变成这个 Feature——它必须给出真实 CLI 走通的证据，而不是四份分头验收的汇总 |
+
+**当前状态：只预留 ID，不建目录。** 三件套要等 M3 用户旅程定稿——`gate_version: 1` 要求
+spec 第 2 节用户场景、第 4 节需求与第 6 节 AC 齐备，而这些内容只能来自定稿旅程；在旅程批准前
+写出来就是凭空发明，正违反开发冻结。同理暂不进 `BACKLOG.md`：BACKLOG 与 feature 目录之间是
+双向集合校验（`npm run check:features`），只加一行会直接红灯。
+
+**进入条件**：M3 旅程定稿 + M4 原型定稿 → 依据影响面分析重估 v0.3 时，与 F009–F012 的范围重判
+一并建立三件套。登记见
+<a href="../../reviews/product-experience-reset-plan.md">`docs/reviews/product-experience-reset-plan.md`</a> 第 7 节。
 
 ## 2. Feature 范围
 

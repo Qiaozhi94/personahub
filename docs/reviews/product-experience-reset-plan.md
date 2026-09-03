@@ -2,7 +2,7 @@
 topics: [product-reset, user-journey, ux-prototype, self-test, replanning]
 doc_kind: plan
 created: 2026-08-12
-updated: 2026-08-14
+updated: 2026-09-03
 ---
 
 # PersonaHub 产品体验重置与开发计划调整方案
@@ -522,6 +522,7 @@ Room、Squad 等领域能力出发，没有先证明当前核心工作台是否�
 | F011 Work Room | 与“观察、打断、纠偏”高度相关，产品价值可能保留 | 保留概念，重做交互与范围 | 现有三栏 Thread 体验未验证，直接加 Room 风险最高 | 原型先证明单 Issue 的观察与介入模型 |
 | F012 Squad | 便利性能力，不解决当前阻塞主流程 | 明确后移 | 依赖 F011，且会增加设置复杂度 | Room 被真实使用并出现重复成员配置需求 |
 | v0.3 25–40 日时间线 | 建立在现有 Feature 顺序和范围不变的假设上 | 作废，定稿后重估 | 旅程和整体整改会改变范围 | 整改影响面、迁移方案和测试矩阵完成 |
+| **旅程闭环 owner（预留 F013）** `[2026-09-03 新增]` | F009–F012 各自可以“完成”，但没有任何一条的验收必须证明整条旅程走通 | **新增一个 Feature 对整条旅程负责**，F009–F012 降为 linked contract | 见 <a href="clowder-governance-borrowing.md">`clowder-governance-borrowing.md`</a> §4.3：clowder 用 F313 纠正过同型错误——把“真相留在原 owner”误译成“实施也拆成各自的 Feature 线” | M3 旅程定稿后建三件套；在此之前只预留 ID，不建目录、不进 BACKLOG |
 
 ### 建议替换后的阶段顺序
 
@@ -572,6 +573,25 @@ M6 是目标形态定稿后才启动的独立实施阶段，不计入这两周�
 3. F009–F012 三件套：用户场景、UX 需求、非目标、依赖和任务顺序。
 4. `docs/SOP.md` / `docs/features/README.md`：加入强制旅程、原型和真实浏览器门禁。
 5. `package.json` / CI：统一 verify、E2E 和发布级 dogfood 入口。
+
+6. **clowder 治理层借鉴的影响面** `[2026-09-03 新增]`：来源与逐项论证见
+   <a href="clowder-governance-borrowing.md">`clowder-governance-borrowing.md`</a>（该文第 7 节是本条的详版）。
+   四项候选中两项进流程层、四项进产品设计层；**产品层四项在开发冻结期内只推进到设计，不写业务代码**。
+
+   | 受影响对象 | 影响 | 层 |
+   | --- | --- | --- |
+   | `docs/personahub-prd.md` §7.5 Agent Validation Loop | validation 结论枚举加 `insufficient`；引入归因分层 `execution / harness / rubric / observation`；轮次预算只由 `execution` 类 fail 消耗；`round_limit_reached` 拆分为「三轮没修好」与「验收标准写错了」两个出口 | 产品 |
+   | `docs/personahub-prd.md` §5 Validation Policy | 「评估标准本身可被质疑」需要有承载字段 | 产品 |
+   | `shared/src/types/validation.ts` | `ValidationFindingRecord` 加生命周期：finding 四态 `repair / no_repair / observe / insufficient`，closure 只能由下一轮 validator 对同一 finding 的判定或用户显式 `suppressed_with_reason` 驱动 | 产品 |
+   | 中间协作现场（PRD §10） | 新增「现在为什么还不动」人话清单：封闭 blocker code 词表 + 随 code 持久化的文案，重启后可重渲染同样句子 | 产品 |
+   | `docs/features/README.md` + `tools/check-feature-gates.mjs` | spec 第 6 节新增**条件必填**子节：Primary Users + Activation Signal / Friction Metric / Regression Fixture / **Sunset Signal**；两问触发，不触发时禁止写空白或 N/A；Sunset Signal 空填即不通过 | 流程 |
+   | `docs/features/releases/` 收口模板 | Sunset Signal 在版本收口时复检一次，避免它自己变成没有 consumer 的字段 | 流程 |
+   | `docs/reviews/dogfooding-bugs.md` + `tools/dogfood-bugs.mjs` | `fixed` 必须有非 `—` 的回归测试；新增 `wontfix` 状态且必须带理由；缺失一律 typed 标记，不留空格 | 流程 |
+   | v0.3 Feature 拆分方式 | 见上表「旅程闭环 owner（预留 F013）」行与 `docs/features/0.3/README.md` 第 1.1 节 | 计划 |
+
+   **明确不借**（理由见该文第 5 节）：三信号加权 `action_confidence`、L0–L4 线性五级阶梯、
+   重型指标出生证、F266 的 11 态 reconciler、F311 控制面本体。取的是契约形状
+   （枚举、blocker 文案表、gate 判据），不是控制面。
 
 ## 8. 整体整改阶段的规划原则
 
