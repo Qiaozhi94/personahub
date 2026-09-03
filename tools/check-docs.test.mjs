@@ -202,6 +202,12 @@ test('validateLinkPathBoundary', async (t) => {
     assert.equal(validateLinkPathBoundary('/etc/passwd').ok, false);
   });
 
+  // BUG-006: the verdict must be the same on every host, so both path flavours
+  // are asserted here rather than only the one this machine happens to run.
+  await t.test('rejects Windows absolute path', () => {
+    assert.equal(validateLinkPathBoundary('C:\\Users\\test').ok, false);
+  });
+
   await t.test('rejects .. escape', () => {
     assert.equal(validateLinkPathBoundary('../escape.md').ok, false);
   });

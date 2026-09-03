@@ -3,7 +3,7 @@
 // Zero runtime dependencies - only node built-ins.
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve, relative, isAbsolute, dirname, extname } from 'node:path';
+import { join, resolve, relative, isAbsolute, dirname, extname, posix as pathPosix, win32 as pathWin32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // ---------------------------------------------------------------------------
@@ -133,7 +133,9 @@ export function splitLinkTarget(target) {
 export function validateLinkPathBoundary(rawPath) {
   if (!rawPath) return { ok: true }; // anchor-only link
   const p = rawPath.trim();
-  if (isAbsolute(p)) {
+  // Both flavours, for the same reason as validateTestPathSyntax (BUG-006):
+  // the host's `isAbsolute` would let `C:\…` through on Linux/macOS.
+  if (pathPosix.isAbsolute(p) || pathWin32.isAbsolute(p)) {
     return { ok: false, reason: `absolute path: ${p}` };
   }
   const parts = p.split(/[/\\]/);

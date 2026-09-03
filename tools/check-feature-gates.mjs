@@ -4,7 +4,7 @@
 // Exports pure functions for testing; CLI reads the real repo and sets exit code.
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve, relative, isAbsolute, sep } from 'node:path';
+import { join, resolve, relative, isAbsolute, sep, posix as pathPosix, win32 as pathWin32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // ---------------------------------------------------------------------------
@@ -574,8 +574,12 @@ export function validateTestPathSyntax(rawPath) {
   }
   const p = rawPath.trim();
 
-  // Reject absolute paths (Unix or Windows)
-  if (isAbsolute(p)) {
+  // Reject absolute paths (Unix or Windows). Both flavours are checked
+  // explicitly: bare `isAbsolute` is the host platform's, so on Linux/macOS it
+  // does not recognise `C:\…` and a drive-letter path would be accepted there
+  // but rejected on Windows. A gate verdict must not depend on who runs it
+  // (BUG-006).
+  if (pathPosix.isAbsolute(p) || pathWin32.isAbsolute(p)) {
     return { ok: false, reason: `absolute path: ${p}` };
   }
 

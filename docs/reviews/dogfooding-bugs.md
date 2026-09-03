@@ -17,7 +17,7 @@
 | BUG-003 | open | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | interrupted 不推进 round_count 且仍占 round 槽 | validation | result-processor.ts | — | — |
 | BUG-004 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 装了 agent CLI 的机器上 executable-resolver 单测 7 例必红，`npm run verify` 长期红灯 | 用例是 Windows 形状（`.exe`/`.cmd` fixture、无 exec 位）却在 POSIX 上跑；PATH 又是 prepend 而非替换，于是落回宿主真实二进制 | runtime | server/tests/unit/executable-resolver.test.ts / package.json | executable-resolver.test.ts::does_not_fall_back_to_a_same-named_executable_elsewhere_on_PATH | 3ceed8d |
 | BUG-005 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 以 root 运行时权限拒绝扫描用例必红（T089） | 用 chmod 000 构造权限拒绝，但 root 无视 DAC 位；守卫只排除了 win32，没排除 root | workspace | server/tests/integration/filesystem-scanner.test.ts / package.json | filesystem-scanner.test.ts::T089 + ::reaches_the_same_permission_denied_stop_reason_from_real_chmod | 5e6f34e |
-| BUG-006 | open | 2026-09-03 17:24 | 低 | 任务级 | — | Feature 门禁在 Linux 上不拒绝 Windows 绝对路径（`C:\Users\test` 被判合法测试路径） | `validateTestPathSyntax` 用 `path.isAbsolute`，在 Linux 是 posix 语义，识别不出盘符路径；注释写的是「Unix 或 Windows 都拒绝」 | tooling | tools/check-feature-gates.mjs | tools/check-feature-gates.test.mjs::validateTestPathSyntax::rejects_Windows_absolute_path（已存在，当前红） | — |
+| BUG-006 | fixed | 2026-09-03 17:24 | 低 | 任务级 | — | Feature 门禁在 Linux 上不拒绝 Windows 绝对路径（`C:\Users\test` 被判合法测试路径） | `validateTestPathSyntax` 用 `path.isAbsolute`，在 Linux 是 posix 语义，识别不出盘符路径；注释写的是「Unix 或 Windows 都拒绝」 | tooling | tools/check-feature-gates.mjs / tools/check-doc-links.mjs / tools/check-docs.test.mjs | check-feature-gates.test.mjs::validateTestPathSyntax::rejects_Windows_absolute_path + check-docs.test.mjs::validateLinkPathBoundary::rejects_Windows_absolute_path | PENDING6 |
 
 ## 详情
 
@@ -101,14 +101,18 @@
 - **影响判断**：这不只是测试问题，是**门禁本身的漏洞**——在 Linux 上，Feature spec 里写
   `tests: C:\Users\x.test.ts` 这样的测试路径不会被拒。严重度定为「低」是因为触发它需要
   有人在 spec 里手写盘符路径；但它落在**守护其他所有门禁的那一层**，不宜久留。
-- **修复方向（待实施）**：用 `path.win32.isAbsolute(p) || path.posix.isAbsolute(p)`
-  同时判两种语义（或直接加盘符正则），使结果与运行平台无关。
-- **回归测试**：现有用例 `rejects Windows absolute path` 已经写对了、当前是红的；
-  修复后它应在两种平台上都绿。**不需要新增用例——用例没错，实现错了。**
+- **修复**：改为 `pathPosix.isAbsolute(p) || pathWin32.isAbsolute(p)`，两种语义都显式判，
+  不再走宿主默认实现。**同型扫描后一并修了 `tools/check-doc-links.mjs` 的
+  `validateLinkPathBoundary`**——同一处缺陷、同一意图（把链接挡在仓库根内）、同一目录，
+  属于当前 scope 内的同型命中，不留到下次。
+- **回归测试**：`check-feature-gates.test.mjs::validateTestPathSyntax::rejects Windows absolute path`
+  原本就写对了、当时是红的，修复后转绿——**这一侧不需要新增用例，用例没错，实现错了**。
+  `validateLinkPathBoundary` 那一侧则**缺**对应用例（只断言了 posix 绝对路径），
+  按 7.5 的双向覆盖要求补了 `rejects Windows absolute path`。
 - **发现方式**：自动化测试——修完 BUG-004/005 后跑 `npm run verify` 时暴露。
 - **备注**：这是同一缺陷家族的**第三例**（BUG-004 宿主装了什么 + 什么平台、BUG-005 什么身份、
   本条什么平台）。按 <a href="self-test-system-plan.md">`self-test-system-plan.md`</a> §7.2
-  「重复即升级」，处置不应再是第三个点修，而应补一条**需求级约束**：
-  **测试与门禁的判定结果不得依赖宿主 PATH、uid 或运行平台；平台相关语义必须显式双向覆盖，
-  不能依赖 `path` / `fs` 的当前平台默认实现。** 该约束的落点见
-  `self-test-system-plan.md`，本条只登记触发事实。
+  「重复即升级」，处置不应再是第三个点修。该约束已于 2026-09-03 落为
+  <a href="self-test-system-plan.md">`self-test-system-plan.md`</a> **§7.5「宿主无关：判定结果
+  不得取决于谁在跑」**——含 5 条具体规则与跳过的边界判据，并诚实登记了"暂无自动门禁、靠纪律
+  维持"这一状态。修复后 `npm run verify` 首次全绿（exit 0）。
