@@ -15,7 +15,7 @@
 | BUG-001 | fixed | 2026-08-11 22:27 | 高 | 任务级 | — | 调度器 claim validator 后不派工，验证卡 queued | scheduler tick claim 后未 drainWorkspace | validation | validation-dispatch-scheduler.ts / index.ts / test | validation-dispatch-scheduler.test.ts::dispatches_the_claimed_validator | 7b81076 |
 | BUG-002 | fixed | 2026-08-11 22:34 | 中 | 任务级 | — | web cancel 空 body 带 JSON content-type → 500 | apiFetch 无条件设 Content-Type，Fastify 拒空 body | web | api-client.ts | f002-ui-flows.test.tsx | 89ed06d |
 | BUG-003 | open | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | interrupted 不推进 round_count 且仍占 round 槽 | validation | result-processor.ts | — | — |
-| BUG-004 | open | 2026-09-03 17:02 | 中 | 任务级 | — | 装了 agent CLI 的机器上 executable-resolver 单测 7 例必红，`npm run verify` 长期红灯 | 用例没隔离 PATH，解析命中真实二进制而非临时 fixture | runtime | server/tests/unit/executable-resolver.test.ts | — | — |
+| BUG-004 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 装了 agent CLI 的机器上 executable-resolver 单测 7 例必红，`npm run verify` 长期红灯 | 用例是 Windows 形状（`.exe`/`.cmd` fixture、无 exec 位）却在 POSIX 上跑；PATH 又是 prepend 而非替换，于是落回宿主真实二进制 | runtime | server/tests/unit/executable-resolver.test.ts / package.json | executable-resolver.test.ts::does_not_fall_back_to_a_same-named_executable_elsewhere_on_PATH | PENDING |
 | BUG-005 | open | 2026-09-03 17:02 | 中 | 任务级 | — | 以 root 运行时权限拒绝扫描用例必红（T089） | 用 chmod 000 构造权限拒绝，但 root 无视 DAC 位；守卫只排除了 win32，没排除 root | workspace | server/tests/integration/filesystem-scanner.test.ts | — | — |
 
 ## 详情
@@ -58,12 +58,20 @@
   + Received: "executable": "/root/.nvm/versions/node/v24.20.0/bin/claude"
   ```
 
-- **复现**：在**装有 `claude` / `codex` 可执行文件**的机器上跑 `npx vitest run --root server tests/unit/executable-resolver.test.ts`。未装 agent CLI 的机器上不复现——这正是问题本身。
-- **根因**：用例在 `/tmp/resolver-test-XXXX/bin/` 下造 `claude.exe` / `tool.exe` 等 fixture，然后调用 `resolveExecutable()`，但**没有把 PATH 隔离到该临时目录**。`resolveExecutable` 走真实 PATH 查找，于是先命中宿主上真装的 agent CLI。测试结果依赖"这台机器有没有装 agent CLI"，而 PersonaHub 的开发者机器上**必然装着** agent CLI。
-- **修复方向（待实施）**：用例内注入受控 PATH（或给 `resolveExecutable` 开一个可注入的 lookup 环境参数），让解析完全不依赖宿主 PATH。**开发冻结期内不改代码，仅登记。**
-- **回归测试**：修复后这 7 例需在「装有 agent CLI」与「未装」两种环境下都通过；建议在用例里显式断言"没有读到宿主 PATH"。
+- **复现**：在**装有 `claude` / `codex` 可执行文件**的 POSIX 机器上跑 `npx vitest run --root server tests/unit/executable-resolver.test.ts`。
+- **根因（2026-09-03 修正——首次登记时判断有误）**：初判写的是"用例没隔离 PATH"，**不准确**。用例其实动了 PATH，真正的根因有两层：
+
+  1. **主因：用例是 Windows 形状，却在 POSIX 上无条件运行。** fixture 名为 `claude.exe` / `opencode.cmd`，而 `getPathExtensions()` 只在 Windows 返回 `.exe/.cmd/.bat/.com`，POSIX 下返回 `[""]`——所以 `resolveExecutable("claude")` 在 POSIX 上永远匹配不到 `claude.exe`。绝对路径/相对路径两例则是另一半：fixture 用 `writeFileSync` 写出但没加 exec 位，而 `isExecutableFile()` 在 POSIX 上要求 `X_OK`。**这两类失败在没装 agent CLI 的干净 Linux 机器上同样会红**，只是报 `null` 而不是报错误的二进制。
+  2. **放大因素：`putOnPath` 是 prepend 不是替换。** 宿主真实 PATH 仍然可达，于是 POSIX 匹配不到 fixture 后继续往下找，命中 `/root/.nvm/.../bin/claude`。它把"匹配不到"这个诚实失败，伪装成了"匹配到了别的东西"。
+
+  另外还查出一处**假绿**：`.cmd` shim 的三条 "fails …" 用例在 POSIX 上是通过的，但通过原因是 shim 压根没被找到（返回 null），而不是解析器正确拒绝了它——断言 `resolved` 为 null 时无法区分这两种情况。
+- **修复**：改测试，不改产品代码（开发冻结期内）。三条：
+  1. 新增 `setPath()` **整体替换** PATH，不再 prepend——宿主装没装 agent CLI 与结果无关；
+  2. 新增 `writeExecutable()` 按平台写 fixture：Windows 写 `<name>.exe`，POSIX 写无扩展名文件并 `chmod 0o755`，返回真实路径供断言，不再硬编码某个平台的命名；
+  3. 三个 `.cmd` shim describe 块改为 `describe.runIf(IS_WINDOWS)`。这不是为了省事跳过——`%dp0%\node_modules\…` 是反斜杠路径，`expandShimMacros` + `resolvePath` 只在 Windows 能拼出真实路径；PATHEXT 发现 `.cmd` 也是 Windows 独有。在 POSIX 跑它们只能产出假绿。非 shim 路径的 POSIX 覆盖由 `direct executables` 块承担，未减少。
+- **回归测试**：新增 `does not fall back to a same-named executable elsewhere on PATH when the fixture dir has none`——把宿主真实安装用一个 decoy 目录建模，断言它不在 PATH 上时必须报 not found。这条直接钉住本 bug 的放大因素。修复后本文件在 Linux 上 9 passed / 7 skipped，server 全量 1671 passed，仅剩 BUG-005 一条失败。
 - **发现方式**：自动化测试——2026-09-03 提交文档改动前的例行 `npm run verify`。
-- **备注**：这是**门禁可靠性缺陷，不是产品旅程缺陷**，故「旅程步骤」填 `—`。真正的危害是 `verify` 在真实开发机上长期红灯；红灯一旦常态化，门禁就失去意义，后续真实回归会被淹没在既有失败里。本次文档提交就是在这个红灯下推的 main。
+- **备注**：这是**门禁可靠性缺陷，不是产品旅程缺陷**，故「旅程步骤」填 `—`。真正的危害是 `verify` 在真实开发机上长期红灯；红灯一旦常态化，门禁就失去意义。修复同时把该文件纳入 `package.json` 的 prettier format targets（按 CLAUDE.md 增量格式化约定）。
 
 ### BUG-005：以 root 运行时，权限拒绝扫描用例必红（T089）
 
@@ -75,4 +83,4 @@
 - **修复方向（待实施）**：**不要**只加 uid 守卫跳过——容器与 CI 常以 root 跑，跳过等于这条守卫在最需要它的环境里从不生效。更可取的是改用不依赖 DAC 的方式模拟遍历失败（注入 fs 错误 / 用可替换的目录读取 seam），让用例在任何 uid 下都真实覆盖 `permission_denied` 分支。**开发冻结期内不改代码，仅登记。**
 - **回归测试**：修复后该用例需在 root 与非 root 两种身份下都真实执行（而非 skip）并通过。
 - **发现方式**：同 BUG-004，同一次 `npm run verify`。
-- **备注**：与 BUG-004 同源于一类问题——**用例把"宿主环境恰好是什么样"当成了测试前提**。若第三例同型缺陷出现，应按 `self-test-system-plan.md` §7.2「重复即升级」补一条需求级约束：单测与集成测试不得依赖宿主 PATH、uid 或已安装的外部 CLI。
+- **备注**：与 BUG-004 同源于一类问题——**用例把"宿主环境恰好是什么样"当成了测试前提**（BUG-004 是宿主装了什么 CLI + 跑在什么平台，本条是以什么身份运行）。若第三例同型缺陷出现，应按 `self-test-system-plan.md` §7.2「重复即升级」补一条需求级约束：单测与集成测试不得依赖宿主 PATH、uid 或已安装的外部 CLI。

@@ -1,18 +1,30 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, delimiter } from "node:path";
+import { join, delimiter, basename } from "node:path";
 import { resolveExecutable } from "../../src/runtime/executable-resolver.js";
 
 // T009a-1: executable resolver tests, fixture-driven from real CLI shim shapes
 // captured in server/tests/helpers/{claude,opencode}-protocol-fixtures.md T009a.
 //
-// Two real shim shapes were observed on this machine:
+// Two real shim shapes were observed on this machine (Windows):
 //   - opencode.cmd: single-layer forward straight to a bundled .exe
 //   - codex.cmd:    forward to node.exe + a bundled entry .js file
 // The resolver must handle both, verify target files actually exist, and never
 // fall back to shell=true on failure — any unresolvable/unknown shape must
 // return `resolved: null` with an explanatory errorMessage.
+//
+// BUG-004 (2026-09-03): this suite used to depend on the host — `putOnPath`
+// *prepended* the fixture dir to the real PATH, and the fixtures were all
+// Windows-shaped (`.exe` names, no exec bit). On a developer machine, which by
+// definition has claude/codex installed, POSIX PATH search skipped the fixture
+// (`getPathExtensions()` returns [""] off Windows, so `claude` never matches
+// `claude.exe`) and hit the real binary instead. Two rules now keep the suite
+// host-independent: PATH is *replaced*, never extended (`setPath`), and every
+// fixture is written in the shape the running platform can actually resolve
+// (`writeExecutable`).
+
+const IS_WINDOWS = process.platform === "win32";
 
 describe("resolveExecutable (T009a)", () => {
   let root: string;
@@ -33,17 +45,36 @@ describe("resolveExecutable (T009a)", () => {
     else process.env.PATHEXT = savedPathExt;
   });
 
-  function putOnPath(dir: string) {
-    process.env.PATH = `${dir}${delimiter}${process.env.PATH ?? ""}`;
+  /**
+   * Replaces PATH outright. Prepending is what made this suite host-dependent
+   * (BUG-004): the real agent CLIs stayed reachable, so a fixture the platform
+   * could not match silently fell through to `/usr/…/bin/claude`. With PATH
+   * replaced, an unmatched fixture fails as "not found" — an honest failure.
+   */
+  function setPath(...dirs: string[]) {
+    process.env.PATH = dirs.join(delimiter);
+  }
+
+  /**
+   * Writes a fixture in the shape PATH search can actually find on this
+   * platform: `<name>.exe` on Windows, a bare extensionless file with the exec
+   * bit on POSIX (the default codex/claude/opencode install shape — PATHEXT is
+   * a Windows-only convention). Returns the real path so assertions never
+   * hardcode one platform's naming.
+   */
+  function writeExecutable(dir: string, name: string, content = "binary"): string {
+    mkdirSync(dir, { recursive: true });
+    const target = join(dir, IS_WINDOWS ? `${name}.exe` : name);
+    writeFileSync(target, content);
+    if (!IS_WINDOWS) chmodSync(target, 0o755);
+    return target;
   }
 
   describe("direct executables (no shim)", () => {
-    it("resolves a bare .exe found via PATH as source=direct with empty prefixArgs", () => {
+    it("resolves a bare executable found via PATH as source=direct with empty prefixArgs", () => {
       const binDir = join(root, "bin");
-      mkdirSync(binDir);
-      const exePath = join(binDir, "claude.exe");
-      writeFileSync(exePath, "not a real binary, just needs to exist");
-      putOnPath(binDir);
+      const exePath = writeExecutable(binDir, "claude");
+      setPath(binDir);
 
       const result = resolveExecutable("claude");
 
@@ -52,9 +83,10 @@ describe("resolveExecutable (T009a)", () => {
     });
 
     it("resolves an absolute path directly without PATH search", () => {
-      const exePath = join(root, "somewhere", "tool.exe");
-      mkdirSync(join(root, "somewhere"));
-      writeFileSync(exePath, "binary");
+      const exePath = writeExecutable(join(root, "somewhere"), "tool");
+      // PATH points at an empty dir: resolving still succeeds only if the
+      // absolute path bypassed PATH search entirely.
+      setPath(root);
 
       const result = resolveExecutable(exePath);
 
@@ -63,10 +95,8 @@ describe("resolveExecutable (T009a)", () => {
 
     it("handles paths containing spaces and unicode", () => {
       const dir = join(root, "Program Files", "café 咖啡");
-      mkdirSync(dir, { recursive: true });
-      const exePath = join(dir, "opencode.exe");
-      writeFileSync(exePath, "binary");
-      putOnPath(dir);
+      const exePath = writeExecutable(dir, "opencode");
+      setPath(dir);
 
       const result = resolveExecutable("opencode");
 
@@ -75,21 +105,45 @@ describe("resolveExecutable (T009a)", () => {
     });
 
     it("resolves a relative path against the current working directory", () => {
-      const exePath = join(root, "tool.exe");
-      writeFileSync(exePath, "binary");
+      const exePath = writeExecutable(root, "tool");
+      setPath(root);
       const cwd = process.cwd();
       try {
         process.chdir(root);
-        const result = resolveExecutable("./tool.exe");
-        expect(result.resolved?.executable).toBe(join(root, "tool.exe"));
+        const result = resolveExecutable(`./${basename(exePath)}`);
+        expect(result.resolved?.executable).toBe(exePath);
         expect(result.resolved?.source).toBe("direct");
       } finally {
         process.chdir(cwd);
       }
     });
+
+    it("does not fall back to a same-named executable elsewhere on PATH when the fixture dir has none", () => {
+      const binDir = join(root, "bin");
+      mkdirSync(binDir, { recursive: true });
+      const decoyDir = join(root, "decoy");
+      writeExecutable(decoyDir, "claude");
+      // BUG-004 regression: only binDir is on PATH, so the decoy (standing in
+      // for a real host install) must not be reachable.
+      setPath(binDir);
+
+      const result = resolveExecutable("claude");
+
+      expect(result.resolved).toBeNull();
+      expect(result.errorMessage).toMatch(/not found/i);
+    });
   });
 
-  describe("verified shim: single-layer exe forward (opencode.cmd shape)", () => {
+  // The three shim blocks below are Windows-only by nature, not by convenience:
+  // discovering a bare `opencode` as `opencode.cmd` needs PATHEXT, and the
+  // `%dp0%\node_modules\…` paths inside a real shim are backslash-separated, so
+  // `expandShimMacros` + `resolvePath` only produce a real path on Windows.
+  // They used to run on POSIX, where the two "fails …" cases passed for the
+  // wrong reason — null because the shim was never located at all, not because
+  // the parser rejected it. Skipping beats a false green; the parser's real
+  // coverage lives on Windows, and `run-on-linux` coverage of the non-shim path
+  // is the `direct executables` block above.
+  describe.runIf(IS_WINDOWS)("verified shim: single-layer exe forward (opencode.cmd shape)", () => {
     it("resolves the real target exe and reports source=verified_shim", () => {
       const binDir = join(root, "bin");
       const nodeModulesExe = join(binDir, "node_modules", "opencode-ai", "bin");
@@ -112,7 +166,7 @@ describe("resolveExecutable (T009a)", () => {
           '"%dp0%\\node_modules\\opencode-ai\\bin\\opencode.exe"   %*',
         ].join("\r\n"),
       );
-      putOnPath(binDir);
+      setPath(binDir);
 
       const result = resolveExecutable("opencode");
 
@@ -124,11 +178,8 @@ describe("resolveExecutable (T009a)", () => {
       const binDir = join(root, "bin");
       mkdirSync(binDir, { recursive: true });
       const shimPath = join(binDir, "ghost.cmd");
-      writeFileSync(
-        shimPath,
-        ['@ECHO off', '"%~dp0\\node_modules\\ghost-ai\\bin\\ghost.exe"   %*'].join("\r\n"),
-      );
-      putOnPath(binDir);
+      writeFileSync(shimPath, ["@ECHO off", '"%~dp0\\node_modules\\ghost-ai\\bin\\ghost.exe"   %*'].join("\r\n"));
+      setPath(binDir);
 
       const result = resolveExecutable("ghost");
 
@@ -137,7 +188,7 @@ describe("resolveExecutable (T009a)", () => {
     });
   });
 
-  describe("verified shim: node + entry .js forward (codex.cmd shape)", () => {
+  describe.runIf(IS_WINDOWS)("verified shim: node + entry .js forward (codex.cmd shape)", () => {
     it("resolves node.exe and the entry .js as prefixArgs[0]", () => {
       const binDir = join(root, "bin");
       mkdirSync(binDir, { recursive: true });
@@ -171,7 +222,7 @@ describe("resolveExecutable (T009a)", () => {
           'endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*',
         ].join("\r\n"),
       );
-      putOnPath(binDir);
+      setPath(binDir);
 
       const result = resolveExecutable("codex");
 
@@ -199,9 +250,8 @@ describe("resolveExecutable (T009a)", () => {
           '"%_prog%"  "%~dp0\\node_modules\\@openai\\codex\\bin\\codex.js" %*',
         ].join("\r\n"),
       );
-      putOnPath(binDir);
-      // ensure no real "node" is resolvable either, by pointing PATH only at binDir
-      process.env.PATH = binDir;
+      // Only binDir on PATH, so the bare-`node` fallback has nothing to find.
+      setPath(binDir);
 
       const result = resolveExecutable("codex");
 
@@ -222,7 +272,7 @@ describe("resolveExecutable (T009a)", () => {
           '"%_prog%"  "%~dp0\\node_modules\\@openai\\codex\\bin\\codex.js" %*',
         ].join("\r\n"),
       );
-      putOnPath(binDir);
+      setPath(binDir);
 
       const result = resolveExecutable("codex");
 
@@ -231,7 +281,7 @@ describe("resolveExecutable (T009a)", () => {
     });
   });
 
-  describe("unknown / unsupported shim shapes — must fail closed, never fall back to shell", () => {
+  describe.runIf(IS_WINDOWS)("unknown / unsupported shim shapes — must fail closed, never fall back to shell", () => {
     it("refuses an unrecognized .cmd shape rather than guessing", () => {
       const binDir = join(root, "bin");
       mkdirSync(binDir, { recursive: true });
@@ -239,7 +289,7 @@ describe("resolveExecutable (T009a)", () => {
         join(binDir, "weird.cmd"),
         ["@ECHO off", "for /f %%i in ('some-other-tool') do set X=%%i", "call something-unusual %X% %*"].join("\r\n"),
       );
-      putOnPath(binDir);
+      setPath(binDir);
 
       const result = resolveExecutable("weird");
 
@@ -250,8 +300,11 @@ describe("resolveExecutable (T009a)", () => {
     it("refuses a .bat file with an unrecognized shape", () => {
       const binDir = join(root, "bin");
       mkdirSync(binDir, { recursive: true });
-      writeFileSync(join(binDir, "legacy.bat"), ["@echo off", "rem does something custom", "custom.exe %*"].join("\r\n"));
-      putOnPath(binDir);
+      writeFileSync(
+        join(binDir, "legacy.bat"),
+        ["@echo off", "rem does something custom", "custom.exe %*"].join("\r\n"),
+      );
+      setPath(binDir);
 
       const result = resolveExecutable("legacy");
 
@@ -267,7 +320,7 @@ describe("resolveExecutable (T009a)", () => {
     });
 
     it("returns an error when the command cannot be found on PATH", () => {
-      process.env.PATH = root; // empty dir, nothing on it
+      setPath(root); // empty dir, nothing on it
       const result = resolveExecutable("does-not-exist-anywhere");
       expect(result.resolved).toBeNull();
       expect(result.errorMessage).toBeTruthy();
@@ -282,14 +335,14 @@ describe("resolveExecutable (T009a)", () => {
   // "Command not found". Gated to POSIX like filesystem-scanner.test.ts's
   // symlink tests, since Windows accessSync(X_OK) semantics don't model
   // POSIX executable bits.
-  describe.skipIf(process.platform === "win32")("POSIX extensionless commands (final-comprehensive-report regression)", () => {
+  describe.skipIf(IS_WINDOWS)("POSIX extensionless commands (final-comprehensive-report regression)", () => {
     it("finds a bare, extensionless executable on PATH — the default codex/claude/opencode install shape", () => {
       const binDir = join(root, "bin");
       mkdirSync(binDir, { recursive: true });
       const target = join(binDir, "fake-cli");
       writeFileSync(target, "#!/bin/sh\necho fake\n");
       chmodSync(target, 0o755);
-      putOnPath(binDir);
+      setPath(binDir);
 
       const result = resolveExecutable("fake-cli");
 
@@ -301,7 +354,7 @@ describe("resolveExecutable (T009a)", () => {
       mkdirSync(binDir, { recursive: true });
       writeFileSync(join(binDir, "not-executable"), "just data\n");
       chmodSync(join(binDir, "not-executable"), 0o644);
-      putOnPath(binDir);
+      setPath(binDir);
 
       const result = resolveExecutable("not-executable");
 
