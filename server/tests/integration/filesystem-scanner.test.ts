@@ -1,9 +1,43 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createTempDir, cleanupTempDir } from "../helpers.js";
 import { writeFileSync, mkdirSync, rmSync, symlinkSync, chmodSync } from "node:fs";
 import { join } from "node:path";
-import { captureFilesystemSnapshot, diffFilesystemSnapshots } from "../../src/runtime/trace/filesystem-workspace-scanner.js";
+import {
+  captureFilesystemSnapshot,
+  diffFilesystemSnapshots,
+} from "../../src/runtime/trace/filesystem-workspace-scanner.js";
 import { FileChangeType } from "@personahub/shared/types";
+
+/**
+ * BUG-005 (2026-09-03): the permission-denied case used to be built with
+ * `chmod 0o000`, which root ignores — so under root (containers and CI
+ * routinely run as root) the scan completed normally and the test failed.
+ * Guarding it on uid would have been worse than the bug: the branch would then
+ * be covered in exactly the environments that never run it.
+ *
+ * So the branch is driven directly instead. `scanTree` reaches
+ * `permission_denied` when `readdirSync` throws, so one targeted `readdirSync`
+ * failure reproduces it on any platform and any uid. `deniedDir` is the switch:
+ * null means "pass everything through", so every other test in this file keeps
+ * using the real filesystem.
+ */
+const deniedDir = vi.hoisted(() => ({ path: null as string | null }));
+
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  const readdirSync = ((target: Parameters<typeof actual.readdirSync>[0], ...rest: unknown[]) => {
+    if (deniedDir.path !== null && String(target) === deniedDir.path) {
+      const error: NodeJS.ErrnoException = new Error(`EACCES: permission denied, scandir '${String(target)}'`);
+      error.code = "EACCES";
+      error.errno = -13;
+      error.syscall = "scandir";
+      error.path = String(target);
+      throw error;
+    }
+    return (actual.readdirSync as (...args: unknown[]) => unknown)(target, ...rest);
+  }) as typeof actual.readdirSync;
+  return { ...actual, readdirSync, default: { ...actual, readdirSync } };
+});
 
 describe("Filesystem Workspace Scanner (T028)", () => {
   let dir: string;
@@ -12,6 +46,7 @@ describe("Filesystem Workspace Scanner (T028)", () => {
     dir = createTempDir();
   });
   afterEach(() => {
+    deniedDir.path = null;
     cleanupTempDir(dir);
   });
 
@@ -37,7 +72,7 @@ describe("Filesystem Workspace Scanner (T028)", () => {
     writeFileSync(join(dir, "app.ts"), "modified");
     const after = captureFilesystemSnapshot(dir);
     const diffs = diffFilesystemSnapshots(before, after);
-    const modified = diffs.find(d => d.change_type === FileChangeType.Modified);
+    const modified = diffs.find((d) => d.change_type === FileChangeType.Modified);
     expect(modified).toBeDefined();
   });
 
@@ -47,7 +82,7 @@ describe("Filesystem Workspace Scanner (T028)", () => {
     rmSync(join(dir, "remove.ts"));
     const after = captureFilesystemSnapshot(dir);
     const diffs = diffFilesystemSnapshots(before, after);
-    const deleted = diffs.find(d => d.change_type === FileChangeType.Deleted);
+    const deleted = diffs.find((d) => d.change_type === FileChangeType.Deleted);
     expect(deleted).toBeDefined();
   });
 
@@ -101,16 +136,22 @@ describe("Filesystem Workspace Scanner (T028)", () => {
       writeFileSync(join(dir, `file${i}.ts`), `content${i}`);
     }
     const before = captureFilesystemSnapshot(dir, {
-      wallTimeMs: 10_000, maxEntries: 50, hashedBytesPerFile: 8 * 1024 * 1024, persistedChanges: 5000,
+      wallTimeMs: 10_000,
+      maxEntries: 50,
+      hashedBytesPerFile: 8 * 1024 * 1024,
+      persistedChanges: 5000,
     });
     writeFileSync(join(dir, "new.ts"), "new");
     const after = captureFilesystemSnapshot(dir, {
-      wallTimeMs: 10_000, maxEntries: 50, hashedBytesPerFile: 8 * 1024 * 1024, persistedChanges: 5000,
+      wallTimeMs: 10_000,
+      maxEntries: 50,
+      hashedBytesPerFile: 8 * 1024 * 1024,
+      persistedChanges: 5000,
     });
     const diffs = diffFilesystemSnapshots(before, after);
-    const added = diffs.filter(d => d.change_type === FileChangeType.Added);
-    const deleted = diffs.filter(d => d.change_type === FileChangeType.Deleted);
-    const modified = diffs.filter(d => d.change_type === FileChangeType.Modified);
+    const added = diffs.filter((d) => d.change_type === FileChangeType.Added);
+    const deleted = diffs.filter((d) => d.change_type === FileChangeType.Deleted);
+    const modified = diffs.filter((d) => d.change_type === FileChangeType.Modified);
     expect(added.length + deleted.length).toBe(0);
     expect(modified.length).toBeGreaterThanOrEqual(0);
   });
@@ -129,7 +170,7 @@ describe("Filesystem Workspace Scanner (T028)", () => {
     }
   });
 
-  it.runIf(process.platform !== "win32")("does not produce false added/deleted when subdirectory is permission denied (T089)", () => {
+  it("does not produce false added/deleted when subdirectory is permission denied (T089)", () => {
     mkdirSync(join(dir, "sub"));
     writeFileSync(join(dir, "sub", "file.ts"), "content");
     writeFileSync(join(dir, "root.ts"), "root");
@@ -139,9 +180,9 @@ describe("Filesystem Workspace Scanner (T028)", () => {
     expect(before.entries.has("root.ts")).toBe(true);
     expect(before.entries.has("sub/file.ts")).toBe(true);
 
-    chmodSync(join(dir, "sub"), 0o000);
+    deniedDir.path = join(dir, "sub");
 
-    try {
+    {
       const after = captureFilesystemSnapshot(dir);
       // Permission denied means incomplete but NOT truncated
       expect(after.scanComplete).toBe(false);
@@ -154,12 +195,36 @@ describe("Filesystem Workspace Scanner (T028)", () => {
 
       // No false added/deleted (bothComplete is false when scanComplete is false)
       const diffs = diffFilesystemSnapshots(before, after);
-      const added = diffs.filter(d => d.change_type === FileChangeType.Added);
-      const deleted = diffs.filter(d => d.change_type === FileChangeType.Deleted);
+      const added = diffs.filter((d) => d.change_type === FileChangeType.Added);
+      const deleted = diffs.filter((d) => d.change_type === FileChangeType.Deleted);
       expect(added.length).toBe(0);
       expect(deleted.length).toBe(0);
-    } finally {
-      chmodSync(join(dir, "sub"), 0o755);
     }
   });
+
+  /**
+   * The real-filesystem half of T089: proves the mocked case above models
+   * something that actually happens. Only meaningful as a non-root POSIX user —
+   * root ignores the permission bits, and Windows has no equivalent — so it is
+   * an additional guarantee where the OS can provide it, never the only one.
+   */
+  it.runIf(process.platform !== "win32" && process.getuid?.() !== 0)(
+    "reaches the same permission_denied stop reason from real chmod 0o000 (non-root POSIX)",
+    () => {
+      mkdirSync(join(dir, "sub"));
+      writeFileSync(join(dir, "sub", "file.ts"), "content");
+      writeFileSync(join(dir, "root.ts"), "root");
+
+      chmodSync(join(dir, "sub"), 0o000);
+      try {
+        const snapshot = captureFilesystemSnapshot(dir);
+        expect(snapshot.scanComplete).toBe(false);
+        expect(snapshot.scanTruncated).toBe(false);
+        expect(snapshot.stopReason).toBe("permission_denied");
+        expect(snapshot.entries.has("sub/file.ts")).toBe(false);
+      } finally {
+        chmodSync(join(dir, "sub"), 0o755);
+      }
+    },
+  );
 });

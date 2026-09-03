@@ -16,7 +16,8 @@
 | BUG-002 | fixed | 2026-08-11 22:34 | 中 | 任务级 | — | web cancel 空 body 带 JSON content-type → 500 | apiFetch 无条件设 Content-Type，Fastify 拒空 body | web | api-client.ts | f002-ui-flows.test.tsx | 89ed06d |
 | BUG-003 | open | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | interrupted 不推进 round_count 且仍占 round 槽 | validation | result-processor.ts | — | — |
 | BUG-004 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 装了 agent CLI 的机器上 executable-resolver 单测 7 例必红，`npm run verify` 长期红灯 | 用例是 Windows 形状（`.exe`/`.cmd` fixture、无 exec 位）却在 POSIX 上跑；PATH 又是 prepend 而非替换，于是落回宿主真实二进制 | runtime | server/tests/unit/executable-resolver.test.ts / package.json | executable-resolver.test.ts::does_not_fall_back_to_a_same-named_executable_elsewhere_on_PATH | 3ceed8d |
-| BUG-005 | open | 2026-09-03 17:02 | 中 | 任务级 | — | 以 root 运行时权限拒绝扫描用例必红（T089） | 用 chmod 000 构造权限拒绝，但 root 无视 DAC 位；守卫只排除了 win32，没排除 root | workspace | server/tests/integration/filesystem-scanner.test.ts | — | — |
+| BUG-005 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 以 root 运行时权限拒绝扫描用例必红（T089） | 用 chmod 000 构造权限拒绝，但 root 无视 DAC 位；守卫只排除了 win32，没排除 root | workspace | server/tests/integration/filesystem-scanner.test.ts / package.json | filesystem-scanner.test.ts::T089 + ::reaches_the_same_permission_denied_stop_reason_from_real_chmod | PENDING5 |
+| BUG-006 | open | 2026-09-03 17:24 | 低 | 任务级 | — | Feature 门禁在 Linux 上不拒绝 Windows 绝对路径（`C:\Users\test` 被判合法测试路径） | `validateTestPathSyntax` 用 `path.isAbsolute`，在 Linux 是 posix 语义，识别不出盘符路径；注释写的是「Unix 或 Windows 都拒绝」 | tooling | tools/check-feature-gates.mjs | tools/check-feature-gates.test.mjs::validateTestPathSyntax::rejects_Windows_absolute_path（已存在，当前红） | — |
 
 ## 详情
 
@@ -75,12 +76,39 @@
 
 ### BUG-005：以 root 运行时，权限拒绝扫描用例必红（T089）
 
-- **现象**：`server/tests/integration/filesystem-scanner.test.ts:132` 的
+- **现象**：`server/tests/integration/filesystem-scanner.test.ts` 的
   `does not produce false added/deleted when subdirectory is permission denied (T089)` 失败，
   `after.scanComplete` 仍为 `true`（期望 `false`）。
 - **复现**：以 root 身份跑 `npx vitest run --root server tests/integration/filesystem-scanner.test.ts`。
 - **根因**：用例用 `chmodSync(join(dir, "sub"), 0o000)` 构造"权限拒绝"场景，但 **root 无视 DAC 权限位**，仍能遍历该目录，因此 `scanComplete` 不会变 false、`stopReason` 也不是 `permission_denied`。用例的运行守卫只排除了 Windows（`it.runIf(process.platform !== "win32")`），没有排除 root。
-- **修复方向（待实施）**：**不要**只加 uid 守卫跳过——容器与 CI 常以 root 跑，跳过等于这条守卫在最需要它的环境里从不生效。更可取的是改用不依赖 DAC 的方式模拟遍历失败（注入 fs 错误 / 用可替换的目录读取 seam），让用例在任何 uid 下都真实覆盖 `permission_denied` 分支。**开发冻结期内不改代码，仅登记。**
-- **回归测试**：修复后该用例需在 root 与非 root 两种身份下都真实执行（而非 skip）并通过。
-- **发现方式**：同 BUG-004，同一次 `npm run verify`。
-- **备注**：与 BUG-004 同源于一类问题——**用例把"宿主环境恰好是什么样"当成了测试前提**（BUG-004 是宿主装了什么 CLI + 跑在什么平台，本条是以什么身份运行）。若第三例同型缺陷出现，应按 `self-test-system-plan.md` §7.2「重复即升级」补一条需求级约束：单测与集成测试不得依赖宿主 PATH、uid 或已安装的外部 CLI。
+- **修复**：改测试，不改产品代码。**没有采用"加 uid 守卫跳过"**——容器与 CI 常以 root 跑，跳过等于这条守卫在最需要它的环境里从不生效，那比现在红着更糟。改为直接驱动被测分支：`scanTree` 到达 `permission_denied` 的唯一条件是 `readdirSync` 抛错，因此用 `vi.mock("node:fs", …)` 只对**一个指定目录**让 `readdirSync` 抛 `EACCES`，其余调用原样透传。开关是模块级的 `deniedDir.path`，默认 `null`，`afterEach` 复位，所以同文件其余用例继续走真实文件系统。这样该用例在**任何平台、任何 uid** 下都真实覆盖 `permission_denied` 分支。
+- **回归测试**：
+  - `T089` 本体现在无条件运行（原先在 root 下必红、在 Windows 下被跳过）；
+  - 新增 `reaches the same permission_denied stop reason from real chmod 0o000 (non-root POSIX)`——真实文件系统那一半，守卫为 `platform !== "win32" && getuid() !== 0`。它证明上面的 mock 建模的是真实会发生的事；作为 OS 能提供时的**额外**保证，而不是唯一保证。
+- **发现方式**：自动化测试——2026-09-03 提交文档改动前的例行 `npm run verify`。
+- **备注**：与 BUG-004 同源于一类问题——**用例把"宿主环境恰好是什么样"当成了测试前提**（BUG-004 是宿主装了什么 CLI + 跑在什么平台，本条是以什么身份运行）。修复后 server 全量 1672 passed / 0 failed。按 CLAUDE.md 增量格式化约定，把该文件纳入 `package.json` 的 prettier format targets。
+
+### BUG-006：Feature 门禁在 Linux 上不拒绝 Windows 绝对路径
+
+- **现象**：`npm run verify` 的 `test:feature-gates` 阶段红灯，
+  `tools/check-feature-gates.test.mjs` 的
+  `validateTestPathSyntax > rejects Windows absolute path` 失败——
+  `validateTestPathSyntax('C:\\Users\\test')` 在 Linux 上返回 `ok: true`。
+- **复现**：在 Linux/macOS 上跑 `npm run test:feature-gates`。Windows 上不复现。
+- **根因**：`tools/check-feature-gates.mjs:578` 用 `path.isAbsolute(p)` 判断绝对路径，
+  而 `path` 在 Linux 上是 posix 实现，识别不出 `C:\…` 盘符路径。**紧邻的注释写的是
+  「Reject absolute paths (Unix or Windows)」——意图明确，实现只覆盖了当前平台。**
+- **影响判断**：这不只是测试问题，是**门禁本身的漏洞**——在 Linux 上，Feature spec 里写
+  `tests: C:\Users\x.test.ts` 这样的测试路径不会被拒。严重度定为「低」是因为触发它需要
+  有人在 spec 里手写盘符路径；但它落在**守护其他所有门禁的那一层**，不宜久留。
+- **修复方向（待实施）**：用 `path.win32.isAbsolute(p) || path.posix.isAbsolute(p)`
+  同时判两种语义（或直接加盘符正则），使结果与运行平台无关。
+- **回归测试**：现有用例 `rejects Windows absolute path` 已经写对了、当前是红的；
+  修复后它应在两种平台上都绿。**不需要新增用例——用例没错，实现错了。**
+- **发现方式**：自动化测试——修完 BUG-004/005 后跑 `npm run verify` 时暴露。
+- **备注**：这是同一缺陷家族的**第三例**（BUG-004 宿主装了什么 + 什么平台、BUG-005 什么身份、
+  本条什么平台）。按 <a href="self-test-system-plan.md">`self-test-system-plan.md`</a> §7.2
+  「重复即升级」，处置不应再是第三个点修，而应补一条**需求级约束**：
+  **测试与门禁的判定结果不得依赖宿主 PATH、uid 或运行平台；平台相关语义必须显式双向覆盖，
+  不能依赖 `path` / `fs` 的当前平台默认实现。** 该约束的落点见
+  `self-test-system-plan.md`，本条只登记触发事实。
