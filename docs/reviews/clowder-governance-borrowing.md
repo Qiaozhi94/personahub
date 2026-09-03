@@ -235,10 +235,12 @@ blocker code 是封闭词表、文案随 code 持久化，重启后重渲染同�
 **PersonaHub 现状对照**：
 
 - Issue 级已有（validation pass → Done + 绑定 evidence summary，PRD §7.5 / §7.6），不用借。
-- **缺口 A（流程层，可立刻补）**：`tools/dogfood-bugs.mjs:171` 只校验了
-  `open ⇒ 无 fix commit`，反向没有——**`fixed` 不要求「回归测试」列非空**。当前 BUG-003
-  状态 open、回归测试 `—`、修复方向"待实施"。补两条规则即可：`fixed` 必须有非 `—` 的回归测试；
-  新增 `wontfix` 状态且必须带理由（对应上面第 2 条）。
+- **缺口 A（流程层）——已于 2026-09-03 落地**：原先 `tools/dogfood-bugs.mjs` 只校验了
+  `open ⇒ 无 fix commit`，反向没有，`fixed` 不要求「回归测试」列非空。现在：
+  `fixed` 必须同时有非 `—` 的回归测试与修复 commit；新增 `wontfix` 状态，必须在详情块写
+  `不修理由`、且不得带修复 commit。**并且把 `npm run bug:log` 接进了 `npm run verify`**
+  ——此前它只在有人手动敲时才跑，等于一条没有 consumer 的门禁，正是本文 §4.2 要防的东西。
+  新增 21 条工具测试（`tools/dogfood-bugs.test.mjs`），已入 `test:docs`。
 - **缺口 B（产品层，P1）**：`shared/src/types/validation.ts` 有 `ValidationFindingRecord`
   （`finding_index` / `latest_findings`），但 **finding 没有生命周期**。第 2 轮与第 1 轮的
   findings 怎么对齐、哪些重复、哪条是"带理由不修"，目前无对象承载；PRD §7.5 只写了
@@ -342,7 +344,7 @@ EVOLUTION_CYCLE_DECISIONS = ['keep','tune','rollback','sunset','no_change','insu
 | 优先级 | 项 | 层 | 规模 | 开发冻结影响 |
 |---|---|---|---|---|
 | ~~立刻~~ **已完成 2026-09-03** | ② 轻量 Eval Contract 门禁（4 项 + 条件触发 + 空填拒绝） | 流程 | `checkEvalContract` + 15 条门禁测试 + README 规范 | 不受影响（tooling/文档，非业务代码） |
-| 立刻 | ③-A bug log「复验才能关单」+ `wontfix` 带理由；缺失一律 typed 标记不留空格 | 流程 | 约 15 行 | 同上 |
+| ~~立刻~~ **已完成 2026-09-03** | ③-A bug log「复验才能关单」+ `wontfix` 带理由 | 流程 | 校验规则 + 21 条工具测试；并把 `bug:log` 接进 `verify` | 不受影响（tooling/文档，非业务代码） |
 | 进 P1 设计 | ④' validation 结论加 `insufficient`；只有 `execution` 类 fail 消耗轮次 | 产品 | 枚举 + 状态流转 | 仅设计层 |
 | 进 P1 设计 | ①' 归因四层 `execution / harness / rubric / observation` | 产品 | 一个枚举 | 仅设计层 |
 | 进 P1 设计 | ①'' `whyNotChange` 人话清单 + 封闭 blocker code 表 | 产品 | 文案表 + 渲染 | 仅设计层 |

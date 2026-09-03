@@ -15,7 +15,13 @@ const REVIEWS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 
 const BUG_DOC = join(REVIEWS_DIR, 'dogfooding-bugs.md');
 const NOTE_DOC = join(REVIEWS_DIR, 'dogfooding-notes.md');
 
-const LEGAL_STATUSES = ['fixed', 'open'];
+// `wontfix` exists so that "looked at it, deliberately not fixing" has somewhere
+// to go other than staying `open` forever or quietly disappearing. Borrowed from
+// clowder-ai's `suppressed_with_reason` being a first-class lifecycle state
+// (F266) — see docs/reviews/clowder-governance-borrowing.md §4.3.
+const LEGAL_STATUSES = ['fixed', 'open', 'wontfix'];
+/** Marker a wontfix detail block must carry. Bold so it is visible when reading, not just when parsing. */
+const WONTFIX_REASON_MARKER = '不修理由';
 const LEGAL_SEVERITIES = ['高', '中', '低'];
 // Which layer should have caught this. Drives where the regression case goes —
 // see self-test-system-plan.md §7.1.
@@ -84,9 +90,36 @@ export function parseBugLog(markdown) {
     escapeLayer: row[col('逃逸层级')],
     journeyStep: row[col('旅程步骤')],
     problem: row[col('问题')],
+    regressionTest: row[col('回归测试')] ?? EMPTY,
     fixCommit: row[col('修复 commit')] ?? EMPTY,
   }));
   return { header, issues };
+}
+
+/**
+ * Map of BUG id -> its `### BUG-xxx…` detail block body.
+ * Used only to check that a `wontfix` states why; everything else is table-driven.
+ */
+export function parseDetailSections(markdown) {
+  const sections = new Map();
+  const lines = markdown.split('\n');
+  let currentId = null;
+  let buffer = [];
+  const flush = () => {
+    if (currentId) sections.set(currentId, buffer.join('\n'));
+    buffer = [];
+  };
+  for (const line of lines) {
+    const heading = line.match(/^###\s+(BUG-\d+)/);
+    if (heading) {
+      flush();
+      currentId = heading[1];
+      continue;
+    }
+    if (currentId) buffer.push(line);
+  }
+  flush();
+  return sections;
 }
 
 /**
@@ -139,7 +172,7 @@ export function findRepeatedSteps(entries) {
 // Validation + summary (pure)
 // ---------------------------------------------------------------------------
 
-export function validateBugs(issues) {
+export function validateBugs(issues, details = new Map()) {
   const errors = [];
   const seen = new Set();
   for (const issue of issues) {
@@ -171,6 +204,30 @@ export function validateBugs(issues) {
     if (issue.status === 'open' && issue.fixCommit && issue.fixCommit !== EMPTY) {
       errors.push(`${issue.id}: status is open but has fix commit "${issue.fixCommit}"`);
     }
+    // "复验才能关单": a fix nobody can re-run is a claim, not a closure. Borrowed
+    // from clowder-ai F266 — closure may come from a passing re-check, an explicit
+    // reasoned decision, or sunset; never from someone saying "fixed".
+    if (issue.status === 'fixed') {
+      if (!issue.regressionTest || issue.regressionTest === EMPTY) {
+        errors.push(
+          `${issue.id}: status is fixed but has no regression test — a fix nobody can re-run is a claim, not a closure`,
+        );
+      }
+      if (!issue.fixCommit || issue.fixCommit === EMPTY) {
+        errors.push(`${issue.id}: status is fixed but has no fix commit`);
+      }
+    }
+    if (issue.status === 'wontfix') {
+      if (issue.fixCommit && issue.fixCommit !== EMPTY) {
+        errors.push(`${issue.id}: status is wontfix but has fix commit "${issue.fixCommit}"`);
+      }
+      const detail = details.get(issue.id);
+      if (!detail || !detail.includes(WONTFIX_REASON_MARKER)) {
+        errors.push(
+          `${issue.id}: status is wontfix but its detail block has no "${WONTFIX_REASON_MARKER}" — deciding not to fix is a decision, and a decision needs a reason on the record`,
+        );
+      }
+    }
   }
   return errors;
 }
@@ -201,7 +258,7 @@ function main() {
   const markdown = readFileSync(BUG_DOC, 'utf8');
   const { issues } = parseBugLog(markdown);
   const { notes } = parseNoteLog(readFileSync(NOTE_DOC, 'utf8'));
-  const errors = validateBugs(issues);
+  const errors = validateBugs(issues, parseDetailSections(markdown));
   const summary = summarizeBugs(issues);
   const repeated = findRepeatedSteps([...issues, ...notes]);
 

@@ -32,9 +32,9 @@
     "check:doc-links": "node tools/check-doc-links.mjs",
     "check:doc-ownership": "node tools/check-doc-ownership.mjs",
     "check:e2e-fixme": "node tools/check-e2e-fixme.mjs",
-    "test:docs": "node --test tools/check-docs.test.mjs tools/check-e2e-fixme.test.mjs",
+    "test:docs": "node --test tools/check-docs.test.mjs tools/check-e2e-fixme.test.mjs tools/dogfood-bugs.test.mjs",
     "bug:log": "node tools/dogfood-bugs.mjs",
-    "verify": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run test:feature-gates && npm run test:docs && npm run check:features && npm run check:doc-links && npm run check:doc-ownership && npm run check:e2e-fixme",
+    "verify": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run test:feature-gates && npm run test:docs && npm run check:features && npm run check:doc-links && npm run check:doc-ownership && npm run check:e2e-fixme && npm run bug:log",
     "verify:release": "npm run verify && npm run build && npm run test:e2e:install && npm run test:e2e"
   },
   "engines": {
