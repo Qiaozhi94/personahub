@@ -1151,9 +1151,13 @@ await check("实现与验证不能同源是硬约束（PRD 第 7.5 节）", asyn
   await picker.locator("[data-picker-close]").first().click();
 
   await page.locator('.main-rail [data-surface="library"]').click();
-  const squad = await page.locator('[data-library-body="skill"]').innerText();
-  if (!squad.includes("只给结果")) throw new Error("编组没有把验证步的上下文范围写成字段");
-  if (!squad.includes("独立")) throw new Error("编组没有说明为什么要限制上下文");
+  await page.locator('[data-library-tab="skill"]').click();
+  const skillPane = page.locator('[data-library-body="skill"]');
+  await skillPane.locator('[data-skill-open="verify-pair"]').click();
+  const squad = await skillPane.locator('[data-skill-scope="detail"]').innerText();
+  if (!squad.includes("只给结果")) throw new Error("编组详情没有把验证步的上下文范围写成字段");
+  if (!squad.includes("独立")) throw new Error("编组详情没有说明为什么要限制上下文");
+  await skillPane.locator('[data-skill-back]').click();
   await page.locator('.main-rail [data-surface="project"]').click();
 });
 
@@ -1540,13 +1544,8 @@ await check("能力面：无左框、无成员卡、执行组合不在这里（A
   const skill = lib.locator('[data-library-body="skill"]');
   if (!(await skill.isVisible())) throw new Error("默认不是 Skills tab");
   const text = await skill.innerText();
-  if (!text.includes("只给结果")) throw new Error("编组没有写明每一步的上下文范围");
-  if (!text.includes("触碰")) throw new Error("Skill 看不出什么时候注入");
-  if (!text.includes("次命中")) throw new Error("Skill 看不出命中过多少次");
-  if (!text.includes("不注入验证类派工")) {
-    throw new Error("没有写明 Skill 不注入验证类派工——被喂做法的验证不独立");
-  }
-  if (!(await skill.locator(".dl-row.off").count())) throw new Error("看不到已停用的行");
+  if (!text.includes("已下发")) throw new Error("看不出这条 skill 到了哪几个 adapter");
+  if (!(await skill.locator(".skill-list .dl-row.off").count())) throw new Error("看不到已停用的行");
 });
 
 await check("执行组合是运行时的检查结果，不是每天要挑的配置（V3.15）", async () => {
@@ -2179,26 +2178,30 @@ await check("Skills 是一张表 + tag 筛选，编组只是带 steps 的行（V
   await page.locator('[data-library-tab="skill"]').click();
 
   const head = await pane.locator(".dl-head").innerText();
-  for (const col of ["名称", "tags", "要求", "步骤", "来源", "状态"]) {
+  for (const col of ["名称", "需要能力", "已下发", "来源", "更新", "状态"]) {
     if (!head.includes(col)) throw new Error(`Skills 表缺少「${col}」列`);
   }
+  // V3.22：列表回答「挑哪一条」，这几样属于详情
+  if (head.includes("步骤")) throw new Error("步骤链又回到列表里了——它属于详情（design.md §3.2.3）");
+  if (head.includes("创建人")) throw new Error("创建人属于详情；「这是我写的还是包带来的」由来源列回答");
+  if (head.includes("要求")) throw new Error("「要求」应已正名为「需要能力」");
   if (head.includes("表现") || head.includes("评分")) {
     throw new Error("表里出现了表现列——Squad 不产生持久身份（ADR 0012 第 5 条），表现是展开后现算的一句");
   }
 
-  const total = await pane.locator(".dl-row").count();
+  const total = await pane.locator(".skill-list .dl-row").count();
   if (total < 8) throw new Error("Skills 表行数太少，看不出编组与普通 skill 混在同一张表里");
 
   // tag 筛选：#编组 应该只留下带 steps 的那几行
   await pane.locator('[data-lib-filter="编组"]').click();
-  const shown = await pane.locator(".dl-row:not([hidden])").count();
+  const shown = await pane.locator(".skill-list .dl-row:not([hidden])").count();
   if (shown === total) throw new Error("按 #编组 筛选没有过滤掉任何行——筛选是假的");
   if (shown === 0) throw new Error("按 #编组 筛选之后一行都不剩");
-  for (const row of await pane.locator(".dl-row:not([hidden])").all()) {
-    if (!(await row.innerText()).includes("步")) throw new Error("#编组 里出现了没有步骤的行");
+  for (const row of await pane.locator(".skill-list .dl-row:not([hidden])").all()) {
+    if (!(await row.innerText()).includes("#编组")) throw new Error("#编组 筛选里出现了不带该 tag 的行");
   }
   await pane.locator('[data-lib-filter="all"]').click();
-  if ((await pane.locator(".dl-row:not([hidden])").count()) !== total) throw new Error("切回「全部」没有恢复所有行");
+  if ((await pane.locator(".skill-list .dl-row:not([hidden])").count()) !== total) throw new Error("切回「全部」没有恢复所有行");
 });
 
 await check("插件的 tab 是声明出来的，动作走宿主白名单（V3.21 §3.2.6）", async () => {
@@ -2225,6 +2228,65 @@ await check("插件的 tab 是声明出来的，动作走宿主白名单（V3.21
   if (!ptext.includes("能力包") || !ptext.includes("插件")) throw new Error("插件组没有分成能力包与插件两个子区——风险差一个数量级的东西不能长得一样");
   if (!ptext.includes("没有沙箱")) throw new Error("代码准入没有写出「本机没有沙箱」");
   if (!ptext.includes("不得声明 surface")) throw new Error("没有写出 adapter 不能开 tab 的准入判据");
+});
+
+await check("Skill 详情：左文件列表 + 右内容，元信息带 id@version（V3.22 §3.2.3）", async () => {
+  await page.locator('.main-rail [data-surface="library"]').click();
+  await page.locator('[data-library-tab="skill"]').click();
+  const pane = page.locator('[data-library-body="skill"]');
+
+  // 点名字下钻
+  await pane.locator('[data-skill-open="verify-pair"]').click();
+  const detail = pane.locator('[data-skill-scope="detail"]');
+  if (!(await detail.isVisible())) throw new Error("点名字没有进详情");
+  if (await pane.locator('[data-skill-scope="list"]').isVisible()) throw new Error("进详情后列表还在，两者应该互斥");
+
+  const text = await detail.innerText();
+  // 元信息六样
+  for (const want of ["来源", "版本", "创建", "最后更新", "已下发", "需要能力"]) {
+    if (!text.includes(want)) throw new Error(`详情缺少元信息「${want}」`);
+  }
+  // 版本号必须露出来，否则那句现算表现无从核对
+  if (!text.includes("@3")) throw new Error("详情没有露出 id@version——§3.2.4 的表现句就无法核对是哪一版之后的样本");
+  if (!text.includes("统计不足") && !text.includes("样本不足")) throw new Error("表现句没有标样本量");
+  // 步骤在详情里，不在列表里
+  if (!text.includes("只给结果")) throw new Error("详情没有写出每一步的上下文范围");
+
+  // 左边文件列表 + 右边内容，切文件右边跟着换
+  if ((await detail.locator('[data-skill-file]:visible').count()) < 2) throw new Error("详情没有文件列表");
+  await detail.locator('[data-skill-file="pair-ref"]').click();
+  const shown = detail.locator('[data-skill-file-view="pair-ref"]');
+  if (!(await shown.isVisible())) throw new Error("切文件右侧没有跟着换");
+  if (await detail.locator('[data-skill-file-view="pair-main"]').isVisible()) throw new Error("旧文件视图没有隐藏");
+
+  // 只读：不提供编辑入口，只提供在编辑器打开
+  if (!text.includes("只读")) throw new Error("详情没有声明它是只读的");
+  if (!text.includes("在编辑器打开")) throw new Error("没有给出改磁盘文件的出口");
+
+  // 返回是明确动作
+  await detail.locator("[data-skill-back]").click();
+  if (!(await pane.locator('[data-skill-scope="list"]').isVisible())) throw new Error("返回没有回到列表");
+});
+
+await check("Skill 行尾是三点菜单，且没有「编辑」（V3.22 §3.2.3）", async () => {
+  await page.locator('.main-rail [data-surface="library"]').click();
+  await page.locator('[data-library-tab="skill"]').click();
+  const row = page.locator('[data-library-body="skill"] .skill-list .dl-row').first();
+
+  const menu = row.locator(".row-menu");
+  if (!(await menu.count())) throw new Error("行尾没有三点菜单");
+  // 未悬停时不展开
+  if (await menu.locator(".row-menu-pop").isVisible()) throw new Error("下拉默认就是展开的");
+  await menu.locator(".row-menu-btn").hover();
+  const pop = menu.locator(".row-menu-pop");
+  if (!(await pop.isVisible())) throw new Error("鼠标移上去没有展开下拉");
+
+  const items = await pop.locator("button").allInnerTexts();
+  if (!items.some((t) => t.includes("停用") || t.includes("启用"))) throw new Error("菜单里没有停用/启用");
+  if (!items.some((t) => t.includes("删除"))) throw new Error("菜单里没有删除");
+  if (items.some((t) => t.includes("编辑"))) {
+    throw new Error("菜单里出现了「编辑」——skill 不该被手改，改一版就是另一段样本（§3.2.4）");
+  }
 });
 
 await browser.close();

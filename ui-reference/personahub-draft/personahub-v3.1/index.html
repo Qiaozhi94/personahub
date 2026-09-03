@@ -2820,7 +2820,8 @@ completed -&gt; archived</code></pre>
               </div>
 
               <div class="lib-pane" data-library-body="skill">
-                <p class="pane-note"><b>没有「编组」这个类型</b>——一条 Skill 填了步骤它就是编组（自动带 <code>#编组</code>），不填就是一条普通做法。两个类型会逼你在用熟之后「转换类型」，历史表现跟着断；而 ADR 0012 第 5 条要防的正是「编组积累成身份」，<b>一个可来可去的 tag 比一个独立类型离那个失败模式更远</b>。<br><b>「要求」写的是这条做法至少需要什么能力，不写「配哪个组合最好」</b>——后者会长出第二套路由信号。<b>这张表没有「表现」列，也不能按表现排序</b>：表现是展开后现算的一句观察。</p>
+                <div data-skill-scope="list">
+                <p class="pane-note"><b>没有「编组」这个类型</b>——一条 Skill 填了步骤它就是编组（自动带 <code>#编组</code>），不填就是一条普通做法。两个类型会逼你在用熟之后「转换类型」，历史表现跟着断；而 ADR 0012 第 5 条要防的正是「编组积累成身份」，<b>一个可来可去的 tag 比一个独立类型离那个失败模式更远</b>。<br><b>列表只放挑的时候用得上的</b>：步骤链、创建人、命中次数都在详情里——点名字进去。<b>「需要能力」写的是这条做法至少需要执行者具备什么</b>，不写「配哪个组合最好」；<b>「已下发」是事实不是范围</b>，它说的是这条 skill 被翻译成了哪几个 adapter 的原生格式，不是「只准给谁用」。</p>
 
                 <div class="lib-filter" role="group" aria-label="按 tag 筛选">
                   <button class="active" type="button" data-lib-filter="all">全部 <i>9</i></button>
@@ -2830,105 +2831,174 @@ completed -&gt; archived</code></pre>
                   <button type="button" data-lib-filter="架构">#架构 <i>1</i></button>
                 </div>
 
-                <div class="data-list" style="--cols: minmax(0, 1.15fr) 150px 130px 168px 138px 92px 58px" role="table" aria-label="Skills">
-                  <div class="dl-head" role="row"><span>名称</span><span>tags</span><span>要求</span><span>步骤</span><span>来源</span><span>状态</span><span></span></div>
+                <div class="data-list skill-list" style="--cols: minmax(0, 1.3fr) 126px 116px 132px 76px 104px 40px" role="table" aria-label="Skills">
+                  <div class="dl-head" role="row"><span>名称</span><span>需要能力</span><span>已下发</span><span>来源</span><span>更新</span><span>状态</span><span></span></div>
 
                   <div class="dl-row" role="row" data-tags="编组 交付">
-                    <span class="dl-title">代码实现 + 独立验证</span>
-                    <span><em class="cap-tag">#编组</em><em class="cap-tag">#交付</em></span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="verify-pair">代码实现 + 独立验证</button><small class="dl-tags"><em class="cap-tag">#编组</em><em class="cap-tag">#交付</em></small></span>
                     <span><em class="cap-tag">工具循环</em></span>
-                    <span class="dl-chain"><b>2 步</b> <code>codex-gpt5.6-high</code><i>→</i><code>claude-sonnet4.8-medium</code></span>
+                    <span class="ship-dots"><i class="on" title="Claude Code · 已下发为 skill 文件">A</i><i class="on" title="Codex · 已写入 AGENTS.md 段落">C</i><i title="OpenCode · 未下发：它不支持这种注入">O</i></span>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">内置</button></span>
+                    <span class="dl-dim">08-30</span>
                     <span class="pill success">已启用</span>
-                    <span class="dl-act"><button type="button" data-demo="编辑这条 Skill：步骤、上下文围栏与要求 tag">编辑</button></span>
-                    <p class="dl-sub">第 2 步强制「只给结果」：读不到实现者的自述，这次验证才算独立（PRD §7.5）。派工时校验，不满足就拒绝。
-                      <em class="dl-perf"><b>现算 · 统计 v3 之后的 12 次派工</b>：验收一次通过 9 次。<span class="dl-flag">样本不足 30 次</span>　成员组合各自：<code>codex-gpt5.6-high</code> 9/12 · <code>claude-sonnet4.8-medium</code> 11/12。<b>这不是评分</b>——改一版就是另一段样本（本地自建同样按 <code>id@version</code> 记，不因为「不是从包里来的」而例外）。</em></p>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：只有本地自建的能删；包里来的要去设置 · 插件停用整个包">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="编组 研读">
-                    <span class="dl-title">调研 + 交叉核对</span>
-                    <span><em class="cap-tag">#编组</em><em class="cap-tag">#研读</em></span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="cross-check">调研 + 交叉核对</button><small class="dl-tags"><em class="cap-tag">#编组</em><em class="cap-tag">#研读</em></small></span>
                     <span><em class="cap-tag">深度分析</em></span>
-                    <span class="dl-chain"><b>2 步</b> <code>claude-opus4.6-high</code><i>→</i><code>codex-gpt5.6-medium</code></span>
+                    <span class="ship-dots"><i class="on" title="Claude Code · 已下发为 skill 文件">A</i><i class="on" title="Codex · 已写入 AGENTS.md 段落">C</i><i class="on" title="OpenCode · 已下发">O</i></span>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">web-research@1.4</button></span>
+                    <span class="dl-dim">08-29</span>
                     <span class="pill success">已启用</span>
-                    <span class="dl-act"><button type="button" data-demo="导出为能力包 —— 导出前会剥离 3 条 Memory 原始内容、2 份 Evidence 与本机路径，逐条列出后才写文件">导出</button></span>
-                    <p class="dl-sub">第 2 步给「只给目标」：不看第 1 步的结论，两份独立结论的分歧点才是要你拍板的地方。
-                      <em class="dl-perf"><b>现算 · 统计 v1 之后的 4 次派工</b>：验收一次通过 3 次。<span class="dl-flag">样本不足 30 次</span>　4 次不足以判断这套编排好不好，这一行现在只是记录，不是依据。</em></p>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 web-research@1.4，删不掉——要去设置 · 插件停用整个包">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row off" role="row" data-tags="编组 研读">
-                    <span class="dl-title">文档拆解 + 结构化摘录</span>
-                    <span><em class="cap-tag">#编组</em><em class="cap-tag">#研读</em></span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="book">文档拆解 + 结构化摘录</button><small class="dl-tags"><em class="cap-tag">#编组</em><em class="cap-tag">#研读</em></small></span>
                     <span><em class="cap-tag">长文拆解</em></span>
-                    <span class="dl-chain"><b>2 步</b> <code>claude-opus4.6-medium</code><i>→</i><code>opencode-deepseekv4pro-low</code></span>
+                    <span class="ship-dots"><i title="随来源停用，已从三个 adapter 撤回">—</i></span>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">book-digest@0.9</button></span>
+                    <span class="dl-dim">08-24</span>
                     <span class="pill muted">随来源停用</span>
-                    <span class="dl-act"><button type="button" data-demo="在设置 · 插件里启用 book-digest@0.9 后它会回到派工清单">启用</button></span>
-                    <p class="dl-sub">来源包停用后它从派工清单消失，<b>但历史不改写</b>：用过它的 7 条执行记录仍显示当时的 <code>book-digest@0.9</code>，证据链不因为今天停了一个包而断（同设置 · 运行时删除 adapter 配置的处理）。</p>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="在设置 · 插件里启用 book-digest@0.9 后它会回到派工清单">启用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 book-digest@0.9，删不掉——要去设置 · 插件卸载整个包">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="交付">
-                    <span class="dl-title">改动前先跑 npm run verify</span>
-                    <span><em class="cap-tag">#交付</em></span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="verify">改动前先跑 npm run verify</button><small class="dl-tags"><em class="cap-tag">#交付</em></small></span>
                     <span><em class="cap-tag">工具循环</em></span>
-                    <span class="dl-dim">— <small>触碰 <code>server/** · shared/**</code></small></span>
+                    <span class="ship-dots"><i class="on" title="Claude Code · 已下发为 skill 文件">A</i><i class="on" title="Codex · 已写入 AGENTS.md 段落">C</i><i class="on" title="OpenCode · 已下发">O</i></span>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">内置</button></span>
-                    <span class="pill success">34 次命中</span>
-                    <span class="dl-act"><button type="button" data-demo="停用这条 Skill">停用</button></span>
-                    <p class="dl-sub">改动 <code>server/</code> 或 <code>shared/</code> 下的文件后跑 <code>npm run verify</code>（串联 lint、typecheck、测试与文档门禁），不要只跑单个测试文件。<em class="dl-warn">不注入验证类派工 —— 验证者该自己决定怎么验，被喂做法就不独立了。</em></p>
+                    <span class="dl-dim">08-30</span>
+                    <span class="pill success">已启用</span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：本地自建的可以删，删掉后历史 Run 仍保留当时的 id@version">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="架构">
-                    <span class="dl-title">新增可替换点前先看 ADR 0008 的判断标准</span>
-                    <span><em class="cap-tag">#架构</em></span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="seam">新增可替换点前先看 ADR 0008 的判断标准</button><small class="dl-tags"><em class="cap-tag">#架构</em></small></span>
                     <span><em class="cap-tag">架构</em></span>
-                    <span class="dl-dim">— <small>触碰 <code>**/providers/**</code></small></span>
+                    <span class="ship-dots"><i class="on" title="Claude Code · 已下发为 skill 文件">A</i><i class="on" title="Codex · 已写入 AGENTS.md 段落">C</i><i title="OpenCode · 未下发：它不支持这种注入">O</i></span>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">内置</button></span>
-                    <span class="pill success">11 次命中</span>
-                    <span class="dl-act"><button type="button" data-demo="停用这条 Skill">停用</button></span>
+                    <span class="dl-dim">08-27</span>
+                    <span class="pill success">已启用</span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用这条 Skill">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：本地自建的可以删，删掉后历史 Run 仍保留当时的 id@version">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="">
-                    <span class="dl-title">Prettier 是增量目标，改旧文件时同步扩展 format targets</span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="prettier">Prettier 是增量目标，改旧文件时同步扩展 format targets</button></span>
                     <span class="dl-dim">—</span>
-                    <span class="dl-dim">—</span>
-                    <span class="dl-dim">—</span>
+                    <span class="ship-dots"><i class="on" title="Claude Code · 已下发为 skill 文件">A</i><i class="on" title="Codex · 已写入 AGENTS.md 段落">C</i><i title="OpenCode · 未下发：它不支持这种注入">O</i></span>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">内置</button></span>
-                    <span class="pill success">6 次命中</span>
-                    <span class="dl-act"><button type="button" data-demo="停用这条 Skill">停用</button></span>
+                    <span class="dl-dim">08-22</span>
+                    <span class="pill success">已启用</span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用这条 Skill">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：本地自建的可以删，删掉后历史 Run 仍保留当时的 id@version">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="研读">
-                    <span class="dl-title">引用必须带章节号</span>
-                    <span><em class="cap-tag">#研读</em></span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="cite">引用必须带章节号</button><small class="dl-tags"><em class="cap-tag">#研读</em></small></span>
                     <span><em class="cap-tag">深度分析</em></span>
-                    <span class="dl-dim">— <small>触碰 <code>docs/**</code></small></span>
+                    <span class="ship-dots"><i class="on" title="Claude Code · 已下发为 skill 文件">A</i><i class="on" title="Codex · 已写入 AGENTS.md 段落">C</i><i class="on" title="OpenCode · 已下发">O</i></span>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">web-research@1.4</button></span>
-                    <span class="pill success">22 次命中</span>
-                    <span class="dl-act"><button type="button" data-demo="停用这条 Skill">停用</button></span>
+                    <span class="dl-dim">08-29</span>
+                    <span class="pill success">已启用</span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用这条 Skill">停用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 web-research@1.4，删不掉——要去设置 · 插件停用整个包">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="研读">
-                    <span class="dl-title">调研结论要标注检索日期</span>
-                    <span><em class="cap-tag">#研读</em></span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="fresh">调研结论要标注检索日期</button><small class="dl-tags"><em class="cap-tag">#研读</em></small></span>
                     <span><em class="cap-tag">深度分析</em></span>
-                    <span class="dl-dim">—</span>
+                    <span class="ship-dots"><i title="未生效，因此没有下发到任何 adapter">—</i></span>
                     <span class="pill warn">冲突 · 待你选</span>
+                    <span class="dl-dim">08-28</span>
                     <span class="dl-dim">未生效</span>
-                    <span class="dl-act"><button type="button" data-demo="选定一个候选后记一条决定：从此这个名字归它，另一个保持未生效">去选</button></span>
-                    <p class="dl-sub"><b>两个来源贡献了同名 Skill，系统不替你定优先级</b>——自动覆盖会让「为什么这次结果变了」不可解释。两个候选并置，选完记一条决定：
-                      <em class="dl-perf"><code>web-research@1.4</code>：要求标注「检索日期 + 快照链接」　·　<code>coding-review-cn@2.1</code>：只要求标注检索日期。<b>在你选定之前两个都不生效</b>，这次派工的上下文里没有这条。<button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">去设置 · 插件选一个</button></em></p>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-surface="settings" data-settings-pick="plugins">去选一个候选</button><button type="button" role="menuitem" class="danger" data-demo="两个候选都来自能力包，删不掉——去设置 · 插件停用其中一个">删除</button></span></span></span>
+                    <p class="dl-sub"><b>两个来源贡献了同名 Skill，系统不替你定优先级</b>——自动覆盖会让「为什么这次结果变了」不可解释。<b>在你选定之前两个都不生效</b>，也因此没有下发到任何 adapter：<code>web-research@1.4</code> 要求标注「检索日期 + 快照链接」，<code>coding-review-cn@2.1</code> 只要求标注检索日期。</p>
                   </div>
 
                   <div class="dl-row off" role="row" data-tags="">
-                    <span class="dl-title">失败用例先复现再修</span>
+                    <span class="dl-title"><button class="skill-name" type="button" data-skill-open="repro">失败用例先复现再修</button></span>
                     <span class="dl-dim">—</span>
-                    <span class="dl-dim">—</span>
-                    <span class="dl-dim">—</span>
+                    <span class="ship-dots"><i title="已停用，三个 adapter 都已撤回">—</i></span>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">内置</button></span>
+                    <span class="dl-dim">08-18</span>
                     <span class="pill muted">停用于 08-18</span>
-                    <span class="dl-act"><button type="button" data-demo="启用这条 Skill">启用</button></span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="启用：重新下发到已装的 adapter">启用</button><button type="button" role="menuitem" class="danger" data-demo="删除：本地自建的可以删，删掉后历史 Run 仍保留当时的 id@version">删除</button></span></span></span>
+                  </div>
+                </div>
+                </div>
+
+                <div data-skill-scope="detail" hidden>
+                  <div class="skill-bar">
+                    <button class="skill-back" type="button" data-skill-back>← 全部 Skills</button>
+                    <div class="skill-bar-title"><h2 data-skill-field="name">代码实现 + 独立验证</h2><span data-skill-field="tags"><em class="cap-tag">#编组</em><em class="cap-tag">#交付</em></span></div>
+                    <span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：只有本地自建的能删；包里来的要去设置 · 插件停用整个包">删除</button></span></span>
+                  </div>
+
+                  <p class="pane-note"><b>这一页是只读的。</b>skill 要么来自能力包、要么从 Done Issue 沉淀而来，<b>不该被手改</b>：改一条包里来的，下次包升级时你的改动要么被覆盖、要么让它永远停在旧版；改一条沉淀来的，它就与产生它的那些 Run 对不上了——而「改一版就是另一段样本」正是那句现算表现能成立的前提。要动就动磁盘上那个文件，或者新建一版。</p>
+
+                  <div class="git-block" data-skill-view="verify-pair">
+                    <div><span>来源</span><span>PersonaHub 内置 · <code>builtin/skills/verify-pair</code></span></div>
+                    <div><span>版本</span><span><code>verify-pair@3</code>　<small>下面那句表现统计的就是 v3 之后的样本</small></span></div>
+                    <div><span>创建</span><span>你 · 2026-07-14　<small>从 PH-233 的完成摘要沉淀</small></span></div>
+                    <div><span>最后更新</span><span>你 · 2026-08-30　<small>第 2 步的上下文范围从「只给目标」收紧为「只给结果」</small></span></div>
+                    <div><span>已下发</span><span><b>Claude Code</b> <code>~/.claude/skills/verify-pair/</code>　·　<b>Codex</b> <code>AGENTS.md</code> 段落　·　<span class="git-warn">OpenCode 未下发——它不支持这种注入，派给它时这条不会进上下文</span></span></div>
+                    <div><span>需要能力</span><span><em class="cap-tag">工具循环</em>　<small>不满足的执行组合在派工弹层里标「不可选」</small></span></div>
+                  </div>
+
+                  <div class="git-block" data-skill-view="verify" hidden>
+                    <div><span>来源</span><span>PersonaHub 内置 · <code>builtin/skills/verify-before-change</code></span></div>
+                    <div><span>版本</span><span><code>verify-before-change@2</code></span></div>
+                    <div><span>创建</span><span>你 · 2026-06-02　<small>从 PH-104 的完成摘要沉淀</small></span></div>
+                    <div><span>最后更新</span><span>你 · 2026-08-30　<small>触碰路径加上 <code>shared/**</code></small></span></div>
+                    <div><span>已下发</span><span><b>Claude Code</b> <code>~/.claude/skills/verify-before-change/</code>　·　<b>Codex</b> <code>AGENTS.md</code> 段落　·　<b>OpenCode</b> 已下发</span></div>
+                    <div><span>需要能力</span><span><em class="cap-tag">工具循环</em></span></div>
+                  </div>
+
+                  <div data-skill-view="verify-pair">
+                    <h2 class="pane-h">步骤<span class="pane-h-note">有 steps 才是编组；步骤只在详情里，不占列表一列</span></h2>
+                    <div class="skill-steps">
+                      <div class="rt-head"><span>第几步</span><span>执行组合</span><span>上下文范围</span><span>为什么</span></div>
+                      <div class="rt-row"><span>1 · 实现</span><span><code>codex-gpt5.6-high</code></span><span><b>全部</b></span><span>要读得到需求、既有实现与历史决定</span></div>
+                      <div class="rt-row"><span>2 · 验证</span><span><code>claude-sonnet4.8-medium</code></span><span><b>只给结果</b></span><span class="git-warn">读不到实现者的自述，这次验证才算独立（PRD §7.5）。派工时校验，不满足就拒绝</span></div>
+                    </div>
+                    <p class="pane-note"><em class="dl-perf"><b>现算 · 统计 <code>@3</code> 之后的 12 次派工</b>：验收一次通过 9 次。<span class="dl-flag">样本不足 30 次</span>　成员组合各自：<code>codex-gpt5.6-high</code> 9/12 · <code>claude-sonnet4.8-medium</code> 11/12。<b>这不是评分</b>——改一版就是另一段样本，所以上面那个版本号必须露出来，否则这句话无从核对。</em></p>
+                  </div>
+
+                  <h2 class="pane-h">文件<span class="pane-h-note">一条 skill 在磁盘上是一个目录</span></h2>
+                  <div class="skill-split">
+                    <div class="skill-files">
+                      <div data-skill-view="verify-pair">
+                        <button class="res-item active" type="button" data-skill-file="pair-main"><span class="of-type">MD</span><span><strong>SKILL.md</strong><small>主文件 · frontmatter 带 steps</small></span></button>
+                        <button class="res-item" type="button" data-skill-file="pair-ref"><span class="of-type">MD</span><span><strong>references/independence.md</strong><small>PRD §7.5 摘录</small></span></button>
+                        <button class="res-item" type="button" data-skill-file="pair-log"><span class="of-type">MD</span><span><strong>CHANGELOG.md</strong><small>3 个版本</small></span></button>
+                      </div>
+                      <div data-skill-view="verify" hidden>
+                        <button class="res-item active" type="button" data-skill-file="verify-main"><span class="of-type">MD</span><span><strong>SKILL.md</strong><small>主文件</small></span></button>
+                        <button class="res-item" type="button" data-skill-file="verify-log"><span class="of-type">MD</span><span><strong>CHANGELOG.md</strong><small>2 个版本</small></span></button>
+                      </div>
+                    </div>
+                    <div class="skill-preview">
+                      <div class="file-view active" data-skill-file-view="pair-main">
+                        <div class="fv-bar"><p><code>SKILL.md</code><small>Markdown · 只读 · 1.4 KB</small></p><div class="fv-actions"><button type="button" data-demo="在编辑器里打开磁盘上的这个文件">在编辑器打开</button><button type="button" data-demo="复制路径">复制路径</button></div></div>
+                        <div class="fv-body code"><div class="cl"><span class="ln">1</span><span class="sg"> </span><span class="ct">---</span></div><div class="cl"><span class="ln">2</span><span class="sg"> </span><span class="ct">id: verify-pair</span></div><div class="cl"><span class="ln">3</span><span class="sg"> </span><span class="ct">version: 3</span></div><div class="cl"><span class="ln">4</span><span class="sg"> </span><span class="ct">tags: [编组, 交付]</span></div><div class="cl"><span class="ln">5</span><span class="sg"> </span><span class="ct">requires: [工具循环]</span></div><div class="cl"><span class="ln">6</span><span class="sg"> </span><span class="ct">steps:</span></div><div class="cl"><span class="ln">7</span><span class="sg"> </span><span class="ct">  - role: 实现</span></div><div class="cl"><span class="ln">8</span><span class="sg"> </span><span class="ct">    combo: codex-gpt5.6-high</span></div><div class="cl"><span class="ln">9</span><span class="sg"> </span><span class="ct">    context: full</span></div><div class="cl"><span class="ln">10</span><span class="sg"> </span><span class="ct">  - role: 验证</span></div><div class="cl"><span class="ln">11</span><span class="sg"> </span><span class="ct">    combo: claude-sonnet4.8-medium</span></div><div class="cl"><span class="ln">12</span><span class="sg"> </span><span class="ct">    context: result_only   # 硬约束，派工时校验</span></div><div class="cl"><span class="ln">13</span><span class="sg"> </span><span class="ct">---</span></div><div class="cl"><span class="ln">14</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">15</span><span class="sg"> </span><span class="ct"># 代码实现 + 独立验证</span></div><div class="cl"><span class="ln">16</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">17</span><span class="sg"> </span><span class="ct">第 2 步读不到第 1 步的自述，只读它产出的结果与证据。</span></div><div class="cl"><span class="ln">18</span><span class="sg"> </span><span class="ct">这一条不是建议：`context: result_only` 在派工时校验，</span></div><div class="cl"><span class="ln">19</span><span class="sg"> </span><span class="ct">不满足就拒绝派工，不会降级成一句提示。</span></div></div>
+                      </div>
+                      <div class="file-view" data-skill-file-view="pair-ref" hidden>
+                        <div class="fv-bar"><p><code>references/independence.md</code><small>Markdown · 只读 · 0.6 KB</small></p><div class="fv-actions"><button type="button" data-demo="在编辑器里打开磁盘上的这个文件">在编辑器打开</button><button type="button" data-demo="复制路径">复制路径</button></div></div>
+                        <div class="fv-body code"><div class="cl"><span class="ln">1</span><span class="sg"> </span><span class="ct"># 为什么验证步只能读结果</span></div><div class="cl"><span class="ln">2</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">3</span><span class="sg"> </span><span class="ct">PRD §7.5：实现与验证不能同源。</span></div><div class="cl"><span class="ln">4</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">5</span><span class="sg"> </span><span class="ct">实现者的自述里通常已经包含了它对「哪里可能有问题」的</span></div><div class="cl"><span class="ln">6</span><span class="sg"> </span><span class="ct">判断。验证者一旦读到，它的注意力就被引导了——它会去</span></div><div class="cl"><span class="ln">7</span><span class="sg"> </span><span class="ct">核对那几处，而不是自己找。</span></div></div>
+                      </div>
+                      <div class="file-view" data-skill-file-view="pair-log" hidden>
+                        <div class="fv-bar"><p><code>CHANGELOG.md</code><small>Markdown · 只读 · 0.4 KB</small></p><div class="fv-actions"><button type="button" data-demo="在编辑器里打开磁盘上的这个文件">在编辑器打开</button><button type="button" data-demo="复制路径">复制路径</button></div></div>
+                        <div class="fv-body code"><div class="cl"><span class="ln">1</span><span class="sg"> </span><span class="ct">## v3 — 2026-08-30</span></div><div class="cl"><span class="ln">2</span><span class="sg"> </span><span class="ct">第 2 步 context 从 goal_only 收紧为 result_only。</span></div><div class="cl"><span class="ln">3</span><span class="sg"> </span><span class="ct">此前的 v2 样本不并入 v3 的表现统计。</span></div><div class="cl"><span class="ln">4</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">5</span><span class="sg"> </span><span class="ct">## v2 — 2026-08-11</span></div><div class="cl"><span class="ln">6</span><span class="sg"> </span><span class="ct">第 1 步的组合从 medium 提到 high。</span></div><div class="cl"><span class="ln">7</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">8</span><span class="sg"> </span><span class="ct">## v1 — 2026-07-14</span></div><div class="cl"><span class="ln">9</span><span class="sg"> </span><span class="ct">从 PH-233 的完成摘要沉淀。</span></div></div>
+                      </div>
+                      <div class="file-view" data-skill-file-view="verify-main" hidden>
+                        <div class="fv-bar"><p><code>SKILL.md</code><small>Markdown · 只读 · 0.9 KB</small></p><div class="fv-actions"><button type="button" data-demo="在编辑器里打开磁盘上的这个文件">在编辑器打开</button><button type="button" data-demo="复制路径">复制路径</button></div></div>
+                        <div class="fv-body code"><div class="cl"><span class="ln">1</span><span class="sg"> </span><span class="ct">---</span></div><div class="cl"><span class="ln">2</span><span class="sg"> </span><span class="ct">id: verify-before-change</span></div><div class="cl"><span class="ln">3</span><span class="sg"> </span><span class="ct">version: 2</span></div><div class="cl"><span class="ln">4</span><span class="sg"> </span><span class="ct">tags: [交付]</span></div><div class="cl"><span class="ln">5</span><span class="sg"> </span><span class="ct">requires: [工具循环]</span></div><div class="cl"><span class="ln">6</span><span class="sg"> </span><span class="ct">paths: [server/**, shared/**]</span></div><div class="cl"><span class="ln">7</span><span class="sg"> </span><span class="ct">skip_for: [validation]   # 不注入验证类派工</span></div><div class="cl"><span class="ln">8</span><span class="sg"> </span><span class="ct">---</span></div><div class="cl"><span class="ln">9</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">10</span><span class="sg"> </span><span class="ct"># 改动前先跑 npm run verify</span></div><div class="cl"><span class="ln">11</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">12</span><span class="sg"> </span><span class="ct">改动 server/ 或 shared/ 下的文件后跑 `npm run verify`</span></div><div class="cl"><span class="ln">13</span><span class="sg"> </span><span class="ct">（串联 lint、typecheck、测试与文档门禁），不要只跑</span></div><div class="cl"><span class="ln">14</span><span class="sg"> </span><span class="ct">单个测试文件。</span></div><div class="cl"><span class="ln">15</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">16</span><span class="sg"> </span><span class="ct">`skip_for: [validation]` 是硬的：验证者该自己决定怎么</span></div><div class="cl"><span class="ln">17</span><span class="sg"> </span><span class="ct">验，被喂做法就不独立了。</span></div></div>
+                      </div>
+                      <div class="file-view" data-skill-file-view="verify-log" hidden>
+                        <div class="fv-bar"><p><code>CHANGELOG.md</code><small>Markdown · 只读 · 0.2 KB</small></p><div class="fv-actions"><button type="button" data-demo="在编辑器里打开磁盘上的这个文件">在编辑器打开</button><button type="button" data-demo="复制路径">复制路径</button></div></div>
+                        <div class="fv-body code"><div class="cl"><span class="ln">1</span><span class="sg"> </span><span class="ct">## v2 — 2026-08-30</span></div><div class="cl"><span class="ln">2</span><span class="sg"> </span><span class="ct">触碰路径加上 shared/**。</span></div><div class="cl"><span class="ln">3</span><span class="sg"> </span><span class="ct"></span></div><div class="cl"><span class="ln">4</span><span class="sg"> </span><span class="ct">## v1 — 2026-06-02</span></div><div class="cl"><span class="ln">5</span><span class="sg"> </span><span class="ct">从 PH-104 的完成摘要沉淀。</span></div></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

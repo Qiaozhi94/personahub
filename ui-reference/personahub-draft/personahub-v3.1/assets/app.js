@@ -69,6 +69,7 @@
   function setSurface(name) {
     if (!$("[data-surface-view='" + name + "']")) return;
     state.surface = name;
+    resetSkillScope();
     $$('[data-surface-view]').forEach((view) => view.classList.toggle("active", view.dataset.surfaceView === name));
     $$('[data-surface]').forEach((button) => button.classList.toggle("active", button.dataset.surface === name));
   }
@@ -465,8 +466,6 @@
   }
 
   // 左框选中一项 → 右主体换成它的内容。六个面共用这一套。
-  // viewValue 允许高亮的按钮和展开的详情不是同一个值：自动化面几条定时规则
-  // 共用同一份详情，按钮用 data-automation-detail 指过去。
   function pickInList(group, value, scope, viewValue = value) {
     $$(`[data-${group}-pick]`, scope).forEach((b) => b.classList.toggle("active", b.dataset[`${group}Pick`] === value));
     const views = $$(`[data-${group}-view]`, scope);
@@ -496,12 +495,49 @@
   }
 
   // 能力面 Skills tab 的 tag 筛选：一张表，编组只是带 steps 的 skill（design.md §3.2.3）
+  function resetSkillScope() {
+    const detail = $('[data-skill-scope="detail"]');
+    if (detail && !detail.hidden) closeSkillDetail();
+  }
+
   function setLibFilter(tag) {
     $$("[data-lib-filter]").forEach((b) => b.classList.toggle("active", b.dataset.libFilter === tag));
     $$('[data-library-body="skill"] .dl-row').forEach((row) => {
       const tags = (row.dataset.tags || "").split(/\s+/).filter(Boolean);
       row.hidden = tag !== "all" && !tags.includes(tag);
     });
+  }
+
+  // Skill 详情：列表 → 详情是一次下钻，返回是明确动作（design.md §3.2.3）。
+  // 静态原型只做了两条的真实文件，其余行给出说明而不是假装能打开。
+  const SKILL_DETAILS = { "verify-pair": "pair-main", verify: "verify-main" };
+
+  function openSkillDetail(key) {
+    const first = SKILL_DETAILS[key];
+    if (!first) {
+      showToast("静态原型只做了「代码实现 + 独立验证」和「改动前先跑 npm run verify」两条的详情");
+      return;
+    }
+    const row = $(`[data-skill-open="${key}"]`)?.closest(".dl-row");
+    const pane = $('[data-library-body="skill"]');
+    $("[data-skill-field='name']", pane).textContent = $(`[data-skill-open="${key}"]`).textContent;
+    $("[data-skill-field='tags']", pane).innerHTML = $(".dl-tags", row)?.innerHTML ?? "";
+    // 元信息、步骤块与文件列表都按 skill 分组显示
+    $$("[data-skill-view]", pane).forEach((el) => (el.hidden = el.dataset.skillView !== key));
+    setSkillFile(first);
+    $('[data-skill-scope="list"]', pane).hidden = true;
+    $('[data-skill-scope="detail"]', pane).hidden = false;
+  }
+
+  function closeSkillDetail() {
+    const pane = $('[data-library-body="skill"]');
+    $('[data-skill-scope="detail"]', pane).hidden = true;
+    $('[data-skill-scope="list"]', pane).hidden = false;
+  }
+
+  function setSkillFile(key) {
+    $$("[data-skill-file]").forEach((b) => b.classList.toggle("active", b.dataset.skillFile === key));
+    $$("[data-skill-file-view]").forEach((el) => (el.hidden = el.dataset.skillFileView !== key));
   }
 
   // 项目面：点文件在右侧出预览（GitHub 式），树本身不跳走
@@ -1235,6 +1271,21 @@
 
     if (target.dataset.libFilter) {
       setLibFilter(target.dataset.libFilter);
+      return;
+    }
+
+    if (target.dataset.skillOpen) {
+      openSkillDetail(target.dataset.skillOpen);
+      return;
+    }
+
+    if (target.hasAttribute("data-skill-back")) {
+      closeSkillDetail();
+      return;
+    }
+
+    if (target.dataset.skillFile) {
+      setSkillFile(target.dataset.skillFile);
       return;
     }
 

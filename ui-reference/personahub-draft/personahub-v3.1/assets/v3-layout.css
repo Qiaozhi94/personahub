@@ -3673,7 +3673,8 @@
 .automation-list-note { margin: 0; padding: 10px 12px 12px; border-top: 1px solid var(--border); color: var(--faint); font-size: 10px; line-height: 1.65; }
 
 .sp-main.automation-main { grid-template-rows: auto auto minmax(0, 1fr); }
-/* 详情整块隐藏时必须真的不占位：作者写的 display: grid 会盖掉 [hidden] 的默认值。 */
+/* 自动化面右侧有两份详情（定时 / Webhook）；.sp-main 的 display:grid
+   会盖掉 UA 的 [hidden]，必须显式关掉。 */
 .sp-main[hidden] { display: none; }
 .automation-tabs { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid var(--border); }
 .automation-tabs > button {
@@ -5634,3 +5635,147 @@ button.dl-row { cursor: pointer; }
 }
 
 .mem-tabs .lib-tab-add:hover { color: var(--text-1); }
+
+
+/* ── V3.22 Skills 表：精简列、三点菜单、详情页 ─────────────────── */
+
+/* 名称是进详情的入口，不是一段文字 */
+.skill-name {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.skill-name:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+.dl-tags { display: block; margin-top: 3px; }
+.dl-tags .cap-tag { margin-right: 4px; }
+
+/* 已下发：三个 adapter 的事实，不是适用范围 */
+.ship-dots { display: inline-flex; gap: 4px; align-items: center; }
+.ship-dots i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line, var(--border));
+  border-radius: 5px;
+  color: var(--faint);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  cursor: default;
+}
+.ship-dots i.on { border-color: transparent; background: var(--panel-3, var(--surface-3)); color: var(--text-1, inherit); }
+
+/* 行尾三点：悬停或键盘聚焦时展开。没有「编辑」——skill 不该被手改 */
+.row-menu { position: relative; display: inline-flex; }
+.row-menu-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--faint);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.row-menu-btn:hover { background: var(--panel-3, var(--surface-3)); color: var(--text-1, inherit); }
+
+.row-menu-pop {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  z-index: 40;
+  display: none;
+  min-width: 108px;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel, var(--surface-1));
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+.row-menu:hover .row-menu-pop,
+.row-menu:focus-within .row-menu-pop { display: flex; }
+
+.row-menu-pop button {
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-1, inherit);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.row-menu-pop button:hover { background: var(--panel-3, var(--surface-3)); }
+.row-menu-pop button.danger { color: var(--danger, #c0392b); }
+
+/* 详情页：返回是明确动作 */
+.skill-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.skill-bar h2 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+.skill-bar-title span { display: inline-flex; gap: 4px; margin-top: 3px; }
+
+.skill-back {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--faint);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.skill-back:hover { color: var(--text-1, inherit); background: var(--panel-3, var(--surface-3)); }
+
+/* 左文件列表 + 右内容（形态照 §4.2 的资源视图） */
+.skill-split {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.skill-files {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.skill-preview { border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+
+/* 步骤表：形态同 runtime-table，但不是执行组合表——能力面不出现那张表 */
+.skill-steps { border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.skill-steps .rt-head,
+.skill-steps .rt-row {
+  display: grid;
+  grid-template-columns: 92px 210px 108px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.skill-steps .rt-head { border-bottom: 1px solid var(--border); color: var(--faint); font-size: 11px; }
+.skill-steps .rt-row + .rt-row { border-top: 1px solid var(--border); }
+.skill-preview .file-view[hidden] { display: none; }
+.skill-preview .fv-body { max-height: 420px; overflow: auto; }
+
+@media (max-width: 1180px) {
+  .skill-split { grid-template-columns: minmax(0, 1fr); }
+}
