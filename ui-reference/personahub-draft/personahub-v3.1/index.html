@@ -2972,35 +2972,35 @@ completed -&gt; archived</code></pre>
 
           <section class="surface split-surface" data-surface-view="automation" aria-label="自动化">
             <aside class="sp-list automation-list">
-              <div class="sp-head"><p>自动化<small>3 条规则</small></p><button type="button" data-automation-create aria-label="新建自动化" title="新建自动化">＋</button></div>
+              <div class="sp-head"><p>自动化<small>4 条规则</small></p><button type="button" data-automation-create aria-label="新建自动化" title="新建自动化">＋</button></div>
               <div class="automation-filter" role="tablist" aria-label="自动化筛选">
-                <button class="active" type="button" data-demo="当前显示全部 3 条自动化">全部 <b>3</b></button>
+                <button class="active" type="button" data-demo="当前显示全部 4 条自动化">全部 <b>4</b></button>
                 <button type="button" data-demo="筛出 1 条需要处理的自动化">需处理 <b>1</b></button>
               </div>
               <div class="sp-scroll">
                 <p class="sp-group">按下次动作排序</p>
-                <button class="sp-item active" type="button" data-automation-pick="dep"><span class="signal green"></span><span><strong>每周依赖与安全检查</strong><small>定时 + Webhook · 下一次 明天 09:00</small></span></button>
-                <button class="sp-item" type="button" data-automation-pick="dog"><span class="signal blue"></span><span><strong>每日 dogfooding 归档</strong><small>每天 22:00 · 今天已建任务</small></span></button>
-                <button class="sp-item" type="button" data-automation-pick="push"><span class="signal yellow"></span><span><strong>发布前推送检查</strong><small>已暂停 · 缺 push 授权</small></span></button>
+                <button class="sp-item active" type="button" data-automation-pick="dep"><span class="signal green"></span><span><strong>每周依赖与安全检查</strong><small>每周一 09:00 · 下一次 明天 09:00</small></span></button>
+                <button class="sp-item" type="button" data-automation-pick="gh"><span class="signal green"></span><span><strong>GitHub issue 分诊</strong><small>Webhook · 今天收到 3 次</small></span></button>
+                <button class="sp-item" type="button" data-automation-pick="dog" data-automation-detail="dep"><span class="signal blue"></span><span><strong>每日 dogfooding 归档</strong><small>每天 22:00 · 今天已建任务</small></span></button>
+                <button class="sp-item" type="button" data-automation-pick="push" data-automation-detail="dep"><span class="signal yellow"></span><span><strong>发布前推送检查</strong><small>已暂停 · 缺 push 授权</small></span></button>
               </div>
               <p class="automation-list-note">运行记录属于具体规则，不和规则混在一个列表里。黄点只表示要你处理；失败但无需你动作时不会抢到最前。</p>
             </aside>
-            <section class="sp-main automation-main">
+            <section class="sp-main automation-main" data-automation-view="dep">
               <div class="sp-bar">
                 <div><h1>每周依赖与安全检查</h1><p>自动化只负责触发并建立普通任务；执行、证据、验收和人工介入仍回到同一条任务链。</p></div>
                 <div class="sp-bar-actions">
                   <span class="pill success">已启用</span>
-                  <button type="button" data-demo="编辑名称、Runbook、项目、工作流与执行组合">编辑</button>
-                  <button type="button" data-demo="已暂停。正在运行的任务不受影响；定时与 Webhook 停止受理">暂停</button>
+                  <button type="button" data-demo="编辑名称、任务说明、项目、工作流与执行组合">编辑</button>
+                  <button type="button" data-demo="已暂停。正在运行的任务不受影响；到点不再触发">暂停</button>
                   <button class="primary-button" type="button" data-demo="会先做额度、运行时、权限与重复运行检查；通过后建立一条普通任务">立即运行</button>
                 </div>
               </div>
 
               <div class="automation-tabs" role="tablist" aria-label="自动化详情">
                 <button class="active" type="button" role="tab" aria-selected="true" data-automation-tab="overview">概览</button>
-                <button type="button" role="tab" aria-selected="false" data-automation-tab="triggers">触发器 <b>2</b></button>
+                <button type="button" role="tab" aria-selected="false" data-automation-tab="triggers">触发器 <b>1</b></button>
                 <button type="button" role="tab" aria-selected="false" data-automation-tab="runs">运行记录 <b>18</b></button>
-                <button type="button" role="tab" aria-selected="false" data-automation-tab="deliveries">Webhook 投递 <b>7</b></button>
               </div>
 
               <div class="sp-body automation-body" data-automation-body="overview">
@@ -3012,7 +3012,7 @@ completed -&gt; archived</code></pre>
 
                 <h2 class="pane-h">每次触发会发生什么</h2>
                 <div class="ar-flow">
-                  <span class="ar-step"><small>触发</small>定时 / Webhook</span><i>→</i>
+                  <span class="ar-step"><small>触发</small>每周一 09:00</span><i>→</i>
                   <span class="ar-step"><small>准入检查</small>额度 · 运行时 · 去重</span><i>→</i>
                   <span class="ar-step"><small>在项目建任务</small>PersonaHub</span><i>→</i>
                   <span class="ar-step"><small>工作流</small>Coding · 独立验证</span><i>→</i>
@@ -3023,19 +3023,21 @@ completed -&gt; archived</code></pre>
 
                 <div class="automation-overview-grid">
                   <section>
-                    <h2 class="pane-h">Runbook</h2>
+                    <h2 class="pane-h">任务说明</h2>
                     <div class="automation-runbook">
+                      <div class="runbook-origin"><small>你写的原话</small><p>每周查一下依赖有没有漏洞和过期，要有证据，结论让另一个模型复核。</p><button type="button" data-demo="重新整理会生成新一版说明，需要你重新确认；旧版本保留，不影响正在跑的任务">重新整理</button></div>
                       <h3>目标</h3><p>检查直接与传递依赖的已知漏洞、过期版本和许可证变化。</p>
                       <h3>完成要求</h3><ol><li>保存 advisory 原始结果；</li><li>按高 / 中 / 低说明影响；</li><li>有更新建议时给出可回滚方案；</li><li>由不同模型独立验证结论。</li></ol>
+                      <p class="runbook-stamp">由 <code>claude-sonnet5-low</code> 整理于 08-11 · <b>你已确认</b> · 每次触发读取这一版，<b>不会重新生成</b></p>
                     </div>
                   </section>
                   <section>
-                    <h2 class="pane-h">任务模板</h2>
+                    <h2 class="pane-h">建成什么样的任务</h2>
                     <div class="git-block">
                       <div><span>项目</span><span>PersonaHub</span></div>
                       <div><span>标题</span><span><code>依赖与安全检查 · {{date}}</code></span></div>
                       <div><span>标签</span><span><code>maintenance</code> · <code>security</code></span></div>
-                      <div><span>上下文</span><span>Runbook + 触发 payload；不自动带上一次会话</span></div>
+                      <div><span>上下文</span><span>任务说明 + 触发 payload；不自动带上一次会话</span></div>
                       <div><span>并发</span><span>同规则同时只允许 1 条；重复触发合并进现有任务</span></div>
                     </div>
                   </section>
@@ -3051,16 +3053,10 @@ completed -&gt; archived</code></pre>
               </div>
 
               <div class="sp-body automation-body" data-automation-body="triggers" hidden>
-                <div class="automation-section-head"><div><h2>触发器</h2><p>一条自动化可以有多个入口；入口只决定何时开始，不改变 Runbook 与能力边界。</p></div><button type="button" data-demo="添加定时或 Webhook 触发器">＋ 添加触发器</button></div>
+                <div class="automation-section-head"><div><h2>触发器</h2><p>一条自动化可以有多个入口；入口只决定何时开始，不改变任务说明与能力边界。</p></div><button type="button" data-demo="添加时间表；需要外部系统触发时再加 Webhook">＋ 添加触发器</button></div>
                 <article class="trigger-card">
                   <header><div><span class="trigger-icon">◷</span><p><strong>工作日早晨</strong><small>时间表 · 已启用</small></p></div><button type="button" data-demo="编辑这个时间表">编辑</button></header>
                   <div class="trigger-grid"><div><small>规则</small><strong>每周一 09:00</strong><code>0 9 * * 1</code></div><div><small>时区</small><strong>Asia/Singapore</strong><span>夏令时按本地 09:00 保持</span></div><div><small>接下来</small><strong>09-07 · 09-14 · 09-21</strong><span>保存前必须能预览至少 3 次</span></div></div>
-                </article>
-                <article class="trigger-card">
-                  <header><div><span class="trigger-icon">⌁</span><p><strong>依赖清单变化</strong><small>Webhook · 已启用</small></p></div><button type="button" data-demo="编辑事件过滤与签名策略">编辑</button></header>
-                  <div class="webhook-secret"><span><small>Webhook URL · 凭证默认隐藏</small><code>http://localhost:3847/hooks/automation/••••••••7ad2</code></span><button type="button" data-demo="已复制完整 URL；它等同密码，不会显示在通知或任务正文里">复制</button><button type="button" data-demo="重新生成会让旧 URL 立即失效；真实操作需要二次确认">重新生成</button></div>
-                  <div class="trigger-grid"><div><small>事件过滤</small><strong><code>dependency.changed</code></strong><span>action: added, updated, removed</span></div><div><small>签名</small><strong>HMAC-SHA256 · 必须</strong><span>无效或缺失直接拒绝，不进入运行队列</span></div><div><small>去重</small><strong>Idempotency-Key</strong><span>同 key 返回原投递，不重复建任务</span></div></div>
-                  <p class="pane-note">Payload 最大 256 KiB，只保存允许的请求头；完整 URL 不进入任务、日志截图或导出文件。</p>
                 </article>
               </div>
 
@@ -3069,7 +3065,7 @@ completed -&gt; archived</code></pre>
                 <div class="run-table automation-runs">
                   <div class="rn-head"><span>触发时间 / 来源</span><span>准入</span><span>关联任务</span><span>任务结果</span><span>耗时</span></div>
                   <button class="rn-row" type="button" data-demo="打开 PH-412 的验收面"><span>今天 09:00 <small>时间表</small></span><span class="pill success">已运行</span><span>PH-412</span><span>验证通过</span><span>12m 41s</span></button>
-                  <button class="rn-row" type="button" data-demo="同一个幂等键命中已有投递，没有建立第二条任务"><span>昨天 18:22 <small>Webhook</small></span><span class="pill muted">重复 · 未触发</span><span>PH-409</span><span>沿用已有任务</span><span>—</span></button>
+                  <button class="rn-row" type="button" data-demo="上一次的任务还没结束；按并发设置合并进现有任务，没有建立第二条"><span>08-31 09:00 <small>时间表</small></span><span class="pill muted">并发合并 · 未触发</span><span>PH-409</span><span>沿用已有任务</span><span>—</span></button>
                   <button class="rn-row" type="button" data-demo="额度不足发生在派工前：没有任务、没有 Run，也不算执行失败"><span>08-25 09:00 <small>时间表</small></span><span class="pill muted">未触发</span><span>—</span><span>额度不足</span><span>—</span></button>
                   <button class="rn-row" type="button" data-demo="打开 PH-401：任务确实运行过，但验证命令退出 1"><span>08-18 09:00 <small>时间表</small></span><span class="pill success">已运行</span><span>PH-401</span><span class="pill warn">失败</span><span>08m 03s</span></button>
                 </div>
@@ -3078,18 +3074,113 @@ completed -&gt; archived</code></pre>
                 <p class="pane-note">手动重跑会新增一条运行记录并建立新任务，不改写旧记录。基础设施重试属于同一次 Run 的 Attempt，不在这里伪装成一次新的规则触发。</p>
               </div>
 
+            </section>
+
+            <!-- Webhook 不是每条规则都有：只有真正由外部系统发起的规则才带投递审计。
+                 定时规则（dep / dog / push）共用上面那份详情，本视图是唯一的 Webhook 样本。 -->
+            <section class="sp-main automation-main" data-automation-view="gh" hidden>
+              <div class="sp-bar">
+                <div><h1>GitHub issue 分诊</h1><p>外部事件只决定何时开始；分诊结论仍然是一条普通任务，走同一条验收链。</p></div>
+                <div class="sp-bar-actions">
+                  <span class="pill success">已启用</span>
+                  <button type="button" data-demo="编辑名称、任务说明、项目、工作流与执行组合">编辑</button>
+                  <button type="button" data-demo="已暂停。正在运行的任务不受影响；新投递一律记「未触发 · 规则已暂停」">暂停</button>
+                  <button class="primary-button" type="button" data-demo="用最近一次投递的 payload 手动跑一遍；会新建任务，不改写原投递">用最近一次投递重跑</button>
+                </div>
+              </div>
+
+              <div class="automation-tabs" role="tablist" aria-label="自动化详情">
+                <button class="active" type="button" role="tab" aria-selected="true" data-automation-tab="overview">概览</button>
+                <button type="button" role="tab" aria-selected="false" data-automation-tab="triggers">触发器 <b>1</b></button>
+                <button type="button" role="tab" aria-selected="false" data-automation-tab="runs">运行记录 <b>12</b></button>
+                <button type="button" role="tab" aria-selected="false" data-automation-tab="deliveries">Webhook 投递 <b>7</b></button>
+              </div>
+
+              <div class="sp-body automation-body" data-automation-body="overview">
+                <div class="automation-brief">
+                  <article><small>最近一次投递</small><strong>2 小时前</strong><span>issues.opened · #218</span></article>
+                  <article><small>最近一次结果</small><strong>验证通过</strong><span>PH-418 · 分诊为 bug</span></article>
+                  <article><small>近 30 天</small><strong>12 / 14 已运行</strong><span>1 重复 · 1 签名无效</span></article>
+                </div>
+
+                <h2 class="pane-h">每次触发会发生什么</h2>
+                <div class="ar-flow">
+                  <span class="ar-step"><small>触发</small>收到投递</span><i>→</i>
+                  <span class="ar-step"><small>入口检查</small>验签 · 去重 · 过滤</span><i>→</i>
+                  <span class="ar-step"><small>准入检查</small>额度 · 运行时</span><i>→</i>
+                  <span class="ar-step"><small>在项目建任务</small>PersonaHub</span><i>→</i>
+                  <span class="ar-step"><small>派给</small><code>claude-sonnet5-low</code></span><i>→</i>
+                  <span class="ar-step"><small>最后去向</small>任务验收面</span>
+                </div>
+                <p class="pane-note"><strong>入口检查在准入检查之前，两者分开记。</strong> 签名无效、重复投递、被事件过滤挡下的，都停在入口，<b>不消耗额度也不产生 Run</b>；额度或运行时的问题才进准入检查。两类原因混成一个「失败」，就再也分不清是别人发错了还是本机跑不动。</p>
+
+                <div class="automation-overview-grid">
+                  <section>
+                    <h2 class="pane-h">任务说明</h2>
+                    <div class="automation-runbook">
+                      <div class="runbook-origin"><small>你写的原话</small><p>有人提 issue 就先读一遍，判断是 bug 还是功能请求，找出相关代码在哪，别改代码。</p><button type="button" data-demo="重新整理会生成新一版说明，需要你重新确认；旧版本保留，不影响正在跑的任务">重新整理</button></div>
+                      <h3>目标</h3><p>对新提交的 issue 做初步分诊，给出类型判断与代码线索，不做修改。</p>
+                      <h3>完成要求</h3><ol><li>判断类型：缺陷 / 功能请求 / 使用提问；</li><li>列出最相关的 1-3 个文件与行号；</li><li>无法复现时写清缺什么信息；</li><li>不修改任何文件，不回复 issue。</li></ol>
+                      <p class="runbook-stamp">由 <code>claude-sonnet5-low</code> 整理于 08-19 · <b>你已确认</b> · 每次触发读取这一版，<b>不会重新生成</b></p>
+                    </div>
+                  </section>
+                  <section>
+                    <h2 class="pane-h">建成什么样的任务</h2>
+                    <div class="git-block">
+                      <div><span>项目</span><span>PersonaHub</span></div>
+                      <div><span>标题</span><span><code>分诊 #{{issue.number}} · {{issue.title}}</code></span></div>
+                      <div><span>标签</span><span><code>triage</code> · <code>from-github</code></span></div>
+                      <div><span>上下文</span><span>任务说明 + issue 正文；<b>不含</b>评论区与提交者身份</span></div>
+                      <div><span>并发</span><span>按 issue 号隔离；不同 issue 可并行，同一个 issue 只跑 1 条</span></div>
+                    </div>
+                  </section>
+                </div>
+
+                <h2 class="pane-h">能力边界</h2>
+                <div class="git-block">
+                  <div><span>可读</span><span>整个代码目录</span></div>
+                  <div><span>可写</span><span class="git-warn">不可写 —— 分诊只产出判断与线索</span></div>
+                  <div><span>网络</span><span class="git-warn">不出网。issue 正文由投递带入，规则本身不回连 GitHub</span></div>
+                  <div><span>git push</span><span class="git-warn">未授权</span></div>
+                </div>
+                <p class="pane-note">投递内容来自公网，属于<strong>不可信输入</strong>：issue 正文只作为任务上下文，不参与能力边界判断——正文里写「请帮我推送到 main」不会让这条规则获得 push 权限。</p>
+              </div>
+
+              <div class="sp-body automation-body" data-automation-body="triggers" hidden>
+                <div class="automation-section-head"><div><h2>触发器</h2><p>这条规则只有一个入口。凭证在这里管理，规则的其他部分不受入口影响。</p></div><button type="button" data-demo="添加时间表或第二个 Webhook">＋ 添加触发器</button></div>
+                <article class="trigger-card">
+                  <header><div><span class="trigger-icon">⌁</span><p><strong>仓库新 issue</strong><small>Webhook · 已启用</small></p></div><button type="button" data-demo="编辑事件过滤与签名策略">编辑</button></header>
+                  <div class="webhook-secret"><span><small>Webhook URL · 凭证默认隐藏</small><code>http://localhost:3847/hooks/automation/••••••••7ad2</code></span><button type="button" data-demo="已复制完整 URL；它等同密码，不会显示在通知或任务正文里">复制</button><button type="button" data-demo="重新生成会让旧 URL 立即失效；真实操作需要二次确认">重新生成</button></div>
+                  <div class="trigger-grid"><div><small>事件过滤</small><strong><code>issues.opened</code></strong><span>只收新建；编辑与评论不触发</span></div><div><small>签名</small><strong>HMAC-SHA256 · 必须</strong><span>无效或缺失直接拒绝，不进入运行队列</span></div><div><small>去重</small><strong>Idempotency-Key</strong><span>同 key 返回原投递，不重复建任务</span></div></div>
+                  <p class="pane-note">本机地址要能被 GitHub 访问才收得到投递——需要内网穿透或公网转发。<b>PersonaHub 不代管这一段</b>，规则详情里也不显示你用的是哪种方式。<br>Payload 最大 256 KiB，只保存允许的请求头；完整 URL 不进入任务、日志截图或导出文件。</p>
+                </article>
+              </div>
+
+              <div class="sp-body automation-body" data-automation-body="runs" hidden>
+                <div class="automation-section-head"><div><h2>运行记录</h2><p>一行代表一次触发意图。先看有没有真正运行，再看任务最终结果。</p></div><button type="button" data-demo="筛选来源、状态或时间范围">筛选</button></div>
+                <div class="run-table automation-runs">
+                  <div class="rn-head"><span>触发时间 / 来源</span><span>准入</span><span>关联任务</span><span>任务结果</span><span>耗时</span></div>
+                  <button class="rn-row" type="button" data-demo="打开 PH-418 的验收面"><span>2 小时前 <small>#218</small></span><span class="pill success">已运行</span><span>PH-418</span><span>验证通过</span><span>03m 12s</span></button>
+                  <button class="rn-row" type="button" data-demo="同一个幂等键命中已有投递，没有建立第二条任务"><span>今天 11:40 <small>#217</small></span><span class="pill muted">重复 · 未触发</span><span>PH-417</span><span>沿用已有任务</span><span>—</span></button>
+                  <button class="rn-row" type="button" data-demo="签名无效停在入口：没有任务、没有 Run，也不消耗额度"><span>08-27 11:04 <small>—</small></span><span class="pill muted">未触发</span><span>签名无效</span><span>—</span><span>—</span></button>
+                  <button class="rn-row" type="button" data-demo="打开 PH-402：分诊跑完了，但独立验证认为代码线索不成立"><span>08-24 15:31 <small>#203</small></span><span class="pill success">已运行</span><span>PH-402</span><span class="pill warn">失败</span><span>04m 55s</span></button>
+                </div>
+                <p class="pane-note">「未触发」与「已执行但失败」分开记录：前者不属于故障，但使用者需要知晓当日实际未执行。</p>
+                <div class="automation-state-key"><span><b>未触发</b>：入口或准入检查挡下，没有执行</span><span><b>失败</b>：已经执行，任务或验证失败</span><span><b>已暂停</b>：规则不再接受新的触发</span></div>
+              </div>
+
               <div class="sp-body automation-body" data-automation-body="deliveries" hidden>
                 <div class="automation-section-head"><div><h2>Webhook 投递</h2><p>这里审计入口是否收到、鉴权、去重与分发；真正的执行结论仍在关联任务。</p></div><button type="button" data-demo="只显示拒绝或失败的投递">只看异常</button></div>
                 <div class="run-table delivery-table">
                   <div class="rn-head"><span>收到时间 / 事件</span><span>签名</span><span>投递</span><span>去重键</span><span>关联运行</span></div>
-                  <button class="rn-row" type="button" data-demo="展开投递 dly_7ad2：只显示允许的请求头与截断后的 JSON"><span>昨天 18:22 <small>dependency.changed</small></span><span class="pill success">通过</span><span>已分发 · 1 次</span><span><code>lock-8f21</code></span><span>PH-409</span></button>
-                  <button class="rn-row" type="button" data-demo="命中 lock-8f21，返回原投递 ID；没有重复运行"><span>昨天 18:22 <small>dependency.changed</small></span><span class="pill success">通过</span><span class="pill muted">已忽略 · 重复</span><span><code>lock-8f21</code></span><span>沿用上一条</span></button>
-                  <button class="rn-row" type="button" data-demo="签名失败，原始 body 不可重放"><span>08-27 11:04 <small>dependency.changed</small></span><span class="pill warn">无效</span><span class="pill warn">已拒绝</span><span>—</span><span>—</span></button>
-                  <button class="rn-row" type="button" data-demo="下游临时失败，可从详情重放；重放会新建投递并指回本条"><span>08-20 08:58 <small>dependency.changed</small></span><span class="pill success">通过</span><span class="pill warn">失败 · 3 次</span><span><code>lock-7c03</code></span><span>—</span></button>
+                  <button class="rn-row" type="button" data-demo="展开投递 dly_7ad2：只显示允许的请求头与截断后的 JSON"><span>2 小时前 <small>issues.opened</small></span><span class="pill success">通过</span><span>已分发 · 1 次</span><span><code>gh-218</code></span><span>PH-418</span></button>
+                  <button class="rn-row" type="button" data-demo="命中 gh-217，返回原投递 ID；没有重复运行"><span>今天 11:40 <small>issues.opened</small></span><span class="pill success">通过</span><span class="pill muted">已忽略 · 重复</span><span><code>gh-217</code></span><span>沿用上一条</span></button>
+                  <button class="rn-row" type="button" data-demo="事件类型不在过滤范围内，收下但不分发"><span>今天 10:02 <small>issues.edited</small></span><span class="pill success">通过</span><span class="pill muted">已过滤</span><span>—</span><span>—</span></button>
+                  <button class="rn-row" type="button" data-demo="签名失败，原始 body 不可重放"><span>08-27 11:04 <small>issues.opened</small></span><span class="pill warn">无效</span><span class="pill warn">已拒绝</span><span>—</span><span>—</span></button>
                 </div>
                 <div class="delivery-detail">
                   <h3>投递 dly_7ad2</h3>
-                  <dl><dt>Content-Type</dt><dd><code>application/json</code></dd><dt>保留的请求头</dt><dd><code>x-event-type</code>、<code>idempotency-key</code>、<code>x-signature</code>（值已隐藏）</dd><dt>Payload</dt><dd><code>{"event":"dependency.changed","action":"updated","files":["package-lock.json"]}</code></dd><dt>响应</dt><dd><code>202 accepted · run=autrun_183 · issue=PH-409</code></dd></dl>
+                  <dl><dt>Content-Type</dt><dd><code>application/json</code></dd><dt>保留的请求头</dt><dd><code>x-github-event</code>、<code>idempotency-key</code>、<code>x-hub-signature-256</code>（值已隐藏）</dd><dt>Payload</dt><dd><code>{"action":"opened","issue":{"number":218,"title":"重启后同一节点被认领两次"}}</code></dd><dt>响应</dt><dd><code>202 accepted · run=autrun_291 · issue=PH-418</code></dd></dl>
                   <div><button type="button" data-demo="复制经过脱敏的投递详情">复制脱敏详情</button><button type="button" data-demo="重放会创建一条新投递并指回 dly_7ad2；原记录不会改变">重放为新投递</button></div>
                 </div>
                 <p class="pane-note">签名失败、仍在排队或已被过滤的投递不能重放。重放不参与原幂等键去重，但必须保留 <code>replayed_from</code> 来源。</p>
@@ -3745,21 +3836,22 @@ completed -&gt; archived</code></pre>
       <form class="automation-dialog" data-automation-form>
         <header><div><small>新规则默认暂停 · 保存后先做一次完整预检</small><h2>新建自动化</h2></div><button type="button" data-automation-close aria-label="关闭新建自动化">×</button></header>
         <div class="automation-template-row" aria-label="从模板开始">
-          <button class="active" type="button" data-demo="已选依赖审计模板；会预填 Runbook、标签与只读权限">依赖审计<small>代码项目</small></button>
+          <button class="active" type="button" data-demo="已选依赖审计模板；会预填任务说明、标签与只读权限">依赖审计<small>代码项目</small></button>
           <button type="button" data-demo="预填 dogfooding 归档模板">使用记录归档<small>每日汇总</small></button>
           <button type="button" data-demo="预填 Webhook 分诊模板">Webhook 分诊<small>外部事件</small></button>
           <button type="button" data-demo="清空全部预填，从空白开始">从空白开始<small>不带默认值</small></button>
         </div>
         <div class="automation-form-grid">
           <label class="ad-field wide"><span>名称</span><input type="text" value="每周依赖与安全检查" /></label>
-          <label class="ad-field wide"><span>Runbook <small>每次触发都读取同一份版本化说明</small></span><textarea rows="7"># 目标
-检查直接与传递依赖的漏洞、过期版本和许可证变化。
-
-# 完成要求
-1. 保存 advisory 原始结果
-2. 按严重度说明影响
-3. 给出可回滚方案
-4. 由不同模型独立验证</textarea></label>
+          <label class="ad-field wide"><span>任务说明 <small>要做什么？包括约束条件，以及什么算做完</small></span><textarea rows="3">每周查一下依赖有没有漏洞和过期，要有证据，结论让另一个模型复核。</textarea></label>
+          <div class="ad-field wide runbook-refine">
+            <div class="rf-head"><span>整理成步骤</span><small>由 <code>claude-sonnet5-low</code> 改写；你确认后才存为这条规则的任务说明</small><button type="button" data-demo="重新整理；每次整理生成新一版，需要重新确认">重新整理</button></div>
+            <div class="automation-runbook">
+              <h3>目标</h3><p>检查直接与传递依赖的已知漏洞、过期版本和许可证变化。</p>
+              <h3>完成要求</h3><ol><li>保存 advisory 原始结果；</li><li>按高 / 中 / 低说明影响；</li><li>有更新建议时给出可回滚方案；</li><li>由不同模型独立验证结论。</li></ol>
+            </div>
+            <label class="rf-confirm"><input type="checkbox" checked /><span>这一版我已看过，存为规则的任务说明——<b>之后每次触发都读它，不再重新生成</b></span></label>
+          </div>
           <label class="ad-field"><span>项目</span><select><option>PersonaHub</option><option>Market Game Sim</option></select></label>
           <label class="ad-field"><span>工作流</span><select><option>Coding · 独立验证</option><option>Research · 多源综合</option></select></label>
           <label class="ad-field"><span>执行组合</span><select><option>claude-sonnet5-low</option><option>codex-gpt5.6-medium</option></select><small>工作流内其他步骤仍按各自的组合配置</small></label>
@@ -3772,7 +3864,7 @@ completed -&gt; archived</code></pre>
           <p class="schedule-preview"><b>接下来：</b> 09-07 09:00 · 09-14 09:00 · 09-21 09:00　<code>0 9 * * 1</code></p>
         </div>
         <div class="automation-preflight">
-          <strong>保存前预检</strong><span>✓ 项目可用</span><span>✓ 运行时在线</span><span>✓ 预计额度足够</span><span class="warn">! git push 未授权；当前 Runbook 不需要</span>
+          <strong>保存前预检</strong><span>✓ 项目可用</span><span>✓ 运行时在线</span><span>✓ 预计额度足够</span><span class="warn">! git push 未授权；当前任务说明不需要</span>
           <p>自动化建立的永远是普通任务。没有“仅运行”开关，也不会在额度不足时偷偷换便宜模型。</p>
         </div>
         <footer><button type="button" data-automation-close>取消</button><button class="primary-button" type="submit">保存为暂停并查看详情</button></footer>

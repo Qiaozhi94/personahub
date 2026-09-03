@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-02T14:34:14.391Z",
+  "generatedAt": "2026-09-03T14:05:38.388Z",
   "source": "file:///D:/Projects/personahub/ui-reference/personahub-draft/personahub-v3.1/index.html",
   "viewport": "1440x900",
-  "count": 44,
+  "count": 45,
   "exports": [
     {
       "file": "workbench.png",
@@ -151,12 +151,17 @@
     },
     {
       "file": "surface-automation-triggers.png",
-      "title": "自动化 · 触发器（定时与 Webhook）",
+      "title": "自动化 · 触发器（定时规则只有时间表）",
       "kind": "top-level-surface"
     },
     {
       "file": "surface-automation-runs.png",
       "title": "自动化 · 运行记录（准入与任务结果）",
+      "kind": "top-level-surface"
+    },
+    {
+      "file": "surface-automation-webhook.png",
+      "title": "自动化 · Webhook 规则（GitHub issue 分诊）",
       "kind": "top-level-surface"
     },
     {

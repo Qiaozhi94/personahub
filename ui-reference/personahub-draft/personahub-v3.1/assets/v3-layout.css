@@ -3673,6 +3673,8 @@
 .automation-list-note { margin: 0; padding: 10px 12px 12px; border-top: 1px solid var(--border); color: var(--faint); font-size: 10px; line-height: 1.65; }
 
 .sp-main.automation-main { grid-template-rows: auto auto minmax(0, 1fr); }
+/* 详情整块隐藏时必须真的不占位：作者写的 display: grid 会盖掉 [hidden] 的默认值。 */
+.sp-main[hidden] { display: none; }
 .automation-tabs { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid var(--border); }
 .automation-tabs > button {
   height: 34px; padding: 0 9px; border: 0; border-bottom: 2px solid transparent;
@@ -3694,6 +3696,10 @@
 .automation-runbook h3:not(:first-child) { margin-top: 11px; }
 .automation-runbook p, .automation-runbook ol { margin: 0; }
 .automation-runbook ol { padding-left: 18px; }
+.runbook-origin { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; align-items: start; margin: 0 0 11px; padding: 0 0 10px; border-bottom: 1px dashed var(--border); }
+.runbook-origin small { grid-column: 1 / -1; color: var(--faint); font-size: 10px; }
+.runbook-origin p { color: var(--text); }
+.runbook-stamp { margin: 11px 0 0; padding-top: 9px; border-top: 1px dashed var(--border); color: var(--faint); font-size: 11px; }
 
 .automation-section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; max-width: 900px; margin-bottom: 14px; }
 .automation-section-head h2 { margin: 0; font-size: 15px; }
@@ -3701,7 +3707,9 @@
 .automation-section-head > button,
 .trigger-card > header > button,
 .webhook-secret > button,
-.delivery-detail > div > button {
+.delivery-detail > div > button,
+.runbook-origin > button,
+.automation-dialog .rf-head > button {
   height: 27px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px;
   background: transparent; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer;
 }
@@ -3756,6 +3764,13 @@
 }
 .automation-dialog input, .automation-dialog select { height: 32px; }
 .automation-dialog textarea { padding: 9px; line-height: 1.65; resize: vertical; }
+.automation-dialog .runbook-refine { gap: 8px; }
+.automation-dialog .rf-head { display: flex; align-items: baseline; gap: 8px; }
+.automation-dialog .rf-head > span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.automation-dialog .rf-head > small { flex: 1; color: var(--faint); font-size: 11px; }
+.automation-dialog .runbook-refine .automation-runbook { background: var(--bg); }
+.automation-dialog .rf-confirm { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.automation-dialog .rf-confirm input[type="checkbox"] { flex: none; width: 14px; height: 14px; padding: 0; margin: 0; accent-color: var(--accent); }
 .automation-dialog-section { padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
 .automation-dialog-section > div:first-child { display: flex; align-items: baseline; gap: 10px; }
 .automation-dialog-section h3 { margin: 0; font-size: 13px; }

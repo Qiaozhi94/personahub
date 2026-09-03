@@ -172,19 +172,28 @@ for (const [surface, file, title] of [
 // 投递是三种不同的审计问题；创建器还决定了规则保存时的安全默认值。
 await page.locator('.main-rail [data-surface="automation"]').click();
 for (const [tab, file, title] of [
-  ["triggers", "surface-automation-triggers.png", "自动化 · 触发器（定时与 Webhook）"],
+  ["triggers", "surface-automation-triggers.png", "自动化 · 触发器（定时规则只有时间表）"],
   ["runs", "surface-automation-runs.png", "自动化 · 运行记录（准入与任务结果）"],
-  ["deliveries", "surface-automation-deliveries.png", "自动化 · Webhook 投递审计"],
 ]) {
-  await page.locator(`[data-automation-tab="${tab}"]`).click();
-  await page.locator(`[data-automation-body="${tab}"]`).waitFor({ state: "visible" });
+  await page.locator(`[data-automation-view="dep"] [data-automation-tab="${tab}"]`).click();
+  await page.locator(`[data-automation-view="dep"] [data-automation-body="${tab}"]`).waitFor({ state: "visible" });
   await capture(file, title, "top-level-surface");
 }
+
+// Webhook 只属于真正由外部系统发起的规则，所以投递审计要先切到那条规则上。
+await page.locator('[data-automation-pick="gh"]').click();
+await page.locator('[data-automation-view="gh"]').waitFor({ state: "visible" });
+await capture("surface-automation-webhook.png", "自动化 · Webhook 规则（GitHub issue 分诊）", "top-level-surface");
+await page.locator('[data-automation-view="gh"] [data-automation-tab="deliveries"]').click();
+await page.locator('[data-automation-view="gh"] [data-automation-body="deliveries"]').waitFor({ state: "visible" });
+await capture("surface-automation-deliveries.png", "自动化 · Webhook 投递审计", "top-level-surface");
+await page.locator('[data-automation-pick="dep"]').click();
 await page.locator("[data-automation-create]").click();
 await page.locator("[data-automation-dialog]").waitFor({ state: "visible" });
 await capture("surface-automation-create.png", "自动化 · 新建规则与预检", "overlay");
 await page.locator("[data-automation-close]").first().click();
-await page.locator('[data-automation-tab="overview"]').click();
+// 两份规则详情各有一个「概览」tab，选择器必须限定在当前那一份里。
+await page.locator('[data-automation-view="dep"] [data-automation-tab="overview"]').click();
 
 // 记忆的另外两个 tab 各自成图：知识库承载三轴与状态，健康度承载五项债务（§3.6）
 await page.locator('.main-rail [data-surface="memory"]').click();
@@ -268,4 +277,4 @@ console.log(JSON.stringify(result, null, 2));
 
 // 张数写死是故意的：少截一张说明某个入口点不动了，而截图本身不会报错。
 // 加截图时必须同步改这个数——它上一次没跟上（写着 24，实际已是 34）。
-if (exports.length !== 44 || consoleErrors.length) process.exitCode = 1;
+if (exports.length !== 45 || consoleErrors.length) process.exitCode = 1;

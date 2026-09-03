@@ -465,10 +465,12 @@
   }
 
   // 左框选中一项 → 右主体换成它的内容。六个面共用这一套。
-  function pickInList(group, value, scope) {
+  // viewValue 允许高亮的按钮和展开的详情不是同一个值：自动化面几条定时规则
+  // 共用同一份详情，按钮用 data-automation-detail 指过去。
+  function pickInList(group, value, scope, viewValue = value) {
     $$(`[data-${group}-pick]`, scope).forEach((b) => b.classList.toggle("active", b.dataset[`${group}Pick`] === value));
     const views = $$(`[data-${group}-view]`, scope);
-    if (views.length) views.forEach((el) => (el.hidden = el.dataset[`${group}View`] !== value));
+    if (views.length) views.forEach((el) => (el.hidden = el.dataset[`${group}View`] !== viewValue));
   }
 
   // 一个按钮可以同时指定多个层级的位置（例如「去设置 · 插件」既切面又切组），
@@ -479,7 +481,14 @@
     for (const group of ["automation", "settings", "runtime"]) {
       const value = target.dataset[`${group}Pick`];
       if (value) {
-        pickInList(group, value);
+        // 自动化面：右侧详情按「规则类型」分，不是每条规则一份。定时规则
+        // （dep / dog / push）共用 dep 那份，只有 Webhook 规则另有投递审计，
+        // 所以按钮可以用 data-automation-detail 指到别人的详情上。
+        const detail = group === "automation" ? target.dataset.automationDetail || value : value;
+        pickInList(group, value, undefined, detail);
+        // 两份详情的 tab 集合不同（dep 没有「Webhook 投递」）。切规则时不回到
+        // 概览，就会停在一个当前详情里不存在的 tab 上，右侧整块空白。
+        if (group === "automation") setLocalTab("automation", "overview");
         hit = true;
       }
     }

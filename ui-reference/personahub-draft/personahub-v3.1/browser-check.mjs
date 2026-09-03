@@ -1575,11 +1575,16 @@ await check("自动化：规则、触发、运行与投递分层，所有结果�
   const surface = page.locator('[data-surface-view="automation"]');
 
   if ((await surface.locator("[data-automation-pick]").count()) < 3) throw new Error("左框规则太少");
-  if ((await surface.locator(".automation-tabs > button").count()) !== 4) throw new Error("自动化详情没有分成四个信息层");
   if ((await surface.locator(".automation-list").innerText()).includes("执行历史")) throw new Error("运行历史仍混在规则清单里");
 
-  const main = await surface.locator('[data-automation-body="overview"]').innerText();
-  if (!(await surface.locator(".ar-step").count())) throw new Error("没有摊开执行链路");
+  // 定时规则只有三层。Webhook 投递审计属于真有外部入口的规则，不是每条规则的标配——
+  // 让它对所有规则常驻，等于把一个多数人用不到的空 tab 摆成一等公民。
+  const dep = surface.locator('[data-automation-view="dep"]');
+  if ((await dep.locator(".automation-tabs > button").count()) !== 3) throw new Error("定时规则的信息层不是三个");
+  if (await dep.locator('[data-automation-body="deliveries"]').count()) throw new Error("定时规则不该带 Webhook 投递层");
+
+  const main = await dep.locator('[data-automation-body="overview"]').innerText();
+  if (!(await dep.locator(".ar-step").count())) throw new Error("没有摊开执行链路");
   for (const want of ["触发", "准入检查", "在项目建任务", "工作流", "派给", "任务验收面"]) {
     if (!main.includes(want)) throw new Error(`执行链路缺少「${want}」`);
   }
@@ -1587,21 +1592,46 @@ await check("自动化：规则、触发、运行与投递分层，所有结果�
   // 自动化最危险的是权限，所以能力边界必须写在脸上
   if (!main.includes("能力边界")) throw new Error("没有写明能力边界");
   if (!main.includes("不会自己降级去跑")) throw new Error("没有说明缺权限时是停下来问，而不是降权限硬跑");
+  // 任务说明是一次性冻结的：人写一句话、模型整理一版、人确认一次，之后每次触发读同一版。
+  // 每次触发都让模型重写，规则会静默漂移，三个月后没人说得清它在干什么。
+  if (!main.includes("你写的原话")) throw new Error("任务说明没有留下人写的原话");
+  if (!main.includes("不会重新生成")) throw new Error("没有说明任务说明每次触发读同一版");
+  if (main.includes("Runbook")) throw new Error("任务说明又退回成 Runbook 行话");
 
-  await surface.locator('[data-automation-tab="triggers"]').click();
-  const triggers = await surface.locator('[data-automation-body="triggers"]').innerText();
-  for (const want of ["接下来", "Asia/Singapore", "Webhook URL", "HMAC-SHA256", "Idempotency-Key"]) {
-    if (!triggers.includes(want)) throw new Error(`触发器设计缺少「${want}」`);
+  await dep.locator('[data-automation-tab="triggers"]').click();
+  const triggers = await dep.locator('[data-automation-body="triggers"]').innerText();
+  for (const want of ["接下来", "Asia/Singapore"]) {
+    if (!triggers.includes(want)) throw new Error(`时间表设计缺少「${want}」`);
   }
+  if (triggers.includes("Webhook URL")) throw new Error("定时规则不该带 Webhook 凭证");
 
-  await surface.locator('[data-automation-tab="runs"]').click();
-  const runs = await surface.locator('[data-automation-body="runs"]').innerText();
-  for (const want of ["未触发", "失败", "重复", "关联任务", "Attempt"]) {
+  await dep.locator('[data-automation-tab="runs"]').click();
+  const runs = await dep.locator('[data-automation-body="runs"]').innerText();
+  for (const want of ["未触发", "失败", "关联任务", "Attempt"]) {
     if (!runs.includes(want)) throw new Error(`运行记录没有讲清「${want}」`);
   }
 
-  await surface.locator('[data-automation-tab="deliveries"]').click();
-  const deliveries = await surface.locator('[data-automation-body="deliveries"]').innerText();
+  // Webhook 规则比定时规则多一层：入口审计。切规则要真的换详情，不是只换高亮。
+  await surface.locator('[data-automation-pick="gh"]').click();
+  const gh = surface.locator('[data-automation-view="gh"]');
+  if (!(await gh.isVisible())) throw new Error("切换规则没有换掉右侧详情");
+  if (await dep.isVisible()) throw new Error("两份规则详情同时可见");
+  if ((await gh.locator(".automation-tabs > button").count()) !== 4) throw new Error("Webhook 规则缺少投递审计层");
+
+  const ghMain = await gh.locator('[data-automation-body="overview"]').innerText();
+  // 入口挡下（验签/去重/过滤）和准入挡下（额度/运行时）是两类原因，混成一个「失败」
+  // 就分不清是别人发错了还是本机跑不动
+  if (!ghMain.includes("不消耗额度也不产生 Run")) throw new Error("入口检查没有和准入检查分开");
+  if (!ghMain.includes("不可信输入")) throw new Error("没有写明投递内容来自公网、不能成为提权路径");
+
+  await gh.locator('[data-automation-tab="triggers"]').click();
+  const ghTriggers = await gh.locator('[data-automation-body="triggers"]').innerText();
+  for (const want of ["Webhook URL", "HMAC-SHA256", "Idempotency-Key"]) {
+    if (!ghTriggers.includes(want)) throw new Error(`Webhook 入口设计缺少「${want}」`);
+  }
+
+  await gh.locator('[data-automation-tab="deliveries"]').click();
+  const deliveries = await gh.locator('[data-automation-body="deliveries"]').innerText();
   for (const want of ["签名", "去重键", "已拒绝", "重放为新投递", "replayed_from"]) {
     if (!deliveries.includes(want)) throw new Error(`Webhook 投递审计缺少「${want}」`);
   }
@@ -1610,13 +1640,14 @@ await check("自动化：规则、触发、运行与投递分层，所有结果�
   const dialog = page.locator("[data-automation-dialog]");
   if (!(await dialog.isVisible())) throw new Error("新建自动化入口没有打开创建器");
   const dialogText = await dialog.innerText();
-  for (const want of ["Runbook", "第一个触发器", "接下来", "保存为暂停", "保存前预检"]) {
+  for (const want of ["任务说明", "整理成步骤", "第一个触发器", "接下来", "保存为暂停", "保存前预检"]) {
     if (!dialogText.includes(want)) throw new Error(`自动化创建器缺少「${want}」`);
   }
+  if (dialogText.includes("Runbook")) throw new Error("创建器又退回成 Runbook 行话");
   await dialog.locator("[data-automation-close]").first().click();
 
-  // 离开前归位，后续截图与测试都从概览开始。
-  await surface.locator('[data-automation-tab="overview"]').click();
+  // 离开前归位，后续截图与测试都从定时规则的概览开始。
+  await surface.locator('[data-automation-pick="dep"]').click();
 
   await page.locator('.main-rail [data-surface="project"]').click();
 });
