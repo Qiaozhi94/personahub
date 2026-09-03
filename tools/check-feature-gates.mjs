@@ -65,6 +65,131 @@ export const TASKS_SECTIONS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Eval / Tracking Contract (borrowed from clowder-ai — see
+// docs/reviews/clowder-governance-borrowing.md §4.2)
+// ---------------------------------------------------------------------------
+
+/** Heading of the conditional subsection inside spec section 6. */
+export const EVAL_CONTRACT_HEADING = 'Eval / Tracking Contract';
+
+/**
+ * The four fields, in order. Deliberately four and no more: clowder's heavyweight
+ * nine-field metric birth certificate reached 3 instances in two years, while this
+ * four-field version reached 49. The weight is the reason.
+ */
+export const EVAL_CONTRACT_FIELDS = [
+  '主要用户与激活信号',
+  '摩擦指标',
+  '回归夹具',
+  '退役信号',
+];
+
+/**
+ * Parses `- **字段**：value` bullets out of the contract subsection.
+ * Returns a Map of field -> value (trimmed, possibly empty).
+ */
+export function parseEvalContractFields(sectionContent) {
+  const stripped = stripCodeBlocks(sectionContent);
+  const found = new Map();
+  for (const line of stripped.split('\n')) {
+    const m = line.match(/^-\s+\*\*(.+?)\*\*\s*[：:]\s*(.*)$/);
+    if (!m) continue;
+    found.set(m[1].trim(), m[2].trim());
+  }
+  return found;
+}
+
+/**
+ * Validates one spec's Eval / Tracking Contract.
+ *
+ * Two rules carry the whole thing, both taken from clowder's KD-4:
+ *  - an empty 退役信号 fails; there is no reviewer-signature downgrade, because a
+ *    contract nobody can fail is a contract nobody writes;
+ *  - when the trigger does not fire, the section must be *absent*, not present
+ *    and filled with N/A. An N/A farm is how this gate dies.
+ *
+ * Content is required from `ready-for-development` onward — that is PersonaHub's
+ * Design Gate, the same moment clowder binds it. A `draft` spec may omit the
+ * section entirely (its user scenarios are not settled yet, and a contract
+ * invented before them would be fiction), but if it writes one, it is validated
+ * in full: a half-filled section is worse than none.
+ */
+export function checkEvalContract(specText, status, relDir) {
+  const errors = [];
+  const { frontmatter } = parseFrontmatter(specText);
+  // gate_version is exactly the mechanism for "which gate rules apply"; the
+  // recorded legacy batch (F001-F008, gate_version 0) predates this contract and
+  // is not retro-fitted.
+  if (frontmatter?.gate_version === 0) return errors;
+  const declaration = frontmatter?.eval_contract;
+  const sections = extractTopLevelSections(specText);
+  const sec6 = getSectionByNum(sections, 6);
+  const subSection = sec6
+    ? extractSubSections(sec6.content).find((sub) => sub.title.trim() === EVAL_CONTRACT_HEADING)
+    : null;
+  const contentRequired = status !== 'draft';
+
+  if (declaration !== undefined && declaration !== 'required' && declaration !== 'exempt') {
+    errors.push(
+      `${relDir}/spec.md: frontmatter eval_contract must be "required" or "exempt", got ${JSON.stringify(declaration)}`,
+    );
+    return errors;
+  }
+
+  if (contentRequired && declaration === undefined) {
+    errors.push(
+      `${relDir}/spec.md: frontmatter must declare eval_contract ("required" or "exempt") from ready-for-development onward`,
+    );
+    return errors;
+  }
+
+  if (declaration === 'exempt') {
+    const reason = frontmatter?.eval_contract_exempt_reason;
+    if (!reason || INCOMPLETE_MARKERS.some((marker) => String(reason).includes(marker))) {
+      errors.push(
+        `${relDir}/spec.md: eval_contract "exempt" requires a concrete eval_contract_exempt_reason (both trigger questions answered no)`,
+      );
+    }
+    if (subSection) {
+      errors.push(
+        `${relDir}/spec.md: eval_contract is "exempt" but section 6 still has a "${EVAL_CONTRACT_HEADING}" subsection — delete it rather than filling it with N/A`,
+      );
+    }
+    return errors;
+  }
+
+  if (declaration === 'required' && !subSection) {
+    if (contentRequired) {
+      errors.push(
+        `${relDir}/spec.md: eval_contract is "required" but section 6 has no "${EVAL_CONTRACT_HEADING}" subsection`,
+      );
+    }
+    return errors;
+  }
+
+  if (!subSection) return errors;
+
+  const fields = parseEvalContractFields(subSection.content);
+  for (const field of EVAL_CONTRACT_FIELDS) {
+    if (!fields.has(field)) {
+      errors.push(`${relDir}/spec.md: ${EVAL_CONTRACT_HEADING} missing field: ${field}`);
+      continue;
+    }
+    const value = fields.get(field);
+    if (!value) {
+      errors.push(`${relDir}/spec.md: ${EVAL_CONTRACT_HEADING} field "${field}" is empty`);
+      continue;
+    }
+    if (/^(N\/A|无|不适用)$/i.test(value) || INCOMPLETE_MARKERS.some((marker) => value.includes(marker))) {
+      errors.push(
+        `${relDir}/spec.md: ${EVAL_CONTRACT_HEADING} field "${field}" is a placeholder (${value}) — either answer it or set eval_contract: exempt`,
+      );
+    }
+  }
+  return errors;
+}
+
+// ---------------------------------------------------------------------------
 // Pure text utilities
 // ---------------------------------------------------------------------------
 
@@ -1127,6 +1252,9 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
       }
     }
   }
+
+  // --- Eval / Tracking Contract (conditional, section 6 subsection) ---
+  errors.push(...checkEvalContract(specText, status, relDir));
 
   // --- tests: path validation (review/done states) ---
   if (status === 'review' || status === 'done') {

@@ -42,7 +42,7 @@ updated: 2026-09-03
 |---|---|---|---|---|
 | ① | 元认知路由（三信号加权） | 纸面，零代码 | **不借** | — |
 | ①' | 评估标准可被质疑（归因分层 + 干预门） | **已落地，7 千行控制面里的一道硬门** | **借契约形状** | 产品（validation） |
-| ② | eval contract 轻量四项（含 Sunset Signal） | 49 份 feature doc 在用 | **直接借** | 流程（spec 模板 + gate） |
+| ② | eval contract 轻量四项（含 Sunset Signal） | 49 份 feature doc 在用 | **已落地 2026-09-03** | 流程（`checkEvalContract` + `docs/features/README.md`） |
 | ②' | 重型指标出生证（9+ 字段） | 3 份实例 | **不借** | — |
 | ③ | verdict closure（逐 finding 四态） | 已落地，有真实样本 | **借四态与闭环链** | 产品 + 流程 |
 | ④ | L0–L4 五级阶梯 | 纸面，零产出 | **不借** | — |
@@ -167,8 +167,21 @@ blocker code 是封闭词表、文案随 code 持久化，重启后重渲染同�
 一周新增 5 个 Feature、轻量契约只加 1 份，说明**它的采纳靠强制触发而非自发**——反过来印证
 上面三条缺一不可。
 
-**PersonaHub 落点**：流程层，不进产品。`tools/check-feature-gates.mjs` 已有 9 节固定 spec 结构
-与 AC 解析，插一条条件必填规则是熟路；落在 spec §6「成功与验收」下作条件子节。
+**PersonaHub 落点**：流程层，不进产品。已于 2026-09-03 落地为
+`tools/check-feature-gates.mjs::checkEvalContract`，规范见
+<a href="../features/README.md">`docs/features/README.md`</a>「Eval / Tracking Contract（第 6 节条件子节）」。
+
+实现时相对 clowder 做了三处收紧，都是为了让门禁**机械可判**而不依赖 reviewer 记性：
+
+1. **触发要显式声明**。clowder 靠 reviewer 按两问判断；PersonaHub 要求 frontmatter 写
+   `eval_contract: required | exempt`，`exempt` 必须附具体理由（沿用 clowder `tips_exempt` 的形状）。
+   门禁判不了「效用是否不确定」，但能强制这个问题被回答一次。
+2. **绑定在 Design Gate，不在立项**。`draft` 可不声明——用户场景没定稿时写出的契约是虚构的；
+   `ready-for-development` 起声明与内容都必填。但 draft 若写了子节，四字段照样全校验：
+   半填的比不填更糟。
+3. **`gate_version: 0` 不追溯**（F001-F008 历史批次）。
+
+保留的两条原样照抄：**退役信号空填即不通过、不设签字降级**（KD-4），以及**不触发时禁止写空节或 N/A**。
 
 **现成的思想钩子**：`concept-mapping.md` §2.1.1 引的 multica 反面证据——迁移 058 删掉
 `autopilot.project_id`，注释写明 "never exposed in the UI"，进而写进 PRD §15
@@ -328,7 +341,7 @@ EVOLUTION_CYCLE_DECISIONS = ['keep','tune','rollback','sunset','no_change','insu
 
 | 优先级 | 项 | 层 | 规模 | 开发冻结影响 |
 |---|---|---|---|---|
-| 立刻 | ② 轻量 Eval Contract 门禁（4 项 + 条件触发 + 空填拒绝） | 流程 | 模板 + gate 规则约 80 行 + 测试 | 不受影响（tooling/文档，非业务代码） |
+| ~~立刻~~ **已完成 2026-09-03** | ② 轻量 Eval Contract 门禁（4 项 + 条件触发 + 空填拒绝） | 流程 | `checkEvalContract` + 15 条门禁测试 + README 规范 | 不受影响（tooling/文档，非业务代码） |
 | 立刻 | ③-A bug log「复验才能关单」+ `wontfix` 带理由；缺失一律 typed 标记不留空格 | 流程 | 约 15 行 | 同上 |
 | 进 P1 设计 | ④' validation 结论加 `insufficient`；只有 `execution` 类 fail 消耗轮次 | 产品 | 枚举 + 状态流转 | 仅设计层 |
 | 进 P1 设计 | ①' 归因四层 `execution / harness / rubric / observation` | 产品 | 一个枚举 | 仅设计层 |

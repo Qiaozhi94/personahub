@@ -123,6 +123,53 @@ draft → ready-for-development → in-progress → review → done
 - 「7. 测试、依赖与决策」固定包含 `### 测试策略`、`### 依赖`、`### 决策与风险`
   三个子标题。schema/service/repository/component 等实现拆分仍属于 `design.md`。
 
+#### Eval / Tracking Contract（第 6 节条件子节）
+
+来源：clowder-ai 的 `feat-lifecycle` Eval Contract 门禁，判断依据见
+<a href="../reviews/clowder-governance-borrowing.md">`docs/reviews/clowder-governance-borrowing.md`</a> §4.2。
+借的是**轻量四字段版**——clowder 的九字段重型「指标出生证」两年只有 3 份实例，四字段版有 49 份；
+差别就是重量。
+
+**触发（两问都是 yes 才填）**：
+
+1. 这个改动会改变**用户旅程或成员行为**吗？
+2. 存在**效用不确定、且有明确 consumer**（有人会据此决定保留/调整/删除）的主张吗？
+
+任一为 no 即不触发。**不触发时不要写空节，也不要用 N/A 占位**——N/A 农场是这类门禁的死法。
+
+**声明（frontmatter，`gate_version: 1` 且状态 ≥ `ready-for-development` 时必填）**：
+
+```yaml
+eval_contract: required          # 触发
+# 或
+eval_contract: exempt
+eval_contract_exempt_reason: "两问为何都是 no"
+```
+
+`draft` 可以不声明：用户场景还没定稿，这时写出的契约是虚构的。但**一旦写了子节，四个字段
+一律校验**——半填的比不填更糟。
+
+**四个字段（`required` 时必填，缺一不过）**：
+
+```markdown
+### Eval / Tracking Contract
+
+- **主要用户与激活信号**：谁在用；什么事件说明它真的被用起来了。
+- **摩擦指标**：这件事做得顺不顺，用什么数字看。
+- **回归夹具**：至少 1 条，建议 2-5 条，说明哪些场景必须一直成立。
+- **退役信号**：**什么条件成立时，这个 Feature 的专用实现应当被删除。**
+```
+
+**退役信号空填直接不通过，不设 reviewer 签字降级**（clowder KD-4）。这条是整个门禁的承重墙：
+一个谁都不会不通过的契约，就是谁都不会写的契约。写「有个更好的方案就删」不算——要写出可判定
+的条件（谁接管、满足什么迁移与回放要求）。
+
+它也是 PRD §15「预留没有消费者的字段就是下次要删的东西」的可执行版本；版本收口时按下方
+「Version Closure Rules」复检一次。
+
+**门禁**：`npm run check:features`（`checkEvalContract`）。`gate_version: 0` 的历史批次
+（F001-F008）不追溯。
+
 ### `design.md`
 
 `design.md` 是该 feature 的技术设计，回答“怎么实现”。
@@ -250,6 +297,9 @@ draft → ready-for-development → in-progress → review → done
 4. 收口动作必须跑一遍 `npm run verify` 的门禁脚本，确认该版本所有 Feature 确实
    `done`，再写入 release 的 `closed_at` 元数据。版本目录收口后只允许修复历史错误
    或死链，不再追加新需求。
+5. **复检该版本每个 `eval_contract: required` Feature 的退役信号**，在 release 文档里
+   逐条写明「已触发 / 未触发 / 无法判定」；已触发的进入下一版本的删除候选。写一次就沉底
+   的退役信号，本身就是「没有 consumer 的字段」——正是它要防的东西。
 
 ## Relationship To Other Docs
 

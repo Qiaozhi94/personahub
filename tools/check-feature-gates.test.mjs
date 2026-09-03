@@ -9,6 +9,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  checkEvalContract,
+  parseEvalContractFields,
+  EVAL_CONTRACT_FIELDS,
   parseFrontmatter,
   stripCodeBlocks,
   normalizeLineEndings,
@@ -353,6 +356,9 @@ function makeDoneSpec(opts = {}) {
     status: 'done',
     gateVersion: 1,
     sec6: checkedSec6(),
+    // Non-draft gate_version 1 Features must answer the Eval Contract trigger.
+    // The generic fixture is a plumbing Feature, so it answers "no" with a reason.
+    extraFrontmatter: 'eval_contract: exempt\neval_contract_exempt_reason: "fixture: 不改用户旅程也不改成员行为"\n',
     ...opts,
   });
 }
@@ -1555,6 +1561,7 @@ test('Open questions: review all-checked still legal', async () => {
         gateVersion: 1,
         sec6: checkedSec6(),
         sec8: '无',
+        extraFrontmatter: 'eval_contract: exempt\neval_contract_exempt_reason: "fixture: 不改用户旅程也不改成员行为"\n',
       }),
       tasks: makeTasks({ sec2: checkedSec2(), sec3: checkedSec3() }),
     });
@@ -1966,4 +1973,156 @@ test('Regress r4: task format — empty verify value is rejected', () => {
 
 test('Regress r4: task format — non-empty verify value is accepted', () => {
   assert.equal(parseTaskLines('- [ ] T001: do - verify: `server/tests/x.test.ts`').length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// Eval / Tracking Contract (borrowed from clowder-ai; see
+// docs/reviews/clowder-governance-borrowing.md §4.2)
+// ---------------------------------------------------------------------------
+
+function specWith({ frontmatter = '', section6 = '## 6. 成功与验收\n\n### 成功标准\n\n- SC-001：x\n' } = {}) {
+  return `---\nkind: feature\nid: F999\nversion: "0.9"\nstatus: review\ngate_version: 1\n${frontmatter}---\n\n# F999\n\n${section6}\n`;
+}
+
+const FULL_CONTRACT = [
+  '## 6. 成功与验收',
+  '',
+  '### 成功标准',
+  '',
+  '- SC-001：x',
+  '',
+  '### Eval / Tracking Contract',
+  '',
+  '- **主要用户与激活信号**：单人开发者；创建第一个 coding Issue 时激活。',
+  '- **摩擦指标**：从派活到拿到验证结论的人工介入次数。',
+  '- **回归夹具**：一次 pass、一次 fail 转 Ready。',
+  '- **退役信号**：连续两个版本该指标为 0 且无人查看，则删除本 Feature 的专用实现。',
+  '',
+].join('\n');
+
+test('parseEvalContractFields extracts the four labelled bullets', () => {
+  const fields = parseEvalContractFields(FULL_CONTRACT);
+  for (const name of EVAL_CONTRACT_FIELDS) {
+    assert.equal(fields.has(name), true, `missing ${name}`);
+  }
+  assert.match(fields.get('退役信号'), /连续两个版本/);
+});
+
+test('checkEvalContract', async (t) => {
+  await t.test('passes a fully filled required contract', () => {
+    const errors = checkEvalContract(
+      specWith({ frontmatter: 'eval_contract: required\n', section6: FULL_CONTRACT }),
+      'review',
+      'docs/features/0.9/F999-x',
+    );
+    assert.deepEqual(errors, []);
+  });
+
+  // KD-4: the whole gate rests on this one. An empty sunset signal is the field
+  // people skip, so it is the field that must fail closed.
+  await t.test('rejects an empty 退役信号 with no reviewer-signature downgrade', () => {
+    const section6 = FULL_CONTRACT.replace(/- \*\*退役信号\*\*：.*/, '- **退役信号**：');
+    const errors = checkEvalContract(
+      specWith({ frontmatter: 'eval_contract: required\n', section6 }),
+      'review',
+      'd',
+    );
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /退役信号.*is empty/);
+  });
+
+  await t.test('rejects a placeholder value', () => {
+    const section6 = FULL_CONTRACT.replace(/- \*\*摩擦指标\*\*：.*/, '- **摩擦指标**：N/A');
+    const errors = checkEvalContract(
+      specWith({ frontmatter: 'eval_contract: required\n', section6 }),
+      'review',
+      'd',
+    );
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /placeholder/);
+  });
+
+  await t.test('rejects a missing field', () => {
+    const section6 = FULL_CONTRACT.split('\n').filter((l) => !l.includes('回归夹具')).join('\n');
+    const errors = checkEvalContract(
+      specWith({ frontmatter: 'eval_contract: required\n', section6 }),
+      'review',
+      'd',
+    );
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /missing field: 回归夹具/);
+  });
+
+  await t.test('rejects "required" with no subsection at all', () => {
+    const errors = checkEvalContract(specWith({ frontmatter: 'eval_contract: required\n' }), 'review', 'd');
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /no "Eval \/ Tracking Contract" subsection/);
+  });
+
+  await t.test('exempt requires a concrete reason', () => {
+    const errors = checkEvalContract(specWith({ frontmatter: 'eval_contract: exempt\n' }), 'review', 'd');
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /eval_contract_exempt_reason/);
+  });
+
+  await t.test('exempt rejects a TODO reason', () => {
+    const errors = checkEvalContract(
+      specWith({ frontmatter: 'eval_contract: exempt\neval_contract_exempt_reason: "TODO"\n' }),
+      'review',
+      'd',
+    );
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /eval_contract_exempt_reason/);
+  });
+
+  await t.test('accepts exempt with a concrete reason', () => {
+    const errors = checkEvalContract(
+      specWith({ frontmatter: 'eval_contract: exempt\neval_contract_exempt_reason: "纯内部重构，不改用户旅程也不改成员行为"\n' }),
+      'review',
+      'd',
+    );
+    assert.deepEqual(errors, []);
+  });
+
+  // The N/A-farm guard: an untriggered Feature must delete the section, not fill it.
+  await t.test('exempt rejects a leftover subsection', () => {
+    const errors = checkEvalContract(
+      specWith({
+        frontmatter: 'eval_contract: exempt\neval_contract_exempt_reason: "纯内部重构"\n',
+        section6: FULL_CONTRACT,
+      }),
+      'review',
+      'd',
+    );
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /delete it rather than filling it with N\/A/);
+  });
+
+  await t.test('rejects an unknown declaration value', () => {
+    const errors = checkEvalContract(specWith({ frontmatter: 'eval_contract: maybe\n' }), 'review', 'd');
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /must be "required" or "exempt"/);
+  });
+
+  // draft is before PersonaHub's Design Gate: user scenarios are not settled, so a
+  // contract written now would be fiction. Declaration and content both become
+  // mandatory at ready-for-development.
+  await t.test('draft may omit the declaration entirely', () => {
+    assert.deepEqual(checkEvalContract(specWith(), 'draft', 'd'), []);
+  });
+
+  await t.test('ready-for-development must declare', () => {
+    const errors = checkEvalContract(specWith(), 'ready-for-development', 'd');
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /must declare eval_contract/);
+  });
+
+  // A half-filled section is worse than none, so a draft that writes one is still
+  // held to all four fields.
+  await t.test('a draft that writes a partial contract is still validated', () => {
+    const section6 = FULL_CONTRACT.replace(/- \*\*退役信号\*\*：.*/, '- **退役信号**：');
+    const errors = checkEvalContract(specWith({ section6 }), 'draft', 'd');
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /退役信号.*is empty/);
+  });
 });
