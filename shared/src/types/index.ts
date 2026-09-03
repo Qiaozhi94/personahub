@@ -156,6 +156,8 @@ export enum ThreadEventType {
   IssueDone = "issue.done",
   IssueUnblocked = "issue.unblocked",
   ValidationRoundReset = "validation.round_reset",
+  /** BUG-003: a validator terminated without producing a verdict, so it hands its round back instead of holding the slot forever. Carries the run id and the round it released. */
+  ValidationRoundReleased = "validation.round_released",
   // F006: graph execution events
   GraphNodeQueued = "graph.node_queued",
   GraphNodeResult = "graph.node_result",

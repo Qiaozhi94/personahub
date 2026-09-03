@@ -14,7 +14,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | BUG-001 | fixed | 2026-08-11 22:27 | 高 | 任务级 | — | 调度器 claim validator 后不派工，验证卡 queued | scheduler tick claim 后未 drainWorkspace | validation | validation-dispatch-scheduler.ts / index.ts / test | validation-dispatch-scheduler.test.ts::dispatches_the_claimed_validator | 7b81076 |
 | BUG-002 | fixed | 2026-08-11 22:34 | 中 | 任务级 | — | web cancel 空 body 带 JSON content-type → 500 | apiFetch 无条件设 Content-Type，Fastify 拒空 body | web | api-client.ts | f002-ui-flows.test.tsx | 89ed06d |
-| BUG-003 | open | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | interrupted 不推进 round_count 且仍占 round 槽 | validation | result-processor.ts | — | — |
+| BUG-003 | fixed | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | 无结论的终态 validator 仍占着 `(issue, round)` 唯一索引槽，而 round_count 只记已形成的 failed 结论，两者永不前进 | validation | result-processor.ts / repositories/run.ts / shared/types/index.ts | validation-validator-uniqueness.test.ts::releases_the_round_when_a_validator_terminates_as_{interrupted,cancelled,failed} | PENDING3 |
 | BUG-004 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 装了 agent CLI 的机器上 executable-resolver 单测 7 例必红，`npm run verify` 长期红灯 | 用例是 Windows 形状（`.exe`/`.cmd` fixture、无 exec 位）却在 POSIX 上跑；PATH 又是 prepend 而非替换，于是落回宿主真实二进制 | runtime | server/tests/unit/executable-resolver.test.ts / package.json | executable-resolver.test.ts::does_not_fall_back_to_a_same-named_executable_elsewhere_on_PATH | 3ceed8d |
 | BUG-005 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 以 root 运行时权限拒绝扫描用例必红（T089） | 用 chmod 000 构造权限拒绝，但 root 无视 DAC 位；守卫只排除了 win32，没排除 root | workspace | server/tests/integration/filesystem-scanner.test.ts / package.json | filesystem-scanner.test.ts::T089 + ::reaches_the_same_permission_denied_stop_reason_from_real_chmod | 5e6f34e |
 | BUG-006 | fixed | 2026-09-03 17:24 | 低 | 任务级 | — | Feature 门禁在 Linux 上不拒绝 Windows 绝对路径（`C:\Users\test` 被判合法测试路径） | `validateTestPathSyntax` 用 `path.isAbsolute`，在 Linux 是 posix 语义，识别不出盘符路径；注释写的是「Unix 或 Windows 都拒绝」 | tooling | tools/check-feature-gates.mjs / tools/check-doc-links.mjs / tools/check-docs.test.mjs | check-feature-gates.test.mjs::validateTestPathSyntax::rejects_Windows_absolute_path + check-docs.test.mjs::validateLinkPathBoundary::rejects_Windows_absolute_path | 30ea8d1 |
@@ -45,10 +45,33 @@
 - **现象**：validator 运行中被中断（重启 `server_restarted` 或人为取消）→ Issue 变 `Blocked`（`validator_run_failed`）。但即使 unblock 后重跑 implementation，进验证后 validator 仍不启动；Issue 卡 `Validating`。
 - **复现**：implementation 完成 → 验证中 → 中断 validator → unblock → Ready → 重跑 implementation → 又进 `Validating` → validator 不再被创建/启动，卡死。
 - **根因**：两条 validator 结束路径不同——正常 fail（`processFailed`）`validation_round_count +1`；中断/failed/cancelled（`result-processor.ts::process` 调 `blockIssue`）**不推进 round_count**。而 `getValidatorRunByRound(round)` 返回该 round **任何状态** run（含 terminal interrupted）→ 旧 interrupted validator 占着 round-1 槽、round_count 停 0 → 重验证 round 仍=1 → `per_round_conflict`。且 claim 的 round 取自冻结的 `dispatch_pending` 事件，调度器 / recovery / 手动触发全部解不开。
-- **修复方向（待实施）**：`result-processor.ts` 对 Interrupted/Failed/Cancelled validator 调 `blockIssue` 时同时推进 `validation_round_count`（对齐 `processFailed`）。需配回归测试：中断后能通过 unblock + 重跑恢复验证。
-- **当前缓解**：新建 coding Issue 重跑（旧 Issue 有 stale interrupted validator 卡着）；或等修复后清理 DB。
+- **根因补全（2026-09-03）**：原记录只说到「不推进 round_count」，漏了另一半——`schema-v5.ts` 有唯一索引
+  `idx_runs_validator_per_round ON runs(issue_id, validation_round) WHERE role='validator' AND validation_round IS NOT NULL`，
+  **与终态无关**。所以死锁是两个不变量对撞：round 槽被无结论的死 run 永久占着，而 round_count
+  按 PRD 定义只记「已形成 failed 结果」的轮次、不会因它前进。两边都不动 = 永远同一个 round、
+  永远撞同一条死 run。同一形状还覆盖 `processBlocked`（outcome=blocked 也不推进 round_count）。
+- **修复**：**没有采用原记录里「推进 round_count」的方向**。那会让一次服务器重启吃掉用户 1/3 的
+  验证预算——三次重启就能把 Issue 推到 `round_limit_reached`，而用户一个结论都没拿到。这正是
+  「证据不足」和「真失败」被压进同一个出口的问题。改为**交还 round 槽，不动预算**：
+  1. `RunRepository.releaseValidationRound(runId)`：对 failed/cancelled/interrupted 的 validator 把
+     `validation_round` 置 NULL。唯一索引是 `WHERE validation_round IS NOT NULL` 的部分索引，
+     置 NULL 即退出索引，run 记录本身保留。**Completed 不释放**——它的结论可能只是还没被处理。
+  2. `result-processor.ts` 在 `blockIssue` 之前调用它，并写一条
+     `validation.round_released` 事件（含 run_id / released_round / run_status），保住审计链。
+  3. Issue 仍然照常 Blocked——validator 死了用户必须知道；解开的是 unblock 之后的重试路径。
+- **对既有卡死数据的影响**：自愈，但需两次触发——第一次 `processValidatorResult` 释放 round，
+  第二次触发才能 claim 到新 attempt。不需要清库。
+- **回归测试**：`validation-validator-uniqueness.test.ts` 新增三例，对
+  **interrupted / cancelled / failed 各断言一遍**——三者走同一段代码，只特判 `interrupted`
+  的修法会把同样的死锁留在 cancel 与 spawn 失败后面。每例断言：Issue 仍 Blocked、
+  `validation_round_count` 仍为 0、`validation_round` 已置 NULL、`round_released` 事件写了一条、
+  unblock 后 claim 成功且拿到的仍是 round 1 的新 run。
 - **发现方式**：人工 dogfood（中断 validator 后重跑观察到卡死）。
-- **备注**：修复后回填「中断 → unblock → 重跑」能否干净恢复的验证证据。
+- **⚠️ 与 PRD 的冲突，需裁决**：PRD §7.5 写「每条 validator Run 记录自身不可变的 `validation_round`」，
+  本修复会把死 run 的该字段置 NULL，**与「不可变」字面冲突**。选它是因为另一条路（推进 round_count）
+  与同段的「`validation_round_count` 是**已形成 failed 结果**的累计」冲突得更狠，且会真实伤害用户
+  （无结论也扣预算）。审计链用 `validation.round_released` 事件补偿。**两条路都要改 PRD，本条按
+  影响小的那条实现，PRD 措辞待裁决**——已登记进 `product-experience-reset-plan.md` 第 7 节。
 
 ### BUG-004：装了 agent CLI 的机器上，executable-resolver 单测 7 例必红
 

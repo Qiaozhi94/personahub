@@ -54,6 +54,49 @@ describe("T093 per-round validator uniqueness", () => {
     expect(validatorCount(services, issue.id)).toBe(1);
   });
 
+  // BUG-003 regression: the wedge was "interrupted validator holds round 1
+  // forever". Every resultless terminal status reaches the same code path, so
+  // all three are asserted — a fix that only special-cased `interrupted` would
+  // leave the identical deadlock behind a cancel or a spawn failure.
+  for (const deadStatus of [RunStatus.Interrupted, RunStatus.Cancelled, RunStatus.Failed] as const) {
+    it(`releases the round when a validator terminates as ${deadStatus}, so retry after unblock is not wedged`, () => {
+      const { issue, implRun } = setupFixture(services, tempDir);
+      const v1 = services.validationWorkflowService.requestValidation(issue.id, implRun.id)!;
+      expect(v1.validation_round).toBe(1);
+
+      const now = new Date().toISOString();
+      services.runRepo.transitionStatus(v1.id, RunStatus.Queued, RunStatus.Running, { started_at: now });
+      services.runRepo.transitionStatus(v1.id, RunStatus.Running, deadStatus, { completed_at: now });
+      services.validationWorkflowService.processValidatorResult(v1.id);
+
+      // The Issue is still blocked — the operator must learn the validator died.
+      expect(services.issueRepo.getById(issue.id)!.status).toBe(IssueStatus.Blocked);
+      // …but the round budget was not spent on an attempt that produced no verdict.
+      expect(services.issueRepo.getById(issue.id)!.validation_round_count).toBe(0);
+      // …and round 1 is free again, with the release recorded.
+      expect(services.runRepo.getById(v1.id)!.validation_round).toBeNull();
+      expect(services.runRepo.getValidatorRunByRound(issue.id, 1)).toBeNull();
+      const released = services.threadEventRepo
+        .listByThread(issue.primary_thread!.id)
+        .filter((e) => e.type === ThreadEventType.ValidationRoundReleased);
+      expect(released).toHaveLength(1);
+      expect(released[0].payload_json.released_round).toBe(1);
+      expect(released[0].payload_json.run_id).toBe(v1.id);
+
+      services.validationRecoveryActionService.unblock(issue.id, "validator died, retrying");
+      services.issueRepo.updateStatus(issue.id, { status: IssueStatus.Validating, updatedAt: new Date().toISOString() });
+
+      const retry = services.validationWorkflowService.claimValidatorSlot(issue.id, { mode: "auto" });
+
+      expect(retry.ok).toBe(true);
+      if (retry.ok) {
+        expect(retry.run.id).not.toBe(v1.id);
+        expect(retry.run.validation_round).toBe(1);
+      }
+      expect(validatorCount(services, issue.id)).toBe(2);
+    });
+  }
+
   it("rejects a second claim attempt as an active conflict (queued) current-round validator", () => {
     const { issue, implRun } = setupFixture(services, tempDir);
     const v1 = services.validationWorkflowService.requestValidation(issue.id, implRun.id)!;

@@ -242,6 +242,30 @@ export class RunRepository {
     return row ? mapRow(row) : null;
   }
 
+  /**
+   * BUG-003: hands a spent round back. `idx_runs_validator_per_round` reserves
+   * (issue, round) for one validator regardless of terminal status, so a
+   * validator killed before it could produce a verdict — restart, cancel, spawn
+   * failure — would otherwise hold that round forever while
+   * `validation_round_count` (which only counts *formed* failed verdicts) never
+   * advanced. Every later attempt then asked for the same round and collided
+   * with the dead run. Nulling `validation_round` drops the row out of the
+   * partial index without deleting the run or spending the Issue's round budget
+   * on an attempt that produced nothing. Guarded on the resultless terminal
+   * statuses so a Completed run — whose verdict may still be pending
+   * processing — keeps its slot.
+   */
+  releaseValidationRound(runId: string): number | null {
+    const row = this.db.prepare(
+      `SELECT validation_round FROM runs
+       WHERE id = ? AND role = 'validator' AND validation_round IS NOT NULL
+         AND status IN ('failed', 'cancelled', 'interrupted')`,
+    ).get(runId) as { validation_round: number } | undefined;
+    if (!row) return null;
+    this.db.prepare(`UPDATE runs SET validation_round = NULL WHERE id = ?`).run(runId);
+    return row.validation_round;
+  }
+
   getValidatorRunByRound(issueId: string, round: number): Run | null {
     const row = this.db.prepare(
       `SELECT * FROM runs
