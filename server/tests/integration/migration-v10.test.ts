@@ -25,24 +25,23 @@ describe("T009 schema v10 migration", () => {
     db.close();
   });
 
-  it("fresh install reaches v10", () => {
+  // These assert that *v10* was applied, not what the head version happens to be
+  // — later migrations move the head, and a v10 suite that also owned the head
+  // number would fail on every future migration for no real reason. The head is
+  // owned by the newest migration's suite.
+  it("fresh install applies v10", () => {
     applyMigrations(db);
-    const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(10);
+    const row = db.prepare("SELECT version FROM schema_version WHERE version = 10").get() as
+      { version: number } | undefined;
+    expect(row?.version).toBe(10);
+    expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(10);
   });
 
-  it("CURRENT_SCHEMA_VERSION matches the applied migration count", () => {
-    applyMigrations(db);
-    expect(CURRENT_SCHEMA_VERSION).toBe(10);
-    const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
-  });
-
-  it("is idempotent — running twice stays at v10", () => {
+  it("is idempotent — running twice applies v10 exactly once", () => {
     applyMigrations(db);
     applyMigrations(db);
-    const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(10);
+    const row = db.prepare("SELECT COUNT(*) AS c FROM schema_version WHERE version = 10").get() as { c: number };
+    expect(row.c).toBe(1);
   });
 
   it("creates admin_audit_events table with expected columns", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
-import { applyMigrations } from "../../src/db/migrations.js";
+import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
 import { SCHEMA_V1 } from "../../src/db/schema-v1.js";
 import { SCHEMA_V2 } from "../../src/db/schema-v2.js";
 import { SCHEMA_V3 } from "../../src/db/schema-v3.js";
@@ -60,18 +60,18 @@ describe("T014 schema v6 migration", () => {
 
   afterEach(() => db.close());
 
-  describe("fresh install reaches latest (v8)", () => {
+  describe("fresh install reaches the head version", () => {
     it("schema_version max is 8", () => {
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(10);
+      expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
     });
 
     it("is idempotent - running twice does not error and stays at 8", () => {
       applyMigrations(db);
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(10);
+      expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
     });
   });
 
@@ -286,10 +286,11 @@ describe("T014 schema v6 migration", () => {
       expect(row.purpose).toBe("ad_hoc_consult");
     });
 
-    it("F004 active-validator and per-round unique indexes still exist and only match role='validator'", () => {
+    it("F004 active-validator and per-round-attempt unique indexes still exist and only match role='validator'", () => {
       applyMigrations(db);
       const activeIdx = db.prepare("SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_runs_one_active_validator'").get() as { sql: string };
-      const roundIdx = db.prepare("SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_runs_validator_per_round'").get() as { sql: string };
+      // BUG-003 / schema-v11 renamed the per-round index when it gained the attempt column.
+      const roundIdx = db.prepare("SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_runs_validator_per_round_attempt'").get() as { sql: string };
       expect(activeIdx.sql).toContain("role = 'validator'");
       expect(roundIdx.sql).toContain("role = 'validator'");
     });

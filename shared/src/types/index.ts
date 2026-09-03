@@ -156,8 +156,6 @@ export enum ThreadEventType {
   IssueDone = "issue.done",
   IssueUnblocked = "issue.unblocked",
   ValidationRoundReset = "validation.round_reset",
-  /** BUG-003: a validator terminated without producing a verdict, so it hands its round back instead of holding the slot forever. Carries the run id and the round it released. */
-  ValidationRoundReleased = "validation.round_released",
   // F006: graph execution events
   GraphNodeQueued = "graph.node_queued",
   GraphNodeResult = "graph.node_result",
@@ -249,6 +247,8 @@ export interface Run {
   role: RunRole;
   workflow_step: "implementation" | "validation" | null;
   validation_round: number | null;
+  /** BUG-003: which try at that round this run is (1-based). The round is what the Issue's validation budget is spent on; the attempt is how many times we tried to obtain that round's verdict. A run that dies without a verdict keeps its round and is superseded by attempt N+1. */
+  validation_attempt: number | null;
   dispatch_source: RunDispatchSource;
   adapter_identity: AdapterIdentitySnapshot | null;
   has_final_message: boolean;

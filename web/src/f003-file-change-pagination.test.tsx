@@ -52,6 +52,7 @@ function makeEvidencePage(overrides: Partial<RunEvidenceResponse> = {}): RunEvid
       role: RunRole.Implementation,
       workflow_step: "implementation",
       validation_round: null,
+      validation_attempt: null,
       dispatch_source: RunDispatchSource.UserExplicit,
       adapter_identity: null,
       has_final_message: false,

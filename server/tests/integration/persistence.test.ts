@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
 import Database from "better-sqlite3";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -124,7 +125,7 @@ describe("Persistence / Restart Recovery", () => {
     {
       const db = openDatabase(dbPath);
       const version = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(version.v).toBe(10);
+      expect(version.v).toBe(CURRENT_SCHEMA_VERSION);
       db.close();
     }
   });

@@ -588,7 +588,6 @@ M6 是目标形态定稿后才启动的独立实施阶段，不计入这两周�
    | `docs/features/releases/` 收口模板 | Sunset Signal 在版本收口时复检一次，避免它自己变成没有 consumer 的字段 | 流程 |
    | `docs/reviews/dogfooding-bugs.md` + `tools/dogfood-bugs.mjs` | `fixed` 必须有非 `—` 的回归测试；新增 `wontfix` 状态且必须带理由；缺失一律 typed 标记，不留空格 | 流程 |
    | v0.3 Feature 拆分方式 | 见上表「旅程闭环 owner（预留 F013）」行与 `docs/features/0.3/README.md` 第 1.1 节 | 计划 |
-   | `docs/personahub-prd.md` §7.5 的 `validation_round` 不可变性 | BUG-003 修复把无结论终态 validator 的 `validation_round` 置 NULL 以交还 round 槽，与「每条 validator Run 记录自身不可变的 `validation_round`」字面冲突；另一条路（推进 `validation_round_count`）与同段「已形成 failed 结果的累计」冲突更狠且会无结论扣预算。已按影响小的一条实现，措辞待裁决，见 `dogfooding-bugs.md` BUG-003 | 产品 |
 
    **明确不借**（理由见该文第 5 节）：三信号加权 `action_confidence`、L0–L4 线性五级阶梯、
    重型指标出生证、F266 的 11 态 reconciler、F311 控制面本体。取的是契约形状

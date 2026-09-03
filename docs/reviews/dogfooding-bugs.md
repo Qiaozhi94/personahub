@@ -14,7 +14,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | BUG-001 | fixed | 2026-08-11 22:27 | 高 | 任务级 | — | 调度器 claim validator 后不派工，验证卡 queued | scheduler tick claim 后未 drainWorkspace | validation | validation-dispatch-scheduler.ts / index.ts / test | validation-dispatch-scheduler.test.ts::dispatches_the_claimed_validator | 7b81076 |
 | BUG-002 | fixed | 2026-08-11 22:34 | 中 | 任务级 | — | web cancel 空 body 带 JSON content-type → 500 | apiFetch 无条件设 Content-Type，Fastify 拒空 body | web | api-client.ts | f002-ui-flows.test.tsx | 89ed06d |
-| BUG-003 | fixed | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | 无结论的终态 validator 仍占着 `(issue, round)` 唯一索引槽，而 round_count 只记已形成的 failed 结论，两者永不前进 | validation | result-processor.ts / repositories/run.ts / shared/types/index.ts | validation-validator-uniqueness.test.ts::releases_the_round_when_a_validator_terminates_as_{interrupted,cancelled,failed} | feecb4d |
+| BUG-003 | fixed | 2026-08-11 23:36 | 高 | 任务级 | — | 中断 validator 死锁 round 槽位，重验证无法开始 | 无结论的终态 validator 占着 `(issue, round)` 唯一索引槽，而 round_count 只记已形成的 failed 结论，两者永不前进 | validation | db/schema-v11.ts / repositories/run.ts / validation/validator-slot-claimer.ts / shared/types/index.ts | validation-validator-uniqueness.test.ts::supersedes_a_{interrupted,cancelled,failed}_validator_with_a_new_attempt + migration-v11.test.ts | PENDING3 |
 | BUG-004 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 装了 agent CLI 的机器上 executable-resolver 单测 7 例必红，`npm run verify` 长期红灯 | 用例是 Windows 形状（`.exe`/`.cmd` fixture、无 exec 位）却在 POSIX 上跑；PATH 又是 prepend 而非替换，于是落回宿主真实二进制 | runtime | server/tests/unit/executable-resolver.test.ts / package.json | executable-resolver.test.ts::does_not_fall_back_to_a_same-named_executable_elsewhere_on_PATH | 3ceed8d |
 | BUG-005 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 以 root 运行时权限拒绝扫描用例必红（T089） | 用 chmod 000 构造权限拒绝，但 root 无视 DAC 位；守卫只排除了 win32，没排除 root | workspace | server/tests/integration/filesystem-scanner.test.ts / package.json | filesystem-scanner.test.ts::T089 + ::reaches_the_same_permission_denied_stop_reason_from_real_chmod | 5e6f34e |
 | BUG-006 | fixed | 2026-09-03 17:24 | 低 | 任务级 | — | Feature 门禁在 Linux 上不拒绝 Windows 绝对路径（`C:\Users\test` 被判合法测试路径） | `validateTestPathSyntax` 用 `path.isAbsolute`，在 Linux 是 posix 语义，识别不出盘符路径；注释写的是「Unix 或 Windows 都拒绝」 | tooling | tools/check-feature-gates.mjs / tools/check-doc-links.mjs / tools/check-docs.test.mjs | check-feature-gates.test.mjs::validateTestPathSyntax::rejects_Windows_absolute_path + check-docs.test.mjs::validateLinkPathBoundary::rejects_Windows_absolute_path | 30ea8d1 |
@@ -50,52 +50,47 @@
   **与终态无关**。所以死锁是两个不变量对撞：round 槽被无结论的死 run 永久占着，而 round_count
   按 PRD 定义只记「已形成 failed 结果」的轮次、不会因它前进。两边都不动 = 永远同一个 round、
   永远撞同一条死 run。同一形状还覆盖 `processBlocked`（outcome=blocked 也不推进 round_count）。
-- **修复**：**没有采用原记录里「推进 round_count」的方向**。那会让一次服务器重启吃掉用户 1/3 的
-  验证预算——三次重启就能把 Issue 推到 `round_limit_reached`，而用户一个结论都没拿到。这正是
-  「证据不足」和「真失败」被压进同一个出口的问题。改为**交还 round 槽，不动预算**：
-  1. `RunRepository.releaseValidationRound(runId)`：对 failed/cancelled/interrupted 的 validator 把
-     `validation_round` 置 NULL。唯一索引是 `WHERE validation_round IS NOT NULL` 的部分索引，
-     置 NULL 即退出索引，run 记录本身保留。**Completed 不释放**——它的结论可能只是还没被处理。
-  2. `result-processor.ts` 在 `blockIssue` 之前调用它，并写一条
-     `validation.round_released` 事件（含 run_id / released_round / run_status），保住审计链。
-  3. Issue 仍然照常 Blocked——validator 死了用户必须知道；解开的是 unblock 之后的重试路径。
-- **对既有卡死数据的影响**：自愈，但需两次触发——第一次 `processValidatorResult` 释放 round，
-  第二次触发才能 claim 到新 attempt。不需要清库。
-- **回归测试**：`validation-validator-uniqueness.test.ts` 新增三例，对
-  **interrupted / cancelled / failed 各断言一遍**——三者走同一段代码，只特判 `interrupted`
-  的修法会把同样的死锁留在 cancel 与 spawn 失败后面。每例断言：Issue 仍 Blocked、
-  `validation_round_count` 仍为 0、`validation_round` 已置 NULL、`round_released` 事件写了一条、
-  unblock 后 claim 成功且拿到的仍是 round 1 的新 run。
+- **修复（2026-09-03，第二版——按使用者裁决改用 attempt 维度）**：**没有采用原记录里「推进
+  round_count」的方向**。那会让一次服务器重启吃掉用户 1/3 的验证预算——三次重启就能把 Issue 推到
+  `round_limit_reached`，而用户一个结论都没拿到。这正是「证据不足」和「真失败」被压进同一个出口。
+
+  第一版实现改成把死 run 的 `validation_round` 置 NULL 来交还槽位，但那与 PRD §7.5
+  「每条 validator Run 记录自身不可变的 `validation_round`」字面冲突。使用者裁决：**加 attempt
+  维度、保持 `validation_round` 不可变**。最终实现：
+
+  1. **schema-v11**：`runs` 增列 `validation_attempt`；把唯一索引
+     `idx_runs_validator_per_round(issue_id, validation_round)` 换成
+     `idx_runs_validator_per_round_attempt(issue_id, validation_round, validation_attempt)`。
+     历史 validator 行回填 attempt=1——迁移前第二个 attempt 根本插不进来，不可能有别的值。
+  2. **概念分离**：**round 是预算单位**（`max_validation_rounds` 花的是它），
+     **attempt 是「为拿到这一轮的结论试了几次」**。死掉的 attempt 保留自己的 round 与 attempt
+     号供审计，由 attempt N+1 取代；预算一分不扣。
+  3. **claimer**：终态且无结论（failed/cancelled/interrupted）的 attempt 不再触发
+     `per_round_conflict`，新 run 取 `nextValidationAttempt()`。**Completed 仍然占位**——
+     它的结论可能只是还没被处理（既有 T093 用例正是这个场景）。
+  4. **`getValidatorRunByRound` 返回最新 attempt** 而非最早的，否则「现在谁拥有这一轮」会答出尸体。
+     按 `validation_attempt DESC` 排序，不依赖时钟精度。
+  5. `idx_runs_one_active_validator`（schema-v4）继续保证一个 Issue 同时只有一个活跃 validator，
+     所以多个 attempt 不可能并发。
+  6. Issue 仍然照常 Blocked——validator 死了用户必须知道；解开的是 unblock 之后的重试路径。
+- **对既有卡死数据的影响**：迁移后自愈，不需清库。第一版曾把部分 run 的 `validation_round`
+  置 NULL；若某个开发库跑过那一版，那些行的 round 无法恢复（迁移只回填 attempt，不猜 round），
+  但它们已不占索引槽，不影响重试。
+- **回归测试**：
+  - `validation-validator-uniqueness.test.ts` 新增三例，**interrupted / cancelled / failed 各断言
+    一遍**——三者走同一段代码，只特判 `interrupted` 的修法会把同样的死锁留在 cancel 与 spawn
+    失败后面。每例断言：Issue 仍 Blocked、`validation_round_count` 仍为 0、**死 run 的 round 与
+    attempt 都没被改动**、unblock 后 claim 成功且拿到 round 1 / attempt 2、
+    `getValidatorRunByRound` 答出的是 attempt 2。
+  - `migration-v11.test.ts` 覆盖：到达 head 版本、幂等、加列、回填（有 round 的置 1、无 round 的
+    保持 NULL）、索引替换，以及**同一 round 的第二个 attempt 可插入而重复 attempt 被拒**
+    ——即旧索引挡住的那条插入。
 - **发现方式**：人工 dogfood（中断 validator 后重跑观察到卡死）。
-- **⚠️ 与 PRD 的冲突，需裁决**：PRD §7.5 写「每条 validator Run 记录自身不可变的 `validation_round`」，
-  本修复会把死 run 的该字段置 NULL，**与「不可变」字面冲突**。选它是因为另一条路（推进 round_count）
-  与同段的「`validation_round_count` 是**已形成 failed 结果**的累计」冲突得更狠，且会真实伤害用户
-  （无结论也扣预算）。审计链用 `validation.round_released` 事件补偿。**两条路都要改 PRD，本条按
-  影响小的那条实现，PRD 措辞待裁决**——已登记进 `product-experience-reset-plan.md` 第 7 节。
-
-### BUG-004：装了 agent CLI 的机器上，executable-resolver 单测 7 例必红
-
-- **现象**：`npm run verify` 在 server 单测阶段红灯。`tests/unit/executable-resolver.test.ts` 的 `resolveExecutable (T009a)` 有 7 例失败，断言期望解析到临时 fixture，实得宿主真实二进制：
-
-  ```text
-  - Expected: "executable": "/tmp/resolver-test-Yepd56/bin/claude.exe"
-  + Received: "executable": "/root/.nvm/versions/node/v24.20.0/bin/claude"
-  ```
-
-- **复现**：在**装有 `claude` / `codex` 可执行文件**的 POSIX 机器上跑 `npx vitest run --root server tests/unit/executable-resolver.test.ts`。
-- **根因（2026-09-03 修正——首次登记时判断有误）**：初判写的是"用例没隔离 PATH"，**不准确**。用例其实动了 PATH，真正的根因有两层：
-
-  1. **主因：用例是 Windows 形状，却在 POSIX 上无条件运行。** fixture 名为 `claude.exe` / `opencode.cmd`，而 `getPathExtensions()` 只在 Windows 返回 `.exe/.cmd/.bat/.com`，POSIX 下返回 `[""]`——所以 `resolveExecutable("claude")` 在 POSIX 上永远匹配不到 `claude.exe`。绝对路径/相对路径两例则是另一半：fixture 用 `writeFileSync` 写出但没加 exec 位，而 `isExecutableFile()` 在 POSIX 上要求 `X_OK`。**这两类失败在没装 agent CLI 的干净 Linux 机器上同样会红**，只是报 `null` 而不是报错误的二进制。
-  2. **放大因素：`putOnPath` 是 prepend 不是替换。** 宿主真实 PATH 仍然可达，于是 POSIX 匹配不到 fixture 后继续往下找，命中 `/root/.nvm/.../bin/claude`。它把"匹配不到"这个诚实失败，伪装成了"匹配到了别的东西"。
-
-  另外还查出一处**假绿**：`.cmd` shim 的三条 "fails …" 用例在 POSIX 上是通过的，但通过原因是 shim 压根没被找到（返回 null），而不是解析器正确拒绝了它——断言 `resolved` 为 null 时无法区分这两种情况。
-- **修复**：改测试，不改产品代码（开发冻结期内）。三条：
-  1. 新增 `setPath()` **整体替换** PATH，不再 prepend——宿主装没装 agent CLI 与结果无关；
-  2. 新增 `writeExecutable()` 按平台写 fixture：Windows 写 `<name>.exe`，POSIX 写无扩展名文件并 `chmod 0o755`，返回真实路径供断言，不再硬编码某个平台的命名；
-  3. 三个 `.cmd` shim describe 块改为 `describe.runIf(IS_WINDOWS)`。这不是为了省事跳过——`%dp0%\node_modules\…` 是反斜杠路径，`expandShimMacros` + `resolvePath` 只在 Windows 能拼出真实路径；PATHEXT 发现 `.cmd` 也是 Windows 独有。在 POSIX 跑它们只能产出假绿。非 shim 路径的 POSIX 覆盖由 `direct executables` 块承担，未减少。
-- **回归测试**：新增 `does not fall back to a same-named executable elsewhere on PATH when the fixture dir has none`——把宿主真实安装用一个 decoy 目录建模，断言它不在 PATH 上时必须报 not found。这条直接钉住本 bug 的放大因素。修复后本文件在 Linux 上 9 passed / 7 skipped，server 全量 1671 passed，仅剩 BUG-005 一条失败。
-- **发现方式**：自动化测试——2026-09-03 提交文档改动前的例行 `npm run verify`。
-- **备注**：这是**门禁可靠性缺陷，不是产品旅程缺陷**，故「旅程步骤」填 `—`。真正的危害是 `verify` 在真实开发机上长期红灯；红灯一旦常态化，门禁就失去意义。修复同时把该文件纳入 `package.json` 的 prettier format targets（按 CLAUDE.md 增量格式化约定）。
+- **顺带修掉的一类脆弱断言**：本次加 migration 时有 14 个既有用例红，全都是把
+  **当前 head schema 版本号硬编码**在与该版本无关的断言里（`expect(row.v).toBe(10)`），
+  以及 v5/v6 用例直接断言旧索引名。已改为引用 `CURRENT_SCHEMA_VERSION` 与新索引名，
+  并把「fresh install reaches latest (v8)」这类会随时间说谎的用例名改成版本无关表述。
+  这与 §7.5「宿主无关」是同一条毛病的另一面：**断言钉在了偶然事实上**。
 
 ### BUG-005：以 root 运行时，权限拒绝扫描用例必红（T089）
 

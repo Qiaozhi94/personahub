@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyMigrations } from "../../src/db/migrations.js";
+import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
 import { SCHEMA_V1 } from "../../src/db/schema-v1.js";
 import { SCHEMA_V2 } from "../../src/db/schema-v2.js";
 import { SCHEMA_V3 } from "../../src/db/schema-v3.js";
@@ -119,14 +119,14 @@ describe("T012 schema v8 migration", () => {
     it("schema_version max is 8", () => {
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(10);
+      expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
     });
 
     it("is idempotent — running twice does not error and stays at 8", () => {
       applyMigrations(db);
       applyMigrations(db);
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(10);
+      expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
     });
 
     it("creates graph_runs table", () => {
@@ -296,7 +296,7 @@ describe("T012 schema v8 migration", () => {
       applyMigrations(db);
       expect(() => applyMigrations(db)).not.toThrow();
       const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-      expect(row.v).toBe(10);
+      expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
     });
 
     it("v7 to v8 file-based migration preserves data and is idempotent on retry", () => {
@@ -349,7 +349,7 @@ describe("T012 schema v8 migration", () => {
 
         // Verify v8 was applied.
         const version = reopened.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-        expect(version.v).toBe(10);
+        expect(version.v).toBe(CURRENT_SCHEMA_VERSION);
 
         // Verify v7 data survived.
         const project = reopened.prepare("SELECT name FROM projects WHERE id = ?").get("prj_1") as { name: string };
@@ -368,7 +368,7 @@ describe("T012 schema v8 migration", () => {
         // Verify migration is idempotent on retry.
         expect(() => applyMigrations(reopened)).not.toThrow();
         const version2 = reopened.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-        expect(version2.v).toBe(10);
+        expect(version2.v).toBe(CURRENT_SCHEMA_VERSION);
 
         reopened.close();
       } finally {
@@ -434,7 +434,7 @@ describe("T012 schema v8 migration", () => {
         retryDb.exec("DROP TRIGGER fail_v8_version");
         expect(() => applyMigrations(retryDb)).not.toThrow();
         const v8 = retryDb.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-        expect(v8.v).toBe(10);
+        expect(v8.v).toBe(CURRENT_SCHEMA_VERSION);
         retryDb.close();
       } finally {
         try {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
-import { applyMigrations } from "../../src/db/migrations.js";
+import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
 import { SCHEMA_V1 } from "../../src/db/schema-v1.js";
 import { SCHEMA_V2 } from "../../src/db/schema-v2.js";
 import { SCHEMA_V3 } from "../../src/db/schema-v3.js";
@@ -33,14 +33,14 @@ describe("Database Migration", () => {
   it("creates schema_version table", () => {
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(10);
+    expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
   });
 
   it("is idempotent - running twice does not error", () => {
     applyMigrations(db);
     applyMigrations(db);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
-    expect(row.v).toBe(10);
+    expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
   });
 
   it("creates all 14 tables", () => {

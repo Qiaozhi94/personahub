@@ -69,7 +69,7 @@ describe("T091/T092: composer routing preview", () => {
         adapter_config_id: "agt_1", status: "running" as never, failure_reason: null,
         instructions: "x", started_at: "2026-07-19T00:00:00.000Z", completed_at: null,
         exit_code: null, error_message: null, role: "validator" as never, workflow_step: "validation",
-        validation_round: 1, dispatch_source: "system" as never, adapter_identity: null,
+        validation_round: 1, validation_attempt: 1, dispatch_source: "system" as never, adapter_identity: null,
         has_final_message: false, purpose: "workflow_bound" as never, context_source_run_id: null,
         node_run_id: null,
         created_at: "2026-07-19T00:00:00.000Z", updated_at: "2026-07-19T00:00:00.000Z",

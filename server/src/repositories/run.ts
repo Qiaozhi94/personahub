@@ -16,6 +16,8 @@ export interface RunCreateInput {
   role?: RunRole;
   dispatch_source?: RunDispatchSource;
   validation_round?: number | null;
+  /** BUG-003: which try at that round. Defaults to 1; the claimer passes the next free attempt when a previous try died without a verdict. */
+  validation_attempt?: number | null;
   adapter_identity?: AdapterIdentitySnapshot | null;
   purpose?: RunPurposeType;
   context_source_run_id?: string | null;
@@ -44,6 +46,7 @@ interface RunRow {
   role: string;
   workflow_step: string | null;
   validation_round: number | null;
+  validation_attempt: number | null;
   dispatch_source: string;
   final_message: string | null;
   adapter_identity_json: string | null;
@@ -84,6 +87,7 @@ function mapRow(row: RunRow): Run {
     role: row.role as RunRole,
     workflow_step: row.workflow_step as "implementation" | "validation" | null,
     validation_round: row.validation_round,
+    validation_attempt: row.validation_attempt,
     dispatch_source: row.dispatch_source as RunDispatchSource,
     adapter_identity: row.adapter_identity_json
       ? (JSON.parse(row.adapter_identity_json) as AdapterIdentitySnapshot)
@@ -107,6 +111,8 @@ export class RunRepository {
     const workflowStep = deriveWorkflowStep(role);
     const dispatchSource = input.dispatch_source ?? RDS.UserExplicit;
     const validationRound = input.validation_round ?? null;
+    // Attempts only exist for rounds; a run with no round has nothing to retry.
+    const validationAttempt = validationRound === null ? null : (input.validation_attempt ?? 1);
     const identityJson = input.adapter_identity ? JSON.stringify(input.adapter_identity) : null;
     const purpose = input.purpose ?? RunPurpose.WorkflowBound;
     const contextSourceRunId = input.context_source_run_id ?? null;
@@ -120,9 +126,9 @@ export class RunRepository {
 
     try {
       this.db.prepare(
-        `INSERT INTO runs (id, issue_id, thread_id, workspace_id, adapter_config_id, status, failure_reason, instructions, role, workflow_step, validation_round, dispatch_source, adapter_identity_json, started_at, completed_at, exit_code, error_message, purpose, context_source_run_id, node_run_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?, ?, ?, ?)`
-      ).run(id, input.issue_id, input.thread_id, input.workspace_id, input.adapter_config_id, input.status, input.instructions, role, workflowStep, validationRound, dispatchSource, identityJson, purpose, contextSourceRunId, nodeRunId, now, now);
+        `INSERT INTO runs (id, issue_id, thread_id, workspace_id, adapter_config_id, status, failure_reason, instructions, role, workflow_step, validation_round, validation_attempt, dispatch_source, adapter_identity_json, started_at, completed_at, exit_code, error_message, purpose, context_source_run_id, node_run_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?, ?, ?, ?)`
+      ).run(id, input.issue_id, input.thread_id, input.workspace_id, input.adapter_config_id, input.status, input.instructions, role, workflowStep, validationRound, validationAttempt, dispatchSource, identityJson, purpose, contextSourceRunId, nodeRunId, now, now);
     } catch (error) {
       if (isActiveGraphAttemptConflict(error)) {
         throw new GraphConstraintError(
@@ -243,36 +249,29 @@ export class RunRepository {
   }
 
   /**
-   * BUG-003: hands a spent round back. `idx_runs_validator_per_round` reserves
-   * (issue, round) for one validator regardless of terminal status, so a
-   * validator killed before it could produce a verdict — restart, cancel, spawn
-   * failure — would otherwise hold that round forever while
-   * `validation_round_count` (which only counts *formed* failed verdicts) never
-   * advanced. Every later attempt then asked for the same round and collided
-   * with the dead run. Nulling `validation_round` drops the row out of the
-   * partial index without deleting the run or spending the Issue's round budget
-   * on an attempt that produced nothing. Guarded on the resultless terminal
-   * statuses so a Completed run — whose verdict may still be pending
-   * processing — keeps its slot.
+   * BUG-003: the *latest* attempt at that round, not the earliest. A round can
+   * carry more than one validator run — a run that terminated without producing
+   * a verdict keeps its round for the audit trail and is superseded by the next
+   * attempt — so callers asking "who owns this round right now" must see the
+   * newest one. Ordering on validation_attempt rather than created_at makes that
+   * independent of clock resolution.
    */
-  releaseValidationRound(runId: string): number | null {
-    const row = this.db.prepare(
-      `SELECT validation_round FROM runs
-       WHERE id = ? AND role = 'validator' AND validation_round IS NOT NULL
-         AND status IN ('failed', 'cancelled', 'interrupted')`,
-    ).get(runId) as { validation_round: number } | undefined;
-    if (!row) return null;
-    this.db.prepare(`UPDATE runs SET validation_round = NULL WHERE id = ?`).run(runId);
-    return row.validation_round;
-  }
-
   getValidatorRunByRound(issueId: string, round: number): Run | null {
     const row = this.db.prepare(
       `SELECT * FROM runs
        WHERE issue_id = ? AND role = 'validator' AND validation_round = ?
-       ORDER BY created_at ASC, id ASC LIMIT 1`,
+       ORDER BY validation_attempt DESC, created_at DESC, id DESC LIMIT 1`,
     ).get(issueId, round) as RunRow | undefined;
     return row ? mapRow(row) : null;
+  }
+
+  /** BUG-003: next free attempt number for a round; 1 when the round is untouched. */
+  nextValidationAttempt(issueId: string, round: number): number {
+    const row = this.db.prepare(
+      `SELECT MAX(validation_attempt) AS max_attempt FROM runs
+       WHERE issue_id = ? AND role = 'validator' AND validation_round = ?`,
+    ).get(issueId, round) as { max_attempt: number | null } | undefined;
+    return (row?.max_attempt ?? 0) + 1;
   }
 
   getLatestTerminalByRole(issueId: string, role: RunRole): Run | null {

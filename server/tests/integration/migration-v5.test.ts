@@ -42,8 +42,11 @@ describe("T095 schema v5 evidence_summaries invariants", () => {
   });
   afterEach(() => db.close());
 
-  it("creates the per-round validator unique index", () => {
-    const idx = db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_runs_validator_per_round'").get();
+  // v5 introduced per-round validator uniqueness; schema-v11 (BUG-003) widened
+  // the same guarantee to (round, attempt) and renamed the index. The invariant
+  // v5 owns — "a validator cannot silently duplicate a round" — is still in force.
+  it("keeps a unique index guarding validator rounds", () => {
+    const idx = db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_runs_validator_per_round_attempt'").get();
     expect(idx).toBeTruthy();
   });
 

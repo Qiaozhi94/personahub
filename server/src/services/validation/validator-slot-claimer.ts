@@ -44,6 +44,17 @@ export type ClaimValidatorSlotResult =
   | { ok: false; reason: "adapter_invalid"; message: string }
   | { ok: false; reason: "blocked" };
 
+/**
+ * BUG-003: statuses a validator can reach without ever producing a verdict.
+ * Kept beside the claim rule it drives — `Completed` is deliberately absent, and
+ * `Queued`/`Running` are already covered by the active-validator check.
+ */
+const RESULTLESS_TERMINAL_STATUSES: readonly RunStatus[] = [
+  RunStatus.Failed,
+  RunStatus.Cancelled,
+  RunStatus.Interrupted,
+];
+
 export class ValidatorSlotClaimer {
   constructor(
     private db: Database.Database,
@@ -91,8 +102,19 @@ export class ValidatorSlotClaimer {
       const policyId = pendingEvent.payload_json.policy_id as string;
       const policyVersion = pendingEvent.payload_json.policy_version as number;
 
+      // BUG-003: a validator that terminated without producing a verdict is a
+      // spent attempt, not the round's owner — it can never yield this round's
+      // verdict, so it must not block a retry. It keeps its own
+      // validation_round (PRD §7.5 immutability); the retry becomes attempt N+1
+      // of the same round, which costs the Issue nothing because the budget is
+      // spent per round, not per attempt. A Completed run still owns the round:
+      // its verdict may simply not have been processed yet.
       const existingForRound = this.runRepo.getValidatorRunByRound(issueId, round);
-      if (existingForRound) return { ok: false, reason: "per_round_conflict", conflictingRun: existingForRound };
+      const spentAttempt = existingForRound !== null && RESULTLESS_TERMINAL_STATUSES.includes(existingForRound.status);
+      if (existingForRound && !spentAttempt) {
+        return { ok: false, reason: "per_round_conflict", conflictingRun: existingForRound };
+      }
+      const attempt = this.runRepo.nextValidationAttempt(issueId, round);
 
       const implRun = this.runRepo.getById(implementationRunId);
       if (
@@ -215,6 +237,7 @@ export class ValidatorSlotClaimer {
         role: RunRole.Validator,
         dispatch_source: dispatchSource,
         validation_round: round,
+        validation_attempt: attempt,
         adapter_identity: validatorIdentity,
         context_source_run_id: implementationRunId,
       });
@@ -235,6 +258,7 @@ export class ValidatorSlotClaimer {
             thread_id: issue.primary_thread_id!,
             workspace_id: issue.workspace_id,
             validation_round: round,
+            validation_attempt: attempt,
             target: "implementation_result",
             policy_id: policyId,
             policy_version: policyVersion,
@@ -256,6 +280,7 @@ export class ValidatorSlotClaimer {
           status: RunStatus.Queued,
           role: RunRole.Validator,
           validation_round: round,
+          validation_attempt: attempt,
         }),
       );
       return { ok: true, run: validatorRun };

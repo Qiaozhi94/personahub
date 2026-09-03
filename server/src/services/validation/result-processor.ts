@@ -7,11 +7,9 @@ import type {
   ValidationResultEnvelope,
 } from "@personahub/shared/types";
 import {
-  ActorType,
   IssueStatus,
   RunRole,
   RunStatus,
-  ThreadEventType,
   TraceCompletenessStatus,
   ValidationBlockReason,
   ValidationOutcome,
@@ -65,28 +63,6 @@ export class ValidationResultProcessor {
     const validatorRun = this.runRepo.getById(validatorRunId);
     if (!validatorRun || validatorRun.role !== RunRole.Validator) return;
     if ([RunStatus.Failed, RunStatus.Cancelled, RunStatus.Interrupted].includes(validatorRun.status)) {
-      // BUG-003: this run can never produce the round's verdict, so it hands the
-      // round back before the Issue is blocked. Without this it kept the
-      // (issue, round) slot while validation_round_count stayed put, and every
-      // retry after the operator unblocked collided with the dead run —
-      // per_round_conflict with no way out. Releasing does not touch the round
-      // budget: an attempt that produced no verdict must not spend one of the
-      // Issue's max_validation_rounds.
-      const releasedRound = this.runRepo.releaseValidationRound(validatorRun.id);
-      if (releasedRound !== null) {
-        this.threadEventService.write(
-          validatorRun.thread_id,
-          ThreadEventType.ValidationRoundReleased,
-          ActorType.System,
-          null,
-          {
-            run_id: validatorRun.id,
-            issue_id: validatorRun.issue_id,
-            released_round: releasedRound,
-            run_status: validatorRun.status,
-          },
-        );
-      }
       this.blocker.blockIssue(
         validatorRun.issue_id,
         ValidationBlockReason.ValidatorRunFailed,

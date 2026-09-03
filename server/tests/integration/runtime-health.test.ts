@@ -132,8 +132,8 @@ describe("RuntimeHealth (F008 Phase 4)", { timeout: 30_000 }, () => {
       const health = makeHealthService(services).collect(project.id);
 
       expect(health.schema).toEqual({
-        actual_version: 10,
-        expected_version: 10,
+        actual_version: CURRENT_SCHEMA_VERSION,
+        expected_version: CURRENT_SCHEMA_VERSION,
         status: "current",
       });
       expect(health.background).toEqual({
@@ -175,7 +175,7 @@ describe("RuntimeHealth (F008 Phase 4)", { timeout: 30_000 }, () => {
 
     it("does not report mismatch when current", () => {
       const { project } = setupProject(services, tempDir);
-      const health = makeHealthService(services, 10).collect(project.id);
+      const health = makeHealthService(services, CURRENT_SCHEMA_VERSION).collect(project.id);
       expect(health.diagnostics.find((d) => d.code === "schema_version_mismatch")).toBeUndefined();
     });
   });
