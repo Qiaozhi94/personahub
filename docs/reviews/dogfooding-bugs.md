@@ -18,6 +18,7 @@
 | BUG-004 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 装了 agent CLI 的机器上 executable-resolver 单测 7 例必红，`npm run verify` 长期红灯 | 用例是 Windows 形状（`.exe`/`.cmd` fixture、无 exec 位）却在 POSIX 上跑；PATH 又是 prepend 而非替换，于是落回宿主真实二进制 | runtime | server/tests/unit/executable-resolver.test.ts / package.json | executable-resolver.test.ts::does_not_fall_back_to_a_same-named_executable_elsewhere_on_PATH | 3ceed8d |
 | BUG-005 | fixed | 2026-09-03 17:02 | 中 | 任务级 | — | 以 root 运行时权限拒绝扫描用例必红（T089） | 用 chmod 000 构造权限拒绝，但 root 无视 DAC 位；守卫只排除了 win32，没排除 root | workspace | server/tests/integration/filesystem-scanner.test.ts / package.json | filesystem-scanner.test.ts::T089 + ::reaches_the_same_permission_denied_stop_reason_from_real_chmod | 5e6f34e |
 | BUG-006 | fixed | 2026-09-03 17:24 | 低 | 任务级 | — | Feature 门禁在 Linux 上不拒绝 Windows 绝对路径（`C:\Users\test` 被判合法测试路径） | `validateTestPathSyntax` 用 `path.isAbsolute`，在 Linux 是 posix 语义，识别不出盘符路径；注释写的是「Unix 或 Windows 都拒绝」 | tooling | tools/check-feature-gates.mjs / tools/check-doc-links.mjs / tools/check-docs.test.mjs | check-feature-gates.test.mjs::validateTestPathSyntax::rejects_Windows_absolute_path + check-docs.test.mjs::validateLinkPathBoundary::rejects_Windows_absolute_path | 30ea8d1 |
+| BUG-007 | fixed | 2026-09-03 20:14 | 中 | 任务级 | — | 加一条 migration 就让 14 个无关用例变红：断言把当前 head schema 版本号与索引名写死 | 用例断言钉在「当前恰好是第几版」这种偶然事实上，而不是它自己拥有的不变量 | tooling | server/tests/integration/{migration,migration-v5,v6,v8,v10,persistence,runtime-health}.test.ts | migration-v11.test.ts::fresh_install_reaches_the_head_version（head 版本号的唯一 owner）；**无自动防再犯检测**，见备注 | 7b160c3 |
 
 ## 详情
 
@@ -86,11 +87,8 @@
     保持 NULL）、索引替换，以及**同一 round 的第二个 attempt 可插入而重复 attempt 被拒**
     ——即旧索引挡住的那条插入。
 - **发现方式**：人工 dogfood（中断 validator 后重跑观察到卡死）。
-- **顺带修掉的一类脆弱断言**：本次加 migration 时有 14 个既有用例红，全都是把
-  **当前 head schema 版本号硬编码**在与该版本无关的断言里（`expect(row.v).toBe(10)`），
-  以及 v5/v6 用例直接断言旧索引名。已改为引用 `CURRENT_SCHEMA_VERSION` 与新索引名，
-  并把「fresh install reaches latest (v8)」这类会随时间说谎的用例名改成版本无关表述。
-  这与 §7.5「宿主无关」是同一条毛病的另一面：**断言钉在了偶然事实上**。
+- **顺带暴露的另一个缺陷**：本次加 migration 时有 14 个既有用例变红，与本 bug 无关，
+  已单独立为 **BUG-007** 并在同一 commit 修掉。
 
 ### BUG-005：以 root 运行时，权限拒绝扫描用例必红（T089）
 
@@ -134,3 +132,45 @@
   <a href="self-test-system-plan.md">`self-test-system-plan.md`</a> **§7.5「宿主无关：判定结果
   不得取决于谁在跑」**——含 5 条具体规则与跳过的边界判据，并诚实登记了"暂无自动门禁、靠纪律
   维持"这一状态。修复后 `npm run verify` 首次全绿（exit 0）。
+
+### BUG-007：加一条 migration 就让 14 个无关用例变红
+
+- **现象**：为 BUG-003 新增 `schema-v11` 后，`npm run verify` 红灯，**14 个用例失败、6 个测试文件**，
+  没有一个与本次改动的行为有关。典型断言：
+
+  ```text
+  expected 11 to be 10        // expect(row.v).toBe(10)
+  expected { …(4) } to be undefined   // 断言旧索引名 idx_runs_validator_per_round 存在
+  ```
+
+- **复现**：给 `applyMigrations` 增加任意一个新版本 → 上述用例全红。**每加一次 migration 必然重演。**
+- **根因**：这些断言钉在**「当前恰好是第几版」这种偶然事实**上，而不是用例自己拥有的不变量。三种形态：
+  1. **硬编码 head 版本号**：`migration.test.ts` / `persistence.test.ts` / `migration-v6` / `migration-v8`
+     里的 `expect(row.v).toBe(10)`，以及 `runtime-health.test.ts` 的
+     `actual_version: 10` / `makeHealthService(services, 10)`。这些用例要证的是「迁移跑完了」
+     「版本一致时不报 mismatch」，**跟 10 这个数字没关系**。
+  2. **断言旧索引名**：`migration-v5` / `migration-v6` 直接查 `idx_runs_validator_per_round`。
+     v5 拥有的不变量是「validator 不能悄悄重复一轮」，索引叫什么名字是实现细节。
+  3. **用例名会随时间说谎**：`migration-v6.test.ts` 里叫
+     `fresh install reaches latest (v8)` 的 describe，断言的却是 10——名字在 v8→v10 时就已经过期，
+     没人改，因为它一直是绿的。
+- **影响判断**：不阻塞产品主流程，但**每次 migration 都制造一片与改动无关的红灯**。危害是训练人
+  忽略红灯——真实回归会被淹在这 14 条噪声里。BUG-004 的备注里写过同样的话：
+  「红灯一旦常态化，门禁就失去意义」。
+- **修复**：改为引用 `CURRENT_SCHEMA_VERSION` 与当前索引名；`migration-v10.test.ts` 从「拥有 head
+  版本号」改成「断言 v10 这一条被应用过」（`SELECT version FROM schema_version WHERE version = 10`），
+  幂等用例改成断言该版本只被写入一次；describe 名改成版本无关表述。
+  **head 版本号现在只有一个 owner**：最新那个 migration 的用例（当前是
+  `migration-v11.test.ts::fresh install reaches the head version`）。后续加 migration 时，
+  只有它需要跟着改——这正是这类用例本该有的形状。
+- **回归测试**：`migration-v11.test.ts::fresh install reaches the head version`。
+  **但要诚实说明：这不构成防再犯的检测**——它只保证 head 有唯一 owner，拦不住有人在新用例里
+  再写一次 `toBe(11)`。可自动化的候选（未立项）：禁止 `server/tests/**/migration*.test.ts`
+  出现 `toBe(<数字>)` 形式的版本断言，除 head owner 文件外。
+- **发现方式**：自动化测试——BUG-003 加 migration 时暴露。
+- **备注**：这是「断言钉在偶然事实上」家族的第四例，前三例是
+  <a href="self-test-system-plan.md">`self-test-system-plan.md`</a> §7.5 已覆盖的
+  BUG-004/005/006（宿主 PATH / uid / 平台）。**本例钉的不是宿主，是版本号与实现细节名**，
+  §7.5 当前措辞（「不得依赖宿主 PATH、uid 或运行平台」）覆盖不到它。
+  **建议把 §7.5 的判据从「宿主无关」放宽为「断言只钉自己拥有的不变量，不钉偶然事实」，
+  待裁决**——本轮只登记，未擅自改动那份需求级文档。
