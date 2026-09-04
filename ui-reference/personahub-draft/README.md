@@ -93,7 +93,7 @@ node verify-draft.mjs   # 1440×900 真实浏览器验收
 node verify-nav.mjs     # 交互与死链验收
 ```
 
-当前状态：`check-classes` 157/157、`verify-draft` 13/13、`verify-nav` 13/13 全部通过，截图在 `shots/`。
+当前状态：`check-classes` 157/157、`verify-draft` 13/13、`verify-nav` 13/13 全部通过。
 
 ## 交互约定
 
