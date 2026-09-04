@@ -33,9 +33,9 @@
           <kbd>Ctrl K</kbd>
         </button>
         <div class="title-actions">
-          <span class="local-state"><i></i> 本地服务正常</span><button class="local-degraded" type="button" data-surface="memory" data-demo="记忆能力降级：中文分词已回退到 unicode61，检索会静默退化。点开记忆 → 健康度看索引与运行时" title="服务在运行，但记忆能力降级">记忆降级 1</button>
-          <button class="icon-button" type="button" data-demo="通知中心暂无新消息" aria-label="通知">◌</button>
-          <button class="avatar" type="button" data-demo="单用户本地模式" aria-label="用户">G</button>
+          <button class="local-state" type="button" data-surface="settings" data-settings-pick="health" title="本机服务、数据库与事件流的逐项状态"><i></i> 本地服务正常</button><button class="local-degraded" type="button" data-surface="memory" data-demo="记忆能力降级：中文分词已回退到 unicode61，检索会静默退化。点开记忆 → 健康度看索引与运行时" title="服务在运行，但记忆能力降级">记忆降级 1</button>
+          <button class="icon-button" type="button" data-surface="settings" data-settings-pick="notify" data-demo="通知中心暂无新消息。哪些事件会通知、走哪个渠道，在设置 · 通知里" aria-label="通知">◌</button>
+          <span class="row-menu avatar-menu"><button class="avatar" type="button" aria-haspopup="menu" aria-label="用户与外观">G</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="切到深色：静态原型不真的换主题。主题在这里常驻可达（照 clowder），完整的外观 / 时区 / 编辑器在设置 · 偏好设置">切到深色</button><button type="button" role="menuitem" data-surface="settings" data-settings-pick="prefs">偏好设置</button><button type="button" role="menuitem" data-surface="settings" data-settings-pick="about">关于 · 0.3.0-dev</button><button type="button" role="menuitem" disabled data-demo="单用户本地模式：没有账号体系，也不上传任何东西">单用户本地模式</button></span></span>
         </div>
       </header>
 
@@ -598,11 +598,11 @@
 <p><b>完成要求</b>：1 旧引用解析到 r1 原文；2 archived locator 由 <code>content_sha256</code> 派生、调用方不可指定；3 反向查询不跨 Project scope。</p>
 <p><b>可用产物</b>：<code>synthesis_plan@r3</code>、<code>research_findings@r1</code>。两者都是固定版本引用，不会跟着后续 revision 漂。</p>
 <p><b>上下文范围：只给结果。</b>本次调用不包含实现者的过程对话与自评（11.7k tok 被裁掉）。这一步是独立验证，验证者看见实现者的自述，结论就不再独立（PRD §7.5）。</p>
-<p><b>运行时</b>：工作目录 <code>D:\Projects\personahub</code>，分支 <code>main</code>，权限档「只读 ＋ 测试命令白名单」。</p></div></div>
+<p><b>运行时</b>：工作目录 <code>D:\Projects\personahub</code>，分支 <code>main</code>，能力边界「只读 ＋ 测试命令白名单」。</p></div></div>
                       <div class="td-body" data-td-pane="tools" hidden><div class="td-tools">
 <div><b>read</b><p>读取一个文本文件，返回带行号的内容。用 offset / limit 续读大文件。</p></div>
 <div><b>grep</b><p>用正则搜索文件内容，按文件分组返回命中行与行号。命中过多时只返回前 250 条。</p></div>
-<div><b>write</b><p>新建文件或整体覆盖。本次权限档只放开 <code>server/test/**</code>，其余路径写入会被拒绝。</p></div>
+<div><b>write</b><p>新建文件或整体覆盖。本次能力边界只放开 <code>server/test/**</code>，其余路径写入会被拒绝。</p></div>
 <div><b>bash</b><p>执行命令并返回 stdout/stderr。只有测试命令白名单内的命令免确认，其余需要你确认后才会执行。</p></div>
 </div></div>
                     </div>
@@ -676,7 +676,7 @@ archived locator 的 TOCTOU 边界。</pre><p class="td-block">Block #2 <span>ar
 41   const archived = archivePath(sha);   // 调用方不可指定、不可覆盖
 42   await db.insert(artifactRevision).values({ sha, archived });
 …
-（共 218 行，截断至命中处前后各 2 行）</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>read</b><p>读取一个文本文件，返回带行号的内容。结果按行截断到 2000 行；用 offset 与 limit 续读大文件。读取不受权限档限制，写入才受。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:07.412</dd></div><div><dt>Duration</dt><dd>42 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+（共 218 行，截断至命中处前后各 2 行）</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>read</b><p>读取一个文本文件，返回带行号的内容。结果按行截断到 2000 行；用 offset 与 limit 续读大文件。读取不受能力边界限制，写入才受。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:07.412</dd></div><div><dt>Duration</dt><dd>42 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
                       <div class="td-body" data-td-pane="payload" hidden><pre class="td-code">{
   <em class="ck">file_path</em>: <em class="cs">"server/src/services/artifact.ts"</em>
 }</pre></div>
@@ -686,7 +686,7 @@ archived locator 的 TOCTOU 边界。</pre><p class="td-block">Block #2 <span>ar
 42   await db.insert(artifactRevision).values({ sha, archived });
 …
 （共 218 行，截断至命中处前后各 2 行）</pre></div>
-                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>read</b><p>读取一个文本文件，返回带行号的内容。结果按行截断到 2000 行；用 offset 与 limit 续读大文件。读取不受权限档限制，写入才受。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
+                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>read</b><p>读取一个文本文件，返回带行号的内容。结果按行截断到 2000 行；用 offset 与 limit 续读大文件。读取不受能力边界限制，写入才受。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
   <em class="ck">type</em>: <em class="cs">"object"</em>,
   <em class="ck">properties</em>: {
     <em class="ck">file_path</em>: { type: <em class="cs">"string"</em>, description: <em class="cs">"绝对或仓库相对路径"</em> },
@@ -784,7 +784,7 @@ server/src/storage/paths.ts:12       export function archivePath(sha: string) {
   … 16 more
 
 <em class="ck">Tests</em>: 18 passed, 18 total
-[exit code: 0]</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>bash</b><p>执行命令并返回 stdout/stderr。命令在权限档白名单内免确认，其余需要你确认后才执行；非零退出以 [exit code: N] 标记回报，不当成工具失败。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:20.031</dd></div><div><dt>Duration</dt><dd>198,150 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+[exit code: 0]</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>bash</b><p>执行命令并返回 stdout/stderr。命令在能力边界白名单内免确认，其余需要你确认后才执行；非零退出以 [exit code: N] 标记回报，不当成工具失败。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 10:31:20.031</dd></div><div><dt>Duration</dt><dd>198,150 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
                       <div class="td-body" data-td-pane="payload" hidden><pre class="td-code">{
   <em class="ck">command</em>: <em class="cs">"npm test -w @personahub/server -- artifact-ref"</em>,
   <em class="ck">description</em>: <em class="cs">"跑 artifact 引用解析的集成用例"</em>,
@@ -797,7 +797,7 @@ server/src/storage/paths.ts:12       export function archivePath(sha: string) {
 
 <em class="ck">Tests</em>: 18 passed, 18 total
 [exit code: 0]</pre></div>
-                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>bash</b><p>执行命令并返回 stdout/stderr。命令在权限档白名单内免确认，其余需要你确认后才执行；非零退出以 [exit code: N] 标记回报，不当成工具失败。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
+                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>bash</b><p>执行命令并返回 stdout/stderr。命令在能力边界白名单内免确认，其余需要你确认后才执行；非零退出以 [exit code: N] 标记回报，不当成工具失败。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
   <em class="ck">type</em>: <em class="cs">"object"</em>,
   <em class="ck">properties</em>: {
     <em class="ck">command</em>: { type: <em class="cs">"string"</em> },
@@ -869,7 +869,7 @@ server/src/storage/paths.ts:12       export function archivePath(sha: string) {
                     <div class="tr-detail" data-tr-panel hidden>
                       <header class="td-head"><span class="td-chip req">REQUEST</span><span class="td-where">Turn 2 · Request #4</span><button class="td-close" type="button" data-td-close aria-label="收起详情">×</button></header>
                       <div class="td-tabs" role="tablist"><button class="active" type="button" data-td-tab="summary" role="tab">Summary</button><button type="button" data-td-tab="timing" role="tab">Timing</button><button type="button" data-td-tab="source" role="tab">Source</button></div>
-                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">codex-gpt5.6-high<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Context</dt><dd>只给结果</dd></div><div><dt>Lineage</dt><dd>⟳ Resumed from Request #3</dd></div><div><dt>Tokens</dt><dd>17.0k tok</dd></div><div class="sub"><dt>Input</dt><dd>16.1k tok</dd></div><div class="sub"><dt>Output</dt><dd>0.9k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.5k tok</dd></div><div class="sub"><dt>Cached</dt><dd>93 %</dd></div></dl><p class="td-section">Lineage<span aria-hidden="true">›</span></p><div class="td-prose"><p>放宽权限档不触发冷启动：围栏管的是上下文范围与执行组合，不是工具权限（ADR 0009 第 2 层）。这次多了 write:server/test/**。</p></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:18.940</dd></div><div><dt>Total duration</dt><dd>6.40 s</dd></div><div><dt>TTFT</dt><dd>700 ms</dd></div><div><dt>Generation</dt><dd>5.70 s</dd></div><div><dt>Throughput</dt><dd>157.9 tok/s</dd></div></dl></div>
+                      <div class="td-body" data-td-pane="summary"><dl class="td-fields"><div><dt>Source</dt><dd><button class="td-link" type="button">codex-gpt5.6-high<span aria-hidden="true">›</span></button></dd></div><div><dt>Status</dt><dd>Completed</dd></div><div><dt>Context</dt><dd>只给结果</dd></div><div><dt>Lineage</dt><dd>⟳ Resumed from Request #3</dd></div><div><dt>Tokens</dt><dd>17.0k tok</dd></div><div class="sub"><dt>Input</dt><dd>16.1k tok</dd></div><div class="sub"><dt>Output</dt><dd>0.9k tok</dd></div><div class="sub"><dt>Reasoning</dt><dd>0.5k tok</dd></div><div class="sub"><dt>Cached</dt><dd>93 %</dd></div></dl><p class="td-section">Lineage<span aria-hidden="true">›</span></p><div class="td-prose"><p>放宽能力边界不触发冷启动：围栏管的是上下文范围与执行组合，不是工具权限（ADR 0009 第 2 层）。这次多了 write:server/test/**。</p></div><p class="td-section">Request Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:18.940</dd></div><div><dt>Total duration</dt><dd>6.40 s</dd></div><div><dt>TTFT</dt><dd>700 ms</dd></div><div><dt>Generation</dt><dd>5.70 s</dd></div><div><dt>Throughput</dt><dd>157.9 tok/s</dd></div></dl></div>
                       <div class="td-body" data-td-pane="timing" hidden><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:18.940</dd></div><div><dt>Total duration</dt><dd>6.40 s</dd></div><div><dt>TTFT</dt><dd>700 ms</dd></div><div><dt>Generation</dt><dd>5.70 s</dd></div><div><dt>Throughput</dt><dd>157.9 tok/s</dd></div></dl></div>
                       <div class="td-body" data-td-pane="source" hidden><pre class="td-code">{
   <em class="ck">adapter</em>: <em class="cs">"Codex CLI 0.48.1"</em>,
@@ -898,7 +898,7 @@ it("reverse lookup does not leak across projects", async () =&gt; {
   await seedArtifact({ project: <em class="cs">"B"</em>, source: a.source });
   const rows = await reverseLookup(a.content_sha256, { project: <em class="cs">"A"</em> });
   expect(rows).toHaveLength(1);
-});</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>write</b><p>新建文件或整体覆盖已有文件。覆盖前必须先 read（默认 fs-observation-policy 要求）；本次权限档只放开 server/test/**。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:26.180</dd></div><div><dt>Duration</dt><dd>31 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
+});</pre><p class="td-section">Schema<span aria-hidden="true">›</span></p><div class="td-schema"><b>write</b><p>新建文件或整体覆盖已有文件。覆盖前必须先 read（默认 fs-observation-policy 要求）；本次能力边界只放开 server/test/**。</p></div><p class="td-section">Timing<span aria-hidden="true">›</span></p><dl class="td-fields"><div><dt>Started</dt><dd>2026-08-27 11:04:26.180</dd></div><div><dt>Duration</dt><dd>31 ms</dd></div><div><dt>Timing source</dt><dd>Session timestamps</dd></div></dl></div>
                       <div class="td-body" data-td-pane="payload" hidden><pre class="td-code">{
   <em class="ck">file_path</em>: <em class="cs">"server/test/integration/artifact-scope.test.ts"</em>,
   <em class="ck">content</em>: <em class="cs">"…34 行，见 Result"</em>
@@ -911,7 +911,7 @@ it("reverse lookup does not leak across projects", async () =&gt; {
   const rows = await reverseLookup(a.content_sha256, { project: <em class="cs">"A"</em> });
   expect(rows).toHaveLength(1);
 });</pre></div>
-                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>write</b><p>新建文件或整体覆盖已有文件。覆盖前必须先 read（默认 fs-observation-policy 要求）；本次权限档只放开 server/test/**。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
+                      <div class="td-body" data-td-pane="schema" hidden><div class="td-schema"><b>write</b><p>新建文件或整体覆盖已有文件。覆盖前必须先 read（默认 fs-observation-policy 要求）；本次能力边界只放开 server/test/**。</p></div><p class="td-block">Parameters</p><pre class="td-code">{
   <em class="ck">type</em>: <em class="cs">"object"</em>,
   <em class="ck">properties</em>: {
     <em class="ck">file_path</em>: { type: <em class="cs">"string"</em> },
@@ -2001,32 +2001,32 @@ completed -&gt; archived</code></pre>
                 <p class="rp-head">这一步需要什么　<em class="cap-tag">深度分析</em><em class="cap-tag">隔离验证</em></p>
 
                 <p class="rp-group">用哪个 adapter 与模型　<small>来自运行时的真实清单</small></p>
-                <p class="rp-quota">额度按 <b>adapter 配置</b>分池，不按模型：<code>codex</code> 剩 18% · <code>claude</code> 剩 62% · <code>opencode · coding-plan</code> 剩 88%。同一份配置下的多个模型共用一个池，所以下面各行标的是它属于哪个池，不是它自己有一个池。</p>
+                <p class="rp-quota">额度按 <b>adapter 配置</b>算，不按模型，每份配置两个口径——<b>时限额</b>（滚动窗口）与<b>周限额</b>，取更紧的那一个看。下面各行标的是它用哪一份配置的额度，不是它自己有一份。</p>
                 <div class="model-list" data-model-list>
-                  <button class="model-row active" type="button" data-pick-model="codex-gpt5.6" data-depths="low,medium,high" data-quota="18">
+                  <button class="model-row active" type="button" data-pick-model="codex-gpt5.6" data-depths="low,medium,high" data-quota-window="82" data-quota-week="62">
                     <span class="mr-mark blue">C</span>
                     <span><strong>GPT-5.6</strong><small>Codex CLI v2.4.1</small></span>
-                    <span class="mr-quota warn">池 <code>codex</code> · 18%</span>
+                    <span class="mr-quota warn"><code>codex</code> · 时 82% · 周 62%</span>
                   </button>
-                  <button class="model-row" type="button" data-pick-model="codex-gpt5.6-mini" data-depths="low,medium" data-quota="18">
+                  <button class="model-row" type="button" data-pick-model="codex-gpt5.6-mini" data-depths="low,medium" data-quota-window="82" data-quota-week="62">
                     <span class="mr-mark blue">C</span>
                     <span><strong>GPT-5.6-mini</strong><small>Codex CLI v2.4.1 · 不支持 high</small></span>
-                    <span class="mr-quota warn">池 <code>codex</code> · 18%</span>
+                    <span class="mr-quota warn"><code>codex</code> · 时 82% · 周 62%</span>
                   </button>
-                  <button class="model-row" type="button" data-pick-model="claude-opus4.6" data-depths="low,medium,high" data-quota="62">
+                  <button class="model-row" type="button" data-pick-model="claude-opus4.6" data-depths="low,medium,high" data-quota-window="88" data-quota-week="74">
                     <span class="mr-mark purple">A</span>
                     <span><strong>Opus 4.6</strong><small>Claude Code v1.9.0</small></span>
-                    <span class="mr-quota">池 <code>claude</code> · 62%</span>
+                    <span class="mr-quota warn"><code>claude</code> · 时 88% · 周 74%</span>
                   </button>
-                  <button class="model-row" type="button" data-pick-model="claude-sonnet4.8" data-depths="low,medium,high" data-quota="62">
+                  <button class="model-row" type="button" data-pick-model="claude-sonnet4.8" data-depths="low,medium,high" data-quota-window="88" data-quota-week="74">
                     <span class="mr-mark purple">A</span>
                     <span><strong>Sonnet 4.8</strong><small>Claude Code v1.9.0</small></span>
-                    <span class="mr-quota">池 <code>claude</code> · 62%</span>
+                    <span class="mr-quota warn"><code>claude</code> · 时 88% · 周 74%</span>
                   </button>
-                  <button class="model-row" type="button" data-pick-model="opencode-deepseekv4flash" data-depths="low" data-quota="88" data-advice="这一步要深度分析，它只有 low">
+                  <button class="model-row" type="button" data-pick-model="opencode-deepseekv4flash" data-depths="low" data-quota-window="0" data-quota-week="12" data-advice="这一步要深度分析，它只有 low">
                     <span class="mr-mark green">O</span>
                     <span><strong>DeepSeek-V4-Flash</strong><small>OpenCode v0.7.2 · 只有 low</small></span>
-                    <span class="mr-quota">池 <code>opencode · coding-plan</code> · 88%</span>
+                    <span class="mr-quota"><code>opencode · coding-plan</code> · 周 12%</span>
                   </button>
                 </div>
 
@@ -2281,24 +2281,25 @@ completed -&gt; archived</code></pre>
               </div>
                             <div class="project-pane" data-project-body="workflow" hidden>
                 <div class="pane-doc">
-                  <p class="pane-note">工作流模板含验证段（ADR 0012 第 7 条）：建议路径 + 什么算 Done + 要什么证据，合并自原 Validation Policy。</p>
+                  <p class="pane-note"><b>工作流不是第二种对象，它就是带步骤的 Skill（编组）。</b>这一页因此不再是一份「内置模板清单」——它只回答一件事：<b>这个项目默认走哪一条</b>。条目本身在<button class="linklike" type="button" data-surface="library">能力</button>面维护，改步骤、看历史表现、停用都在那边；两个参考项目也都没有独立的「工作流模板」对象，流程就写在 skill 里。<br>照 clowder 的<b>「全局默认 + 项目可覆盖」</b>：下面选中的是这个项目的默认，没选的仍然可以在派工时临时用。</p>
                   <div class="pj-list">
                     <article class="pj-row flow">
-                      <header><strong>Coding</strong><span class="pill success">已启用</span></header>
+                      <header><strong>代码实现 + 独立验证</strong><span class="pill success">本项目默认</span><em class="cap-tag">#编组</em><em class="cap-tag">#交付</em></header>
                       <div class="pj-chain"><span class="pj-step">实现</span><i>→</i><span class="pj-step">独立验证</span><i>→</i><span class="pj-step">收口</span></div>
                       <p class="pj-done"><span>什么算 Done</span>用例通过，且证据可被第二方复现</p>
                     </article>
                     <article class="pj-row flow">
-                      <header><strong>Research</strong><span class="pill success">已启用</span></header>
+                      <header><strong>调研 + 交叉核对</strong><span class="pill muted">可选</span><em class="cap-tag">#编组</em><em class="cap-tag">#研读</em></header>
                       <div class="pj-chain"><span class="pj-step">调研</span><i>→</i><span class="pj-step">交叉核对</span><i>→</i><span class="pj-step">结论</span></div>
                       <p class="pj-done"><span>什么算 Done</span>每条主张都有引用或反证，分歧点单独列出</p>
                     </article>
                     <article class="pj-row flow">
-                      <header><strong>Docs</strong><span class="pill muted">未启用</span></header>
+                      <header><strong>草稿 → 检视 → 定稿</strong><span class="pill muted">可选</span><em class="cap-tag">#编组</em><em class="cap-tag">#交付</em></header>
                       <div class="pj-chain"><span class="pj-step">草稿</span><i>→</i><span class="pj-step">检视</span><i>→</i><span class="pj-step">定稿</span></div>
                       <p class="pj-done"><span>什么算 Done</span>检视意见全部闭环</p>
                     </article>
                   </div>
+                  <p class="pane-note"><b>「什么算 Done」能被编组改严，不能被改松。</b>底座的硬规则——实现与验证不能同源（PRD §7.5）、<code>claimed</code> 不进验证类上下文——写在核心层，能力包与编组都只能在它之上加严；<b>界面上没有「放宽」这个表达，因为它不可能发生</b>。否则工作流一旦变成可停用的能力包内容，「什么算 Done」也就跟着变成可以关掉的了。<br>每一次派工到底受哪几条约束、被加严了哪一条，看派工弹窗的<b>本次生效组合</b>。</p>
                 </div>
               </div>
               <div class="project-pane" data-project-body="settings" hidden>
@@ -2312,7 +2313,7 @@ completed -&gt; archived</code></pre>
                   </div>
                   <h2 class="pane-h">默认工作流</h2>
                   <div class="git-block">
-                    <div><span>新建任务时</span><span>Coding</span></div>
+                    <div><span>新建任务时</span><span>代码实现 + 独立验证　<button class="linklike" type="button" data-project-tab="workflow">改默认</button></span></div>
                     <div><span>自动化建的任务</span><span>跟随规则里各自的设置</span></div>
                   </div>
                   <h2 class="pane-h">能力边界</h2>
@@ -2816,12 +2817,12 @@ completed -&gt; archived</code></pre>
               <div class="mem-tabs" role="tablist" aria-label="能力视图">
                 <button class="active" type="button" role="tab" data-library-tab="skill">Skills <i>9</i></button>
                 <button type="button" role="tab" data-library-tab="inbox">订阅 <i>3</i></button>
-                <button class="lib-tab-add" type="button" data-surface="settings" data-settings-pick="plugins" title="tab 由插件贡献，在设置 · 插件里装">＋</button>
+                <button class="lib-tab-add" type="button" data-surface="settings" data-settings-pick="plugins" title="tab 由插件贡献，在设置 · 能力包与插件里装">＋</button>
               </div>
 
               <div class="lib-pane" data-library-body="skill">
                 <div data-skill-scope="list">
-                <p class="pane-note"><b>没有「编组」这个类型</b>——一条 Skill 填了步骤它就是编组（自动带 <code>#编组</code>），不填就是一条普通做法。两个类型会逼你在用熟之后「转换类型」，历史表现跟着断；而 ADR 0012 第 5 条要防的正是「编组积累成身份」，<b>一个可来可去的 tag 比一个独立类型离那个失败模式更远</b>。<br><b>列表只放挑的时候用得上的</b>：步骤链、创建人、命中次数都在详情里——点名字进去。<b>「需要能力」写的是这条做法至少需要执行者具备什么</b>，不写「配哪个组合最好」；<b>「已下发」是事实不是范围</b>，它说的是这条 skill 被翻译成了哪几个 adapter 的原生格式，不是「只准给谁用」。</p>
+                <p class="pane-note"><b>没有「编组」这个类型，也没有「工作流模板」这个类型</b>——一条 Skill 填了步骤它就是编组（自动带 <code>#编组</code>），不填就是一条普通做法；<b>项目里说的「工作流」就是这里带步骤的那几条</b>，项目面只负责选默认，不再另存一份清单。两个类型会逼你在用熟之后「转换类型」，历史表现跟着断；而 ADR 0012 第 5 条要防的正是「编组积累成身份」，<b>一个可来可去的 tag 比一个独立类型离那个失败模式更远</b>。<br><b>列表只放挑的时候用得上的</b>：步骤链、创建人、命中次数都在详情里——点名字进去。<b>「需要能力」写的是这条做法至少需要执行者具备什么</b>，不写「配哪个组合最好」；<b>「已下发」是事实不是范围</b>，它说的是这条 skill 被翻译成了哪几个 adapter 的原生格式，不是「只准给谁用」。</p>
 
                 <div class="lib-filter" role="group" aria-label="按 tag 筛选">
                   <button class="active" type="button" data-lib-filter="all">全部 <i>9</i></button>
@@ -2841,7 +2842,7 @@ completed -&gt; archived</code></pre>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">内置</button></span>
                     <span class="dl-dim">08-30</span>
                     <span class="pill success">已启用</span>
-                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：只有本地自建的能删；包里来的要去设置 · 插件停用整个包">删除</button></span></span></span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：只有本地自建的能删；包里来的要去设置 · 能力包与插件停用整个包">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="编组 研读">
@@ -2851,7 +2852,7 @@ completed -&gt; archived</code></pre>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">web-research@1.4</button></span>
                     <span class="dl-dim">08-29</span>
                     <span class="pill success">已启用</span>
-                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 web-research@1.4，删不掉——要去设置 · 插件停用整个包">删除</button></span></span></span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 web-research@1.4，删不掉——要去设置 · 能力包与插件停用整个包">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row off" role="row" data-tags="编组 研读">
@@ -2861,7 +2862,7 @@ completed -&gt; archived</code></pre>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">book-digest@0.9</button></span>
                     <span class="dl-dim">08-24</span>
                     <span class="pill muted">随来源停用</span>
-                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="在设置 · 插件里启用 book-digest@0.9 后它会回到派工清单">启用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 book-digest@0.9，删不掉——要去设置 · 插件卸载整个包">删除</button></span></span></span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="在设置 · 能力包与插件里启用 book-digest@0.9 后它会回到派工清单">启用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 book-digest@0.9，删不掉——要去设置 · 能力包与插件卸载整个包">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="交付">
@@ -2901,7 +2902,7 @@ completed -&gt; archived</code></pre>
                     <span><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">web-research@1.4</button></span>
                     <span class="dl-dim">08-29</span>
                     <span class="pill success">已启用</span>
-                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用这条 Skill">停用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 web-research@1.4，删不掉——要去设置 · 插件停用整个包">删除</button></span></span></span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用这条 Skill">停用</button><button type="button" role="menuitem" class="danger" data-demo="它来自 web-research@1.4，删不掉——要去设置 · 能力包与插件停用整个包">删除</button></span></span></span>
                   </div>
 
                   <div class="dl-row" role="row" data-tags="研读">
@@ -2911,7 +2912,7 @@ completed -&gt; archived</code></pre>
                     <span class="pill warn">冲突 · 待你选</span>
                     <span class="dl-dim">08-28</span>
                     <span class="dl-dim">未生效</span>
-                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-surface="settings" data-settings-pick="plugins">去选一个候选</button><button type="button" role="menuitem" class="danger" data-demo="两个候选都来自能力包，删不掉——去设置 · 插件停用其中一个">删除</button></span></span></span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-surface="settings" data-settings-pick="plugins">去选一个候选</button><button type="button" role="menuitem" class="danger" data-demo="两个候选都来自能力包，删不掉——去设置 · 能力包与插件停用其中一个">删除</button></span></span></span>
                     <p class="dl-sub"><b>两个来源贡献了同名 Skill，系统不替你定优先级</b>——自动覆盖会让「为什么这次结果变了」不可解释。<b>在你选定之前两个都不生效</b>，也因此没有下发到任何 adapter：<code>web-research@1.4</code> 要求标注「检索日期 + 快照链接」，<code>coding-review-cn@2.1</code> 只要求标注检索日期。</p>
                   </div>
 
@@ -2931,7 +2932,7 @@ completed -&gt; archived</code></pre>
                   <div class="skill-bar">
                     <button class="skill-back" type="button" data-skill-back>← 全部 Skills</button>
                     <div class="skill-bar-title"><h2 data-skill-field="name">代码实现 + 独立验证</h2><span data-skill-field="tags"><em class="cap-tag">#编组</em><em class="cap-tag">#交付</em></span></div>
-                    <span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：只有本地自建的能删；包里来的要去设置 · 插件停用整个包">删除</button></span></span>
+                    <span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="停用：它从派工清单消失，历史执行记录仍显示当时用过它">停用</button><button type="button" role="menuitem" class="danger" data-demo="删除：只有本地自建的能删；包里来的要去设置 · 能力包与插件停用整个包">删除</button></span></span>
                   </div>
 
                   <p class="pane-note"><b>这一页是只读的。</b>skill 要么来自能力包、要么从 Done Issue 沉淀而来，<b>不该被手改</b>：改一条包里来的，下次包升级时你的改动要么被覆盖、要么让它永远停在旧版；改一条沉淀来的，它就与产生它的那些 Run 对不上了——而「改一版就是另一段样本」正是那句现算表现能成立的前提。要动就动磁盘上那个文件，或者新建一版。</p>
@@ -2942,7 +2943,7 @@ completed -&gt; archived</code></pre>
                     <div><span>创建</span><span>你 · 2026-07-14　<small>从 PH-233 的完成摘要沉淀</small></span></div>
                     <div><span>最后更新</span><span>你 · 2026-08-30　<small>第 2 步的上下文范围从「只给目标」收紧为「只给结果」</small></span></div>
                     <div><span>已下发</span><span><b>Claude Code</b> <code>~/.claude/skills/verify-pair/</code>　·　<b>Codex</b> <code>AGENTS.md</code> 段落　·　<span class="git-warn">OpenCode 未下发——它不支持这种注入，派给它时这条不会进上下文</span></span></div>
-                    <div><span>需要能力</span><span><em class="cap-tag">工具循环</em>　<small>不满足的执行组合在派工弹层里标「不可选」</small></span></div>
+                    <div><span>需要能力</span><span><em class="cap-tag">工具循环</em>　<small>不满足的执行组合在派工弹窗里标「不可选」</small></span></div>
                   </div>
 
                   <div class="git-block" data-skill-view="verify" hidden>
@@ -2962,6 +2963,15 @@ completed -&gt; archived</code></pre>
                       <div class="rt-row"><span>2 · 验证</span><span><code>claude-sonnet4.8-medium</code></span><span><b>只给结果</b></span><span class="git-warn">读不到实现者的自述，这次验证才算独立（PRD §7.5）。派工时校验，不满足就拒绝</span></div>
                     </div>
                     <p class="pane-note"><em class="dl-perf"><b>现算 · 统计 <code>@3</code> 之后的 12 次派工</b>：验收一次通过 9 次。<span class="dl-flag">样本不足 30 次</span>　成员组合各自：<code>codex-gpt5.6-high</code> 9/12 · <code>claude-sonnet4.8-medium</code> 11/12。<b>这不是评分</b>——改一版就是另一段样本，所以上面那个版本号必须露出来，否则这句话无从核对。</em></p>
+
+                    <h2 class="pane-h">什么算 Done<span class="pane-h-note">工作流并进编组之后，这一层归它</span></h2>
+                    <div class="git-block">
+                      <div><span>完成要求</span><span>用例通过，<b>且证据可被第二方复现</b></span></div>
+                      <div><span>要什么证据</span><span>结构化 command event（不是复述）· 变更位置 · 第二方的验证结论</span></div>
+                      <div><span>底座硬规则</span><span class="git-warn">实现与验证不能同源（PRD §7.5）· <code>claimed</code> 不进验证类上下文（ADR 0013）——<b>这两条来自核心层，本条编组只能在其上加严，不能放宽</b></span></div>
+                      <div><span>本条加严了</span><span>第 2 步的上下文范围从「只给目标」收紧为「只给结果」（v3 起）</span></div>
+                    </div>
+                    <p class="pane-note"><b>放宽在界面上没有表达，因为它不可能发生。</b>如果「什么算 Done」能被一个可停用的能力包放松，那它本身就成了可以关掉的东西——而它恰恰是这个产品唯一不能关的那部分。<br>这一次派工实际受哪几条约束、哪一条被谁加严了，逐条列在派工弹窗与执行记录的<b>本次生效组合</b>里。</p>
                   </div>
 
                   <h2 class="pane-h">文件<span class="pane-h-note">一条 skill 在磁盘上是一个目录</span></h2>
@@ -3591,29 +3601,98 @@ completed -&gt; archived</code></pre>
             <aside class="sp-list">
               <div class="sp-head"><p>设置<small>本机 · 不上传</small></p></div>
               <div class="sp-scroll">
-              <p class="sp-group">工作区</p>
-              <button class="sp-item active" type="button" data-settings-pick="labels"><span><strong>任务前缀与标签</strong><small>PH- · 9 个标签</small></span></button>
-              <p class="sp-group">数据</p>
-              <button class="sp-item" type="button" data-demo="代码目录权限按真实路径隔离"><span><strong>代码目录权限</strong><small>按真实路径隔离</small></span></button>
+              <p class="sp-group">工作习惯<small>这台机器怎么伺候我</small></p>
+              <button class="sp-item active" type="button" data-settings-pick="prefs"><span><strong>偏好设置</strong><small>浅色 · Asia/Singapore · VS Code</small></span></button>
+              <button class="sp-item" type="button" data-settings-pick="notify"><span><strong>通知</strong><small>7 类事件 · 2 个渠道</small></span></button>
+              <button class="sp-item" type="button" data-settings-pick="labels"><span><strong>任务前缀与标签</strong><small>PH- · 9 个标签</small></span></button>
+              <p class="sp-group">执行环境<small>能不能派工 · 装了什么</small></p>
+              <button class="sp-item" type="button" data-settings-pick="runtime"><span><strong>运行时</strong><small>3 个 adapter · 2 个在跑</small></span></button>
+              <button class="sp-item" type="button" data-settings-pick="plugins"><span><strong>能力包与插件</strong><small>4 个能力包 · 2 个插件 · 1 处冲突</small></span></button>
+              <p class="sp-group">系统<small>数据 · 授权 · 健康</small></p>
               <button class="sp-item" type="button" data-settings-pick="data"><span><strong>数据与备份</strong><small>SQLite · 每日快照 · 密钥存放</small></span></button>
-              <button class="sp-item" type="button" data-demo="诊断会显示服务、数据库与事件流状态"><span><strong>健康诊断</strong><small>服务 / 数据库 / 事件流</small></span></button>
-              <p class="sp-group">运行时<small>adapter 与凭据 · 派不出去时来这</small></p>
-              <button class="sp-item" type="button" data-settings-pick="runtime" data-runtime-pick="codex"><span class="signal green"></span><span><strong>Codex CLI</strong><small>0.42.0 · 可派工</small></span></button>
-              <button class="sp-item" type="button" data-settings-pick="runtime" data-runtime-pick="claude"><span class="signal green"></span><span><strong>Claude Code</strong><small>1.0.88 · 可派工</small></span></button>
-              <button class="sp-item" type="button" data-settings-pick="runtime" data-runtime-pick="opencode"><span class="signal yellow"></span><span><strong>OpenCode</strong><small>0.7.2 · 一个代码目录待重新检查</small></span></button>
-              <button class="sp-item" type="button" data-demo="添加 adapter 是代码准入（T2）：手工放进本地目录 + 逐项确认。本机没有沙箱，它与 PersonaHub 同权运行"><span><strong>＋ 添加 adapter</strong><small>代码准入 · 无沙箱</small></span></button>
-              <p class="sp-group">插件<small>能力包与插件 · 装了什么</small></p>
-              <button class="sp-item" type="button" data-settings-pick="plugins"><span><strong>已装的包与插件</strong><small>4 个能力包 · 2 个插件 · 1 处冲突</small></span></button>
-              <p class="sp-group">其他</p>
-              <button class="sp-item" type="button" data-surface="setup"><span><strong>首次设置向导</strong><small>重新走一遍</small></span></button>
+              <button class="sp-item" type="button" data-settings-pick="dirs"><span><strong>代码目录授权</strong><small>3 个目录 · 本机能碰哪些路径</small></span></button>
+              <button class="sp-item" type="button" data-settings-pick="health"><span class="signal yellow"></span><span><strong>健康诊断</strong><small>服务 / 数据库 / 事件流 · 1 项降级</small></span></button>
+              <button class="sp-item" type="button" data-settings-pick="about"><span><strong>关于</strong><small>0.3.0-dev · 日志与首次设置</small></span></button>
               </div>
             </aside>
             <section class="sp-main">
-              <div class="sp-bar" data-settings-view="labels">
+              <div class="sp-bar" data-settings-view="prefs">
+                <div><h1>偏好设置</h1><p>只影响<strong>你怎么看、怎么用这台机器</strong>的东西，一条都不影响派工判断。放在第一组是因为它是唯一一组「改了立刻生效、改错了也不会有后果」的设置。</p></div>
+                <div class="sp-bar-actions"><button type="button" data-demo="恢复默认：只重置本页，不动运行时、数据与授权">恢复默认</button></div>
+              </div>
+              <div class="sp-body" data-settings-view="prefs">
+                <h2 class="pane-h">外观</h2>
+                <div class="tc-chips">
+                  <button class="tc-chip active" type="button" data-demo="浅色">浅色</button>
+                  <button class="tc-chip" type="button" data-demo="深色：静态原型不切换真实主题">深色</button>
+                  <button class="tc-chip" type="button" data-demo="跟随系统">跟随系统</button>
+                </div>
+                <p class="pane-note">主题在<b>右上角头像菜单</b>里也有一个一键切换——照 clowder 的做法，它是常驻可达的，不必为了换个亮度进设置。<br>它<b>不在左上角那个下拉里</b>：那个控件的语义是「我在看哪个工作区的数据」，外观不是数据范围。</p>
+
+                <h2 class="pane-h">时区</h2>
+                <div class="git-block">
+                  <div><span>当前</span><span><code>Asia/Singapore</code> · 跟随系统　<button class="linklike" type="button" data-pick-open="timezone">改时区</button></span></div>
+                  <div><span>用在哪</span><span>自动化的定时规则（<code>0 9 * * 1</code> 按这个时区解释）、统计的周期切分、所有界面上的时间戳</span></div>
+                  <div><span>夏令时</span><span>按本地钟点保持——「每周一 09:00」在夏令时切换后仍然是当地的 09:00，不漂 1 小时</span></div>
+                </div>
+
+                <h2 class="pane-h">外部编辑器</h2>
+                <div class="git-block">
+                  <div><span>当前</span><span>VS Code · <code>code -g {file}:{line}</code>　<button class="linklike" type="button" data-pick-open="editor">改编辑器</button></span></div>
+                  <div><span>用在哪</span><span>文件视图、变更位置、证据文件的「在编辑器打开」</span></div>
+                  <div><span>打不开时</span><span>回退成「复制路径」，并说明是哪一步失败——不静默什么都不做</span></div>
+                </div>
+
+                <h2 class="pane-h">语言</h2>
+                <div class="tc-chips">
+                  <button class="tc-chip active" type="button" data-demo="简体中文">简体中文</button>
+                  <button class="tc-chip" type="button" data-demo="English：静态原型不切换">English</button>
+                </div>
+                <p class="pane-note">界面语言不改<b>派给 agent 的提示语言</b>——那由任务本身和工作流决定，两者混在一起会让「换个界面语言，结论就变了」。</p>
+              </div>
+
+              <div class="sp-bar" data-settings-view="notify" hidden>
+                <div><h1>通知</h1><p>PersonaHub 的活是<strong>你不在的时候</strong>干的，而 P0 是全手动派工——一步跑完就停在「等你指派」。<strong>没有通知，这个状态只能靠你自己想起来回来看。</strong>所以这一页不是可选项。</p></div>
+                <div class="sp-bar-actions"><button type="button" data-demo="发一条测试通知，确认系统通知权限真的给了">发测试通知</button></div>
+              </div>
+              <div class="sp-body" data-settings-view="notify" hidden>
+                <h2 class="pane-h">通知渠道</h2>
+                <div class="data-list" style="--cols: 132px minmax(0, 1fr) 120px 108px" role="table" aria-label="通知渠道">
+                  <div class="dl-head" role="row"><span>渠道</span><span>说明</span><span>状态</span><span>操作</span></div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">应用内</span>
+                    <span class="dl-dim">顶栏铃铛 + 状态栏；<b>始终开启</b>，不提供关闭</span>
+                    <span class="pill success">已开启</span>
+                    <span class="dl-act"><button type="button" disabled data-demo="应用内通知不可关闭：关掉它等于让「等你指派」这个状态彻底没有出口">不可关闭</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">系统通知</span>
+                    <span class="dl-dim">本机桌面通知，PersonaHub 不在前台时也能看到</span>
+                    <span class="pill warn">未授权</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-demo="向系统申请通知权限；拒绝过一次的要去系统设置里手动开">去授权</button></span>
+                  </div>
+                </div>
+                <p class="pane-note"><b>只做这两个渠道。</b>参考项目里的 IM 对接与移动推送解决的是「多人协作 + 手机上收消息」，本产品是单用户本机工具，多做一条通道就多一份把项目事实推到本机之外的路径。</p>
+
+                <h2 class="pane-h">哪些事件会通知<span class="pane-h-note">每一条都对应一个已经存在的状态，不是新造的提醒</span></h2>
+                <div class="data-list" style="--cols: 26px minmax(0, 1fr) minmax(0, 0.9fr) 108px" role="table" aria-label="通知事件">
+                  <div class="dl-head" role="row"><span></span><span>事件</span><span>它在界面上的那个状态</span><span>渠道</span></div>
+                  <div class="dl-row" role="row"><span class="dl-check">✓</span><span class="dl-title">等你确认权限</span><span class="dl-dim">任务态「等待权限确认」</span><span class="dl-dim">两个都发</span></div>
+                  <div class="dl-row" role="row"><span class="dl-check">✓</span><span class="dl-title">等你指派下一步</span><span class="dl-dim">「等待你的指派」——一步跑完就停在这</span><span class="dl-dim">两个都发</span></div>
+                  <div class="dl-row" role="row"><span class="dl-check">✓</span><span class="dl-title">验证未通过 / 连续两轮不收敛</span><span class="dl-dim">「连续 2 次未解决 · 需要换策略」</span><span class="dl-dim">两个都发</span></div>
+                  <div class="dl-row" role="row"><span class="dl-check">✓</span><span class="dl-title">任务完成待验收</span><span class="dl-dim">成果面进入完成态</span><span class="dl-dim">两个都发</span></div>
+                  <div class="dl-row" role="row"><span class="dl-check">✓</span><span class="dl-title">自动化规则的结果</span><span class="dl-dim">已建任务 / <b>未触发 · 额度不足</b> / 失败</span><span class="dl-dim">两个都发</span></div>
+                  <div class="dl-row" role="row"><span class="dl-check">✓</span><span class="dl-title">额度低于阈值</span><span class="dl-dim">运行时的额度告警（20% / 10%）</span><span class="dl-dim">仅应用内</span></div>
+                  <div class="dl-row" role="row"><span class="dl-check">✓</span><span class="dl-title">本机降级或 adapter 掉线</span><span class="dl-dim">顶栏「记忆降级 1」、adapter 灯变黄</span><span class="dl-dim">仅应用内</span></div>
+                </div>
+                <p class="pane-note"><b>「未触发 · 额度不足」尤其要通知</b>：那一天什么都没发生，界面上没有任何新东西会引起你注意——不通知就等于静默停摆。<br>通知<b>不改变任何状态</b>：点进去看到的还是那个任务面，确认、指派、验收都在原处做。通知只是入口，不是第二套操作路径。</p>
+              </div>
+
+              <div class="sp-bar" data-settings-view="labels" hidden>
                 <div><h1>任务前缀与标签</h1><p>任务编号一旦发出去就会被引用——commit message、证据文件名、外部链接都带着它，所以前缀改一次全仓重命名，这里做成要确认的操作。</p></div>
                 <div class="sp-bar-actions"><button class="primary-button" type="button" data-demo="新建标签：静态原型不保存">＋ 新建标签</button></div>
               </div>
-              <div class="sp-body" data-settings-view="labels">
+              <div class="sp-body" data-settings-view="labels" hidden>
                 <h2 class="pane-h">任务前缀</h2>
                 <div class="git-block">
                   <div><span>当前前缀</span><span><code>PH-</code> · 最新 <code>PH-412</code></span></div>
@@ -3621,7 +3700,7 @@ completed -&gt; archived</code></pre>
                   <div><span>改前缀</span><span class="git-warn">会把 412 条任务从 PH-N 重命名为 新前缀-N；已经写进 commit 和证据里的旧编号不会跟着变，只保留一条别名记录</span></div>
                 </div>
                 <div class="tc-chips">
-                  <button class="tc-chip" type="button" data-demo="改前缀需要输入新前缀并二次确认"><span aria-hidden="true">⛊</span>PH-<span class="chevron" aria-hidden="true"><svg viewBox="0 0 12 12" width="10" height="10"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+                  <button class="tc-chip" type="button" data-prefix-open><span aria-hidden="true">⛊</span>PH-<span class="chevron" aria-hidden="true"><svg viewBox="0 0 12 12" width="10" height="10"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
                   <button class="tc-chip" type="button" data-demo="编号从 1 递增，不复用已删除任务的号">编号策略：递增不复用</button>
                 </div>
 
@@ -3629,14 +3708,17 @@ completed -&gt; archived</code></pre>
                 <p class="pane-note">标签是<strong>你自己维护的一层</strong>：不参与派工判断，也不影响工作流选择——那些由工作流和能力边界决定。标签只用来筛任务和圈自动化规则的范围。删掉一个标签不会动任何任务本身。</p>
                 <div class="label-table">
                   <div class="rt-head"><span>标签</span><span>说明</span><span>用在</span><span>最近使用</span><span>被规则引用</span></div>
-                  <button class="rt-row" type="button" data-demo="编辑标签 F006"><span><span class="signal blue"></span> <code>F006</code></span><span>图执行相关</span><span>23 个任务</span><span>08-30</span><span class="pill muted">—</span></button>
-                  <button class="rt-row" type="button" data-demo="编辑标签 bug"><span><span class="signal yellow"></span> <code>bug</code></span><span>缺陷，需要可复现用例</span><span>41 个任务</span><span>08-30</span><span class="pill success">2 条规则</span></button>
+                  <div class="rt-row"><span><span class="signal blue"></span> <code>F006</code></span><span>图执行相关</span><span>23 个任务</span><span>08-30</span><span class="pill muted">—</span><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="重命名标签：23 个任务上的这个标签一起改，筛选链接跟着走">重命名</button><button type="button" role="menuitem" data-demo="合并到另一个标签：先预览会动多少任务，被合并的转成别名">合并到…</button><button type="button" role="menuitem" class="danger" data-remove-open="label" data-remove-name="F006" data-remove-tasks="23" data-remove-rules="0">删除</button></span></span></div>
+                  <div class="rt-row"><span><span class="signal yellow"></span> <code>bug</code></span><span>缺陷，需要可复现用例</span><span>41 个任务</span><span>08-30</span><span class="pill success">2 条规则</span><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="重命名标签">重命名</button><button type="button" role="menuitem" data-demo="合并到另一个标签">合并到…</button><button type="button" role="menuitem" class="danger" data-remove-open="label" data-remove-name="bug" data-remove-tasks="41" data-remove-rules="2">删除</button></span></span></div>
                   <button class="rt-row" type="button" data-demo="编辑标签 dogfooding"><span><span class="signal green"></span> <code>dogfooding</code></span><span>自用中发现的问题</span><span>36 个任务</span><span>08-29</span><span class="pill success">1 条规则</span></button>
                   <button class="rt-row" type="button" data-demo="编辑标签 research"><span><span class="signal blue"></span> <code>research</code></span><span>调研与竞品，不落代码</span><span>18 个任务</span><span>08-27</span><span class="pill muted">—</span></button>
                   <button class="rt-row" type="button" data-demo="编辑标签 blocked"><span><span class="signal yellow"></span> <code>blocked</code></span><span>缺授权或缺额度停住的</span><span>4 个任务</span><span>08-30</span><span class="pill muted">—</span></button>
-                  <button class="rt-row" type="button" data-demo="这个标签 90 天没用过，建议合并或删除"><span><span class="signal"></span> <code>perf</code></span><span>性能</span><span>2 个任务</span><span>05-11</span><span class="pill warn">90 天未用</span></button>
+                  <div class="rt-row"><span><span class="signal"></span> <code>perf</code></span><span>性能</span><span>2 个任务</span><span>05-11</span><span class="pill warn">90 天未用</span><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="重命名标签">重命名</button><button type="button" role="menuitem" data-demo="合并到另一个标签：90 天没用过的通常合并进一个更大的标签">合并到…</button><button type="button" role="menuitem" class="danger" data-remove-open="label" data-remove-name="perf" data-remove-tasks="2" data-remove-rules="0">删除</button></span></span></div>
                 </div>
-                <p class="pane-note">被自动化规则引用的标签删不掉：先解掉引用，否则规则会变成筛不到任何东西还照常触发。</p>
+                <div class="tc-chips">
+                  <button class="tc-chip" type="button" data-demo="合并标签：选一个留下的目标标签 → 预览会动多少个任务与哪几条规则的筛选范围 → 确认。被合并的那个转成别名，历史筛选链接不会失效">合并标签…</button>
+                </div>
+                <p class="pane-note">被自动化规则引用的标签删不掉：先解掉引用，否则规则会变成筛不到任何东西还照常触发。<br><b>「90 天未用」给的建议是「合并或删除」，所以合并必须真的存在</b>——建议一个界面上没有的动作，等于把问题推回给你自己想办法。</p>
               </div>
 
               <div class="sp-bar" data-settings-view="data" hidden>
@@ -3651,6 +3733,30 @@ completed -&gt; archived</code></pre>
                   <div><span>Markdown 导出</span><span>任务、证据与完成摘要可导出；<b>不含密钥</b></span></div>
                 </div>
 
+                <h2 class="pane-h">快照与恢复<span class="pane-h-note">没有恢复入口的备份不成立</span></h2>
+                <div class="data-list" style="--cols: 128px minmax(0, 1fr) 108px 132px" role="table" aria-label="本机快照">
+                  <div class="dl-head" role="row"><span>时间</span><span>内容</span><span>大小</span><span>操作</span></div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">今天 03:00</span>
+                    <span class="dl-dim">412 个任务 · 1.2k 条证据 · 128 条记忆 · 4 份 adapter 配置</span>
+                    <span class="dl-dim">406 MB</span>
+                    <span class="dl-act"><button type="button" data-demo="恢复到这一份：先列出会被覆盖什么（今天新建的 3 个任务、2 条记忆），确认后才执行；恢复前自动再拍一份当前状态，恢复本身可以撤回">恢复…</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">昨天 03:00</span>
+                    <span class="dl-dim">409 个任务 · 1.2k 条证据 · 126 条记忆 · 4 份 adapter 配置</span>
+                    <span class="dl-dim">404 MB</span>
+                    <span class="dl-act"><button type="button" data-demo="恢复到这一份：先列出会被覆盖什么，确认后才执行">恢复…</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title">08-31 03:00</span>
+                    <span class="dl-dim">还有 11 份，保留 14 天</span>
+                    <span class="dl-dim">—</span>
+                    <span class="dl-act"><button type="button" data-demo="展开全部 14 份快照">看全部 14 份</button></span>
+                  </div>
+                </div>
+                <p class="pane-note"><b>恢复一定是「先看清单再执行」</b>：它会覆盖掉快照之后产生的任务、证据与记忆，而这些正是你最近在做的事。恢复前自动拍一份当前状态，所以恢复本身也能撤回。<br>快照<b>包含明文的 API Key</b>（就在下面那条说的那一列里）——把快照拷到别处，等于把 key 一起拷过去。</p>
+
                 <h2 class="pane-h">密钥存在哪<span class="pane-h-note">从运行时面搬来：这是数据风险，不是某个 adapter 的属性</span></h2>
                 <div class="git-block">
                   <div><span>存储位置</span><span>就在上面那个数据目录里，SQLite 的 <code>agent_configs.api_key</code> 列，<b>明文</b></span></div>
@@ -3658,164 +3764,296 @@ completed -&gt; archived</code></pre>
                   <div><span>换 key</span><span>只影响之后的派工；已经跑过的 Run 记录保留当时的组合名，不回填</span></div>
                   <div><span>注意</span><span class="git-warn">⚠ 数据库文件本身没有加密。<b>把数据目录放进同步盘或 git 仓库，等于把 key 一起同步出去。</b></span></div>
                 </div>
-                <p class="pane-note">这一条必须出现在页面上，不能只躺在架构文档里——它是使用者唯一能看见这个风险的地方。<br>删除一份配置会让依赖它的执行组合从派工清单里消失，但历史 Run 记录保留当时的组合名——证据链不能因为你今天删了份配置就断掉（快照冻的是 <code>adapter_config_id</code>）。配置本身在本页的<button class="linklike" type="button" data-settings-pick="runtime" data-runtime-pick="codex">运行时</button>组维护。</p>
+                <p class="pane-note">这一条必须出现在页面上，不能只躺在架构文档里——它是使用者唯一能看见这个风险的地方。<br>删除一份配置会让依赖它的执行组合从派工清单里消失，但历史 Run 记录保留当时的组合名——证据链不能因为你今天删了份配置就断掉（快照冻的是 <code>adapter_config_id</code>）。配置本身在<button class="linklike" type="button" data-settings-pick="runtime">运行时</button>里维护。</p>
+
+                <h2 class="pane-h">环境与文件<span class="pane-h-note">出问题时第一个要报的三样</span></h2>
+                <div class="git-block">
+                  <div><span>数据目录</span><span><code>D:\Projects\personahub\.data</code> · 换目录要停服务，且不搬历史证据的归档文件</span></div>
+                  <div><span>配置文件</span><span><code>.data\config.json</code> · 端口、日志级别、快照策略；界面改完写回这个文件，不需要手改</span></div>
+                  <div><span>服务端口</span><span><code>127.0.0.1:4179</code> · <b>只监听本机</b>——不提供局域网访问开关，那会让「本机工具」这个前提不成立</span></div>
+                </div>
+                <p class="pane-note">这三样凑在一起，是因为它们是<b>报问题时要贴出来的那一组</b>。不做成可编辑的环境变量长表：参考项目那样列 42 个变量，是因为它要被多人多机部署；本产品只有一台机器一个用户，能改的就上面这三条。</p>
               </div>
               <div class="sp-bar" data-settings-view="runtime" hidden>
-                <div><h1>运行时</h1><p>这一组回答两件事：<strong>现在能不能派工</strong>、<strong>派不出去是因为什么</strong>。adapter 与配置都是<strong>检查结果</strong>，不是你的偏好——「默认用哪个」属于派工弹层和 Skill 的步骤，不在这里。<b>它和「插件」组分开，不是分类洁癖</b>：装一个 CLI 和导入别人写的一套方法，失败模式不同（起不了进程 / 装了一半），处理动作也不同（去终端敲命令 / 在界面上选一个候选）。</p></div>
-                <div class="sp-bar-actions"><span class="health-badge"><i></i>2 个正常 · 1 个待检查</span><button type="button" data-demo="重新检查全部 adapter：读取版本、登录态与可用模型，不启动任何任务">重新检查</button></div>
+                <div><h1>运行时</h1><p>这一组回答两件事：<strong>现在能不能派工</strong>、<strong>派不出去是因为什么</strong>。adapter 与配置都是<strong>检查结果</strong>，不是你的偏好——「默认用哪个」属于派工弹窗和 Skill 的步骤，不在这里。<b>一台机器一个 tab</b>：执行发生在哪台机器上是 <code>runtime_id</code>（ADR 0015），v0.7 起可以接远程；今天只有本机时它就是一个 tab。</p></div>
+                <div class="sp-bar-actions"><span class="health-badge"><i></i>5 个 adapter 正常 · 1 个待检查</span><button type="button" data-demo="额度告警阈值：任一配置剩余低于 20% 在状态栏提示、低于 10% 停止触发定时规则，且不自动降级为更低成本的执行组合。它跨机器生效，所以在 tab 条外面">额度告警阈值</button><button type="button" data-demo="暂停全部派工：正在跑的不打断，新的派工请求一律挡下，直到你手动恢复。它是一个动作，不是一条偏好——恢复之后没有任何残留设置">暂停全部派工</button><button type="button" data-demo="重新检查全部机器上的全部 adapter：读取版本、登录态与可用模型，不启动任何任务">重新检查</button></div>
               </div>
-              <div class="sp-body" data-settings-view="runtime" hidden>
+              <div class="sp-body rt-runtime" data-settings-view="runtime" hidden>
 
-                <div class="mem-tabs" role="tablist" aria-label="运行时视图">
-                  <button class="active" type="button" role="tab" data-runtime-tab="config" aria-selected="true">配置 <i>4</i></button>
-                  <button type="button" role="tab" data-runtime-tab="diagnostic" aria-selected="false">诊断</button>
+                <!-- 机器 = tab（V3.24）。执行位置是 AdapterConfig 与身份快照上的
+                     runtime_id（ADR 0015 第 1、2 条），v0.3–v0.6 恒为 local。
+                     照 multica：它的运行时页也按「电脑」分组，因为一台机器掉线时，
+                     它上面的 adapter 全都派不了工——这是 adapter 自身答不了的一层。 -->
+                <div class="rt-machines" role="tablist" aria-label="执行机器">
+                  <button class="active" type="button" role="tab" aria-selected="true" data-machine-tab="local"><span class="signal green"></span><span><strong>本机</strong><small>3 个 adapter · 2 个在跑</small></span></button>
+                  <button type="button" role="tab" aria-selected="false" data-machine-tab="studio"><span class="signal yellow"></span><span><strong>mac-studio</strong><small>2 个 adapter · 1 个待检查</small></span></button>
+                  <button class="rt-machine-add" type="button" data-demo="添加远程机器：在那台机器上装 daemon、拿它的地址与配对码回来。v0.7 才开放——今天 runtime_id 恒为 local（ADR 0015）。加进来之后它自己一个 tab，它上面的 adapter 与配置都属于它" title="添加一台执行机器">＋</button>
                 </div>
 
-                <!-- ─────────── 能力 tab ─────────── -->
-                <!-- ─────────── 配置 tab ─────────── -->
-                <div data-runtime-body="config">
+                <div class="rt-stage" data-machine-body="local">
+                  <div class="rt-stage-main">
+                    <div class="git-block rt-host">
+                      <div><span>这台机器</span><span><code>local</code> · 本机 · PersonaHub 服务与 CLI 跑在同一个进程树里，不经过网络</span></div>
+                      <div><span>状态</span><span><b class="ok">在线</b> · 已运行 6h 12m · 2 个执行进程在跑（上限 4）</span></div>
+                    </div>
 
-                  <div class="git-block">
-                    <div><span>配置是什么</span><span><b>一份驱动这个 CLI 的方式</b>：一种认证 + 一个 base URL + 一组可用模型 + 一个额度池。额度<b>按 adapter 配置</b>分池、不按模型——同一份配置下的多个模型共用一个池，彼此是「或者」不是「以及」。<b>不叫「账号」</b>——凭据只是它的一个字段。<button class="linklike" type="button" data-account-new>＋ 新增一份配置</button></span></div>
-                    <div><span>登录态不代管</span><span>OAuth 那一支的 token 由各个 CLI 自己存在它自己的目录里，PersonaHub <b>只做只读检查</b>——登录、续期、切账号都在终端完成，这里给命令，不接管。代管等于把三个 CLI 的凭据格式和过期策略全抄一遍，抄错一次就是静默失败。</span></div>
-                    <div><span>执行组合怎么来的</span><span>已安装的 adapter 与已登录的配置<b>算出</b>可用组合，深度由模型自身能力决定——<b>这是检查结果，不是配置项</b>。一个 adapter 只有一份配置时组合名省略配置段（codex / claude 各只有一份）；OpenCode 挂了两份，它的组合必须带配置名。</span></div>
+                    <h2 class="pane-h">adapter<span class="pane-h-note">点一行看详情</span></h2>
+                    <div class="data-list rt-adapters" style="--cols: 92px minmax(0, 1fr) 84px 64px 76px minmax(0, 1.1fr)" role="table" aria-label="本机的 adapter">
+                      <div class="dl-head" role="row"><span>状态</span><span>adapter</span><span>版本</span><span>配置</span><span>可用组合</span><span>现在挡着什么</span></div>
+                      <button class="dl-row rt-pick" type="button" role="row" data-runtime-pick="codex">
+                        <span class="mem-stance verified">可派工</span>
+                        <span class="dl-title">Codex CLI</span>
+                        <span class="dl-dim">0.42.0</span>
+                        <span class="dl-dim">1 份</span>
+                        <span class="dl-dim">2 个</span>
+                        <span class="dl-dim">—</span>
+                      </button>
+                      <button class="dl-row rt-pick" type="button" role="row" data-runtime-pick="claude">
+                        <span class="mem-stance verified">可派工</span>
+                        <span class="dl-title">Claude Code</span>
+                        <span class="dl-dim">1.0.88</span>
+                        <span class="dl-dim">1 份</span>
+                        <span class="dl-dim">3 个</span>
+                        <span class="dl-dim">额度窗口偏紧</span>
+                      </button>
+                      <button class="dl-row rt-pick" type="button" role="row" data-runtime-pick="opencode">
+                        <span class="mem-stance claimed">部分可用</span>
+                        <span class="dl-title">OpenCode</span>
+                        <span class="dl-dim">0.7.2</span>
+                        <span class="dl-dim">2 份</span>
+                        <span class="dl-dim">2 个</span>
+                        <span class="dl-dim"><b>official-api 连不上</b></span>
+                      </button>
+                    </div>
+                    <button class="rt-add" type="button" data-demo="添加 adapter 走 T2 代码准入：手工放进这台机器的本地目录 → 逐项确认它要什么权限 → 明确知晓「本机没有沙箱，它与 PersonaHub 同权运行」→ 才允许启用。这是全产品风险最高的一个流程，所以它是一个多步确认，不是一行「新增」">＋ 在这台机器上添加 adapter<small>代码准入 · 没有沙箱</small></button>
+                    <p class="pane-note"><b>状态</b>取所有检查项里最坏的那一项，「现在挡着什么」说明是哪一项。<b>「可用组合」是算出来的，不是配的</b>——已装好的 adapter × 已登录的配置 × 可用模型 × 深度，这里只看不增删。</p>
+                    <h2 class="pane-h">运行中<span class="pane-h-note">这台机器上的实时读数，不是全部机器的</span></h2>
+                    <div class="data-list" style="--cols: 88px minmax(0, 1fr) 164px 76px 84px" role="table" aria-label="本机正在运行的执行进程">
+                      <div class="dl-head" role="row"><span>状态</span><span>任务</span><span>执行组合</span><span>已跑</span><span>操作</span></div>
+                      <div class="dl-row" role="row">
+                        <span class="mem-stance verified">运行中</span>
+                        <span class="dl-title">PH-412 · 修复图重启的并发认领</span>
+                        <span class="dl-dim"><code>codex-gpt5.6-high</code></span>
+                        <span class="dl-dim">3m 18s</span>
+                        <span class="dl-act"><button type="button" data-demo="停止这一个进程：中断产物按「中断」态处理，不会被当成完成结论">停止</button></span>
+                      </div>
+                      <div class="dl-row" role="row">
+                        <span class="mem-stance verified">运行中</span>
+                        <span class="dl-title">PH-409 · 依赖与安全检查<small class="dl-tag">自动化建的</small></span>
+                        <span class="dl-dim"><code>claude-sonnet5-low</code></span>
+                        <span class="dl-dim">1m 24s</span>
+                        <span class="dl-act"><button type="button" data-demo="停止这一个进程：中断产物按「中断」态处理，不会被当成完成结论">停止</button></span>
+                      </div>
+                    </div>
+                    <p class="pane-note"><b>并发占满时新的派工会排队</b>，所以「派不出去」也可能是这里的原因。并发上限按 adapter 配置设，在它的详情里；逐次调用的明细点任务行进<b>轨迹</b>视图。</p>
+
                   </div>
 
-                  <div data-runtime-view="codex">
-                    <h2 class="pane-h">Codex CLI · 配置<span class="pane-h-note">1 份</span></h2>
-                    <div class="account-list">
-                      <article class="account-row">
-                        <span class="runtime-icon">C</span>
-                        <div class="ac-body">
-                          <div class="ac-head"><strong>codex</strong><span class="pill blue">oauth</span><span class="pill success">已登录</span></div>
-                          <small>CLI 自管 · 有效期至 2026-10-08 · gpt-5.6 / gpt-5.6-codex · base URL 用官方默认</small>
+                  <!-- 右框：点某一行才出现。V3.26 取消了框内的「配置 / 诊断」两个 tab——
+                       这一框装的是「同一个 adapter 的一串事实」，是线性的，不是并列的
+                       几组东西；而且诊断那一侧只有两行，撑不起一个 tab。
+                       属性一律跟着它所属的那份配置走：可用模型、额度、项目可用性都是
+                       AdapterConfig 的字段（ADR 0012 第 2 条），摆在配置卡外面时，
+                       OpenCode 那两份就只能靠前缀硬拼在一起——那是个补丁。 -->
+                  <aside class="rt-drawer" data-runtime-drawer hidden aria-label="adapter 详情">
+                    <header class="rt-drawer-head">
+                      <div><small data-drawer-host>本机</small><h2 data-drawer-title>Codex CLI</h2></div>
+                      <button type="button" data-runtime-drawer-close aria-label="关闭详情">×</button>
+                    </header>
+
+                    <div data-runtime-view="codex">
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">状态<button type="button" data-demo="重新检查 Codex CLI：读版本、登录态与可用模型，不启动任何任务">重新检查</button><button class="danger-link" type="button" data-remove-open="adapter" data-remove-name="Codex CLI" data-remove-configs="1" data-remove-combos="2">移除</button></p>
+                        <div class="git-block">
+                          <div><span>现在</span><span><b class="ok">可派工</b> · 0.42.0</span></div>
+                          <div><span>上次检查</span><span>今天 09:12 · 通过</span></div>
+                          <div><span>最近失败</span><span>08-28 执行超时 · <button class="linklike" type="button" data-surface="stats" data-demo="跳到统计 · 失败页那一条">看那次执行</button></span></div>
                         </div>
-                        <div class="ac-actions"><button type="button" data-demo="重新检查 codex 登录态">重新检查</button><button type="button" data-demo="在终端里跑：codex login">登录命令</button></div>
-                      </article>
-                    </div>
-                    <div class="runtime-table">
-                      <div class="rt-head"><span>模型</span><span>可用深度</span><span>额度</span><span>项目可用性</span><span>状态</span></div>
-                      <div class="rt-row"><span><code>gpt-5.6</code></span><span>low · medium · high</span><span>剩 214 次</span><span>3 个项目</span><span class="pill success">可用</span></div>
-                      <div class="rt-row"><span><code>gpt-5.6-codex</code></span><span>medium · high</span><span>同池</span><span>3 个项目</span><span class="pill success">可用</span></div>
-                    </div>
-                    <h2 class="pane-h">额度池<span class="pane-h-note">一份配置一个池</span></h2>
-                    <div class="runtime-table">
-                      <div class="rt-head"><span>配置</span><span>认证</span><span>可派次数（按 low 折算）</span><span>计量窗口</span><span>状态</span></div>
-                      <div class="rt-row"><span><code>codex</code></span><span>OAuth</span><span>214 次 low ／ 107 次 medium ／ 42 次 high</span><span>本月 · 已用 41%</span><span class="pill success">充足</span></div>
-                    </div>
-                    <p class="pane-note">上表两个模型共用这一个池，所以它们之间是「<strong>或者</strong>」不是「以及」。深度折算系数固定：<code>high ≈ 5 次 low</code>、<code>medium ≈ 2 次 low</code>；派工弹层的「派工后剩余次数」按此折算。<br><strong>「项目可用性」是一列，不是灯。</strong>可用性本来就是按项目的（还能被单个代码目录再改一次），而左框那个灯是一个全局符号，表达不了「这里可用、那里被停了」。</p>
-                  </div>
+                      </div>
 
-                  <div data-runtime-view="claude" hidden>
-                    <h2 class="pane-h">Claude Code · 配置<span class="pane-h-note">1 份</span></h2>
-                    <div class="account-list">
-                      <article class="account-row">
-                        <span class="runtime-icon purple">A</span>
-                        <div class="ac-body">
-                          <div class="ac-head"><strong>claude-code</strong><span class="pill blue">oauth</span><span class="pill success">已登录</span></div>
-                          <small>CLI 自管 · opus-5 / sonnet-5 / haiku-4.5 · base URL 用官方默认</small>
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">配置 <i>1 份</i><button type="button" data-account-new>＋ 新增</button></p>
+                        <article class="cfg-card">
+                          <div class="cfg-head"><strong>codex</strong><span class="pill blue">oauth</span><span class="pill success">已登录</span></div>
+                          <div class="git-block">
+                            <div><span>连接</span><span>base URL 用官方默认 · 有效期至 2026-10-08 · 并发 2</span></div>
+                            <div><span>模型 · 深度</span><span><code>gpt-5.6</code> low · medium · high<br><code>gpt-5.6-codex</code> medium · high</span></div>
+                            <div><span>时限额</span><span>5 小时窗口 · 已用 41% · <b>14:20</b> 重置</span></div>
+                            <div><span>周限额</span><span>已用 62% · <b>周一 08:00</b> 重置</span></div>
+                            <div><span>项目</span><span>3 个全部可用</span></div>
+                            <div><span>被引用</span><span><b>2 个执行组合</b> · 1 条自动化规则用到它</span></div>
+                          </div>
+                          <div class="cfg-acts"><button type="button" data-demo="在终端里跑：codex login">登录命令</button><button type="button" data-account-edit="codex">编辑</button><button type="button" data-demo="停用这份配置：它算出的执行组合从派工清单消失，凭据与额度都留着，随时能启用回来">停用</button><button class="danger-link" type="button" data-remove-open="config" data-remove-name="codex" data-remove-combos="2" data-remove-runs="74">删除</button></div>
+                        </article>
+                        <p class="rt-sec-note">两个模型<b>共用同一份额度</b>，所以它们之间是「或者」不是「以及」；判断够不够看<b>更紧的那一个</b>。登录态<b>不代管</b>：token 由 CLI 自己存在它自己的目录里，PersonaHub <b>只做只读检查</b>并给出终端命令——所以这里没有输入框。<br><b>改动从下一次派工起生效</b>：正在跑的进程不受影响，换配置要冷启动一个新进程（ADR 0009）。<b>停用是可逆的，删除不是</b>——连不上、key 过期这类先停用，别直接删。</p>
+                      </div>
+
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">工具 <i>2</i></p>
+                        <div class="data-list" style="--cols: minmax(0, 1fr) 76px" role="table" aria-label="Codex 可用工具">
+                          <div class="dl-row" role="row"><span class="dl-title"><code>host.web.fetch</code><small class="dl-tag">内置</small></span><span class="pill success">可用</span></div>
+                          <div class="dl-row" role="row"><span class="dl-title"><code>web.search</code><small class="dl-tag"><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">web-research@1.4</button></small></span><span class="pill success">可用</span></div>
                         </div>
-                        <div class="ac-actions"><button type="button" data-demo="重新检查 claude 登录态">重新检查</button><button type="button" data-demo="在终端里跑：claude">登录命令</button></div>
-                      </article>
-                    </div>
-                    <div class="runtime-table">
-                      <div class="rt-head"><span>模型</span><span>可用深度</span><span>额度</span><span>项目可用性</span><span>状态</span></div>
-                      <div class="rt-row"><span><code>opus-5</code></span><span>low · medium · high</span><span>剩 38 次</span><span>3 个项目</span><span class="pill success">可用</span></div>
-                      <div class="rt-row"><span><code>sonnet-5</code></span><span>low · medium · high</span><span>剩 902 次</span><span>3 个项目</span><span class="pill success">可用</span></div>
-                      <div class="rt-row"><span><code>haiku-4.5</code></span><span>只有 low</span><span>剩 5.2k 次</span><span>3 个项目</span><span class="pill success">可用</span></div>
-                    </div>
-                    <h2 class="pane-h">额度池<span class="pane-h-note">一份配置一个池</span></h2>
-                    <div class="runtime-table">
-                      <div class="rt-head"><span>配置</span><span>认证</span><span>可派次数（按 low 折算）</span><span>计量窗口</span><span>状态</span></div>
-                      <div class="rt-row"><span><code>claude</code></span><span>OAuth</span><span>38 次 low（opus）／ 902 次 low（sonnet）</span><span>5 小时窗口</span><span class="pill warn">偏紧</span></div>
-                    </div>
-                    <p class="pane-note">三个模型共用这一个池（5 小时窗口），所以上表的额度列是「或者」不是「以及」：多派一次 opus 就少几次 sonnet。</p>
-                  </div>
+                      </div>
 
-                  <div data-runtime-view="opencode" hidden>
-                    <h2 class="pane-h">OpenCode · 配置<span class="pane-h-note">2 份 —— 唯一一个多配置的 adapter</span></h2>
-                    <p class="pane-note">一份配置只能有一种认证方式。想两种都用就建两份配置，否则失败时分不清是哪条路断的。<strong>正名之后这条规则自解释了</strong>：配置就是「驱动这个 CLI 的一种方式」，一种方式当然只有一种认证。</p>
-                    <div class="label-table">
-                      <div class="rt-head"><span>配置</span><span>认证</span><span>Base URL</span><span>可用模型</span><span>状态</span></div>
-                      <button class="rt-row" type="button" data-demo="编辑 opencode · coding-plan 配置"><span><code>coding-plan</code></span><span><span class="pill muted">api_key</span></span><span><code>api.deepseek.com/v1</code></span><span>deepseek-v4-pro · -flash</span><span class="pill success">已配置</span></button>
-                      <button class="rt-row" type="button" data-demo="编辑 opencode · official-api 配置"><span><code>official-api</code></span><span><span class="pill muted">api_key</span></span><span><code>127.0.0.1:11434/v1</code></span><span>deepseek-v4-pro · qwen3-max</span><span class="pill warn">连不上</span></button>
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">做不到什么</p>
+                        <p class="rt-sec-note">没有。权限拦截、结构化轨迹、完成摘要、MCP 注入都支持，原生记忆已按 ADR 0011 关闭——因此它<b>可以</b>当独立验证员。</p>
+                      </div>
                     </div>
-                    <p class="pane-note"><strong>同一个 <code>deepseek-v4-pro</code>，这里有两条路</strong>——这就是执行组合必须带配置段的那个真实场景：<code>opencode-coding-plan-deepseekv4pro-medium</code> 与 <code>opencode-official-api-deepseekv4pro-medium</code> 是两个不同的东西，额度性质、计费方式与失败模式都不同。区分依据是这张表的 <strong>Base URL 与配置名</strong>，它们是配置的字段，不是 CLI 安装的字段。</p>
-                    <h2 class="pane-h">额度池<span class="pane-h-note">两份配置两个池</span></h2>
-                    <div class="runtime-table">
-                      <div class="rt-head"><span>配置</span><span>认证</span><span>可派次数（按 low 折算）</span><span>计量窗口</span><span>状态</span></div>
-                      <div class="rt-row"><span><code>coding-plan</code></span><span>API Key</span><span>1.4k 次 low ／ 700 次 medium</span><span>本月 · 已用 12%</span><span class="pill success">充足</span></div>
-                      <div class="rt-row"><span><code>official-api</code></span><span>API Key</span><span>不设上限 · 按 token 计费</span><span>—</span><span class="pill muted">不受额度约束</span></div>
+
+                    <div data-runtime-view="claude" hidden>
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">状态<button type="button" data-demo="重新检查 Claude Code">重新检查</button><button class="danger-link" type="button" data-remove-open="adapter" data-remove-name="Claude Code" data-remove-configs="1" data-remove-combos="3">移除</button></p>
+                        <div class="git-block">
+                          <div><span>现在</span><span><b class="ok">可派工</b> · 1.0.88 · <span class="git-warn">时限额偏紧</span></span></div>
+                          <div><span>上次检查</span><span>今天 09:12 · 通过</span></div>
+                          <div><span>最近失败</span><span>08-30 adapter 错误 · <button class="linklike" type="button" data-surface="stats" data-demo="跳到统计 · 失败页那一条">看那次执行</button></span></div>
+                        </div>
+                      </div>
+
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">配置 <i>1 份</i><button type="button" data-account-new>＋ 新增</button></p>
+                        <article class="cfg-card">
+                          <div class="cfg-head"><strong>claude-code</strong><span class="pill blue">oauth</span><span class="pill success">已登录</span></div>
+                          <div class="git-block">
+                            <div><span>连接</span><span>base URL 用官方默认 · CLI 自管有效期 · 并发 1</span></div>
+                            <div><span>模型 · 深度</span><span><code>opus-5</code> low · medium · high<br><code>sonnet-5</code> low · medium · high<br><code>haiku-4.5</code> 只有 low</span></div>
+                            <div><span>时限额</span><span class="git-warn">5 小时窗口 · 已用 <b>88%</b> · <b>13:05</b> 重置</span></div>
+                            <div><span>周限额</span><span>已用 74% · <b>周一 08:00</b> 重置</span></div>
+                            <div><span>项目</span><span>3 个全部可用</span></div>
+                            <div><span>被引用</span><span><b>3 个执行组合</b> · 2 条自动化规则用到它</span></div>
+                          </div>
+                          <div class="cfg-acts"><button type="button" data-demo="在终端里跑：claude setup-token">登录命令</button><button type="button" data-account-edit="claude-code">编辑</button><button type="button" data-demo="停用这份配置：凭据与额度都留着，随时能启用回来">停用</button><button class="danger-link" type="button" data-remove-open="config" data-remove-name="claude-code" data-remove-combos="3" data-remove-runs="54">删除</button></div>
+                        </article>
+                        <p class="rt-sec-note">三个模型<b>共用同一份额度</b>，所以它们之间是「或者」不是「以及」。判断够不够看<b>更紧的那一个</b>——这里是时限额。登录态<b>不代管</b>：PersonaHub <b>只做只读检查</b>并给出终端命令，登录与续期都在终端完成。<br><b>改动从下一次派工起生效</b>：正在跑的进程不受影响，换配置要冷启动一个新进程（ADR 0009）。<b>停用是可逆的，删除不是</b>——连不上、key 过期这类先停用，别直接删。</p>
+                      </div>
+
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">工具 <i>2</i></p>
+                        <div class="data-list" style="--cols: minmax(0, 1fr) 76px" role="table" aria-label="Claude Code 可用工具">
+                          <div class="dl-row" role="row"><span class="dl-title"><code>host.web.fetch</code><small class="dl-tag">内置</small></span><span class="pill success">可用</span></div>
+                          <div class="dl-row" role="row"><span class="dl-title"><code>web.search</code><small class="dl-tag"><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">web-research@1.4</button></small></span><span class="pill success">可用</span></div>
+                        </div>
+                      </div>
+
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">做不到什么</p>
+                        <div class="git-block">
+                          <div><span>远端执行时的权限拦截</span><span>它靠 PreToolUse hook 注入，<b>依赖本地文件路径</b>——本机没问题，接远程机器之后这条会掉（ADR 0008 第 3 条已记录）。</span></div>
+                        </div>
+                        <p class="rt-sec-note">原生记忆已按 ADR 0011 关闭，因此它<b>可以</b>当独立验证员。</p>
+                      </div>
                     </div>
-                    <p class="pane-note">两份配置两个池，互不相干——这是它们必须是两个执行组合的另一半理由：额度性质都不一样。<br>「连不上」和「key 不对」分开报：前者是网络或服务没起，后者才需要你换 key。两者都不会把配置自动停用——停用是你的决定。</p>
-                  </div>
 
+                    <div data-runtime-view="opencode" hidden>
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">状态<button type="button" data-demo="重新检查 OpenCode 的两份配置">重新检查</button><button class="danger-link" type="button" data-remove-open="adapter" data-remove-name="OpenCode" data-remove-configs="2" data-remove-combos="2">移除</button></p>
+                        <div class="git-block">
+                          <div><span>现在</span><span><b class="warn">部分可用</b> · 0.7.2 · <span class="git-warn">official-api 连不上</span></span></div>
+                          <div><span>上次检查</span><span>今天 09:12 · coding-plan 正常，official-api 无响应</span></div>
+                          <div><span>最近失败</span><span>08-30 adapter 错误 · <button class="linklike" type="button" data-surface="stats" data-demo="跳到统计 · 失败页那一条">看那次执行</button></span></div>
+                        </div>
+                      </div>
 
-                  <h2 class="pane-h">额度告警<span class="pane-h-note">一条策略，不属于任何 adapter</span></h2>
-                  <div class="git-block">
-                    <div><span>提醒</span><span>任一配置剩余低于 <b>20%</b> 时在状态栏提示</span></div>
-                    <div><span>自动化规则</span><span class="git-warn">剩余低于 <b>10%</b> 时停止触发定时规则 —— 记录一条「未触发 · 额度不足」，<b>不自动降级为更低成本的执行组合</b></span></div>
-                    <div><span>手动派工</span><span>始终允许，但会先提示剩余次数</span></div>
-                  </div>
-                  <p class="pane-note">系统不会为了执行完成而自动更换更低成本的执行组合：更换组合会改变结果质量，这属于使用者的质量判断，而非节省额度的手段。「因额度不足未执行」的记录在<button class="linklike" type="button" data-surface="automation">自动化</button>面，与「已执行但失败」分开记录——前者不属于故障，但使用者需要知晓当日实际未执行。<br>「已消耗多少」在<button class="linklike" type="button" data-surface="stats">统计</button>面：额度是<strong>约束</strong>，统计是<strong>账本</strong>，二者不得相加。<strong>密钥存在哪</strong>属于数据风险，在本页的<button class="linklike" type="button" data-settings-pick="data">数据</button>组。</p>
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">配置 <i>2 份</i><button type="button" data-account-new>＋ 新增</button></p>
+                        <article class="cfg-card">
+                          <div class="cfg-head"><strong>coding-plan</strong><span class="pill muted">api_key</span><span class="pill success">已配置</span></div>
+                          <div class="git-block">
+                            <div><span>连接</span><span><code>api.deepseek.com/v1</code> · 并发 2</span></div>
+                            <div><span>模型 · 深度</span><span><code>deepseek-v4-pro</code> · <code>deepseek-v4-flash</code></span></div>
+                            <div><span>时限额</span><span>无</span></div>
+                            <div><span>周限额</span><span>已用 12% · <b>周一 00:00</b> 重置</span></div>
+                            <div><span>项目</span><span>3 个全部可用</span></div>
+                            <div><span>被引用</span><span><b>2 个执行组合</b> · 没有规则用到它</span></div>
+                          </div>
+                          <div class="cfg-acts"><button type="button" data-account-edit="coding-plan">编辑</button><button type="button" data-demo="停用这份配置：凭据与额度都留着，随时能启用回来">停用</button><button class="danger-link" type="button" data-remove-open="config" data-remove-name="coding-plan" data-remove-combos="2" data-remove-runs="18">删除</button></div>
+                        </article>
+                        <article class="cfg-card bad">
+                          <div class="cfg-head"><strong>official-api</strong><span class="pill muted">api_key</span><span class="pill warn">连不上</span></div>
+                          <div class="git-block">
+                            <div><span>连接</span><span><code>127.0.0.1:11434/v1</code> · 并发 1 · <span class="git-warn">无响应</span></span></div>
+                            <div><span>模型 · 深度</span><span><code>deepseek-v4-pro</code> · <code>qwen3-max</code></span></div>
+                            <div><span>额度</span><span>不设上限 · 按 token 计费，不受额度约束——成本在<button class="linklike" type="button" data-surface="stats">统计</button>面</span></div>
+                            <div><span>项目</span><span>1 个代码目录待重新检查</span></div>
+                            <div><span>被引用</span><span>连不上，<b>当前没有可用组合</b></span></div>
+                          </div>
+                          <div class="cfg-acts"><button type="button" data-account-edit="official-api">编辑</button><button type="button" data-demo="停用这份配置：连不上时先停掉它，别让派工一次次撞上去。凭据留着，修好再启用">停用</button><button class="danger-link" type="button" data-remove-open="config" data-remove-name="official-api" data-remove-combos="0" data-remove-runs="3">删除</button></div>
+                        </article>
+                        <p class="rt-sec-note"><b>同一个 <code>deepseek-v4-pro</code> 在这里有两条路</b>，所以组合名必须带配置段：额度性质、计费方式与失败模式都不同。<b>「连不上」和「key 不对」分开报</b>——前者是网络或服务没起，后者才需要换 key；两者都不会自动停用配置，<b>停用是你的决定</b>。<br><b>改动从下一次派工起生效</b>：正在跑的进程不受影响，换配置要冷启动一个新进程（ADR 0009）。<b>停用是可逆的，删除不是</b>——连不上、key 过期这类先停用，别直接删。</p>
+                      </div>
 
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">工具 <i>2</i></p>
+                        <div class="data-list" style="--cols: minmax(0, 1fr) 76px" role="table" aria-label="OpenCode 可用工具">
+                          <div class="dl-row" role="row"><span class="dl-title"><code>host.web.fetch</code><small class="dl-tag">内置</small></span><span class="pill success">可用</span></div>
+                          <div class="dl-row" role="row">
+                            <span class="dl-title"><code>web.search</code><small class="dl-tag"><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">web-research@1.4</button></small></span>
+                            <span class="pill warn">缺席</span>
+                            <p class="dl-sub"><em class="dl-warn">⚠ 这个 adapter 不注入 MCP，点了名的工具<b>静默缺席</b>——两次执行看起来一样，结论却可能不同。</em>它会写进派工弹窗与执行记录的「<b>本次生效组合</b>」。</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="rt-sec">
+                        <p class="rt-sec-h">做不到什么<span class="rt-sec-note-inline">写后果，不写能力位名字</span></p>
+                        <div class="git-block">
+                          <div><span><b>不能当独立验证员</b></span><span><em class="dl-warn">⚠ 它的<b>原生记忆关不掉</b>（ADR 0011），可能读得到上一轮的实现细节。</em>因此它在「独立验证员」角色下<b>永远不可选</b>——不随时间、不随任务变化。</span></div>
+                          <div><span>写操作不先问你</span><span>派给它的活<b>不会出现「等待权限确认」</b>，写操作直接落盘——七个任务态在它身上少一个。</span></div>
+                          <div><span>统计下钻不到</span><span>它只报整次执行的合计，不报逐次调用。</span></div>
+                          <div><span>MCP 工具会缺席</span><span>而且是<b>静默</b>缺席，见上面的工具表。</span></div>
+                        </div>
+                        <p class="rt-sec-note"><b>这四条是能力边界，不是故障，不进失败率。</b>把「能力不具备」计入失败率，这个指标就不能再用来判断系统是否存在故障了。<b>只有第一条改变派工合法性</b>，其余三条影响的是体验与可观测性。</p>
+                      </div>
+                    </div>
+                  </aside>
                 </div>
 
-                <!-- ─────────── 诊断 tab ─────────── -->
-                <div data-runtime-body="diagnostic" hidden>
-
-                  <div data-runtime-view="codex">
-                    <h2 class="pane-h">Codex CLI · 诊断</h2>
-                    <div class="git-block">
-                      <div><span>最近一次检查</span><span>今天 09:12 · 通过 · 0.42.0 · 已登录</span></div>
-                      <div><span>近 30 天派工</span><span>74 次 · 失败 2 次（执行超时 1 · adapter 错误 1）</span></div>
-                      <div><span>登录态到期</span><span>2026-10-08</span></div>
+                <div class="rt-stage" data-machine-body="studio" hidden>
+                  <div class="rt-stage-main">
+                    <div class="git-block rt-host">
+                      <div><span>这台机器</span><span><code>studio-01</code> · <code>mac-studio.lan:7420</code> · daemon 0.3.0 · 配对于 08-24</span></div>
+                      <div><span>状态</span><span><b class="ok">在线</b> · 时钟与本机相差 0.4s · 0 个执行进程</span></div>
                     </div>
-                    <h2 class="pane-h">这个 adapter 做不到什么</h2>
-                    <p class="pane-note">没有。权限拦截、结构化轨迹、完成摘要、MCP 注入都支持，原生记忆已按 ADR 0011 关闭——因此它<strong>可以</strong>当独立验证员。</p>
-                    <p class="pane-note">失败归因于执行组合，不归因于任务；逐条记录在<button class="linklike" type="button" data-surface="stats">统计</button>的失败页。</p>
+                    <div class="rt-host-acts"><button type="button" data-demo="重新配对：在 mac-studio 上重跑 daemon 的配对命令，拿新的配对码回来。地址变了也走这里">重新配对</button><button class="danger-link" type="button" data-remove-open="machine" data-remove-name="mac-studio" data-remove-adapters="2" data-remove-configs="2">移除这台机器</button></div>
+                    <div class="stage-note"><b>这台机器掉线时，它上面两个 adapter 全都派不了工</b>——而它们各自的检查仍会显示「上次检查通过」，那是上一次能连上时的结果。所以状态分两级看：先机器，再 adapter。<br><b>远程执行在 v0.7</b>：今天只有本机，这个 tab 是目标形态的预览。</div>
+
+                    <h2 class="pane-h">adapter<span class="pane-h-note">点一行看详情</span></h2>
+                    <div class="data-list rt-adapters" style="--cols: 92px minmax(0, 1fr) 84px 64px 76px minmax(0, 1.1fr)" role="table" aria-label="mac-studio 的 adapter">
+                      <div class="dl-head" role="row"><span>状态</span><span>adapter</span><span>版本</span><span>配置</span><span>可用组合</span><span>现在挡着什么</span></div>
+                      <button class="dl-row rt-pick" type="button" role="row" data-demo="这台机器上的 Codex 是另一份安装、另一份登录态——同名不等于同一个。它的详情与本机那份互不影响">
+                        <span class="mem-stance verified">可派工</span>
+                        <span class="dl-title">Codex CLI</span>
+                        <span class="dl-dim">0.41.3</span>
+                        <span class="dl-dim">1 份</span>
+                        <span class="dl-dim">2 个</span>
+                        <span class="dl-dim">—</span>
+                      </button>
+                      <button class="dl-row rt-pick" type="button" role="row" data-demo="登录态过期：要到 mac-studio 那台机器的终端上跑 claude setup-token，PersonaHub 不代管任何 CLI 的登录">
+                        <span class="mem-stance claimed">待检查</span>
+                        <span class="dl-title">Claude Code</span>
+                        <span class="dl-dim">1.0.86</span>
+                        <span class="dl-dim">1 份</span>
+                        <span class="dl-dim">0 个</span>
+                        <span class="dl-dim"><b>登录态过期</b></span>
+                      </button>
+                    </div>
+                    <button class="rt-add" type="button" data-demo="在 mac-studio 上添加 adapter：准入流程与本机相同，但确认是在那台机器上落地的——本机没有沙箱这句话对它同样成立">＋ 在这台机器上添加 adapter<small>代码准入 · 没有沙箱</small></button>
+                    <p class="pane-note"><b>同名的 adapter 在两台机器上是两份东西</b>：两份安装、两份登录态、两份额度。所以「去重新登录」要到这台机器上做，不是在本机做。</p>
+                    <h2 class="pane-h">运行中<span class="pane-h-note">这台机器上的</span></h2>
+                    <p class="pane-note">这台机器上没有正在跑的执行进程。</p>
+
                   </div>
-
-                  <div data-runtime-view="claude" hidden>
-                    <h2 class="pane-h">Claude Code · 诊断</h2>
-                    <div class="git-block">
-                      <div><span>最近一次检查</span><span>今天 09:12 · 通过 · 1.0.88 · 已登录</span></div>
-                      <div><span>近 30 天派工</span><span>54 次 · 失败 2 次（adapter 错误 1 · 执行超时 1）</span></div>
-                      <div><span>额度</span><span class="git-warn">⚠ 5 小时窗口偏紧：opus 只剩 38 次 low 折算</span></div>
-                    </div>
-                    <h2 class="pane-h">这个 adapter 做不到什么</h2>
-                    <div class="git-block">
-                      <div><span>远端执行时的权限拦截</span><span>它的权限拦截靠 <code>PreToolUse</code> hook 注入，<b>依赖本地文件路径</b>——本机执行没问题，daemon 化之后这条会掉（ADR 0008 第 3 条已记录）。当前只有本机一个执行位置，所以现在不影响任何判断。</span></div>
-                    </div>
-                    <p class="pane-note">原生记忆已按 ADR 0011 关闭，因此它<strong>可以</strong>当独立验证员。</p>
-                  </div>
-
-                  <div data-runtime-view="opencode" hidden>
-                    <h2 class="pane-h">OpenCode · 诊断</h2>
-                    <div class="git-block">
-                      <div><span>最近一次检查</span><span class="git-warn">⚠ 部分可用 —— coding-plan 正常，official-api 连不上（<code>127.0.0.1:11434</code> 无响应）</span></div>
-                      <div><span>近 30 天派工</span><span>18 次 · 失败 3 次 · <b>样本不足</b>（低于 30 次，失败率不具备统计意义）</span></div>
-                    </div>
-
-                    <h2 class="pane-h">这个 adapter 做不到什么<span class="pane-h-note">写后果，不写能力位名字</span></h2>
-                    <div class="git-block">
-                      <div><span class="git-warn">不能当独立验证员</span><span class="git-warn">⚠ 它的<b>原生记忆关不掉</b>（ADR 0011），可能读得到上一轮的实现细节，上下文范围三档在它身上保证不了。因此它在「独立验证员」角色下<b>永远不可选</b>——这一条不随时间、不随任务变化，换个账号换个模型都不会变。</span></div>
-                      <div><span>写操作不会先停下来问你</span><span>派给它的活<b>不会出现「等待权限确认」</b>，写操作直接落盘——七个任务态在它身上少一个。</span></div>
-                      <div><span>统计点不进逐次明细</span><span>它只报整次执行的合计，不报逐次调用；它的任务行在统计里下钻不到 token 明细。</span></div>
-                      <div><span>能力包声明的 MCP 工具会缺席</span><span>而且是<b>静默</b>缺席——两次执行看起来一样，结论却可能不同。这一条会写进「本次生效组合」视图。</span></div>
-                    </div>
-                    <p class="pane-note"><strong>这四条是能力边界，不是故障，不进失败率。</strong>把「能力不具备」计入失败率，这个指标就不能再用来判断系统是否存在故障了——同 §3.4 失败页把「验证未通过」和「额度不足」排除在外的那条判断。<br><strong>第一条是唯一一条改变派工合法性的</strong>：其余三条影响的是体验与可观测性，只有它会让一条主张失效。派工弹层的「结构性不具备」与成果面的「该执行体无法保证独立性」都落在这里。</p>
-                  </div>
-
                 </div>
               </div>
 
               <div class="sp-bar" data-settings-view="plugins" hidden>
-                <div><h1>插件</h1><p>已装的能力包与插件：准入、启用、停用、冲突、导出。<strong>声明不等于授权</strong>——包里写着提供什么只是候选，校验、准入、启用之后它才存在；未准入的条目不会按声明渲染成已有能力。</p></div>
+                <div><h1>能力包与插件</h1><p>已装的能力包与插件：准入、启用、停用、冲突、导出。<strong>声明不等于授权</strong>——包里写着提供什么只是候选，校验、准入、启用之后它才存在；未准入的条目不会按声明渲染成已有能力。</p></div>
                 <div class="sp-bar-actions"><button type="button" data-demo="导入能力包：读一个目录，schema 校验，未知字段拒绝，包不会被部分导入">导入能力包</button><button type="button" data-demo="添加插件是代码准入（T2）：手工放进 ~/.personahub/plugins/ + 逐项确认。本机没有沙箱，它与 PersonaHub 同权运行">添加插件</button></div>
               </div>
               <div class="sp-body" data-settings-view="plugins" hidden>
-                <p class="pane-note"><b>分两个子区，因为两者的风险差着一个数量级。</b>能力包是声明式的零代码单位，读一个目录、校验通过即可启用；插件是代码，必须逐项确认后才允许运行。这一组界面上叫「插件」是通称，但两类<b>不能长得一样</b>——「安装」在使用者心里是同一个动作，而它们的后果不是。</p>
+                <p class="pane-note"><b>「停用」和「卸载」不是一件事</b>：停用是注册/注销级的，它贡献的条目从派工清单消失、历史执行记录仍显示当时的包名与版本；卸载才是把这个目录从本机拿掉，之后想用得重新导入。<br><b>分两个子区，因为两者的风险差着一个数量级。</b>能力包是声明式的零代码单位，读一个目录、校验通过即可启用；插件是代码，必须逐项确认后才允许运行。这一组界面上叫「插件」是通称，但两类<b>不能长得一样</b>——「安装」在使用者心里是同一个动作，而它们的后果不是。</p>
 
                 <h2 class="pane-h">能力包<span class="pane-h-note">声明式 · 零代码 · 校验通过即可启用</span></h2>
                 <div class="data-list" style="--cols: minmax(0, 1.05fr) minmax(0, 1.2fr) 88px 104px 96px" role="table" aria-label="能力包">
@@ -3832,7 +4070,7 @@ completed -&gt; archived</code></pre>
                     <span class="dl-dim">1 Skill · 1 输出契约 · 1 硬规则加严</span>
                     <span class="dl-dim">2.1</span>
                     <span class="pill success">已启用</span>
-                    <span class="dl-act"><button type="button" data-demo="停用 coding-review-cn@2.1：它贡献的条目从派工清单消失，历史执行记录保留当时的包名与版本">停用</button></span>
+                    <span class="dl-act"><button type="button" data-demo="停用 coding-review-cn@2.1：它贡献的条目从派工清单消失，历史执行记录保留当时的包名与版本">停用</button><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="检查更新：读包目录里的版本号，比对已装的那一版；升级前列出会变哪几项">检查更新</button><button type="button" role="menuitem" data-demo="导出这个包：逐条列出剥离了什么，看到剥离后的实际内容再确认">导出</button><button type="button" role="menuitem" class="danger" data-remove-open="pack" data-remove-name="coding-review-cn@2.1" data-remove-items="3" data-remove-runs="26">卸载</button></span></span></span>
                     <p class="dl-sub"><b>未知字段会被拒绝，包不会被部分导入</b>。它把「验证步只读结果」这条底座规则<b>加严</b>为「验证步只读结果且不含失败日志」——<em class="dl-perf">能力包只能把规则改得更严，放宽是不可能的，因此界面上没有这个表达。</em></p>
                   </div>
                   <div class="dl-row" role="row">
@@ -3849,7 +4087,7 @@ completed -&gt; archived</code></pre>
                     <span class="dl-dim">1 编组 · 3 Skill</span>
                     <span class="dl-dim">0.9</span>
                     <span class="pill muted">已停用</span>
-                    <span class="dl-act"><button type="button" data-demo="重新启用 book-digest@0.9">启用</button></span>
+                    <span class="dl-act"><button type="button" data-demo="重新启用 book-digest@0.9">启用</button><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="导出这个包">导出</button><button type="button" role="menuitem" class="danger" data-remove-open="pack" data-remove-name="book-digest@0.9" data-remove-items="4" data-remove-runs="7">卸载</button></span></span></span>
                     <p class="dl-sub">停用于 08-24。它贡献的 Skill 不再进入任何派工，<b>但用过它的 7 条历史执行记录仍显示当时的 <code>book-digest@0.9</code></b>——停用不改写历史。</p>
                   </div>
                 </div>
@@ -3862,7 +4100,7 @@ completed -&gt; archived</code></pre>
                     <span class="dl-dim">1 个 surface（能力面「订阅」tab）· 1 个定时 factory 引用</span>
                     <span class="dl-dim">0.3</span>
                     <span class="pill success">已启用</span>
-                    <span class="dl-act"><button type="button" data-demo="停用 rss-inbox@0.3：能力面的「订阅」tab 立刻消失，其余 tab 照常。停用是注册/注销级的，不做进程内模块卸载">停用</button></span>
+                    <span class="dl-act"><button type="button" data-demo="停用 rss-inbox@0.3：能力面的「订阅」tab 立刻消失，其余 tab 照常。停用是注册/注销级的，不做进程内模块卸载">停用</button><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="看它声明了什么：surface、动作白名单、定时 factory 引用">看声明</button><button type="button" role="menuitem" class="danger" data-remove-open="plugin" data-remove-name="rss-inbox@0.3" data-remove-items="2" data-remove-runs="0">卸载</button></span></span></span>
                     <p class="dl-sub"><b>它带 UI，但没写一行前端代码</b>：manifest 里声明 <code>kind: table</code> 加列名加两个动作，界面由宿主渲染。
                       <em class="dl-perf">动作只能引用白名单：<code>host.library.archive</code> · <code>host.issue.createWithRoom</code>。<b>它够不着凭据</b>——凭据在这一页上面的「运行时」组，插件的挂载点只在能力面 tab 内，两处不相交。<b>准入判据</b>：停掉它你照样建 Issue、拉 Room、派工、验收，所以它有资格开 tab；adapter 停掉就派不了工，所以 adapter 永远不在能力面。</em></p>
                   </div>
@@ -3871,7 +4109,7 @@ completed -&gt; archived</code></pre>
                     <span class="dl-dim">1 个 adapter · 1 个定时 factory 引用</span>
                     <span class="dl-dim">0.3</span>
                     <span class="pill muted">待逐项确认</span>
-                    <span class="dl-act"><button type="button" data-demo="逐项确认：先看它声明了什么，再决定是否允许它运行">逐项确认</button></span>
+                    <span class="dl-act"><button type="button" data-demo="逐项确认：先看它声明了什么，再决定是否允许它运行">逐项确认</button><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" class="danger" data-remove-open="plugin" data-remove-name="deepseek-adapter@0.3" data-remove-items="2" data-remove-runs="0">卸载</button></span></span></span>
                     <p class="dl-sub"><em class="dl-warn">⚠ 本机没有沙箱：启用等于让这段代码与 PersonaHub 同权运行，能读你的代码目录与本机凭据。</em>它是你自己放进 <code>~/.personahub/plugins/</code> 的目录，本产品不做远程安装与信任链。<b>它贡献的是 adapter，因此不得声明 surface</b>——缺了它派不了工，这类东西归上面的「运行时」组，不进能力面。</p>
                   </div>
                 </div>
@@ -3880,7 +4118,112 @@ completed -&gt; archived</code></pre>
                 <div class="git-block">
                   <div><span class="git-warn">Skill「调研结论要标注检索日期」</span><span><code>web-research@1.4</code> 与 <code>coding-review-cn@2.1</code> 都提供了这个名字。<b>在你选定之前两个都不生效</b>——自动定优先级会让「为什么这次结果变了」不可解释。<button class="linklike" type="button" data-demo="并置两个候选，选完记一条决定">去选一个</button></span></div>
                 </div>
-                <p class="pane-note"><b>导出默认不含项目事实。</b>把 Skill 导出成能力包时，Memory 原始内容、Evidence 与本机路径默认被剥离，导出弹层会逐条列出剥离了什么，你看到剥离后的实际内容再确认。个人工具里这条是隐私边界，不是可选项。<br>贡献物落到<button class="linklike" type="button" data-surface="library">能力</button>面（Skill）、资源库（资料）、<button class="linklike" type="button" data-surface="automation">自动化</button>（定时规则）与本页「运行时」组（adapter）——<b>按贡献物类型落面，不按插件分 tab</b>。</p>
+                <p class="pane-note"><b>导出默认不含项目事实。</b>把 Skill 导出成能力包时，Memory 原始内容、Evidence 与本机路径默认被剥离，导出弹窗会逐条列出剥离了什么，你看到剥离后的实际内容再确认。个人工具里这条是隐私边界，不是可选项。<br>贡献物落到<button class="linklike" type="button" data-surface="library">能力</button>面（Skill）、资源库（资料）、<button class="linklike" type="button" data-surface="automation">自动化</button>（定时规则）与本页「运行时」组（adapter）——<b>按贡献物类型落面，不按插件分 tab</b>。</p>
+              </div>
+
+              <div class="sp-bar" data-settings-view="dirs" hidden>
+                <div><h1>代码目录授权</h1><p>回答一个只有全局能回答的问题：<strong>PersonaHub 在这台机器上能碰哪些真实路径</strong>。<b>它不重复项目里的能力边界</b>——读 / 写 / 网络 / git push 那四档写在项目上，这里管的是「这个目录到底授没授权、谁在用、还要不要留着」。</p></div>
+                <div class="sp-bar-actions"><button class="primary-button" type="button" data-demo="授权一个新目录：选真实路径 → 看清它会被谁用 → 确认。授权是按真实路径给的，软链和 worktree 会解析到真身再判断">授权新目录</button></div>
+              </div>
+              <div class="sp-body" data-settings-view="dirs" hidden>
+                <div class="data-list" style="--cols: minmax(0, 1.3fr) 132px 140px 108px 96px" role="table" aria-label="已授权的代码目录">
+                  <div class="dl-head" role="row"><span>真实路径</span><span>谁在用</span><span>最近访问</span><span>状态</span><span>操作</span></div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title"><code>D:\Projects\personahub</code></span>
+                    <span class="dl-dim">PersonaHub</span>
+                    <span class="dl-dim">今天 09:12</span>
+                    <span class="pill success">已授权</span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="看这个目录的能力边界：读 / 写 / 网络 / git push 四档写在项目上，这里只跳过去">看能力边界</button><button type="button" role="menuitem" class="danger" data-demo="撤销授权：正在跑的任务会被停下，历史 Run 记录保留当时的路径——证据链不因为今天撤了授权就断">撤销授权</button></span></span></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title"><code>D:\Projects\market-game-sim</code></span>
+                    <span class="dl-dim">Market Game Sim</span>
+                    <span class="dl-dim">08-27</span>
+                    <span class="pill success">已授权</span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" data-demo="看这个目录的能力边界">看能力边界</button><button type="button" role="menuitem" class="danger" data-demo="撤销授权">撤销授权</button></span></span></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="dl-title"><code>D:\Projects\old-spike</code></span>
+                    <span class="dl-dim">没有项目在用</span>
+                    <span class="dl-dim">05-11</span>
+                    <span class="pill warn">闲置 116 天</span>
+                    <span class="dl-act"><span class="row-menu"><button class="row-menu-btn" type="button" aria-haspopup="menu" aria-label="更多操作">⋮</button><span class="row-menu-pop" role="menu"><button type="button" role="menuitem" class="danger" data-demo="撤销授权：没有项目在用，撤销不影响任何正在跑的东西">撤销授权</button></span></span></span>
+                    <p class="dl-sub">没有项目在用的授权是<b>纯风险</b>：它不带来任何能力，但仍然在 allowlist 里。闲置超过 90 天的会被标出来，但<b>不自动撤销</b>——自动撤销会在你回到一个老项目时静默失败。</p>
+                  </div>
+                </div>
+                <p class="pane-note"><b>授权按真实路径给，不按项目给。</b>两个项目指同一个目录时它们共享同一份授权；软链、junction 与 git worktree 都先解析到真身再判断，否则「授权 A、经由软链写到 B」就是一条绕过。<br>撤销授权与删除项目是两件事：删项目不撤授权，撤授权不删项目。</p>
+              </div>
+
+              <div class="sp-bar" data-settings-view="health" hidden>
+                <div><h1>健康诊断</h1><p>这一页只答一件事：<strong>PersonaHub 本身还好不好</strong>。它和运行时的诊断分开——运行时坏了是「派不出去」，这里坏了是<strong>整个产品在降级</strong>，而且处理动作是重启服务、修数据库。顶栏那个「本地服务正常」点进来就是这里。</p></div>
+                <div class="sp-bar-actions"><button type="button" data-demo="重新跑一遍全部探针，不改动任何数据">重新检查</button></div>
+              </div>
+              <div class="sp-body" data-settings-view="health" hidden>
+                <div class="stage-note"><b>「服务正常」不等于「功能都在」。</b>绿点只说明进程和数据库活着；索引坏了检索会<b>静默返回空</b>，你看到的是「没有相关记忆」，真相是「取不出来」。<b>绿点撒谎比没有绿点更糟</b>，所以这一页逐项报，不合成一个总分。</div>
+                <div class="data-list" style="--cols: 88px minmax(0, 1fr) minmax(0, 0.95fr) 132px" role="table" aria-label="本机健康探针">
+                  <div class="dl-head" role="row"><span>状态</span><span>探针</span><span>怎么判的</span><span>操作</span></div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">正常</span>
+                    <span class="dl-title">本地服务</span>
+                    <span class="dl-dim">127.0.0.1:4179 · 已运行 6h 12m · 内存 214 MB</span>
+                    <span class="dl-act"><button type="button" data-demo="重启本地服务：正在跑的执行进程会被标记为中断，不会被当成完成">重启服务</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">正常</span>
+                    <span class="dl-title">数据库</span>
+                    <span class="dl-dim">SQLite 单文件 · 412 MB · WAL 模式 · 完整性检查 08-31 02:14 通过</span>
+                    <span class="dl-act"><button type="button" data-demo="立即跑一次 integrity_check，只读，不改数据">完整性检查</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">正常</span>
+                    <span class="dl-title">事件流</span>
+                    <span class="dl-dim">SSE 已连接 · 近 1 小时断线 0 次</span>
+                    <span class="dl-act"><button type="button" data-demo="重连事件流：断了的话界面不会自己更新，但任务照常在跑">重连</button></span>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance claimed">降级</span>
+                    <span class="dl-title">记忆检索</span>
+                    <span class="dl-dim">中文分词回退到 unicode61 · 建表时 trigram 不可用</span>
+                    <span class="dl-act"><button class="primary-button" type="button" data-surface="memory" data-demo="跳到记忆 · 健康度看索引与运行时">去记忆 · 健康度</button></span>
+                    <p class="dl-sub"><em class="dl-warn">⚠ 中文召回会退化且<b>不报错</b>。</em>顶栏那个「记忆降级 1」指的就是这一条；细节与重建动作在记忆面自己的健康度里，这里不复制一份。</p>
+                  </div>
+                  <div class="dl-row" role="row">
+                    <span class="mem-stance verified">正常</span>
+                    <span class="dl-title">磁盘空间</span>
+                    <span class="dl-dim">数据盘剩余 84 GB · 证据归档占 3.2 GB</span>
+                    <span class="dl-act"><button type="button" data-demo="看证据归档占用明细，按项目分">看占用</button></span>
+                  </div>
+                </div>
+                <p class="pane-note"><b>每一行右侧都必须有一个能按的动作</b>——只报数字不给动作的诊断页是债务展览馆（同记忆健康度那条规则）。<br>这里不放派工相关的诊断：adapter 装没装、登没登、做不到什么，全在<button class="linklike" type="button" data-settings-pick="runtime">运行时</button>的诊断里。两处分开是因为处理动作完全不同。</p>
+              </div>
+
+              <div class="sp-bar" data-settings-view="about" hidden>
+                <div><h1>关于</h1><p>版本、日志、以及那些<strong>一年用一次</strong>的入口。首次设置向导放在这里，因为它是一个动作，不是一项设置——它不该常年占着一级目录的一行。</p></div>
+                <div class="sp-bar-actions"><button type="button" data-demo="检查更新：只查版本号，不自动下载、不自动安装">检查更新</button></div>
+              </div>
+              <div class="sp-body" data-settings-view="about" hidden>
+                <h2 class="pane-h">版本</h2>
+                <div class="git-block">
+                  <div><span>当前</span><span><code>0.3.0-dev</code> · 本机构建 2026-09-01</span></div>
+                  <div><span>数据版本</span><span>schema v6 · 升级会先做一次快照，失败自动回滚</span></div>
+                  <div><span>更新方式</span><span>手动——<b>不自动更新</b>。一个会替你改代码的工具，不该在你不知情时换掉自己的版本</span></div>
+                </div>
+
+                <h2 class="pane-h">日志与诊断包</h2>
+                <div class="git-block">
+                  <div><span>日志目录</span><span><code>D:\Projects\personahub\.data\logs</code> · 按天切分，保留 14 天</span></div>
+                  <div><span>诊断包</span><span>导出时<b>逐条列出剥离了什么</b>（密钥、证据正文、本机绝对路径），你看到剥离后的实际内容再确认——同能力包导出的那条规则</span></div>
+                </div>
+                <div class="tc-chips">
+                  <button class="tc-chip" type="button" data-demo="打开日志目录">打开日志目录</button>
+                  <button class="tc-chip" type="button" data-demo="导出诊断包：先看剥离清单，再确认">导出诊断包</button>
+                </div>
+
+                <h2 class="pane-h">重新走一遍首次设置</h2>
+                <p class="pane-note">向导只做检查与引导，<b>不会清空任何数据</b>：它重新验证代码目录、执行组合与执行检查，跑完你的任务、证据和记忆一条不少。</p>
+                <div class="tc-chips">
+                  <button class="tc-chip" type="button" data-surface="setup">打开首次设置向导</button>
+                </div>
               </div>
             </section>
           </section>
@@ -3957,7 +4300,7 @@ completed -&gt; archived</code></pre>
           <button type="button" data-task-model-pick="claude-opus5-high">claude · opus-5<i>high</i></button>
           <button type="button" data-task-model-pick="claude-sonnet5-medium">claude · sonnet-5<i>medium</i></button>
           <button type="button" data-task-model-pick="claude-haiku4.5-low">claude · haiku-4.5<i>low</i></button>
-          <p class="lm-foot">深度决定额度折算：high 约等于 5 次 low。可用组合来自设置里的 adapter 检查。</p>
+          <p class="lm-foot">深度越高消耗越快，但快多少按任务而定——所以这里不折算成次数。可用组合来自设置里的 adapter 检查。</p>
         </div>
         <p class="tc-note">标题由第一轮执行读完内容后总结，你随时可改。创建后<strong>直接进入会话并开跑</strong>。中途想换人，在会话里换——换执行组合会冷启动一个新进程（ADR 0009）。</p>
         <footer><button type="button" data-task-create-close>取消</button><button class="primary-button" type="submit">创建并开始</button></footer>
@@ -4006,11 +4349,105 @@ completed -&gt; archived</code></pre>
         <p class="picker-needs" data-picker-needs></p>
         <p class="picker-rule" data-picker-rule></p>
         <div class="picker-list" data-picker-list></div>
+          <p class="picker-eff-head">本次生效组合<small>不论选哪个，这一次都受下面这些约束；换一个组合，第二、三块会跟着变</small></p>
+          <div class="eff-combo">
+            <div class="eff-sect fixed">
+              <p class="eff-head">不可覆盖的底座<span>核心层 · 能力包只能加严</span></p>
+              <ul>
+                <li>实现与验证不能同源<em>PRD §7.5</em></li>
+                <li><code>claimed</code> 的记忆不进验证类上下文<em>ADR 0013</em></li>
+              </ul>
+            </div>
+            <div class="eff-sect">
+              <p class="eff-head">这次生效的做法<span>每一条都带来源</span></p>
+              <ul>
+                <li>代码实现 + 独立验证 · 第 2 步<em><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">内置</button></em></li>
+                <li>上下文范围收紧为「只给结果」<em>本条编组加严</em></li>
+                <li>引用必须带章节号<em><button class="linklike" type="button" data-surface="settings" data-settings-pick="plugins">web-research@1.4</button></em></li>
+              </ul>
+            </div>
+            <div class="eff-sect muted">
+              <p class="eff-head">被拦掉的<span>压暗但在场，不静默</span></p>
+              <ul>
+                <li>2 条记忆未进上下文<em>1 条待复核 · 1 条是实现方自述（<code>claimed</code>）</em></li>
+                <li>本会话 12 条对话未进<em>上下文范围「只给结果」</em></li>
+              </ul>
+            </div>
+          </div>
+          <p class="picker-eff-note"><b>换个执行组合，这三块会跟着变。</b>选 OpenCode 时能力包点名的 <code>web.search</code> 会<b>静默缺席</b>——它会出现在第三块里，而不是什么都不说。<b>只有这个视图能回答「为什么这次的结论和上次不一样」</b>；它在派工前和执行记录里各出现一次，两处内容一致。</p>
+
         <footer>
           <span>组合由<button class="linklike" type="button" data-picker-goto-settings>设置里的 adapter 检查</button>决定，这里只选不增删</span>
           <button type="button" data-picker-close>取消</button>
         </footer>
       </div>
+    </div>
+
+
+    <!-- 通用「删除 / 移除」确认弹窗（V3.27）。六处删除共用一个形态，
+         因为它们共用同一条规则：**先算出影响面再确认，并说清历史不受影响**。
+         文案由触发按钮上的 data-remove-* 属性驱动，宿主渲染。 -->
+    <div class="command-overlay center" data-remove-dialog hidden>
+      <form class="remove-dialog" data-remove-form>
+        <header>
+          <div><small data-remove-kind>删除一份配置</small><h2 data-remove-title>删除 official-api？</h2></div>
+          <button type="button" data-remove-close aria-label="关闭">×</button>
+        </header>
+        <p class="rm-lead" data-remove-lead>这份配置会从派工清单里消失，正在跑的任务不受影响。</p>
+        <p class="rm-h">这会动到什么</p>
+        <ul class="rm-impact" data-remove-impact></ul>
+        <p class="rm-h">这不会动到什么</p>
+        <ul class="rm-keep" data-remove-keep></ul>
+        <p class="rm-undo" data-remove-undo></p>
+        <footer>
+          <button type="button" data-remove-close>取消</button>
+          <button class="danger-button" type="submit" data-remove-submit>删除</button>
+        </footer>
+      </form>
+    </div>
+
+    <!-- 改任务前缀：设计里写死了「这是要确认的操作」（§3.5.2 第 1 条），
+         但此前只有一个 data-demo。 -->
+    <div class="command-overlay center" data-prefix-dialog hidden>
+      <form class="remove-dialog" data-prefix-form>
+        <header>
+          <div><small>任务前缀</small><h2>把 PH- 改成别的</h2></div>
+          <button type="button" data-prefix-close aria-label="关闭">×</button>
+        </header>
+        <label class="ad-field"><span>新前缀</span><input type="text" value="PH-" data-prefix-input /></label>
+        <p class="rm-lead">编号策略不变：递增、不复用已删除任务的号。最新一条仍是 <code>412</code>。</p>
+        <p class="rm-h">这会动到什么</p>
+        <ul class="rm-impact">
+          <li><b>412 条任务</b>重命名为「新前缀-N」，链接与筛选跟着走</li>
+          <li>之后新建的任务、证据文件名、Markdown 导出都用新前缀</li>
+          <li>留一条<b>别名记录</b>：旧编号仍能搜到，指向同一条任务</li>
+        </ul>
+        <p class="rm-h">这改不动什么</p>
+        <ul class="rm-keep">
+          <li class="warn"><b>已经写进 commit message 与证据正文里的旧编号不会变</b>——那些是历史事实，改了就对不上原始记录了</li>
+          <li>外部链接（issue 里贴过的编号、聊天记录里的引用）同样不会变</li>
+        </ul>
+        <footer>
+          <button type="button" data-prefix-close>取消</button>
+          <button class="primary-button" type="submit">重命名 412 条任务</button>
+        </footer>
+      </form>
+    </div>
+
+    <!-- 单值选择弹窗：时区与外部编辑器此前只有静态文字，没有改的入口 -->
+    <div class="command-overlay center" data-pick-dialog hidden>
+      <form class="remove-dialog" data-pick-form>
+        <header>
+          <div><small data-pick-kind>偏好设置</small><h2 data-pick-title>时区</h2></div>
+          <button type="button" data-pick-close aria-label="关闭">×</button>
+        </header>
+        <p class="rm-lead" data-pick-lead></p>
+        <div class="pick-list" data-pick-list></div>
+        <footer>
+          <button type="button" data-pick-close>取消</button>
+          <button class="primary-button" type="submit">保存</button>
+        </footer>
+      </form>
     </div>
 
     <div class="command-overlay" data-command-overlay hidden>

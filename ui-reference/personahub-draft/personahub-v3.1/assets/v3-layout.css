@@ -5779,3 +5779,293 @@ button.dl-row { cursor: pointer; }
 @media (max-width: 1180px) {
   .skill-split { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ── 55. 设置 · 运行时：机器是 tab，adapter 是表，详情在右框（V3.24）──
+   执行位置是 AdapterConfig 与身份快照上的 runtime_id（ADR 0015），
+   一台机器一个 tab——一台机器掉线时它上面的 adapter 全都派不了工，
+   而每个 adapter 自己的检查仍会显示「上次通过」，这一层 adapter 答不了。 */
+
+.sp-body.rt-runtime { padding: 0; overflow: hidden; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+
+.rt-machines { display: flex; gap: 4px; padding: 12px 24px 0; border-bottom: 1px solid var(--border); }
+.rt-machines > [data-machine-tab] {
+  display: grid;
+  grid-template-columns: 8px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rt-machines > [data-machine-tab]:hover { background: var(--panel-3); }
+.rt-machines > [data-machine-tab].active {
+  border-color: var(--border);
+  background: var(--panel);
+  color: var(--text);
+  margin-bottom: -1px;
+  padding-bottom: 9px;
+}
+.rt-machines strong { display: block; font-size: 13px; font-weight: 600; }
+.rt-machines small { display: block; margin-top: 1px; color: var(--faint); font-size: 11px; }
+.rt-machine-add {
+  align-self: center;
+  margin-left: 4px;
+  width: 26px;
+  height: 26px;
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--faint);
+  font: inherit;
+  cursor: pointer;
+}
+.rt-machine-add:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 舞台：右框未开时列表铺满，开了才让出 400px */
+.rt-stage { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; overflow: hidden; }
+.rt-stage[hidden] { display: none; }
+.rt-stage[data-drawer="open"] { grid-template-columns: minmax(0, 1fr) 400px; }
+.rt-stage-main { min-width: 0; min-height: 0; padding: 18px 24px 40px; overflow: auto; }
+.rt-host > div > span:first-child { color: var(--faint); }
+.rt-host b.ok, .git-block b.ok { color: var(--green); }
+.git-block b.warn { color: var(--yellow); }
+
+/* adapter 表的行是可点的：整行进详情，不是行尾一个小箭头 */
+.rt-adapters .dl-row.rt-pick {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rt-adapters .dl-row.rt-pick:hover { background: var(--panel-3); }
+.rt-adapters .dl-row.rt-pick.active { background: var(--accent-soft); }
+
+/* 添加 adapter 是全产品风险最高的流程（T2 代码准入，本机没有沙箱），
+   所以它不能长得像表里的第四行——虚线框 + 第二行警告。 */
+.rt-add {
+  display: block;
+  width: 100%;
+  margin: 10px 0 4px;
+  padding: 9px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.rt-add:hover { border-color: var(--yellow); color: var(--text); }
+.rt-add small { display: block; margin-top: 3px; color: var(--yellow); font-size: 11px; }
+
+.rt-drawer {
+  min-height: 0;
+  padding: 16px 20px 40px;
+  border-left: 1px solid var(--border);
+  background: var(--panel-2);
+  overflow: auto;
+}
+.rt-drawer[hidden] { display: none; }
+.rt-drawer-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.rt-drawer-head small { color: var(--faint); font-size: 11px; }
+.rt-drawer-head h2 { margin: 2px 0 0; font-size: 15px; font-weight: 650; }
+.rt-drawer-head > button {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.rt-drawer .git-block > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.rt-drawer .git-block > div + div { margin-top: 8px; }
+.rt-drawer .git-block > div > span:first-child { font-size: 11px; }
+
+/* ── 56. 右框：一列分区，不再套一层 tab（V3.26）────────────── */
+.rt-sec + .rt-sec { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.rt-sec-h { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 650; }
+.rt-sec-h i { padding: 0 5px; border-radius: 7px; background: var(--panel-3); color: var(--faint); font-size: 11px; font-style: normal; font-weight: 400; }
+.rt-sec-h > button {
+  margin-left: auto;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.rt-sec-h > button:hover { border-color: var(--accent); color: var(--accent); }
+.rt-sec-note-inline { margin-left: 6px; color: var(--faint); font-size: 11px; font-weight: 400; }
+.rt-sec-note { margin: 8px 0 0; color: var(--faint); font-size: 11px; line-height: 1.7; }
+
+/* 一份配置一张卡：可用模型、额度、项目可用性都是 AdapterConfig 的字段
+   （ADR 0012 第 2 条），摆在卡外面时多份配置只能靠前缀硬拼。 */
+.cfg-card { padding: 10px 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--panel); }
+.cfg-card + .cfg-card { margin-top: 8px; }
+.cfg-card.bad { border-color: color-mix(in oklch, var(--yellow) 42%, var(--border)); }
+.cfg-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.cfg-head strong { font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; }
+.cfg-card .git-block > div { grid-template-columns: 62px minmax(0, 1fr); gap: 8px; }
+.cfg-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.cfg-acts > button {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.cfg-acts > button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── 57. 通知事件表的勾选列与行内标记 ─────────────────────── */
+.dl-check { color: var(--green); font-size: 13px; }
+.dl-tag { margin-left: 6px; padding: 0 5px; border-radius: 7px; background: var(--panel-3); color: var(--faint); font-size: 11px; }
+.tc-chip.active { border-color: color-mix(in oklch, var(--accent) 45%, var(--border)); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* 段前提示条：此前在记忆健康度里用过但一直没有样式，V3.23 补齐。 */
+.stage-note {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--yellow);
+  border-radius: 0 8px 8px 0;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* 顶栏「本地服务正常」改成按钮：它现在是健康诊断的入口 */
+button.local-state {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+button.local-state:hover { border-color: var(--border); color: var(--text); }
+.avatar-menu .row-menu-pop { min-width: 168px; }
+
+/* ── 58. 「本次生效组合」（design.md §3.2.7）───────────────── */
+.eff-combo { display: grid; gap: 5px; margin: 2px 0 8px; }
+.eff-sect { padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); }
+.eff-sect.fixed { border-left: 3px solid var(--accent); }
+.eff-sect.muted { opacity: 0.72; }
+.eff-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 0 3px; font-size: 12px; font-weight: 650; }
+.eff-head span { color: var(--faint); font-size: 11px; font-weight: 400; }
+.eff-sect ul { margin: 0; padding-left: 15px; }
+.eff-sect li { margin: 1px 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.eff-sect li em { margin-left: 6px; color: var(--faint); font-size: 11px; font-style: normal; }
+.picker-eff-head { margin: 14px 0 6px; font-size: 12px; font-weight: 650; }
+.picker-eff-head small { margin-left: 8px; color: var(--faint); font-size: 11px; font-weight: 400; }
+.picker-eff-note { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+
+/* ── 59. 删除 / 改前缀 / 单值选择三个弹窗（V3.27）───────────── */
+.remove-dialog {
+  width: min(520px, calc(100vw - 48px));
+  max-height: calc(100vh - 120px);
+  padding: 18px 20px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 18px 48px oklch(0% 0 0 / 0.16);
+  overflow: auto;
+}
+.remove-dialog > header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; margin-bottom: 12px; }
+.remove-dialog > header small { color: var(--faint); font-size: 11px; }
+.remove-dialog > header h2 { margin: 3px 0 0; font-size: 16px; font-weight: 650; }
+.remove-dialog > header > button {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.rm-lead { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.rm-h { margin: 0 0 6px; font-size: 12px; font-weight: 650; }
+.rm-impact, .rm-keep { margin: 0 0 14px; padding-left: 18px; }
+.rm-impact li, .rm-keep li { margin: 3px 0; font-size: 12px; line-height: 1.65; }
+.rm-impact li { color: var(--text); }
+.rm-impact li::marker { color: var(--yellow); }
+.rm-keep li { color: var(--muted); }
+.rm-keep li::marker { color: var(--green); }
+.rm-keep li.warn { color: var(--yellow); }
+.rm-undo {
+  margin: 0 0 14px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.remove-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; }
+.remove-dialog > footer > button {
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.remove-dialog > footer > button.primary-button { border-color: var(--text); background: var(--text); color: var(--bg); }
+.danger-button { border-color: var(--danger, #c0392b) !important; background: var(--danger, #c0392b) !important; color: #fff !important; }
+/* 行内的破坏性动作：不做成实心按钮，它不该比旁边的常用动作更显眼 */
+.danger-link { border: 1px solid transparent !important; background: transparent !important; color: var(--danger, #c0392b) !important; }
+.danger-link:hover { border-color: var(--danger, #c0392b) !important; }
+.rt-sec-h > .danger-link { margin-left: 0; }
+.rt-host-acts { display: flex; gap: 8px; margin: 10px 0 4px; }
+.rt-host-acts > button {
+  height: 26px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.pick-list { display: grid; gap: 6px; margin-bottom: 14px; }
+.pick-row { display: grid; grid-template-columns: 16px minmax(0, 1fr); align-items: start; gap: 10px; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+.pick-row.active { border-color: var(--accent); background: var(--accent-soft); }
+.pick-row strong { display: block; font-size: 13px; font-weight: 600; }
+.pick-row small { display: block; margin-top: 2px; color: var(--faint); font-size: 11px; line-height: 1.6; }
+
+@media (max-width: 1180px) {
+  .rt-stage[data-drawer="open"] { grid-template-columns: minmax(0, 1fr) 320px; }
+}

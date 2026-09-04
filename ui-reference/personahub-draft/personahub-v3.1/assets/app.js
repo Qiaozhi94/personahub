@@ -388,13 +388,17 @@
         : "深度由每次派工决定，不烧进配置";
     }
 
-    // 额度按深度折算——这是选深度时真正要权衡的东西
-    const quota = Number(row.dataset.quota || 0);
-    const cost = { low: 1, medium: 2.5, high: 5 }[comboState.depth] || 1;
+    // 只报上游自己给的两个口径（时限额 / 周限额）与哪一个更紧，不折算成
+    // 「还能派几次」——那要靠一个固定系数换算，而真实消耗按任务差异极大，
+    // 折出来的数字看起来像事实，其实是估算（V3.25）。
+    const win = Number(row.dataset.quotaWindow || 0);
+    const week = Number(row.dataset.quotaWeek || 0);
     if (est) {
-      const calls = Math.max(1, Math.round((quota * 2) / cost));
-      est.innerHTML = `当前 <b>${comboState.depth}</b> · 该配置池剩余 ${quota}% 约够 <b>${calls}</b> 次调用`;
-      est.classList.toggle("warn", calls < 20);
+      const tight = win >= week ? ["时限额", win] : ["周限额", week];
+      est.innerHTML =
+        `当前 <b>${comboState.depth}</b> · 时限额已用 ${win}% · 周限额已用 ${week}%` +
+        ` —— <b>${tight[0]}</b>是更紧的那一个`;
+      est.classList.toggle("warn", tight[1] >= 80);
     }
 
     const combo = `${comboState.model}-${comboState.depth}`;
@@ -475,6 +479,30 @@
   // 一个按钮可以同时指定多个层级的位置（例如「去设置 · 插件」既切面又切组），
   // 所以这里不能命中一个就 return —— V3.21 把运行时并进设置后，
   // 左栏的 adapter 条目正是 settings + runtime 两个 pick 同时生效。
+  // V3.24：运行时按机器分 tab，adapter 是 tab 内的一张表，点一行弹右框。
+  // 列表回答「挑哪一条 / 谁坏了」，详情回答「这一条是什么」（同 §3.2.3）。
+  const ADAPTER_NAMES = { codex: "Codex CLI", claude: "Claude Code", opencode: "OpenCode" };
+
+  function openRuntimeDrawer(adapter) {
+    const drawer = $("[data-runtime-drawer]");
+    if (!drawer) return;
+    drawer.hidden = false;
+    drawer.closest(".rt-stage")?.setAttribute("data-drawer", "open");
+    const title = $("[data-drawer-title]", drawer);
+    if (title) title.textContent = ADAPTER_NAMES[adapter] || adapter;
+    // V3.26：框内不再有「配置 / 诊断」两个 tab——这一框是同一个 adapter 的
+    // 一串事实，线性的；换 adapter 只换内容，没有需要复位的 tab 状态。
+    drawer.scrollTop = 0;
+  }
+
+  function closeRuntimeDrawer() {
+    const drawer = $("[data-runtime-drawer]");
+    if (!drawer) return;
+    drawer.hidden = true;
+    drawer.closest(".rt-stage")?.setAttribute("data-drawer", "closed");
+    $$("[data-runtime-pick]").forEach((b) => b.classList.remove("active"));
+  }
+
   function applyPicks(target) {
     let hit = false;
     for (const group of ["automation", "settings", "runtime"]) {
@@ -488,6 +516,7 @@
         // 两份详情的 tab 集合不同（dep 没有「Webhook 投递」）。切规则时不回到
         // 概览，就会停在一个当前详情里不存在的 tab 上，右侧整块空白。
         if (group === "automation") setLocalTab("automation", "overview");
+        if (group === "runtime") openRuntimeDrawer(value);
         hit = true;
       }
     }
@@ -978,9 +1007,9 @@
   }
 
 
-  // ── 账号与凭据弹层 ─────────────────────────────────────────
+  // ── 账号与凭据弹窗 ─────────────────────────────────────────
   // 认证方式决定要填什么：登录态那一支**没有输入项**，PersonaHub 不代管
-  // token；只有 API Key 这一支才由 PersonaHub 自己存。两支共用一个弹层，
+  // token；只有 API Key 这一支才由 PersonaHub 自己存。两支共用一个弹窗，
   // 但绝不共用字段——混在一起会让人以为登录态也要填 key。
   function setAccountMode(mode) {
     $$("[data-account-mode]").forEach((b) => b.classList.toggle("active", b.dataset.accountMode === mode));
@@ -995,7 +1024,7 @@
       return;
     }
     const editing = typeof target === "string" && target;
-    $("[data-account-title]").textContent = editing ? "编辑账号 · " + target : "新增账号";
+    $("[data-account-title]").textContent = editing ? "编辑配置 · " + target : "新增一份配置";
     $("[data-account-context]").textContent = editing
       ? "已保存的 key 不回显；留空表示不改"
       : "凭据只存在本机，不上传";
@@ -1006,17 +1035,17 @@
   // ── 执行组合选择器 ──────────────────────────────────────────
   // 这里没有「成员」这种常驻角色：能派出去的最小单位是**执行组合**
   // （adapter × 模型 × 深度），由设置里的 adapter 检查决定有哪些，
-  // 不在这个弹层里增删。选哪一个本身就是要向使用者解释的判断，
+  // 不在这个弹窗里增删。选哪一个本身就是要向使用者解释的判断，
   // 所以每一行都必须说清「为什么建议 / 为什么不建议 / 为什么不能选」
   // （design.md §4.6）。
   const COMBOS = [
-    { id: "codex-gpt5.6-high", adapter: "codex", model: "gpt-5.6", depth: "high", mark: "C", tone: "blue", quota: "剩 42 次", tags: ["代码实现", "重构", "测试"], status: "ok" },
-    { id: "codex-gpt5.6-medium", adapter: "codex", model: "gpt-5.6", depth: "medium", mark: "C", tone: "blue", quota: "剩 107 次", tags: ["代码实现", "测试"], status: "ok" },
-    { id: "claude-opus5-high", adapter: "claude", model: "opus-5", depth: "high", mark: "A", tone: "purple", quota: "剩 3 次 low 折算", tags: ["架构", "调研", "综合"], status: "quota" },
-    { id: "claude-opus5-medium", adapter: "claude", model: "opus-5", depth: "medium", mark: "A", tone: "purple", quota: "剩 1 次", tags: ["架构", "调研", "综合"], status: "ok" },
-    { id: "claude-sonnet5-medium", adapter: "claude", model: "sonnet-5", depth: "medium", mark: "A", tone: "purple", quota: "剩 451 次", tags: ["代码审查", "验证"], status: "ok" },
-    { id: "claude-haiku4.5-low", adapter: "claude", model: "haiku-4.5", depth: "low", mark: "A", tone: "purple", quota: "剩 5.2k 次", tags: ["格式整理"], status: "ok" },
-    { id: "opencode-qwen3max-medium", adapter: "opencode", model: "qwen3-max", depth: "medium", mark: "O", tone: "amber", quota: "本地无限", tags: ["综合", "格式整理"], status: "unchecked" },
+    { id: "codex-gpt5.6-high", adapter: "codex", model: "gpt-5.6", depth: "high", mark: "C", tone: "blue", quota: "codex 时 82% · 周 62%", tags: ["代码实现", "重构", "测试"], status: "ok" },
+    { id: "codex-gpt5.6-medium", adapter: "codex", model: "gpt-5.6", depth: "medium", mark: "C", tone: "blue", quota: "codex 时 82% · 周 62%", tags: ["代码实现", "测试"], status: "ok" },
+    { id: "claude-opus5-high", adapter: "claude", model: "opus-5", depth: "high", mark: "A", tone: "purple", quota: "claude 时 96% · 周 74%", tags: ["架构", "调研", "综合"], status: "quota" },
+    { id: "claude-opus5-medium", adapter: "claude", model: "opus-5", depth: "medium", mark: "A", tone: "purple", quota: "claude 时 88% · 周 74%", tags: ["架构", "调研", "综合"], status: "ok" },
+    { id: "claude-sonnet5-medium", adapter: "claude", model: "sonnet-5", depth: "medium", mark: "A", tone: "purple", quota: "claude 时 88% · 周 74%", tags: ["代码审查", "验证"], status: "ok" },
+    { id: "claude-haiku4.5-low", adapter: "claude", model: "haiku-4.5", depth: "low", mark: "A", tone: "purple", quota: "claude 时 88% · 周 74%", tags: ["格式整理"], status: "ok" },
+    { id: "opencode-qwen3max-medium", adapter: "opencode", model: "qwen3-max", depth: "medium", mark: "O", tone: "amber", quota: "opencode 不设上限", tags: ["综合", "格式整理"], status: "unchecked" },
   ];
 
   // 本次实现是哪个模型做的。同源判定看**模型**，不看深度：
@@ -1064,7 +1093,7 @@
   // 所有角色共用的前置：组合本身能不能派出去，和这一步要什么无关。
   function comboBlocked(c) {
     if (c.status === "unchecked") return "adapter 登录状态需要重新检查，现在派过去会直接失败";
-    if (c.status === "quota") return "额度剩余 3 次 low 折算，不足以完成一次 high（需 5 次）——额度池见设置 · 运行时";
+    if (c.status === "quota") return "claude 这份配置的时限额已用 96%，5 小时窗口里几乎没有余量——high 大概率跑到一半就断。窗口 13:05 重置；两个口径见设置 · 运行时";
     return null;
   }
 
@@ -1182,6 +1211,165 @@
     window.setTimeout(() => list.querySelector(".picker-row:not([disabled])")?.focus(), 0);
   }
 
+
+  // ── 删除 / 移除确认弹窗（design.md §3.5.7，V3.27）──────────────
+  // 六种对象共用一个形态，因为它们共用同一条规则：**先算出影响面再确认，
+  // 并把「这不会动到什么」和影响面并排写出来**。后半句不是安慰——证据链
+  // 的价值在于事后能追，使用者不确定删了会不会把历史一起带走时，
+  // 真实反应是不删，于是界面上永远堆着一批不敢动的东西。
+  const REMOVE_SPECS = {
+    config: (d) => ({
+      kind: "删除一份配置",
+      title: `删除配置 ${d.removeName}？`,
+      lead: "配置是「驱动这个 CLI 的一种方式」。删掉它，由它算出来的执行组合会从派工清单里消失。",
+      impact: [
+        `<b>${d.removeCombos} 个执行组合</b>从派工清单消失`,
+        "引用了这些组合的<b>自动化规则</b>会在下次触发时报「执行组合不存在」，需要你改规则",
+        "它的 API Key 从本机数据库删除（明文列，删除即不可找回）",
+      ],
+      keep: [
+        `用过它的 <b>${d.removeRuns} 条历史 Run</b> 一条不动，仍显示当时的组合名`,
+        "已产出的 Artifact、Evidence 与验收结论不受影响",
+        "同一个 adapter 的其他配置照常工作",
+      ],
+      submit: "删除这份配置",
+    }),
+    adapter: (d) => ({
+      kind: "从这台机器移除 adapter",
+      title: `移除 ${d.removeName}？`,
+      lead: "移除的是 PersonaHub 这边的登记，不会去卸载你机器上那个 CLI——那要你自己在终端做。",
+      impact: [
+        `它的 <b>${d.removeConfigs} 份配置</b>一并删除，含其中的凭据`,
+        `<b>${d.removeCombos} 个执行组合</b>从派工清单消失`,
+        "正在用它跑的任务会被停下，按「中断」处理，不会被当成完成结论",
+      ],
+      keep: [
+        "历史 Run 与证据链完整保留，仍显示当时的 adapter 版本与组合名",
+        "机器上那个 CLI 本身、它自己的登录态与配置文件都不动",
+        "同一个 CLI 装在别的机器上的那一份不受影响",
+      ],
+      submit: "移除 adapter",
+    }),
+    machine: (d) => ({
+      kind: "移除一台执行机器",
+      title: `移除 ${d.removeName}？`,
+      lead: "断开配对，这台机器不再出现在 tab 条里。它上面的 daemon 需要你自己去那台机器上停掉。",
+      impact: [
+        `它上面的 <b>${d.removeAdapters} 个 adapter</b> 与 <b>${d.removeConfigs} 份配置</b>一并删除`,
+        "由它们算出来的执行组合全部从派工清单消失",
+        "配对凭证作废；以后要用得重新配对",
+      ],
+      keep: [
+        "在这台机器上跑过的历史 Run 全部保留，身份快照里的执行位置不改写",
+        "本机与其他机器上的 adapter 完全不受影响",
+      ],
+      submit: "移除这台机器",
+    }),
+    label: (d) => ({
+      kind: "删除标签",
+      title: `删除标签 ${d.removeName}？`,
+      lead: Number(d.removeRules) > 0
+        ? "这个标签正被自动化规则引用——先解掉引用才能删，否则规则会变成筛不到任何东西还照常触发。"
+        : "标签只是你自己维护的筛选层，删掉它不动任何任务本身。",
+      impact: Number(d.removeRules) > 0
+        ? [`<b>${d.removeRules} 条自动化规则</b>用它圈定范围，必须先改这些规则`]
+        : [`从 <b>${d.removeTasks} 个任务</b>上摘掉这个标签`, "用到它的筛选链接会失效"],
+      keep: [
+        `<b>${d.removeTasks} 个任务本身一条不动</b>——标签不参与派工判断，摘掉它不改变任何已有结论`,
+        "历史执行记录与证据不受影响",
+      ],
+      blocked: Number(d.removeRules) > 0,
+      submit: Number(d.removeRules) > 0 ? "先去改这些规则" : "删除标签",
+    }),
+    pack: (d) => ({
+      kind: "卸载能力包",
+      title: `卸载 ${d.removeName}？`,
+      lead: "卸载和停用不是一件事：停用只是注销，卸载会把这个包的目录从本机拿掉，之后要用得重新导入。",
+      impact: [
+        `它贡献的 <b>${d.removeItems} 项</b>（Skill / 编组 / 输出契约等）全部注销`,
+        "它加严过的规则回到底座默认",
+        "包目录从本机删除",
+      ],
+      keep: [
+        `用过它的 <b>${d.removeRuns} 条历史执行记录</b>仍显示当时的包名与版本`,
+        "由它沉淀出的、已经独立存在的条目不会被带走",
+      ],
+      submit: "卸载这个包",
+    }),
+    plugin: (d) => ({
+      kind: "卸载插件",
+      title: `卸载 ${d.removeName}？`,
+      lead: "插件是代码。卸载会注销它的全部贡献点，并把目录从 ~/.personahub/plugins/ 删除。",
+      impact: [
+        `它声明的 <b>${d.removeItems} 个贡献点</b>（surface / adapter / factory 引用）全部注销`,
+        "它开的 tab 从能力面消失",
+        "引用了它的定时规则会在下次触发时报「引用不存在」",
+      ],
+      keep: [
+        `<b>${d.removeRuns} 条历史执行记录</b>保留，仍显示当时用过它`,
+        "它抓回来的资料留在资源库里，不随插件一起删",
+      ],
+      submit: "卸载这个插件",
+    }),
+  };
+
+  function openRemoveDialog(target) {
+    const dlg = $("[data-remove-dialog]");
+    const spec = REMOVE_SPECS[target.dataset.removeOpen];
+    if (!dlg || !spec) return;
+    const s = spec(target.dataset);
+    $("[data-remove-kind]", dlg).textContent = s.kind;
+    $("[data-remove-title]", dlg).textContent = s.title;
+    $("[data-remove-lead]", dlg).textContent = s.lead;
+    $("[data-remove-impact]", dlg).innerHTML = s.impact.map((x) => `<li>${x}</li>`).join("");
+    $("[data-remove-keep]", dlg).innerHTML = s.keep.map((x) => `<li>${x}</li>`).join("");
+    // 不做「输入名称以确认」：两个参考项目都没有这道闸，而本产品每天有
+    // 快照——真正的安全网是它，不是让人抄一遍名字。所以这里给的是
+    // **一条能照着做的退路**，而不是一个增加摩擦的仪式。
+    $("[data-remove-undo]", dlg).innerHTML =
+      "本机每日快照，最近一次<b>今天 03:00</b>。删错了可以从<b>数据与备份</b>恢复，但那会连带回退这之后的其他改动。";
+    const submit = $("[data-remove-submit]", dlg);
+    submit.textContent = s.submit;
+    submit.classList.toggle("danger-button", !s.blocked);
+    submit.classList.toggle("primary-button", !!s.blocked);
+    dlg.hidden = false;
+  }
+
+  // 单值选择弹窗：时区与外部编辑器此前只有静态文字，没有改的入口
+  const PICK_SPECS = {
+    timezone: {
+      kind: "偏好设置", title: "时区",
+      lead: "自动化的定时规则按这个时区解释 cron，统计的周期切分与界面上所有时间戳跟着它走。",
+      options: [
+        ["跟随系统（Asia/Singapore）", "现在是 UTC+8；系统时区变了它跟着变", true],
+        ["Asia/Shanghai", "UTC+8，不随系统变", false],
+        ["UTC", "适合和别人对时间戳，但定时规则会在本地的奇怪钟点触发", false],
+      ],
+    },
+    editor: {
+      kind: "偏好设置", title: "外部编辑器",
+      lead: "文件视图、变更位置与证据文件的「在编辑器打开」用它。打不开时回退成「复制路径」，并说明是哪一步失败。",
+      options: [
+        ["VS Code", "<code>code -g {file}:{line}</code>", true],
+        ["Cursor", "<code>cursor -g {file}:{line}</code>", false],
+        ["自定义命令", "自己写一条命令模板，<code>{file}</code> 与 <code>{line}</code> 会被替换", false],
+      ],
+    },
+  };
+
+  function openPickDialog(key) {
+    const dlg = $("[data-pick-dialog]");
+    const spec = PICK_SPECS[key];
+    if (!dlg || !spec) return;
+    $("[data-pick-kind]", dlg).textContent = spec.kind;
+    $("[data-pick-title]", dlg).textContent = spec.title;
+    $("[data-pick-lead]", dlg).textContent = spec.lead;
+    $("[data-pick-list]", dlg).innerHTML = spec.options
+      .map(([name, note, on]) => `<label class="pick-row${on ? " active" : ""}"><input type="radio" name="pick" ${on ? "checked" : ""} /><span><strong>${name}</strong><small>${note}</small></span></label>`)
+      .join("");
+    dlg.hidden = false;
+  }
+
   // ── 指派撤销窗口（design.md §6）────────────────────────────
   // 发出指派后不立刻判定「已指派」：先进入可取消的启动窗口，
   // 指派与否由派工结果决定，不由文本前缀猜测。
@@ -1230,7 +1418,7 @@
 
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button, a");
-    // 点弹层外部即关闭——弹层比触发按钮高，不能只靠再点一次按钮
+    // 点弹窗外部即关闭——弹窗比触发按钮高，不能只靠再点一次按钮
     if (!event.target.closest("[data-recipient-popover],[data-recipient-open]")) setRecipientPopover(false);
     if (!event.target.closest("[data-scope-popover],[data-scope-open]")) setScopePopover(false);
     // 记忆详情行内展开。一次只开一条：同时开三条就又变回卡片了，
@@ -1365,9 +1553,12 @@
       return;
     }
 
-    for (const group of ["project", "memory", "library", "automation", "runtime", "stat", "statshape", "statdim"]) {
+    for (const group of ["project", "memory", "library", "automation", "machine", "stat", "statshape", "statdim"]) {
       const value = target.dataset[`${group}Tab`];
       if (value) {
+        // 换机器时收起右框：详情是「那台机器上的那一个 adapter」，
+        // 留着会把另一台机器的内容显示在新 tab 里
+        if (group === "machine") closeRuntimeDrawer();
         setLocalTab(group, value);
         return;
       }
@@ -1447,11 +1638,25 @@
       return;
     }
 
+    if (target.dataset.removeOpen) { openRemoveDialog(target); return; }
+    if (target.hasAttribute("data-remove-close")) { $("[data-remove-dialog]").hidden = true; return; }
+    if (target.dataset.pickOpen) { openPickDialog(target.dataset.pickOpen); return; }
+    if (target.hasAttribute("data-pick-close")) { $("[data-pick-dialog]").hidden = true; return; }
+    if (target.hasAttribute("data-prefix-open")) { $("[data-prefix-dialog]").hidden = false; return; }
+    if (target.hasAttribute("data-prefix-close")) { $("[data-prefix-dialog]").hidden = true; return; }
+
+    if (target.hasAttribute("data-runtime-drawer-close")) {
+      closeRuntimeDrawer();
+      return;
+    }
+
     if (target.dataset.projectTab) {
       const card = target.closest(".project-card");
       if (card) {
         const name = target.dataset.projectTab;
-        $$("[data-project-tab]", card).forEach((b) => b.classList.toggle("active", b === target));
+        // active 只在 tab 条上的按钮之间转移：正文里也有「跳到某个 tab」的
+        // 行内按钮（如项目设置里的「改默认」），它们导航但不该被点亮。
+        $$('[role="tab"][data-project-tab]', card).forEach((b) => b.classList.toggle("active", b.dataset.projectTab === name));
         $$("[data-project-body]", card).forEach((body) => (body.hidden = body.dataset.projectBody !== name));
       }
       return;
