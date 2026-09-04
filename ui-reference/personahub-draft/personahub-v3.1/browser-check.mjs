@@ -314,7 +314,6 @@ await check("成果面首屏回答「做成什么样、可不可信」（§4.2�
     throw new Error("变更被混进了状态卡——它不在验证进度轴上");
   }
 
-  await page.screenshot({ path: "shots/outcome-waiting.png", fullPage: true });
 });
 
 await check("每条陈述标明信源：机器事实与 Agent 的说法不混同（§4.2.4）", async () => {
@@ -464,7 +463,6 @@ await check("决定产生状态变更，不产生消息气泡（概览给结构 
   const nums = (await page.locator('[data-document="issue-view"] [data-claim-filter-btn]').allInnerTexts()).join(" ").match(/\d+/g).map(Number);
   if (nums[0] !== 0) throw new Error("批准后已独立验证数没有下调");
 
-  await page.screenshot({ path: "shots/baseline-approved.png", fullPage: true });
 
   // 这条 check 会真的改变舞台状态，收尾时复位，避免污染后续断言
   await page.reload({ waitUntil: "networkidle" });
@@ -508,7 +506,6 @@ await check("舞台是单例：验收里点入文件可返回；资源里点文�
   await page.locator('[data-document="file-code"]').waitFor({ state: "visible" });
   const back = page.locator("[data-stage-back]");
   if (!(await back.isVisible())) throw new Error("从验收面点入后没有返回入口");
-  await page.screenshot({ path: "shots/stage-child-file.png", fullPage: true });
   await back.click();
   await page.locator('[data-document="issue-view"]').waitFor({ state: "visible" });
   if (await back.isVisible()) throw new Error("返回后仍显示返回按钮");
@@ -823,7 +820,6 @@ await check("首屏顺序按状态变化，不是七态照抄同一套（提案 
   if (!(await page.locator('[data-document="issue-done"] .claim-na-line').isVisible())) {
     throw new Error("已完成态没有写仍未证明的部分");
   }
-  await page.screenshot({ path: "shots/task-done.png", fullPage: true });
 });
 
 await check("非代码任务同骨架，证据换成引用与反证（ADR 0010 决策 4）", async () => {
@@ -862,7 +858,6 @@ await check("轨迹并入会话：默认陪着会话，按 ⤢ 放大成全宽�
   if (!(await asidePanel.isVisible())) throw new Error("副栏里点行没有展开详情");
   if (!(await asidePanel.locator('[data-td-tab="timing"]').isVisible()))
     throw new Error("副栏里的详情缺了分页");
-  await page.screenshot({ path: "shots/task-trace-inline.png" });
   await asideRow.click();
 
   // 放大后功能要和原来那个独立 tab 完全一样
@@ -954,10 +949,9 @@ await check("轨迹是 adapter 的详细交互过程，不是会话总结（照 
   // 按回合分组
   if ((await trace.locator(".tr-turn").count()) < 2) throw new Error("没有按 Turn 分组");
 
-  // 截图带上一条展开的详情：行内展开是这一版轨迹的主交互
+  // 展开一条详情：行内展开是这一版轨迹的主交互
   const shotRow = trace.locator(".tr-row.tool").first();
   await shotRow.click();
-  await page.screenshot({ path: "shots/task-trace.png" });
   await shotRow.click();
 });
 
@@ -1645,7 +1639,7 @@ await check("自动化：规则、触发、运行与投递分层，所有结果�
   if (dialogText.includes("Runbook")) throw new Error("创建器又退回成 Runbook 行话");
   await dialog.locator("[data-automation-close]").first().click();
 
-  // 离开前归位，后续截图与测试都从定时规则的概览开始。
+  // 离开前归位，后续断言都从定时规则的概览开始。
   await surface.locator('[data-automation-pick="dep"]').click();
 
   await page.locator('.main-rail [data-surface="project"]').click();
@@ -2144,12 +2138,6 @@ await check("页面无横向溢出", async () => {
   if (overflow > 1) throw new Error(`横向溢出 ${overflow}px`);
 });
 
-// 收尾截图前先收拾现场：断言可能留下开着的浮层，或把页面停在别的面
-await page.keyboard.press("Escape");
-await page.evaluate(() => document.querySelectorAll(".command-overlay").forEach((el) => (el.hidden = true)));
-await page.locator('.main-rail [data-surface="project"]').click();
-await page.locator('.work-item[data-open="issue-view"]').first().click();
-await page.screenshot({ path: "shots/workbench.png", fullPage: true });
 await check("能力面是可选能力的容器：tab 由插件贡献，缺了也能跑（V3.21 §3.2）", async () => {
   await page.locator('.main-rail [data-surface="library"]').click();
   const lib = page.locator('[data-surface-view="library"]');
@@ -2292,6 +2280,6 @@ await check("Skill 行尾是三点菜单，且没有「编辑」（V3.22 §3.2.3
 await browser.close();
 
 const result = { passed: checks.length, failed: failures.length, checks, failures, consoleErrors };
-fs.writeFileSync("shots/browser-check.json", `${JSON.stringify(result, null, 2)}\n`);
+fs.writeFileSync("browser-check.json", `${JSON.stringify(result, null, 2)}\n`);
 console.log(JSON.stringify(result, null, 2));
 if (failures.length || consoleErrors.length) process.exitCode = 1;
