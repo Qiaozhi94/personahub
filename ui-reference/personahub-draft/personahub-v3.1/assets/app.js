@@ -21,6 +21,9 @@
     stageParent: null,
     toastTimer: null,
     taskStep: "goal",
+    setupStep: "check",
+    setupCheckRetried: false,
+    setupTimer: null,
     taskSubmitting: false,
   };
 
@@ -74,6 +77,71 @@
     resetSkillScope();
     $$('[data-surface-view]').forEach((view) => view.classList.toggle("active", view.dataset.surfaceView === name));
     $$('[data-surface]').forEach((button) => button.classList.toggle("active", button.dataset.surface === name));
+  }
+
+  // ── 首次设置（J1） ───────────────────────────────────────
+  // 三步都要能进能退，第三步的检查必须真有 loading / 成功 / 失败 / 重试——
+  // 「检查」如果永远瞬间成功，它就没有在检查任何东西。
+  const setupSteps = ["repo", "members", "check"];
+
+  function setSetupStep(step) {
+    if (!setupSteps.includes(step)) return;
+    state.setupStep = step;
+    $$("[data-setup-body]").forEach((el) => (el.hidden = el.dataset.setupBody !== step));
+    $$("[data-setup-step]").forEach((b) => b.classList.toggle("active", b.dataset.setupStep === step));
+    const copy = {
+      repo: ["第 1 步 · 共 3 步", "选一个代码目录", "PersonaHub 只读取它的 Git 信息；真正的写入要等你派工时明确授权。"],
+      members: ["第 2 步 · 共 3 步", "至少配一个 AI 成员", "一个可用成员就能开始。第二个用于独立验证，是建议，不是必需项。"],
+      check: ["最后一步", "确认这个项目可以安全开始工作", "一个可用组合即可开始；用于独立验证的第二个模型是明确建议，不伪装成必需项。"],
+    }[step];
+    const set = (sel, text) => { const el = $(sel); if (el) el.textContent = text; };
+    set("[data-setup-kicker]", copy[0]);
+    set("[data-setup-heading]", copy[1]);
+    set("[data-setup-lede]", copy[2]);
+  }
+
+  function runSetupCheck() {
+    const result = $("[data-setup-result]");
+    if (!result) return;
+    result.hidden = false;
+    const foot = $("[data-setup-check-foot]");
+    const retry = $("[data-setup-retry]");
+    const done = $("[data-setup-first-task]");
+    if (foot) foot.hidden = true;
+    if (retry) retry.hidden = true;
+    if (done) done.hidden = true;
+    $$("[data-check-item]").forEach((li) => {
+      li.dataset.state = "running";
+      $("[data-check-mark]", li).textContent = "…";
+      $("[data-check-note]", li).textContent = "正在检查";
+    });
+    window.clearTimeout(state.setupTimer);
+    state.setupTimer = window.setTimeout(() => {
+      // 第一次跑给一个真实的失败：CLI 登录态过期是这一步最常见的拦路虎，
+      // 检查如果只演成功，使用者第一次遇到失败时会以为是应用坏了。
+      const failing = !state.setupCheckRetried;
+      const rows = {
+        lock: ["ok", "可写 · 没有其他任务持锁"],
+        cli: failing ? ["fail", "codex 登录态已过期，当前派不了工"] : ["ok", "codex / claude 均可启动"],
+        test: ["ok", "npm run verify 可执行"],
+      };
+      $$("[data-check-item]").forEach((li) => {
+        const [st, note] = rows[li.dataset.checkItem];
+        li.dataset.state = st;
+        $("[data-check-mark]", li).textContent = st === "ok" ? "✓" : "!";
+        $("[data-check-note]", li).textContent = note;
+      });
+      if (foot) {
+        foot.hidden = false;
+        foot.textContent = failing
+          ? "在终端执行 codex login 完成登录后重试。已填的项目与成员都保留。"
+          : "检查通过。可以创建第一个任务。";
+        foot.classList.toggle("fail", failing);
+      }
+      if (retry) retry.hidden = !failing;
+      if (done) done.hidden = failing;
+      if (!failing) window.setTimeout(() => done?.focus(), 0);
+    }, 600);
   }
 
   function setExplorer(name) {
@@ -2451,6 +2519,41 @@
     event.preventDefault();
     setAutomationDialog(false);
     showToast("自动化已保存为暂停；预检通过后由你明确启用");
+  });
+
+  // 首次设置的事件都挂在委托里：面上按钮会随步骤重绘。
+  document.addEventListener("click", (event) => {
+    const target = event.target.closest("button");
+    if (!target) return;
+    if (target.dataset.setupStep) setSetupStep(target.dataset.setupStep);
+    if (target.dataset.setupGo) setSetupStep(target.dataset.setupGo);
+    if (target.hasAttribute("data-setup-run")) runSetupCheck();
+    if (target.hasAttribute("data-setup-retry")) {
+      state.setupCheckRetried = true;
+      runSetupCheck();
+    }
+    if (target.hasAttribute("data-setup-recheck")) showToast("已重新读取这个目录的 Git 信息");
+    if (target.hasAttribute("data-setup-drop-verify")) {
+      const row = $('[data-setup-member="verify"]');
+      if (row) row.hidden = true;
+      const hint = $("[data-verify-hint]");
+      if (hint) hint.hidden = false;
+      const sum = $("[data-setup-sum-members]");
+      if (sum) sum.textContent = "只有实现成员 · 完成会标记同源验证";
+    }
+    if (target.hasAttribute("data-setup-add-verify")) {
+      const row = $('[data-setup-member="verify"]');
+      if (row) row.hidden = false;
+      const hint = $("[data-verify-hint]");
+      if (hint) hint.hidden = true;
+      const sum = $("[data-setup-sum-members]");
+      if (sum) sum.textContent = "实现 + 独立验证各一个";
+    }
+    // J1.6：设置完成后落到唯一的任务创建入口，且保留当前项目上下文。
+    if (target.hasAttribute("data-setup-first-task")) {
+      setSurface("project");
+      setTaskCreate(true);
+    }
   });
 
   $("[data-task-next]")?.addEventListener("click", () => {

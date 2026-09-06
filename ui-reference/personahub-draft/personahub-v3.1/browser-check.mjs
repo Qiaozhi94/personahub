@@ -1223,6 +1223,50 @@ await check("新建任务照 multica：描述 + 属性 chip，标题由执行结
   if ((await page.locator("[data-pane-tab].active").innerText()) !== "会话") throw new Error("创建后没有直接进入会话");
 });
 
+// UX-BL-R1-002：首次设置必须从界面上真的走得到，且三步连续可点。
+// 曾经 setup 面存在但入口写的是 start，页面上没有任何一个按钮进得去。
+await check("首次设置：入口可达，J1.1-J1.6 连续走通且检查有失败与重试", async () => {
+  if (await page.locator('[data-surface="start"]').count()) throw new Error("start 这个已废弃的路由标识又回来了");
+  await page.locator('.main-rail [data-surface="projects"]').click();
+  const entry = page.locator('.sp-head [data-surface="setup"]');
+  if (!(await entry.isVisible())) throw new Error("首次设置没有可见入口");
+  await entry.click();
+  const setup = page.locator('[data-surface-view="setup"]');
+  if (!(await setup.isVisible())) throw new Error("点了入口没有进入首次设置");
+
+  // J1.2 代码目录：能改、能重新检查，且明确说明读不到时会怎样
+  if (!(await setup.locator("[data-setup-path]").isVisible())) throw new Error("第 1 步没有代码目录输入");
+  if (!(await setup.locator('[data-setup-probe="repo"]').innerText()).includes("main")) throw new Error("没有回读 Git 信息");
+  await setup.locator('[data-setup-body="repo"] [data-setup-go="members"]').click();
+
+  // J1.4 一个成员即可继续，第二个是建议：移除后必须说明同源验证后果
+  const members = setup.locator('[data-setup-body="members"]');
+  if (!(await members.isVisible())) throw new Error("进不到 AI 成员这一步");
+  await members.locator("[data-setup-drop-verify]").click();
+  const hint = members.locator("[data-verify-hint]");
+  if (!(await hint.isVisible())) throw new Error("移除第二个成员后没有说明后果");
+  if (!(await hint.innerText()).includes("同源验证")) throw new Error("没有说明同源验证的后果");
+  await hint.locator("[data-setup-add-verify]").click();
+  await members.locator('[data-setup-go="check"]').first().click();
+
+  // J1.5 执行检查必须真有 loading → 失败 → 重试 → 成功
+  await setup.locator("[data-setup-run]").click();
+  const first = setup.locator('[data-check-item="cli"]');
+  if ((await first.getAttribute("data-state")) !== "running") throw new Error("检查没有 loading 态，瞬间出结果");
+  await first.locator('[data-check-mark]').filter({ hasText: "!" }).waitFor();
+  const retry = setup.locator("[data-setup-retry]");
+  if (!(await retry.isVisible())) throw new Error("检查失败后没有重试入口");
+  if (await setup.locator("[data-setup-first-task]").isVisible()) throw new Error("检查没过就放行了");
+  await retry.click();
+  const go = setup.locator("[data-setup-first-task]");
+  await go.waitFor({ state: "visible" });
+
+  // J1.6 落到唯一的任务创建入口
+  await go.click();
+  if (!(await page.locator(".task-create-dialog").isVisible())) throw new Error("设置完成后没有落到新建任务");
+  await page.keyboard.press("Escape");
+});
+
 // UX-BL-R1-001：目标原文是使用者唯一亲手写的东西，创建之后必须还在；
 // 确认之前不得产生任何任务，重复确认不得重复创建（J2.1-J2.3）。
 await check("新建任务：目标原文端到端保留，确认前不创建，重复提交不重复创建", async () => {

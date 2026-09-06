@@ -1055,6 +1055,39 @@ kbd {
 .setup-summary section > button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; }
 .setup-summary section > button.primary-button { border-color: var(--text); background: var(--text); color: var(--bg); }
 
+/* 首次设置的三步都是真的页，不是三段说明文字。第三步的检查有
+   running / ok / fail 三态，失败留在原地给重试，不把人踢回第一步。 */
+.setup-form { display: grid; gap: 16px; margin-top: 28px; max-width: 560px; }
+.setup-probe { padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.setup-probe .sp-line { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.setup-probe .sp-line b { color: var(--green); }
+.setup-probe .sp-fail b { color: var(--red, #c33); }
+.setup-probe .sp-warn b { color: var(--yellow, #b80); }
+.setup-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.setup-actions button { padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 12px; cursor: pointer; }
+.setup-actions button.primary-button { border-color: var(--text); background: var(--text); color: var(--bg); }
+
+.setup-members { display: grid; gap: 10px; margin-top: 28px; max-width: 620px; }
+.setup-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.setup-member div { display: grid; gap: 3px; }
+.setup-member small { color: var(--faint); font-size: 10px; }
+.setup-member small b { color: var(--accent); font-weight: 600; }
+.setup-member h3 { margin: 0; font-size: 13px; }
+.setup-member p { margin: 0; color: var(--muted); font-size: 11px; }
+.setup-member > button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; }
+.setup-hint { margin: 0; padding: 12px 14px; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.setup-hint button { margin-left: 6px; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+
+.setup-check { margin-top: 16px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.setup-check ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.setup-check li { display: grid; grid-template-columns: 20px auto minmax(0, 1fr); align-items: baseline; gap: 8px; font-size: 12px; }
+.setup-check li > span { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--bg); color: var(--faint); font-size: 10px; }
+.setup-check li[data-state="ok"] > span { background: color-mix(in oklab, var(--green) 14%, var(--bg)); color: var(--green); }
+.setup-check li[data-state="fail"] > span { background: color-mix(in oklab, var(--red, #c33) 14%, var(--bg)); color: var(--red, #c33); }
+.setup-check li small { color: var(--muted); font-size: 11px; }
+.setup-check-foot { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.setup-check-foot.fail { color: var(--red, #c33); }
+
 .automation-rules { display: grid; gap: 10px; margin-top: 28px; }
 .automation-rules article { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
 .automation-rules article > div { min-width: 0; display: flex; align-items: center; gap: 10px; }

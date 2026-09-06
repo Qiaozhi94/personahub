@@ -40,30 +40,6 @@
       </header>
 
       <div class="work-area">
-        <nav class="activity-rail" aria-label="一级工作面">
-          <div class="rail-primary">
-            <button class="rail-button" type="button" data-surface="start" aria-label="开始中心" title="开始中心">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9 20v-6h6v6"/></svg>
-            </button>
-            <button class="rail-button active" type="button" data-surface="project" aria-label="项目工作台" title="项目工作台">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h7l2 2h9v10H3z"/><path d="M3 6.5v-2h7l2 2"/></svg>
-            </button>
-            <button class="rail-button" type="button" data-surface="library" aria-label="能力库" title="能力库">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5A2.5 2.5 0 0 1 20 21z"/></svg>
-            </button>
-            <button class="rail-button" type="button" data-surface="automation" aria-label="自动化" title="自动化">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg>
-            </button>
-          </div>
-          <div class="rail-secondary">
-            <button class="rail-button" type="button" data-bottom-toggle aria-label="执行面板" title="执行面板">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 5 5-5 5"/><path d="M12 17h7"/></svg>
-            </button>
-            <button class="rail-button" type="button" data-surface="settings" aria-label="设置" title="设置与诊断">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1-2.8 2.8-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1 1.6V21h-4v-.1a1.8 1.8 0 0 0-1-1.6 1.8 1.8 0 0 0-2 .4l-.1.1-2.8-2.8.1-.1a1.8 1.8 0 0 0 .4-2A1.8 1.8 0 0 0 3 14H3v-4h.1a1.8 1.8 0 0 0 1.6-1 1.8 1.8 0 0 0-.4-2l-.1-.1L7 4.1l.1.1a1.8 1.8 0 0 0 2 .4A1.8 1.8 0 0 0 10 3V3h4v.1a1.8 1.8 0 0 0 1 1.6 1.8 1.8 0 0 0 2-.4l.1-.1L20 7l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1h.1v4h-.1a1.8 1.8 0 0 0-1.7.9Z"/></svg>
-            </button>
-          </div>
-        </nav>
 
         <nav class="main-rail" aria-label="主切换">
           <button type="button" class="active" data-surface="project" title="任务 · Issue 列表">
@@ -2144,13 +2120,72 @@ completed -&gt; archived</code></pre>
           </section>
           <section class="surface simple-surface" data-surface-view="setup" aria-label="首次设置">
             <aside class="section-sidebar">
-              <div class="section-title"><small>5 分钟完成</small><h2>首次设置</h2></div><nav><button type="button">1 代码目录 <span>✓</span></button><button type="button">2 执行组合 <span>✓</span></button><button class="active" type="button">3 执行检查</button></nav></aside>
-            <section class="surface-content setup-content"><header><div><small>最后一步</small><h1>确认这个项目可以安全开始工作</h1><p>一个可用组合即可开始；用于独立验证的第二个模型是明确建议，不伪装成必需项。</p></div><button type="button" data-surface="start">退出预览</button></header><div class="setup-summary"><section><span>✓</span><div><small>项目与代码目录</small><h3>PersonaHub</h3><p>D:\Projects\personahub · main · Git 状态可读取</p></div><button type="button" data-demo="返回代码目录选择">修改</button></section><section><span>✓</span><div><small>执行组合</small><h3>实现 + 独立验证各一个</h3><p>codex-gpt5.6-high 可执行；Claude Sonnet 可独立验证</p></div><button type="button" data-surface="settings">查看组合</button></section><section class="current"><span>3</span><div><small>执行检查</small><h3>验证写锁、CLI 与测试路径</h3><p>检查只读取环境信息，不会启动真实任务。</p></div><button class="primary-button" type="button" data-demo="执行检查完成：可以创建第一个任务">运行检查</button></section></div></section>
+              <div class="section-title"><small>5 分钟完成</small><h2>首次设置</h2></div><nav data-setup-nav><button type="button" data-setup-step="repo">1 代码目录 <span data-setup-mark="repo">✓</span></button><button type="button" data-setup-step="members">2 AI 成员 <span data-setup-mark="members">✓</span></button><button class="active" type="button" data-setup-step="check">3 执行检查 <span data-setup-mark="check">3</span></button></nav></aside>
+            <section class="surface-content setup-content">
+              <header>
+                <div><small data-setup-kicker>最后一步</small><h1 data-setup-heading>确认这个项目可以安全开始工作</h1><p data-setup-lede>一个可用组合即可开始；用于独立验证的第二个模型是明确建议，不伪装成必需项。</p></div>
+                <button type="button" data-surface="project">退出设置</button>
+              </header>
+
+              <div class="setup-panel" data-setup-body="repo">
+                <div class="setup-form">
+                  <label class="ad-field"><span>代码目录</span><input type="text" data-setup-path value="D:\Projects\personahub" /><small>选一个已经存在的目录；PersonaHub 只读取它的 Git 信息，不会改动任何文件。</small></label>
+                  <label class="ad-field"><span>项目名称</span><input type="text" data-setup-name value="PersonaHub" /><small>从目录名读出来的，可以改。</small></label>
+                  <div class="setup-probe" data-setup-probe="repo" data-state="ok">
+                    <p class="sp-line"><b>可读取</b> · main · 工作区干净 · 最近提交 16cbd97</p>
+                    <p class="sp-line sp-fail" hidden><b>这个路径读不到</b> · 目录不存在或没有读权限。项目名称保留，不会建立无效绑定。</p>
+                    <p class="sp-line sp-warn" hidden><b>不是 Git 仓库</b> · 仍然可以执行任务，但变化追踪与回滚能力会降低。</p>
+                  </div>
+                  <footer class="setup-actions">
+                    <button type="button" data-setup-recheck="repo">重新检查</button>
+                    <button class="primary-button" type="button" data-setup-go="members">确认项目，下一步</button>
+                  </footer>
+                </div>
+              </div>
+
+              <div class="setup-panel" data-setup-body="members" hidden>
+                <div class="setup-members">
+                  <div class="setup-member" data-setup-member="impl">
+                    <div><small>实现</small><h3>codex-gpt5.6-high</h3><p data-member-note>已登录 · 在这个代码目录下可执行 · 额度充足</p></div>
+                    <button type="button" data-demo="编辑实现成员：换 adapter、模型或思考深度">编辑</button>
+                  </div>
+                  <div class="setup-member" data-setup-member="verify">
+                    <div><small>独立验证 <b>建议</b></small><h3 data-verify-name>claude-sonnet5-medium</h3><p data-verify-note>与实现者不同厂商，验证结论不算同源。</p></div>
+                    <button type="button" data-setup-drop-verify>移除</button>
+                  </div>
+                  <p class="setup-hint" data-verify-hint hidden>只有一个成员也能开始。届时实现与验证同源，任务完成会一直带着<b>同源验证</b>标记，不伪装成跨模型验证。<button type="button" data-setup-add-verify>再配一个</button></p>
+                  <footer class="setup-actions">
+                    <button type="button" data-setup-go="repo">上一步</button>
+                    <button class="primary-button" type="button" data-setup-go="check">下一步：执行检查</button>
+                  </footer>
+                </div>
+              </div>
+
+              <div class="setup-panel" data-setup-body="check">
+                <div class="setup-summary">
+                  <section><span>✓</span><div><small>项目与代码目录</small><h3 data-setup-sum-name>PersonaHub</h3><p data-setup-sum-path>D:\Projects\personahub · main · Git 状态可读取</p></div><button type="button" data-setup-go="repo">修改</button></section>
+                  <section><span>✓</span><div><small>AI 成员</small><h3 data-setup-sum-members>实现 + 独立验证各一个</h3><p>codex-gpt5.6-high 可执行；claude-sonnet5-medium 可独立验证</p></div><button type="button" data-setup-go="members">修改</button></section>
+                  <section class="current"><span>3</span><div><small>执行检查</small><h3>验证写锁、CLI 与测试路径</h3><p>检查只读取环境信息，不会启动真实任务。</p></div><button class="primary-button" type="button" data-setup-run>运行检查</button></section>
+                </div>
+                <div class="setup-check" data-setup-result hidden>
+                  <ul data-setup-check-list>
+                    <li data-check-item="lock"><span data-check-mark>…</span>代码目录写锁<small data-check-note>正在检查</small></li>
+                    <li data-check-item="cli"><span data-check-mark>…</span>CLI 可启动<small data-check-note>正在检查</small></li>
+                    <li data-check-item="test"><span data-check-mark>…</span>测试命令可执行<small data-check-note>正在检查</small></li>
+                  </ul>
+                  <p class="setup-check-foot" data-setup-check-foot hidden></p>
+                  <footer class="setup-actions">
+                    <button type="button" data-setup-retry hidden>重试</button>
+                    <button class="primary-button" type="button" data-setup-first-task hidden>创建第一个任务</button>
+                  </footer>
+                </div>
+              </div>
+            </section>
           </section>
 
           <section class="surface split-surface" data-surface-view="projects" aria-label="项目">
             <aside class="sp-list">
-              <div class="sp-head"><p>项目<small>2 个</small></p><button type="button" data-demo="打开新建项目表单" aria-label="新建项目" title="新建项目">＋</button></div>
+              <div class="sp-head"><p>项目<small>2 个</small></p><button type="button" data-surface="setup" aria-label="新建项目" title="新建项目">＋</button></div>
               <div class="sp-scroll">
                 <button class="sp-item active" type="button" data-project-pick="ph"><span class="scope-symbol project">PH</span><span><strong>PersonaHub</strong><small>D:\Projects\personahub · main · 3 个改动</small></span></button>
                 <button class="sp-item" type="button" data-project-pick="mg"><span class="scope-symbol project">MG</span><span><strong>Market Game Sim</strong><small>代码目录未绑定</small></span></button>
