@@ -3711,9 +3711,13 @@ completed -&gt; archived</code></pre>
                 <button class="sp-item active" type="button" data-machine-pick="lt"><span class="signal green"></span><span><strong>qiaozhi-lt</strong><small>在线 · 3 个适配器</small></span></button>
                 <button class="sp-item" type="button" data-machine-pick="studio"><span class="signal yellow"></span><span><strong>mac-studio</strong><small>在线 · 1 个未登录</small></span></button>
               </div>
+              <div class="dispatch-paused-banner" data-dispatch-paused-banner hidden>
+                <span><b>全部派工已暂停</b>正在执行的不受影响；排队任务与定时规则都停在原地。</span>
+                <button type="button" data-dispatch-resume>恢复派工</button>
+              </div>
               <div class="sp-foot">
                 <button type="button" data-demo="额度告警阈值：任一接入剩余低于 20% 在状态栏提示，低于 10% 停止触发定时规则，且不自动换成更低成本的组合">额度告警阈值</button>
-                <button type="button" data-demo="暂停全部派工：正在跑的不打断，新的派工一律挡下，直到手动恢复">暂停全部派工</button>
+                <button type="button" data-dispatch-pause-open>暂停全部派工</button>
               </div>
             </aside>
             <section class="sp-main">
@@ -4626,7 +4630,7 @@ completed -&gt; archived</code></pre>
           <label class="ad-field"><span>账号名称</span><input type="text" placeholder="例如 deepseek、volcengine" /><small>派工记录里用这个名字，改名不影响历史记录</small></label>
           <label class="ad-field"><span>适配器</span><select><option>opencode</option><option>codex</option><option>claude-code</option></select><small>指定调用模型所使用的 CLI，与模型提供方无关</small></label>
           <label class="ad-field"><span>Base URL</span><input type="text" placeholder="https://api.deepseek.com/v1" /></label>
-          <label class="ad-field"><span>API Key</span><input type="text" placeholder="sk-…" /><small>保存后只回「已配置」，界面不再显示原值；要换直接覆盖</small></label>
+          <label class="ad-field"><span>API Key</span><span class="ad-secret"><input type="password" data-secret-input placeholder="sk-…" /><button type="button" data-secret-toggle aria-pressed="false">查看</button></span><small>保存后只回「已配置」，界面不再显示原值；要换直接覆盖</small></label>
           <label class="ad-field"><span>可用模型</span><div class="tc-chips"><span class="tc-chip">deepseek-v4-pro ×</span><span class="tc-chip">deepseek-v4-flash ×</span><button class="tc-chip" type="button" data-demo="输入模型名回车添加">＋ 添加模型</button></div><small>这几个模型会和深度组合成执行组合，出现在派工清单里</small></label>
           <details class="ad-advanced"><summary>高级：环境变量</summary><p class="tc-note">起 CLI 子进程时额外注入的变量。只在这个账号的派工里生效，不写进你的 shell。</p><div class="tc-chips"><button class="tc-chip" type="button" data-demo="添加一条 KEY=value">＋ 添加变量</button></div></details>
         </div>
@@ -4810,6 +4814,24 @@ completed -&gt; archived</code></pre>
     </div>
 
     <!-- 单值选择弹窗：时区与外部编辑器此前只有静态文字，没有改的入口 -->
+    <div class="command-overlay center" data-dispatch-pause-dialog hidden>
+      <div class="remove-dialog">
+        <header><div><small>影响整个工作区，跨全部机器与项目</small><h2>暂停全部派工</h2></div><button type="button" data-dispatch-pause-close aria-label="关闭暂停全部派工">×</button></header>
+        <div class="rm-block">
+          <h3>这会动到什么</h3>
+          <ul><li><b>3 个</b>排队中的任务停在原地，不再获得执行组合</li><li><b>4 条</b>定时规则到点不触发，记为「未触发 · 已暂停」</li><li>Webhook 投递照常收下并去重，但不进入执行</li></ul>
+        </div>
+        <div class="rm-block">
+          <h3>这不会动到什么</h3>
+          <ul><li><b>2 个</b>正在执行的任务不打断，跑完为止</li><li>已有的执行记录、证据链与验收结论一律不动</li><li>运行时的登录态与额度不受影响</li></ul>
+        </div>
+        <div class="rm-block">
+          <h3>怎么恢复</h3>
+          <ul><li>暂停期间左栏常驻一条横幅，点上面的「恢复派工」即可解除</li><li>恢复后排队任务按原顺序继续，不重排、不丢队列</li></ul>
+        </div>
+        <footer><button type="button" data-dispatch-pause-close>取消</button><button class="primary-button" type="button" data-dispatch-pause-confirm>暂停全部派工</button></footer>
+      </div>
+    </div>
     <div class="command-overlay center" data-pick-dialog hidden>
       <form class="remove-dialog" data-pick-form>
         <header>

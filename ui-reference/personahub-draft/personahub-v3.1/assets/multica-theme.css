@@ -1055,6 +1055,17 @@ kbd {
 .setup-summary section > button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; }
 .setup-summary section > button.primary-button { border-color: var(--text); background: var(--text); color: var(--bg); }
 
+/* 密钥输入默认遮罩：保存后不回显管不到输入的那一刻。 */
+.ad-secret { display: flex; gap: 6px; align-items: stretch; }
+.ad-secret input { flex: 1; min-width: 0; }
+.ad-secret button { padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--muted); font-size: 11px; cursor: pointer; }
+.ad-secret button[aria-pressed="true"] { border-color: var(--text); color: var(--text); }
+
+/* 暂停期间必须一直看得见，否则「为什么没动静」要靠人自己回想。 */
+.dispatch-paused-banner { display: grid; gap: 6px; margin: 0 10px 8px; padding: 10px 12px; border: 1px solid color-mix(in oklab, var(--yellow, #b80) 40%, var(--border)); border-radius: 8px; background: color-mix(in oklab, var(--yellow, #b80) 8%, var(--bg)); font-size: 11px; line-height: 1.7; }
+.dispatch-paused-banner b { display: block; font-size: 12px; }
+.dispatch-paused-banner button { justify-self: start; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; }
+
 /* 首次设置的三步都是真的页，不是三段说明文字。第三步的检查有
    running / ok / fail 三态，失败留在原地给重试，不把人踢回第一步。 */
 .setup-form { display: grid; gap: 16px; margin-top: 28px; max-width: 560px; }

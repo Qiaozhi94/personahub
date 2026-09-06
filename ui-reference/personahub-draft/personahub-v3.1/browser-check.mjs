@@ -1223,6 +1223,44 @@ await check("新建任务照 multica：描述 + 属性 chip，标题由执行结
   if ((await page.locator("[data-pane-tab].active").innerText()) !== "会话") throw new Error("创建后没有直接进入会话");
 });
 
+// UX-BL-R1-005：同一类东西用同一种保护。密钥默认遮罩，全局闸门先说影响再确认。
+await check("凭据默认遮罩，要看得显式按一下", async () => {
+  const secrets = await page.locator('input[placeholder="sk-…"], input[data-secret-input]').all();
+  if (!secrets.length) throw new Error("找不到密钥输入框");
+  for (const input of secrets) {
+    if ((await input.getAttribute("type")) !== "password") throw new Error("密钥输入框默认是明文");
+  }
+  // 全站不允许再有明文的密钥类输入。只看字段名，不看说明文字——
+  // 「上下文预算上限（token）」的说明里也有 token，那不是密钥。
+  const plain = await page.locator('input[type="text"]').all();
+  for (const input of plain) {
+    const name = (await input.evaluate((el) => el.closest("label")?.querySelector("span")?.textContent ?? "")).toLowerCase();
+    if (/key|密钥|token|secret/.test(name)) throw new Error(`还有密钥类输入用的是明文 text：${name}`);
+  }
+});
+
+await check("暂停全部派工：先给影响预览与确认，暂停后留持久恢复入口", async () => {
+  await page.locator('.main-rail [data-surface="runtime"]').click();
+  const banner = page.locator("[data-dispatch-paused-banner]");
+  if (await banner.isVisible()) throw new Error("还没暂停就挂着暂停横幅");
+  await page.locator("[data-dispatch-pause-open]").click();
+  const dlg = page.locator("[data-dispatch-pause-dialog]");
+  if (!(await dlg.isVisible())) throw new Error("暂停全部派工没有确认这一步");
+  const text = await dlg.innerText();
+  for (const need of ["这会动到什么", "这不会动到什么", "怎么恢复"]) {
+    if (!text.includes(need)) throw new Error(`影响预览缺少「${need}」`);
+  }
+  if (!text.includes("不打断")) throw new Error("没有说明正在执行的任务会怎样");
+  if (await banner.isVisible()) throw new Error("确认之前就已经暂停了");
+
+  await dlg.locator("[data-dispatch-pause-confirm]").click();
+  if (!(await banner.isVisible())) throw new Error("暂停后没有持久状态");
+  if (!(await banner.innerText()).includes("恢复派工")) throw new Error("暂停后没有恢复入口");
+  await banner.locator("[data-dispatch-resume]").click();
+  if (await banner.isVisible()) throw new Error("恢复后横幅没有撤掉");
+  await page.keyboard.press("Escape");
+});
+
 // UX-BL-R1-002：首次设置必须从界面上真的走得到，且三步连续可点。
 // 曾经 setup 面存在但入口写的是 start，页面上没有任何一个按钮进得去。
 await check("首次设置：入口可达，J1.1-J1.6 连续走通且检查有失败与重试", async () => {
@@ -2285,7 +2323,11 @@ await check("凭据在运行时面的配置 tab：登录态不代管，API Key �
   }
   await dialog.locator('[data-account-mode="api_key"]').click();
   const keyPane = dialog.locator('[data-account-body="api_key"]');
-  if ((await keyPane.locator("input[type=\"text\"]").count()) < 3) throw new Error("API Key 这一支字段不全（账号名 / Base URL / key）");
+  // key 那一格是 password（默认遮罩，UX-BL-R1-005），所以这里按字段数点，不按 type 点
+  if ((await keyPane.locator("input[type=\"text\"], input[type=\"password\"]").count()) < 3) {
+    throw new Error("API Key 这一支字段不全（账号名 / Base URL / key）");
+  }
+  if (!(await keyPane.locator("[data-secret-input]").count())) throw new Error("API Key 这一格不是遮罩输入");
   if (!(await keyPane.locator("select").count())) throw new Error("API Key 这一支没有选 adapter");
   if (await oauthPane.isVisible()) throw new Error("切换后登录态面板还留在页面上");
   await dialog.locator("[data-account-close]").first().click();

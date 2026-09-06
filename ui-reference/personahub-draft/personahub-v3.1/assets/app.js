@@ -24,6 +24,7 @@
     setupStep: "check",
     setupCheckRetried: false,
     setupTimer: null,
+    dispatchPaused: false,
     taskSubmitting: false,
   };
 
@@ -2521,6 +2522,43 @@
     showToast("自动化已保存为暂停；预检通过后由你明确启用");
   });
 
+  // ── 高风险动作：密钥与全局派工闸门 ──────────────────────
+  // 密钥默认遮罩，要看得自己按一下——「保存后不回显」不足以保护输入的当下。
+  // 暂停全部派工是工作区级的闸门（不是对某个进程的控制），所以它必须先说清
+  // 会动到什么、不会动到什么、怎么恢复，确认后留一条持久横幅。
+  function setDispatchPaused(paused) {
+    state.dispatchPaused = paused;
+    const banner = $("[data-dispatch-paused-banner]");
+    if (banner) banner.hidden = !paused;
+    const open = $("[data-dispatch-pause-open]");
+    if (open) open.textContent = paused ? "已暂停全部派工" : "暂停全部派工";
+    if (open) open.disabled = paused;
+  }
+
+  document.addEventListener("click", (event) => {
+    const target = event.target.closest("button");
+    if (!target) return;
+    if (target.hasAttribute("data-secret-toggle")) {
+      const input = $("[data-secret-input]", target.closest(".ad-secret"));
+      if (!input) return;
+      const shown = input.type === "text";
+      input.type = shown ? "password" : "text";
+      target.textContent = shown ? "查看" : "隐藏";
+      target.setAttribute("aria-pressed", String(!shown));
+    }
+    if (target.hasAttribute("data-dispatch-pause-open")) $("[data-dispatch-pause-dialog]").hidden = false;
+    if (target.hasAttribute("data-dispatch-pause-close")) $("[data-dispatch-pause-dialog]").hidden = true;
+    if (target.hasAttribute("data-dispatch-pause-confirm")) {
+      $("[data-dispatch-pause-dialog]").hidden = true;
+      setDispatchPaused(true);
+      showToast("全部派工已暂停；正在执行的不打断");
+    }
+    if (target.hasAttribute("data-dispatch-resume")) {
+      setDispatchPaused(false);
+      showToast("已恢复派工；排队任务按原顺序继续");
+    }
+  });
+
   // 首次设置的事件都挂在委托里：面上按钮会随步骤重绘。
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
@@ -2617,6 +2655,8 @@
       setCommand(false);
       setTaskCreate(false);
       setAutomationDialog(false);
+      const pause = $("[data-dispatch-pause-dialog]");
+      if (pause) pause.hidden = true;
     }
   });
 
