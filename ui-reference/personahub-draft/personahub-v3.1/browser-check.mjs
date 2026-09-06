@@ -1223,6 +1223,116 @@ await check("新建任务照 multica：描述 + 属性 chip，标题由执行结
   if ((await page.locator("[data-pane-tab].active").innerText()) !== "会话") throw new Error("创建后没有直接进入会话");
 });
 
+// UX-BL-R1-004：弹层 / 数据表 / 页签的基础键盘与读屏契约。
+// 这一组断言原本一条都没有——111 条全绿却带着 8 个没有 role 的弹层通过，
+// 说明门禁只在证明「结构判断没被改丢」，没有在证明「键盘能用」。
+await check("弹层：都有 dialog 语义与可访问标题", async () => {
+  const bad = await page.evaluate(() =>
+    [...document.querySelectorAll(".command-overlay")]
+      .filter((el) => {
+        const box = el.querySelector('[role="dialog"]') ?? (el.getAttribute("role") === "dialog" ? el : null);
+        if (!box) return true;
+        if (box.getAttribute("aria-modal") !== "true") return true;
+        const id = box.getAttribute("aria-labelledby");
+        const named = box.hasAttribute("aria-label") || (id && document.getElementById(id));
+        return !named;
+      })
+      .map((el) => el.dataset ? Object.keys(el.dataset)[0] ?? el.className : el.className)
+  );
+  if (bad.length) throw new Error(`这些弹层没有 dialog 语义或可访问标题：${bad.join(", ")}`);
+});
+
+await check("弹层：焦点进得去、Tab 出不来、Esc 关得掉、关掉回到原按钮", async () => {
+  await page.locator('.main-rail [data-surface="project"]').click();
+  const trigger = page.locator("[data-new-object]");
+  await trigger.click();
+  const dlg = page.locator("[data-task-create-overlay]");
+  if (!(await dlg.isVisible())) throw new Error("弹层没打开");
+
+  // 焦点必须落进弹层里
+  let inside = await page.evaluate(() => !!document.activeElement?.closest("[data-task-create-overlay]"));
+  if (!inside) throw new Error("打开后焦点没有进入弹层");
+
+  // 一路 Tab 不许跑出去
+  for (let i = 0; i < 24; i++) {
+    await page.keyboard.press("Tab");
+    inside = await page.evaluate(() => !!document.activeElement?.closest("[data-task-create-overlay]"));
+    if (!inside) throw new Error(`按了 ${i + 1} 次 Tab 之后焦点跑出了弹层`);
+  }
+
+  await page.keyboard.press("Escape");
+  if (await dlg.isVisible()) throw new Error("Esc 关不掉弹层");
+  const back = await page.evaluate(() => document.activeElement?.dataset?.newObject !== undefined);
+  if (!back) throw new Error("关闭后焦点没有回到打开它的按钮");
+});
+
+await check("弹层：Esc 对每一个都有效，不只对被记得的那三个", async () => {
+  for (const [open, sel] of [
+    ['[data-surface-view="runtime"] [data-dispatch-pause-open]', "[data-dispatch-pause-dialog]"],
+  ]) {
+    await page.locator('.main-rail [data-surface="runtime"]').click();
+    await page.locator(open).click();
+    const dlg = page.locator(sel);
+    if (!(await dlg.isVisible())) throw new Error(`${sel} 没打开`);
+    await page.keyboard.press("Escape");
+    if (await dlg.isVisible()) throw new Error(`${sel} 按 Esc 关不掉`);
+  }
+});
+
+await check("数据表：单元格与列头有语义，列对得上", async () => {
+  const report = await page.evaluate(() => {
+    const out = { tables: 0, noCell: [], mismatch: [] };
+    document.querySelectorAll('[role="table"]').forEach((t) => {
+      out.tables++;
+      const label = t.getAttribute("aria-label") ?? "(无名)";
+      const head = t.querySelector('.dl-head[role="row"], .rn-head[role="row"]');
+      if (!head) { out.noCell.push(`${label}: 没有表头行`); return; }
+      const heads = [...head.children].filter((c) => c.getAttribute("role") === "columnheader");
+      if (!heads.length) out.noCell.push(`${label}: 表头没有 columnheader`);
+      if (heads.some((h) => !h.textContent.trim())) out.noCell.push(`${label}: 有空表头`);
+      const rows = [...t.querySelectorAll('.dl-row[role="row"], .rn-row[role="row"]')];
+      rows.forEach((r) => {
+        const cells = [...r.children].filter((c) => c.getAttribute("role") === "cell");
+        if (!cells.length) out.noCell.push(`${label}: 有数据行没有 cell`);
+        else if (cells.length !== heads.length) out.mismatch.push(`${label}: 表头 ${heads.length} 列，行 ${cells.length} 格`);
+      });
+    });
+    return out;
+  });
+  if (report.tables < 40) throw new Error(`只找到 ${report.tables} 张表，选择器可能失配`);
+  if (report.noCell.length) throw new Error(report.noCell.slice(0, 3).join(" / "));
+  if (report.mismatch.length) throw new Error([...new Set(report.mismatch)].slice(0, 3).join(" / "));
+});
+
+await check("页签：aria-selected 跟着选中态，一组只留一个 tab stop，方向键可切", async () => {
+  const bad = await page.evaluate(() => {
+    const problems = [];
+    document.querySelectorAll('[role="tablist"]').forEach((list) => {
+      const tabs = [...list.querySelectorAll('[role="tab"]')];
+      if (!tabs.length) return;
+      const label = list.getAttribute("aria-label") ?? list.className;
+      if (tabs.some((t) => !t.hasAttribute("aria-selected"))) problems.push(`${label}: 有 tab 缺 aria-selected`);
+      const stops = tabs.filter((t) => t.tabIndex === 0);
+      if (stops.length !== 1) problems.push(`${label}: tab stop 有 ${stops.length} 个`);
+      const selected = tabs.filter((t) => t.getAttribute("aria-selected") === "true");
+      if (selected.length !== 1) problems.push(`${label}: aria-selected 为 true 的有 ${selected.length} 个`);
+    });
+    return problems;
+  });
+  if (bad.length) throw new Error(bad.slice(0, 3).join(" / "));
+
+  // 方向键真的能切，并且 aria-selected 跟着走
+  const tablist = page.locator('[role="tablist"]:visible').first();
+  const tabs = tablist.locator('[role="tab"]');
+  if ((await tabs.count()) > 1) {
+    await tabs.first().focus();
+    await page.keyboard.press("ArrowRight");
+    if ((await tabs.nth(1).getAttribute("aria-selected")) !== "true") {
+      throw new Error("方向键切了 tab，aria-selected 没有跟上");
+    }
+  }
+});
+
 // UX-BL-R1-005：同一类东西用同一种保护。密钥默认遮罩，全局闸门先说影响再确认。
 await check("凭据默认遮罩，要看得显式按一下", async () => {
   const secrets = await page.locator('input[placeholder="sk-…"], input[data-secret-input]').all();

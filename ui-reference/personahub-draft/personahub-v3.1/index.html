@@ -4516,8 +4516,8 @@ completed -&gt; archived</code></pre>
     </div>
 
     <div class="command-overlay center" data-automation-dialog hidden>
-      <form class="automation-dialog" data-automation-form>
-        <header><div><small>新规则默认暂停 · 保存后先做一次完整预检</small><h2>新建自动化</h2></div><button type="button" data-automation-close aria-label="关闭新建自动化">×</button></header>
+      <form class="automation-dialog" data-automation-form role="dialog" aria-modal="true" aria-labelledby="automation-dialog-title">
+        <header><div><small>新规则默认暂停 · 保存后先做一次完整预检</small><h2 id="automation-dialog-title">新建自动化</h2></div><button type="button" data-automation-close aria-label="关闭新建自动化">×</button></header>
         <div class="automation-template-row" aria-label="从模板开始">
           <button class="active" type="button" data-demo="已选依赖审计模板；会预填任务说明、标签与只读权限">依赖审计<small>代码项目</small></button>
           <button type="button" data-demo="预填 dogfooding 归档模板">使用记录归档<small>每日汇总</small></button>
@@ -4555,8 +4555,8 @@ completed -&gt; archived</code></pre>
     </div>
 
     <div class="command-overlay center" data-task-create-overlay hidden>
-      <form class="task-create-dialog" data-task-create-form>
-        <header><div><small>工作区维度 · 可以不属于任何项目</small><h2>新建任务</h2></div><button type="button" data-task-create-close aria-label="关闭新建任务">×</button></header>
+      <form class="task-create-dialog" data-task-create-form role="dialog" aria-modal="true" aria-labelledby="task-create-overlay-title">
+        <header><div><small>工作区维度 · 可以不属于任何项目</small><h2 id="task-create-overlay-title">新建任务</h2></div><button type="button" data-task-create-close aria-label="关闭新建任务">×</button></header>
         <div class="tc-step" data-task-step="goal">
         <textarea class="tc-desc" data-task-goal rows="4" placeholder="要做什么？包括约束条件，以及什么算做完">重启恢复时同一个节点可能被认领两次。要求：给出可复现的失败用例，修复后该用例转绿，并保留证据。</textarea>
         <div class="tc-chips">
@@ -4609,8 +4609,8 @@ completed -&gt; archived</code></pre>
 
 
     <div class="command-overlay center" data-account-dialog hidden>
-      <form class="account-dialog" data-account-form>
-        <header><div><small data-account-context>凭据只存在服务端，不上传</small><h2 data-account-title>新增账号</h2></div><button type="button" data-account-close aria-label="关闭新增账号">×</button></header>
+      <form class="account-dialog" data-account-form role="dialog" aria-modal="true" aria-labelledby="account-dialog-title">
+        <header><div><small data-account-context>凭据只存在服务端，不上传</small><h2 data-account-title id="account-dialog-title">新增账号</h2></div><button type="button" data-account-close aria-label="关闭新增账号">×</button></header>
 
         <div class="mem-tabs" role="tablist" aria-label="认证方式">
           <button class="active" type="button" role="tab" data-account-mode="oauth">CLI 登录态</button>
@@ -4688,9 +4688,9 @@ completed -&gt; archived</code></pre>
          因为它们共用同一条规则：**先算出影响面再确认，并说清历史不受影响**。
          文案由触发按钮上的 data-remove-* 属性驱动，宿主渲染。 -->
     <div class="command-overlay center" data-remove-dialog hidden>
-      <form class="remove-dialog" data-remove-form>
+      <form class="remove-dialog" data-remove-form role="dialog" aria-modal="true" aria-labelledby="remove-dialog-title">
         <header>
-          <div><small data-remove-kind>删除一份配置</small><h2 data-remove-title>删除 official-api？</h2></div>
+          <div><small data-remove-kind>删除一份配置</small><h2 data-remove-title id="remove-dialog-title">删除 official-api？</h2></div>
           <button type="button" data-remove-close aria-label="关闭">×</button>
         </header>
         <p class="rm-lead" data-remove-lead>这份配置会从派工清单里消失，正在跑的任务不受影响。</p>
@@ -4709,9 +4709,9 @@ completed -&gt; archived</code></pre>
     <!-- 改任务前缀：设计里写死了「这是要确认的操作」（§3.5.2 第 1 条），
          但此前只有一个 data-demo。 -->
     <div class="command-overlay center" data-repo-dialog hidden>
-      <form class="remove-dialog repo-dialog" data-repo-form>
+      <form class="remove-dialog repo-dialog" data-repo-form role="dialog" aria-modal="true" aria-labelledby="repo-dialog-title">
         <header>
-          <div><small data-repo-kind>代码仓</small><h2 data-repo-title>personahub</h2></div>
+          <div><small data-repo-kind>代码仓</small><h2 data-repo-title id="repo-dialog-title">personahub</h2></div>
           <button type="button" data-repo-close aria-label="关闭">×</button>
         </header>
 
@@ -4755,9 +4755,9 @@ completed -&gt; archived</code></pre>
     </div>
 
     <div class="command-overlay center" data-plugin-dialog hidden>
-      <form class="remove-dialog plugin-dialog" data-plugin-form>
+      <form class="remove-dialog plugin-dialog" data-plugin-form role="dialog" aria-modal="true" aria-labelledby="plugin-dialog-title">
         <header>
-          <div><small>插件配置</small><h2 data-plugin-title>web-research</h2></div>
+          <div><small>插件配置</small><h2 data-plugin-title id="plugin-dialog-title">web-research</h2></div>
           <button type="button" data-plugin-close aria-label="关闭">×</button>
         </header>
 
@@ -4788,9 +4788,9 @@ completed -&gt; archived</code></pre>
     </div>
 
     <div class="command-overlay center" data-prefix-dialog hidden>
-      <form class="remove-dialog" data-prefix-form>
+      <form class="remove-dialog" data-prefix-form role="dialog" aria-modal="true" aria-labelledby="prefix-dialog-title">
         <header>
-          <div><small>任务前缀</small><h2>把 PH- 改成别的</h2></div>
+          <div><small>任务前缀</small><h2 id="prefix-dialog-title">把 PH- 改成别的</h2></div>
           <button type="button" data-prefix-close aria-label="关闭">×</button>
         </header>
         <label class="ad-field"><span>新前缀</span><input type="text" value="PH-" data-prefix-input /></label>
@@ -4815,8 +4815,8 @@ completed -&gt; archived</code></pre>
 
     <!-- 单值选择弹窗：时区与外部编辑器此前只有静态文字，没有改的入口 -->
     <div class="command-overlay center" data-dispatch-pause-dialog hidden>
-      <div class="remove-dialog">
-        <header><div><small>影响整个工作区，跨全部机器与项目</small><h2>暂停全部派工</h2></div><button type="button" data-dispatch-pause-close aria-label="关闭暂停全部派工">×</button></header>
+      <div class="remove-dialog" role="dialog" aria-modal="true" aria-labelledby="dispatch-pause-dialog-title">
+        <header><div><small>影响整个工作区，跨全部机器与项目</small><h2 id="dispatch-pause-dialog-title">暂停全部派工</h2></div><button type="button" data-dispatch-pause-close aria-label="关闭暂停全部派工">×</button></header>
         <div class="rm-block">
           <h3>这会动到什么</h3>
           <ul><li><b>3 个</b>排队中的任务停在原地，不再获得执行组合</li><li><b>4 条</b>定时规则到点不触发，记为「未触发 · 已暂停」</li><li>Webhook 投递照常收下并去重，但不进入执行</li></ul>
@@ -4833,9 +4833,9 @@ completed -&gt; archived</code></pre>
       </div>
     </div>
     <div class="command-overlay center" data-pick-dialog hidden>
-      <form class="remove-dialog" data-pick-form>
+      <form class="remove-dialog" data-pick-form role="dialog" aria-modal="true" aria-labelledby="pick-dialog-title">
         <header>
-          <div><small data-pick-kind>偏好设置</small><h2 data-pick-title>时区</h2></div>
+          <div><small data-pick-kind>偏好设置</small><h2 data-pick-title id="pick-dialog-title">时区</h2></div>
           <button type="button" data-pick-close aria-label="关闭">×</button>
         </header>
         <p class="rm-lead" data-pick-lead></p>
@@ -4847,7 +4847,7 @@ completed -&gt; archived</code></pre>
       </form>
     </div>
 
-    <div class="command-overlay" data-command-overlay hidden>
+    <div class="command-overlay" data-command-overlay hidden role="dialog" aria-modal="true" aria-label="命令面板">
       <div class="command-dialog" role="dialog" aria-modal="true" aria-label="命令面板">
         <label><span>⌕</span><input type="text" placeholder="搜索任务、文件、产出，或输入命令…" data-command-input /></label>
         <p class="command-hint" data-command-hint>输入即筛左栏的任务列表；这是全站唯一的搜索入口。</p>

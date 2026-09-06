@@ -25,6 +25,7 @@
     setupCheckRetried: false,
     setupTimer: null,
     dispatchPaused: false,
+    overlayTrigger: null,
     taskSubmitting: false,
   };
 
@@ -2522,6 +2523,123 @@
     showToast("自动化已保存为暂停；预检通过后由你明确启用");
   });
 
+  // ── 统一的键盘与读屏语义（UX-BL-R1-004） ─────────────────
+  // 表格、页签、弹层三种结构在这一份原型里各出现了几十次，逐处手写 aria
+  // 必然漏。这里统一补一遍，规则只有一条：**结构说什么，语义就报什么**。
+
+  // 表：行的直接子元素就是单元格。dl-detail（行内展开）与 dl-sub（整行的
+  // 补充说明）不是单元格——它们横跨整行，报成单元格会让列对不上。
+  function applyTableSemantics(root = document) {
+    $$('[role="table"]', root).forEach((table) => {
+      $$('[role="row"]', table).forEach((row) => {
+        const isHead = row.classList.contains("dl-head") || row.classList.contains("rn-head");
+        [...row.children].forEach((cell) => {
+          if (cell.hasAttribute("role")) return;
+          if (cell.classList.contains("dl-detail") || cell.classList.contains("dl-sub")) {
+            cell.setAttribute("role", "none");
+            return;
+          }
+          cell.setAttribute("role", isHead ? "columnheader" : "cell");
+        });
+      });
+    });
+  }
+
+  // 页签：aria-selected 跟着 .active 走，并且一组只留一个 tab stop——
+  // 53 个 tab 各自可 Tab 聚焦时，键盘用户要按几十次才能走出一条 tab 条。
+  function syncTablist(list) {
+    const tabs = $$('[role="tab"]', list);
+    if (!tabs.length) return;
+    let active = tabs.find((t) => t.classList.contains("active"));
+    if (!active) active = tabs[0];
+    tabs.forEach((tab) => {
+      tab.setAttribute("aria-selected", String(tab === active));
+      tab.tabIndex = tab === active ? 0 : -1;
+    });
+  }
+
+  function applyTabSemantics(root = document) {
+    $$('[role="tablist"]', root).forEach(syncTablist);
+  }
+
+  document.addEventListener("keydown", (event) => {
+    const tab = event.target.closest?.('[role="tab"]');
+    if (!tab) return;
+    const list = tab.closest('[role="tablist"]');
+    if (!list) return;
+    const tabs = $$('[role="tab"]', list);
+    const i = tabs.indexOf(tab);
+    const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    const target = tabs[(next + tabs.length) % tabs.length];
+    target.focus();
+    target.click();
+  });
+
+  // 弹层：焦点进得去、出不来、Esc 关得掉、关掉之后回到原来那个按钮。
+  function visibleOverlay() {
+    return $$(".command-overlay").find((el) => !el.hidden);
+  }
+
+  const focusables = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab") return;
+    const overlay = visibleOverlay();
+    if (!overlay) return;
+    const items = $$(focusables, overlay).filter((el) => el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !overlay.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  // 关掉之后焦点必须回到打开它的那个按钮，否则读屏用户会被丢回文档开头。
+  document.addEventListener("mousedown", (event) => {
+    const trigger = event.target.closest?.("button");
+    if (trigger && !trigger.closest(".command-overlay")) state.overlayTrigger = trigger;
+  }, true);
+
+  const overlayObserver = new MutationObserver((records) => {
+    records.forEach((record) => {
+      const el = record.target;
+      if (!el.classList?.contains("command-overlay")) return;
+      if (el.hidden) {
+        const back = state.overlayTrigger;
+        if (back && document.contains(back)) window.setTimeout(() => back.focus(), 0);
+      } else {
+        applyTableSemantics(el);
+        applyTabSemantics(el);
+        const first = $$(focusables, el).find((n) => n.offsetParent !== null);
+        window.setTimeout(() => {
+          if (!el.contains(document.activeElement)) first?.focus();
+        }, 0);
+      }
+    });
+  });
+  $$(".command-overlay").forEach((el) => overlayObserver.observe(el, { attributes: true, attributeFilter: ["hidden"] }));
+
+  // .active 是这份原型里唯一的选中态来源，aria-selected 必须跟着它，
+  // 否则读屏读到的永远是页面加载那一刻的那个 tab。
+  const tabObserver = new MutationObserver((records) => {
+    const lists = new Set();
+    records.forEach((record) => {
+      const list = record.target.closest?.('[role="tablist"]');
+      if (list) lists.add(list);
+    });
+    lists.forEach(syncTablist);
+  });
+  $$('[role="tablist"]').forEach((list) => {
+    $$('[role="tab"]', list).forEach((tab) => tabObserver.observe(tab, { attributes: true, attributeFilter: ["class"] }));
+  });
+
   // ── 高风险动作：密钥与全局派工闸门 ──────────────────────
   // 密钥默认遮罩，要看得自己按一下——「保存后不回显」不足以保护输入的当下。
   // 暂停全部派工是工作区级的闸门（不是对某个进程的控制），所以它必须先说清
@@ -2652,11 +2770,14 @@
       setCommand(true);
     }
     if (event.key === "Escape") {
+      // Esc 关掉当前这一个弹层，而不是只关那三个被记得的。
+      // 以前漏掉的那几个（账号、插件、删除…）从使用者角度和别的没有区别。
       setCommand(false);
       setTaskCreate(false);
       setAutomationDialog(false);
-      const pause = $("[data-dispatch-pause-dialog]");
-      if (pause) pause.hidden = true;
+      setComboPicker(null);
+      const open = visibleOverlay();
+      if (open) open.hidden = true;
     }
   });
 
@@ -2702,6 +2823,8 @@
     showToast("已发送；独立会话不产生验收，也不写记忆");
   });
 
+  applyTableSemantics();
+  applyTabSemantics();
   setThreadTab("solo");
   // 统计面的默认态由数据决定而不是由 HTML 决定：热力图在 30 天下不可用，
   // 这个置灰必须在首屏就成立，否则点进去才发现按不动。
