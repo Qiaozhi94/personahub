@@ -20,6 +20,8 @@
     changeIndex: -1,
     stageParent: null,
     toastTimer: null,
+    taskStep: "goal",
+    taskSubmitting: false,
   };
 
   const documentMeta = {
@@ -124,6 +126,19 @@
     if (tags) tags.innerHTML = labels.map((t) => `<em>${t}</em>`).join("");
   }
 
+
+  // 目标原文是使用者唯一亲手写下的东西，创建之后必须还在。标题这时候还没有——
+  // 它由第一轮执行读完内容后总结，所以此刻任务名显示的就是目标原文本身。
+  function setTaskGoal(id, goal) {
+    const row = taskMeta[id];
+    if (!row || !goal) return;
+    row[0] = goal;
+    const context = dockContexts[id];
+    if (context) context.title = goal;
+    syncPaneTask(id);
+    const stageTitle = $("[data-stage-task-title]");
+    if (stageTitle) stageTitle.textContent = goal;
+  }
 
   function syncOverview(id) {
     const docs = $$("[data-overview]");
@@ -481,31 +496,9 @@
   // 左栏的 adapter 条目正是 settings + runtime 两个 pick 同时生效。
   // V3.24：运行时按机器分 tab，adapter 是 tab 内的一张表，点一行弹右框。
   // 列表回答「挑哪一条 / 谁坏了」，详情回答「这一条是什么」（同 §3.2.3）。
-  const ADAPTER_NAMES = { codex: "Codex CLI", claude: "Claude Code", opencode: "OpenCode" };
-
-  function openRuntimeDrawer(adapter) {
-    const drawer = $("[data-runtime-drawer]");
-    if (!drawer) return;
-    drawer.hidden = false;
-    drawer.closest(".rt-stage")?.setAttribute("data-drawer", "open");
-    const title = $("[data-drawer-title]", drawer);
-    if (title) title.textContent = ADAPTER_NAMES[adapter] || adapter;
-    // V3.26：框内不再有「配置 / 诊断」两个 tab——这一框是同一个 adapter 的
-    // 一串事实，线性的；换 adapter 只换内容，没有需要复位的 tab 状态。
-    drawer.scrollTop = 0;
-  }
-
-  function closeRuntimeDrawer() {
-    const drawer = $("[data-runtime-drawer]");
-    if (!drawer) return;
-    drawer.hidden = true;
-    drawer.closest(".rt-stage")?.setAttribute("data-drawer", "closed");
-    $$("[data-runtime-pick]").forEach((b) => b.classList.remove("active"));
-  }
-
   function applyPicks(target) {
     let hit = false;
-    for (const group of ["automation", "settings", "runtime"]) {
+    for (const group of ["automation", "settings", "machine"]) {
       const value = target.dataset[`${group}Pick`];
       if (value) {
         // 自动化面：右侧详情按「规则类型」分，不是每条规则一份。定时规则
@@ -516,7 +509,8 @@
         // 两份详情的 tab 集合不同（dep 没有「Webhook 投递」）。切规则时不回到
         // 概览，就会停在一个当前详情里不存在的 tab 上，右侧整块空白。
         if (group === "automation") setLocalTab("automation", "overview");
-        if (group === "runtime") openRuntimeDrawer(value);
+        // 换机器时收起右框：详情是「那台机器上的那一个 adapter」
+        if (group === "machine") setLocalTab("rt", "overview");
         hit = true;
       }
     }
@@ -537,36 +531,91 @@
     });
   }
 
-  // Skill 详情：列表 → 详情是一次下钻，返回是明确动作（design.md §3.2.3）。
-  // 静态原型只做了两条的真实文件，其余行给出说明而不是假装能打开。
-  const SKILL_DETAILS = { "verify-pair": "pair-main", verify: "verify-main" };
+  // Skill 详情是能力面的整页下钻。详情态隐藏 Skills / MCP tab，避免用户
+  // 在具体 Skill 的文件上下文中横跳到另一个资源类型。
+  const SKILL_DETAILS = {
+    "verify-pair": { first: "pair-main", group: "verify-pair", id: "verify-pair@3", source: "PersonaHub 内置", updated: "2026-08-30", requires: "工具循环", delivery: "Claude Code、Codex 已下发；OpenCode 不支持", description: "按“实现 → 独立验证”顺序执行，并隔离验证步骤的上下文。" },
+    "cross-check": { first: "generic-main", group: "generic", id: "research-cross-check@4", source: "web-research 1.4", updated: "2026-08-29", requires: "深度分析", delivery: "3 个适配器已下发", description: "对调研结论执行第二来源核对，并单独保留无法消除的分歧。" },
+    book: { first: "generic-main", group: "generic", id: "document-digest@2", source: "book-digest 0.9", updated: "2026-08-24", requires: "长文拆解", delivery: "随来源插件停用", description: "按章节拆解长文档，并输出可追溯的结构化摘录。" },
+    verify: { first: "verify-main", group: "verify", id: "verify-before-change@2", source: "PersonaHub 内置", updated: "2026-08-30", requires: "工具循环", delivery: "3 个适配器已下发", description: "修改代码前运行仓库级验证，避免在既有故障上继续叠加改动。" },
+    seam: { first: "generic-main", group: "generic", id: "review-extension-seam@1", source: "PersonaHub 内置", updated: "2026-08-27", requires: "架构分析", delivery: "Claude Code、Codex 已下发", description: "新增扩展点前核对 ADR 0008，确认替换边界与所有权。" },
+    prettier: { first: "generic-main", group: "generic", id: "incremental-format@2", source: "PersonaHub 内置", updated: "2026-08-22", requires: "无额外要求", delivery: "Claude Code、Codex 已下发", description: "修改旧文件时同步扩大格式化覆盖范围，并保持增量迁移。" },
+    cite: { first: "generic-main", group: "generic", id: "citation-section@2", source: "web-research 1.4", updated: "2026-08-29", requires: "网络检索", delivery: "3 个适配器已下发", description: "所有外部引用必须包含文档章节或页面定位信息。" },
+    fresh: { first: "generic-main", group: "generic", id: "source-freshness@1", source: "web-research 1.4", updated: "2026-08-28", requires: "网络检索", delivery: "3 个适配器已下发", description: "对可能变化的事实检查发布日期与实际发生时间。" },
+    repro: { first: "generic-main", group: "generic", id: "repro-evidence@1", source: "本地创建", updated: "2026-08-18", requires: "工具循环", delivery: "已停用", description: "交付前保留可重复执行的命令、输出和环境信息。" },
+  };
 
   function openSkillDetail(key) {
-    const first = SKILL_DETAILS[key];
-    if (!first) {
-      showToast("静态原型只做了「代码实现 + 独立验证」和「改动前先跑 npm run verify」两条的详情");
-      return;
-    }
+    const detail = SKILL_DETAILS[key];
+    if (!detail) return;
     const row = $(`[data-skill-open="${key}"]`)?.closest(".dl-row");
     const pane = $('[data-library-body="skill"]');
-    $("[data-skill-field='name']", pane).textContent = $(`[data-skill-open="${key}"]`).textContent;
-    $("[data-skill-field='tags']", pane).innerHTML = $(".dl-tags", row)?.innerHTML ?? "";
-    // 元信息、步骤块与文件列表都按 skill 分组显示
-    $$("[data-skill-view]", pane).forEach((el) => (el.hidden = el.dataset.skillView !== key));
-    setSkillFile(first);
+    const name = $(`[data-skill-open="${key}"]`).textContent;
+    $$('[data-skill-field="name"]', pane).forEach((el) => (el.textContent = name));
+    $$('[data-skill-field="tags"]', pane).forEach((el) => (el.innerHTML = $(".dl-tags", row)?.innerHTML ?? ""));
+    for (const field of ["id", "source", "updated", "requires", "delivery", "description"]) {
+      $$(`[data-skill-field="${field}"]`, pane).forEach((el) => (el.textContent = detail[field]));
+    }
+    $$("[data-skill-view]", pane).forEach((el) => (el.hidden = el.dataset.skillView !== detail.group));
+    if (detail.group === "generic") {
+      $('[data-skill-generic-path]', pane).textContent = `${detail.id.split("@")[0]}/SKILL.md`;
+      $('[data-skill-generic-content]', pane).textContent = `---\nid: ${detail.id.split("@")[0]}\nversion: ${detail.id.split("@")[1]}\nrequires: [${detail.requires}]\n---\n\n# ${name}\n\n${detail.description}`;
+    }
+    setSkillFile(detail.first);
     $('[data-skill-scope="list"]', pane).hidden = true;
     $('[data-skill-scope="detail"]', pane).hidden = false;
+    $('[data-surface-view="library"]').classList.add("skill-detail-mode");
   }
 
   function closeSkillDetail() {
     const pane = $('[data-library-body="skill"]');
     $('[data-skill-scope="detail"]', pane).hidden = true;
     $('[data-skill-scope="list"]', pane).hidden = false;
+    $('[data-surface-view="library"]').classList.remove("skill-detail-mode");
   }
 
   function setSkillFile(key) {
     $$("[data-skill-file]").forEach((b) => b.classList.toggle("active", b.dataset.skillFile === key));
     $$("[data-skill-file-view]").forEach((el) => (el.hidden = el.dataset.skillFileView !== key));
+  }
+
+  function openProjectSkill(key) {
+    setSurface("library");
+    setLocalTab("library", "skill");
+    setLibFilter("all");
+    openSkillDetail(key);
+  }
+
+  function setProjectDefaultSkill(key) {
+    $$("[data-project-skill-row]").forEach((row) => {
+      const active = row.dataset.projectSkillRow === key;
+      const badge = $("[data-project-skill-state]", row);
+      badge.textContent = active ? "当前默认" : "可选";
+      badge.className = `pill ${active ? "success" : "muted"}`;
+      $("[data-project-default-skill]", row).hidden = active;
+    });
+    const name = $(`[data-project-skill-row="${key}"] .dl-title strong`)?.textContent ?? "所选 Skill";
+    showToast(`已将「${name}」设为项目默认 Skill`);
+  }
+
+  function filterProjectMemory() {
+    const pane = $('[data-project-body="knowledge"]');
+    if (!pane) return;
+    const query = $('[data-project-memory-search]', pane)?.value.trim().toLocaleLowerCase() ?? "";
+    const stance = $('[data-project-memory-stance]', pane)?.value ?? "all";
+    const type = $('[data-project-memory-type]', pane)?.value ?? "all";
+    const state = $('[data-project-memory-state]', pane)?.value ?? "all";
+    let visible = 0;
+    $$("[data-project-memory-row]", pane).forEach((row) => {
+      const matchesQuery = !query || row.textContent.toLocaleLowerCase().includes(query);
+      const matchesStance = stance === "all" || row.dataset.memoryStance === stance;
+      const matchesType = type === "all" || row.dataset.memoryType === type;
+      const matchesState = state === "all" || row.dataset.memoryState === state;
+      row.hidden = !(matchesQuery && matchesStance && matchesType && matchesState);
+      if (!row.hidden) visible += 1;
+    });
+    $("[data-project-memory-count]", pane).textContent = `显示 ${visible} 条`;
+    $("[data-project-memory-empty]", pane).hidden = visible !== 0;
   }
 
   // 项目面：点文件在右侧出预览（GitHub 式），树本身不跳走
@@ -628,6 +677,90 @@
       if (b.getAttribute("role") === "tab") b.setAttribute("aria-selected", String(on));
     });
     $$(`[data-${group}-body]`).forEach((el) => (el.hidden = el.dataset[`${group}Body`] !== value));
+  }
+
+  function selectGraphNode(node) {
+    if (!node) return;
+    const graph = $('[data-memory-body="graph"]');
+    if (!graph) return;
+    $$('[data-graph-node]', graph).forEach((item) => {
+      const selected = item === node;
+      item.classList.toggle("graph-selected", selected);
+      item.classList.toggle("graph-anchor", selected);
+      item.setAttribute("aria-pressed", String(selected));
+    });
+    const fields = ["title", "type", "state", "scope", "source", "recall", "usage"];
+    fields.forEach((field) => {
+      const output = $(`[data-graph-detail="${field}"]`, graph);
+      if (output) output.textContent = node.dataset[`graph${field[0].toUpperCase()}${field.slice(1)}`] || "未记录";
+    });
+    const stance = $('[data-graph-detail="stance"]', graph);
+    if (stance) {
+      stance.textContent = node.dataset.graphStance || "未标记";
+      stance.classList.remove("verified", "confirmed", "claimed", "none");
+      stance.classList.add(node.dataset.graphStance === "已验证" ? "verified" : node.dataset.graphStance === "已确认" ? "confirmed" : "claimed");
+    }
+    const network = $('[data-graph-network]', graph);
+    if (network) network.setAttribute("aria-label", `以“${node.dataset.graphTitle}”为锚点的关系图`);
+    const input = $('[data-graph-anchor]', graph);
+    if (input) input.value = node.dataset.graphTitle || "";
+  }
+
+  function refreshGraphVisibility() {
+    const graph = $('[data-memory-body="graph"]');
+    if (!graph) return;
+    const depth = $('[data-graph-depth].active', graph)?.dataset.graphDepth || "1";
+    const relation = $('[data-graph-rel].active', graph)?.dataset.graphRel || "all";
+    const scope = $('[data-graph-scope]', graph)?.value || "全部作用域";
+    const lifecycle = $('[data-graph-state]', graph)?.value || "全部生命周期";
+    const relationMatches = (value) => relation === "all" || value === relation;
+    const depthMatches = (el) => depth === "2" || el.dataset.graphDepthLevel !== "2";
+    const scopeMatches = (el) => scope === "全部作用域" || (el.dataset.graphScope || "").includes(scope);
+    const lifecycleMatches = (el) => {
+      const state = el.dataset.graphState || "";
+      if (lifecycle === "全部生命周期") return true;
+      if (["验收证据", "任务引用"].includes(el.dataset.graphType)) return true;
+      if (lifecycle === "仅在库") return state === "在库";
+      return state === "在库" || state === "待复核";
+    };
+    $$('[data-graph-rel-edge]', graph).forEach((edge) => {
+      edge.hidden = !relationMatches(edge.dataset.graphRelEdge) || !depthMatches(edge);
+    });
+    $$('[data-graph-node]', graph).forEach((node) => {
+      const isAnchor = node.classList.contains("graph-anchor");
+      node.hidden = !isAnchor && (!relationMatches(node.dataset.graphRelNode) || !depthMatches(node) || !scopeMatches(node) || !lifecycleMatches(node));
+    });
+    $$('[data-graph-rel-row]', graph).forEach((row) => (row.hidden = !relationMatches(row.dataset.graphRelRow)));
+    const visibleNodes = $$('[data-graph-node]', graph).filter((node) => !node.hidden).length;
+    const visibleEdges = $$('[data-graph-rel-edge]', graph).filter((edge) => !edge.hidden).length;
+    const count = $('[data-graph-count]', graph);
+    if (count) count.textContent = `锚点 1 · 可见节点 ${visibleNodes} · 关系 ${visibleEdges}`;
+  }
+
+  function setGraphDepth(value) {
+    const graph = $('[data-memory-body="graph"]');
+    $$('[data-graph-depth]', graph).forEach((button) => button.classList.toggle("active", button.dataset.graphDepth === value));
+    const stage = $('[data-graph-depth-mode]', graph);
+    if (stage) stage.dataset.graphDepthMode = value;
+    refreshGraphVisibility();
+  }
+
+  function setGraphRelation(value) {
+    const graph = $('[data-memory-body="graph"]');
+    $$('[data-graph-rel]', graph).forEach((button) => button.classList.toggle("active", button.dataset.graphRel === value));
+    refreshGraphVisibility();
+  }
+
+  function setGraphZoom(action) {
+    const graph = $('[data-memory-body="graph"]');
+    const network = $('[data-graph-network]', graph);
+    if (!network) return;
+    const current = Number(network.dataset.graphZoom || "1");
+    const next = action === "in" ? Math.min(1.3, current + 0.1) : action === "out" ? Math.max(0.8, current - 0.1) : 1;
+    network.dataset.graphZoom = String(next);
+    network.style.setProperty("--graph-scale", String(next));
+    const reset = $('[data-graph-zoom="reset"]', graph);
+    if (reset) reset.textContent = `${Math.round(next * 100)}%`;
   }
 
   // ── 统计面 ────────────────────────────────────────────────
@@ -992,11 +1125,39 @@
     else if (input) input.value = "";
   }
 
+  // 新建任务是两步：写目标 → 看推荐方案 → 确认并开始（J2.1-J2.3）。
+  // 确认之前不创建任何 Issue/Run——「调整不留下执行记录」是这条旅程的硬约束，
+  // 所以推荐这一步只读 DOM，不改任何状态。
+  function setTaskStep(step) {
+    state.taskStep = step;
+    $$("[data-task-step]").forEach((el) => (el.hidden = el.dataset.taskStep !== step));
+    const review = step === "review";
+    const back = $("[data-task-back]");
+    const next = $("[data-task-next]");
+    const confirm = $("[data-task-confirm]");
+    if (back) back.hidden = !review;
+    if (next) next.hidden = review;
+    if (confirm) confirm.hidden = !review;
+    if (review) {
+      const echo = $("[data-task-goal-echo]");
+      if (echo) echo.textContent = $("[data-task-goal]")?.value.trim() ?? "";
+      const model = $("[data-task-model]")?.textContent;
+      const planModel = $("[data-task-plan-model]");
+      if (model && planModel) planModel.textContent = model;
+      window.setTimeout(() => confirm?.focus(), 0);
+    } else {
+      window.setTimeout(() => $("[data-task-goal]")?.focus(), 0);
+    }
+  }
+
   function setTaskCreate(open) {
     const overlay = $("[data-task-create-overlay]");
     if (!overlay) return;
     overlay.hidden = !open;
-    if (open) window.setTimeout(() => $("[data-task-goal]")?.focus(), 0);
+    if (open) {
+      state.taskSubmitting = false;
+      setTaskStep("goal");
+    }
   }
 
   function setAutomationDialog(open) {
@@ -1296,6 +1457,35 @@
       ],
       submit: "卸载这个包",
     }),
+    repo: (d) => ({
+      kind: "移除代码仓",
+      title: `从工作区移除 ${d.removeName}？`,
+      lead: "移除的是这个工作区对它的引用，本机磁盘上的目录不动。",
+      impact: [
+        `<b>${d.removeRefs} 个项目</b>不再能把它当作参考仓库`,
+        `新派工不能再读它；<b>${d.removeTasks} 个引用过它的任务</b>下次派工会提示「取不到这份代码」`,
+        "各机器上对它的路径授权一并撤销",
+      ],
+      keep: [
+        "磁盘上的目录与 git 历史不动，PersonaHub 只是不再引用它",
+        "历史执行记录与证据保留，仍显示当时读过它",
+      ],
+      submit: "移除这个代码仓",
+    }),
+    mcp: (d) => ({
+      kind: "移除 MCP server",
+      title: `移除 ${d.removeName}？`,
+      lead: "会从各 adapter 的配置文件里撤掉它，之后的派工拿不到它提供的工具。",
+      impact: [
+        `<b>${d.removeAdapters} 个 adapter</b> 的配置文件里的这一条被删掉`,
+        "引用了它的 Skill 在派工弹窗里会标「需要的工具缺席」",
+      ],
+      keep: [
+        `<b>${d.removeRuns} 条历史执行记录</b>保留，仍显示当时用过它`,
+        "它产生过的结果与证据不动",
+      ],
+      submit: "移除这个 server",
+    }),
     plugin: (d) => ({
       kind: "卸载插件",
       title: `卸载 ${d.removeName}？`,
@@ -1327,7 +1517,7 @@
     // 快照——真正的安全网是它，不是让人抄一遍名字。所以这里给的是
     // **一条能照着做的退路**，而不是一个增加摩擦的仪式。
     $("[data-remove-undo]", dlg).innerHTML =
-      "本机每日快照，最近一次<b>今天 03:00</b>。删错了可以从<b>数据与备份</b>恢复，但那会连带回退这之后的其他改动。";
+      "本机每日快照，最近一次<b>今天 03:00</b>，位置在<b>设置 · 关于</b>。删错了可以拿它换回来，但那会连带回退这之后的其他改动。";
     const submit = $("[data-remove-submit]", dlg);
     submit.textContent = s.submit;
     submit.classList.toggle("danger-button", !s.blocked);
@@ -1406,7 +1596,11 @@
   }
 
   function appendRoomMessage(text) {
-    const stream = $("[data-message-stream]");
+    // 早先这里找的是 [data-message-stream]，页面上根本没有这个节点——目标原文
+    // 于是被静默丢掉。会话流跟着当前可见的 thread pane 走，不另起一套选择器。
+    const stream =
+      $('[data-pane="thread"] [data-room-panel].active .message-stream') ??
+      $("[data-thread-message-stream]");
     if (!stream) return;
     const message = document.createElement("div");
     message.className = "message room-user-message user-message";
@@ -1434,6 +1628,34 @@
     if (!target) return;
 
     if (target.matches("a[href='#']")) event.preventDefault();
+
+    if (target.dataset.projectSkillOpen) {
+      openProjectSkill(target.dataset.projectSkillOpen);
+      return;
+    }
+
+    if (target.hasAttribute("data-project-knowledge-open")) {
+      const query = target.dataset.projectKnowledgeOpen;
+      setSurface("memory");
+      setLocalTab("memory", "library");
+      if (query) {
+        $$('[data-memory-row].open').forEach((row) => row.classList.remove("open"));
+        const match = $$('[data-memory-row]').find((row) => row.textContent.includes(query));
+        match?.classList.add("open");
+      }
+      return;
+    }
+
+    if (target.hasAttribute("data-project-skills-open")) {
+      setSurface("library");
+      setLocalTab("library", "skill");
+      return;
+    }
+
+    if (target.dataset.projectDefaultSkill) {
+      setProjectDefaultSkill(target.dataset.projectDefaultSkill);
+      return;
+    }
 
     if (target.dataset.surface) {
       setSurface(target.dataset.surface);
@@ -1474,6 +1696,33 @@
 
     if (target.dataset.skillFile) {
       setSkillFile(target.dataset.skillFile);
+      return;
+    }
+
+    if (target.dataset.graphNode) {
+      selectGraphNode(target);
+      return;
+    }
+
+    if (target.dataset.graphFocus) {
+      const node = $(`[data-graph-node="${target.dataset.graphFocus}"]`);
+      selectGraphNode(node);
+      node?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+      return;
+    }
+
+    if (target.dataset.graphDepth) {
+      setGraphDepth(target.dataset.graphDepth);
+      return;
+    }
+
+    if (target.dataset.graphRel) {
+      setGraphRelation(target.dataset.graphRel);
+      return;
+    }
+
+    if (target.dataset.graphZoom) {
+      setGraphZoom(target.dataset.graphZoom);
       return;
     }
 
@@ -1553,12 +1802,9 @@
       return;
     }
 
-    for (const group of ["project", "memory", "library", "automation", "machine", "stat", "statshape", "statdim"]) {
+    for (const group of ["project", "memory", "library", "automation", "rt", "stat", "statshape", "statdim"]) {
       const value = target.dataset[`${group}Tab`];
       if (value) {
-        // 换机器时收起右框：详情是「那台机器上的那一个 adapter」，
-        // 留着会把另一台机器的内容显示在新 tab 里
-        if (group === "machine") closeRuntimeDrawer();
         setLocalTab(group, value);
         return;
       }
@@ -1638,17 +1884,78 @@
       return;
     }
 
+    // 自动化详情的编辑态：概览的每一块都有只读与可编辑两份，切 class 换掉
+    if (target.hasAttribute("data-auto-edit")) {
+      const main = target.closest(".automation-main");
+      if (main) {
+        const on = !main.classList.contains("editing");
+        main.classList.toggle("editing", on);
+        target.textContent = on ? "取消" : "编辑";
+        const save = $("[data-auto-save-rule]", main);
+        if (save) save.hidden = !on;
+      }
+      return;
+    }
+    // 代码仓配置：本地路径 + git 自动识别 + 各机器上的路径与授权
+    const REPO_SPECS = {
+      personahub: ["personahub", "D:\Projects\personahub", "github.com/qzli/personahub", "main"],
+      multica: ["multica", "D:\Projects\multica", "github.com/multica/multica", "main"],
+      market: ["market-game-sim", "D:\Projects\market-game-sim", "github.com/qzli/market-game-sim", "main"],
+      design: ["design-archive", "D:\Archive\design", "", ""],
+      spike: ["old-spike", "D:\Projects\old-spike", "", ""],
+    };
+    if (target.dataset.repoOpen || target.dataset.repoAdd) {
+      const dlg = $("[data-repo-dialog]");
+      if (!dlg) return;
+      const add = target.dataset.repoAdd;
+      const spec = REPO_SPECS[target.dataset.repoOpen] || ["", "", "", ""];
+      const reference = add === "reference" || ["multica", "design", "spike"].includes(target.dataset.repoOpen);
+      const addTitle = reference ? "添加参考仓库" : "添加代码仓";
+      $("[data-repo-kind]", dlg).textContent = add ? addTitle : "代码仓配置";
+      $("[data-repo-title]", dlg).textContent = add ? addTitle : spec[0];
+      $("[data-repo-path]", dlg).value = add ? "" : spec[1];
+      $$('[data-repo-purpose]', dlg).forEach((button) => button.classList.toggle("active", button.dataset.repoPurpose === (reference ? "reference" : "main")));
+      // 选中本地目录后自动读一次 git 配置：是 git 仓库就把远端一起绑上
+      $("[data-repo-detect]", dlg).innerHTML = add
+        ? "填本地路径或仓库地址都可以。本地目录会<b>自动读一次 git 配置</b>：是 git 仓库就把远端一起绑上，名称从仓库或目录名读出来。"
+        : spec[2]
+          ? `<b class="ok">✓ 已识别为 git 仓库</b> · 远端 <code>${spec[2]}</code> · 当前分支 <code>${spec[3]}</code>`
+          : '<b class="warn">无 git 远端</b> · 按纯本地目录处理，读得到代码但拿不到 PR 与 issue';
+      dlg.hidden = false;
+      return;
+    }
+    if (target.hasAttribute("data-repo-close")) { $("[data-repo-dialog]").hidden = true; return; }
+    if (target.dataset.repoPurpose) {
+      $$('[data-repo-purpose]', target.closest("[data-repo-dialog]")).forEach((button) => button.classList.toggle("active", button === target));
+      return;
+    }
+    if (target.dataset.pluginOpen) {
+      const dlg = $("[data-plugin-dialog]");
+      if (!dlg) return;
+      $("[data-plugin-title]", dlg).textContent = target.dataset.pluginOpen;
+      dlg.hidden = false;
+      return;
+    }
+    if (target.hasAttribute("data-plugin-close")) { $("[data-plugin-dialog]").hidden = true; return; }
+    // 概览里的 adapter 列表：点一行跳到它自己的 tab
+    if (target.dataset.rtGoto) { setLocalTab("rt", target.dataset.rtGoto); return; }
+    // 图谱在活跃记忆不足 500 条时只保留能力预告，不允许内部链接绕过禁用态。
+    if (target.dataset.memoryGoto) {
+      const tab = $(`[data-memory-tab="${target.dataset.memoryGoto}"]`);
+      if (tab?.disabled) {
+        showToast("知识图谱尚未开放：活跃记忆达到 500 条并出现真实浏览需求后启用");
+        return;
+      }
+      setLocalTab("memory", target.dataset.memoryGoto);
+      return;
+    }
+    // 自动化规则的启用开关：标签跟着状态走，暂停时说明后果
     if (target.dataset.removeOpen) { openRemoveDialog(target); return; }
     if (target.hasAttribute("data-remove-close")) { $("[data-remove-dialog]").hidden = true; return; }
     if (target.dataset.pickOpen) { openPickDialog(target.dataset.pickOpen); return; }
     if (target.hasAttribute("data-pick-close")) { $("[data-pick-dialog]").hidden = true; return; }
     if (target.hasAttribute("data-prefix-open")) { $("[data-prefix-dialog]").hidden = false; return; }
     if (target.hasAttribute("data-prefix-close")) { $("[data-prefix-dialog]").hidden = true; return; }
-
-    if (target.hasAttribute("data-runtime-drawer-close")) {
-      closeRuntimeDrawer();
-      return;
-    }
 
     if (target.dataset.projectTab) {
       const card = target.closest(".project-card");
@@ -2086,6 +2393,54 @@
   // 建完就开跑：这一条和「谁来做等会儿再说」的默认不同——用户在弹窗里
   // 已经选了执行模型，那就说明他现在就要它动起来。所以直接落到会话视图，
   // 并且把第一轮派工写进流里，而不是丢回概览让他再点一次。
+  // 自动化规则的启用开关：标签跟着状态走，暂停时说明后果
+  document.addEventListener("change", (event) => {
+    const box = event.target.closest?.("[data-rule-toggle]");
+    if (!box) return;
+    const label = box.closest(".rule-switch")?.querySelector(".rule-label");
+    if (label) label.textContent = box.checked ? "已启用" : "已暂停";
+    showToast(box.checked ? "规则已启用，下次到点会触发" : "规则已暂停：正在跑的任务不受影响，到点不再触发");
+  });
+
+  // 自动化的执行组合：模型 × 深度现算成组合名，和派工弹窗同一套口径
+  const AUTO_DEPTHS = {
+    "codex-gpt5.6": ["low", "medium", "high"],
+    "codex-gpt5.6-mini": ["low", "medium"],
+    "claude-opus5": ["low", "medium", "high"],
+    "claude-sonnet5": ["low", "medium", "high"],
+    "opencode-glm4.6": ["low", "medium"],
+    "opencode-kimi-k2": ["low"],
+  };
+  function syncAutoCombo(scope) {
+    const model = $("[data-auto-model]", scope);
+    const depth = $("[data-auto-depth]", scope);
+    const out = $("[data-auto-combo]", scope);
+    if (!model || !depth || !out) return;
+    const allowed = AUTO_DEPTHS[model.value] || ["low"];
+    // 模型不支持的深度直接置灰：不可选比选了再报错好
+    $$("option", depth).forEach((o) => (o.disabled = !allowed.includes(o.textContent.trim())));
+    if (!allowed.includes(depth.value)) depth.value = allowed[allowed.length - 1];
+    out.textContent = `${model.value}-${depth.value}`;
+  }
+  document.addEventListener("change", (event) => {
+    const el = event.target.closest?.("[data-auto-model],[data-auto-depth]");
+    if (!el) return;
+    syncAutoCombo(el.closest(".fm-card"));
+  });
+  $$("[data-auto-model]").forEach((el) => syncAutoCombo(el.closest(".fm-card")));
+
+  $("[data-repo-form]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    $("[data-repo-dialog]").hidden = true;
+    showToast("代码仓已保存；改动从下一次派工起生效");
+  });
+
+  $("[data-plugin-form]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    $("[data-plugin-dialog]").hidden = true;
+    showToast("插件配置已保存");
+  });
+
   $("[data-account-form]")?.addEventListener("submit", (event) => {
     event.preventDefault();
     setAccountDialog(false);
@@ -2098,13 +2453,37 @@
     showToast("自动化已保存为暂停；预检通过后由你明确启用");
   });
 
+  $("[data-task-next]")?.addEventListener("click", () => {
+    const goal = $("[data-task-goal]")?.value.trim();
+    if (!goal) {
+      showToast("先补充目标：要做什么、有什么约束、什么算做完");
+      $("[data-task-goal]")?.focus();
+      return;
+    }
+    setTaskStep("review");
+  });
+
+  $("[data-task-back]")?.addEventListener("click", () => setTaskStep("goal"));
+
   $("[data-task-create-form]")?.addEventListener("submit", (event) => {
     event.preventDefault();
+    // 只有确认那一步才真的创建。停在写目标这一步时按回车不应该建任务。
+    if (state.taskStep !== "review") return;
+    // 重复点击不重复创建（J2.3 可观察验收）。
+    if (state.taskSubmitting) return;
+    state.taskSubmitting = true;
     const combo = $("[data-task-model]")?.textContent ?? "codex-gpt5.6-high";
-    const goal = $("[data-task-title]")?.value.trim() || "新任务";
+    const goal = $("[data-task-goal]")?.value.trim();
+    if (!goal) {
+      state.taskSubmitting = false;
+      setTaskStep("goal");
+      showToast("先补充目标：要做什么、有什么约束、什么算做完");
+      return;
+    }
     setTaskCreate(false);
     setSurface("project");
     openDocument("issue-running", documentMeta["issue-running"][1]);
+    setTaskGoal("issue-running", goal);
     setPane("thread");
     appendRoomMessage(goal);
     showToast(`任务已创建，已派给 ${combo} 并开始执行`);
@@ -2144,6 +2523,19 @@
 
   document.addEventListener("input", (event) => {
     if (event.target.matches("[data-tree-filter]")) filterFileTree(event.target.value);
+    if (event.target.matches("[data-project-memory-search]")) filterProjectMemory();
+    if (event.target.matches("[data-graph-anchor]")) {
+      const query = event.target.value.trim().toLocaleLowerCase();
+      if (query.length >= 2) {
+        const node = $$('[data-graph-node]').find((item) => (item.dataset.graphTitle || "").toLocaleLowerCase().includes(query));
+        if (node) selectGraphNode(node);
+      }
+    }
+  });
+
+  document.addEventListener("change", (event) => {
+    if (event.target.matches("[data-graph-scope], [data-graph-state]")) refreshGraphVisibility();
+    if (event.target.matches("[data-project-memory-stance], [data-project-memory-type], [data-project-memory-state]")) filterProjectMemory();
   });
 
   $("[data-thread-composer]")?.addEventListener("submit", (event) => {
