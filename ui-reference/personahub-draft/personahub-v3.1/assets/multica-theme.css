@@ -1055,6 +1055,12 @@ kbd {
 .setup-summary section > button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; }
 .setup-summary section > button.primary-button { border-color: var(--text); background: var(--text); color: var(--bg); }
 
+/* 异常状态的影响预览：动了什么 / 没动什么 / 怎么恢复，三块摆在主操作上面，
+   不能等按下去才知道。 */
+.sl-impact { display: grid; gap: 4px; margin: 8px 0 10px; padding-left: 18px; }
+.sl-impact li { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.sl-impact li b { color: var(--text); font-weight: 600; }
+
 /* 密钥输入默认遮罩：保存后不回显管不到输入的那一刻。 */
 .ad-secret { display: flex; gap: 6px; align-items: stretch; }
 .ad-secret input { flex: 1; min-width: 0; }

@@ -38,6 +38,10 @@
     "issue-view": ["PersonaHub › 任务 › 等待你指派", "任务 · 协作现场人工介入"],
     "issue-new": ["PersonaHub › 任务 › 刚创建", "任务 · 刚创建"],
     "issue-validation": ["PersonaHub › 工作 › 反复未收敛", "任务 · 验证未收敛"],
+    "issue-failed": ["PersonaHub › 工作 › 实现失败", "任务 · 实现失败"],
+    "issue-interrupted": ["PersonaHub › 工作 › 已中断", "任务 · 已中断"],
+    "issue-cancelled": ["PersonaHub › 工作 › 已取消", "任务 · 已取消"],
+    "issue-queued": ["PersonaHub › 工作 › 已排队", "任务 · 已排队"],
     "issue-permission": ["PersonaHub › 任务 › 等待权限确认", "任务 · 权限确认"],
     "issue-running": ["PersonaHub › 任务 › 运行中", "任务 · Inspector 的 artifact 状态"],
     "issue-research": ["PersonaHub › 任务 › Research 进行中", "任务 · 阶段成果研究"],
@@ -60,6 +64,10 @@
     "issue-validation": { panel: "primary", recipient: "claude-opus4.6-medium", title: "修复图重启的并发认领", status: "需要你处理", summary: "连续 2 次未解决 · 自动继续已停止", message: "两轮独立验证都指向同一处并发窗口。建议先由架构研究员隔离分析共同根因，再决定换什么策略。", handoff: true, handoffLabel: "建议改变策略", handoffSummary: "先分析共同根因，不直接继续修改", handoffMember: "@架构研究员", input: "@架构研究员\n先分析两轮都撞上的那个并发窗口，不修改代码；给出新的恢复策略和验证边界。", who: "验证循环", what: "连续 2 次出现相同 finding", step: "已停止自动继续", block: "卡在：两轮都撞同一处并发窗口，需要换策略"},
     "issue-permission": { panel: "primary", recipient: "codex-gpt5.6-high", title: "允许 agent 执行 git push", status: "等待确认", summary: "执行已安全暂停 · 外部路径尚未授权", message: "请求执行 git push origin HEAD:feat/f009-artifact-ref。这是显式的能力边界，每次都要你单独授权。", handoff: false, input: "", who: "执行已安全暂停", what: "等待你授权 git push", step: "1 / 3 步", block: "卡在：git push 是显式能力边界，需要你单独授权"},
     "issue-running": { panel: "primary", recipient: "claude-opus4.6-medium", title: "补齐 Inspector 的 artifact 状态", status: "正在执行", summary: "Claude 正在检查项目级 CLI 可用性 · 无需你操作", message: "当前进行到第 2 / 4 步，代码目录写锁安全。四种 artifact 状态里已完成两种，完成或遇到阻塞时会在这里通知你。", handoff: false, input: "", who: "Claude", what: "正在补 missing / invalid 两种状态", step: "2 / 4 步", block: ""},
+    "issue-failed": { panel: "primary", recipient: "codex-gpt5.6-high", title: "迁移 artifact 归档路径", status: "实现失败", summary: "第 3 步命令退出码 1 · 等你决定怎么重来", message: "实现步骤明确失败：迁移脚本在写入阶段退出。前两步的结果仍然可信，代码目录已回到干净状态。", handoff: true, input: "按失败原因重试这一步，不重跑前两步。", who: "codex", what: "第 3 步失败 · 退出码 1", step: "2 / 4 步", block: "迁移脚本写入阶段失败"},
+    "issue-interrupted": { panel: "primary", recipient: "claude-opus4.6-medium", title: "补齐 Room 事件重放", status: "已中断", summary: "服务重启 · 进行中的那一步结果不可信", message: "服务在这一步执行途中退出，这一次尝试的产出无法确认是否完整，因此不作数。已完成的前两步不受影响。", handoff: true, input: "从被中断的那一步重新开始，前两步的结果直接沿用。", who: "系统", what: "服务重启，第 3 步尝试作废", step: "2 / 4 步", block: "进行中的尝试不可信"},
+    "issue-cancelled": { panel: "primary", recipient: "codex-gpt5.6-medium", title: "重写统计页分页口径", status: "已取消", summary: "你在 08-28 停止了这个任务", message: "任务由你主动停止，不是故障。已经产出的改动和证据都保留，重新开始会另起一次尝试，不覆盖这一次的记录。", handoff: true, input: "重新开始这个任务，沿用原目标。", who: "你", what: "08-28 主动停止", step: "1 / 3 步", block: ""},
+    "issue-queued": { panel: "primary", recipient: "codex-gpt5.6-high", title: "清理 dogfooding 标签", status: "已排队", summary: "代码目录被另一个写任务占用 · 排在第 2 位", message: "这个项目的可写目录同一时刻只允许一个写任务。当前持锁的是「artifact 引用不漂移」，这一条在它结束后按顺序开始。", handoff: false, input: "", who: "队列", what: "等写锁 · 排第 2", step: "0 / 3 步", block: "另一个写任务持锁"},
     "issue-research": { panel: "research-thread", recipient: "claude-opus4.6-medium", room: { name: "Research 现场", meta: "3 个执行组合并行 · 1 个已交付 · 1 个执行中 · 1 个等前置" }, title: "Agent session 生命周期调研", status: "正在执行", summary: "Research 阶段 · 2 / 3 步 · 无需你操作", message: "研究现场正在核实 multica 与 clowder 的 session 机制，以及 PersonaHub 现状的差距。", handoff: false, input: "", who: "OpenCode", what: "正在整理两个项目的 session 机制", step: "2 / 3 步", block: ""},
     "issue-done": { panel: "primary", recipient: "codex-gpt5.6-high", title: "Graph 启动恢复", status: "已完成", summary: "验证通过 · 完成要求 3 / 3", message: "任务已可信完成。完成摘要可逐条追到执行记录、变更文件与独立验证结论。", handoff: false, input: "", who: "已完成", what: "完成要求 3 / 3 · 独立验证通过", step: "3 / 3 步", block: ""},
   };
@@ -174,6 +182,10 @@
     "issue-new": ["把 dogfooding 问题导出为周报", "未归类", "2026-08-30 14:20", "刚创建，还没有指派", ["未归类"]],
     "issue-view": ["artifact 引用不漂移与来源可追", "PersonaHub", "2026-08-27 09:12", "等待你指派", ["F009", "v0.3", "coding"]],
     "issue-validation": ["修复图重启的并发认领", "PersonaHub", "2026-08-26 16:40", "连续 2 次未解决", ["F006", "bug"]],
+    "issue-failed": ["迁移 artifact 归档路径", "PersonaHub", "2026-08-28 11:05", "实现失败 · 等你决定", ["F009"]],
+    "issue-interrupted": ["补齐 Room 事件重放", "PersonaHub", "2026-08-27 20:31", "已中断 · 服务重启", ["F011"]],
+    "issue-cancelled": ["重写统计页分页口径", "PersonaHub", "2026-08-28 09:44", "已取消 · 你停止的", ["F008"]],
+    "issue-queued": ["清理 dogfooding 标签", "PersonaHub", "2026-08-30 15:02", "已排队 · 等写锁", ["运维"]],
     "issue-permission": ["允许 agent 执行 git push", "PersonaHub", "2026-08-30 13:38", "等待你确认权限", ["运维"]],
     "issue-research": ["Agent session 生命周期调研", "PersonaHub", "2026-08-25 10:02", "Research 阶段 · 执行中", ["ADR", "v0.3"]],
     "issue-running": ["补齐 Inspector 的 artifact 状态", "PersonaHub", "2026-08-29 21:15", "Claude 正在执行", ["F009"]],
@@ -294,6 +306,7 @@
   const TAB_DOCUMENTS = new Set([
     "issue-new", "issue-view", "issue-validation", "issue-permission",
     "issue-running", "issue-research", "issue-done",
+    "issue-failed", "issue-interrupted", "issue-cancelled", "issue-queued",
     "room-view", "project-overview",
   ]);
 
@@ -2612,15 +2625,32 @@
       const el = record.target;
       if (!el.classList?.contains("command-overlay")) return;
       if (el.hidden) {
+        // 归还也要立刻发生：拖到下一个 tick 的话，关闭之后的那一瞬间焦点
+        // 还留在已经隐藏的弹层里，读屏会读到一个不在场的控件。
         const back = state.overlayTrigger;
-        if (back && document.contains(back)) window.setTimeout(() => back.focus(), 0);
+        if (back && document.contains(back)) {
+          back.focus();
+          window.requestAnimationFrame(() => {
+            if (!document.activeElement || document.activeElement === document.body) back.focus();
+          });
+        }
       } else {
         applyTableSemantics(el);
         applyTabSemantics(el);
-        const first = $$(focusables, el).find((n) => n.offsetParent !== null);
-        window.setTimeout(() => {
-          if (!el.contains(document.activeElement)) first?.focus();
-        }, 0);
+        // 焦点入场不能依赖布局是否已经完成：offsetParent 在首帧之前是 null，
+        // 那一帧里「找不到可聚焦元素」会让弹层开着却没人接住焦点。
+        // 因此按可见 → 任意可聚焦 → 弹层容器本身三级兜底，保证一定进得去。
+        const items = $$(focusables, el);
+        const first = items.find((n) => n.offsetParent !== null) ?? items[0];
+        const box = $('[role="dialog"]', el) ?? el;
+        if (!box.hasAttribute("tabindex")) box.tabIndex = -1;
+        const enter = () => {
+          if (el.hidden || el.contains(document.activeElement)) return;
+          (first ?? box).focus();
+          if (!el.contains(document.activeElement)) box.focus();
+        };
+        enter();
+        window.requestAnimationFrame(enter);
       }
     });
   });

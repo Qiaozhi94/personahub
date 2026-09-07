@@ -49,7 +49,7 @@ async function check(name, action) {
   }
 }
 
-await page.goto(baseUrl, { waitUntil: "networkidle" });
+await page.goto(baseUrl, { waitUntil: "load", timeout: 15000 });
 
 /** 打开任务并切到指定视图。V3.3 后内容分散在六个面里，查之前必须先切过去。 */
 /** 轨迹并入会话面：放大副栏就得到原来那个全宽轨迹视图。 */
@@ -500,7 +500,7 @@ await check("决定产生状态变更，不产生消息气泡（概览给结构 
 
 
   // 这条 check 会真的改变舞台状态，收尾时复位，避免污染后续断言
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "load", timeout: 15000 });
   await openTask("issue-view", "overview");
   await page.locator("[data-baseline-gate]").waitFor({ state: "visible" });
 });
@@ -653,7 +653,7 @@ await check("tab 上的数字是需要人工介入的件数，不是内容总数
   if (await overview.isVisible()) throw new Error("处理完之后概览仍在计数");
 
   if (await page.locator('[data-pane-count="resource"]').count()) throw new Error("只读视图不该有计数位");
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "load", timeout: 15000 });
   await openTask("issue-view", "overview");
 });
 
@@ -1221,6 +1221,53 @@ await check("新建任务照 multica：描述 + 属性 chip，标题由执行结
   await dlg.locator("[data-task-confirm]").click();
   if (await dlg.isVisible()) throw new Error("提交后弹窗没关");
   if ((await page.locator("[data-pane-tab].active").innerText()) !== "会话") throw new Error("创建后没有直接进入会话");
+});
+
+// UX-BL-R1-003：状态矩阵里的每个 P0 状态都要有可进入的代表画面、
+// 唯一主操作、影响预览和恢复后的保证。原先缺了失败、中断、取消、排队四种。
+await check("异常与恢复状态：四种都进得去，各有主操作与影响预览", async () => {
+  const cases = [
+    ["issue-failed", "实现失败", "按失败原因重试这一步", ["保留", "作废", "不动"]],
+    ["issue-interrupted", "已中断", "从这一步重新开始", ["保留", "作废"]],
+    ["issue-cancelled", "已取消", "重新开始", ["保留", "重新开始"]],
+    ["issue-queued", "已排队", "查看队列", ["正在等", "不消耗", "拿到锁后"]],
+  ];
+  for (const [id, word, primary, impacts] of cases) {
+    const entry = page.locator(`.work-item[data-open="${id}"]`);
+    if (!(await entry.count())) throw new Error(`${word}：左栏没有入口`);
+    await openTask(id, "overview");
+    const doc = page.locator(`[data-overview="${id}"]`);
+    if (!(await doc.isVisible())) throw new Error(`${word}：点进去没有代表画面`);
+    const lead = doc.locator(".state-lead");
+    if (!(await lead.isVisible())) throw new Error(`${word}：没有置顶状态卡`);
+
+    // 主操作唯一：状态卡里只有一个 primary
+    const primaries = lead.locator("button.primary-button");
+    if ((await primaries.count()) !== 1) throw new Error(`${word}：主操作不唯一（${await primaries.count()} 个）`);
+    if ((await primaries.innerText()) !== primary) throw new Error(`${word}：主操作应是「${primary}」`);
+
+    // 影响预览：按下去之前就得说清动了什么、没动什么
+    const impact = await lead.locator(".sl-impact").innerText();
+    for (const need of impacts) {
+      if (!impact.includes(need)) throw new Error(`${word}：影响预览缺少「${need}」`);
+    }
+    // 状态名不能和别的状态混着说
+    const name = await page.locator("[data-pane-task-name]").innerText();
+    if (!name) throw new Error(`${word}：任务名没跟上`);
+  }
+});
+
+await check("已中断不冒充成功，已取消不冒充失败", async () => {
+  await openTask("issue-interrupted", "overview");
+  const interrupted = await page.locator('[data-overview="issue-interrupted"]').innerText();
+  if (!interrupted.includes("作废")) throw new Error("被中断的尝试没有明确作废");
+  const status = await page.locator('[data-overview="issue-interrupted"] .ov-now-status').innerText();
+  if (status.includes("已完成") || status.includes("验证通过")) throw new Error("中断态被报成了完成");
+
+  await openTask("issue-cancelled", "overview");
+  const cancelled = await page.locator('[data-overview="issue-cancelled"]').innerText();
+  if (!cancelled.includes("不是故障")) throw new Error("已取消没有和故障区分开");
+  if (!cancelled.includes("不会自动恢复")) throw new Error("已取消没有说明不会自动恢复");
 });
 
 // UX-BL-R1-004：弹层 / 数据表 / 页签的基础键盘与读屏契约。
