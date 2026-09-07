@@ -1223,6 +1223,32 @@ await check("新建任务照 multica：描述 + 属性 chip，标题由执行结
   if ((await page.locator("[data-pane-tab].active").innerText()) !== "会话") throw new Error("创建后没有直接进入会话");
 });
 
+// N4：「说明段落 ≤150 字、整站说明性文字 ≤4500 字」原本没有完整口径。
+// 这里把口径固定下来：只统计界面写给使用者的说明、提示和警告类节点；不含数据文案，
+// 也不含 agent 产出的会话内容（.agent-note 是别人说的话，不是界面在解释自己）。
+await check("说明性文字：单段 ≤150 字，整站 ≤4500 字", async () => {
+  const report = await page.evaluate(() => {
+    const nodes = [
+      ...document.querySelectorAll(
+        ".pane-note, .rt-sec-note, .sc-note, .stage-note, .dl-sub, .tc-note, .fm-warn, .fm-hint, .as-note",
+      ),
+    ];
+    let total = 0;
+    const long = [];
+    nodes.forEach((el) => {
+      const text = (el.textContent ?? "").replace(/\s+/g, "").trim();
+      total += text.length;
+      if (text.length > 150) long.push(`${text.length} 字：${text.slice(0, 24)}…`);
+    });
+    return { total, long, count: nodes.length };
+  });
+  if (report.count < 100) throw new Error(`只统计到 ${report.count} 段说明文字，口径可能失配`);
+  if (report.long.length) throw new Error(`这些说明段落超过 150 字：${report.long.slice(0, 2).join(" / ")}`);
+  if (report.total > 4500) {
+    throw new Error(`整站说明性文字 ${report.total} 字，超出 4500 上限 ${report.total - 4500} 字——约束又爬回界面了，挪回 implementation-notes`);
+  }
+});
+
 // N3：占位动作必须能区分「交互已定案、原型用一句话代替」与「这条还没设计」。
 // 415 个 data-demo 混在一起时，实现方没有办法判断该照着做还是该先去问。
 await check("占位动作分两类：data-demo 写结果，data-unbuilt 置灰并写原因", async () => {
@@ -3412,14 +3438,6 @@ await check("界面只留事实与动作，设计论证撤回文档（V3.28 文�
   for (const n of notes) {
     if (/（(?:ADR|PRD|§)/.test(n)) throw new Error(`说明文字里还带着文档引用：${n.slice(0, 40)}…`);
   }
-  // 说明性文字有上限：超过 200 字的段落，说的一定不只是「会发生什么」
-  const long = notes.filter((n) => n.replace(/\s/g, "").length > 150);
-  if (long.length) throw new Error(`有 ${long.length} 段说明文字超过 150 字：${long[0].slice(0, 40)}…`);
-  // 总量守门：说明性文字整站不超过 4500 字，超了说明约束又开始往界面上爬
-  const total = await page.evaluate(() =>
-    [...document.querySelectorAll(".pane-note, .rt-sec-note, .sc-note, .stage-note, .dl-sub, .tc-note, .fm-warn, .fm-hint, .as-note")]
-      .reduce((n, el) => n + (el.textContent || "").replace(/\s/g, "").length, 0));
-  if (total > 4500) throw new Error(`说明性文字共 ${total} 字，超过 4500 上限——约束应写进 docs/implementation-notes.md`);
   // 自造名词：装进来的东西一律叫插件
   if (text.includes("能力包")) throw new Error("「能力包」这个自造名词回来了——只有 Skills / MCP / 插件");
   // 给设计者看的备注不该留在界面上

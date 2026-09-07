@@ -3897,7 +3897,7 @@ completed -&gt; archived</code></pre>
                         <button type="button" data-stat-page="next" aria-label="下一页">›</button>
                       </span>
                     </p>
-                    <p class="pane-note sc-note">选择任意任务可查看对应的<b>轨迹</b>。合计行固定显示在首行。<br>缓存输入按折扣价格估算；非缓存输入包含本次处理的输入与全部输出。返工占比 = 返工重试 token ÷ 全部 token（缓存输入 + 非缓存输入）。<b>估算成本与实际费用为独立口径，不应相加。</b></p>
+                    <p class="pane-note sc-note">点任务行看它的<b>轨迹</b>。合计行固定在首行。<br>返工占比 = 返工重试 token ÷ 全部 token（缓存输入 + 非缓存输入）。<b>估算与实付是两个口径，不相加。</b></p>
                   </div>
 
                   <div class="sc-body" data-statdim-body="project" hidden>
@@ -4984,7 +4984,7 @@ completed -&gt; archived</code></pre>
           <details class="ad-advanced"><summary>高级：环境变量</summary><p class="tc-note">起 CLI 子进程时额外注入的变量。只在这个账号的派工里生效，不写进你的 shell。</p><div class="tc-chips"><button class="tc-chip" type="button" data-demo="添加一条 KEY=value">＋ 添加变量</button></div></details>
         </div>
 
-        <p class="tc-note">保存后 PersonaHub 会<strong>立刻做一次检查</strong>：连得上、key 有效、模型清单能拿到，才会把这个账号的组合放进派工清单。检查失败不会阻止保存——先存下来，再修。</p>
+        <p class="tc-note">保存后<strong>立刻检查一次</strong>：连得上、key 有效、模型清单能拿到，才进派工清单。检查失败不阻止保存。</p>
         <footer><button type="button" data-account-close>取消</button><button class="primary-button" type="submit">保存并检查</button></footer>
       </form>
     </div>
