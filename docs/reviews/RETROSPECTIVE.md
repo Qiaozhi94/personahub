@@ -836,7 +836,7 @@ archived ref 的消费限制与 F009 契约一致。
 ## 循环 17: V3.44 交互设计基线检视（2轮）
 
 - **report_type**: doc-review
-- **周期**: 2026-09-06—2026-09-07，2轮 · **状态**: 收敛候选，待最终 CI
+- **周期**: 2026-09-06—2026-09-08，2轮 · **状态**: 已闭环（本地 `npm run verify` 全绿；GitHub Actions run `34143145129` 的 Verify 与 Playwright E2E 全绿）
 - **背景**: 对 `ui-reference/personahub-draft/personahub-v3.1/` 做交付前全量检视。Round 1
   基线为 `16cbd97`，发现 5 条 High；修复落在 `70a32b4`、`d337e3d`、`a933c0e`、
   `a58833e`、`1a2af6e`。Round 2 原定 diff-only，但首个修复覆盖目标产物超过 30%，按协议
