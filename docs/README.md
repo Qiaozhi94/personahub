@@ -50,6 +50,7 @@ updated: 2026-08-09
 - **检视复盘**：→ [`reviews/RETROSPECTIVE.md`](reviews/RETROSPECTIVE.md)
 - **使用问题记录（dogfooding bug log，实时追踪）**：→ [`reviews/dogfooding-bugs.md`](reviews/dogfooding-bugs.md)
 - **使用体验记录（dogfooding notes，实时追踪）**：→ [`reviews/dogfooding-notes.md`](reviews/dogfooding-notes.md)
+- **交互设计空白区清单**：→ [`reviews/blank-areas.md`](reviews/blank-areas.md)
 - **检视记录与产品级计划目录**：→ [`reviews/`](reviews/)（2026-08-12 起全量纳入 git；
   `CURRENT-doc.md` / `CURRENT-code.md` 为检视进行中的临时文件，由检视人复核后删除）
 

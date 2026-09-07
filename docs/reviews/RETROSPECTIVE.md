@@ -830,3 +830,33 @@ archived ref 的消费限制与 F009 契约一致。
    severity 清零就宣布完成，这条 flake 会一直留在门禁里，直到某次真实回归被当成
    "重跑一下就好"。新标签 `flaky-gate-erodes-final-check` 记录这个模式：**随机红的门禁
    比没有门禁更危险**，因为它训练人忽略红色。已登记 ST-T17，且明确禁止用 `retries` 消红。
+
+---
+
+## 循环 17: V3.44 交互设计基线检视（2轮）
+
+- **report_type**: doc-review
+- **周期**: 2026-09-06—2026-09-07，2轮 · **状态**: 收敛候选，待最终 CI
+- **背景**: 对 `ui-reference/personahub-draft/personahub-v3.1/` 做交付前全量检视。Round 1
+  基线为 `16cbd97`，发现 5 条 High；修复落在 `70a32b4`、`d337e3d`、`a933c0e`、
+  `a58833e`、`1a2af6e`。Round 2 原定 diff-only，但首个修复覆盖目标产物超过 30%，按协议
+  升级为一次 full-scan；当前 125 条浏览器断言全绿，五类联合变异均能使目标断言转红。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 裁决理由 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| UX-BL-R1-001 | 新建任务丢失用户目标并绕过推荐确认主路径 | High | correctness | root-cause | original-coding | fixed | 读取真实目标，恢复 J2 推荐与确认路径，并用唯一目标文本做端到端断言 | 提交逻辑保留 `data-task-goal` 原文；确认前只生成可调整推荐，确认后幂等创建任务并把原文带入任务与会话 | 接纳；实现与建议一致 | `browser-check.mjs::新建任务：目标原文端到端保留，确认前不创建，重复提交不重复创建` | 1 | 2 | journey-contract-not-exercised |
+| UX-BL-R1-002 | 首次设置页面存在但没有任何可达入口 | High | correctness | root-cause | spec-drift | fixed | 统一 `start/setup` 路由并跑通 J1.1-J1.6 | 统一为 `setup` 路由，增加可见入口；代码目录、成员、执行检查与首个任务可连续完成，含 loading、失败和重试 | 接纳；实现与建议一致 | `browser-check.mjs::首次设置：入口可达，J1.1-J1.6 连续走通且检查有失败与重试` | 1 | 2 | route-id-contract-drift |
+| UX-BL-R1-003 | 异常恢复状态覆盖不完整且设计文档仍描述已取消结构 | High | correctness | root-cause | spec-drift | fixed | 补齐恢复状态与主操作，清理任务 tab 等过期契约 | 新增实现失败、已中断、已取消、已排队代表画面；每态具有唯一主操作、影响预览和恢复保证，并清理已撤销导航契约 | 接纳；实现与建议一致 | `browser-check.mjs::异常与恢复状态：四种都进得去，各有主操作与影响预览` | 1 | 2 | source-of-truth-prototype-drift |
+| UX-BL-R1-004 | 弹层、数据表与页签未达到基础键盘和读屏契约 | High | test-coverage | root-cause | process-gap | fixed | 统一 Dialog、Tabs、DataTable，并新增键盘与语义门禁 | Dialog 统一名称、焦点圈、Esc 与焦点归还；DataTable 补列头/单元格关系；Tabs 补选中态、单一 tab stop 与方向键模型 | 接纳；实现覆盖建议及相邻键盘契约 | `browser-check.mjs::弹层、数据表与页签回归组` | 1 | 2 | structural-check-misses-behavior |
+| UX-BL-R1-005 | 密钥与全局暂停没有使用一致的高风险操作保护 | High | correctness | root-cause | original-coding | fixed | 遮罩密钥；为全局暂停补影响预览、确认、恢复并裁决归属 | 所有密钥默认遮罩并显式查看；暂停全部派工在运行时给出影响预览和确认，确认后保留持久状态与唯一恢复入口 | 接纳；运行时只管理全局派工闸门，不承担单任务停止 | `browser-check.mjs::凭据与暂停派工回归组` | 1 | 2 | risk-tier-affordance-missing |
+
+**模式性教训**
+
+1. 来源分布为原方案 2、规格漂移 2、流程缺口 1；没有 fix-regression。5 条均在 Round 2
+   关闭，最长存活 1 轮。
+2. `journey-contract-not-exercised` 与 `structural-check-misses-behavior` 指向同一问题：结构断言
+   全绿不能证明用户旅程可走。门禁必须输入唯一文本、执行真实键盘路径并验证确认前后状态。
+3. 5 条建议均被实质采用，建议命中率 100%；没有 partial/rejected 裁决。命中率偏高的原因是
+   首轮发现均附带了可直接执行的关闭条件，而不是只有风格偏好。
+4. 联合变异删除任务目标入口、首次设置路由、异常状态入口、Dialog 语义和密钥遮罩后，五条
+   目标回归全部转红；还原后 125/125 全绿，证明新增门禁具备抓回归能力。
