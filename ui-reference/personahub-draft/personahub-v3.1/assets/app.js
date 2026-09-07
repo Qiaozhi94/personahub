@@ -2686,6 +2686,7 @@
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     if (!target) return;
+    // 置灰的按钮点不动，但原因要能看到：title 由 data-unbuilt 直接给出。
     if (target.hasAttribute("data-secret-toggle")) {
       const input = $("[data-secret-input]", target.closest(".ad-secret"));
       if (!input) return;
@@ -2855,6 +2856,11 @@
 
   applyTableSemantics();
   applyTabSemantics();
+  $$("[data-unbuilt]").forEach((el) => {
+    el.disabled = true;
+    el.title = el.dataset.unbuilt;
+    el.setAttribute("aria-disabled", "true");
+  });
   setThreadTab("solo");
   // 统计面的默认态由数据决定而不是由 HTML 决定：热力图在 30 天下不可用，
   // 这个置灰必须在首屏就成立，否则点进去才发现按不动。

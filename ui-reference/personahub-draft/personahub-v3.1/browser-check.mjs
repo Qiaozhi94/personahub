@@ -1223,6 +1223,39 @@ await check("新建任务照 multica：描述 + 属性 chip，标题由执行结
   if ((await page.locator("[data-pane-tab].active").innerText()) !== "会话") throw new Error("创建后没有直接进入会话");
 });
 
+// N3：占位动作必须能区分「交互已定案、原型用一句话代替」与「这条还没设计」。
+// 415 个 data-demo 混在一起时，实现方没有办法判断该照着做还是该先去问。
+await check("占位动作分两类：data-demo 写结果，data-unbuilt 置灰并写原因", async () => {
+  const report = await page.evaluate(() => {
+    const out = { demos: 0, empty: [], mechanical: [], both: [], unbuilt: 0, badUnbuilt: [] };
+    document.querySelectorAll("[data-demo]").forEach((el) => {
+      out.demos++;
+      const text = (el.dataset.demo ?? "").trim();
+      const label = (el.textContent ?? "").trim().slice(0, 12);
+      if (text.length < 4) out.empty.push(label || text);
+      // 只写控件动作、不写结果的不算数：「打开 X 选择器」没有回答按下之后会怎样
+      if (/^(打开|展开|切换|进入)[^，：；。]*(表单|弹窗|选择器|确认|对话框)$/.test(text)) {
+        out.mechanical.push(text);
+      }
+      if (el.hasAttribute("data-unbuilt")) out.both.push(text);
+    });
+    document.querySelectorAll("[data-unbuilt]").forEach((el) => {
+      out.unbuilt++;
+      const why = (el.dataset.unbuilt ?? "").trim();
+      if (why.length < 4) out.badUnbuilt.push("没有写原因");
+      else if (!el.disabled) out.badUnbuilt.push(`${why}：没有置灰`);
+    });
+    return out;
+  });
+  if (report.demos < 300) throw new Error(`只找到 ${report.demos} 个占位动作，选择器可能失配`);
+  if (report.empty.length) throw new Error(`这些占位没有写清会发生什么：${report.empty.slice(0, 3).join(" / ")}`);
+  if (report.mechanical.length) {
+    throw new Error(`这些占位只写了控件动作、没写结果：${[...new Set(report.mechanical)].slice(0, 3).join(" / ")}`);
+  }
+  if (report.both.length) throw new Error(`同一个按钮不能既是 demo 又是 unbuilt：${report.both[0]}`);
+  if (report.badUnbuilt.length) throw new Error(report.badUnbuilt.slice(0, 3).join(" / "));
+});
+
 // UX-BL-R1-003：状态矩阵里的每个 P0 状态都要有可进入的代表画面、
 // 唯一主操作、影响预览和恢复后的保证。原先缺了失败、中断、取消、排队四种。
 await check("异常与恢复状态：四种都进得去，各有主操作与影响预览", async () => {

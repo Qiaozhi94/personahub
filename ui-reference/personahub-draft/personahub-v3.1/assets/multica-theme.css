@@ -1055,6 +1055,9 @@ kbd {
 .setup-summary section > button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; }
 .setup-summary section > button.primary-button { border-color: var(--text); background: var(--text); color: var(--bg); }
 
+/* 还没做的动作：置灰但在场，鼠标停上去给原因——隐藏会让人以为它不存在。 */
+button[data-unbuilt] { opacity: .55; cursor: not-allowed; text-decoration: line-through; }
+
 /* 异常状态的影响预览：动了什么 / 没动什么 / 怎么恢复，三块摆在主操作上面，
    不能等按下去才知道。 */
 .sl-impact { display: grid; gap: 4px; margin: 8px 0 10px; padding-left: 18px; }
