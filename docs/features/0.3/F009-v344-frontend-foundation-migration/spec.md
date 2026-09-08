@@ -62,7 +62,7 @@ updated: 2026-09-08
 - Project / Issue / Thread / Run / Trace / Evidence 等现有事实到新页面结构的兼容读取投影。
 - v0.1–v0.2 已交付创建、选择、派工、介入、查看和管理动作的新界面入口。
 - 现有 adapter、workflow template 与 runtime health 能力从临时弹窗迁入最终信息架构允许的生产位置。
-- 旧路由过渡映射、页面迁移矩阵、旧组件隔离与可删除清单。
+- 已发布 URL inventory、canonical deep links、页面迁移矩阵、旧组件隔离与可删除清单。
 - loading、empty、error、partial、legacy 状态和全局可访问性契约。
 
 ### 范围外
@@ -86,7 +86,7 @@ updated: 2026-09-08
 - **FR-001**：生产应用使用 V3.44 App Shell、导航层级和稳定路由承载所有已开放工作面。
 - **FR-002**：建立覆盖 v0.1–v0.2 所有生产页面、入口和动作的迁移矩阵；每项记录 migrated / deferred / retired 结论，以及 stable-shell / final-surface / transitional-host 生命周期分类。transitional-host 必填 replacement_owner、delete_when 与 latest_milestone。
 - **FR-003**：既有项目选择、任务创建、执行启动、人工介入、轨迹 / 文件变化查看、证据验收和配置管理在新界面中保持可用。
-- **FR-004**：旧生产 URL 映射到新路由或明确的 legacy 读取页，不产生 404、空白页或对象身份漂移。
+- **FR-004**：以仓库与 release 证据建立已发布 URL inventory；当前已发布历史 URL inventory 只有根入口 `/`，因此只迁移有证据的历史 URL。F009 新增 `/tasks/:taskId/:view?`、`/projects/:projectId/:tab?`、`/sessions/:sessionId` canonical deep links，支持刷新恢复、未知 ID 返回对应列表与明确 not-found。不得把新 deep link 写成旧收藏链接迁移。
 - **FR-005**：未交付工作面和动作不得伪装为可用；隐藏与置灰遵守 V3.44 对“没有页面”和“暂不可执行”的区分。
 - **FR-006**：新页面只经既有 canonical API 写入；兼容投影不得复制业务状态或引入第二套状态机。
 - **FR-007**：旧 App Shell 和旧写入口退出生产路径，并形成供 F014 最终删除的可追踪清单。
@@ -120,7 +120,7 @@ updated: 2026-09-08
 
 - [ ] **AC-001** (`FR-001`, `FR-003`, `NFR-001`): v0.2 schema fixture 在新 App Shell 中完成项目 → 任务 → 执行 → 轨迹 → 验收代表旅程，既有事实与终态守恒。
 - [ ] **AC-002** (`FR-002`, `FR-005`, `FR-007`, `NFR-004`): 页面 / 路由 / 动作迁移矩阵 100% 有结论和生命周期分类；每个 transitional-host 有 replacement_owner、delete_when、latest_milestone，生产扫描无旧 Shell、死导航和并行写入口。
-- [ ] **AC-003** (`FR-004`, `UX-003`): 旧收藏链接覆盖测试通过，无法无损表达的对象明确进入兼容读取而非被猜测转换。
+- [ ] **AC-003** (`FR-004`, `UX-003`): 已发布 URL inventory 的来源逐项可核对；根入口升级、新 canonical deep link 直达 / 刷新、未知 ID 和非法 view / tab 均有浏览器测试，不存在无证据的历史对象 URL 映射。
 - [ ] **AC-004** (`UX-001`, `UX-002`, `NFR-002`): 共享弹层、页签、表格、导航和关键状态通过浏览器键盘、语义、窄视口及控制台检查。
 - [ ] **AC-005** (`FR-006`, `NFR-003`): 新前端写操作全部命中既有 canonical API，兼容 adapter 有独立清单、替换 owner 和删除条件。
 
@@ -128,7 +128,7 @@ updated: 2026-09-08
 
 ### 测试策略
 
-保留 F001–F008 server / API 回归；为 App Shell、共享原语与兼容 projection 建组件状态矩阵；以 v0.2 fixture 建 Playwright 黄金旅程、旧路由覆盖、键盘与可访问性测试；从 V3.44 的 125 条 browser checks 中提取本 Feature 已进入生产的适用契约。
+保留 F001–F008 server / API 回归；为 App Shell、共享原语与兼容 projection 建组件状态矩阵；以 v0.2 fixture 建 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；从 V3.44 的 125 条 browser checks 中提取本 Feature 已进入生产的适用契约。
 
 ### 依赖
 

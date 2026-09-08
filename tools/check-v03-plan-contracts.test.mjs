@@ -155,3 +155,25 @@ test('V03-PLAN-R1-007: F009 limits transitional surfaces and assigns deletion ow
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
+  const documents = [
+    read('docs/features/0.3/README.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+    read('docs/features/0.3/F014-trusted-task-journey-closure/spec.md'),
+  ];
+  const phrases = [
+    '当前已发布历史 URL inventory 只有根入口 `/`',
+    '`/tasks/:taskId/:view?`',
+    '`/projects/:projectId/:tab?`',
+    '`/sessions/:sessionId`',
+    '刷新恢复',
+    '未知 ID',
+    '不得把新 deep link 写成旧收藏链接迁移',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});

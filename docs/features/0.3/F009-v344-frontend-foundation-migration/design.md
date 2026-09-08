@@ -25,7 +25,7 @@ updated: 2026-09-08
 
 ## 4. 接口、Contract 与 Event
 
-Route contract 为稳定的一级 surface + 对象 ID + 可选子视图；旧 URL resolver 纯函数映射，不查询或改写对象。兼容 projection 只组合现有 projects、issues、threads、runs、trace、evidence、adapters、workflow templates 和 runtime-health API。事件订阅继续使用现有 SSE cursor，route 切换不得重复订阅或制造事件。
+Route contract 为稳定的一级 surface + 对象 ID + 可选子视图：`/tasks/:taskId/:view?`、`/projects/:projectId/:tab?`、`/sessions/:sessionId`，其中 view / tab 使用显式白名单和默认值。当前生产 App 只通过 React local state 选对象，已发布 URL inventory 只有 `/`；legacy resolver 只接受 inventory 中有 release 证据的条目，不猜历史对象 ID。刷新先解析 route 再加载对象；未知 ID 返回对应列表并保留 not-found 诊断。兼容 projection 只组合现有 projects、issues、threads、runs、trace、evidence、adapters、workflow templates 和 runtime-health API。事件订阅继续使用现有 SSE cursor，route 切换不得重复订阅或制造事件。
 
 ## 5. Runtime、Workflow 与并发
 
@@ -41,7 +41,7 @@ Route contract 为稳定的一级 surface + 对象 ID + 可选子视图；旧 UR
 
 ## 8. 测试策略与验收映射
 
-AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、route registry 扫描和旧组件入口断言覆盖；AC-003 覆盖每类旧 URL；AC-004 覆盖共享原语的 axe / 键盘 / viewport / console；AC-005 以 API mock 调用断言和 adapter dependency test 验证无第二写入口。
+AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、route registry 扫描和旧组件入口断言覆盖；AC-003 用 release / source inventory 锁定历史根入口，并覆盖每类新 canonical route 的直达、刷新、未知 ID、非法子视图；AC-004 覆盖共享原语的 axe / 键盘 / viewport / console；AC-005 以 API mock 调用断言和 adapter dependency test 验证无第二写入口。
 
 ## 9. 已确认决策与残余风险
 
