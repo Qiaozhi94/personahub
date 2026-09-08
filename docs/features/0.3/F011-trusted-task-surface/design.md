@@ -17,19 +17,19 @@ updated: 2026-09-08
 
 ## 2. 架构与模块边界
 
-Projection 层只读聚合；命令由 Issue、Dispatch、Run、Evidence 服务各自处理。前端一个 task route 持有当前视图、草稿和副栏状态，视图组件消费同一 projection。
+Projection 层只读聚合；AcceptanceService 是完成要求、主张链、风险接受与完成摘要的唯一写入口，EvidenceService 只提供证据事实，IssueService 只消费 `acceptance.completed` 推进 done，Dispatch / Run 服务不写验收状态。前端一个 task route 持有当前视图、草稿和副栏状态，视图组件消费同一 projection。
 
 ## 3. 数据模型与 Migration
 
-claim / argument / claim-evidence link 若当前 schema 不具备则新增规范化表；UI 筛选与展开状态不持久化为领域事实。具体 migration 顺延当前版本。
+新增 completion requirement baseline、claim、argument、claim-evidence link、risk acceptance 与 completion summary 规范化表；完成要求和摘要均不可原地覆盖。UI 筛选与展开状态不持久化为领域事实。具体 migration 顺延当前版本。
 
 ## 4. 接口、Contract 与 Event
 
-`GET task projection` 返回 header、attention count、overview、conversation refs、claims、resources、trace summary 与 version cursor。命令 API 使用幂等键和 expected version。事件 replay 只推进 cursor，不重算为新事件。
+`GET task projection` 返回 header、attention count、overview、conversation refs、claims、resources、trace summary 与 version cursor。验收命令 API 覆盖 freeze requirements、upsert claim chain、accept residual risk 与 complete；统一使用幂等键和 expected version。完成事务写入不可变摘要与 outbox `acceptance.completed`，IssueService 幂等消费后推进 done；事件 replay 只推进 cursor，不重算为新事件。
 
 ## 5. Runtime、Workflow 与并发
 
-不改运行调度。投影读取必须容忍 Run 与 Artifact 在事务边界间短暂不同步，以明确 pending 状态表达，不提前推断完成。
+不改运行调度。投影读取必须容忍 Run 与 Artifact 在事务边界间短暂不同步，以明确 pending 状态表达，不提前推断完成。完成摘要失败不得推进 Issue done；outbox 重放只允许同一 acceptance version 完成一次。
 
 ## 6. UI 与可观测性
 
@@ -41,7 +41,7 @@ claim / argument / claim-evidence link 若当前 schema 不具备则新增规范
 
 ## 8. 测试策略与验收映射
 
-状态 fixture 覆盖 AC-001；claim 独立性和 missing ref 覆盖 AC-002；资源 / 轨迹 / 草稿覆盖 AC-003；axe、键盘和 SSE replay 覆盖 AC-004。
+状态 fixture 覆盖 AC-001；claim 独立性和 missing ref 覆盖 AC-002；资源 / 轨迹 / 草稿覆盖 AC-003；axe、键盘和 SSE replay 覆盖 AC-004；验收写链故障注入、幂等与 outbox replay 覆盖 AC-005。
 
 ## 9. 已确认决策与残余风险
 
