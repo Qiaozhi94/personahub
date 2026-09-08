@@ -294,3 +294,17 @@ test('V03-PLAN-R3-013: active review artifacts stay local while retrospectives r
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R4-014: downstream research docs reference the current Artifact feature', () => {
+  const documents = [read('docs/quant-factor-research-tradingview-assessment.md')];
+  const phrases = [
+    'F010 又规划了 Artifact entity、immutable revision 和 pinned ref',
+    'features/0.3/F010-artifact-foundation-provenance/spec.md',
+  ];
+  const retiredPath = 'features/0.3/F009-artifact-foundation-provenance/spec.md';
+
+  requirePhrases(documents, phrases);
+  forbidPhrases(documents, [retiredPath]);
+  verifyMutation(documents, phrases);
+  verifyForbiddenMutation(documents, retiredPath);
+});

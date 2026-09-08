@@ -97,7 +97,7 @@ Codex、Claude Code、OpenCode 已经作为真实 CLI adapter 落地。它们可
 
 ### 3.3 Event、Evidence 与 Artifact 方向适合可复现研究
 
-当前 ThreadEvent 具备稳定顺序、SSE replay 和 evidence refs；F009 又规划了 Artifact entity、immutable revision 和 pinned ref。这个方向特别适合量化研究，因为研究结论不能只指向“最新版”：
+当前 ThreadEvent 具备稳定顺序、SSE replay 和 evidence refs；F010 又规划了 Artifact entity、immutable revision 和 pinned ref。这个方向特别适合量化研究，因为研究结论不能只指向“最新版”：
 
 ```text
 factor:momentum@3
@@ -107,8 +107,8 @@ backtest:bt_01@1
 pine-strategy:tv_momentum@4
 ```
 
-一个历史结论必须永久解析到当时使用的精确内容，而不是随着因子或数据更新漂移。F009 的 revision/CAS/hash/provenance 设计可以复用，见
-[`features/0.3/F009-artifact-foundation-provenance/spec.md`](features/0.3/F009-artifact-foundation-provenance/spec.md)。
+一个历史结论必须永久解析到当时使用的精确内容，而不是随着因子或数据更新漂移。F010 的 revision/CAS/hash/provenance 设计可以复用，见
+[`features/0.3/F010-artifact-foundation-provenance/spec.md`](features/0.3/F010-artifact-foundation-provenance/spec.md)。
 
 ### 3.4 V3 成果面适合作为量化研究的外壳
 
