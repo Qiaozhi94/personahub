@@ -11,11 +11,25 @@ function requirePhrases(documents, phrases) {
   }
 }
 
+function forbidPhrases(documents, phrases) {
+  const corpus = documents.join('\n');
+  for (const phrase of phrases) {
+    assert.ok(!corpus.includes(phrase), `forbidden v0.3 planning contract: ${phrase}`);
+  }
+}
+
 function verifyMutation(documents, phrases) {
   const corpus = documents.join('\n');
   const [first, ...rest] = phrases;
   const mutated = [corpus.replaceAll(first, '')];
   assert.throws(() => requirePhrases(mutated, [first, ...rest]), /missing v0\.3 planning contract/);
+}
+
+function verifyForbiddenMutation(documents, phrase) {
+  assert.throws(
+    () => forbidPhrases([...documents, phrase], [phrase]),
+    /forbidden v0\.3 planning contract/,
+  );
 }
 
 test('V03-PLAN-R1-001: acceptance writes have canonical owners and integration tasks', () => {
@@ -196,7 +210,33 @@ test('V03-PLAN-R1-008: URL migration is based on published routes, not invented 
   ];
 
   requirePhrases(documents, phrases);
+  forbidPhrases(documents, ['when 打开旧收藏链接']);
   verifyMutation(documents, phrases);
+  verifyForbiddenMutation(documents, 'when 打开旧收藏链接');
+});
+
+test('V03-PLAN-R2-012: F009 scenarios consistently retire unsupported legacy surfaces', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+  ];
+  const phrases = [
+    '从已发布历史根入口 `/` 进入',
+    'Workflow Template 编辑动作标为 retired',
+    '旧数据只读',
+    'adapter 配置与 runtime health 入口',
+    '不把退役管理动作算作能力回归',
+  ];
+  const forbidden = [
+    'when 打开旧收藏链接',
+    '现有 adapter、workflow template 与 runtime health 能力从临时弹窗迁入最终信息架构允许的生产位置',
+  ];
+
+  requirePhrases(documents, phrases);
+  forbidPhrases(documents, forbidden);
+  verifyMutation(documents, phrases);
+  verifyForbiddenMutation(documents, forbidden[0]);
 });
 
 test('V03-PLAN-R1-009: all eleven task states have named acceptance fixtures', () => {

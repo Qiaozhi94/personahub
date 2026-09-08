@@ -32,11 +32,11 @@ updated: 2026-09-08
 
 ### US-001：在新界面继续使用既有能力（Priority: P1）
 
-升级用户进入产品后，能在 V3.44 壳层中找到项目、任务、执行、轨迹和证据，并继续完成 v0.1–v0.2 已支持的操作。
+升级用户进入产品后，能在 V3.44 壳层中找到项目、任务、执行、轨迹和证据，并继续完成迁移矩阵标为 migrated 的 v0.1–v0.2 操作；被最终对象模型明确取代的管理动作按 retired 处理。
 
 **独立测试**：使用 v0.2 最新 schema fixture，从打开项目到创建任务、选择执行方式、启动、查看执行事实和验收结果，全程不进入旧 App Shell。
 
-1. Given 用户已有项目和任务，when 打开旧收藏链接，then 进入对应的新生产路由且对象身份不变。
+1. Given 用户已有项目和任务，when 从已发布历史根入口 `/` 进入，then 读取原对象身份；when 复制 F009 新 canonical deep link 后刷新，then 回到同一对象。
 2. Given 某项最终设计能力尚未交付，when 用户浏览导航或页面动作，then 不出现可点击死入口或伪造数据。
 
 ### US-002：使用一致且可访问的交互（Priority: P1）
@@ -60,8 +60,8 @@ updated: 2026-09-08
 
 - V3.44 全局 App Shell、一级导航稳定槽位、路由、布局、设计令牌和共享交互原语。
 - Project / Issue / Thread / Run / Trace / Evidence 等现有事实到新页面结构的兼容读取投影。
-- v0.1–v0.2 已交付创建、选择、派工、介入、查看和管理动作的新界面入口。
-- 现有 adapter、workflow template 与 runtime health 能力从临时弹窗迁入最终信息架构允许的生产位置。
+- v0.1–v0.2 已交付项目 / 任务创建、选择、派工、介入与事实查看动作的新界面入口；迁移矩阵中明确 retired 的旧对象管理动作除外。
+- adapter 配置与 runtime health 入口使用最小 transitional-host；Workflow Template 编辑动作标为 retired，旧数据只读，等待 F013 转为 Skill revision。
 - 已发布 URL inventory、canonical deep links、页面迁移矩阵、旧组件隔离与可删除清单。
 - loading、empty、error、partial、legacy 状态和全局可访问性契约。
 
@@ -85,7 +85,7 @@ updated: 2026-09-08
 
 - **FR-001**：生产应用使用 V3.44 App Shell、导航层级和稳定路由承载所有已开放工作面。
 - **FR-002**：建立覆盖 v0.1–v0.2 所有生产页面、入口和动作的迁移矩阵；每项记录 migrated / deferred / retired 结论，以及 stable-shell / final-surface / transitional-host 生命周期分类。transitional-host 必填 replacement_owner、delete_when 与 latest_milestone。
-- **FR-003**：既有项目选择、任务创建、执行启动、人工介入、轨迹 / 文件变化查看、证据验收和配置管理在新界面中保持可用。
+- **FR-003**：既有项目选择、任务创建、执行启动、人工介入、轨迹 / 文件变化查看、证据验收，以及 adapter 配置与 runtime health 入口在新界面中保持可用；Workflow Template 编辑按最终对象裁决退役，只保留只读迁移证据。
 - **FR-004**：以仓库与 release 证据建立已发布 URL inventory；当前已发布历史 URL inventory 只有根入口 `/`，因此只迁移有证据的历史 URL。F009 新增 `/tasks/:taskId/:view?`、`/projects/:projectId/:tab?`、`/sessions/:sessionId` canonical deep links，支持刷新恢复、未知 ID 返回对应列表与明确 not-found。不得把新 deep link 写成旧收藏链接迁移。
 - **FR-005**：未交付工作面和动作不得伪装为可用；隐藏与置灰遵守 V3.44 对“没有页面”和“暂不可执行”的区分。
 - **FR-006**：新页面只经既有 canonical API 写入；兼容投影不得复制业务状态或引入第二套状态机。
@@ -99,7 +99,7 @@ updated: 2026-09-08
 
 ### 非功能需求
 
-- **NFR-001**：F001–F008 的 API / 领域回归测试保持通过；前端替换不改变持久化事实。
+- **NFR-001**：F001–F008 的 API / 领域回归测试保持通过；前端替换不改变持久化事实，回归报告按迁移矩阵解释 retired 项，不把退役管理动作算作能力回归。
 - **NFR-002**：关键生产路由具备浏览器 smoke、可访问性和控制台零错误门禁。
 - **NFR-003**：兼容 adapter 集中、可计数且无反向依赖，后续 Feature 可以逐项替换并删除。
 - **NFR-004**：不得为 transitional-host 重做最终视觉或新增领域逻辑；它只调用既有 canonical API，并在 owning Feature 验收时删除。
