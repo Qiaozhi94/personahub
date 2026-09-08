@@ -27,7 +27,7 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 
 - [ ] T001 (`FR-001`, `FR-002`): 定义 Session / Dispatch / execution identity / context snapshot 类型。 — verify: `npm run typecheck`
 - [ ] T002 (`FR-002`, `NFR-001`): 新增 migration、兼容映射与历史 fixture。 — verify: `npm test --workspace server`
-- [ ] T003 (`FR-003`, `FR-008`): 实现 runtime projection 与三档 eligibility evaluator。 — verify: `npm test --workspace server`
+- [ ] T003 (`FR-002`, `FR-003`, `FR-008`): 实现 runtime projection 与三档 eligibility evaluator，将 F013 versioned effective requirements 固定到 Dispatch snapshot；本任务覆盖 Skill 升级 / 禁用后的历史不漂移。 — verify: `npm test --workspace server`
 
 ### Phase 2：派工与介入
 

@@ -23,12 +23,12 @@ v0.3 的第一步是把 v0.1–v0.2 已交付能力迁入 V3.44 生产前端，�
 |---|---|---|---|
 | [F009](F009-v344-frontend-foundation-migration/spec.md) | V3.44 Frontend Foundation & Migration | 先用最终壳层重建 v0.1–v0.2 生产前端 | F001–F008 |
 | [F010](F010-artifact-foundation-provenance/spec.md) | Artifact & Provenance Foundation | 建立不可漂移的阶段成果和统一引用 | F003、F004、F006、F009 |
-| [F013](F013-project-skills-foundation/spec.md) | Space, Project & Skills Foundation | 建立归属根并统一项目文件边界与 Skill / 编组 | F009、F010 |
+| [F013](F013-project-skills-foundation/spec.md) | Space, Project & Skills Foundation | 建立归属根并统一项目文件边界与 Skill / 编组 | F009 |
 | [F012](F012-session-dispatch-intervention/spec.md) | Session, Dispatch & Intervention | 将会话、执行选择、上下文与控制拆成可追溯对象 | F005、F006、F009、F010、F013 |
 | [F011](F011-trusted-task-surface/spec.md) | Trusted Task Surface | 用四视图表达决策、会话、验收和资源 | F009、F010、F012 |
 | [F014](F014-trusted-task-journey-closure/spec.md) | Trusted Task Journey Closure | 对整条旅程、迁移和发布验收负责 | F009–F013 |
 
-F009 先完成生产前端换壳和既有能力迁移。F010 只拥有 Artifact core 与 `recordConsumption` 公共契约，不等待上下文组装器；F013 发布 effective requirements 与路径授权 contract，不读取 Dispatch。F012 是上下文组装调用 `recordConsumption` 的最终集成 owner，并消费 F013 contract 冻结 Dispatch snapshot；F011 随后在已提交的 Dispatch / 会话契约上建立任务投影和验收写链。F009–F013 是 linked contracts，只有 F014 可以声明 v0.3 整体旅程完成。任何局部 Feature 完成不能替代端到端证据。
+F009 先完成生产前端换壳和既有能力迁移。F010 与 F013 互不依赖：F010 只拥有 Artifact core 与 `recordConsumption` 公共契约，不等待上下文组装器；F013 只验收 versioned effective-requirements 输出与路径授权 contract，不读取 Dispatch。F012 是上下文组装调用 `recordConsumption` 的最终集成 owner，并消费 F013 contract 冻结 Dispatch snapshot；F012 最终验收 Skill 升级 / 禁用不改已提交 Dispatch。F011 随后在已提交的 Dispatch / 会话契约上建立任务投影和验收写链。F009–F013 是 linked contracts，只有 F014 可以声明 v0.3 整体旅程完成。任何局部 Feature 完成不能替代端到端证据。
 
 ## 3. 范围边界
 

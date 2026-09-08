@@ -105,7 +105,7 @@ Dispatch 有三条合法路径：`draft → cancelled`、`draft → starting →
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-002`, `FR-003`): 四维组合、要求来源和三档 eligibility 在派工前可核对。
+- [ ] **AC-001** (`FR-002`, `FR-003`): 四维组合、要求来源和三档 eligibility 在派工前可核对；Dispatch 固定 Skill revision 与 effective requirements，Skill 升级 / 禁用不改已提交 Dispatch。
 - [ ] **AC-002** (`FR-004`, `NFR-001`): 撤销期取消保留一个 cancelled Dispatch 且零 Run；超时、重复确认、cancel / claim 竞态和重启只产生一个 Dispatch 与首个 Attempt / Run，每个事件恰好对应其 commit 点。
 - [ ] **AC-003** (`FR-005`, `NFR-002`): resume / 冷启动与三档上下文组装、过滤披露正确。
 - [ ] **AC-004** (`FR-006`, `NFR-001`): pause / claim 并发、取消、改派和 restart 恢复正确。

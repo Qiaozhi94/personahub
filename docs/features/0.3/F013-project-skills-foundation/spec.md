@@ -50,7 +50,7 @@ updated: 2026-09-08
 
 用户从一张 Skills 表选择方法；带 steps 的行标为编组，并在派工时贡献能力要求与完成要求。
 
-**独立测试**：Skill 更新产生新版本，历史 Dispatch 仍指向旧版本。
+**独立测试**：Skill 更新产生新版本，旧 revision 仍可解析，已固定旧 ref 的 effective requirements 输出不变。
 
 1. Given 两个来源同名，when 扫描，then 两者都不生效直到冲突处理。
 2. Given 项目选择默认 Skill，when 创建任务，then 显示引用而不复制一份项目工作流。
@@ -63,7 +63,7 @@ updated: 2026-09-08
 - 项目信息、一个主代码目录、多个只读参考仓库和文件范围。
 - 代码仓单一添加入口、真实路径解析、Git remote / identity 只读探测。
 - Skill `id@version`、来源、说明、能力要求、steps、完成要求和下发状态。
-- 项目默认 Skill 引用、Skill 详情只读下钻、Dispatch 版本快照。
+- 项目默认 Skill 引用、Skill 详情只读下钻，以及供 F012 消费的 versioned effective-requirements contract。
 
 ### 范围外
 
@@ -111,18 +111,18 @@ Space 可 active / archived，v0.3 不支持物理删除；项目归档可恢复
 - [ ] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 清洁首次设置与 v0.2 升级均产生正确 Space 归属；重复升级幂等，Project / Issue 原 ID 和可空 Project 语义守恒。
 - [ ] **AC-002** (`FR-003`, `FR-004`, `NFR-002`): 主目录 / 参考仓库、自动识别、真实路径和读写边界正确。
 - [ ] **AC-003** (`FR-005`, `FR-007`, `FR-008`): 普通 Skill / 编组共用列表与详情，项目只存引用。
-- [ ] **AC-004** (`FR-006`, `NFR-001`): Dispatch 快照固定 Skill 版本和要求，升级 / 禁用不改历史。
+- [ ] **AC-004** (`FR-006`, `NFR-001`): effective requirements 以 Skill revision ref 输出；升级 / 禁用不改旧 ref 的解析结果。跨 Feature Dispatch 快照集成只由 F012 验收。
 - [ ] **AC-005** (`FR-005`, `NFR-001`): 同名冲突与非法来源在激活前被拒绝且状态可见。
 
 ## 7. 测试、依赖与决策
 
 ### 测试策略
 
-Space / 路径边界与 Skill schema 单测；默认 Space、repo/Skill migration 和历史快照集成测试；首次设置、项目四 tab、Skill 详情和派工要求 Playwright。
+Space / 路径边界、Skill schema 与 versioned effective requirements 单测；默认 Space、repo/Skill migration 和旧 revision 解析集成测试；首次设置、项目四 tab与 Skill 详情 Playwright。
 
 ### 依赖
 
-依赖 F009 新壳层和 F010 revision contract。F013 发布 effective requirements 与路径授权 contract，F012 消费它们生成 eligibility / Dispatch snapshot；本 Feature 不读取 Dispatch，跨 Feature 快照集成由 F012 验收。F014 负责端到端整合。
+依赖 F009 新壳层。Skill revision 自身定义不可变 ID / version contract，不依赖 Artifact 实现；F013 发布 effective requirements 与路径授权 contract，F012 消费它们生成 eligibility / Dispatch snapshot。本 Feature 不读取 Dispatch，跨 Feature 快照集成只由 F012 验收。F014 负责端到端整合。
 
 ### 决策与风险
 

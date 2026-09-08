@@ -5,7 +5,7 @@ created: 2026-08-09
 updated: 2026-09-08
 ---
 
-# F013：Project & Skills Foundation - 任务
+# F013：Space, Project & Skills Foundation - 任务
 
 ## 0. 来源与执行规则
 
@@ -13,7 +13,7 @@ updated: 2026-09-08
 
 ## 1. 前置条件
 
-F009 新壳层的首次设置、项目 / 管理入口可替换；F010 revision contract 冻结。F012 只消费本 Feature 冻结后的 effective requirements 与路径授权 contract，不是本 Feature 的前置。
+F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision contract 由本 Feature 自己定义；F012 只消费本 Feature 冻结后的 effective requirements 与路径授权 contract，不是本 Feature 的前置。
 
 ## 2. 实现任务
 
@@ -34,8 +34,8 @@ F009 新壳层的首次设置、项目 / 管理入口可替换；F010 revision c
 
 ## 3. 验证与验收任务
 
-- [ ] T020 (`AC-001`, `AC-002`, `AC-005`): 覆盖默认 Space、真实路径、软链、参考仓库写拒绝、冲突与 restart。 — verify: `npm test`
-- [ ] T021 (`AC-001`, `AC-003`, `AC-004`): 完成首次设置、项目 / Skill / Dispatch 版本 Playwright 旅程。 — verify: `npm run test:e2e`
+- [ ] T020 (`AC-001`, `AC-002`, `AC-004`, `AC-005`): 覆盖默认 Space、真实路径、软链、参考仓库写拒绝、旧 Skill ref requirements、冲突与 restart。 — verify: `npm test`
+- [ ] T021 (`AC-001`, `AC-003`): 完成首次设置、项目 / Skill Playwright 旅程。 — verify: `npm run test:e2e`
 - [ ] T022 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 运行发布质量门。 — verify: `npm run verify:release`
 
 ## 4. 依赖与并行关系

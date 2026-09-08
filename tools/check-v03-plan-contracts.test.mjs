@@ -78,6 +78,27 @@ test('V03-PLAN-R1-003: feature dependencies form an acyclic executable order', (
   verifyMutation(documents, phrases);
 });
 
+test('V03-PLAN-R2-011: F013 publishes inputs while F012 owns Dispatch integration', () => {
+  const documents = [
+    read('docs/features/0.3/README.md'),
+    read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
+    read('docs/features/0.3/F012-session-dispatch-intervention/tasks.md'),
+    read('docs/features/0.3/F013-project-skills-foundation/spec.md'),
+    read('docs/features/0.3/F013-project-skills-foundation/tasks.md'),
+  ];
+  const phrases = [
+    '| F009 |',
+    'F010 与 F013 互不依赖',
+    'F013 只验收 versioned effective-requirements 输出',
+    'F012 最终验收 Skill 升级 / 禁用不改已提交 Dispatch',
+    '已固定旧 ref 的 effective requirements 输出不变',
+    '跨 Feature Dispatch 快照集成只由 F012 验收',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-004: file artifact publication never exposes a missing revision', () => {
   const documents = [
     read('docs/features/0.3/F010-artifact-foundation-provenance/spec.md'),
