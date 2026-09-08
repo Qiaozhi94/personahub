@@ -860,3 +860,60 @@ archived ref 的消费限制与 F010 契约一致。
    首轮发现均附带了可直接执行的关闭条件，而不是只有风格偏好。
 4. 联合变异删除任务目标入口、首次设置路由、异常状态入口、Dialog 语义和密钥遮罩后，五条
    目标回归全部转红；还原后 125/125 全绿，证明新增门禁具备抓回归能力。
+
+---
+
+## 循环 18：v0.3 及后续版本重排规划检视（3轮）
+
+- **report_type**: doc-review
+- **周期**: 2026-09-08，3轮 · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
+- **背景**: 以 `main@f2b2f7e`、V3.44、F009–F014 为修复基线，检查领域写 owner、Feature
+  依赖、持久化发布、生命周期、迁移真实性、状态覆盖和后续版本边界。Round 1 全量扫描；
+  Round 2/3 只审修复 diff 与相邻契约。13 条 finding 均有独立提交、仓库内回归测试与变异证据。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| V03-PLAN-R1-001 | 可信验收闭环缺少 canonical 写入 owner | High | 正确性 | 根因 | 原方案 | fixed | AcceptanceService 成为完成要求、主张链、风险接受与完成摘要的唯一写入口，IssueService 只消费完成事件 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-001` | 1 | 2 | journey-contract-without-write-owner |
+| V03-PLAN-R1-002 | 最终根对象 Space 没有 schema 与 Feature owner | High | 正确性 | 根因 | 规格漂移 | fixed | F013 拥有 Space schema、默认迁移、Project/Issue 归属和首次设置 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-002` | 1 | 2 | root-domain-without-feature-owner |
+| V03-PLAN-R1-003 | F010/F012/F013 的真实依赖形成闭环 | High | 正确性 | 根因 | 规格漂移 | fixed | 改为 F009→(F010∥F013)→F012→F011→F014，并分离 Artifact core、requirements 输出和 Dispatch 集成 owner | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-003` | 1 | 2 | cross-feature-dependency-cycle |
+| V03-PLAN-R1-004 | Artifact 文件发布顺序会留下已提交但不可读取的 revision | High | 正确性 | 根因 | 原方案 | fixed | 先 fsync 并原子发布 content-addressed archive，再以 DB commit 作为唯一可见点，补齐 CAS/orphan/restart 语义 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-004` | 1 | 2 | cross-resource-publication-order |
+| V03-PLAN-R1-005 | adapter probe 未闭合却被写成开发前置事实 | High | 正确性 | 根因 | 流程缺口 | fixed | F012 Phase 0 负责 probe 与持久证据，unsupported/unverified 采用保守 eligibility | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-005` | 1 | 2 | readiness-prerequisite-unowned |
+| V03-PLAN-R1-006 | Dispatch 在撤销窗口前后何时创建存在两套语义 | High | 正确性 | 根因 | 原方案 | fixed | 确认时创建 draft，超时 CAS 到 starting 并原子写 snapshot/consumption/Attempt/Run，commit 后才 spawn | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-006` | 1 | 2 | lifecycle-transition-creation-ambiguity |
+| V03-PLAN-R1-007 | F009 迁移即将退役的管理面会制造确定性二次实现 | Medium | 质量 | 根因 | 原方案 | fixed | 迁移矩阵区分 stable-shell/final-surface/transitional-host，并为临时宿主指定替换 owner、删除条件和期限 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-007` | 1 | 2 | transitional-layer-overinvestment |
+| V03-PLAN-R1-008 | 旧收藏链接验收建立在不存在的历史路由契约上 | Medium | 质量 | 症状 | 规格漂移 | fixed | 历史 URL inventory 只认已发布根入口，新 canonical deep links 作为新增能力独立验收 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-008` | 1 | 2 | migration-contract-without-existing-surface |
+| V03-PLAN-R1-009 | 七类状态验收不足以覆盖十一类任务状态 | Medium | 测试覆盖 | 根因 | 规格漂移 | fixed | F011 逐项列出十一种具名 fixture，并为每态定义首屏优先级、主操作、恢复结果和保留事实 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-009` | 1 | 2 | acceptance-state-matrix-undercoverage |
+| V03-PLAN-R1-010 | v0.4 同时绑定四条独立价值链 | Medium | 质量 | 根因 | 原方案 | fixed | v0.4 改为方向性 umbrella，v0.4.0 只保留最小边界，其余作为独立候选线 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-010` | 1 | 2 | release-bundle-multiple-intents |
+| V03-PLAN-R2-011 | F010/F013 并行声明仍被前置表与 Dispatch owner 破坏 | High | 正确性 | 根因 | 修复引入 | fixed | F013 只发布 versioned effective requirements，F012 独占 Dispatch snapshot 集成及升级/禁用不变性验收 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R2-011` | 2 | 3 | dependency-table-owner-drift |
+| V03-PLAN-R2-012 | F009 场景与范围仍承诺无依据的旧链接和退役管理面 | Medium | 质量 | 根因 | 修复引入 | fixed | 用户场景改为根入口与新 deep link；Workflow Template 编辑 retired，只保留旧数据只读迁移 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R2-012` | 2 | 3 | partial-symmetric-fix |
+| V03-PLAN-R3-013 | 检视过程稿未被忽略而可能误入 Git | Medium | 质量 | 根因 | 流程缺口 | fixed | `.gitignore` 精确忽略 `CURRENT-*.md` 与 `FIX-log.md`，长期 reviews 文档继续纳入 Git | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R3-013` | 3 | 3 | active-review-artifact-not-ignored |
+
+**问题与实际修复证据**
+
+- R1-001/002 原问题分别是可信完成链和根归属对象无人拥有；`69313bc`、`91c5311` 把写链与
+  Space schema/migration/首次设置落到唯一 Feature owner。
+- R1-003/004 原问题分别是跨 Feature 环和 DB/文件双资源半发布；`15a7f6c`、`577e471` 固定
+  无环顺序与 archive-before-manifest 发布不变量。
+- R1-005/006 原问题分别是未执行 probe 冒充前置事实和撤销窗口双时序；`4af7df3`、`806ee26`
+  增加 owned Phase 0 证据并统一 draft→starting→dispatched/cancelled 的事务边界。
+- R1-007/008 原问题是临时面过度建设与虚构旧路由；`461d924`、`4035ca6` 限定兼容宿主生命周期，
+  只迁移有发布证据的根入口并单列新 deep links。
+- R1-009/010 原问题是状态矩阵少四类与 v0.4 多价值链捆绑；`171c349`、`f3d48e3` 补齐十一态并
+  将后续路线拆成可独立评估的候选线。
+- R2-011/012 是首轮修复的相邻契约未对称同步；`29fd59d`、`323197a` 明确 F012/F013 owner，
+  并同步收缩 F009 的场景、范围、需求和回归口径。
+- R3-013 是闭环检查发现的流程缺口；`6969b65` 兼容项目“长期文档可追溯”和 skill“过程稿不入库”
+  两项要求，`git check-ignore -v` 已分别命中两个临时文件模式。
+
+**模式性教训**
+
+1. `origin` 分布：原方案 5、规格漂移 4、修复引入 2、流程缺口 2。首轮修复自伤率 2/10，处于
+   协议预期的 20–30%，再次证明第二轮 diff-only 不能省。
+2. 最长存活 1 轮：R1 十条在 Round 2 关闭，R2 两条在 Round 3 关闭；R3-013 当轮以红→绿门禁
+   关闭。没有 finding 连续三轮失败，无需触发不收敛升级。
+3. `cross-feature-dependency-cycle` 与 `dependency-table-owner-drift` 表明依赖图、依赖表、任务 AC 和
+   integration owner 必须作为一个对称契约修改；只改路线图文字会在相邻 Feature 中留下隐性反向边。
+4. `partial-symmetric-fix` 表明“退役一个 surface”必须同时搜索用户场景、范围、FR/NFR、tasks 和 AC；
+   只修发现所在段落会让同一旧承诺从另一段复活。
+5. 文档门禁共 13 条，均对必需短语执行删除变异；涉及禁止旧契约的两条还执行反向注入变异。
+   完整本地 `npm run verify`：Server 1680 passed / 30 skipped，Web 216/216，feature gate 144/144，
+   docs gate 108/108，其余文档与治理门禁全绿。
