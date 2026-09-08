@@ -21,7 +21,7 @@ ArtifactService 是创建 / 修订唯一写入口；resolver 只读；派工上�
 
 ## 3. 数据模型与 Migration
 
-新增 `artifacts`、`artifact_revisions`、`artifact_consumptions`。实体保存 current revision 指针，revision 保存 storage kind、内容 / 相对路径、摘要与来源 Attempt；消费表保存 dispatch/run 与确定 revision。Migration 从实施时真实 schema 顺延并包含回滚前兼容检查。
+新增 `artifacts`、`artifact_revisions`、`artifact_consumptions`。实体保存 current revision 指针；revision 保存 storage kind、摘要、来源 Attempt，并将工作区 source locator 与 content-addressed archive locator 分开保存，resolver 永不把可变 source 当历史正文；消费表保存 dispatch/run 与确定 revision。Migration 从实施时真实 schema 顺延并包含回滚前兼容检查。
 
 ## 4. 接口、Contract 与 Event
 
@@ -29,7 +29,7 @@ API 提供 create、revise、list、get revision、provenance。ref 规范为 `a
 
 ## 5. Runtime、Workflow 与并发
 
-inline 内容在单事务发布。文件内容先写临时文件并校验，再提交 DB manifest，最后原子改名；失败清理临时文件。修订以 expected current revision 做 CAS。任何副作用和事件广播发生在 commit 后。
+inline 内容在单事务发布。文件内容使用以下协议：`临时 blob → 校验并 fsync → 原子改名到 content-addressed archive → DB 事务插入 revision manifest 并 CAS 更新 current pointer / outbox`。DB commit 是 revision 对 resolver 可见的唯一发布点；因此 rename 后 crash 或 DB / CAS 失败只留下不可见的 archive orphan，绝不留下已提交但缺文件的 revision。archive path 由内容 hash 派生且只读，source locator 仅用于解释来源，resolver 只读取 archive locator。事件广播只消费 commit 后 outbox。
 
 ## 6. UI 与可观测性
 
@@ -37,11 +37,11 @@ inline 内容在单事务发布。文件内容先写临时文件并校验，再�
 
 ## 7. 失败、恢复、安全与兼容
 
-真实路径越界拒绝；未知 storage kind 拒绝；retired 仍可读历史；重启清理未被 manifest 引用的临时文件。旧 Evidence ref 继续解析。
+真实路径越界拒绝；未知 storage kind 拒绝；retired 仍可读历史。重启先清理无效临时文件；archive orphan 由带租约的 sweep 处理，重启清理只删除超过安全宽限期且未被任何 manifest 引用的 orphan，避免与在途发布竞争。并发 CAS 败者不删除可能被相同 hash revision 引用的 archive。旧 Evidence ref 继续解析。
 
 ## 8. 测试策略与验收映射
 
-AC-001 对应 repository/migration/restart；AC-002 对应 resolver/path/hash；AC-003 对应 integration/API/event replay。加入故障注入验证 DB / 文件两个完成顺序。
+AC-001 对应 repository/migration/restart，并在临时写、fsync、rename、DB insert、CAS、commit 各点注入 crash，断言 resolver 只能返回完整 published revision 或 not-found；AC-002 对应 resolver/source/archive path/hash；AC-003 对应 integration/API/outbox replay。并发用不同内容与相同内容两组 CAS fixture 验证败者 orphan 不影响赢家。
 
 ## 9. 已确认决策与残余风险
 

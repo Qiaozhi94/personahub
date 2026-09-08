@@ -77,3 +77,22 @@ test('V03-PLAN-R1-003: feature dependencies form an acyclic executable order', (
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-004: file artifact publication never exposes a missing revision', () => {
+  const documents = [
+    read('docs/features/0.3/F010-artifact-foundation-provenance/spec.md'),
+    read('docs/features/0.3/F010-artifact-foundation-provenance/design.md'),
+    read('docs/features/0.3/F010-artifact-foundation-provenance/tasks.md'),
+  ];
+  const phrases = [
+    'source locator 与 archive locator 分开保存',
+    '临时 blob → 校验并 fsync → 原子改名到 content-addressed archive',
+    'DB commit 是 revision 对 resolver 可见的唯一发布点',
+    'CAS 失败只留下不可见的 archive orphan',
+    '重启清理只删除超过安全宽限期且未被任何 manifest 引用的 orphan',
+    '每个故障点 crash 后 resolver 都只能返回完整 published revision 或 not-found',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});

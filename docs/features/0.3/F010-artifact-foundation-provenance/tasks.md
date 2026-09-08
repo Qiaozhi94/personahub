@@ -20,18 +20,18 @@ F009 新壳层和前端接入边界已冻结；ADR 0010 已接受；Evidence ref
 ### Phase 1：Contract 与存储
 
 - [ ] T001 (`FR-001`, `FR-002`): 定义 Artifact / revision / consumption 共享类型与校验。 — verify: `npm run typecheck`
-- [ ] T002 (`FR-001`, `FR-002`, `NFR-001`): 增加顺延 migration、Repository 与不变量测试。 — verify: `npm test --workspace server`
+- [ ] T002 (`FR-001`, `FR-002`, `NFR-001`): 增加顺延 migration、Repository、source/archive locator 分离与不变量测试。 — verify: `npm test --workspace server`
 - [ ] T003 (`FR-003`, `NFR-002`): 实现统一 ref parser / builder / resolver 与路径、hash 拒绝。 — verify: `npm test --workspace server`
 
 ### Phase 2：服务、事件与读取面
 
-- [ ] T010 (`FR-001`, `FR-002`, `TR-001`): 实现 create / revise 唯一写入口、CAS 和 commit 后事件。 — verify: `npm test --workspace server`
+- [ ] T010 (`FR-001`, `FR-002`, `TR-001`): 实现 content-addressed archive 先行、DB 可见性 commit 后置的 create / revise 唯一写入口、CAS、outbox 与安全 orphan sweep。 — verify: `npm test --workspace server`
 - [ ] T011 (`FR-004`, `FR-005`): 提供幂等 `recordConsumption(dispatch_id, run_id, revision_ref)` 公共契约与双向 provenance 查询；不接入尚未存在的上下文组装器。 — verify: `npm test --workspace server`
 - [ ] T012 [P] (`FR-005`): 增加 API client 与资源 / 验收最小读取组件。 — verify: `npm test --workspace web`
 
 ## 3. 验证与验收任务
 
-- [ ] T020 (`AC-001`, `AC-002`): 覆盖 restart、并发修订、文件故障注入、越界和 hash mismatch。 — verify: `npm test`
+- [ ] T020 (`AC-001`, `AC-002`): 覆盖每个发布步骤 crash、restart、同 / 异内容并发 CAS、宽限期 orphan 清理、source 变化、越界和 hash mismatch；逐点断言不可观察半成品。 — verify: `npm test`
 - [ ] T021 (`AC-003`): 完成 Run / Artifact / Evidence 双向追溯集成测试。 — verify: `npm test`
 - [ ] T022 (`AC-001`, `AC-002`, `AC-003`): 运行全量质量门。 — verify: `npm run verify:release`
 

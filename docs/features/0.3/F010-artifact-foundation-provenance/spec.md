@@ -63,6 +63,7 @@ updated: 2026-09-08
 
 - 路径规范化后越出授权目录必须拒绝。
 - DB 成功而文件落盘失败不得留下可消费 revision。
+- source locator 与 archive locator 分开保存；工作区源文件后续变化不得改变已发布 archive。
 - 同一幂等键只产生一个 revision；并发修订采用 CAS。
 
 ## 4. 需求
@@ -70,7 +71,7 @@ updated: 2026-09-08
 ### 功能需求
 
 - **FR-001**：Artifact 保存归属、类型、标题、来源与当前 revision。
-- **FR-002**：revision 内容不可原地覆盖，并保存摘要与创建来源。
+- **FR-002**：revision 内容不可原地覆盖，并保存摘要、创建来源、source locator 与不可变 archive locator；resolver 只读取 archive。
 - **FR-003**：resolver 返回确定 revision，缺失 / 越权 / 未知类型显式失败。
 - **FR-004**：记录每次派工实际消费的 Artifact revision。
 - **FR-005**：可从 Artifact 查来源和消费者，也可从 Run / Evidence 查 Artifact。
@@ -97,7 +98,7 @@ Artifact 实体可 active / retired；revision 一经发布不可变。retired �
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 两类存储均可创建、修订、重启后读取，历史 revision 不变。
+- [ ] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 两类存储均可创建、修订、重启后读取，历史 revision 不变；文件发布每个故障点 crash 后 resolver 都只能返回完整 published revision 或 not-found。
 - [ ] **AC-002** (`FR-003`, `NFR-002`): 缺失、越权、hash mismatch、未知类型均在消费前可观察失败。
 - [ ] **AC-003** (`FR-004`, `FR-005`, `TR-001`): Run / Artifact / Evidence 双向追溯与事件回放一致。
 
