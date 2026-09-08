@@ -863,13 +863,14 @@ archived ref 的消费限制与 F010 契约一致。
 
 ---
 
-## 循环 18：v0.3 及后续版本重排规划检视（3轮）
+## 循环 18：v0.3 及后续版本重排规划检视（4轮）
 
 - **report_type**: doc-review
-- **周期**: 2026-09-08，3轮 · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
+- **周期**: 2026-09-08，4轮（含 1 轮 CI 门禁重开） · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
 - **背景**: 以 `main@f2b2f7e`、V3.44、F009–F014 为修复基线，检查领域写 owner、Feature
   依赖、持久化发布、生命周期、迁移真实性、状态覆盖和后续版本边界。Round 1 全量扫描；
-  Round 2/3 只审修复 diff 与相邻契约。13 条 finding 均有独立提交、仓库内回归测试与变异证据。
+  Round 2/3 只审修复 diff 与相邻契约；Round 4 由首个 CI 的断链失败触发。14 条 finding 均有
+  独立提交、仓库内回归测试与变异证据。
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -886,6 +887,7 @@ archived ref 的消费限制与 F010 契约一致。
 | V03-PLAN-R2-011 | F010/F013 并行声明仍被前置表与 Dispatch owner 破坏 | High | 正确性 | 根因 | 修复引入 | fixed | F013 只发布 versioned effective requirements，F012 独占 Dispatch snapshot 集成及升级/禁用不变性验收 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R2-011` | 2 | 3 | dependency-table-owner-drift |
 | V03-PLAN-R2-012 | F009 场景与范围仍承诺无依据的旧链接和退役管理面 | Medium | 质量 | 根因 | 修复引入 | fixed | 用户场景改为根入口与新 deep link；Workflow Template 编辑 retired，只保留旧数据只读迁移 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R2-012` | 2 | 3 | partial-symmetric-fix |
 | V03-PLAN-R3-013 | 检视过程稿未被忽略而可能误入 Git | Medium | 质量 | 根因 | 流程缺口 | fixed | `.gitignore` 精确忽略 `CURRENT-*.md` 与 `FIX-log.md`，长期 reviews 文档继续纳入 Git | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R3-013` | 3 | 3 | active-review-artifact-not-ignored |
+| V03-PLAN-R4-014 | Artifact Feature 改号后下游评估文档仍引用已删除的 F009 路径 | Medium | 测试覆盖 | 根因 | 规格漂移 | fixed | 将文字与链接改指 F010，并增加当前引用必需、旧路径禁用的契约门禁 | `tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R4-014` | 4 | 4 | cross-document-reference-drift |
 
 **问题与实际修复证据**
 
@@ -903,17 +905,22 @@ archived ref 的消费限制与 F010 契约一致。
   并同步收缩 F009 的场景、范围、需求和回归口径。
 - R3-013 是闭环检查发现的流程缺口；`6969b65` 兼容项目“长期文档可追溯”和 skill“过程稿不入库”
   两项要求，`git check-ignore -v` 已分别命中两个临时文件模式。
+- R4-014 由 GitHub Actions run `34202024137` 的 `check:doc-links` 首次暴露：本地用户改动恰好遮住
+  了已提交版本的旧 F009 链接；`9a54ff5` 只暂存三处引用修复及专属门禁，没有吞入同文件其余改动。
 
 **模式性教训**
 
-1. `origin` 分布：原方案 5、规格漂移 4、修复引入 2、流程缺口 2。首轮修复自伤率 2/10，处于
+1. `origin` 分布：原方案 5、规格漂移 5、修复引入 2、流程缺口 2。首轮修复自伤率 2/10，处于
    协议预期的 20–30%，再次证明第二轮 diff-only 不能省。
-2. 最长存活 1 轮：R1 十条在 Round 2 关闭，R2 两条在 Round 3 关闭；R3-013 当轮以红→绿门禁
-   关闭。没有 finding 连续三轮失败，无需触发不收敛升级。
+2. 最长存活 1 轮：R1 十条在 Round 2 关闭，R2 两条在 Round 3 关闭；R3-013 与 R4-014 当轮
+   以红→绿门禁关闭。没有 finding 连续三轮失败，无需触发不收敛升级。
 3. `cross-feature-dependency-cycle` 与 `dependency-table-owner-drift` 表明依赖图、依赖表、任务 AC 和
    integration owner 必须作为一个对称契约修改；只改路线图文字会在相邻 Feature 中留下隐性反向边。
 4. `partial-symmetric-fix` 表明“退役一个 surface”必须同时搜索用户场景、范围、FR/NFR、tasks 和 AC；
    只修发现所在段落会让同一旧承诺从另一段复活。
-5. 文档门禁共 13 条，均对必需短语执行删除变异；涉及禁止旧契约的两条还执行反向注入变异。
+5. 文档门禁共 14 条，均对必需短语执行删除变异；涉及禁止旧契约的三条还执行反向注入变异。
    完整本地 `npm run verify`：Server 1680 passed / 30 skipped，Web 216/216，feature gate 144/144，
    docs gate 108/108，其余文档与治理门禁全绿。
+6. 首个 CI 的 E2E 已绿，但 Verify 被已提交版本的断链阻塞；这说明脏工作树可能让本地文档门禁
+   读取到尚未提交的修正，从而掩盖 HEAD 的真实状态。后续收口应额外对 `git show HEAD:<file>`
+   或干净 worktree 跑涉及全仓链接的门禁，不能只看当前工作树全绿。
