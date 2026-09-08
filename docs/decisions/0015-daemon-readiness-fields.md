@@ -3,9 +3,15 @@ topics: [decision, runtime, daemon, data-model, evidence, scope-control]
 doc_kind: decision
 status: accepted
 created: 2026-08-31
+updated: 2026-09-08
 ---
 
-# 0015: daemon 化的提前准备——现在只加字段，不动运行时
+# 0015: daemon 化分期——v0.3 固定执行位置，v0.7 再做多机
+
+> **2026-09-08 分期修订**：V3.44 已把运行时定为“执行机器 → adapter → 接入方式”的最终
+> 信息结构。F012 在 v0.3 建立单台本机的 RuntimeMachine / installation / access 基础和执行
+> 快照；v0.7 才开放多机注册、daemon 生命周期、租约 / fencing、远程鉴权与隔离。下文“现在
+> 只加字段”的判断按“v0.3 不实现多机 daemon”理解，不再表示运行时页面按机器分组应后移。
 
 ## 背景
 
@@ -104,18 +110,18 @@ ADR 0008 第 3 条已经答过，这里不重复论证，只重申其结论与�
 
 事件传输不用提前处理。`ThreadEvent` 已带 `event_sequence`（`shared/src/types/index.ts:63`）做游标，架构第 2 节「事件本体与传输方式解耦，v0.7 换 WebSocket 或 daemon 内部 pub/sub 不改事件模型」的判断成立，现状不构成障碍。
 
-UI 也不用提前改。设计稿的运行时面已按 **adapter 配置**分额度池（`ui-reference/personahub-draft/personahub-v3.1`；ADR 0012 第 2 条把配置定为携带认证、`base_url` 与可用模型的那一层），daemon 化后加一层「机器 × 配置」即可，multica 的运行时页是现成参照。现在就按机器分组只会多一层空壳。
+UI 从 v0.3 起按 **执行机器 → adapter → 接入方式** 展示；首批只有一台本机，但仍使用最终层级，不另做一套临时结构。额度属于接入方式，实际工具属于 adapter；增加远端机器时只扩展数据，不改变信息归属。
 
 ## 影响
 
 - `shared/src/types/index.ts` 的 `AdapterConfig` 与 `shared/src/types/validation.ts` 的 `AdapterIdentitySnapshot` 各增一个字段；`agent_configs` 增一列。两处都是可空/有默认值的加法，不影响现有查询。
 - `server/src/services/stale-recovery.ts` 提出一个具名判定函数，行为不变。
 - `docs/personahub-architecture.md` 第 2 节的 v0.1→v0.7 对照表中，「Workspace 锁」与「Agent Runner」两行需要补一句指向本决策，说明哪些字段已经提前留好、哪些仍是候选设计。
-- 本决策**不产生**任何 Feature 级排期任务，也不改变 v0.3（F009–F012）的范围。
+- 本决策的数据基础由 F012 统一落地；F014 负责跨版本迁移验收。它不把 daemon、多机协议或远程鉴权提前进 v0.3。
 
-## 已知未闭合项
+## v0.7 实现项
 
-- 本决策只覆盖「远程执行需要哪些字段」，**不覆盖** daemon 自身的形态问题：进程如何安装与守护、本机与 daemon 之间用什么协议、鉴权怎么做、密钥如何下发到远端。这些在触发信号到达、`ExecutionProvider` 真正提取时一并设计。
+- 本决策只覆盖「远程执行需要哪些字段」，**不覆盖** daemon 自身的形态问题：进程如何安装与守护、本机与 daemon 之间用什么协议、鉴权怎么做、密钥如何下发到远端。这些在 v0.7 进入 Feature 设计时一并关闭。
 - PRD 第 15 节把 v0.7（Runtime / Daemon / Self-host）列为方向性设想而非排期承诺。本决策不改变这一点，只是让「到时候能做」的成本不因为今天的省略而变高。
 
 ### 多设备的形态是「单一 server + 多端访问」，不是双向同步

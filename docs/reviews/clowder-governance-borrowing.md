@@ -259,7 +259,7 @@ blocker code 是封闭词表、文案随 code 持久化，重启后重渲染同�
 F313 明确说旧设计的错误是：把"canonical truth 留在原 owner"误译成"实施也要拆成各自的
 Feature 线"，结果**每条线都能局部完成，却没有任何一条的完成声明必须证明整条链走通**。
 
-PersonaHub 的 F009 / F010 / F011 / F012 是同一种拆法——四条线各自可以"完成"，
+PersonaHub 的 F010 / F011 / F012 / F013 是同一种拆法——四条线各自可以"完成"，
 但没有一条的验收必须证明"用户从派活到验证关单走通了"。**v0.3 重启时值得按这条重判：
 留一个 Feature 持续对整条旅程负责，其余作为 linked contract。**
 
@@ -362,7 +362,7 @@ EVOLUTION_CYCLE_DECISIONS = ['keep','tune','rollback','sunset','no_change','insu
 | `docs/features/README.md` + `tools/check-feature-gates.mjs` | spec §6 新增条件必填子节 |
 | `docs/reviews/dogfooding-bugs.md` + `tools/dogfood-bugs.mjs` | 表头与校验规则 |
 | `shared/src/types/validation.ts` | `ValidationFindingRecord` 加生命周期字段 |
-| v0.3 Feature 拆分方式 | F009–F012 是否留一个 Feature 对整条旅程负责（见 §4.3 末） |
+| v0.3 Feature 拆分方式 | F010–F013 是否留一个 Feature 对整条旅程负责（见 §4.3 末） |
 | <a href="product-experience-reset-plan.md">`product-experience-reset-plan.md`</a> 第 7 节 | 上述 PRD 级改动应登记进「需要重新评估的现有文档」 |
 
 **产品级修改须走 PRD 修订流程**，惯例见 <a href="concept-mapping.md">`concept-mapping.md`</a> §7.3。

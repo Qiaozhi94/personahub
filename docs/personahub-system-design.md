@@ -1,353 +1,246 @@
 ---
-feature_ids: [F004, F005]
-related_features: [F001, F002, F003]
-topics: [design, data-model, agent-team-os]
+feature_ids: [F004, F005, F006, F007, F008]
+related_features: [F001, F002, F003, F009, F010, F011, F012, F013, F014]
+topics: [design, data-model, sqlite, migration]
 doc_kind: design
 created: 2026-07-11
-updated: 2026-08-01
+updated: 2026-09-08
 ---
 
-# PersonaHub 系统设计草案：数据模型
+# PersonaHub 系统设计：数据模型
 
-> Status: draft | Owner: TBD
+## 1. 文档边界
 
-## 与 PRD 的关系
+本文是字段、表和数据关系的实现级索引。产品语义与路线以 `personahub-prd.md` 为准；进程、模块和通信边界以 `personahub-architecture.md` 为准；单 Feature 的最终字段以其 `design.md` 为准。
 
-本文档从 `docs/personahub-prd.md` 拆出，承载数据模型这类实现级别的设计内容。产品判断、范围和路线仍以 PRD 为唯一真相源（见 PRD 第 16 节"文档关系"）；本文档描述的是"如何实现"，会随实现推进比 PRD 更频繁地变化，字段增删、拆表、类型调整不需要同步修改 PRD。
+本文严格区分：
 
-PRD 第 5 节"核心概念"是这些实体的产品语义来源，本文档只补充字段级细节，不重复定义概念。
+- **已实现**：当前代码和 SQLite schema v11 的事实。
+- **v0.3 目标**：F009 先完成零业务表变更的生产前端迁移；V3.44 新领域模型由 F010–F014 计划引入，尚未实现，字段名可在开发前设计检视中调整。
 
-模块划分、运行时/进程模型、存储与通信层等"整体怎么搭"的设计见 `docs/personahub-architecture.md`，本文档不重复定义，只提供该文档引用的字段级 schema。
+不得把目标模型写成当前已交付能力，也不得因旧表仍存在就把已取消概念继续暴露给 UI。
 
-## 数据模型草案
+## 2. 已实现基线：schema v11
 
-> F004 (Autonomous Validation) 新增/修改字段以 `# F004` 标记，完整 schema 细节见 `docs/features/0.1/F004-autonomous-validation/design.md` §3-4。F005 (Manual Multi-Agent Routing) 新增/修改字段以 `# F005` 标记，完整 schema 细节见 `docs/features/0.1/F005-multi-agent-manual-routing/design.md` §3-4。
+唯一版本常量是 `server/src/db/migrations.ts` 的 `CURRENT_SCHEMA_VERSION = 11`。Migration v1→v11 顺序执行；已发布 migration 文件不可修改，只能新增后续版本。
+
+### 2.1 表清单
+
+| 表 | 当前职责 | 来源版本 |
+|---|---|---|
+| `projects` | 项目及默认代码目录 / adapter 配置 | v1、v6 |
+| `workspaces` | 项目内本地代码目录、分支与写锁 | v1、v2 |
+| `workflow_templates` | coding workflow 版本与激活 | v1、v10 |
+| `validation_policies` | 验证条件与轮次上限 | v1 |
+| `issues` | 任务、状态、验证轮次与阻塞调度期限 | v1、v4、v6 |
+| `threads` / `thread_events` | 每个任务的主 Thread 与顺序事件 | v1 |
+| `agent_configs` | 历史“AI 成员 / adapter config”混合记录 | v2、v6 |
+| `runs` | 单次 CLI 进程执行与验证 attempt | v2、v4、v6、v8、v11 |
+| `run_trace_states` / `run_file_changes` | Trace 最终化与文件变化 | v3 |
+| `evidence_summaries` | 验证通过后形成的确定性完成摘要 | v4、v5 |
+| `adapter_workspace_status` | adapter 在代码目录范围内的状态覆盖 | v7 |
+| `graph_runs` / `node_runs` | F006 可恢复执行图、节点与 Attempt 归属 | v8 |
+| `intake_confirmations` | F007 签名推荐的一认领 | v9 |
+| `app_secrets` | 与数据库同生命周期的 HMAC secret | v9 |
+| `admin_audit_events` | Workflow 管理的全局审计 | v10 |
+
+### 2.2 当前关键关系
 
 ```text
-Project
-  id
-  name
-  description
-  default_workspace_id
-  default_coordinator_agent_id
-  default_adapter_config_id  # F005: composer 省略 adapter_id 时的解析目标（AdapterResolver）；与自动 validator 的 ValidatorSelector 是两回事，不得合并
-  created_at
-  updated_at
+Project 1 ── N Workspace
+Project 1 ── N Issue
+Issue   1 ── 1 primary Thread
+Thread  1 ── N ThreadEvent
+Issue    1 ── N Run
+Run     1 ── 0..1 RunTraceState
+Run     1 ── N RunFileChange
+Issue   1 ── 0..1 EvidenceSummary
+Issue   1 ── N GraphRun
+GraphRun 1 ── N NodeRun
+NodeRun  1 ── N Run (Attempt)
+```
 
-Workspace
-  id
-  project_id
-  local_path
-  local_path_normalized
-  git_branch
-  lock_state
-  locked_by_run_id
-  locked_at
-  push_credentials_enabled
-  created_at
-  updated_at
+这是历史实现关系，不是最终 UI 语言。特别是 `primary Thread`、`validation_policy_id`、`agent_configs.role` 仅代表当前数据库形状。
 
-CoordinatorAgent
-  id
-  project_id
-  agent_id
-  default_topology_policy_json
-  escalation_policy_json
-  result_synthesis_policy_json
+### 2.3 当前数据库不变量
+
+- 每个 Issue 最多一个 primary Thread。
+- 同一 Issue 最多一个 active validator。
+- v11 后 validator 唯一键为 `(issue_id, validation_round, validation_attempt)`；attempt 失败不消耗新的 validation round。
+- 同一 Issue 最多一个非终态 GraphRun。
+- 同一 NodeRun 最多一个 active Attempt。
+- 每个 issue type 最多一个 active WorkflowTemplate，同一 `(issue_type, version)` 唯一。
+- EvidenceSummary 只在 passed 时存在，保存实现 / 验证执行身份、策略快照 hash 与去重 evidence refs。
+- `adapter_workspace_status` 只存相对 `agent_configs.status` 的例外；统一经 effective status 合并。
+
+## 3. v0.3 目标对象模型
+
+F009 不新增目标对象或业务字段，只把当前 schema 的 Project / Issue / Thread / Run / Trace / Evidence 通过受控兼容投影接入 V3.44 壳层。下列新对象从 F010 开始引入。
+
+V3.44 与 ADR 0012 取消了 AI 成员、Primary / Project Thread、独立 Validation Policy 和独立 Squad 类型。目标关系如下：
+
+```text
+Space
+├─ Project 0..N
+├─ Issue 0..N (project_id nullable)
+├─ Skill 0..N
+└─ Memory 0..N
 
 Issue
-  id
-  project_id
-  workspace_id
-  primary_thread_id
-  issue_type
-  workflow_template_id
-  validation_policy_id
-  title
-  goal
-  status
-  owner_agent_id
-  coordinator_agent_id
-  priority
-  labels
-  validation_round_count
-  blocked_reason_code        # F004: ValidationBlockReason | string | null
-  blocked_reason_message     # F004: human-readable blocker description | null
-  validation_dispatch_due_at # F005 §8.1: set in Phase A (implementation completed), cleared by the Phase B winner (manual pick or ValidationDispatchScheduler auto-claim); non-null means the grace window is still open. Indexed by idx_issues_validation_due.
-  created_at
-  updated_at
+├─ Session(Room) 1..N ── 1 Thread
+├─ Dispatch 0..N ── Attempt(Run) 0..N
+├─ GraphRun / NodeRun
+├─ Artifact ── ArtifactRevision
+└─ Claim ── Argument ── EvidenceRef
 
-Thread
-  id
-  issue_id
-  room_id
-  thread_type
-  title
-  created_at
-  updated_at
-
-WorkRoom
-  id
-  issue_id
-  thread_id
-  phase
-  goal
-  topology
-  leader_agent_id
-  member_agent_ids_json
-  input_contract_json
-  output_contract_json
-  evidence_requirements_json
-  budget_policy_json
-  termination_condition_json
-  status
-  created_at
-  updated_at
-
-ThreadEvent
-  id
-  event_sequence
-  thread_id
-  type
-  actor_type
-  actor_id
-  payload_json
-  evidence_refs
-  created_at
-
-HandoffPacket
-  id
-  issue_id
-  thread_id
-  from_agent_id
-  to_agent_id
-  to_room_id
-  current_phase
-  payload_json
-  artifact_refs
-  evidence_refs
-  created_at
-
-Agent (adapter_config)
-  id
-  project_id
-  name
-  role                     # deprecated：仅内部保留，永不出现在 public DTO；capability_tags 是 role 的真相源（见 F005 design §4.1）
-  cli_provider             # F005: codex | claude-code | opencode（后两者为真实落地的第二/三 provider，非预留占位）
-  command
-  args
-  capability_tags          # AgentCapability[]：implementation | validator；consult 不是可配置能力（任何 adapter 都能承接咨询）
-  default_model
-  status
-  last_checked_at
-  auth_type                # F005: oauth | api_key；provider 支持矩阵见 architecture.md §3
-  model_provider           # F005: OpenCode api_key 模式下的 model provider（如 "openai"），走白名单校验
-  api_key                  # F005: 原始 secret，internal-only（AgentConfigRecord），public DTO 永远没有这个字段
-  auth_status_message      # F005: validate() 探测失败时的经清洗 message；成功时为 null
-  created_at
-  updated_at
-  # F005 public DTO（AdapterConfig，非独立 DB 列）额外投影：
-  #   has_api_key  — api_key 是否已配置（write-only 布尔投影，从不回显原值）
-  #   is_default   — 与 Project.default_adapter_config_id 比对得出的 service 层计算字段
-  #   effective_status / effective_last_checked_at / effective_auth_status_message / has_workspace_override
-  #     — 仅 workspace-scoped API 返回，由 agent_configs 基线与下方例外覆盖合并得到
-
-AdapterWorkspaceStatus        # F005 closure / schema v7；只存与 Project 级基线不同的例外
-  adapter_config_id
-  workspace_id
-  status
-  last_checked_at
-  auth_status_message
-  updated_at
-  # PK(adapter_config_id, workspace_id)；无记录 = 使用 agent_configs.status 基线
-  # 所有 workspace-scoped 路由判断统一经过 effectiveAdapterStatus()
-
-WorkflowTemplate
-  id
-  name
-  issue_type
-  collaboration_topology
-  agent_team_template_id
-  validation_policy_id
-  steps_json
-  handoff_policy_json
-  evidence_requirements_json
-  status
-  version
-  created_at
-  updated_at
-
-AgentTeamTemplate
-  id
-  name
-  issue_type
-  roles_json
-  default_assignments_json
-
-ValidationPolicy
-  id
-  name
-  issue_type
-  pass_conditions_json
-  fail_conditions_json
-  evidence_requirements_json   # F004: ValidationEvidenceRequirements
-  max_validation_rounds        # F004: default 3, 3rd failed -> Blocked
-  status
-  version
-  created_at
-  updated_at
-
-Run
-  id
-  issue_id
-  thread_id
-  workspace_id
-  adapter_config_id
-  status
-  failure_reason
-  instructions
-  started_at
-  completed_at
-  exit_code
-  error_message
-  role                    # F004: implementation | validator；F005 扩展新增 consult（见 shared/src/types/validation.ts RunRole）
-  workflow_step           # F004: "implementation" | "validation" | null (derived from role)
-  validation_round        # F004: round number for validator Runs; v5 partial unique idx (issue_id, validation_round) WHERE role='validator'
-  dispatch_source         # F004: user_explicit | system；F005 扩展新增 user_default（composer 省略 adapter_id、走 Project default 解析时）
-  purpose                 # F005: workflow_bound | ad_hoc_consult；workflow_bound 驱动 Issue 状态机与 round，ad_hoc_consult 从不驱动（即便 role 恰好命中 implementation/validator 的 capability）
-  context_source_run_id   # F005: 本 Run 的 Handoff/evidence 上下文来自哪个 Run（通常是最近一次 completed implementation Run）；首个 Run 为 null
-  final_message           # F004: validator final agent message (internal, not in public Run DTO)
-  adapter_identity_json   # F004: snapshot of adapter config identity at Run creation
-  created_at
-  updated_at
-
-EvidenceSummary         # F004: deterministic Done projection, one per Issue
-  id
-  issue_id
-  thread_id
-  validator_run_id
-  implementation_run_id
-  validation_result       # v5 CHECK 恒为 "passed"（Evidence Summary 仅在验证通过时生成）
-  evidence_refs           # aggregated evidence refs (max 500, deduplicated)
-  summary_markdown        # deterministic Markdown (max 256 KiB)
-  same_origin_validation  # 1 if provider+model match, 0 otherwise; v5 CHECK: IN (0,1)
-  implementation_identity_json   # AdapterIdentitySnapshot at Run creation
-  validator_identity_json        # AdapterIdentitySnapshot at Run creation
-  policy_id
-  policy_version
-  policy_snapshot_json    # complete policy snapshot at request time
-  policy_snapshot_hash    # SHA-256 of canonical JSON; v5 CHECK: LIKE 'sha256:%'
-  created_at
-
-# Schema 当前版本 v7（v1→v7 顺序 migration）。F004 关键 DB invariant：
-#   - evidence_summaries CHECK：validation_result='passed'、same_origin_validation IN (0,1)、
-#     policy_snapshot_hash LIKE 'sha256:%'（SQLite 无法 ALTER-ADD CHECK，v5 create-copy-drop-rename 重建该表）
-#   - idx_runs_one_active_validator (issue_id) WHERE role='validator' AND status IN (queued,running)
-#     —— 同 Issue 至多一个活跃 validator
-#   - idx_runs_validator_per_round (issue_id, validation_round) WHERE role='validator'
-#     —— 同 Issue+round 至多一条 validator Run（terminal 也计），与 service 层唯一性（T093）双层保证
-# F005（schema v6，server/src/db/schema-v6.ts）关键 DB invariant：
-#   - idx_issues_validation_due (status, validation_dispatch_due_at) WHERE status='Validating' AND validation_dispatch_due_at IS NOT NULL
-#     —— ValidationDispatchScheduler 每秒 tick 扫描到期 Issue 的查询索引
-#   - agent_configs 新增 auth_type/model_provider/api_key/auth_status_message，SQLite ALTER ADD COLUMN（非 CHECK，校验在 service 层 validateAuthState()）
-#   - runs 新增 purpose/context_source_run_id；projects 新增 default_adapter_config_id（无列级 FK，由 service 校验同 Project 且 available）
-# F005 closure（schema v7，server/src/db/schema-v7.ts）关键 DB invariant：
-#   - adapter_workspace_status PRIMARY KEY(adapter_config_id, workspace_id)
-#   - 表只保存与 agent_configs.status 基线不同的例外；无行即回退基线
-#   - effectiveAdapterStatus() 是 workspace-scoped availability 的统一合并入口
-
-Artifact
-  id
-  issue_id
-  thread_id
-  room_id
-  run_id
-  artifact_type
-  title
-  storage_type
-  uri_or_content_ref
-  evidence_refs
-  created_by_agent_id
-  created_at
-  updated_at
-
-# Memory —— 形状由 ADR 0016 拥有；PRD 第 5 节拥有产品语义
-Memory
-  id
-  scope_type                     # 'project' | 'space'；团队协作时加值不加列
-  scope_id
-  type                           # project fact | decision | lesson | user preference | workflow note
-  stance                         # claimed | verified | confirmed（与 type 正交，受白名单约束）
-  state                          # proposed | rejected | active | suspect | retired | forgotten
-  content
-  origin_type                    # user_direct | agent_output | external_doc
-  usage_policy                   # json: { auto_inject, dangerous_if_used_for[] }
-  source_issue_id
-  source_thread_id
-  source_event_ids
-  evidence_refs
-  originating_input_trust_level
-  created_by
-  superseded_by                  # -> Memory.id；置位时 state 必为 retired
-  verified_at                    # 显式验证事件时间；不得由引用次数写入
-  reference_count
-  last_referenced_at
-  created_at
-  updated_at
-# 约束：
-#   - state / stance 的迁移只能经统一迁移函数；业务代码禁止直接 UPDATE
-#   - 来源包字段（origin_type / usage_policy / provenance 组）NOT NULL
-#   - forgotten 只能从 retired 进入；forgotten 清空 content，保留 tombstone
-
-MemoryRevision                   # append-only；state 与 stance 各占一条轴
-  id
-  memory_id
-  axis                           # 'state' | 'stance'
-  from_value                     # NULL = 出生
-  to_value
-  actor                          # 'user' | agent id | 'system'
-  reason
-  evidence_ref
-  created_at
-
-MemoryWriteRejection             # 第五类病（失败无观测）的自身应用：拒绝不静默
-  id
-  attempted_type
-  attempted_stance
-  attempted_transition
-  origin_type
-  reason
-  source_issue_id
-  created_at
-
-MemoryEdge                       # 可重建的投影，不是真相源
-  from_id
-  to_id
-  relation
-  # PRIMARY KEY(from_id, to_id, relation)；建边时统一做目标解析，目标不存在则拒绝
-
-Skill
-  id
-  name
-  trigger
-  issue_type
-  topology
-  roles_json
-  phase_plan_json
-  instructions
-  output_schema
-  verification
-  provenance_json
-
-ProvenanceGateDecision
-  id
-  target_type
-  target_id
-  source_issue_id
-  source_thread_id
-  source_event_ids
-  input_trust_level
-  decision
-  decided_by
-  created_at
+Runtime
+└─ RuntimeMachine 1..N
+   └─ AdapterInstallation 0..N
+      └─ AdapterAccess 1..N
 ```
+
+v0.3 首批只要求一个 Space 和一台执行机器，但表 / API 不应重新把它们硬编码成 Project 或浏览器进程的属性。
+
+## 4. F010 目标：Artifact 与可信结构
+
+建议形状，最终以 F010 design 为准：
+
+```text
+artifacts
+  id, issue_id, type, title, current_revision, state,
+  created_at, updated_at
+
+artifact_revisions
+  artifact_id, revision, storage_kind,
+  inline_content | relative_path, content_hash,
+  source_room_id, source_run_id, source_attempt_id,
+  created_by, created_at
+
+artifact_consumptions
+  artifact_id, revision, dispatch_id, run_id, purpose, consumed_at
+
+claims
+  id, issue_id, requirement_key, statement, source_kind, state
+
+arguments
+  id, claim_id, rationale, created_at
+
+claim_evidence_links
+  claim_id, argument_id, evidence_ref, relation, independence
+```
+
+不变量：revision 发布后不可变；进入 Dispatch 的 ref 必须带 revision；不存在 / 越权 / hash 不符不得解析成“当前内容”。Claim 状态是证据投影，不是百分比。
+
+## 5. F012 目标：会话、派工与运行时
+
+```text
+sessions (domain name: rooms)
+  id, issue_id nullable, title, state, created_at, ended_at
+
+threads
+  ... existing fields ...
+  room_id UNIQUE NOT NULL
+
+dispatches
+  id, issue_id, room_id, runtime_id,
+  adapter_installation_id, adapter_access_id, model, depth,
+  context_scope, handoff_json,
+  skill_revision_refs_json, requirement_snapshot_json,
+  state, start_deadline_at, created_at, dispatched_at
+
+dispatch_context_items
+  dispatch_id, source_ref, disposition, reason, token_count
+
+runtime_machines
+  id, hostname, status, last_seen_at
+
+adapter_installations
+  id, runtime_id, provider, cli_version, capabilities_json, status
+
+adapter_accesses
+  id, installation_id, name, base_url nullable,
+  auth_type, billing_mode, credential_ref, status
+```
+
+`runs` 逐步改为 Attempt 记录并引用 `dispatch_id`；旧 `adapter_config_id` 保留兼容映射。组合身份是 installation + access + model + depth，`runtime_id` 单独进入快照。
+
+不变量：Dispatch 提交后身份与上下文快照不可变；starting 可在 deadline 前取消且不产生 Run；换上下文范围必须冷启动；Room / Session 不复制执行状态。
+
+## 6. F013 目标：项目仓库与 Skills
+
+```text
+repositories
+  id, canonical_path nullable, remote_url nullable, display_name, kind
+
+repository_machine_paths
+  repository_id, runtime_id, resolved_path, access
+
+project_repositories
+  project_id, repository_id, role(main|reference), read_scope, write_scope
+
+skills
+  id, source_id, current_revision, state
+
+skill_revisions
+  skill_id, revision, name, description,
+  required_capabilities_json, steps_json nullable,
+  completion_requirements_json, source_manifest_json, content_hash
+
+project_skill_refs
+  project_id, skill_id, revision nullable, is_default
+```
+
+有 `steps_json` 即投影为编组，不另建 Squad 表。项目只保存 Skill ref。旧 WorkflowTemplate 无法无损映射的字段保存在 legacy attachment，不猜测填入新字段。
+
+## 7. Memory 目标模型
+
+字段和状态机由 ADR 0016 与 `personahub-memory-design.md` 拥有。核心表族：
+
+- `memories`：当前条目、scope、type、stance、state。
+- `memory_revisions`：append-only 正文与来源包。
+- `memory_write_rejections`：被白名单 / Provenance Gate 拒绝的写入。
+- `memory_edges`：已解析目标的关系。
+- `memory_retrieval_events` / `memory_adoption_events`：展示、引用、采纳和帮助证据。
+
+Memory 不在 v0.3 实现；F009 不预留 Memory 假数据，F010–F014 只需确保验收事件、Artifact 与 Dispatch 上下文具备将来的来源数据。
+
+## 8. 自动化与统计目标
+
+v0.4 引入：
+
+```text
+automation_rules
+  trigger_config, model, depth, task_markdown_revision, project_id, enabled
+
+automation_invocations
+  rule_id, trigger_event, admission_result, issue_id nullable, replayed_from
+
+run_usage
+  attempt_id, run_id, dispatch_id, issue_id, project_id,
+  adapter, model, depth, context_scope, step_kind,
+  input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
+  cost_micro_usd, cost_source, billing_mode, started_at, ended_at
+```
+
+每个有效自动化触发必须创建普通 Issue；入口拒绝不产生 Run。`run_usage` 一行代表一次 Attempt × model，不预建多租户 rollup。历史成本在写入时固化，价表变化不重算。
+
+## 9. Migration 与兼容纪律
+
+1. 每个新版本从 `CURRENT_SCHEMA_VERSION` 真实值顺延；设计稿不得预占数字。
+2. 已发布 migration 文件永不修改；升级器覆盖 v1 至当前每个发布版本。
+3. 移除 UI 概念不等于立即删列。先停止新写、建立目标表与兼容读，再迁移和删除。
+4. 旧 ID、终态、时间、原始 payload、Evidence ref 与 Run trace 必须守恒。
+5. 不能无损映射时写 `legacy` / `unknown` 与原始来源，不根据当前配置推断历史。
+6. migration 可重入；文件系统副作用必须有 journal 或可确定恢复协议。
+7. F014 输出 migration report，但不拥有业务表。
+
+## 10. 数据安全
+
+- 所有本机路径在授权前解析到真实路径；保存规范化形式与必要的展示形式。
+- 密钥不出现在公共 DTO、事件、错误、导出和诊断包。当前 `agent_configs.api_key` 为明文 SQLite 列，系统诊断必须如实提示；后续 `credential_ref` 迁移需单独设计。
+- 插件来源字段与核心数据分离；停用只影响当前激活，不改历史快照。
+- 删除配置、仓库、Skill、项目或 Memory 前检查引用；历史执行与证据不可级联删除。
+
+## 11. 文档更新触发
+
+任何 migration、表职责或跨对象关系改变时同步更新本文件。仅改变单 Feature 内部实现而未改变全局字段语义时，更新对应 Feature design 即可。

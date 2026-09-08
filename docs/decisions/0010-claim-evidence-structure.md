@@ -1,11 +1,16 @@
 ---
 topics: [decision, requirements, validation, evidence, assurance-case, traceability, generality]
 doc_kind: decision
-status: proposed
+status: accepted
 created: 2026-08-27
+updated: 2026-09-08
 ---
 
 # 0010: 需求与验收的结构模型——主张与证据，不是固定层级
+
+> **2026-09-08 定稿说明**：V3.44 已用 coding、research 与异常恢复静态状态验证同一骨架，
+> 本决策转为 accepted。独立 Validation Policy / Workflow Template 已由 ADR 0012 后续修订收敛为
+> Skill / 步骤的完成要求；本文中保留的形成过程按这一最终归属理解。
 
 ## 背景
 
@@ -82,7 +87,7 @@ PersonaHub 的需求与验收结构采用三个角色，与 GSN 同构：
 
 > **`[2026-08-29 修订]`** 原文举例为 `旅程 → Feature → US` 三层血统。ADR 0012 取消了需求层级：**Issue 就是唯一的范围层**，粒度差异用 `issues.labels` 表达，不做父子。因此范围血统在界面上退化为一行「当前 Issue」，大多数情况下不需要展开。这同时消掉了本文「已知未闭合项」里那条关于 AC 需标注所属 US 的阻塞（见下）。
 
-**证据使用已有的天然标识，不新建编号体系。** 测试用测试名，文件用 workspace 相对路径，源码引用用「仓库 · 路径 · 符号」，验证结论用「成员 · Run」，反证用文字标签。PersonaHub 的证据对象本来就各自可寻址（Run ID、ThreadEvent ID、artifact revision、文件路径），再造一套 `TEST-xxx` / `SRC-xxx` 前缀只会多出一份需要人工维护、且与真实对象二次对齐的编号表。
+**证据使用已有的天然标识，不新建编号体系。** 测试用测试名，文件用代码目录相对路径，源码引用用「仓库 · 路径 · 符号」，验证结论用「执行组合 · Attempt」，反证用文字标签。PersonaHub 的证据对象本来就各自可寻址（Run / Attempt ID、ThreadEvent ID、Artifact revision、文件路径），再造一套 `TEST-xxx` / `SRC-xxx` 前缀只会多出一份需要人工维护、且与真实对象二次对齐的编号表。
 
 **「论证」这一层不可省略。** 设计评审中出现过「三段像在讲同一件事但抓不住联系」的反馈，缺的正是它：主张与证据之间没有显式连线，读者只能自己脑补。GSN 把 Strategy 作为独立节点，正是为了消除这种脑补。
 
@@ -102,13 +107,13 @@ PersonaHub 的需求与验收结构采用三个角色，与 GSN 同构：
 - Feature 级主张 ← 功能验收用例
 - US 级主张 ← 场景用例（即现在的 AC）
 
-**单元测试默认不计入用户级主张覆盖率。** 它主要测实现内部，界面上作为“实现回归”单独成段并默认折叠，避免与端到端验收混算成「18 / 18 通过」。但低层技术主张可以显式引用单元测试或属性测试；是否足够仍由该主张所属 Validation Policy 决定，不做“一律不能支撑”的绝对规则。
+**单元测试默认不计入用户级主张覆盖率。** 它主要测实现内部，界面上作为“实现回归”单独成段并默认折叠，避免与端到端验收混算成「18 / 18 通过」。但低层技术主张可以显式引用单元测试或属性测试；是否足够仍由该主张所属 Skill / 步骤完成要求决定，不做“一律不能支撑”的绝对规则。
 
 ### 4. 通用性靠角色不变、实例可换，不靠为每个 Issue Type 硬编码层级
 
-「流程即插件」的插法是：骨架永远是主张 / 论证 / 证据三角色，**插件由 Workflow Template 的验证段提供 Evidence Adapter**——证据类型、摘要与预览、打开动作、时效、独立性、领域结论到通用状态的映射，以及「分解到什么算够」的判据——而不是一套新的层级定义。
+跨任务范式的扩展方式是：骨架永远是主张 / 论证 / 证据三角色，**Skill / 步骤完成要求提供 Evidence Adapter 契约**——证据类型、摘要与预览、打开动作、时效、独立性、领域结论到通用状态的映射，以及「分解到什么算够」的判据——而不是一套新的层级定义。
 
-PRD 已有的 Validation Policy 表按 Issue Type 给出了证据类型（该表已按 ADR 0012 第 7 条并入 Workflow Template 的验证段，概念保留、层级取消）（coding = tests pass / diff review / verification trace；research = 来源足够 / 结论有证据 / 分歧被标注；writing = 目标读者 / 结构 / 论点 / 证据 / 风格；troubleshooting = 现象消失 / 命令输出正常 / 日志无关键错误）。它升格为插件定义，不需要新建概念。
+原 Validation Policy 按 Issue Type 给出的证据类型（coding = tests pass / diff review / verification trace；research = 来源足够 / 结论有证据 / 分歧被标注；writing = 目标读者 / 结构 / 论点 / 证据 / 风格；troubleshooting = 现象消失 / 命令输出正常 / 日志无关键错误）迁入 Skill / 步骤完成要求，不再作为独立对象。
 
 因此非代码场景**不是「去掉验证主线」**——那会让「可信交付」这条产品承诺只在代码场景成立。它换的是证据类型和领域结论；研究至少还需要部分支持、有争议、已失效等状态，不能强压成二元 pass/fail。这里承诺的是信息骨架可复用，不承诺所有 Evidence Adapter 可以零代码接入。
 
@@ -119,38 +124,26 @@ PRD 已有的 Validation Policy 表按 Issue Type 给出了证据类型（该表
 - **不把单元测试默认并入用户级覆盖率。** 低层技术主张的例外见第 3 条。
 - **不引入 GSN 的图形记法。** 采纳的是它的语义（主张 / 论证 / 证据 / 未支撑），不是它的图形符号；本产品的呈现形态是表，不是论证图。
 
-## 已知未闭合项
+## 实施期验证项
 
-**仓库里 AC 与 US 之间没有显式连线。** 核实 `docs/features/0.3/F009-artifact-foundation-provenance/spec.md` 后确认：AC 追溯到的是 `FR-xxx` / `DR-xxx` / `NFR-xxx` / `UX-xxx`，例如
-
-```text
-- [ ] AC-002 (`FR-002`, `FR-003`): 旧 revision ref 永远解析旧内容。
-```
-
-而不是追溯到 `US-002`。也就是说「US-002 有哪几条 AC」目前要靠人读出来，范围级汇总算不出来。这个缺口不影响第一版在单任务内展示 AC，但会阻塞 Feature / US 的上卷统计。
-
-处理方式：**`[2026-08-29 已解除]`** ADR 0012 取消了需求层级（Issue 是唯一范围层，粒度用 `labels` 表达），不再需要按 US 汇总，因此 spec 模板不必为此修改。本条保留为历史记录。
-
-**「分解到什么算够」的判据尚未定义。** GSN 实践里这依赖评审人判断，没有机械规则。第一版先由用户自己决定何时停止分解，并在界面上把未支撑的叶子显式标出——不能停的地方会自己暴露出来。
-
-**范围血统的引用规则尚未统一。** `docs/personahub-user-journeys.md` 已有 `J3.1` 等步骤 ID，但 spec 还没有统一声明 Feature / US 对应哪一步旅程。完整血统和上层贡献汇总前必须补齐；默认只显示当前 US 的单任务界面不受阻塞。
-
-**跨任务范式的复用尚未验证。** 本 ADR 保持 `proposed`，直到 coding、research、troubleshooting 三类静态样例都能用同一组通用状态表达，并由使用者确认没有把领域差异藏进自由文本。
+- “分解到什么算够”由 Skill / 步骤完成要求提供；首批 coding 允许用户停止分解，但所有未支撑叶子必须保持可见。
+- Feature AC 继续追溯到 FR / UX / NFR；跨 Feature 的用户旅程由 F014 单独拥有，不给产品数据模型增加 US 层级。
+- v0.5 的首个非 coding 垂直切片验证 Evidence Adapter 的扩展成本；这不再阻塞本决策或 v0.3。
 
 ## 后果
 
 - **收益一**：交互设计里三段互相重叠的内容（三卡覆盖率、完成要求与依据、还没有被证明）有了统一解释——它们是同一棵主张树的三种读法，因此可以合并成一张表。设计评审中「抓不住联系」的问题定位到了缺失的「论证」层。
 - **收益二**：通用性不再依赖为每个 Issue Type 造一套层级。骨架有四十年跨行业实践（航空、汽车、核电、临床、法律论证）背书，且明确不限于软件。
 - **收益三**：「未支撑的主张必须显式在场」从产品判断变成有出处的结构约束，未来被以「界面太满」为由删掉时，有据可依。
-- **成本**：spec 模板要改（AC 标注所属 US）；旅程引用规则要统一；每类 Workflow 需要 Evidence Adapter。前两项是文档工作，最后一项会产生运行时与界面实现成本。
+- **成本**：每类任务需要由 Skill / 步骤定义 Evidence Adapter 契约，并为领域证据补读取与预览能力。
 - **不承诺**：本决策不声称采纳 GSN 语义能提高交付质量。理论核查只能证明这个方向不是凭空发明；它在本产品里好不好用，仍要靠真实使用验证。
-- **对 PRD 的影响**：Validation Policy 从「按 Issue Type 的一句话描述」升格为 Evidence Adapter 契约。本决策不代改 PRD。
+- **对 PRD 的影响**：Skill / 步骤完成要求承载 Evidence Adapter 契约；PRD 已于 2026-09-08 回写。
 
 ## 关联
 
 - 依赖：`docs/decisions/0009-agent-session-lifecycle.md`（跨围栏冷启动决定证据能不能算独立）
-- 被修订：`docs/decisions/0012-object-model-simplification.md`（范围血统压为一层；Validation Policy 并入 Workflow Template）
-- 约束：`docs/personahub-prd.md` 第 5 节 Workflow Template 的验证段（升格为 Evidence Adapter 契约）
+- 被修订：`docs/decisions/0012-object-model-simplification.md`（范围血统压为一层；验证要求并入 Skill / 步骤）
+- 约束：`docs/personahub-prd.md` 第 5.6 节 Skill / 编组完成要求
 - ~~约束：`docs/personahub-user-journeys.md`~~（原为血统需要；ADR 0012 取消需求层级后不再阻塞）
 - ~~约束：`docs/features/README.md` 的 spec 模板~~（原为 US 级汇总需要；ADR 0012 取消需求层级后不再阻塞）
 - 落点：v3.1 交互设计基线 `ui-reference/personahub-draft/personahub-v3.1/docs/design.md`

@@ -1,180 +1,107 @@
 ---
-topics: [v0.3, artifact, room, squad, planning]
+topics: [v0.3, trusted-task-workbench, planning]
 doc_kind: plan
 created: 2026-08-09
-updated: 2026-09-03
+updated: 2026-09-08
 ---
 
-# v0.3 Artifact-Centered Collaboration 规划审查稿
+# v0.3 Trusted Task Workbench
 
-> **暂停（2026-08-12）**：v0.2 首轮 dogfood 暴露了阻塞性用户旅程与操作可发现性缺口，
-> 因此本版本停止需求评审和开发排期。F009-F012 保持 `draft`，不得推进到
-> `ready-for-development`，原有 25-40 日时间线作废；2026-09-03 预留的旅程闭环 owner（F013，见 1.1）
-> 同样只是登记，旅程定稿前不建三件套。恢复条件和当前执行顺序以
-> <a href="../../reviews/product-experience-reset-plan.md">`docs/reviews/product-experience-reset-plan.md`</a>
-> 为准：先批准用户旅程，再批准 HTML 原型，最后依据影响面分析重估 v0.3。
->
-> Status: review-draft。本文确定版本目标、Feature 边界、顺序和验收口径；F009-F012 已分别建立 draft `spec.md` / `design.md` / `tasks.md`，评审通过后再把对应 Feature 推进到 `ready-for-development`。产品范围仍以 `docs/personahub-prd.md` 第 15 节为准。
+> V3.44 交互设计已于 2026-09-08 完成最终检视，产品体验重置的设计冻结解除。v0.3 仍处于规划修订后的 `draft` 阶段；必须逐个完成影响面核对和三件套评审后，才能将 Feature 推进到 `ready-for-development`。
 
 ## 1. 版本判断
 
-v0.3 不应被实现成“再加一个聊天页面”。它要验证的产品判断是：复杂 coding Issue 的关键上下文能否从聊天历史中独立出来，成为有类型、有来源、可引用、可验证的阶段成果；Room 只是让用户观察和控制这些协作过程的现场。
+v0.3 的第一步是把 v0.1–v0.2 已交付能力迁入 V3.44 生产前端，停止在旧壳层上继续叠加功能；随后迁移到最终对象模型，并跑通“目标 → 派工 → 执行 → Artifact → 主张 / 证据 → 完成”的可信任务闭环。旧规划中“新增独立 Room 协作现场”和“新增独立 Squad 对象”已被最终设计推翻，不进入实现。
 
-建议把版本拆为四个 Feature，按以下顺序交付：
+最终设计完整覆盖九个一级工作面，但 v0.3 不一次实现全部页面。一个工作面只有在具有真实数据、完整状态和可用动作后才进入生产导航；Memory、自动化与完整统计延至 v0.4，声明式插件 surface 延至 v0.8。
 
-| ID                                                  | Feature                          | 单一 intent                                            | 最小可独立验证结果                                                          | 依赖                   |
-| --------------------------------------------------- | -------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------- | ---------------------- |
-| [F009](F009-artifact-foundation-provenance/spec.md) | Artifact Foundation & Provenance | 建立可追溯、可引用的结构化成果模型                     | 用户能创建/查看 artifact，并从 artifact 追到 Issue、Thread、Run 和 evidence | F003、F004             |
-| [F010](F010-artifact-centered-coding-slice/spec.md) | Artifact-Centered Coding Slice   | 让一个复杂 coding workflow 真正以 artifacts 交接和验证 | 一次真实 Issue 产出四类阶段 artifact，下游只靠 refs 可继续工作              | F006、F009             |
-| [F011](F011-work-room-human-intervention/spec.md)   | Work Room & Human Intervention   | 给多节点协作增加用户可见、可控制的临时现场             | 用户能进入 Room，查看分工，暂停/纠偏/调整后续执行并归档                     | F006、F007、F008、F009、F010 |
-| [F012](F012-reusable-agent-squads/spec.md)          | Reusable Agent Squads            | 保存并复用静态 agent 分组                              | 用户能创建 Squad，并在 Room/推荐确认时选用；执行前重新校验成员              | F007、F011             |
+## 2. Feature 顺序
 
-F009 + F010 构成版本的最小价值闭环；F011 + F012 完成 PRD 对 v0.3 的完整承诺。不要并行设计 F011/F012 的持久化契约：Room 的成员变更语义应先稳定，再抽取可复用 Squad。
+| ID | Feature | 单一 intent | 依赖 |
+|---|---|---|---|
+| [F009](F009-v344-frontend-foundation-migration/spec.md) | V3.44 Frontend Foundation & Migration | 先用最终壳层重建 v0.1–v0.2 生产前端 | F001–F008 |
+| [F010](F010-artifact-foundation-provenance/spec.md) | Artifact & Provenance Foundation | 建立不可漂移的阶段成果和统一引用 | F003、F004、F006、F009 |
+| [F011](F011-trusted-task-surface/spec.md) | Trusted Task Surface | 用四视图表达决策、会话、验收和资源 | F009、F010 |
+| [F012](F012-session-dispatch-intervention/spec.md) | Session, Dispatch & Intervention | 将会话、执行选择、上下文与控制拆成可追溯对象 | F005、F006、F009–F011 |
+| [F013](F013-project-skills-foundation/spec.md) | Project & Skills Foundation | 统一项目文件边界与 Skill / 编组 | F009、F010、F012 |
+| [F014](F014-trusted-task-journey-closure/spec.md) | Trusted Task Journey Closure | 对整条旅程、迁移和发布验收负责 | F009–F013 |
 
-### 1.1 旅程闭环 owner（预留 F013）`[2026-09-03 新增]`
+F009 先完成生产前端换壳和既有能力迁移；F010–F013 逐项用新领域契约替换兼容投影；F009–F013 是 linked contracts，只有 F014 可以声明 v0.3 整体旅程完成。任何局部 Feature 完成不能替代端到端证据。
 
-上表四个 Feature 是**按领域能力**拆的（Artifact / 切片 / Room / Squad）。这种拆法有一个结构性缺陷：
-**四条线各自都能"完成"，但没有任何一条的完成声明必须证明整条旅程走通了**——用户从派活、
-执行、交接、验证到关单，中间任何一段掉地上，四个 Feature 的 AC 仍然可以全绿。
+## 3. 范围边界
 
-这不是假想风险。clowder-ai 在 2026-08-29 用 F313 纠正过同型错误，其结论是把
-"canonical truth 必须留在原 owner"误译成了"实施也要拆成各自的 Feature 线"，结果每条线都可能
-局部完成、却没有一条必须证明整条链接通。它的处置是**再立一个 Feature 对整条旅程持续负责，
-其余 Feature 降为 linked contract**。证据与逐项论证见
-<a href="../../reviews/clowder-governance-borrowing.md">`docs/reviews/clowder-governance-borrowing.md`</a> 第 4.3 节。
+### 本版本交付
 
-**v0.3 采用同一处置**：
+- V3.44 生产 App Shell、导航、路由、共享交互原语，以及 v0.1–v0.2 既有能力的兼容迁移。
+- 旧页面 / 路由 / 动作迁移矩阵；旧壳层和重复写入口退出生产路径。
+- Artifact 实体、不可变 revision、typed ref、消费记录和来源回放。
+- 任务四视图：概览、会话、验收、资源；轨迹作为会话副栏。
+- 主张—论证—证据与独立性状态，不使用信任分。
+- Room 在界面统一为会话；Thread 不单独暴露。
+- 派工记录、四维执行组合、三档上下文范围和可撤销启动。
+- 一台执行机器的运行时基础、adapter 状态、模型 / 深度和工具事实。
+- 项目主目录 / 只读参考仓库、项目文件范围、Skills / 编组最小闭环。
+- 从首次配置到真实 coding 任务可信完成的迁移与发布验收。
 
-| 项 | 结论 |
-| --- | --- |
-| 角色 | 单一交付、集成与验收 owner。它拥有：一份端到端旅程 AC、跨 Feature 的交付顺序、真实验收证据、最终关账 |
-| 不拥有 | 任何 canonical 状态。artifact 模型仍归 F009、执行图仍归 F006/F010、Room 控制边界仍归 F011、Squad 仍归 F012 |
-| 明确禁止 | 用「F009 完成」「F011 完成」等局部声明代替整条旅程的完成声明；在该 Feature 内新建第二套 store / 状态机 |
-| F009–F012 的变化 | 从"四条并列交付线"改为"linked contract"：各自仍拥有自己的契约与实现，但不再各自成为待追赶的项目线 |
-| 验收口径 | 复用第 4 节「版本验收旅程」，但该旅程的 owner 从"版本"变成这个 Feature——它必须给出真实 CLI 走通的证据，而不是四份分头验收的汇总 |
+### 明确后移
 
-**当前状态：只预留 ID，不建目录。** 三件套要等 M3 用户旅程定稿——`gate_version: 1` 要求
-spec 第 2 节用户场景、第 4 节需求与第 6 节 AC 齐备，而这些内容只能来自定稿旅程；在旅程批准前
-写出来就是凭空发明，正违反开发冻结。同理暂不进 `BACKLOG.md`：BACKLOG 与 feature 目录之间是
-双向集合校验（`npm run check:features`），只加一行会直接红灯。
+- v0.4：Memory 内容 / 策略 / 诊断 / 效用闭环，自动化，完整统计，Provenance Gate 和 Skill 候选。
+- v0.5：首个非 coding 垂直切片。
+- v0.6：自动续派、智能编组推荐和受控修复回路。
+- v0.7：多执行机器、daemon 化、隔离和后台队列。
+- v0.8：声明式插件 surface、MCP 注入和外部协议。
 
-**进入条件**：M3 旅程定稿 + M4 原型定稿 → 依据影响面分析重估 v0.3 时，与 F009–F012 的范围重判
-一并建立三件套。登记见
-<a href="../../reviews/product-experience-reset-plan.md">`docs/reviews/product-experience-reset-plan.md`</a> 第 7 节。
+## 4. 跨 Feature 不变量
 
-## 2. Feature 范围
+1. Run / Attempt 是执行事实；Room / 会话、Task 页面和统计都不得复制第二套执行状态。
+2. 被消费的 Artifact 始终指向确定 revision；更新不能改变历史输入。
+3. agent 可见的内容必须能从持久事件重建。
+4. 执行组合是 `adapter + 接入方式 + 模型 + 深度`，不再包装为 AI 成员。
+5. 验证要求属于 Skill / 步骤的完成要求，不保留独立 Validation Policy。
+6. 同源或上下文受污染的验证不能获得独立验证状态。
+7. 配置、派工和执行分别有唯一写入口；事务提交前不得启动进程或广播成功事件。
+8. v0.3 的迁移不得破坏 v0.1–v0.2 历史 Run、Trace、Evidence refs。
+9. 新功能只进入 V3.44 壳层；旧界面不得与新界面并存第二个可写入口。
 
-### F009：Artifact Foundation & Provenance
+## 5. 版本验收旅程
 
-**目标**：建立 Artifact 的领域模型、存储边界、typed ref 和基础 UI，让 artifact 成为可被后续 workflow 消费的稳定契约。
+使用 PersonaHub 自身仓库完成一个真实 coding 任务：
 
-范围内：
+1. 从 v0.2 最新 fixture 升级并进入 V3.44 App Shell；旧收藏链接到达同一项目 / 任务且没有旧写入口。
+2. 配置项目主目录，检查一个 adapter 并得到至少一个可派工组合。
+3. 只输入目标创建任务；确认前零写入，重复确认不重复创建。
+4. 选择模型、思考深度和上下文范围；在撤销窗口结束后开始执行。
+5. 执行产出文件变化与 Artifact revision，资源视图能从成果追到 Attempt。
+6. 阶段结束后改用另一个模型、冷启动且只给结果进行验证。
+7. 验收按完成要求展示主张、论证、证据与未覆盖项；同源负例明确降级。
+8. 模拟一次中断并重启：已完成步骤不重跑，运行中 Attempt 标中断，可从该步恢复。
+9. 生成完成摘要；从摘要可回放派工、上下文、Artifact revision、测试与验证者结论。
 
-- Artifact 归属 Issue，并可追溯到来源 Thread、Room、Run、创建者和时间。
-- 首批类型：`research_findings`、`synthesis_plan`、`implementation_log`、`verification_results`；类型允许后续扩展，但未知类型不能静默进入执行上下文。
-- 支持 `inline_markdown` 与 workspace 内受控 `local_file_path`；`db_record` 是否首批开放由 design 阶段核实真实消费者后决定。
-- 新增 `artifact:<artifact_id>` typed ref，并扩展统一 resolver；现有 `event:` / `file-change-set:` refs 保持兼容。
-- artifact 与 evidence refs 双向可追溯；内容修改采用新 revision，不覆盖已被 Run/Handoff 引用的历史版本。
-- Inspector 提供列表、详情、来源、引用状态以及 loading / empty / missing / invalid 状态。
+版本收口要求 `npm run verify:release`、真实 CLI 旅程和人工浏览器检查全部通过。
 
-不做：外部 URL 存储、富文本/多人编辑、全文搜索、自动 memory/skill 沉淀、跨 Project artifact 共享。
+## 6. 里程碑
 
-**独立完成判据**：创建一个 artifact 后，API 与 UI 能从它定位来源 Run 和 evidence；删除或修改源文件不会伪造旧 revision，引用解析会明确返回 missing/invalid。
+| 里程碑 | 包含 | 退出条件 |
+|---|---|---|
+| M1 前端迁移 | F009 | 新壳层承载 v0.1–v0.2 代表旅程，旧壳层和双写入口退出生产路径 |
+| M2 成果契约 | F010 | Artifact / ref / claim 数据边界与迁移策略关闭 |
+| M3 可信任务面 | F011 | 四视图读取同一 projection，七类关键状态可达 |
+| M4 可追溯派工 | F012 | 组合、上下文、撤销、介入与恢复可回放 |
+| M5 项目与方法 | F013 | 代码仓边界和 Skills / 编组形成最小闭环 |
+| M6 旅程收口 | F014 | 真实 CLI 全旅程、迁移、E2E 和发布证据通过 |
 
-### F010：Artifact-Centered Coding Slice
+不在设计稿定稿后沿用旧的 25–40 日估算。每个 Feature 完成影响面分析后单独估算，F014 只汇总已经有证据的估算。
 
-**目标**：把 F006 的三节点图与既有 validation/handoff 串成首个 artifact-first 垂直切片，而不是只提供 artifact CRUD。
+## 7. 已采用决策
 
-范围内：
+- 最终交互基线：`ui-reference/personahub-draft/personahub-v3.1/`（V3.44）。
+- 实施顺序：先用 F009 替换生产前端骨架并迁移既有能力，再由 F010–F013 接管新的领域语义；F014 只做最终收口。
+- 对象简化：ADR 0012；执行单位、会话、Skills / 编组和验证归属按其 2026-09-08 定稿修订。
+- 主张—论证—证据：ADR 0010。
+- Agent session 与上下文范围：ADR 0009 / 0011。
+- Capability 与插件边界：ADR 0014 / 0018。
+- 用量与统计口径：ADR 0017；完整聚合不在 v0.3。
 
-- 复杂 coding Issue 至少产出 `research_findings`、`synthesis_plan`、`implementation_log`、`verification_results`。
-- 节点输出先通过类型/大小/归属校验，再登记为 artifact；进程成功但 artifact 不合格时，节点不得被视为逻辑成功。
-- `HandoffPacket` 引用 artifact refs 与 evidence refs；下游上下文从 resolver 装配，不依赖复制完整聊天历史。
-- synthesis/implementation/validator 明确记录实际消费的 artifact revision；missing、越权、类型不匹配、过大均走可观察的 blocked/failed 路径。
-- Thread 和 Inspector 展示“产出 → 被谁消费 → 验证结果”的链路。
+## 8. 待确认问题
 
-不做：任意自然语言 workflow 编译、Canvas、物理并行写 workspace、非 coding workflow。
-
-**独立完成判据**：真实 CLI 跑完一个复杂 coding Issue；隐藏早期聊天文本后，下游仍能仅凭 handoff + artifact/evidence refs 完成 synthesis 和 validation，并能回放完整消费链。
-
-### F011：Work Room & Human Intervention
-
-**目标**：把 Room 做成现有 Graph/NodeRun/Run/Thread 之上的协作与控制边界，不新增第二套执行状态机。
-
-范围内：
-
-- Human Lead 可手动创建 Room；Coordinator 在用户确认 `orchestrator_subagent` 方案后可按确定性规则创建 Room。
-- Room 拥有独立 Thread、目标、阶段、topology、成员快照、输入/输出契约、evidence 要求、终止条件和状态。
-- 用户可查看创建理由、节点/成员分工、Run 状态、artifacts、evidence 和关键决策。
-- 用户可暂停后续派工、补充约束、取消正在运行的 Run、调整尚未开始的节点执行者，并显式恢复。
-- 所有人工介入和 override 写入结构化事件；Room 结束后只归档，不物理删除。
-
-不做：agents 自由闲聊、独立于 Graph/Run 的 Room 调度器、运行中进程热换 agent、多人权限、语音/视频、跨 Issue Room。
-
-**独立完成判据**：在一个 active Room 中暂停未开始节点、纠偏并更换其执行者、恢复到完成；事件回放能解释原计划、人工改动、最终执行者和产物。
-
-### F012：Reusable Agent Squads
-
-**目标**：把反复使用的 adapter 组合保存为静态分组，同时保持运行时资格校验，避免把 Squad 误当成永远可执行的部署单元。
-
-范围内：
-
-- Project 内创建、重命名、归档 Squad；成员引用 adapter config，可附显示名称和用途说明。
-- Room 创建/调整成员和 Coordinator 确认界面可选择 Squad，也可在本次请求中覆盖成员。
-- 使用 Squad 时保存成员快照；adapter 后续改名、失效或删除不篡改历史 Room。
-- 执行前仍按 workspace availability 与 capability tags 逐节点校验；失效成员给出候选和阻塞原因，不静默替换。
-
-不做：组织/权限、跨 Project Squad、自动学习最佳 Squad、Agent Team Template 与 Workflow Template 的强绑定。
-
-**独立完成判据**：保存一个 Squad，用它创建 Room；使其中一个 adapter 失效后，历史 Room 仍可解释，新 Room 明确阻塞或要求用户替换。
-
-## 3. 跨 Feature 不变量
-
-1. **单一执行真相源**：Room/Squad 不拥有独立 Run 生命周期；执行、取消、恢复继续由 Graph/NodeRun/Run 和 workspace FIFO 负责。
-2. **引用不可漂移**：任何被消费的 artifact 必须指向确定 revision；更新 title/content 不得改变历史 handoff 或 validation 的输入。
-3. **事务后副作用**：创建 Room、图、artifact manifest 的数据库事务提交前，不得启动子进程或广播不可回滚事件。
-4. **运行时重新校验**：Room/Squad 记录的是用户选择与历史快照，不替代 workspace-scoped availability、capability 和 adapter 删除守卫。
-5. **原始 AgentOps 信号**：人工介入/override、duration、retry、validation round、blocked reason、错误终态纠正和 artifact 消费链必须有结构化事件；v0.3 不做聚合评分 UI。
-
-## 4. 版本验收旅程
-
-使用 PersonaHub 自身仓库完成一次真实复杂 coding Issue：
-
-1. Coordinator 推荐 `orchestrator_subagent`，用户确认 roster 或选择一个 Squad，系统创建 Issue、Room 和图。
-2. 两个研究节点各自产出可追溯的 `research_findings`；synthesis 只通过 artifact refs 消费它们并产出 `synthesis_plan`。
-3. 用户在 Graph Room 暂停尚未启动的 synthesis/其他 GraphNode Attempt，补充约束并更换该节点执行者，再恢复执行；running 节点与普通 Run 不受本次 pause 影响。
-4. Graph 完成后 Room 自动归档；随后 primary Thread 中的 implementation 与每轮 validation 分别产出 `implementation_log`、独立的 `verification_results`，handoff 与最终 Evidence Summary 可回溯全部确定 artifact revisions。
-5. 重启应用后，已归档 Room 的状态、成员快照、人工介入以及后续 primary Thread 的 artifact 消费链和最终结论都能完整回放。
-
-版本只有在这条旅程通过真实 CLI 验收、自动化测试、typecheck、lint、format check 和生产构建后才算完成。
-
-## 5. 建议里程碑
-
-| 里程碑               | 包含                                  | 退出条件                                         | 粗估          |
-| -------------------- | ------------------------------------- | ------------------------------------------------ | ------------- |
-| M1：契约冻结         | F009 spec/design/tasks + artifact ADR | revision、storage、typed ref、路径安全问题关闭   | 2–3 个工作日  |
-| M2：Artifact 闭环    | F009                                  | CRUD、resolver、provenance UI、恢复/边界测试通过 | 5–8 个工作日  |
-| M3：Coding 垂直切片  | F010                                  | 四类 artifact 的真实 CLI 旅程通过                | 6–10 个工作日 |
-| M4：可控 Room        | F011                                  | 暂停/纠偏/换人/恢复/归档旅程通过                 | 8–12 个工作日 |
-| M5：Squad 与版本收口 | F012 + 全版本回归                     | Squad 复用、失效校验、全版本验收通过             | 4–7 个工作日  |
-
-总粗估 25–40 个单人工作日。该估算用于判断范围大小，不承诺发布日期；F011 的取消/恢复一致性是最大不确定项。
-
-## 6. 评审需确认的 5 个已采用决策
-
-以下推荐结论已经写入四个 Feature 的 draft spec/design/tasks；评审若改变任一结论，需要同步修改受影响的下游 Feature 后才能进入开发。
-
-| ID  | 问题                                   | 推荐结论                                                     | 不同结论的影响                                      |
-| --- | -------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------- |
-| Q1  | v0.3 是否以 F009+F010 为最小发布切片？ | 是；先验证 artifact 是否真能减少上下文损耗                   | 若四项绑定发布，Room 风险会推迟 artifact 价值验证   |
-| Q2  | artifact 是否允许原地覆盖？            | 不允许；采用实体 + immutable revision                        | 允许覆盖会破坏历史 handoff/validation 的可复现性    |
-| Q3  | local file 的允许范围？                | 仅 workspace 内的受控 artifact directory，保存规范化相对路径 | 允许任意绝对路径会扩大泄露、搬迁和 Windows 路径风险 |
-| Q4  | Room 的控制粒度？                      | v0.3 只调整未开始节点；运行中调整先 cancel 再重建 Attempt    | 热换 agent 需要新的进程协议和状态机，不适合本版本   |
-| Q5  | Squad 是否绑定 capability role？       | 仅保存成员与说明，能力以 adapter tags 在使用时判断           | 固化 role 会重新引入 F005 已废弃的单 role 真相源    |
-
-## 7. 明确延后
-
-- v0.4：非 coding workflow、Provenance Gate 初版、skill candidate、Board/Multi-workspace 等按 PRD 排期处理。
-- v0.5：AgentOps 聚合、评价 UI、比较分析与 trust scoring；v0.3 只保证原始信号完整。
-- v0.6：从 Done Issue 提取/审核/加载 reusable skill；artifact 在 v0.3 只是可追溯输入，不自动成为 memory 或 skill。
-- 未出现真实需求前不做 external URL storage、Graph Canvas、Room 间通信、跨 Project Squad。
+无版本级产品问题。Feature 级实现问题必须在各自 `design.md` 进入开发前关闭。

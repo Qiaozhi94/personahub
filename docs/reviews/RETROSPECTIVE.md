@@ -569,11 +569,11 @@ grace大于`ValidationDispatchScheduler`生产默认1秒tick,且未到期/窗口
 
 ---
 
-## 循环 9: v0.3 F009-F012 规划文档检视(2轮)
+## 循环 9: v0.3 F010-F013 规划文档检视(2轮)
 
 - **report_type**: doc-review
 - **周期**: 2026-08-09,2轮 · **状态**: 已闭环(修复已落工作区,尚未提交)
-- **背景**: F009-F012(v0.3:Artifact Foundation、Artifact-Centered Coding Slice、
+- **背景**: F010-F013(v0.3:Artifact Foundation、Artifact-Centered Coding Slice、
   Work Room、Reusable Agent Squads)四个 Feature 的 draft spec/design/tasks 首次
   整体评审,与 F008 的循环 7/8 是两条独立审查线(用 `docs/reviews/
   CURRENT-doc-v0.3.md` 与 `CURRENT-doc.md` 区分,互不阻塞)。第1轮全量通读四份
@@ -581,24 +581,24 @@ grace大于`ValidationDispatchScheduler`生产默认1秒tick,且未到期/窗口
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| F010-R001 | `artifact_run_links`生产端唯一索引建在`(run_id,direction,purpose,producer_slot)`,但spec.md NFR-003把幂等键定义为`(source_run_id,artifact_type,producer_slot)`;`purpose`是consumed链路的自由描述文本,从未声明等于`artifact_type`,同一producer_slot的两次finalize换个purpose字符串即可绕过唯一约束,直接打穿AC-005"retry/restart不重复revision" | 🟠 | correctness | root-cause | original-coding | fixed | 唯一索引改为只用`(run_id,producer_slot)`;新增`CHECK((direction='produced' AND producer_slot IS NOT NULL) OR direction='consumed')`同时堵上"produced行producer_slot为NULL时NULL互不相等、唯一索引形同虚设"这个连带漏洞;spec/design两处幂等键描述统一改为同一字段组 | `tasks.md::T001,T010` | 1 | 2 | idempotency-key-field-mismatch |
-| F011-R001 | spec.md US3写"暂停只阻止尚未启动的派工",字面不限定graph节点;但design.md唯一给出的机制(`queuedRunEligibility()`加Room gate)只作用于图的排队Attempt认领,F010引入的implementation/validation Run走既有F004/ManualRoutingService路径不经过这个gate,图跑完后Room实际已拦不住后续派工,与spec字面承诺不符 | 🟡 | correctness | root-cause | spec-drift | fixed | 收窄spec而非扩大机制:非目标段、US3、FR-004、AC-002统一明确"v0.3的Room是当前orchestrator_subagent Graph(research/synthesis阶段)的控制面,不拦截图完成后在primary Thread创建的普通implementation/validation Run" | — | 1 | 2 | scope-promise-mechanism-gap |
-| F011-R002 | design.md/tasks.md假设代码库里已存在共享的`queuedRunEligibility()`可直接挂Room gate,但该函数当前并不存在(逻辑内联在`run-dispatch.ts`派工循环的`continue`分支里);F008 design.md同样只泛泛提到"复用一个共享的、无副作用的资格判定器",两份文档都没给出确切签名或提取任务 | 🟡 | correctness | root-cause | spec-drift | fixed | 明确共享classifier的提取由F008 `tasks.md::T041b`拥有(从`startNextQueuedRun()`抽取);F011 `tasks.md::T011`改为显式依赖并复用该导出,不得自行复制判断,同时在依赖关系里声明"若F008尚未落地,F011不得自行复制判定" | `F008 tasks.md::T041b`、`F011 tasks.md::T011` | 1 | 2 | cross-feature-contract-drift |
-| F010-R002 | `graph.node_result`是单一ThreadEventType且已在`TRUSTED_INTERNAL_ALLOWLIST`里,design.md称新graph definition发"v2 payload"、旧definition继续发完整payload,但没写明下游怎样在解析前区分两种形状 | 🟡 | correctness | root-cause | original-coding | fixed | 固定discriminator字段`payload_schema:"graph.node_result.v2"`,`ArtifactContextAssembler`先校验discriminator再用NodeRun→GraphRun冻结的definition id/version交叉验证;缺discriminator的事件只允许属于F006 legacy definition/version,未知/错配组合统一`artifact_invalid`,`resolveTrustedPayload()`本身不承担版本判别职责 | — | 1 | 2 | event-payload-version-ambiguity |
-| F010-R003 | F004既有验证循环允许多轮重试,但spec/design都没说清一次多轮验证对应几个`verification_results` artifact——每轮各一个,还是只有最终结果落地 | 🟡 | correctness | symptom-patch | original-coding | fixed | 明确每个成功解析出规范result的validator Run(含非最终轮、round-limit blocked)都创建独立的`verification_results`实体revision 1,轮次由可信`runs.validation_round`投影;非pass artifact进入下一轮consumed links,最终Evidence Summary引用最终轮并列出此前各轮refs | `tasks.md::T023` | 1 | 2 | cardinality-underspecified |
-| F0912-R001 | F009 design.md明确点出schema版本号依赖F008落地顺序("F008若先落地则F009用v11"),但F010/F011/F012的design.md都只写"下一个migration",没有重述这条级联,打破项目一贯"design阶段写明目标版本供评审"的约定 | 🟢 | quality | symptom-patch | process-gap | fixed | 四份design.md统一改为按既定实施顺序钉死具体版本号(F008=v10、F009=v11、F010=v12、F011=v13、F012=v14),并各自声明"若落地前实施顺序改变,整体重新编号,已应用版本永不修改或追加" | — | 1 | 2 | schema-version-not-stated |
-| F011-R003 | `threads.room_id`自schema v1建表起就存在且恒为NULL(为未来Room功能预留的正向指针),F011引入反向指针`work_rooms.thread_id`后,design.md没说清创建Room Thread时要不要顺手填上这个沉睡多年的列 | 🟢 | quality | symptom-patch | original-coding | fixed | 明确`work_rooms.thread_id`是canonical relation、`threads.room_id`是必填反向导航字段(不再保持NULL);创建Room Thread时同事务写入两侧,新增`idx_threads_one_room_thread`唯一索引,Repository/Projection每次读取断言双向一致,不一致返回`ROOM_THREAD_LINK_INVALID` | `tasks.md::T002,T003` | 1 | 2 | dead-column-disposition-unclear |
-| F009-R001 | design.md只写"并发revise由CAS保证...冲突重试一次",三方及以上并发revise时重试后仍冲突的行为未定义 | 🟢 | correctness | symptom-patch | original-coding | fixed | 明确第二次CAS冲突终止请求、返回409`ARTIFACT_REVISION_CONFLICT`+`latest_revision`,服务端不得无界重试;spec.md IR-001错误码列表同步补上该code | — | 1 | 2 | retry-bound-unspecified |
-| F011-R004 | 修复F011-R002时把"F011依赖F008 T041b"这个新的硬依赖边写进了F011自己的design.md/tasks.md,但没有同步传播到README.md的Feature依赖表(F011行仍只列F006、F007、F009、F010)和F011三件套frontmatter的`related_features` | 🟡 | quality | symptom-patch | fix-regression | fixed | README.md依赖表F011行补上F008;F011 spec/design/tasks三份frontmatter的`related_features`同步加入F008 | — | 2 | 2 | fix-propagation-gap |
+| F011-R001 | `artifact_run_links`生产端唯一索引建在`(run_id,direction,purpose,producer_slot)`,但spec.md NFR-003把幂等键定义为`(source_run_id,artifact_type,producer_slot)`;`purpose`是consumed链路的自由描述文本,从未声明等于`artifact_type`,同一producer_slot的两次finalize换个purpose字符串即可绕过唯一约束,直接打穿AC-005"retry/restart不重复revision" | 🟠 | correctness | root-cause | original-coding | fixed | 唯一索引改为只用`(run_id,producer_slot)`;新增`CHECK((direction='produced' AND producer_slot IS NOT NULL) OR direction='consumed')`同时堵上"produced行producer_slot为NULL时NULL互不相等、唯一索引形同虚设"这个连带漏洞;spec/design两处幂等键描述统一改为同一字段组 | `tasks.md::T001,T010` | 1 | 2 | idempotency-key-field-mismatch |
+| F012-R001 | spec.md US3写"暂停只阻止尚未启动的派工",字面不限定graph节点;但design.md唯一给出的机制(`queuedRunEligibility()`加Room gate)只作用于图的排队Attempt认领,F011引入的implementation/validation Run走既有F004/ManualRoutingService路径不经过这个gate,图跑完后Room实际已拦不住后续派工,与spec字面承诺不符 | 🟡 | correctness | root-cause | spec-drift | fixed | 收窄spec而非扩大机制:非目标段、US3、FR-004、AC-002统一明确"v0.3的Room是当前orchestrator_subagent Graph(research/synthesis阶段)的控制面,不拦截图完成后在primary Thread创建的普通implementation/validation Run" | — | 1 | 2 | scope-promise-mechanism-gap |
+| F012-R002 | design.md/tasks.md假设代码库里已存在共享的`queuedRunEligibility()`可直接挂Room gate,但该函数当前并不存在(逻辑内联在`run-dispatch.ts`派工循环的`continue`分支里);F008 design.md同样只泛泛提到"复用一个共享的、无副作用的资格判定器",两份文档都没给出确切签名或提取任务 | 🟡 | correctness | root-cause | spec-drift | fixed | 明确共享classifier的提取由F008 `tasks.md::T041b`拥有(从`startNextQueuedRun()`抽取);F012 `tasks.md::T011`改为显式依赖并复用该导出,不得自行复制判断,同时在依赖关系里声明"若F008尚未落地,F012不得自行复制判定" | `F008 tasks.md::T041b`、`F012 tasks.md::T011` | 1 | 2 | cross-feature-contract-drift |
+| F011-R002 | `graph.node_result`是单一ThreadEventType且已在`TRUSTED_INTERNAL_ALLOWLIST`里,design.md称新graph definition发"v2 payload"、旧definition继续发完整payload,但没写明下游怎样在解析前区分两种形状 | 🟡 | correctness | root-cause | original-coding | fixed | 固定discriminator字段`payload_schema:"graph.node_result.v2"`,`ArtifactContextAssembler`先校验discriminator再用NodeRun→GraphRun冻结的definition id/version交叉验证;缺discriminator的事件只允许属于F006 legacy definition/version,未知/错配组合统一`artifact_invalid`,`resolveTrustedPayload()`本身不承担版本判别职责 | — | 1 | 2 | event-payload-version-ambiguity |
+| F011-R003 | F004既有验证循环允许多轮重试,但spec/design都没说清一次多轮验证对应几个`verification_results` artifact——每轮各一个,还是只有最终结果落地 | 🟡 | correctness | symptom-patch | original-coding | fixed | 明确每个成功解析出规范result的validator Run(含非最终轮、round-limit blocked)都创建独立的`verification_results`实体revision 1,轮次由可信`runs.validation_round`投影;非pass artifact进入下一轮consumed links,最终Evidence Summary引用最终轮并列出此前各轮refs | `tasks.md::T023` | 1 | 2 | cardinality-underspecified |
+| F0912-R001 | F010 design.md明确点出schema版本号依赖F008落地顺序("F008若先落地则F010用v11"),但F011/F012/F013的design.md都只写"下一个migration",没有重述这条级联,打破项目一贯"design阶段写明目标版本供评审"的约定 | 🟢 | quality | symptom-patch | process-gap | fixed | 四份design.md统一改为按既定实施顺序钉死具体版本号(F008=v10、F010=v11、F011=v12、F012=v13、F013=v14),并各自声明"若落地前实施顺序改变,整体重新编号,已应用版本永不修改或追加" | — | 1 | 2 | schema-version-not-stated |
+| F012-R003 | `threads.room_id`自schema v1建表起就存在且恒为NULL(为未来Room功能预留的正向指针),F012引入反向指针`work_rooms.thread_id`后,design.md没说清创建Room Thread时要不要顺手填上这个沉睡多年的列 | 🟢 | quality | symptom-patch | original-coding | fixed | 明确`work_rooms.thread_id`是canonical relation、`threads.room_id`是必填反向导航字段(不再保持NULL);创建Room Thread时同事务写入两侧,新增`idx_threads_one_room_thread`唯一索引,Repository/Projection每次读取断言双向一致,不一致返回`ROOM_THREAD_LINK_INVALID` | `tasks.md::T002,T003` | 1 | 2 | dead-column-disposition-unclear |
+| F010-R001 | design.md只写"并发revise由CAS保证...冲突重试一次",三方及以上并发revise时重试后仍冲突的行为未定义 | 🟢 | correctness | symptom-patch | original-coding | fixed | 明确第二次CAS冲突终止请求、返回409`ARTIFACT_REVISION_CONFLICT`+`latest_revision`,服务端不得无界重试;spec.md IR-001错误码列表同步补上该code | — | 1 | 2 | retry-bound-unspecified |
+| F012-R004 | 修复F012-R002时把"F012依赖F008 T041b"这个新的硬依赖边写进了F012自己的design.md/tasks.md,但没有同步传播到README.md的Feature依赖表(F012行仍只列F006、F007、F010、F011)和F012三件套frontmatter的`related_features` | 🟡 | quality | symptom-patch | fix-regression | fixed | README.md依赖表F012行补上F008;F012 spec/design/tasks三份frontmatter的`related_features`同步加入F008 | — | 2 | 2 | fix-propagation-gap |
 
-**来源标注说明**: F011-R004是本轮修复F011-R002时自身遗漏的传播,标`fix-regression`;
+**来源标注说明**: F012-R004是本轮修复F012-R002时自身遗漏的传播,标`fix-regression`;
 其余7条首次出现于第1轮全量通读,标`original-coding`/`spec-drift`/`process-gap`。
 
-**可复用教训**: F010-R001与循环7的F008-R002同属一个更大的模式——**唯一性/幂等
+**可复用教训**: F011-R001与循环7的F008-R002同属一个更大的模式——**唯一性/幂等
 保证被拆成两个字段名不同但语义被默认相同的表述**(schema列名`purpose` vs 契约
 文字`artifact_type`),文档双方都没写"这两个是不是同一个东西",只有对照实际
-SQL约束逐字段核对才发现。F011-R002再次印证循环7/8已识别的"假设某个共享机制
-已存在"模式,这次额外确认了修复本身的传播盲区(F011-R004)——与循环8的教训完全
+SQL约束逐字段核对才发现。F012-R002再次印证循环7/8已识别的"假设某个共享机制
+已存在"模式,这次额外确认了修复本身的传播盲区(F012-R004)——与循环8的教训完全
 同构:**"改完这处判断,记得回头查它在依赖表/frontmatter/相邻文档里还留了几份
 影子"**,目前已在循环4/6/7/8/9至少五次独立命中,是本项目复现率最高的缺陷模式,
 值得在未来评审的检查清单里固定一条"新增跨Feature硬依赖后,同步扫描README依赖
@@ -670,7 +670,7 @@ fix-regression)。
 
 - **report_type**: doc-review
 - **周期**: 2026-08-09,3轮 · **状态**: 已闭环
-- **背景**: 聚焦复核 `structure-improvement-plan.md` 2.1,对照旧TEMPLATE与F006-F012
+- **背景**: 聚焦复核 `structure-improvement-plan.md` 2.1,对照旧TEMPLATE与F006-F013
   的真实spec结构,把新TEMPLATE从候选方案定稿为稳定、可被门禁解析的契约。
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
@@ -726,30 +726,30 @@ Critical/High。
 
 ---
 
-## 循环 14: F009 开发前需求与设计文档检视（4轮／2周期）
+## 循环 14: F010 开发前需求与设计文档检视（4轮／2周期）
 
 - **report_type**: doc-review
 - **周期**: 2026-08-11，4轮／2周期 · **状态**: 已收敛（以本次文档提交触发的 CI 全绿为闭环生效条件）
-- **背景**: 检视 F009 Artifact Foundation & Provenance 的 spec/design/tasks，并核对 F010
+- **背景**: 检视 F010 Artifact Foundation & Provenance 的 spec/design/tasks，并核对 F011
   消费侧契约。首周期第 3 轮发现 inline/file 协议混用后按三轮封顶结束；窄范围新周期
   用两轮确认协议拆分无修复回归。
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| F009-DOC-001 | SQLite 与文件系统之间缺少可恢复的一致性协议 | High | correctness | root-cause | original-coding | fixed | 明确 rename-then-commit、失败补偿、启动时孤儿隔离及提交后广播语义，不再宣称跨资源真原子。 | `docs/features/0.3/F009-artifact-foundation-provenance/design.md::5.1` | 1 | 2 | cross-resource-atomicity-gap |
-| F009-DOC-002 | revise CAS 没有定义调用方提交的基线 revision | High | correctness | root-cause | original-coding | fixed | revise 强制 expected_revision，单条 CAS 失败立即 409，服务端不再自动重放陈旧编辑。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::IR-001` | 1 | 2 | optimistic-concurrency-without-precondition |
-| F009-DOC-003 | local_file_path 同时被定义为输入源路径和不可变归档路径 | High | correctness | root-cause | original-coding | fixed | source/archive locator 已拆分；source 采用 open-then-verify-then-read，并新增静态与竞态路径测试任务。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::AC-003` | 1 | 3 | storage-source-identity-conflation |
-| F009-DOC-004 | archived ref 的历史解析与新引用限制缺少可判定边界 | High | correctness | root-cause | original-coding | fixed | 拆分 resolvePinned 与 validateAttachableRef，并定义重复 archive 不追加事件。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::AC-006` | 1 | 2 | lifecycle-context-missing |
-| F009-DOC-005 | 验收与任务门禁未覆盖完整公开契约 | Medium | test-coverage | root-cause | process-gap | fixed | CAS 测试改为一 stale 加两 current writer；新增 T016，并在 F010 assembler/fan-in 任务中接入 attach 校验与阻塞断言。 | `docs/features/0.3/F009-artifact-foundation-provenance/tasks.md::T015-T016` | 1 | 3 | acceptance-contract-gap |
-| F009-DOC-006 | 确定性归档路径在并发 revise 下发生写入碰撞 | High | correctness | root-cause | fix-regression | fixed | archived locator 改为 artifact 内按 content_sha256 寻址；CAS 败者不盲删，延迟孤儿扫描按所有 revision 引用判定。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::AC-007` | 2 | 3 | pre-cas-shared-side-effect |
-| F009-DOC-007 | inline_markdown 被错误纳入文件归档协议 | High | correctness | root-cause | fix-regression | fixed | inline_markdown 与 local_file 拆成纯 DB 与文件系统加 DB 两条独立协议，并补充双分支故障注入任务。 | `docs/features/0.3/F009-artifact-foundation-provenance/spec.md::FR-004` | 3 | 4 | storage-branch-contract-collapse |
+| F010-DOC-001 | SQLite 与文件系统之间缺少可恢复的一致性协议 | High | correctness | root-cause | original-coding | fixed | 明确 rename-then-commit、失败补偿、启动时孤儿隔离及提交后广播语义，不再宣称跨资源真原子。 | `docs/features/0.3/F010-artifact-foundation-provenance/design.md::5.1` | 1 | 2 | cross-resource-atomicity-gap |
+| F010-DOC-002 | revise CAS 没有定义调用方提交的基线 revision | High | correctness | root-cause | original-coding | fixed | revise 强制 expected_revision，单条 CAS 失败立即 409，服务端不再自动重放陈旧编辑。 | `docs/features/0.3/F010-artifact-foundation-provenance/spec.md::IR-001` | 1 | 2 | optimistic-concurrency-without-precondition |
+| F010-DOC-003 | local_file_path 同时被定义为输入源路径和不可变归档路径 | High | correctness | root-cause | original-coding | fixed | source/archive locator 已拆分；source 采用 open-then-verify-then-read，并新增静态与竞态路径测试任务。 | `docs/features/0.3/F010-artifact-foundation-provenance/spec.md::AC-003` | 1 | 3 | storage-source-identity-conflation |
+| F010-DOC-004 | archived ref 的历史解析与新引用限制缺少可判定边界 | High | correctness | root-cause | original-coding | fixed | 拆分 resolvePinned 与 validateAttachableRef，并定义重复 archive 不追加事件。 | `docs/features/0.3/F010-artifact-foundation-provenance/spec.md::AC-006` | 1 | 2 | lifecycle-context-missing |
+| F010-DOC-005 | 验收与任务门禁未覆盖完整公开契约 | Medium | test-coverage | root-cause | process-gap | fixed | CAS 测试改为一 stale 加两 current writer；新增 T016，并在 F011 assembler/fan-in 任务中接入 attach 校验与阻塞断言。 | `docs/features/0.3/F010-artifact-foundation-provenance/tasks.md::T015-T016` | 1 | 3 | acceptance-contract-gap |
+| F010-DOC-006 | 确定性归档路径在并发 revise 下发生写入碰撞 | High | correctness | root-cause | fix-regression | fixed | archived locator 改为 artifact 内按 content_sha256 寻址；CAS 败者不盲删，延迟孤儿扫描按所有 revision 引用判定。 | `docs/features/0.3/F010-artifact-foundation-provenance/spec.md::AC-007` | 2 | 3 | pre-cas-shared-side-effect |
+| F010-DOC-007 | inline_markdown 被错误纳入文件归档协议 | High | correctness | root-cause | fix-regression | fixed | inline_markdown 与 local_file 拆成纯 DB 与文件系统加 DB 两条独立协议，并补充双分支故障注入任务。 | `docs/features/0.3/F010-artifact-foundation-provenance/spec.md::FR-004` | 3 | 4 | storage-branch-contract-collapse |
 
 **模式性教训**: 7 条问题中 4 条来自初始设计、2 条来自修复回归、1 条来自流程缺口；
 说明跨资源协议修复必须按 storage type 分支检查，不能把“共享 CAS”误扩展成“共享持久化
-流程”。7 个模式各出现 1 次。存活轮数最长的是 F009-DOC-003 与 F009-DOC-005，均从
+流程”。7 个模式各出现 1 次。存活轮数最长的是 F010-DOC-003 与 F010-DOC-005，均从
 第 1 轮到第 3 轮关闭，存活 2 轮；它们共同表明 locator 命名和验收任务必须同步覆盖生产者
-与消费者边界。最终定向复核确认 inline 只写 DB、local file 独占文件协议，且 F010 对
-archived ref 的消费限制与 F009 契约一致。
+与消费者边界。最终定向复核确认 inline 只写 DB、local file 独占文件协议，且 F011 对
+archived ref 的消费限制与 F010 契约一致。
 
 ---
 

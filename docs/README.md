@@ -2,7 +2,7 @@
 topics: [docs, index, ownership]
 doc_kind: guide
 created: 2026-08-09
-updated: 2026-08-09
+updated: 2026-09-08
 ---
 
 # PersonaHub 文档地图
@@ -16,6 +16,7 @@ updated: 2026-08-09
 | 信息 | 唯一拥有者 | 说明 |
 |---|---|---|
 | 产品目标、范围和路线 | `personahub-prd.md` | 产品判断的真相源 |
+| 最终页面结构、对象归属与交互语义 | `../ui-reference/personahub-draft/personahub-v3.1/` | V3.44 当前设计基线；不拥有版本交付范围 |
 | 全局模块、进程与运行时边界 | `personahub-architecture.md` | 整体软件架构 |
 | 字段、表和数据关系 | `personahub-system-design.md` | 实现级数据模型，随实现迭代 |
 | 记忆模块的完整拓扑与分期 | `personahub-memory-design.md` | 一条记忆从产生到遗忘的全过程、各环节权力边界、各部分属于哪个阶段；不拥有产品判断（PRD）、决策（ADR）与字段定义（system-design） |
@@ -34,6 +35,8 @@ updated: 2026-08-09
 ## 权威文档导航
 
 - **PRD（产品判断）**：→ [`personahub-prd.md`](personahub-prd.md)
+- **最终交互设计 V3.44**：→ `ui-reference/personahub-draft/personahub-v3.1/`（页面与行为：
+  `docs/design.md`；实现约束：`docs/implementation-notes.md`）
 - **架构**：→ [`personahub-architecture.md`](personahub-architecture.md)
 - **系统设计（数据模型）**：→ [`personahub-system-design.md`](personahub-system-design.md)
 - **记忆模块完整设计**：→ [`personahub-memory-design.md`](personahub-memory-design.md)
@@ -42,7 +45,7 @@ updated: 2026-08-09
 - **Feature 目录（按版本分层）**：→ [`features/`](features/)
   - v0.1（已收口）→ [`features/0.1/README.md`](features/0.1/README.md)
   - v0.2（已收口）→ [`features/0.2/README.md`](features/0.2/README.md)
-  - v0.3（规划审查稿）→ [`features/0.3/README.md`](features/0.3/README.md)
+  - v0.3（按 V3.44 重排的规划稿）→ [`features/0.3/README.md`](features/0.3/README.md)
 - **版本发布与收口摘要**：→ [`features/releases/`](features/releases/)
   - [0.1 收口于 2026-08-09](features/releases/0.1.md)
   - [0.2 收口于 2026-08-09](features/releases/0.2.md)
@@ -50,7 +53,7 @@ updated: 2026-08-09
 - **检视复盘**：→ [`reviews/RETROSPECTIVE.md`](reviews/RETROSPECTIVE.md)
 - **使用问题记录（dogfooding bug log，实时追踪）**：→ [`reviews/dogfooding-bugs.md`](reviews/dogfooding-bugs.md)
 - **使用体验记录（dogfooding notes，实时追踪）**：→ [`reviews/dogfooding-notes.md`](reviews/dogfooding-notes.md)
-- **交互设计空白区清单**：→ [`reviews/blank-areas.md`](reviews/blank-areas.md)
+- **交互设计空白区清单（已闭环归档）**：→ [`reviews/blank-areas.md`](reviews/blank-areas.md)
 - **检视记录与产品级计划目录**：→ [`reviews/`](reviews/)（2026-08-12 起全量纳入 git；
   `CURRENT-doc.md` / `CURRENT-code.md` 为检视进行中的临时文件，由检视人复核后删除）
 

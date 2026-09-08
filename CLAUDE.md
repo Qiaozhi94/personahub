@@ -6,13 +6,14 @@
 
 v0.1（F001-F005：Workspace/Issue 基础、Agent Command Center、Development Trace、Autonomous Validation、Multi-Agent Manual Routing）与 v0.2（F006-F008：Orchestrated Coding Graph Slice、Coordinator Agent & Routing Recommendation、Workflow Template Admin & Runtime Health）均已收口。交付范围、已知限制与技术基线见 `docs/features/releases/0.1.md` / `0.2.md`；逐条 FR/AC 见对应 `docs/features/0.{1,2}/Fxxx-*/spec.md`（历史 Feature，均为 `gate_version: 0`）。
 
-当前 active 版本是 v0.3：F009（Artifact Foundation & Provenance）/ F010（Artifact-Centered Coding Slice）/ F011（Work Room & Human Intervention）/ F012（Reusable Agent Squads），均已完成 draft spec/design/tasks，处于需求与设计审查阶段。版本判断、Feature 顺序与依赖见 `docs/features/0.3/README.md`。
+当前 active 版本是 v0.3 Trusted Task Workbench。V3.44 交互设计已于 2026-09-08 完成最终检视；路线已重排为 F009（V3.44 Frontend Foundation & Migration）先迁移 v0.1–v0.2 生产前端，F010–F013 再补齐 Artifact、可信任务面、会话 / 派工与项目 / Skills，F014 负责端到端收口。六个 Feature 均为 draft，正处于代码影响面与开发前审查阶段。旧的独立 Room/Squad 规划已废止；F014 是唯一端到端交付 owner。版本顺序与边界见 `docs/features/0.3/README.md`。
 
-图执行（F006）与推荐路由（F007）留下的跨 feature 契约——`createGraph()`/`resolveEligibleAdapter()`/HMAC 签名确认 token 等——由各自 `design.md` 拥有并保持权威；v0.3 新 Feature（尤其 F011 Room、F012 Squad）引用它们时请直接查对应 `design.md`，不在本文件重复描述。
+图执行（F006）与推荐路由（F007）留下的跨 feature 契约——`createGraph()` / `resolveEligibleAdapter()` / HMAC 签名确认 token 等——仍由各自 `design.md` 拥有。v0.3 通过兼容迁移复用这些能力，不得把旧 UI 概念（AI 成员、Primary Thread、独立 Validation Policy）继续带入新模型。
 
 ## 当前结构
 
 - `docs/personahub-prd.md`：正式 PRD，产品判断以此为准。
+- `ui-reference/personahub-draft/personahub-v3.1/`：V3.44 最终交互设计基线；页面结构、对象归属和操作影响范围以其 `docs/design.md` / `docs/implementation-notes.md` 为准，发布范围仍由 PRD / Feature 决定。
 - `docs/personahub-system-design.md`：数据模型等实现级设计内容，随实现迭代，不作为产品判断的真相源。
 - `docs/personahub-architecture.md`：整体软件架构设计（模块划分、运行时/进程模型、存储与通信层），随实现迭代，不作为产品判断的真相源。
 - `docs/SOP.md`：个人开发流程约定。

@@ -1,4 +1,8 @@
-# PersonaHub 目标形态拼装草案（M4-T04）
+# PersonaHub 历史目标形态拼装草案（M4-T04）
+
+> **历史归档**：本目录根部的 13 张拼装页已被 V3.44 最终设计替代，不再作为产品、交互或
+> 实现输入。当前基线只在 [`personahub-v3.1/`](personahub-v3.1/)；以下内容保留用于追溯 M4
+> 早期方法与取舍。
 
 双击 `pages/workbench-running.html` 即可浏览，无需启动任何服务。
 

@@ -45,7 +45,7 @@ multica 给出的是"一个工程化产品该怎么组织工作流"，clowder �
 | **Room** | 无 | **Mission Hub**（部分，见 §4） | **仍是空白区** | 唯一真正无对应的核心概念 |
 | **Coordinator Agent** | 小队 leader | 多 Agent 编排 + 传球决策树 | 近似需调整 | clowder 的**能力路由**思路值得借（见 §7） |
 | **Agent** | 智能体（起名、选提供方、配运行时） | Agent（持久身份、跨 session 记忆） | 一一对应 | 三页可借；但**字段结构按 §7 调整** |
-| **Squad** | 小队（人机混编） | 无显式概念 | 近似需调整 | multica 小队页是 F012 参考；**删人类成员** |
+| **Squad** | 小队（人机混编） | 无显式概念 | 近似需调整 | multica 小队页是 F013 参考；**删人类成员** |
 | **Skill** | Skills（沉淀复用） | Skills 框架（按需加载 + capability wakeup 索引） | 一一对应 | 两边都可借 |
 | **Memory** | 无 | 记忆页：知识动态/索引状态/健康度/图书馆/知识图谱 | 一一对应 | clowder 是唯一参考源 |
 | **Artifact** | 无 | **Evidence 体系**（见 §4.1） | **有对应，改判** | 11 种 kind + 10 种 status，直接可借 |
@@ -381,7 +381,7 @@ PRD §5 Agent 当前**同时**有两套：
 | `docs/personahub-prd.md` §5 Agent | 字段定义与 role/capability 的主次关系 |
 | F007 推荐路由 `resolveEligibleAdapter()` | 匹配依据从 role 改为 capability |
 | Agent 新建 / 详情页 | 表单以能力项为主，role 退居次要；影响 R014 页面选型 |
-| F012 Squad | 成员按能力组合，而非按角色配齐一套班子 |
+| F013 Squad | 成员按能力组合，而非按角色配齐一套班子 |
 | PRD §15 v0.4「新场景优先通过 Workflow Template / Validation Policy / **Agent capability** 扩展」 | PRD 已有伏笔，本调整与之一致 |
 
 **这是产品级修改，需走 PRD 修订流程**，已记入主计划第 7 节「需要重新评估的现有文档」。
@@ -474,10 +474,10 @@ interface DispatchProposal {
 
 ### 9.4 对 v0.3 计划的影响
 
-主计划第 7 节原判 F011 Work Room「与观察、打断、纠偏高度相关，产品价值**可能**保留」。
+主计划第 7 节原判 F012 Work Room「与观察、打断、纠偏高度相关，产品价值**可能**保留」。
 基于本节证据，该判断可以更强：
 
-> **F011 直接解决当前最痛的问题（NOTE-003/004/005），且有 clowder 的成熟机制可参考。**
+> **F012 直接解决当前最痛的问题（NOTE-003/004/005），且有 clowder 的成熟机制可参考。**
 > 它不该被理解为"v0.3 的新能力"，而是"v0.1 就承诺、至今未兑现的 Human Lead 能力"。
 
 但**范围要收窄**：当前最需要的不是完整的多 agent Room 协作现场，而是**单 Issue 执行链路上

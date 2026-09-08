@@ -1,11 +1,16 @@
 ---
 topics: [decision, domain-model, hierarchy, agent, thread, room, runtime, squad, naming]
 doc_kind: decision
-status: proposed
+status: accepted
 created: 2026-08-29
+updated: 2026-09-08
 ---
 
 # 0012: 对象模型简化——收敛到当前真正需要的那一层
+
+> **2026-09-08 定稿补充**：V3.44 最终检视进一步合并了本决策早期仍保留的两层：
+> Workflow Template 不再作为项目侧第二对象，验证要求归 Skill / 步骤；Squad 不再独立建模，
+> 有 `steps` 的 Skill 在界面标为“编组”。下文已按此最终结论回写。
 
 ## 背景
 
@@ -18,7 +23,7 @@ v0.3 交互设计推进到「一个 Issue 对应什么」时，暴露出对象�
 1. **执行单位是 `adapter + 配置 + 模型 + 深度`，不是「成员」。** 使用者的原话：「代码开发我可以给 gpt-5.6 也可以给 deepseek-v4-flash，但是架构设计我肯定不会给 deepseek-v4-flash」。PRD 第 5 节 `[2026-08-15 修订]` 早已裁定「`capability_tags` 是路由主依据，`role` 降级为展示标签……界面也按能力项呈现成员，**不写成「它是 reviewer」**」——但 v3.1 原型全程用 `@实现者` / `@独立验证员` / `@架构研究员`，直接违反。
 2. **Space 在数据层根本不存在。** 核实：`projects` 表无 `space_id`（`server/src/db/schema-v1.ts:2`），全仓库 `space_id` / `spaceId` 零命中，303 处 `space` 全是 `workspace_id` 的子串。它只活在 PRD 与界面左上角。
 3. **游离态 Issue 是成立的做法。** multica 的 `issue.project_id` 是 `UUID REFERENCES project(id) ON DELETE SET NULL`（`server/migrations/034_projects.up.sql:19`）——可空，且 project 删除后 issue 仍在。
-4. **Workflow Template 已经包含完成标准。** `docs/personahub-user-journeys.md:145`：「Workflow Template | 工作方式 | 推荐确认时展示**建议路径与完成标准（验证要求、什么算 Done）**」。而 `issues` 表同时有 `workflow_template_id` 与 `validation_policy_id` 两个独立外键，是历史遗留的重复。
+4. **早期 Workflow Template 与 Validation Policy 职责重复。** 前者已经表达建议路径与完成标准，后者又保存验证要求；`issues` 表同时存在两个外键，形成两个会漂移的真相源。
 
 ## 决策
 
@@ -31,14 +36,13 @@ v0.3 交互设计推进到「一个 Issue 对应什么」时，暴露出对象�
 │  └─ 配置 × N            base_url / 认证方式 / 订阅或 API / 可用模型 / 额度 / 项目可用性
 ├─ 设置与诊断             本地数据 · 健康诊断
 └─ Space（工作区）× N     部门 / 小组；共享与归属的最外层
-   ├─ Skills                          各组自己的做法，承接原成员的 system_instructions
+   ├─ Skills / 编组                   可版本化做法；有 steps 即编组
    ├─ Memory：user preference / workflow note
    ├─ 知识库                          人写的指导文档（≠ Memory，见第 6 条）
-   ├─ Squad（编组）                   为后续智能指派服务，见第 5 条
    ├─ Project（项目）× N
    │  ├─ Workspace（代码目录）        权限边界 + 写锁 + git 状态
    │  ├─ 资源库                       文档与素材 / 产出 / 知识
-   │  ├─ Workflow Template            含验证段，见第 4 条
+   │  ├─ 默认 Skill refs              不复制 Skill 内容
    │  ├─ Memory：project fact / decision / lesson
    │  └─ Automation                   只创建 Issue，不形成第二套任务体系
    └─ Issue（任务）  labels 分类，project_id 可空 → 游离态
@@ -124,7 +128,7 @@ ADR 0009 提出的分段是 `implement` / `verify` 枚举；本决策推进设�
 | --- | --- | --- |
 | 同组合续跑同一件事 | 全部 + resume | 上次派工记录 |
 | 换组合接手同类工作 | 全部（含前任自述） | Handoff Packet 的正常用途 |
-| 验证 / 复核 | 只给结果 + 冷启动 | Workflow Template 的验证段 |
+| 验证 / 复核 | 只给结果 + 冷启动 | Skill / 步骤完成要求 |
 | 生成用例 / 设计验收 | 只给目标 + 冷启动 | 同上 |
 | 观察者 / 总结改进过程 | 全部 | 它要的恰恰是过程 |
 
@@ -137,20 +141,18 @@ resume 的键相应改为：
 同组合 + 同范围 → 可 resume；换了范围 → 冷启动
 ```
 
-### 5. Squad 保留，但必须结构化
+### 5. Skill 与编组统一建模
 
-保留理由（使用者原话）：为后续版本的**智能指派**服务——自动选 Squad 完成接下来的任务，减少人介入次数，提升长任务的自主执行度。
+后续智能指派仍需要结构化步骤与能力边界，但不需要第二种 Squad 对象。Skill 字段至少包含：
 
-因此 Squad 是建模对象，不只是收藏夹。字段至少包含：
-
-- 成员组合：一组 `adapter + 配置 + 模型 + 深度`
-- **结构化能力边界**：可匹配的 tags，不是自由文本
+- 可选 `steps[]`：有值时界面标为“编组”，无值时是普通 Skill
+- **结构化能力边界**：每一步可匹配的 tags，不是自由文本
 - 自由文本的擅长 / 不擅长说明：给人读，也给未来的语义匹配留材料
-- **不含历史表现字段**：编组的表现是一次查询，不是一份属性。由 Run 记录（含当次的编组 `id@version`）现算，永远带口径与样本量
+- **不含历史表现字段**：编组表现是一次查询，不是一份属性。由 Run 记录（含当次 Skill `id@version`）现算，永远带口径与样本量
 
-**「能力边界不能只是自由文本」是硬约束。** ADR 0007 已裁定 Coordinator 是**进程内确定性规则引擎，只推荐不派工**；确定性规则引擎无法消费自由文本。若要靠 LLM 做语义匹配来选 Squad，那是突破 ADR 0007 的边界，必须单独立决策，不能从 Squad 的字段设计里偷偷长出来。
+**「能力边界不能只是自由文本」是硬约束。** ADR 0007 已裁定 Coordinator 是**进程内确定性规则引擎，只推荐不派工**；确定性规则引擎无法消费自由文本。若要靠 LLM 做语义匹配来选编组，那是突破 ADR 0007 的边界，必须单独立决策。
 
-**防护条款**：Squad **不产生持久身份**，历史表现仍记在 `adapter + 配置 + 模型 + 深度` 上（四元组的理由见第 2 条）。否则用久了一个「架构师 Squad」就变成了一个成员，第 2 条取消的固定角色会从后门回来。
+**防护条款**：编组 **不产生持久身份**，历史表现仍记在 `adapter + 配置 + 模型 + 深度` 上（四元组的理由见第 2 条）。否则用久了一个“架构师编组”就会变成被取消的固定角色。
 
 **本条约束的是身份积累，不是观察。** 编组的增量价值——同样几个组合，换步骤顺序、换上下文围栏、换谁验谁，结果会不同——恰恰是这个对象存在的理由，按组合归因的数字看不见它。因此允许**现算并显示**「用这个编组的 N 次里验收一次通过 M 次」，条件是三条：只从 Run 记录现算、不落成挂在编组上的字段；永远带口径与样本量（派工次数不足 30 次标「样本不足」）；**编组维度不可排序、不进统计模块的排行位**（ADR 0017 第 1 条不变，统计模块仍无编组维度）。分数是身份，带样本量的句子是观察——凝固成评分或排行榜的那一刻，防护条款就失效了。
 
@@ -167,15 +169,17 @@ resume 的键相应改为：
 
 **判据**：Memory 必须带 `source_issue_id` / `source_thread_id` / `source_event_ids`（PRD 第 5 节已有要求）。写不出来源的，就不是 Memory。
 
-### 7. Validation Policy 并入 Workflow Template
+### 7. Validation Policy 与 Workflow Template 收敛进 Skill
 
-`user-journeys.md:145` 表明 Workflow Template 在界面上已经承担「建议路径与**完成标准**（验证要求、什么算 Done）」，与 Validation Policy 重叠。
+最终交互检视确认：步骤、方法与**完成标准**必须从同一 Skill revision 进入任务基线；独立 Workflow Template 与 Validation Policy 会形成两个相互漂移的编辑入口。
 
-**决策**：Validation 降为 Workflow Template 内部的一个段落，概念保留、层级取消。`issues` 表的 `validation_policy_id` 停用。
+**最终决策**：验证要求、步骤与 handoff 规则由 Skill revision 承载；项目只引用默认 Skill，
+不再维护独立 Workflow Template。`issues.validation_policy_id` 与 `workflow_template_id` 均进入兼容迁移，
+不再是新 UI 的可编辑对象。
 
-ADR 0010 第 4 条「Validation Policy 升格为 Evidence Adapter 契约」相应改为「**Workflow Template 的验证段**升格为 Evidence Adapter 契约」。
+ADR 0010 的 Evidence Adapter 契约由 **Skill / 步骤的完成要求**提供。
 
-**明确不做**：不保留「同一 workflow 换验证严格度」的切换能力。使用者确认不需要；保留它就得维持两层。
+**明确不做**：不保留“同一 workflow 换验证严格度”的切换能力，也不为旧数据保留第二套编辑页面。
 
 ### 8. 命名纪律
 
@@ -191,11 +195,11 @@ ADR 0010 第 4 条「Validation Policy 升格为 Evidence Adapter 契约」相�
 | 一份驱动配置 | `agent_configs` 的一行 | **adapter 配置** | 叫「账号」——凭据只是它的一个字段，且它还携带 base_url、可用模型与项目可用性 |
 | 派工的最小单位 | —（由上四者算出） | **执行组合** | 当作可增删的配置项——它是检查结果，不是配置 |
 
-**「协作现场」退役为视图名**：Room ↔ Thread 一对一之后，用户看到的就是一个会话；一个 Room 可能只有用户和一个执行组合，叫「协作现场」过重。多成员并行时的成员泳道仍可称协作现场，但那是一种呈现形态，不是一个对象。
+**「协作现场」退役为视图描述**：Room ↔ Thread 一对一之后，用户看到的就是一个会话；一个 Room 可能只有用户和一个执行组合，叫「协作现场」过重。多执行组合并行时可用泳道呈现，但那是一种视图形态，不是一个对象。
 
 原则：**一个对象一个名字**。Room / Thread 两个对象共用一个界面，Room / 协作现场 一个对象两个名字，都在本决策中收掉。
 
-## 已知未闭合项
+## 已知实施迁移项
 
 **两处 schema 改动尚未实施**（使用者已确认方向）：
 
@@ -210,11 +214,11 @@ issues.workspace_id  TEXT NOT NULL  →  可空（游离 Issue 无代码目录�
 
 **`base_url` 列尚不存在（落地规格已定，受 development freeze 门控）。** 第 2 条把「同一模型两条路靠 `base_url` 与名称区分」当作 ID 不撞车的依据，但核查后确认：当前 `agent_configs` 只有 `model_provider` / `api_key` / `auth_type` / `command` / `args`，**没有 `base_url`**。在它落地之前，唯一可用的区分依据是配置行的 `name`，而那是自由文本——改一次名字历史记录就对不上。
 
-落地规格如下，`BACKLOG.md` 的 2026-08-12 冻结解除后可直接执行：
+落地规格并入 F012；当前 schema 已到 v11，因此下表原定版本必须从实施时真实版本顺延：
 
 | # | 触点 | 改什么 |
 | --- | --- | --- |
-| 1 | `server/src/db/schema-v11.ts`（新建）+ `migrations.ts` | `ALTER TABLE agent_configs ADD COLUMN base_url TEXT;` 并把 `CURRENT_SCHEMA_VERSION` 提到 11。**可空**——理由与 ADR 0015 的 `runtime_id` 相反：执行位置永远存在，而 base_url **真会缺席**（走官方端点的配置就没有），正是 ADR 0015「为什么用 `'local'` 而不是 `null`」一节里划的那条界 |
+| 1 | 新的顺延 migration + `migrations.ts` | adapter access 新增可空 `base_url`；官方端点真会缺席，不能用假字符串代替 |
 | 2 | `shared/src/types/index.ts` 的 `AdapterConfig` | 加 `base_url: string \| null`，紧挨 `model_provider` |
 | 3 | `server/src/repositories/agent-config.ts` | 行类型、`create` 的 INSERT 列表与占位、`update` 的 `sets.push`、`mapRow` 四处 |
 | 4 | `server/src/repositories/agent-config-dto.ts` | DTO 投影加一行 |
@@ -223,30 +227,31 @@ issues.workspace_id  TEXT NOT NULL  →  可空（游离 Issue 无代码目录�
 | 7 | `web/src/components/adapter/AdapterAuthFields.tsx` | 仅在 API Key 一支出现输入框；OAuth 一支不得出现（design.md §3.5.3 凭据第 1 条：出现输入框就说明抽象漏了） |
 | 8 | `shared/src/types/validation.ts` 的 `AdapterIdentitySnapshot` | **不加**。快照已有 `adapter_config_id`，配置的当时取值可由它回查；把 base_url 冻进快照等于把一个会变的运维字段刻进证据 |
 
-**与 ADR 0015 的落地顺序**：第 1 条与 ADR 0015 的 `runtime_id` 同批改 `agent_configs`，两次 ALTER 合进同一个 schema-v11，避免为同一张表连开两个版本。但两者**不可互相等待**——ADR 0015 第 1、2 条自己是一批（列 + 快照字段），本列不进快照，不属于那一批。
+**与 ADR 0015 的落地顺序**：运行机器、adapter installation 与 access 的迁移由 F012 统一设计；
+不再对已发布的 schema-v11 做增补或改写。
 
-**adapter 能力位尚未有产品表达。** `AgentAdapterCapabilities`（`server/src/runtime/types.ts:56`）已有 `supportsApprovalHook` / `supportsStructuredTrace` / `supportsFinalMessage` / `executionTimeoutMs`，加上 ADR 0011 的「OpenCode 原生记忆关不掉」，每一位都有产品后果（该 adapter 上「等待权限确认」不会发生、轨迹视图取不到逐次明细、上下文范围三档保证不了），而界面上一条都没说。**能力不足是一种事实上的放宽，且是静默的**——ADR 0018 第 5 条硬规则二「只能加严不能放宽」只管住了能力包，管不住执行体本身。表达形态已定：跨 adapter 的能力矩阵在 design.md V3.16 被删除（一张全是不可点格子的表就是债务展览馆），能力位降为**每个 adapter 诊断视图里的一块「这个 adapter 做不到什么」**，每条写后果不写能力位名字，见 design.md §3.5.3。
+**adapter 能力位需要产品表达。** `AgentAdapterCapabilities`（`server/src/runtime/types.ts:56`）已有 `supportsApprovalHook` / `supportsStructuredTrace` / `supportsFinalMessage` / `executionTimeoutMs`，加上 ADR 0011 的原生记忆隔离能力，每一位都有产品后果。最终表达不是跨 adapter 排行矩阵，而是运行时中每个 adapter 的状态、缺失能力及后果；派工 eligibility 再把与当前步骤有关的缺失写成可选 / 不可选理由。
 
 **「深度」的取值范围未定。** `high / medium / low` 是按当前几个 CLI 的推理档位归纳的，不同 provider 的档位不一致（有的按 token 预算，有的按模式名）。需要在 Runtime 的能力探测里确认，并映射到统一取值。
 
-**Memory 的 Project / Space 归属只有类型级判断，没有迁移规则。** 一条 lesson 是否可以从 Project 提升到 Space（「这条经验对所有项目都成立」），当前没有定义。
+**Memory 的 Project / Space 提升需要显式人工动作。** 一条 lesson 不会因引用次数自动从 Project 提升到 Space；具体迁移 UI 归 v0.4 Memory Feature。
 
-**Squad 的智能指派尚未有可行性验证。** 第 5 条只约束了「能力边界必须结构化」，没有验证结构化 tags 是否足以支撑有用的推荐。这需要在真实使用中攒够历史表现数据后才能判断，本决策不承诺它可行。
+**编组的智能指派尚未有可行性验证。** 第 5 条只约束结构，没有承诺 tags 足以支撑有用推荐；真实历史不足前不实现自动选择，路线归 v0.6。
 
 ## 后果
 
 - **收益一**：界面上反复出现的三个「这两个有什么区别」——两个输入框、两个会话 tab、primary Thread 与 Room——全部消失，因为造成它们的模型重叠被拿掉了。
 - **收益二**：使用者对「一上来先定义几个固定角色」的质疑得到结构性回应。执行单位改为自解释的 `codex-gpt5.6-high`，不需要先建人再干活，也不会把职能烧进身份。
 - **收益三**：额度、上下文范围这两个真实的日常决策依据，第一次有了承载对象。
-- **成本**：两处 schema 改 nullable；`agent_configs` 语义变更；PRD 第 5 节多处需重写（Agent 整节、Thread、Room、Space、Validation Policy）。均为一次性成本，不随时间增长。
+- **成本**：两处 schema 改 nullable；`agent_configs` 迁移为 installation / access；旧 Workflow / Validation 数据迁移到 Skill 或 legacy attachment。均为一次性成本，不随时间增长。
 - **不承诺**：本决策不声称简化后的模型能覆盖未来需求。它明确按「当前真正需要」收敛，多人协同、跨 Space 共享、Issue 层级等能力在真实需要出现时再加——**代价是届时要做迁移**，这是本决策自觉接受的取舍。
-- **对 PRD 的影响**：第 5 节需系统性修订。本决策不代改 PRD；按 `docs/SOP.md` 的文档纪律，在 v0.3 交互设计定稿后一并处理。
+- **对 PRD 的影响**：第 5 节已于 2026-09-08 按本决策和 V3.44 回写。
 
 ## 关联
 
 - 修订：`docs/decisions/0009-agent-session-lifecycle.md`（`context_lane` 改为派工记录上的上下文范围；resume 键改为 `adapter+配置+模型+深度`）
-- 修订：`docs/decisions/0010-claim-evidence-structure.md`（范围血统压为一层；Validation Policy 改称 Workflow Template 的验证段）
-- 依赖：`docs/decisions/0007-coordinator-execution-channel.md`（Coordinator 是确定性规则引擎，约束 Squad 的能力边界必须结构化）
+- 修订：`docs/decisions/0010-claim-evidence-structure.md`（范围血统压为一层；验证要求归 Skill / 步骤）
+- 依赖：`docs/decisions/0007-coordinator-execution-channel.md`（Coordinator 是确定性规则引擎，约束 Skill 步骤的能力边界必须结构化）
 - 依赖：`docs/decisions/0011-disable-native-agent-memory.md`（上下文范围的前提保障）
 - 约束：`docs/personahub-prd.md` 第 5 节
 - 证据：`multica-ai/multica` 的 `server/migrations/034_projects.up.sql`（游离态 Issue）

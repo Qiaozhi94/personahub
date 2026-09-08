@@ -3,138 +3,89 @@ topics: [decision, plugin, extensibility, architecture, seam, scope-control]
 doc_kind: decision
 status: accepted
 created: 2026-08-31
+updated: 2026-09-08
 ---
 
-# 0014: 插件贡献点清单——先定「能插什么」，再谈「怎么插」
+# 0014: 插件贡献点——先定能扩展什么，再决定何时开缝
 
 ## 背景
 
-使用者希望 PersonaHub 后续做到与 DeepSeek Harness 类似的**「一切接插件」**。为此调研了 dsh 和 clowder-ai 两个项目的插件实现机制，事实记录在 `../research/plugin-architecture-dsh-clowder.md`。
+PersonaHub 采用普通 route / service / repository 分层和手工装配，不是“一切皆插件”的运行时。为将来整体替换为插件框架而预抽接口，会产生无法由第二实现验证的半成品 seam；但完全不记录潜在扩展点，又容易让业务代码把它们写死。
 
-调研结论有一条是硬约束：**dsh 的「一切皆插件」不是加上去的能力，是运行时本身。** 它的插件框架 Cordis 从第一行代码就在——服务容器、`inject` 依赖排序、类型化事件、`ctx.effect()` 可逆注册，是整个进程的装配方式。PersonaHub 的 `server/src` 是常规的路由/服务/仓储分层 + `index.ts` 手工装配；把 Cordis 塞进来等于重写运行时的装配与生命周期，而不是加一个模块。
-
-clowder-ai 的形态与 PersonaHub 同源（Fastify + 本地存储 + 单进程），它的答案是**声明式 manifest + 宿主逐项准入**：`plugins/<id>/plugin.yaml` 声明 config 和 resources，`PluginRegistry` 扫描校验，`PluginResourceActivator` 是四类资源的唯一激活路径，schedule 只能引用白名单 `factoryId` 而不能提供任意脚本。
-
-### 核查：PersonaHub 当前的可扩展位置长什么样
-
-在写清单之前对着代码逐项核实，结果如下（这是本决策的事实基础）：
-
-| 位置 | 当前形态 | 证据 |
-| --- | --- | --- |
-| Agent Adapter | **真 seam**，运行时注册表 + 4 个 Provider，Consumer 无身份分支 | `server/src/runtime/adapter-registry.ts`；已在 `0008-capability-seam-convention.md` 核实 |
-| Graph Definition | **模块私有 Map，无注册函数**，只有一条 `WGD_CODING_DUAL_REVIEW_V1`，只导出 `getDefinition(id, version)` | `server/src/runtime/graph/definitions.ts:120-133` |
-| Node 输出契约 | **闭合字符串联合** `"findings_v1" \| "synthesis_v1"` + 一张查表 `OUTPUT_CONTRACT_SCHEMAS` | `server/src/runtime/graph/types.ts:10`、`instruction-builder.ts:13,71` |
-| Workflow Template | **数据**，落 SQLite，`steps_json` 由 `WorkflowTemplateAdminService` 管理版本与激活 | `server/src/services/workflow-template-admin.ts` |
-| Evidence typed ref | **单一收敛点** `parseEvidenceRef()`，`kind` 是闭合联合 `"event" \| "file_change_set" \| "unknown"`；构造侧是散在 8+ 处的模板字符串 | `server/src/services/evidence.ts:15-18,33`；构造侧见 `handoff-builder.ts:223`、`development-trace.ts:266` 等 |
-| 路由推荐规则 | **导出的纯函数 + 模块常量**，关键词表 `MULTI_PERSPECTIVE_KEYWORDS` 硬编码在源码里 | `server/src/services/routing/rules.ts:18-31` |
-| 验证策略 | **纯函数集合**，被 snapshot 参数化，无注册表无 key | `server/src/services/validation/policy-gate.ts`；ADR 0008 已判定「不是 seam」 |
-| 执行世界 | **未开缝**，`WorkspaceContext` 是纯数据结构，6 处 adapter/protocol 各自 `spawn` | `server/src/runtime/types.ts:4`；ADR 0008 已核实 |
-
-也就是说：**PersonaHub 现在有 1 个真 seam、2 个收敛点、1 个只差一个 `register()` 的私有注册表，其余都是硬编码。** 这不是缺陷，是当下正确的取舍。
-
-### 张力
-
-`../personahub-architecture.md` 把 MCP/A2A 协议层列在 v0.8「方向性设想」，且明确写了「v0.8 及以后不在本文档范围内……现在设计过细价值有限」；PRD 第 13 节把**「过度平台化」**列为明确风险。同时 v0.3（F009-F012）因 dogfood 暴露的用户旅程缺口已暂停，执行顺序以 `../reviews/product-experience-reset-plan.md` 为准。
-
-在这个时点建一套插件框架，会同时踩中「过度平台化」和「为不存在的第二实现预先抽接口」两个已知坑。
-
----
+因此本决策维护一张具名清单。清单表达目标边界，不授权当前实现，也不替代 ADR 0008 的触发判断。
 
 ## 决策
 
-### 1. 现在只交付清单，不建插件框架
+### 1. 贡献点清单
 
-本决策的交付物是**下面第 2 节的贡献点清单**和第 3、4 节的准入公理，不是代码。
+| ID | 贡献点 | 当前状态 | 开放条件 / 版本 |
+|---|---|---|---|
+| P1 | Agent adapter provider | 已有成熟 seam | Codex / Claude Code / OpenCode 已验证 |
+| P2 | Dispatch context source | 核心组装器先固定 | 出现第二种真实资料来源后按 ADR 0008 开缝 |
+| P3 | Graph definition / node output contract | 内建定义 | 第二条真实非 coding graph；最早 v0.5 |
+| P4 | Evidence ref kind | 核心注册表独占 | 外部不得定义语义；只由核心 Feature 扩展 |
+| P5 | Skill revision | F013 目标 | v0.3 建数据契约；插件贡献延至 v0.8 |
+| P6 | Skill steps / 编组 | 与 P5 同一 schema | 不建独立 Squad seam |
+| P7 | Evidence adapter / domain checker | 候选 | 首个非 coding 垂直切片；最早 v0.5 |
+| P8 | Memory candidate producer / provenance gate | 候选 | v0.4 有第二来源时 |
+| P9 | Execution provider | 候选 | v0.7 出现本机之外的真实执行世界时 |
+| P10 | Automation trigger / admission | 候选 | v0.4 定时与 Webhook 两种来源形成后 |
+| P11 | Notification sink | 候选 | 出现第二通知目的地后 |
+| P12 | Declarative capability surface | 候选 | v0.8 首个带数据视图的插件 |
 
-理由：dsh 那张「新行为归属位置」映射表的价值，**不在于它背后有 Cordis，而在于它把「插件能贡献什么」变成了一份可查、可评审、随实现更新的清单**。这份清单不依赖任何框架就能先存在，而且它本身会决定框架长什么样。反过来先建框架再找贡献点，必然造出半个 seam。
+P5 与 P6 都是 Skill revision；有 `steps` 即编组。不存在独立 Workflow Template、Validation Policy、Squad 或“能力包”贡献点。
 
-**建框架的触发条件（满足任意两条即可重新评估）**：
+### 2. 开缝规则
 
-1. 出现第一个真实的、由 PersonaHub 之外的人编写的扩展需求（不是「将来可能有人要」）；
-2. B 档贡献点中至少 3 个已经因为真实需求各自开出了 seam，装配点开始重复；
-3. v0.4 非 coding 场景垂直切片落地，确认新 Issue Type 确实需要独立的执行环境或证据语义；
-4. MCP 集成进入实际排期（当前在 v0.8）。
+每个贡献点独立判断，满足以下条件才建立 Definition / Provider / Consumer 三角色：
 
-在此之前，**新增可替换点仍按 ADR 0008 逐个判断**：有第二 Provider 的真实需求就配齐三角色，没有就写成函数。
+1. 已有至少两个真实实现，或第二实现已经进入当前 Feature 范围。
+2. 两者差异能够写成稳定 contract，而不是用 `unknown` 把差异推给运行时。
+3. Consumer 确实不需要知道具体 provider。
+4. 失败、能力缺失和生命周期可以由统一语义表达。
 
-### 2. 贡献点清单
+不满足时写普通函数或具名 service。清单中出现不等于要创建空接口。
 
-档位定义：
+### 3. 插件准入公理
 
-- **A 档（已开缝）**：已经是完整 seam，插件化时只需补一个外部装配入口，不改结构。
-- **B 档（已收敛，待开缝）**：已有唯一收敛点或私有注册表，第二实现出现时按 ADR 0008 开缝，代价可控。
-- **C 档（暂不开）**：无第二实现需求，或所属产品范围未定。列在这里是为了**明确它现在不是贡献点**，避免被顺手做掉。
+即使尚未开放插件，这些规则立即约束可贡献数据：
 
-| # | 贡献点 | 档 | 当前形态 | 开缝时的目标机制 |
-| --- | --- | --- | --- | --- |
-| P1 | **Agent Adapter**（新 CLI/模型提供方） | A | `AgentAdapterRegistry` + `AgentAdapter` 词汇 + 4 Provider | 已具备。补外部注册入口 + `capabilities` 词汇扩展即可 |
-| P2 | **Graph Definition**（新协作图拓扑） | B | `definitions.ts` 私有 `Map`，单条目，无 `register()` | 把 `REGISTRY` 提升为可注入的注册表对象，Definition 由外部按 `id@vN` 注册；`getDefinition` 保持唯一读取口 |
-| P3 | **Node 输出契约**（新 `*_v1` schema） | B | 闭合联合 + `OUTPUT_CONTRACT_SCHEMAS` 查表 | 契约 = { schema 文本, 解析器, 校验器 } 三元组注册；未注册契约在 preflight 阶段硬失败，不进执行 |
-| P4 | **Evidence / Artifact typed ref 种类** | B | 构造侧已于 2026-08-31 收敛：`server/src/evidence-ref.ts` 唯一拥有 `REF_PREFIX_BY_KIND`，`buildEvidenceRef` / `parseEvidenceRef` 从同一张表派生 | kind 表现在是单点；出现第二个来源需要贡献 kind 时再把它做成注册表。F009 的 `artifact:` 是第一个真实的新 kind，届时改表一行 |
-| P5 | **Workflow Template** | A（数据） | SQLite 记录 + `steps_json` + 版本/激活治理 | **已经是可扩展的，且不该做成代码插件**。插件若要贡献 workflow，产出的是模板数据，走既有 `WorkflowTemplateAdminService` 校验与审计 |
-| P6 | **Squad 定义**（F012） | A（数据） | 尚未实现；设计上是静态 agent 分组 | 同 P5，数据不是代码。插件贡献 squad 模板即可 |
-| P7 | **路由推荐规则** | B | 纯函数 + 硬编码关键词表 | 关键词表先外置为配置数据；规则本身有第二实现需求（非 coding 场景）时才开缝 |
-| P8 | **验证策略 / policy gate** | C | 纯函数，被 snapshot 参数化 | ADR 0008 已判定不是 seam。**只有一种验证策略时不开**，参数化优先于插件化 |
-| P9 | **执行世界**（workspace 执行方式） | C→B | `WorkspaceContext` 纯数据；6 处各自 `spawn` | ADR 0006 已承诺 v0.7 替换（容器化）。这是**已知会出现第二实现**的位置，开缝优先级高于本清单其他 B 档，但触发条件是 ADR 0006 的隔离验证，不是插件需求 |
-| P10 | **后台任务 / 调度** | C | 有 `stale-recovery`、`validation-dispatch-scheduler` 等具体调度器，无统一注册表 | 参考 clowder 的白名单 `factoryId` 模型：**插件只能引用宿主注册的 factory，永不提供可执行脚本** |
-| P11 | **MCP tools** | C | 未实现，v0.8 方向性设想 | 不在当前范围。届时按 clowder 的外部进程模型评估 |
-| P12 | **UI 面板 / Inspector 视图** | **B**（声明式 surface）/ **C**（插件提供渲染代码） | 前端 `web/` 常规组件 | 插件在 manifest 里**声明** surface（`kind` / `columns` / `actions`），宿主用自己的组件渲染；插件不提供任何前端代码。契约见 ADR 0018 |
+- **声明不等于授权**：manifest 只产生候选资源；宿主校验、授权并激活后才生效。
+- **单一激活路径**：每类资源只有一个写入口；不得为插件建立 ad hoc writer。
+- **所有权与失败局部化**：记录 source / version；冲突直接拒绝；单一来源失败不影响其余。
+- **动作走白名单**：插件 surface 只能调用宿主动作；“创建任务”必须创建普通任务并按需建立会话，不能绕过验收链。
+- **核心链路不依赖可选 surface**：adapter 等派工必需能力不能藏在插件 tab 中。
 
-**P12 分档的三条理由**（2026-09-02，随 design.md V3.21 一并确定）：
+### 4. 上下文和策略纪律
 
-1. **准入规则可判定。** 能声明 surface 的插件必须满足「**它缺失时核心链路不受影响**」——RSS 订阅满足（没有它照样建 Issue、拉 Room、派工、验收），adapter 不满足（没有它派不了工），因此 adapter 天然被这条规则排除在 UI 贡献之外。这条规则比「允不允许插件画界面」可操作。
-2. **动作走宿主白名单，来源链不会被绕开。** surface 的 action 只能引用宿主已注册的动作（首批 `host.library.archive`、`host.issue.createWithRoom`）。插件自己写「创建任务」按钮很容易拼一条捷径，而 design.md §3.3.3 的判断是硬的：**任何一次真正执行都必须有 Issue / Run / Attempt / Artifact / Evidence 的来源链**。
-3. **插件不碰 DOM，因此够不着凭据。** design.md V3.21 把设置拆成运行时组与插件组之后，凭据全部在运行时组、插件挂载点全部在能力面，两处不相交。这是允许声明式 surface 的前提条件。
+任何进入 agent 上下文的贡献物都必须先有持久事件或 typed ref，能从历史重建。插件、Skill 或 MCP 不得直接向进程注入不可见文本。
 
-**C 档的那一半不动**：插件提供渲染代码仍然关闭，理由是本机没有沙箱——同源 JS 能读 DOM 与调用宿主全部 API，而这个风险不随 `kind` 数量变化（同 ADR 0018 第 10 节）。
+将来如出现多个策略参与同一决策，采用可追溯的有序 chain：策略 provider 可以短路并记录决定，观察 provider 只能继续委托。无返回值的广播事件不能承担准入、验证或派工决策。
 
-**对第 1 节触发条件的影响**：条件 2 数的是「B 档贡献点中至少 3 个已经因为真实需求各自开出了 seam」，**要的是已开缝数而不是 B 档总数**，因此 P12 转入 B 档不改变该计数；它开缝时才计入。
+### 5. 声明式 surface 边界
 
-**清单纪律**：改动这些位置的结构时，本清单随之更新——这是从 dsh「改动循环本身时，本映射随之更新」抄来的。清单过期比没有清单更糟。
+P12 只允许插件声明数据 schema、宿主组件类型、空 / 错误状态和白名单动作。插件不提供前端代码、任意 HTML 或 DOM hook。挂载点只在能力面；设置 · 插件仍是安装和授权唯一入口。
 
-### 3. 三条准入公理（来自 clowder，现在就生效）
+宿主动作的稳定语义按产品对象表达，例如“归档外部条目”和“创建普通任务”；不得把历史 API 名 `createWithRoom` 固化成新契约。
 
-即使还没有插件框架，这三条现在就应约束任何「外部可贡献」的设计：
+## 明确不做
 
-**（一）声明不等于授权。**
+- 不引入 Cordis 或等价容器重写当前装配与生命周期。
+- 不允许任意同权限脚本被描述为低风险插件。
+- 不为尚无第二实现的 P2–P12 批量建立接口。
+- 不允许插件贡献新的 Evidence ref 解析规则或直接写核心表。
+- 不在 v0.3 开放插件 surface、MCP 注入、远程 marketplace 或签名链。
 
-> A plugin-declared contribution is a candidate resource, never proof of identity, installation, permission, health, or execution authority.
+## 维护规则
 
-一份 manifest 说自己提供某能力，只是候选；宿主校验、准入、激活之后它才存在。对应到 P3：未注册的输出契约必须在 preflight 硬失败，不能「先跑跑看」。
-
-**（二）单一激活路径。** 每类资源只能有一个写入口。clowder 的 `PluginResourceActivator` 一个类 1023 行，替代了「skill/mcp/limb/schedule 四个 ad hoc writer」。PersonaHub 若开 P2/P3/P4 任意一处，**不得为它单独开一条写路径**。
-
-**（三）所有权元数据 + 失败局部化。** 任何外部贡献的记录都带来源标识，enable/disable 只动自己拥有的记录，跨来源冲突直接拒绝；单个来源坏掉只 skip 它自己并保留可见错误状态，不影响其余。clowder 的 `envClaims` 冲突检测和「候选先排序再准入」（保证扫描结果与目录遍历顺序无关）是可直接抄的实现细节。
-
-### 4. 两条上下文纪律（来自 dsh，现在就生效）
-
-**（一）agent 可见即已记录。** 任何进入 agent 执行上下文的内容都必须能从持久事件流重建。dsh 用运行时不变量断言这一点；PersonaHub 的对应物是 ThreadEvent 流和 F009 的 artifact provenance。**新增一项 agent 可见输入 ⇒ 必须新增对应的持久事件**，不允许贡献点绕过事件流直接注入上下文。这是插件不能偷偷污染 agent 上下文的唯一保证。
-
-**（二）拦截点用 waterfall 语义。** 若将来出现「多方按序拦截同一决策」的扩展点（例如验证前置检查、派工准入），采用 dsh 的约定：监听器接收 `(...args, next)`，**策略型**在拥有决策权时可短路，**观察型必须调 `next()` 委托**。不要用无返回值的广播事件做策略——那会让「谁做的决定」不可追溯。
-
-### 5. 明确不做的事
-
-| 不做 | 理由 |
-| --- | --- |
-| 引入 Cordis 或等价插件框架 | 等于重写 `server/src` 装配与生命周期，代价与收益完全不成比例 |
-| 同权限任意脚本插件 | clowder 在 F129 明确否决过；本地单用户工具没有沙箱，脚本插件 = 无限权限 |
-| 远程 marketplace / 签名 / 安装信任链 | clowder 投入 K-2A~D 四个切片建成后**至今保持 dormant**，不暴露激活路由。这是三个 feature 的量 |
-| 为清单里的 C 档预先抽接口 | ADR 0008：半个 seam 比没有 seam 更坏 |
-| 把 P5/P6 做成代码插件 | Workflow Template 和 Squad 本来就是数据，做成代码插件是形态错配 |
-
----
+当新 Feature 修改表中位置的 provider 数、contract 或开放版本时，同步更新本清单。某个贡献点真正开缝时，需在对应 Feature design 中记录第二实现、统一失败语义和测试证据。
 
 ## 后果
 
-**正面**：
+扩展路线变成可逐项验证的边界，而不是一次性插件框架工程；代价是清单需要人工维护，且插件体验会晚于核心可信任务闭环。
 
-- 「一切接插件」这个诉求被翻译成了 12 个具名位置和 3 个档位，从此可以逐项评审、逐项排期，而不是一次性的架构豪赌。
-- P4（typed ref 构造侧收敛）**已随本决策一并落地**：7 个文件 18 处模板字符串收敛为 `server/src/evidence-ref.ts` 的 `buildEvidenceRef(kind, id)`，与 `parseEvidenceRef` 共享同一张前缀表，round-trip 由单元测试守住。这个改动与插件无关也值得做，F009 加 `artifact:` 时直接受益。唯一未收敛的残留是 `validation/validator-envelope-contract.ts` 里面向模型的提示词文本仍写着字面前缀——那是模型契约的措辞，不应由代码派生。
-- 三条准入公理和两条上下文纪律现在就能约束 F009-F012 的设计，不必等框架。
+## 关联
 
-**负面 / 代价**：
-
-- 短期内不会有「装一个包就多一个能力」的体验。这是刻意的：当前唯一用户就是开发者本人，改代码的成本低于维护一套插件框架的成本。
-- 清单需要人工维护，过期风险真实存在。缓解手段是把它绑定到 ADR 0008 的判断流程——每次按 ADR 0008 决定「配三角色还是写函数」时，顺手更新本清单对应行的档位。
-
-**复核触发条件**：第 1 节列出的四条触发条件满足任意两条，或 ADR 0006 的执行世界隔离验证落地（会直接把 P9 从 C 推到 A）。
+- `0008-capability-seam-convention.md`：建立 seam 的正式判据。
+- `0018-capability-library-and-packs.md`：Skills、插件、MCP 与信任模型。
+- `../personahub-architecture.md`：当前装配和后续运行时边界。
