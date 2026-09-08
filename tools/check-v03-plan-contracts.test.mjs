@@ -96,3 +96,22 @@ test('V03-PLAN-R1-004: file artifact publication never exposes a missing revisio
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
+  const documents = [
+    read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
+    read('docs/features/0.3/F012-session-dispatch-intervention/design.md'),
+    read('docs/features/0.3/F012-session-dispatch-intervention/tasks.md'),
+  ];
+  const phrases = [
+    'supported / unsupported / unverified',
+    '`adapter-capability-evidence.md`',
+    'T000 (`FR-003`, `FR-008`, `NFR-003`)',
+    'unsupported 与 unverified 都不能承担依赖该能力的独立验证',
+    'Phase 0 probe 是进入 schema / eligibility 实现的门槛',
+    '不得把缺失 probe 当作 supported',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});

@@ -13,7 +13,7 @@ updated: 2026-09-08
 
 ## 1. 技术概要与影响面
 
-新增 Dispatch persistence/service、会话 projection、eligibility evaluator、context assembler 和单机 runtime projection；调整 Run 创建为 Dispatch 提交后的副作用。
+先以真实 CLI probe 建立 adapter capability evidence，再新增 Dispatch persistence/service、会话 projection、eligibility evaluator、context assembler 和单机 runtime projection；调整 Run 创建为 Dispatch 提交后的副作用。
 
 ## 2. 架构与模块边界
 
@@ -41,11 +41,11 @@ starting dispatch 由 deadline worker 幂等提交。pause revision 与 claim �
 
 ## 8. 测试策略与验收映射
 
-AC-001 eligibility fixtures；AC-002 deadline / idempotency；AC-003 session/context probe；AC-004 concurrency barrier/restart；AC-005 browser journey 与 migration fixtures。
+AC-001 eligibility fixtures；AC-002 deadline / idempotency；AC-003 session/context probe；AC-004 concurrency barrier/restart；AC-005 browser journey 与 migration fixtures；AC-006 对每个 adapter 的 supported / unsupported / unverified fixture 做变异，并证明缺证据不能进入依赖该能力的独立验证。
 
 ## 9. 已确认决策与残余风险
 
-Room 不拥有执行状态，Thread 不露出；Dispatch 与 Run 分离。残余风险为各 CLI 的深度 / usage / session 能力不齐，必须以探测结果降级并在 UI 写后果。
+Room 不拥有执行状态，Thread 不露出；Dispatch 与 Run 分离。每项能力只允许 supported / unsupported / unverified；unsupported 与 unverified 都不能承担依赖该能力的独立验证，普通执行若不依赖该能力则可保留为带后果说明的候选。原生记忆无法关闭的 adapter 不能承担独立验证。深度能力必须从 adapter 探测，不硬编码三档都可用。
 
 ## 10. 待确认设计问题
 

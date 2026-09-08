@@ -84,12 +84,13 @@ updated: 2026-09-08
 - **FR-005**：resume key 包含执行组合、任务、会话和上下文范围；换范围冷启动。
 - **FR-006**：暂停后续派工只阻止新 Attempt；取消只终止目标 Attempt；所有介入写事件。
 - **FR-007**：独立会话转任务后才允许进入 Artifact / Evidence / Memory 链。
-- **FR-008**：运行时基础提供一台机器上的 adapter 状态、模型 / 深度、工具与额度事实。
+- **FR-008**：运行时基础提供一台机器上的 adapter 状态、模型 / 深度、session、原生 memory 隔离、工具与额度事实；每项 probe 只允许 supported / unsupported / unverified 三态并附证据时间与 CLI 版本。
 
 ### 非功能需求
 
 - **NFR-001**：Dispatch 创建、撤销、pause / resume 与 claim 在并发和重启后保持幂等。
 - **NFR-002**：agent 可见上下文可从事件和 refs 完整重建。
+- **NFR-003**：能力未知时保守失败；不得把缺失 probe 当作 supported，unsupported 与 unverified 都不能承担依赖该能力的独立验证。
 
 ## 5. 生命周期与不变量
 
@@ -109,12 +110,13 @@ Dispatch：draft → starting → dispatched，starting 可撤销为 cancelled�
 - [ ] **AC-003** (`FR-005`, `NFR-002`): resume / 冷启动与三档上下文组装、过滤披露正确。
 - [ ] **AC-004** (`FR-006`, `NFR-001`): pause / claim 并发、取消、改派和 restart 恢复正确。
 - [ ] **AC-005** (`FR-001`, `FR-007`, `FR-008`): 独立 / 任务会话和单机运行时基础完成浏览器旅程。
+- [ ] **AC-006** (`FR-003`, `FR-008`, `NFR-003`): Codex / Claude Code / OpenCode 的模型、深度、session 与原生 memory probe 均有版本化证据；unsupported / unverified 的候选、后果和独立性降级可观察且不可旁路。
 
 ## 7. 测试、依赖与决策
 
 ### 测试策略
 
-Eligibility 与上下文组装单测；dispatch/pause barrier/restart 集成测试；真实 CLI resume probe；Playwright 派工、撤销、会话切换和运行时状态。
+Eligibility 与上下文组装单测；dispatch/pause barrier/restart 集成测试；真实 CLI capability / resume probe；Playwright 派工、撤销、会话切换和运行时状态。probe 摘要持久写入本 Feature 的 `adapter-capability-evidence.md`，原始机器可读结果保存为测试 fixture 并记录 CLI 版本与时间。
 
 ### 依赖
 
