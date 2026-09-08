@@ -41,7 +41,7 @@ Projection 层只读聚合；AcceptanceService 是完成要求、主张链、风
 
 ## 8. 测试策略与验收映射
 
-状态 fixture 覆盖 AC-001；claim 独立性和 missing ref 覆盖 AC-002；资源 / 轨迹 / 草稿覆盖 AC-003；axe、键盘和 SSE replay 覆盖 AC-004；验收写链故障注入、幂等与 outbox replay 覆盖 AC-005。
+AC-001 使用 spec 的 11 行命名矩阵生成 fixture；每行分别断言首屏优先级、唯一主操作、动作后的恢复结果和必须保留事实，禁止以状态数量断言代替逐项语义。claim 独立性和 missing ref 覆盖 AC-002；资源 / 轨迹 / 草稿覆盖 AC-003；axe、键盘和 SSE replay 覆盖 AC-004；验收写链故障注入、幂等与 outbox replay 覆盖 AC-005。
 
 ## 9. 已确认决策与残余风险
 

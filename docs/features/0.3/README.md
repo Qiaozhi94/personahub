@@ -91,7 +91,7 @@ F009 先完成生产前端换壳和既有能力迁移。F010 只拥有 Artifact 
 | M1 前端迁移 | F009 | 新壳层承载 v0.1–v0.2 代表旅程，旧壳层和双写入口退出生产路径 |
 | M2 核心契约 | F010、F013 | Artifact / ref、Space / Project / Skill requirements 与迁移策略关闭 |
 | M3 可追溯派工 | F012 | 组合、上下文、Artifact consumption、撤销、介入与恢复可回放 |
-| M4 可信任务面 | F011 | 验收写链与四视图读取同一 projection，全部具名状态可达 |
+| M4 可信任务面 | F011 | 验收写链与四视图读取同一 projection，11 个具名 Task state fixture 全部可达 |
 | M6 旅程收口 | F014 | 真实 CLI 全旅程、迁移、E2E 和发布证据通过 |
 
 不在设计稿定稿后沿用旧的 25–40 日估算。每个 Feature 完成影响面分析后单独估算，F014 只汇总已经有证据的估算。

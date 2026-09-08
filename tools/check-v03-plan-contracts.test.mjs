@@ -177,3 +177,30 @@ test('V03-PLAN-R1-008: URL migration is based on published routes, not invented 
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-009: all eleven task states have named acceptance fixtures', () => {
+  const documents = [
+    read('docs/features/0.3/README.md'),
+    read('docs/features/0.3/F011-trusted-task-surface/spec.md'),
+    read('docs/features/0.3/F011-trusted-task-surface/design.md'),
+    read('docs/features/0.3/F011-trusted-task-surface/tasks.md'),
+  ];
+  const phrases = [
+    '11 个具名 Task state fixture',
+    '| 刚创建 |',
+    '| 等待启动 |',
+    '| 权限阻塞 |',
+    '| 已排队 |',
+    '| 执行中 |',
+    '| 等待指派 |',
+    '| 验证未收敛 |',
+    '| 执行失败 |',
+    '| 已中断 |',
+    '| 已取消 |',
+    '| 已完成 |',
+    '首屏优先级、唯一主操作、恢复结果和必须保留事实',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
