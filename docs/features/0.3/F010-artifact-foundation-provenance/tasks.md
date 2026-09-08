@@ -26,7 +26,7 @@ F009 新壳层和前端接入边界已冻结；ADR 0010 已接受；Evidence ref
 ### Phase 2：服务、事件与读取面
 
 - [ ] T010 (`FR-001`, `FR-002`, `TR-001`): 实现 create / revise 唯一写入口、CAS 和 commit 后事件。 — verify: `npm test --workspace server`
-- [ ] T011 (`FR-004`, `FR-005`): 在上下文组装时记录 consumption，并实现双向 provenance 查询。 — verify: `npm test --workspace server`
+- [ ] T011 (`FR-004`, `FR-005`): 提供幂等 `recordConsumption(dispatch_id, run_id, revision_ref)` 公共契约与双向 provenance 查询；不接入尚未存在的上下文组装器。 — verify: `npm test --workspace server`
 - [ ] T012 [P] (`FR-005`): 增加 API client 与资源 / 验收最小读取组件。 — verify: `npm test --workspace web`
 
 ## 3. 验证与验收任务
@@ -37,7 +37,7 @@ F009 新壳层和前端接入边界已冻结；ADR 0010 已接受；Evidence ref
 
 ## 4. 依赖与并行关系
 
-F009 完成后进入本 Feature；T001→T002/T003→T010/T011；T012 可在 API contract 冻结后并行。F011/F012 不得在 ref 和 consumption 契约前自行造临时字段。
+F009 完成后进入本 Feature；T001→T002/T003→T010/T011；T012 可在 API contract 冻结后并行。F010 关闭条件只包含 Artifact core、resolver 和 `recordConsumption` contract；F012 是上下文组装调用 `recordConsumption` 的最终集成 owner，F011 只读取其结果。两者不得在 ref 和 consumption 契约前自行造临时字段。
 
 ## 5. 明确后移
 

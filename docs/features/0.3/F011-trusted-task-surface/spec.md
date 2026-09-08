@@ -122,7 +122,7 @@ Projection 单测、API/SSE 集成测试、组件状态矩阵与 Playwright 四�
 
 ### 依赖
 
-依赖 F009 新壳层和 F010 Artifact 契约；读取 F006 图状态。F012 提供实际派工与会话动作，F014 负责整条旅程。
+依赖 F009 新壳层、F010 Artifact 契约和 F012 已提交的 Dispatch / 会话契约；读取 F006 图状态与 F012 consumption 结果。F014 负责整条旅程。
 
 ### 决策与风险
 

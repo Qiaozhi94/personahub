@@ -13,7 +13,7 @@ updated: 2026-09-08
 
 ## 1. 前置条件
 
-F009 新壳层与相关兼容入口已可替换；F010 ref contract 冻结；三个 adapter 的模型、深度、session 和原生记忆能力 probe 有结果。
+F009 新壳层与相关兼容入口已可替换；F010 ref / `recordConsumption` contract 冻结；F013 发布 effective requirements 与路径授权 contract。adapter probe 由本 Feature 的具名 Phase 0 任务负责，不作为无 owner 的外部前置事实。
 
 ## 2. 实现任务
 
@@ -26,7 +26,7 @@ F009 新壳层与相关兼容入口已可替换；F010 ref contract 冻结；三
 ### Phase 2：派工与介入
 
 - [ ] T010 (`FR-004`, `NFR-001`): 实现 starting deadline、撤销和幂等提交。 — verify: `npm test --workspace server`
-- [ ] T011 (`FR-005`, `NFR-002`): 实现 context assembler、过滤事件与 resume key。 — verify: `npm test --workspace server`
+- [ ] T011 (`FR-005`, `NFR-002`): 实现 context assembler、过滤事件与 resume key，并通过 F010 公共 API 幂等记录实际 Artifact consumption；本任务是该集成的最终 owner。 — verify: `npm test --workspace server`
 - [ ] T012 (`FR-006`, `NFR-001`): 实现 pause / claim barrier、cancel / reassign 与 restart recovery。 — verify: `npm test --workspace server`
 - [ ] T013 [P] (`FR-001`, `FR-007`): 实现独立会话与转任务。 — verify: `npm test`
 - [ ] T014 (`FR-003`, `FR-004`, `FR-008`): 接入选择器、撤销横幅、会话与运行时基础 UI。 — verify: `npm test --workspace web`
@@ -40,7 +40,7 @@ F009 新壳层与相关兼容入口已可替换；F010 ref contract 冻结；三
 
 ## 4. 依赖与并行关系
 
-T001→T002/T003→T010/T011/T012→T014；T013 可在 T002 后并行。F013 在 execution identity 与权限读取 contract 冻结后接入。
+F013 contract 与本 Feature Phase 0 probe 完成后，T001→T002/T003→T010/T011/T012→T014；T013 可在 T002 后并行。F011 在 Dispatch / Session / consumption integration 验收后接入，不形成反向依赖。
 
 ## 5. 明确后移
 

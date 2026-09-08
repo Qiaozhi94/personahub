@@ -56,3 +56,24 @@ test('V03-PLAN-R1-002: Space has a v0.3 schema, migration, and feature owner', (
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-003: feature dependencies form an acyclic executable order', () => {
+  const documents = [
+    read('docs/features/0.3/README.md'),
+    read('docs/features/0.3/F010-artifact-foundation-provenance/tasks.md'),
+    read('docs/features/0.3/F011-trusted-task-surface/spec.md'),
+    read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
+    read('docs/features/0.3/F012-session-dispatch-intervention/tasks.md'),
+    read('docs/features/0.3/F013-project-skills-foundation/spec.md'),
+  ];
+  const phrases = [
+    '`F009 → (F010 ∥ F013) → F012 → F011 → F014`',
+    'F010 只拥有 Artifact core 与 `recordConsumption` 公共契约',
+    'F012 是上下文组装调用 `recordConsumption` 的最终集成 owner',
+    'F013 发布 effective requirements 与路径授权 contract',
+    '依赖 F009 新壳层、F010 Artifact 契约和 F012 已提交的 Dispatch / 会话契约',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});

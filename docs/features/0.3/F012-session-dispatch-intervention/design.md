@@ -17,7 +17,7 @@ updated: 2026-09-08
 
 ## 2. 架构与模块边界
 
-SessionService 管 Room / Thread 归属；DispatchService 是派工唯一写入口；EligibilityEvaluator 只读运行时、项目授权、Skill 要求和验证独立性；RunService 只执行已提交 Dispatch。
+SessionService 管 Room / Thread 归属；DispatchService 是派工唯一写入口；EligibilityEvaluator 只读 F013 发布的项目授权、Skill effective requirements 以及运行时 / 验证独立性；ContextAssembler 通过 F010 `recordConsumption` 写入确定 revision；RunService 只执行已提交 Dispatch。
 
 ## 3. 数据模型与 Migration
 

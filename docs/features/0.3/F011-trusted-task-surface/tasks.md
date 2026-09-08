@@ -13,7 +13,7 @@ updated: 2026-09-08
 
 ## 1. 前置条件
 
-F009 新壳层和任务兼容 adapter 清单已冻结；F010 ref / provenance contract 已冻结；ADR 0010 状态为 accepted。
+F009 新壳层和任务兼容 adapter 清单已冻结；F010 ref / provenance contract 已冻结；F012 Dispatch / 会话 / consumption integration 已验收；ADR 0010 状态为 accepted。
 
 ## 2. 实现任务
 
@@ -39,7 +39,7 @@ F009 新壳层和任务兼容 adapter 清单已冻结；F010 ref / provenance co
 
 ## 4. 依赖与并行关系
 
-Projection contract 先于前端。T011/T012/T013 可在 T001–T003 后并行；每个新视图通过后删除对应 F009 兼容 adapter；F012 的真实派工交互在 shell 稳定后接入。
+Projection contract 先于前端。T011/T012/T013 可在 T001–T004 后并行；每个新视图通过后删除对应 F009 兼容 adapter；派工交互只调用已验收的 F012 公共 API，不反向要求 F012 等待本 Feature 的页面容器。
 
 ## 5. 明确后移
 

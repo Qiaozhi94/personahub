@@ -118,7 +118,7 @@ Eligibility 与上下文组装单测；dispatch/pause barrier/restart 集成测�
 
 ### 依赖
 
-依赖 F005 adapter、F006 graph、F009 新壳层和 F010 refs；F011 提供任务容器；F013 消费 Skill 与项目权限；F014 完成迁移验收。
+依赖 F005 adapter、F006 graph、F009 新壳层、F010 refs / `recordConsumption`，以及 F013 发布的 effective requirements 与路径授权 contract。派工 UI 直接接入 F009 稳定槽位；F011 后续消费本 Feature 的 Dispatch / 会话公开契约，F014 完成迁移验收。
 
 ### 决策与风险
 

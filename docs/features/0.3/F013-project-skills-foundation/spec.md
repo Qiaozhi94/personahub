@@ -122,7 +122,7 @@ Space / 路径边界与 Skill schema 单测；默认 Space、repo/Skill migratio
 
 ### 依赖
 
-依赖 F009 新壳层、F010 revision 思路与 F012 Dispatch / eligibility；F014 负责端到端整合。
+依赖 F009 新壳层和 F010 revision contract。F013 发布 effective requirements 与路径授权 contract，F012 消费它们生成 eligibility / Dispatch snapshot；本 Feature 不读取 Dispatch，跨 Feature 快照集成由 F012 验收。F014 负责端到端整合。
 
 ### 决策与风险
 

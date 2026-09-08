@@ -15,18 +15,20 @@ v0.3 的第一步是把 v0.1–v0.2 已交付能力迁入 V3.44 生产前端，�
 
 最终设计完整覆盖九个一级工作面，但 v0.3 不一次实现全部页面。一个工作面只有在具有真实数据、完整状态和可用动作后才进入生产导航；Memory、自动化与完整统计延至 v0.4，声明式插件 surface 延至 v0.8。
 
-## 2. Feature 顺序
+## 2. Feature 依赖顺序
+
+可执行的无环顺序是 `F009 → (F010 ∥ F013) → F012 → F011 → F014`。Feature 编号保留产品追踪身份，不表示实现先后；F010 与 F013 在 F009 壳层边界冻结后可以并行。
 
 | ID | Feature | 单一 intent | 依赖 |
 |---|---|---|---|
 | [F009](F009-v344-frontend-foundation-migration/spec.md) | V3.44 Frontend Foundation & Migration | 先用最终壳层重建 v0.1–v0.2 生产前端 | F001–F008 |
 | [F010](F010-artifact-foundation-provenance/spec.md) | Artifact & Provenance Foundation | 建立不可漂移的阶段成果和统一引用 | F003、F004、F006、F009 |
-| [F011](F011-trusted-task-surface/spec.md) | Trusted Task Surface | 用四视图表达决策、会话、验收和资源 | F009、F010 |
-| [F012](F012-session-dispatch-intervention/spec.md) | Session, Dispatch & Intervention | 将会话、执行选择、上下文与控制拆成可追溯对象 | F005、F006、F009–F011 |
 | [F013](F013-project-skills-foundation/spec.md) | Space, Project & Skills Foundation | 建立归属根并统一项目文件边界与 Skill / 编组 | F009、F010 |
+| [F012](F012-session-dispatch-intervention/spec.md) | Session, Dispatch & Intervention | 将会话、执行选择、上下文与控制拆成可追溯对象 | F005、F006、F009、F010、F013 |
+| [F011](F011-trusted-task-surface/spec.md) | Trusted Task Surface | 用四视图表达决策、会话、验收和资源 | F009、F010、F012 |
 | [F014](F014-trusted-task-journey-closure/spec.md) | Trusted Task Journey Closure | 对整条旅程、迁移和发布验收负责 | F009–F013 |
 
-F009 先完成生产前端换壳和既有能力迁移；F010–F013 逐项用新领域契约替换兼容投影；F009–F013 是 linked contracts，只有 F014 可以声明 v0.3 整体旅程完成。任何局部 Feature 完成不能替代端到端证据。
+F009 先完成生产前端换壳和既有能力迁移。F010 只拥有 Artifact core 与 `recordConsumption` 公共契约，不等待上下文组装器；F013 发布 effective requirements 与路径授权 contract，不读取 Dispatch。F012 是上下文组装调用 `recordConsumption` 的最终集成 owner，并消费 F013 contract 冻结 Dispatch snapshot；F011 随后在已提交的 Dispatch / 会话契约上建立任务投影和验收写链。F009–F013 是 linked contracts，只有 F014 可以声明 v0.3 整体旅程完成。任何局部 Feature 完成不能替代端到端证据。
 
 ## 3. 范围边界
 
@@ -87,10 +89,9 @@ F009 先完成生产前端换壳和既有能力迁移；F010–F013 逐项用新
 | 里程碑 | 包含 | 退出条件 |
 |---|---|---|
 | M1 前端迁移 | F009 | 新壳层承载 v0.1–v0.2 代表旅程，旧壳层和双写入口退出生产路径 |
-| M2 成果契约 | F010 | Artifact / ref / claim 数据边界与迁移策略关闭 |
-| M3 可信任务面 | F011 | 四视图读取同一 projection，七类关键状态可达 |
-| M4 可追溯派工 | F012 | 组合、上下文、撤销、介入与恢复可回放 |
-| M5 项目与方法 | F013 | 代码仓边界和 Skills / 编组形成最小闭环 |
+| M2 核心契约 | F010、F013 | Artifact / ref、Space / Project / Skill requirements 与迁移策略关闭 |
+| M3 可追溯派工 | F012 | 组合、上下文、Artifact consumption、撤销、介入与恢复可回放 |
+| M4 可信任务面 | F011 | 验收写链与四视图读取同一 projection，全部具名状态可达 |
 | M6 旅程收口 | F014 | 真实 CLI 全旅程、迁移、E2E 和发布证据通过 |
 
 不在设计稿定稿后沿用旧的 25–40 日估算。每个 Feature 完成影响面分析后单独估算，F014 只汇总已经有证据的估算。
