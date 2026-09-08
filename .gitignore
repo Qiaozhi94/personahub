@@ -37,9 +37,11 @@ npm-debug.log*
 server-stdout.txt
 server-stderr.txt
 
-# 注：docs/ 下不再有本地-only 目录。2026-08-12 起 docs/reviews/ 与 docs/research/
-# 全部纳入 git——检视记录、dogfood 日志、产品级计划和调研结论都需要可追溯、可 diff、
-# 可在多机之间同步；本地-only 让复盘时拿不到当时的原始判断和证据来源。
+# 2026-08-12 起 docs/reviews/ 与 docs/research/ 的长期文档纳入 git——复盘、dogfood
+# 日志、产品级计划和调研结论需要可追溯、可 diff、可在多机之间同步。检视循环的过程稿
+# 仅在本地存活，闭环前完整归档进 RETROSPECTIVE.md，避免被 git add -A 意外提交。
+docs/reviews/CURRENT-*.md
+docs/reviews/FIX-log.md
 
 # Probe raw output streams
 server/scripts/codex-probe-*.jsonl

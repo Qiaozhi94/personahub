@@ -282,3 +282,15 @@ test('V03-PLAN-R1-010: v0.4 has independent value lanes and a minimum boundary',
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R3-013: active review artifacts stay local while retrospectives remain tracked', () => {
+  const documents = [read('.gitignore'), read('CLAUDE.md')];
+  const phrases = [
+    'docs/reviews/CURRENT-*.md',
+    'docs/reviews/FIX-log.md',
+    '长期复盘与产品级文档纳入 git，进行中的 `CURRENT-*.md` / `FIX-log.md` 除外',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
