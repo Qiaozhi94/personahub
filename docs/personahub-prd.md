@@ -279,14 +279,19 @@ MCP 的意图入口在能力面，实际注入结果在运行时 adapter 工具�
 
 v0.3 首批只要求一台执行机器和 coding 旅程；自动化、完整 Memory 与统计聚合后移 v0.4，声明式插件 surface 后移 v0.8，多机调度后移 v0.7。
 
-### v0.4 Compounding & Automation
+### v0.4 Compounding Foundations（方向性 umbrella）
 
-在可信验收事件稳定后交付：
+v0.4 是方向性 umbrella，不是要求四条价值链同时收口的单个发布包。具体 Feature 仍按 SOP 在 v0.3 收口后的真实反馈下逐条拆分；以下编号只表达候选切片与依赖，不是提前创建的 Feature 承诺。
 
-- Memory 待办、知识库、策略与检索披露；知识图谱可分切片开放，但最终数据契约必须一次定全。
-- 自动化规则、定时 / Webhook 入口、普通任务创建与运行记录。
-- 用量、监控和记忆效用；先完成 adapter usage probe，再承诺成本精度。
-- Provenance Gate、Skill 候选与版本化复用。
+**v0.4.0 最小收口边界：Provenance / Memory foundation。** 在可信验收事件稳定后，交付 Memory 待办、内容 / 策略、全文检索与注入披露，并让所有长期写入先通过 Provenance Gate。关闭条件是来源、背书、状态、过滤和检索可回放；Skill candidate 可以复用同一 gate 产出候选，但自动激活与生态不属于最小边界。
+
+其余三条候选线独立估算、独立验收，不作为 v0.4.0 的阻塞条件：
+
+- **Usage / Monitoring 候选线**：先完成各 adapter usage probe，再决定能承诺的 token、额度与成本精度；只依赖 v0.3 Run / Dispatch 事实，不等待 Automation 或知识图谱。
+- **Automation 候选线**：依赖 v0.3 普通任务创建与运行记录 API 稳定，交付规则、定时 / Webhook 入口和每次触发生成普通任务；不等待 Memory 效用统计。
+- **Memory 效用 / 知识图谱候选线**：只有积累足量 accepted Memory、引用与验收事件后才立项；先声明样本量和非退化有效性门禁，再决定一跳关系、效用指标与图谱范围，不反向阻塞内容 / 检索基础。
+
+候选执行依赖为 `Provenance / Memory foundation → Memory 效用 / 知识图谱`；Usage / Monitoring 与 Automation 可在各自 probe / API 前置满足后独立进行。任何一条未达到立项证据时保持方向性设想，不用另三条能力替它凑成“v0.4 已完成”。
 
 ### v0.5 Daily Workflow Expansion
 

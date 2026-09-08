@@ -204,3 +204,20 @@ test('V03-PLAN-R1-009: all eleven task states have named acceptance fixtures', (
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-010: v0.4 has independent value lanes and a minimum boundary', () => {
+  const documents = [read('docs/personahub-prd.md')];
+  const phrases = [
+    'v0.4 是方向性 umbrella，不是要求四条价值链同时收口的单个发布包',
+    'v0.4.0 最小收口边界',
+    'Provenance / Memory foundation',
+    'Usage / Monitoring 候选线',
+    'Automation 候选线',
+    'Memory 效用 / 知识图谱候选线',
+    '不作为 v0.4.0 的阻塞条件',
+    'v0.3 收口后的真实反馈',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
