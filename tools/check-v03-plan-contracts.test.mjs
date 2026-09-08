@@ -35,3 +35,24 @@ test('V03-PLAN-R1-001: acceptance writes have canonical owners and integration t
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-002: Space has a v0.3 schema, migration, and feature owner', () => {
+  const documents = [
+    read('docs/features/0.3/README.md'),
+    read('docs/features/0.3/F013-project-skills-foundation/spec.md'),
+    read('docs/features/0.3/F013-project-skills-foundation/design.md'),
+    read('docs/features/0.3/F013-project-skills-foundation/tasks.md'),
+    read('docs/decisions/0012-object-model-simplification.md'),
+  ];
+  const phrases = [
+    'F013 是 Space schema、默认数据迁移与首次设置的唯一 owner',
+    '`spaces`、`space_skills`',
+    '`issues.space_id` 非空',
+    '`issues.project_id` 可空',
+    'T000 (`FR-001`, `FR-002`, `NFR-001`)',
+    '清洁库与仅含历史 Project / Issue 的旧库',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});

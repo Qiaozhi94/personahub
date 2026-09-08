@@ -21,7 +21,7 @@ v0.3 交互设计推进到「一个 Issue 对应什么」时，暴露出对象�
 四条判断依据，全部来自本轮讨论中被验证的事实：
 
 1. **执行单位是 `adapter + 配置 + 模型 + 深度`，不是「成员」。** 使用者的原话：「代码开发我可以给 gpt-5.6 也可以给 deepseek-v4-flash，但是架构设计我肯定不会给 deepseek-v4-flash」。PRD 第 5 节 `[2026-08-15 修订]` 早已裁定「`capability_tags` 是路由主依据，`role` 降级为展示标签……界面也按能力项呈现成员，**不写成「它是 reviewer」**」——但 v3.1 原型全程用 `@实现者` / `@独立验证员` / `@架构研究员`，直接违反。
-2. **Space 在数据层根本不存在。** 核实：`projects` 表无 `space_id`（`server/src/db/schema-v1.ts:2`），全仓库 `space_id` / `spaceId` 零命中，303 处 `space` 全是 `workspace_id` 的子串。它只活在 PRD 与界面左上角。
+2. **Space 在 v0.2 数据层根本不存在。** 核实：`projects` 表无 `space_id`（`server/src/db/schema-v1.ts:2`），全仓库 `space_id` / `spaceId` 零命中，303 处 `space` 全是 `workspace_id` 的子串。这是 v0.3 必须关闭的 schema 缺口，不是删除最终根对象的理由。
 3. **游离态 Issue 是成立的做法。** multica 的 `issue.project_id` 是 `UUID REFERENCES project(id) ON DELETE SET NULL`（`server/migrations/034_projects.up.sql:19`）——可空，且 project 删除后 issue 仍在。
 4. **早期 Workflow Template 与 Validation Policy 职责重复。** 前者已经表达建议路径与完成标准，后者又保存验证要求；`issues` 表同时存在两个外键，形成两个会漂移的真相源。
 
@@ -56,6 +56,8 @@ v0.3 交互设计推进到「一个 Issue 对应什么」时，暴露出对象�
 ```
 
 **Issue 挂在 Space 下而不是 Project 下**，因为它可以游离。Project 是可选归类，不是必经容器。
+
+**v0.3 落地裁决**：F013 是 Space schema、默认数据迁移与首次设置的唯一 owner。新增 `spaces` 与 Space 级关联，`issues.space_id` 非空、`issues.project_id` 可空；旧库升级时以稳定幂等键创建唯一默认 Space 并回填历史 Project / Issue / Skill，保留原 ID。v0.3 只做本地多 Space 归属与切换，不提前实现成员、共享权限或跨设备同步。
 
 **Runtime 与 Space 平级**，因为它是本机资源：换一个 Space 不该重新配置本机的 CLI；更硬的理由是**额度挂在 adapter 配置上**——在 A Space 用掉的配额，B Space 也少了，挂在 Space 下会算错。
 

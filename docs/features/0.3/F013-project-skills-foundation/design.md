@@ -1,11 +1,11 @@
 ---
-topics: [project, repository, skill, composition, capability]
+topics: [space, project, repository, skill, composition, capability]
 doc_kind: design
 created: 2026-08-09
 updated: 2026-09-08
 ---
 
-# F013：Project & Skills Foundation - 设计
+# F013：Space, Project & Skills Foundation - 设计
 
 ## 0. 输入与约束
 
@@ -13,19 +13,19 @@ updated: 2026-09-08
 
 ## 1. 技术概要与影响面
 
-新增 repository reference / machine path authorization 与 Skill revision 领域服务；项目只持 refs。提供旧 Workspace / Workflow Template 的兼容读取与一次性迁移。
+新增 Space、repository reference / machine path authorization 与 Skill revision 领域服务；项目只持 refs。提供旧 Workspace / Workflow Template 的兼容读取与一次性迁移。
 
 ## 2. 架构与模块边界
 
-RepositoryRegistry 管真实仓库事实；ProjectService 管项目引用与进一步收紧的范围；SkillRegistry 是版本和冲突的唯一激活入口；F012 只读 effective requirements。
+SpaceService 是 Space 创建、选择与归档的唯一写入口；RepositoryRegistry 管真实仓库事实；ProjectService 管项目引用与进一步收紧的范围；IssueService 创建时要求 `space_id`、允许 `project_id` 为空；SkillRegistry 是版本和冲突的唯一激活入口；F012 只读 effective requirements。
 
 ## 3. 数据模型与 Migration
 
-仓库、仓库机器路径、项目仓库引用、Skill、Skill revision、项目默认 Skill refs 分表。`steps_json` 属 revision。旧 WorkflowTemplate 转为来源 `legacy-workflow` 的 Skill revision，保留旧 ID alias。
+新增 `spaces`、`space_skills`，并为 Project / Issue 增加 Space 外键；`issues.space_id` 非空、`issues.project_id` 可空。仓库、仓库机器路径、项目仓库引用、Skill、Skill revision、项目默认 Skill refs 分表，`steps_json` 属 revision。升级器先以稳定幂等键创建唯一默认 Space，再回填历史 Project / Issue / Space 级 Skill；旧 WorkflowTemplate 转为来源 `legacy-workflow` 的 Skill revision，保留旧 ID alias。
 
 ## 4. 接口、Contract 与 Event
 
-API 覆盖仓库识别 / 授权、项目 refs、Skill list/detail/activate/disable 与 effective requirements。事件记录路径授权、项目引用、Skill revision 激活 / 冲突和默认引用变化。
+API 覆盖 Space create/list/select/archive、仓库识别 / 授权、项目 refs、Skill list/detail/activate/disable 与 effective requirements。事件记录 Space 创建 / 选择、路径授权、项目引用、Skill revision 激活 / 冲突和默认引用变化。
 
 ## 5. Runtime、Workflow 与并发
 
@@ -41,11 +41,11 @@ API 覆盖仓库识别 / 授权、项目 refs、Skill list/detail/activate/disab
 
 ## 8. 测试策略与验收映射
 
-AC-001 路径 / git / authorization；AC-002 UI 与统一 schema；AC-003 dispatch snapshot；AC-004 conflict / migration / restart。
+AC-001 默认 Space migration / 首次设置 / 游离任务；AC-002 路径 / git / authorization；AC-003 UI 与统一 schema；AC-004 dispatch snapshot；AC-005 conflict / migration / restart。
 
 ## 9. 已确认决策与残余风险
 
-Skill / 编组统一，项目只存引用。残余风险是旧 Workflow 自由 JSON 无法全部映射，采用显式 legacy attachment 并由 F014 统计未迁移数量。
+F013 是 Space schema、默认数据迁移与首次设置的唯一 owner；Skill / 编组统一，项目只存引用。残余风险是旧 Workflow 自由 JSON 无法全部映射，采用显式 legacy attachment 并由 F014 统计未迁移数量。
 
 ## 10. 待确认设计问题
 

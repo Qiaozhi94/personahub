@@ -23,7 +23,7 @@ v0.3 的第一步是把 v0.1–v0.2 已交付能力迁入 V3.44 生产前端，�
 | [F010](F010-artifact-foundation-provenance/spec.md) | Artifact & Provenance Foundation | 建立不可漂移的阶段成果和统一引用 | F003、F004、F006、F009 |
 | [F011](F011-trusted-task-surface/spec.md) | Trusted Task Surface | 用四视图表达决策、会话、验收和资源 | F009、F010 |
 | [F012](F012-session-dispatch-intervention/spec.md) | Session, Dispatch & Intervention | 将会话、执行选择、上下文与控制拆成可追溯对象 | F005、F006、F009–F011 |
-| [F013](F013-project-skills-foundation/spec.md) | Project & Skills Foundation | 统一项目文件边界与 Skill / 编组 | F009、F010、F012 |
+| [F013](F013-project-skills-foundation/spec.md) | Space, Project & Skills Foundation | 建立归属根并统一项目文件边界与 Skill / 编组 | F009、F010 |
 | [F014](F014-trusted-task-journey-closure/spec.md) | Trusted Task Journey Closure | 对整条旅程、迁移和发布验收负责 | F009–F013 |
 
 F009 先完成生产前端换壳和既有能力迁移；F010–F013 逐项用新领域契约替换兼容投影；F009–F013 是 linked contracts，只有 F014 可以声明 v0.3 整体旅程完成。任何局部 Feature 完成不能替代端到端证据。
@@ -41,6 +41,7 @@ F009 先完成生产前端换壳和既有能力迁移；F010–F013 逐项用新
 - 派工记录、四维执行组合、三档上下文范围和可撤销启动。
 - 一台执行机器的运行时基础、adapter 状态、模型 / 深度和工具事实。
 - 项目主目录 / 只读参考仓库、项目文件范围、Skills / 编组最小闭环。
+- 持久化 Space 根对象、默认 Space 升级和首次设置；Issue 必属 Space、可不属 Project。
 - 从首次配置到真实 coding 任务可信完成的迁移与发布验收。
 
 ### 明确后移
@@ -63,6 +64,7 @@ F009 先完成生产前端换壳和既有能力迁移；F010–F013 逐项用新
 8. v0.3 的迁移不得破坏 v0.1–v0.2 历史 Run、Trace、Evidence refs。
 9. 新功能只进入 V3.44 壳层；旧界面不得与新界面并存第二个可写入口。
 10. AcceptanceService 唯一写完成要求、主张链、风险接受与完成摘要；IssueService 只消费 `acceptance.completed` 推进 done，F014 只调用公开 API。
+11. F013 是 Space schema、默认数据迁移与首次设置的唯一 owner；`issues.space_id` 非空，`issues.project_id` 可空，游离任务仍有明确归属根。
 
 ## 5. 版本验收旅程
 

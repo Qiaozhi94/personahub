@@ -5,26 +5,35 @@ version: "0.3"
 status: draft
 gate_version: 1
 related_features: [F009, F010, F012, F014]
-topics: [project, repository, skill, composition, capability]
+topics: [space, project, repository, skill, composition, capability]
 doc_kind: spec
 created: 2026-08-09
 updated: 2026-09-08
 ---
 
-# F013：Project & Skills Foundation
+# F013：Space, Project & Skills Foundation
 
 > Owner: unassigned | Target: v0.3
 
 ## 0. 来源与意图
 
-- PRD：第 5.2、5.6、6.2、7.1、7.5 节。
+- PRD：第 5.1、5.2、5.6、6.2、7.1、7.5 节。
 - 设计基线：V3.44 项目与能力面。
 - 决策：ADR 0012、0014、0018。
-- 意图：统一项目的文件边界与可复用方法，不再引入独立 Workflow / Squad / AI 成员对象。
+- 意图：建立最终归属根，并统一项目的文件边界与可复用方法，不再引入独立 Workflow / Squad / AI 成员对象。
 
 ## 1. 问题、目标与非目标
 
-现有 Project、Workspace、Workflow Template 和 AgentConfig 的 UI / 归属与最终模型冲突。目标是建立项目主目录 / 参考仓库和统一 Skill schema；带 steps 的 Skill 即编组。非目标是插件市场、自动推荐、Memory 或非 coding Skill 生态。
+现有数据没有 Space，Project、Workspace、Workflow Template 和 AgentConfig 的 UI / 归属又与最终模型冲突。目标是建立持久化 Space 根对象、项目主目录 / 参考仓库和统一 Skill schema；带 steps 的 Skill 即编组。非目标是多人 Space 权限、插件市场、自动推荐、Memory 或非 coding Skill 生态。
+
+### US-000：完成首次 Space 设置（Priority: P1）
+
+首次启动时，用户选择已有 Space 或创建一个 Space；从旧库升级时，历史 Project、Issue 与 Space 级 Skill 自动归入唯一默认 Space。
+
+**独立测试**：清洁库与仅含历史 Project / Issue 的旧库都得到一个可进入的 Space，重复升级不重复创建默认 Space。
+
+1. Given 清洁安装，when 创建首个 Space，then 进入该 Space 且可以创建游离任务。
+2. Given v0.2 数据，when 升级，then `issues.space_id` 非空、原 `issues.project_id` 保持且允许为空。
 
 ## 2. 用户场景
 
@@ -50,6 +59,7 @@ updated: 2026-09-08
 
 ### 范围内
 
+- Space 创建 / 选择、默认 Space 升级、Space 级 Skill 归属与首次设置。
 - 项目信息、一个主代码目录、多个只读参考仓库和文件范围。
 - 代码仓单一添加入口、真实路径解析、Git remote / identity 只读探测。
 - Skill `id@version`、来源、说明、能力要求、steps、完成要求和下发状态。
@@ -57,6 +67,7 @@ updated: 2026-09-08
 
 ### 范围外
 
+- Space 成员、角色、共享权限与跨设备同步。
 - 独立 Workflow Template / Validation Policy / Squad 表和 AI 成员。
 - 插件代码运行、声明式 surface、Skill 自动生成与 marketplace。
 
@@ -70,12 +81,14 @@ updated: 2026-09-08
 
 ### 功能需求
 
-- **FR-001**：项目保存一个主目录引用、多个参考仓库引用与文件访问范围。
-- **FR-002**：添加代码仓自动识别本地路径 / URL、真实路径、Git remote 与名称。
-- **FR-003**：Skill 使用统一版本 schema；`steps` 可选，有 steps 即投影为编组。
-- **FR-004**：Skill 的能力要求与步骤完成要求进入 F012 eligibility / Dispatch snapshot。
-- **FR-005**：项目只保存默认 Skill ref，不复制 Skill 内容。
-- **FR-006**：Skill 详情展示来源、版本、要求、下发状态与只读文件。
+- **FR-001**：Space 是 Project、Issue 与 Space 级 Skill 的持久化归属根；Issue 必属一个 Space、可不属 Project。
+- **FR-002**：清洁安装创建 Space；旧库升级幂等创建唯一默认 Space并归入历史 Project / Issue / Skill，不改变既有 ID。
+- **FR-003**：项目保存一个主目录引用、多个参考仓库引用与文件访问范围。
+- **FR-004**：添加代码仓自动识别本地路径 / URL、真实路径、Git remote 与名称。
+- **FR-005**：Skill 使用统一版本 schema；`steps` 可选，有 steps 即投影为编组。
+- **FR-006**：Skill 的能力要求与步骤完成要求进入 F012 eligibility / Dispatch snapshot。
+- **FR-007**：项目只保存默认 Skill ref，不复制 Skill 内容。
+- **FR-008**：Skill 详情展示来源、版本、要求、下发状态与只读文件。
 
 ### 非功能需求
 
@@ -84,7 +97,7 @@ updated: 2026-09-08
 
 ## 5. 生命周期与不变量
 
-Skill revision 不可变，active / disabled / conflict 是当前生效状态；禁用不改历史。项目归档可恢复，删除受引用保护。编组表现只从 Run 现算，不保存评分字段。
+Space 可 active / archived，v0.3 不支持物理删除；项目归档可恢复，删除受引用保护。`issues.space_id` 非空，`issues.project_id` 可空。Skill revision 不可变，active / disabled / conflict 是当前生效状态；禁用不改历史。编组表现只从 Run 现算，不保存评分字段。
 
 ## 6. 成功与验收
 
@@ -95,16 +108,17 @@ Skill revision 不可变，active / disabled / conflict 是当前生效状态；
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-001`, `FR-002`, `NFR-002`): 主目录 / 参考仓库、自动识别、真实路径和读写边界正确。
-- [ ] **AC-002** (`FR-003`, `FR-005`, `FR-006`): 普通 Skill / 编组共用列表与详情，项目只存引用。
-- [ ] **AC-003** (`FR-004`, `NFR-001`): Dispatch 快照固定 Skill 版本和要求，升级 / 禁用不改历史。
-- [ ] **AC-004** (`FR-003`, `NFR-001`): 同名冲突与非法来源在激活前被拒绝且状态可见。
+- [ ] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 清洁首次设置与 v0.2 升级均产生正确 Space 归属；重复升级幂等，Project / Issue 原 ID 和可空 Project 语义守恒。
+- [ ] **AC-002** (`FR-003`, `FR-004`, `NFR-002`): 主目录 / 参考仓库、自动识别、真实路径和读写边界正确。
+- [ ] **AC-003** (`FR-005`, `FR-007`, `FR-008`): 普通 Skill / 编组共用列表与详情，项目只存引用。
+- [ ] **AC-004** (`FR-006`, `NFR-001`): Dispatch 快照固定 Skill 版本和要求，升级 / 禁用不改历史。
+- [ ] **AC-005** (`FR-005`, `NFR-001`): 同名冲突与非法来源在激活前被拒绝且状态可见。
 
 ## 7. 测试、依赖与决策
 
 ### 测试策略
 
-路径边界与 Skill schema 单测；repo/Skill migration 和历史快照集成测试；项目四 tab、Skill 详情和派工要求 Playwright。
+Space / 路径边界与 Skill schema 单测；默认 Space、repo/Skill migration 和历史快照集成测试；首次设置、项目四 tab、Skill 详情和派工要求 Playwright。
 
 ### 依赖
 
