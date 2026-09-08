@@ -135,3 +135,23 @@ test('V03-PLAN-R1-006: Dispatch grace-window lifecycle has one commit sequence',
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-007: F009 limits transitional surfaces and assigns deletion owners', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+  ];
+  const phrases = [
+    'stable-shell / final-surface / transitional-host',
+    'replacement_owner',
+    'delete_when',
+    'latest_milestone',
+    '旧 Workflow Template 只保留只读列表 / 详情',
+    '不得为 transitional-host 重做最终视觉或新增领域逻辑',
+    'F011 / F012 / F013 验收时删除',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});

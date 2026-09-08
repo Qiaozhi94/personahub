@@ -84,7 +84,7 @@ updated: 2026-09-08
 ### 功能需求
 
 - **FR-001**：生产应用使用 V3.44 App Shell、导航层级和稳定路由承载所有已开放工作面。
-- **FR-002**：建立覆盖 v0.1–v0.2 所有生产页面、入口和动作的迁移矩阵，每项只有 migrated、deferred 或 retired 三种有证据结论。
+- **FR-002**：建立覆盖 v0.1–v0.2 所有生产页面、入口和动作的迁移矩阵；每项记录 migrated / deferred / retired 结论，以及 stable-shell / final-surface / transitional-host 生命周期分类。transitional-host 必填 replacement_owner、delete_when 与 latest_milestone。
 - **FR-003**：既有项目选择、任务创建、执行启动、人工介入、轨迹 / 文件变化查看、证据验收和配置管理在新界面中保持可用。
 - **FR-004**：旧生产 URL 映射到新路由或明确的 legacy 读取页，不产生 404、空白页或对象身份漂移。
 - **FR-005**：未交付工作面和动作不得伪装为可用；隐藏与置灰遵守 V3.44 对“没有页面”和“暂不可执行”的区分。
@@ -102,10 +102,11 @@ updated: 2026-09-08
 - **NFR-001**：F001–F008 的 API / 领域回归测试保持通过；前端替换不改变持久化事实。
 - **NFR-002**：关键生产路由具备浏览器 smoke、可访问性和控制台零错误门禁。
 - **NFR-003**：兼容 adapter 集中、可计数且无反向依赖，后续 Feature 可以逐项替换并删除。
+- **NFR-004**：不得为 transitional-host 重做最终视觉或新增领域逻辑；它只调用既有 canonical API，并在 owning Feature 验收时删除。
 
 ## 5. 生命周期与不变量
 
-页面迁移项按 inventoried → migrated / deferred / retired 推进；只有 migrated 项通过真实数据与浏览器旅程后才能进入生产导航。兼容投影不拥有领域生命周期，Project、Issue、Thread、Run、Trace 与 Evidence 的状态仍由 F001–F008 canonical service 决定。F009 完成后允许存在受控的兼容读取，但不允许存在旧的并行写入口。
+页面迁移项按 inventoried → migrated / deferred / retired 推进，并标为 stable-shell、final-surface 或 transitional-host；只有 migrated 项通过真实数据与浏览器旅程后才能进入生产导航。兼容投影不拥有领域生命周期，Project、Issue、Thread、Run、Trace 与 Evidence 的状态仍由 F001–F008 canonical service 决定。F009 完成后允许存在受控兼容宿主，但不允许旧页面形成并行写入口；临时宿主必须由 F011 / F012 / F013 验收时删除，最晚不得越过矩阵声明的 milestone。
 
 ## 6. 成功与验收
 
@@ -118,7 +119,7 @@ updated: 2026-09-08
 ### 验收清单
 
 - [ ] **AC-001** (`FR-001`, `FR-003`, `NFR-001`): v0.2 schema fixture 在新 App Shell 中完成项目 → 任务 → 执行 → 轨迹 → 验收代表旅程，既有事实与终态守恒。
-- [ ] **AC-002** (`FR-002`, `FR-005`, `FR-007`): 页面 / 路由 / 动作迁移矩阵 100% 有结论，生产扫描无旧 Shell、死导航和并行写入口。
+- [ ] **AC-002** (`FR-002`, `FR-005`, `FR-007`, `NFR-004`): 页面 / 路由 / 动作迁移矩阵 100% 有结论和生命周期分类；每个 transitional-host 有 replacement_owner、delete_when、latest_milestone，生产扫描无旧 Shell、死导航和并行写入口。
 - [ ] **AC-003** (`FR-004`, `UX-003`): 旧收藏链接覆盖测试通过，无法无损表达的对象明确进入兼容读取而非被猜测转换。
 - [ ] **AC-004** (`UX-001`, `UX-002`, `NFR-002`): 共享弹层、页签、表格、导航和关键状态通过浏览器键盘、语义、窄视口及控制台检查。
 - [ ] **AC-005** (`FR-006`, `NFR-003`): 新前端写操作全部命中既有 canonical API，兼容 adapter 有独立清单、替换 owner 和删除条件。
