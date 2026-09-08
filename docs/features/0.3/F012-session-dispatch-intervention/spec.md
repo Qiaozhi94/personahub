@@ -32,7 +32,7 @@ updated: 2026-09-08
 
 用户分开选择模型、思考深度和上下文范围，看到建议 / 可选 / 不可选理由，并可在启动窗口内撤销。
 
-**独立测试**：撤销窗口内取消不产生 Run；窗口后创建一个 Dispatch 与首个 Attempt。
+**独立测试**：确认后立即存在一个 draft Dispatch；撤销窗口内取消保留 cancelled Dispatch 且不产生 Run，窗口后只创建一个首个 Attempt / Run。
 
 1. Given 验证步骤，when 选择实现同源模型，then 选项不可选且说明独立性原因。
 2. Given 可选组合不满足软要求，when 用户坚持选择，then 允许派工并持久标注偏离。
@@ -80,7 +80,7 @@ updated: 2026-09-08
 - **FR-001**：会话保存可选任务归属；Thread 作为内部一对一事件流，不单独暴露。
 - **FR-002**：Dispatch 固定执行组合、运行机器、上下文范围、Handoff 与 Skills 版本。
 - **FR-003**：eligibility 返回三档候选、逐项理由与要求来源，不自动替用户降级。
-- **FR-004**：派工在 Run 创建前提供可撤销窗口；超时后幂等创建 Dispatch / Attempt。
+- **FR-004**：确认事务立即创建唯一 `draft` Dispatch 和 deadline；撤销只执行 `draft → cancelled` 且零 Run，超时 claim 执行 `draft → starting → dispatched` 并幂等创建首个 Attempt / Run。
 - **FR-005**：resume key 包含执行组合、任务、会话和上下文范围；换范围冷启动。
 - **FR-006**：暂停后续派工只阻止新 Attempt；取消只终止目标 Attempt；所有介入写事件。
 - **FR-007**：独立会话转任务后才允许进入 Artifact / Evidence / Memory 链。
@@ -94,7 +94,7 @@ updated: 2026-09-08
 
 ## 5. 生命周期与不变量
 
-Dispatch：draft → starting → dispatched，starting 可撤销为 cancelled；dispatched 不可撤销，只能取消 Attempt。会话 active / ended，永不物理删除。暂停是任务 / 图的派工闸门，不是会话或 Run 状态。Run / Attempt 继续拥有执行终态。
+Dispatch 有三条合法路径：`draft → cancelled`、`draft → starting → dispatched`，或确定性启动失败时 `draft → starting → start_failed`。确认事务以请求幂等键创建 draft 并写 drafted outbox；撤销与 deadline claim 对 draft 做互斥 CAS，starting 不再接受撤销。worker 取得带期限租约的 starting 后组装上下文，再以同一事务写入 context snapshot、Artifact consumption、首个 Attempt / queued Run、dispatched 状态与 outbox，commit 后才 spawn；start_failed 保留诊断且不创建 Run。dispatched 不可撤销，只能取消 Attempt。会话 active / ended，永不物理删除；暂停是任务 / 图的派工闸门，不是会话或 Run 状态。Run / Attempt 继续拥有执行终态。
 
 ## 6. 成功与验收
 
@@ -106,7 +106,7 @@ Dispatch：draft → starting → dispatched，starting 可撤销为 cancelled�
 ### 验收清单
 
 - [ ] **AC-001** (`FR-002`, `FR-003`): 四维组合、要求来源和三档 eligibility 在派工前可核对。
-- [ ] **AC-002** (`FR-004`, `NFR-001`): 撤销期取消零 Run，超时 / 重复提交只产生一个 Dispatch 与 Attempt。
+- [ ] **AC-002** (`FR-004`, `NFR-001`): 撤销期取消保留一个 cancelled Dispatch 且零 Run；超时、重复确认、cancel / claim 竞态和重启只产生一个 Dispatch 与首个 Attempt / Run，每个事件恰好对应其 commit 点。
 - [ ] **AC-003** (`FR-005`, `NFR-002`): resume / 冷启动与三档上下文组装、过滤披露正确。
 - [ ] **AC-004** (`FR-006`, `NFR-001`): pause / claim 并发、取消、改派和 restart 恢复正确。
 - [ ] **AC-005** (`FR-001`, `FR-007`, `FR-008`): 独立 / 任务会话和单机运行时基础完成浏览器旅程。

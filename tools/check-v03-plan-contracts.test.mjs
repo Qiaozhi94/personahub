@@ -115,3 +115,23 @@ test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () =
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
 });
+
+test('V03-PLAN-R1-006: Dispatch grace-window lifecycle has one commit sequence', () => {
+  const documents = [
+    read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
+    read('docs/features/0.3/F012-session-dispatch-intervention/design.md'),
+    read('docs/features/0.3/F012-session-dispatch-intervention/tasks.md'),
+  ];
+  const phrases = [
+    '确认事务立即创建唯一 `draft` Dispatch',
+    '`draft → cancelled`',
+    '`draft → starting → dispatched`',
+    'starting 不再接受撤销',
+    '同一事务写入 context snapshot、Artifact consumption、首个 Attempt / queued Run',
+    'commit 后才 spawn',
+    '过期 starting lease',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});

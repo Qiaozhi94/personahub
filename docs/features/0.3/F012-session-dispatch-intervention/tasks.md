@@ -31,7 +31,7 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 
 ### Phase 2：派工与介入
 
-- [ ] T010 (`FR-004`, `NFR-001`): 实现 starting deadline、撤销和幂等提交。 — verify: `npm test --workspace server`
+- [ ] T010 (`FR-004`, `NFR-001`): 实现确认即建 draft、draft 撤销、deadline CAS / starting lease，以及 context + consumption + Attempt / Run + dispatched 单事务提交；逐点故障注入并断言 commit 前零 spawn。 — verify: `npm test --workspace server`
 - [ ] T011 (`FR-005`, `NFR-002`): 实现 context assembler、过滤事件与 resume key，并通过 F010 公共 API 幂等记录实际 Artifact consumption；本任务是该集成的最终 owner。 — verify: `npm test --workspace server`
 - [ ] T012 (`FR-006`, `NFR-001`): 实现 pause / claim barrier、cancel / reassign 与 restart recovery。 — verify: `npm test --workspace server`
 - [ ] T013 [P] (`FR-001`, `FR-007`): 实现独立会话与转任务。 — verify: `npm test`
@@ -40,7 +40,7 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 ## 3. 验证与验收任务
 
 - [ ] T020 (`AC-001`, `AC-002`, `AC-003`, `AC-006`): 复跑 adapter evidence fixture、真实 CLI resume / 冷启动与原生 memory 隔离验证，并核对 unsupported / unverified eligibility 后果。 — verify: `npm test`
-- [ ] T021 (`AC-004`): 完成并发 barrier、kill/restart 与恢复集成测试。 — verify: `npm test --workspace server`
+- [ ] T021 (`AC-002`, `AC-004`): 完成 cancel / claim、pause / claim 并发，过期 starting lease、kill/restart 与恢复集成测试。 — verify: `npm test --workspace server`
 - [ ] T022 (`AC-005`): 完成 Playwright 派工、撤销、独立会话、介入和运行时旅程。 — verify: `npm run test:e2e`
 - [ ] T023 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`, `AC-006`): 运行发布质量门。 — verify: `npm run verify:release`
 
