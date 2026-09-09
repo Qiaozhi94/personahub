@@ -927,12 +927,13 @@ archived ref 的消费限制与 F010 契约一致。
 
 ---
 
-## 循环 19：F009 开发前设计检视（5轮）
+## 循环 19：F009 开发前设计检视（9轮）
 
 - **report_type**: doc-review
-- **周期**: 2026-09-08—2026-09-09，5轮（含 1 轮 CI 门禁重开） · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
+- **周期**: 2026-09-08—2026-09-09，9轮（含 1 轮 CI 门禁重开） · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
 - **背景**: 以 `main@53c3c55` 为修复基线，对设计重构后的 F009 做开发前最后检视。
-  Round 1 全量扫描，Round 2/3 只复核修复 diff 与相邻契约。用户自有改动
+  Round 1 全量扫描，Round 6 因累计修订超过 30% 使用一次例外全量复核，其余后续轮次只复核
+  修复 diff 与相邻契约。用户自有改动
   `docs/quant-factor-research-tradingview-assessment.md` 全程排除且未暂存。
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
@@ -946,6 +947,10 @@ archived ref 的消费限制与 F010 契约一致。
 | F009-DOC-R1-007 | 未提交草稿的保存边界不明确 | Medium | 正确性 | 根因 | 原方案 | fixed | ApplicationShell 持有按 Task 分键的内存 TaskDraftStore；定义切换/刷新、revision 匹配清理、提交失败和对象删除语义 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-007` | 1 | 1 | transient-state-owner-missing |
 | F009-DOC-R2-008 | 根入口与任务列表猜测首个 Project，破坏稳定身份 | High | 正确性 | 根因 | 修复引入 | fixed | `/` 固定跳转 `/projects`；无显式 project 的 `/tasks` 显示选择器，只有用户选择后才 push identity URL | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R2-008` | 2 | 2 | route-id-contract-drift |
 | F009-DOC-R4-009 | browser catalog 删除变异只适配 LF | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | 行删除显式处理 LF/CRLF/文件末行，并在两种换行 fixture 上先断言输入实际变化、再断言 125 行校验转红 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-006 (LF/CRLF mutation)` | 4 | 5 | mutation-not-platform-equivalent |
+| F009-DOC-R6-010 | 迁移矩阵混淆目标处置与当前实施状态 | High | 正确性 | 根因 | 修复引入 | fixed | 拆分冻结的目标处置、当前实施状态和完成证据；42 行按当前事实初始化为 `inventoried / pending` | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R6-010` | 6 | 7 | marked-done-not-implemented |
+| F009-DOC-R6-011 | 版本验收仍使用有歧义的 v0.2 最新 fixture | Medium | 测试覆盖 | 根因 | 规格漂移 | fixed | 固定 source commit `5ef5055`、release schema v10 raw fixture 与 v10→v11→current head 升级链 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R6-011` | 6 | 7 | cross-document-reference-drift |
+| F009-DOC-R6-012 | 草稿清除后 revision 是否复用未定义 | Medium | 正确性 | 根因 | 修复引入 | fixed | 草稿身份使用不可复用的 key/generation/revision；pending discard 后旧响应只能 no-op | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R6-012` | 6 | 7 | partial-symmetric-fix |
+| F009-DOC-R7-013 | 迁移完成证据门禁仍接受占位证据 | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | evidence 值 trim 并忽略英文大小写后拒绝完整占位值；三种终态均有失败变异并保留完整正例 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R7-013` | 7 | 9 | structural-check-misses-semantics |
 
 **问题与实际修复证据**
 
@@ -960,18 +965,31 @@ archived ref 的消费限制与 F010 契约一致。
   使用换行无关删除，Round 5 diff-only 复核无新增问题。
 - `b2a590b` 在全部 finding 关闭后才把 F009、BACKLOG、v0.3 README 与项目说明同步到
   `ready-for-development`，同时记录不需要效用假设评估的具体豁免理由。
+- Round 6 的例外全量复核发现：`f8525f5` 把迁移目标与进度拆开并初始化全部 42 行；
+  `b1605f0` 固定 v0.2 release schema v10 fixture；`766211b` 用不可复用 generation 封住草稿
+  丢弃后的晚到响应，三条均在 Round 7 由 reviewer 复核关闭。
+- R7-013 首次修复 `b8475b8` 只拒绝空值和缺键，Round 8 独立变异仍可用 TODO/TBD 等占位文字
+  伪造完成。`6d05e8d` 补齐精确占位集合、大小写/空白归一以及 migrated/deferred/retired 失败
+  变异，Round 9 复核关闭；“引用真实且匹配实现”明确保留为状态推进 PR 的人工审查责任。
+- 会话归档在当前 WSL 只能读取 13 个本机会话；闭环时保留仓库已有的 174 个跨机历史会话，
+  合并新增会话后重建 index、timeline、timeline-summary 与 retrospective，避免全量重导抹去
+  其他机器上采集的过程证据。
 
 **模式性教训**
 
-1. `origin` 分布：原方案 3、规格漂移 1、流程缺口 3、修复引入 2。两条修复引入问题分别由
-   Round 2 diff-only 与 Round 4 Windows CI 捕获，说明本地复核和异构 runner 缺一不可。
+1. `origin` 分布：原方案 3、规格漂移 2、流程缺口 3、修复引入 5。修复引入已成为最大来源：
+   Round 2/7/8 的 diff-only 与 Round 4 Windows CI 都实际捕获了上一轮不存在的问题，说明修复后
+   的相邻契约复核、失败变异和异构 runner 缺一不可。
 2. `readiness-prerequisite-unowned` 再次出现 2 次：开发前依赖如果只写成“应已有”，而没有钉 source、
    owner、产物和验证方法，就不是前置条件，只是愿望。迁移 inventory 与历史 fixture 都应进入 Phase 0。
 3. `route-id-contract-drift` 跨轮出现 2 次：仅列 route pattern 不等于定义身份。根入口、集合页、对象页、
    默认参数、非法参数、history 和异步 not-found 必须一次写成 manifest，尤其禁止按列表顺序猜对象。
-4. R1-005/R1-006 最长存活 1 轮：首轮主体修复已完成，但 Round 2 才清除模糊残词并绑定源哈希；
-   这说明“有分类表/fixture 文档”仍不足以防漂移，必须增加禁止式与源绑定回归。
-5. 九条 finding 均有独立修复提交和仓库内回归；目标测试均先红后绿。Round 3 与 Round 5 的
-   reviewer diff-only 复核均未发现新问题，开放问题、Feature 状态和路线图真相源同步一致。
+4. 最长存活 2 轮的是 R7-013：Round 7 发现，Round 8 证明首修只锁住“非空”结构而没有锁住
+   “非占位”语义，Round 9 才关闭。R1-005/R1-006 与 R6-010～R6-012 均存活 1 轮，其余当轮关闭。
+5. 十三条 finding 均有独立修复提交和仓库内回归；目标测试均记录先红后绿。Round 3、Round 5
+   与 Round 9 的 reviewer diff-only 复核未发现新的开放问题，Feature 状态与路线图真相源一致。
 6. `mutation-not-platform-equivalent` 是新的门禁模式：变异测试不能只断言“校验器抛错”，还必须先断言
    变异确实改变输入；涉及文本行时至少用 LF 与 CRLF 两种 fixture，否则 Linux 绿不能代表 Windows CI。
+7. `structural-check-misses-semantics` 说明解析出合法 `key=value` 只证明结构存在，不能证明值可用；
+   自动门禁应机械拒绝团队已定义的占位全集，同时把引用存在性和与实现一致性明确交给状态推进 PR
+   复核，避免“门禁能自动证明任意自由文本语义”的虚假承诺。

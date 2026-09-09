@@ -1,15 +1,15 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 174
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 187
 
 ## 工具统计
 
 | 工具 | 会话数 |
 |---|---|
 
-| OpenCode | 93 |
+| OpenCode | 100 |
 | Claude Code | 26 |
-| Codex CLI | 55 |
+| Codex CLI | 61 |
 
 ## 会话血缘树
 
@@ -132,6 +132,13 @@
 - **b423aec9-ef49-4ab7-9c82-84a1aa4bcadc** (`claude` · 2026-08-12T11:43:46Z)
 - **e33db601-0d61-45ea-9986-100fb6113347** (`claude` · 2026-08-13T13:48:24Z)
 - **3758d65f-a9cb-49fb-86a6-89f96e1c4125** (`claude` · 2026-08-13T14:38:38Z)
+- **提交未提交更改并推送到main分支** (`opencode` · 2026-09-02T09:21:50Z)
+- **New session - 2026-09-03T09:13:21.883Z** (`opencode` · 2026-09-03T09:13:21Z)
+- **New session - 2026-09-03T09:13:26.813Z** (`opencode` · 2026-09-03T09:13:26Z)
+- **New session - 2026-09-03T09:20:48.512Z** (`opencode` · 2026-09-03T09:20:48Z)
+- **New session - 2026-09-03T09:20:53.291Z** (`opencode` · 2026-09-03T09:20:53Z)
+- **New session - 2026-09-03T12:14:48.865Z** (`opencode` · 2026-09-03T12:14:48Z)
+- **New session - 2026-09-03T12:14:53.290Z** (`opencode` · 2026-09-03T12:14:53Z)
 
 ## 原始会话清单
 
@@ -311,3 +318,16 @@
 | 2026-08-13T14:38:38Z | Claude Code | 3758d65f-a9cb-49fb-86a6-89f96e1c4125 | claude-opus-5 | `claude/3758d65f-a9cb-49fb-86a6-89f96e1c4125.md` |
 | 2026-08-14T12:31:02Z | Codex CLI | rollout-2026-08-14T20-30-02-01a00040-2e9c-79f1-a85d-cd729d7ab195 | openai | `codex/rollout-2026-08-14T20-30-02-01a00040-2e9c-79f1-a85d-cd729d7ab195.md` |
 | 2026-08-14T12:33:33Z | Codex CLI | rollout-2026-08-14T20-33-28-01a00043-58ac-7a93-99f2-7c8c289a7013 | openai | `codex/rollout-2026-08-14T20-33-28-01a00043-58ac-7a93-99f2-7c8c289a7013.md` |
+| 2026-09-02T09:21:50Z | OpenCode | 提交未提交更改并推送到main分支 | glm-5.3-flash | `opencode/ses_f9e9344d5ffe0TJyyw5MIJC0wC.md` |
+| 2026-09-03T09:13:21Z | OpenCode | New session - 2026-09-03T09:13:21.883Z | claude-sonnet-4-5 | `opencode/ses_f9974ad25ffe0GaVaVov2SJh63.md` |
+| 2026-09-03T09:13:26Z | OpenCode | New session - 2026-09-03T09:13:26.813Z | claude-sonnet-4-5 | `opencode/ses_f997499e2ffecwTvQ8d2dKqzdL.md` |
+| 2026-09-03T09:20:48Z | OpenCode | New session - 2026-09-03T09:20:48.512Z | claude-sonnet-4-5 | `opencode/ses_f996ddc80ffeVkl2RxQnNhL42H.md` |
+| 2026-09-03T09:20:53Z | OpenCode | New session - 2026-09-03T09:20:53.291Z | claude-sonnet-4-5 | `opencode/ses_f996dc9d4ffezn0pv1xszMSjKg.md` |
+| 2026-09-03T12:14:48Z | OpenCode | New session - 2026-09-03T12:14:48.865Z | claude-sonnet-4-5 | `opencode/ses_f98ce8ddeffe9IoeN4MyIuyPOE.md` |
+| 2026-09-03T12:14:53Z | OpenCode | New session - 2026-09-03T12:14:53.290Z | claude-sonnet-4-5 | `opencode/ses_f98ce7c96ffeV2MyBGYeI2rnfU.md` |
+| 2026-09-04T08:58:08Z | Codex CLI | rollout-2026-09-04T16-55-35-01a06ba1-6a72-7313-b90e-4713c40197e3 | openai | `codex/rollout-2026-09-04T16-55-35-01a06ba1-6a72-7313-b90e-4713c40197e3.md` |
+| 2026-09-08T01:36:56Z | Codex CLI | rollout-2026-09-08T09-35-14-01a07ea7-b0e9-70e0-9c80-d5d8d58c4698 | openai | `codex/rollout-2026-09-08T09-35-14-01a07ea7-b0e9-70e0-9c80-d5d8d58c4698.md` |
+| 2026-09-08T05:08:14Z | Codex CLI | rollout-2026-09-08T13-07-14-01a07f69-c9fb-7741-92d4-920165dbbeee | openai | `codex/rollout-2026-09-08T13-07-14-01a07f69-c9fb-7741-92d4-920165dbbeee.md` |
+| 2026-09-08T07:04:10Z | Codex CLI | rollout-2026-09-08T15-02-58-01a07fd3-bf27-7653-a25e-dcaa8f19e91e | openai | `codex/rollout-2026-09-08T15-02-58-01a07fd3-bf27-7653-a25e-dcaa8f19e91e.md` |
+| 2026-09-08T12:26:31Z | Codex CLI | rollout-2026-09-08T20-25-36-01a080fb-2031-7803-9737-1854aa7fbd86 | openai | `codex/rollout-2026-09-08T20-25-36-01a080fb-2031-7803-9737-1854aa7fbd86.md` |
+| 2026-09-09T01:41:09Z | Codex CLI | rollout-2026-09-09T09-40-00-01a083d2-6c56-7c30-98de-9380c5f6e5c5 | openai | `codex/rollout-2026-09-09T09-40-00-01a083d2-6c56-7c30-98de-9380c5f6e5c5.md` |

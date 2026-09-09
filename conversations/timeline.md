@@ -8985,3 +8985,66 @@
 - `2026-08-14T13:17:30Z` **session-end** claude/3758d65f-a9cb-49fb-86a6-89f96e1c4125
 - `2026-08-14T13:18:07Z` **session-end** codex/rollout-2026-08-14T20-30-02-01a00040-2e9c-79f1-a85d-cd729d7ab195
 - `2026-08-14T13:18:16Z` **session-end** codex/rollout-2026-08-14T20-33-28-01a00043-58ac-7a93-99f2-7c8c289a7013
+- `2026-09-02T09:21:50Z` **session-start** opencode/提交未提交更改并推送到main分支
+- `2026-09-02T09:21:51Z` **skill** opencode/提交未提交更改并推送到main分支: skill({"name": "git-master", "user_message": "commit uncommitted changes and push to remote main"})
+- `2026-09-02T09:21:58Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git status && echo \"---STAGED---\" && GIT_MASTER=1 git diff --staged --stat && echo \"---UNSTAGED---\" && GIT_MASTER=1 git diff --stat"})
+- `2026-09-02T09:21:58Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git log -30 --pretty=format:\"%s\""})
+- `2026-09-02T09:21:58Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git branch --show-current && GIT_MASTER=1 git rev-parse --abbrev-ref @{upstream} 2>/dev/null || echo \"NO_UPSTREAM\"; GIT_MASTER=1 git log --oneline origin/main..HEAD 2>/dev/null | head -20"})
+- `2026-09-02T09:22:04Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git diff -- docs/decisions/0009-agent-session-lifecycle.md docs/decisions/0015-daemon-readiness-fields.md | head -80"})
+- `2026-09-02T09:22:04Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git diff --stat -- docs/decisions/0012-object-model-simplification.md && GIT_MASTER=1 git diff -- docs/decisions/0012-object-model-simplification.md | head -60"})
+- `2026-09-02T09:22:04Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git diff -- package-lock.json | head -40; echo \"---OMO---\"; ls -la server/.omo/ 2>/dev/null; find server/.omo -type f | head -20"})
+- `2026-09-02T09:25:01Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "head -50 docs/decisions/0017-usage-accounting-and-stats-surface.md; echo \"=====0018=====\"; head -50 docs/decisions/0018-capability-library-and-packs.md"})
+- `2026-09-02T09:25:01Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git diff -- ui-reference/personahub-draft/personahub-v3.1/docs/design.md | grep '^+' | head -30; echo \"=====README=====\"; GIT_MASTER=1 git diff -- ui-reference/personahub-draft/personahub-v3.1/README.md | grep '^+' | head -15"})
+- `2026-09-02T09:25:01Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git diff -- ui-reference/personahub-draft/personahub-v3.1/browser-check.mjs ui-reference/personahub-draft/personahub-v3.1/export-all-pages.mjs | grep '^[+-]' | grep -v '^[+-][+-]' | head -30; echo \"=====GITIGNORE=====\"; cat .gitignore 2>/dev/null || echo \"NO_GITIGNORE\""})
+- `2026-09-02T09:26:13Z` **todowrite** opencode/提交未提交更改并推送到main分支: todowrite({"todos": [{"content": ".gitignore 加 .omo/ 条目", "priority": "high", "status": "in_progress"}, {"content": "提交 1-3：ADR 0012 修订、ADR 0017、ADR 0018", "priority": "high", "status": "pending"}, {"content": "提交 4-5：设计稿 V3.12-18、原型+验收脚本", "priority": "high", "status": "pending"}, {"content": "提交 6-7：package-lock、.gitignore", "priority": "medium", "status": "pending"}, {"content": "验证工作区干净并推送到 origin/main", "priority": "high", "status": "pending"}]})
+- `2026-09-02T09:27:20Z` **read** opencode/提交未提交更改并推送到main分支: read({"filePath": "/root/projects/personahub/.gitignore", "limit": 10})
+- `2026-09-02T09:27:23Z` **edit** opencode/提交未提交更改并推送到main分支: edit({"filePath": "/root/projects/personahub/.gitignore", "newString": ".sisyphus/\n.omo/\n.playwright-mcp/", "oldString": ".sisyphus/\n.playwright-mcp/"})
+- `2026-09-02T09:27:53Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git status --porcelain; echo \"---LOG---\"; GIT_MASTER=1 git log --oneline origin/main..HEAD"})
+- `2026-09-02T09:27:57Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git push origin main"})
+- `2026-09-02T09:28:10Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git remote -v; echo \"---GH---\"; gh auth status 2>&1 | head -10"})
+- `2026-09-02T09:28:15Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "ls ~/.ssh/ 2>/dev/null; ssh -T git@github.com -o BatchMode=yes -o ConnectTimeout=8 2>&1 | head -3"})
+- `2026-09-02T09:28:22Z` **invalid** opencode/提交未提交更改并推送到main分支: invalid({"tool": "bash", "error": "Invalid input for tool bash: JSON parsing failed: Text: {\"command\":\"GIT_MASTER=1 git config --get credential.helper; GIT_MASTER=1 git config --global --get credential.helper; ls -.\nError message: JSON Parse error: Unterminated string"})
+- `2026-09-02T09:28:22Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git config --list --show-origin 2>/dev/null | grep -iE 'credential|user\\.(name|email)|url' ; echo \"---\"; GIT_MASTER=1 git config credential.helper; echo \"---env---\"; env | grep -iE 'github|git_' | sed 's/=.*/=***/'"})
+- `2026-09-02T09:32:01Z` **question** opencode/提交未提交更改并推送到main分支: question({"questions": [{"header": "推送认证", "options": [{"description": "你的终端可能已有缓存凭据，运行 git push origin main 即可，5 秒完成", "label": "我自己在终端推 (Recommended)"}, {"description": "提供 PAT，我用它配置 credential store 后推送（token 会明文存在 ~/.git-credentials）", "label": "给我 GitHub Token"}, {"description": "生成 SSH key、加进 GitHub 后切 remote 为 SSH，约需 3 分钟", "label": "改用 SSH"}], "question": "推送需要 GitHub 认证，你想怎么处理？"}]})
+- `2026-09-02T09:32:48Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "mkdir -p ~/.ssh && chmod 700 ~/.ssh && ssh-keygen -t ed25519 -C \"personahub@$(hostname)\" -f ~/.ssh/id_ed25519 -N \"\" -q && cat ~/.ssh/id_ed25519.pub"})
+- `2026-09-02T09:33:00Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null && GIT_MASTER=1 git remote set-url origin git@github.com:Qiaozhi94/personahub.git && GIT_MASTER=1 git remote -v | head -2"})
+- `2026-09-02T09:33:17Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git status --porcelain && echo \"DIRTY\" || echo \"CLEAN\"; GIT_MASTER=1 git log --oneline origin/main..HEAD | wc -l; GIT_MASTER=1 git remote -v | head -1"})
+- `2026-09-02T09:33:40Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "ssh -T git@github.com -o BatchMode=yes -o ConnectTimeout=8 2>&1 | head -2"})
+- `2026-09-02T09:34:02Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "cat ~/.ssh/id_ed25519.pub"})
+- `2026-09-02T09:34:19Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "ssh -T git@github.com -o BatchMode=yes -o ConnectTimeout=8 2>&1 | head -2"})
+- `2026-09-02T09:35:47Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "ssh -T git@github.com -o BatchMode=yes -o ConnectTimeout=8 2>&1 | head -2; GIT_MASTER=1 git push origin main 2>&1"})
+- `2026-09-02T09:36:04Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git fetch origin && GIT_MASTER=1 git log --oneline HEAD..origin/main; echo \"---DIVERGE---\"; GIT_MASTER=1 git log --oneline origin/main..HEAD | wc -l"})
+- `2026-09-02T09:36:23Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git rebase origin/main && GIT_MASTER=1 git push origin main 2>&1"})
+- `2026-09-02T09:36:33Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git status -sb && GIT_MASTER=1 git log --oneline -8"})
+- `2026-09-02T09:36:37Z` **todowrite** opencode/提交未提交更改并推送到main分支: todowrite({"todos": [{"content": ".gitignore 加 .omo/ 条目（已随提交入库）", "priority": "high", "status": "completed"}, {"content": "提交 1-3：ADR 0012 修订、ADR 0017、ADR 0018", "priority": "high", "status": "completed"}, {"content": "提交 4-5：设计稿 V3.12-18、原型+验收脚本", "priority": "high", "status": "completed"}, {"content": "提交 6-7：package-lock、.gitignore", "priority": "medium", "status": "completed"}, {"content": "推送到 origin/main（rebase 远端新提交后已推成）", "priority": "high", "status": "completed"}]})
+- `2026-09-02T09:39:27Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git config --global user.name; GIT_MASTER=1 git config --global user.email; echo \"---LAST COMMIT IDENTITY---\"; GIT_MASTER=1 git log -1 --pretty=format:\"author: %an <%ae>%ncommitter: %cn <%ce>\""})
+- `2026-09-02T09:39:36Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git config --local --list | grep -E '^user\\.' ; echo \"---GLOBAL FILE---\"; cat ~/.gitconfig 2>/dev/null || echo \"NO_GITCONFIG\""})
+- `2026-09-02T09:39:45Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git config --list --show-origin | grep -iE 'user\\.(name|email)' || echo \"NO_USER_CONFIG_ANYWHERE\""})
+- `2026-09-02T09:41:35Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git config --global user.name && GIT_MASTER=1 git config --global user.email"})
+- `2026-09-02T09:42:25Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git status --porcelain; echo \"---\"; GIT_MASTER=1 git status -sb | head -1"})
+- `2026-09-02T09:42:47Z` **bash** opencode/提交未提交更改并推送到main分支: bash({"command": "GIT_MASTER=1 git status --porcelain; GIT_MASTER=1 git push origin main 2>&1; GIT_MASTER=1 git status -sb | head -1"})
+- `2026-09-02T09:43:07Z` **session-end** opencode/提交未提交更改并推送到main分支
+- `2026-09-03T09:13:21Z` **session-start** opencode/New session - 2026-09-03T09:13:21.883Z
+- `2026-09-03T09:13:22Z` **session-end** opencode/New session - 2026-09-03T09:13:21.883Z
+- `2026-09-03T09:13:26Z` **session-start** opencode/New session - 2026-09-03T09:13:26.813Z
+- `2026-09-03T09:13:28Z` **session-end** opencode/New session - 2026-09-03T09:13:26.813Z
+- `2026-09-03T09:20:48Z` **session-start** opencode/New session - 2026-09-03T09:20:48.512Z
+- `2026-09-03T09:20:49Z` **session-end** opencode/New session - 2026-09-03T09:20:48.512Z
+- `2026-09-03T09:20:53Z` **session-start** opencode/New session - 2026-09-03T09:20:53.291Z
+- `2026-09-03T09:20:54Z` **session-end** opencode/New session - 2026-09-03T09:20:53.291Z
+- `2026-09-03T12:14:48Z` **session-start** opencode/New session - 2026-09-03T12:14:48.865Z
+- `2026-09-03T12:14:49Z` **session-end** opencode/New session - 2026-09-03T12:14:48.865Z
+- `2026-09-03T12:14:53Z` **session-start** opencode/New session - 2026-09-03T12:14:53.290Z
+- `2026-09-03T12:14:54Z` **session-end** opencode/New session - 2026-09-03T12:14:53.290Z
+- `2026-09-04T08:58:08Z` **session-start** codex/rollout-2026-09-04T16-55-35-01a06ba1-6a72-7313-b90e-4713c40197e3
+- `2026-09-04T09:16:58Z` **session-end** codex/rollout-2026-09-04T16-55-35-01a06ba1-6a72-7313-b90e-4713c40197e3
+- `2026-09-08T01:36:56Z` **session-start** codex/rollout-2026-09-08T09-35-14-01a07ea7-b0e9-70e0-9c80-d5d8d58c4698
+- `2026-09-08T05:03:32Z` **session-end** codex/rollout-2026-09-08T09-35-14-01a07ea7-b0e9-70e0-9c80-d5d8d58c4698
+- `2026-09-08T05:08:14Z` **session-start** codex/rollout-2026-09-08T13-07-14-01a07f69-c9fb-7741-92d4-920165dbbeee
+- `2026-09-08T07:02:19Z` **session-end** codex/rollout-2026-09-08T13-07-14-01a07f69-c9fb-7741-92d4-920165dbbeee
+- `2026-09-08T07:04:10Z` **session-start** codex/rollout-2026-09-08T15-02-58-01a07fd3-bf27-7653-a25e-dcaa8f19e91e
+- `2026-09-08T12:18:36Z` **session-end** codex/rollout-2026-09-08T15-02-58-01a07fd3-bf27-7653-a25e-dcaa8f19e91e
+- `2026-09-08T12:26:31Z` **session-start** codex/rollout-2026-09-08T20-25-36-01a080fb-2031-7803-9737-1854aa7fbd86
+- `2026-09-09T01:41:09Z` **session-start** codex/rollout-2026-09-09T09-40-00-01a083d2-6c56-7c30-98de-9380c5f6e5c5
+- `2026-09-09T07:50:19Z` **session-end** codex/rollout-2026-09-09T09-40-00-01a083d2-6c56-7c30-98de-9380c5f6e5c5
+- `2026-09-09T07:54:32Z` **session-end** codex/rollout-2026-09-08T20-25-36-01a080fb-2031-7803-9737-1854aa7fbd86
