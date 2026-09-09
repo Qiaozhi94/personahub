@@ -44,6 +44,7 @@ export function WorkspaceBinding({ projectId, workspace }: WorkspaceBindingProps
           value={localPath}
           onChange={(e) => setLocalPath(e.target.value)}
           placeholder="D:\path\to\workspace"
+          aria-label="代码目录路径"
           className="h-8 text-xs"
         />
         <Button

@@ -79,7 +79,10 @@ export function useRouter(): Router {
 }
 
 /** Builds a URL string from pathname + query params, skipping empty values. */
-export function buildUrl(pathname: string, params: Record<string, string | null | undefined>): string {
+export function buildUrl(
+  pathname: string,
+  params: Record<string, string | null | undefined> = {},
+): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== null && value !== undefined && value !== "") search.set(key, value);

@@ -24,13 +24,13 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 ### Phase 1：迁移清单与前端基础
 
 - [ ] T001 (`FR-002`, `FR-007`, `NFR-004`): T001 只维护和校验已经冻结的矩阵；逐项迁移页面、路由、弹窗、动作、hook 和测试后更新状态与旧组件删除证据，发现漏项须先补矩阵门禁，禁止到实现末尾才反向盘点范围。 — verify: `node --test tools/check-v03-plan-contracts.test.mjs`
-- [ ] T002 (`UX-001`, `UX-002`): 对齐 V3.44 design tokens，并建立 dialog / tabs / table / feedback / page-state 共享原语。 — verify: `npm test --workspace web`
-- [ ] T003 (`FR-001`, `FR-005`): 严格按 `design.md` 的 M1 SurfaceRegistry manifest 实现 ApplicationShell 与一级导航；测试九个槽位的 enabled / not-registered 状态、route、数据投影和允许动作，并断言未注册 surface 无导航控件、不可聚焦、deep link 进入 not-found。 — verify: `npm test --workspace web`
-- [ ] T004 (`UX-002`, `NFR-002`): 实现 shell 级 `TaskDraftStore` 与 `task:${taskId}:composer` key/generation/revision contract；generation high-water 在记录外按 key 保存且整个 shell 生命周期不复用，显式丢弃在 pending 时允许且不重置 high-water；覆盖跨 task/project/surface 往返、后续 view 共用 key、成功/失败/迟到响应、显式丢弃、`submit N → discard while pending → retype → old success`、not-found 清理和刷新前 `beforeunload` 提示，并分别做“重置 generation high-water”“只比较 revision”和把清理条件放宽为“任意成功响应”的失败变异。 — verify: `npm test --workspace web`
+- [x] T002 (`UX-001`, `UX-002`): 对齐 V3.44 design tokens，并建立 dialog / tabs / table / feedback / page-state 共享原语。 — verify: `npm test --workspace web`
+- [x] T003 (`FR-001`, `FR-005`): 严格按 `design.md` 的 M1 SurfaceRegistry manifest 实现 ApplicationShell 与一级导航；测试九个槽位的 enabled / not-registered 状态、route、数据投影和允许动作，并断言未注册 surface 无导航控件、不可聚焦、deep link 进入 not-found。 — verify: `npm test --workspace web`
+- [x] T004 (`UX-002`, `NFR-002`): 实现 shell 级 `TaskDraftStore` 与 `task:${taskId}:composer` key/generation/revision contract；generation high-water 在记录外按 key 保存且整个 shell 生命周期不复用，显式丢弃在 pending 时允许且不重置 high-water；覆盖跨 task/project/surface 往返、后续 view 共用 key、成功/失败/迟到响应、显式丢弃、`submit N → discard while pending → retype → old success`、not-found 清理和刷新前 `beforeunload` 提示，并分别做“重置 generation high-water”“只比较 revision”和把清理条件放宽为“任意成功响应”的失败变异。 — verify: `npm test --workspace web`
 
 ### Phase 2：既有能力迁入新结构
 
-- [ ] T010 (`FR-003`, `FR-006`): 按迁移矩阵 A001–A005 迁移项目选择 / 创建、代码目录绑定、任务列表 / 创建和当前任务上下文，复用逐行指定的既有 API。 — verify: `npm test --workspace web`
+- [x] T010 (`FR-003`, `FR-006`): 按迁移矩阵 A001–A005 迁移项目选择 / 创建、代码目录绑定、任务列表 / 创建和当前任务上下文，复用逐行指定的既有 API。 — verify: `npm test --workspace web`
 - [ ] T011 [P] (`FR-003`, `FR-006`, `NFR-004`): 按迁移矩阵 A006–A015 为推荐确认、执行启动、人工介入、Run / Graph 状态和会话事件建立唯一 transitional-host；不改领域契约，由 F012 验收时删除，latest_milestone=M3。 — verify: `npm test --workspace web`
 - [ ] T012 [P] (`FR-003`, `UX-003`, `NFR-004`): 按迁移矩阵 A016–A024 建任务事实与验收 transitional-host；A016–A020 只读，A021–A024 保留 trigger validation、unblock、reset rounds 与摘要复制 / 下载动作并调用矩阵指定 API；由 F011 验收时删除，latest_milestone=M4。 — verify: `npm test --workspace web`
 - [ ] T013 [P] (`FR-003`, `FR-005`, `NFR-004`): 按迁移矩阵 A025–A029 将 adapter / runtime health 最小入口放入运行时 / 设置 transitional-host（F012 验收时删除，latest_milestone=M3）；旧 Workflow Template A030 只保留只读列表 / 详情（F013 验收时删除，latest_milestone=M2），不得重做管理写面或调用旧写 API。 — verify: `npm test --workspace web`
