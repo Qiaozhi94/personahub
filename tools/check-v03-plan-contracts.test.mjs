@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -826,4 +826,112 @@ test('V03-PLAN-R4-014: downstream research docs reference the current Artifact f
   forbidPhrases(documents, [retiredPath]);
   verifyMutation(documents, phrases);
   verifyForbiddenMutation(documents, retiredPath);
+});
+
+// F009 T020 (FR-007 / NFR-003 / NFR-004): the old shell has left the
+// production registry, every migrated write action keeps exactly one
+// production host, retired template writes are unreachable, and every
+// transitional host in the frozen matrix still carries its replacement owner,
+// delete condition, and latest milestone.
+
+const F009_WEB_SRC = 'web/src';
+
+function listProductionWebFiles(dir = F009_WEB_SRC) {
+  const entries = [];
+  for (const name of readdirSync(new URL(`../${dir}`, import.meta.url))) {
+    const full = `${dir}/${name}`;
+    const stat = statSync(new URL(`../${full}`, import.meta.url));
+    if (stat.isDirectory()) {
+      entries.push(...listProductionWebFiles(full));
+    } else if ((name.endsWith('.ts') || name.endsWith('.tsx')) && !name.includes('.test.')) {
+      entries.push(full);
+    }
+  }
+  return entries;
+}
+
+const F009_WRITE_API_HOSTS = new Map([
+  ['projects.create', ['web/src/hooks/use-projects.ts']],
+  ['workspaces.bind', ['web/src/hooks/use-workspace.ts']],
+  ['issues.create', ['web/src/hooks/use-issues.ts']],
+  ['issues.startGraph', ['web/src/components/thread/ThreadView.tsx']],
+  ['graphRuns.cancel', ['web/src/components/thread/ThreadView.tsx']],
+  ['graphRuns.retryNode', ['web/src/components/thread/ThreadView.tsx']],
+  ['graphRuns.resolveExecutors', ['web/src/components/thread/ThreadView.tsx']],
+  ['runs.create', ['web/src/hooks/use-runs.ts']],
+  ['runs.cancel', ['web/src/hooks/use-runs.ts']],
+  ['validation.triggerValidation', ['web/src/hooks/use-validation.ts']],
+  ['validation.unblock', ['web/src/hooks/use-validation.ts']],
+  ['validation.resetRounds', ['web/src/hooks/use-validation.ts']],
+  ['intake.recommend', ['web/src/components/intake/IntakeDialog.tsx']],
+  ['intake.confirm', ['web/src/components/intake/IntakeDialog.tsx']],
+  ['adapters.create', ['web/src/hooks/use-adapters.ts']],
+  ['adapters.update', ['web/src/hooks/use-adapters.ts']],
+  ['adapters.delete', ['web/src/hooks/use-adapters.ts']],
+  ['adapters.validate', ['web/src/hooks/use-adapters.ts']],
+  ['adapters.setDefault', ['web/src/hooks/use-adapters.ts']],
+  // A030: retired — the read-only legacy page never reaches these.
+  ['workflowTemplates.createVersion', []],
+  ['workflowTemplates.activate', []],
+  ['workflowTemplates.deactivate', []],
+]);
+
+test('F009-T020-001: every write action has one production host and retired writes are unreachable', () => {
+  const productionFiles = listProductionWebFiles().filter((file) => file !== 'web/src/lib/api-client.ts');
+  const productionSources = productionFiles.map((file) => ({ file, source: read(file) }));
+
+  for (const [apiMethod, allowedHosts] of F009_WRITE_API_HOSTS) {
+    const hosts = productionSources
+      .filter(({ source }) => source.includes(`apiClient.${apiMethod}`))
+      .map(({ file }) => file)
+      .sort();
+    assert.deepEqual(
+      hosts,
+      [...allowedHosts].sort(),
+      `write action ${apiMethod} must be reachable only from its single frozen host`,
+    );
+  }
+
+  // Old shell identifiers must not survive anywhere in production source.
+  const retiredIdentifiers = [
+    'AppLayout',
+    'ProjectSwitcher',
+    'WorkflowTemplateAdminDialog',
+    'RuntimeHealthDialog',
+    'NoProject',
+    'NoWorkspace',
+    'NoIssue',
+  ];
+  for (const identifier of retiredIdentifiers) {
+    const holders = productionSources.filter(({ source }) => source.includes(identifier)).map(({ file }) => file);
+    assert.deepEqual(holders, [], `retired component ${identifier} must not be referenced in production`);
+  }
+  for (const retiredPath of [
+    'web/src/components/layout/AppLayout.tsx',
+    'web/src/components/project/ProjectSwitcher.tsx',
+    'web/src/components/workflow-template/WorkflowTemplateAdminDialog.tsx',
+    'web/src/components/runtime-health/RuntimeHealthDialog.tsx',
+    'web/src/components/empty-states/NoProject.tsx',
+    'web/src/components/empty-states/NoWorkspace.tsx',
+    'web/src/components/empty-states/NoIssue.tsx',
+  ]) {
+    assert.throws(() => read(retiredPath), /ENOENT/, `retired file ${retiredPath} must be deleted`);
+  }
+});
+
+test('F009-T020-002: every transitional host in the matrix has owner, delete condition, and milestone', () => {
+  const matrix = read('docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md');
+  const rows = parseMigrationMatrixRows(matrix, 'P').concat(parseMigrationMatrixRows(matrix, 'A'));
+
+  // Page rows: | id | old | capability | api | test | target | status | evidence | lifecycle | entry | owner | delete | milestone |
+  // Action rows carry one more column (canonical write API) before owner.
+  for (const row of rows) {
+    const lifecycle = row.find((cell) => /^stable-shell$|^final-surface$|^transitional-host$/.test(cell));
+    assert.ok(lifecycle, `${row[0]} must declare a lifecycle classification`);
+    if (lifecycle !== 'transitional-host') continue;
+    const [owner, deleteWhen, milestone] = row.slice(-3);
+    assert.ok(owner && owner !== '—', `${row[0]} transitional host needs a replacement_owner`);
+    assert.ok(deleteWhen && deleteWhen !== '—', `${row[0]} transitional host needs a delete_when`);
+    assert.ok(milestone && /^M\d$/.test(milestone), `${row[0]} transitional host needs a latest_milestone`);
+  }
 });

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { XCircle, RotateCcw } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { XCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   FailureReason,
   IssueStatus,
@@ -106,37 +106,8 @@ function useGraph(issueId: string) {
   });
 }
 
-function useRetryGraphNode() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ graphRunId, nodeKey }: { graphRunId: string; nodeKey: string }) =>
-      apiClient.graphRuns.retryNode(graphRunId, nodeKey),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["issue-graph"] });
-      qc.invalidateQueries({ queryKey: ["runs"] });
-      qc.invalidateQueries({ queryKey: ["issue"] });
-    },
-  });
-}
-
-function useCancelGraphRun() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (graphRunId: string) => apiClient.graphRuns.cancel(graphRunId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["issue-graph"] });
-      qc.invalidateQueries({ queryKey: ["runs"] });
-      qc.invalidateQueries({ queryKey: ["issue"] });
-    },
-  });
-}
-
 function GraphInspectorSection({ issueId }: { issueId: string }) {
   const graphQuery = useGraph(issueId);
-  const retryNode = useRetryGraphNode();
-  const cancelGraph = useCancelGraphRun();
-  const retryError = retryNode.isError ? toApiError(retryNode.error).message : null;
-  const cancelError = cancelGraph.isError ? toApiError(cancelGraph.error).message : null;
 
   if (graphQuery.isLoading) {
     return (
@@ -163,30 +134,15 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
   const { graph_run, nodes, edges } = current;
   const isBlocked = graph_run.status === GraphRunStatus.Blocked;
   const isCancelling = graph_run.status === GraphRunStatus.Cancelling;
-  const isTerminal = graph_run.status === GraphRunStatus.Completed || graph_run.status === GraphRunStatus.Cancelled;
   const activeRunIds = nodes.flatMap((n) => n.attempts.filter((a) => a.status === "running").map((a) => a.run_id));
 
   return (
     <section className="grid min-w-0 gap-2 rounded-lg border border-border bg-card p-3.5">
       <div className="flex items-center justify-between">
         <strong className="text-sm">Graph Run</strong>
-        <div className="flex items-center gap-2">
-          {!isTerminal ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 text-[11px]"
-              disabled={cancelGraph.isPending}
-              onClick={() => cancelGraph.mutate(graph_run.id)}
-            >
-              <XCircle className="mr-1 h-3 w-3" />
-              {isCancelling ? "Force Cancel" : "Cancel"}
-            </Button>
-          ) : null}
-          <Badge variant={GRAPH_RUN_STATUS_VARIANT[graph_run.status]} className="text-[11px]">
-            {graph_run.status}
-          </Badge>
-        </div>
+        <Badge variant={GRAPH_RUN_STATUS_VARIANT[graph_run.status]} className="text-[11px]">
+          {graph_run.status}
+        </Badge>
       </div>
 
       <InspectorRow label="Definition" value={`${graph_run.definition_id} v${graph_run.definition_version}`} />
@@ -213,18 +169,7 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
               return (
                 <li key={key} className="flex items-center justify-between gap-2 text-xs">
                   <span className="min-w-0 break-words [overflow-wrap:anywhere]">{key}</span>
-                  {canRetry ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-[11px]"
-                      disabled={retryNode.isPending || isCancelling}
-                      onClick={() => retryNode.mutate({ graphRunId: graph_run.id, nodeKey: key })}
-                    >
-                      <RotateCcw className="mr-1 h-3 w-3" />
-                      Retry
-                    </Button>
-                  ) : null}
+                  {canRetry ? <span className="text-muted-foreground">Failed node: retry in the execution section</span> : null}
                 </li>
               );
             })}
@@ -289,8 +234,6 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
         </div>
       ) : null}
 
-      {retryError ? <p className="text-xs text-destructive">{retryError}</p> : null}
-      {cancelError ? <p className="text-xs text-destructive">{cancelError}</p> : null}
     </section>
   );
 }
