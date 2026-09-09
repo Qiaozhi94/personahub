@@ -29,7 +29,9 @@ updated: 2026-09-09
   `target_disposition` 同名的终态。编码开始前全部为 `inventoried`；不得用目标处置冒充完成状态。
 - `completion_evidence` 在 `inventoried` 时固定为 `pending`；终态证据使用分号分隔的
   `key=value; key=value` 语法，每个 key 唯一且 value 必须为非空、可复核的 route、canonical API、
-  测试名、Feature 或规格 / ADR 引用，不接受占位文字。推进到 `migrated` 前必须同时记录非空的
+  测试名、Feature 或规格 / ADR 引用。门禁对 value 去除首尾空白并忽略英文大小写后，拒绝完整值
+  `TODO`、`TBD`、`pending`、`placeholder`、`待补` 或 `—`；引用是否存在且与实现一致仍须在推进
+  该行状态的同一 PR 中复核。推进到 `migrated` 前必须同时记录非空、非占位的
   `route=<生产入口>; data=<真实数据或 canonical API>; write=<唯一写入口或 read-only / client-only / none>;
   browser=<浏览器测试文件::测试名>`。推进到 `deferred` 前必须记录
   `registry=absent; owner=<接管 Feature>`；推进到 `retired` 前必须记录

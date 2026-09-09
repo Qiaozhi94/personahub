@@ -60,6 +60,15 @@ function parseMigrationMatrixRows(matrix, idPrefix) {
     .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
 }
 
+const completionEvidencePlaceholders = new Set([
+  'todo',
+  'tbd',
+  'pending',
+  'placeholder',
+  '待补',
+  '—',
+]);
+
 function parseCompletionEvidence(id, completionEvidence) {
   const evidence = new Map();
   for (const entry of completionEvidence.split(';').map((part) => part.trim())) {
@@ -68,6 +77,10 @@ function parseCompletionEvidence(id, completionEvidence) {
     const [, key, rawValue] = match;
     const value = rawValue.trim();
     assert.ok(value, `${id} missing evidence value: ${key}`);
+    assert.ok(
+      !completionEvidencePlaceholders.has(value.toLowerCase()),
+      `${id} has placeholder completion evidence value: ${key}=${value}`,
+    );
     assert.ok(!evidence.has(key), `${id} has duplicate completion evidence key: ${key}`);
     evidence.set(key, value);
   }
@@ -427,6 +440,48 @@ test('F009-DOC-R7-013: completed migration evidence has non-empty disposition-sp
   );
   assert.notEqual(validMigratedEvidence, matrix, 'valid migrated-evidence mutation must change a row');
   assert.doesNotThrow(() => verifyMigrationMatrixProgress(validMigratedEvidence));
+
+  const placeholderMigratedEvidence = matrix.replace(
+    '| migrated | inventoried | pending |',
+    '| migrated | migrated | route=TODO; data=TBD; write=placeholder; browser=pending |',
+  );
+  assert.notEqual(placeholderMigratedEvidence, matrix, 'migrated-placeholder mutation must change a row');
+  assert.throws(
+    () => verifyMigrationMatrixProgress(placeholderMigratedEvidence),
+    /placeholder completion evidence value/,
+  );
+
+  for (const placeholder of ['TODO', 'tBd', 'PeNdInG', 'placeholder', '待补', '—']) {
+    const placeholderValue = matrix.replace(
+      '| migrated | inventoried | pending |',
+      `| migrated | migrated | route= ${placeholder} ; data=GET /api/projects; write=read-only; browser=web/src/app.test.tsx::route-smoke |`,
+    );
+    assert.notEqual(placeholderValue, matrix, `${placeholder} mutation must change a migration row`);
+    assert.throws(
+      () => verifyMigrationMatrixProgress(placeholderValue),
+      /placeholder completion evidence value/,
+    );
+  }
+
+  const placeholderDeferredOwner = matrix.replace(
+    '| migrated | inventoried | pending |',
+    '| deferred | deferred | registry=absent; owner=placeholder |',
+  );
+  assert.notEqual(placeholderDeferredOwner, matrix, 'deferred-placeholder mutation must change a row');
+  assert.throws(
+    () => verifyMigrationMatrixProgress(placeholderDeferredOwner),
+    /placeholder completion evidence value/,
+  );
+
+  const placeholderRetiredDecision = matrix.replace(
+    '| retired | inventoried | pending |',
+    '| retired | retired | registry=absent; decision=TODO |',
+  );
+  assert.notEqual(placeholderRetiredDecision, matrix, 'retired-placeholder mutation must change a row');
+  assert.throws(
+    () => verifyMigrationMatrixProgress(placeholderRetiredDecision),
+    /placeholder completion evidence value/,
+  );
 });
 
 test('F009-DOC-R1-002: M1 routes have stable identities and deterministic failures', () => {
