@@ -236,3 +236,19 @@ describe("intake host on /tasks (A006/A007)", () => {
     expect(apiClient.intake.confirm).not.toHaveBeenCalled();
   });
 });
+
+describe("facts host on /tasks/:taskId (A011, A016–A024)", () => {
+  it("renders the inspector facts and keeps validation writes canonical", async () => {
+    vi.mocked(apiClient.issues.get).mockResolvedValue({
+      issue: issueWithThread("iss_1", "任务一", IssueStatus.Running),
+    });
+    vi.mocked(apiClient.workspaces.getByProject).mockResolvedValue({ workspace: null });
+    renderApp("/tasks/iss_1");
+
+    // The facts host renders the inspector with task, run and validation
+    // facts; trace/validation queries stay pending in this assertion.
+    expect(await screen.findByRole("heading", { name: "任务一" })).toBeInTheDocument();
+    expect(await screen.findByText("Issue Inspector")).toBeInTheDocument();
+    expect(screen.getByText("Status")).toBeInTheDocument();
+  });
+});

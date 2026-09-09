@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
 import { ErrorCode } from "@personahub/shared";
 import { useIssue } from "@/hooks/use-issues";
+import { useWorkspace } from "@/hooks/use-workspace";
 import { toApiError } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { PageLoading, ErrorState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
 import { ThreadView } from "@/components/thread/ThreadView";
+import { IssueInspector } from "@/components/inspector/IssueInspector";
 import { useDraftStore } from "@/app/draft-store-context";
 import { taskComposerKey } from "@/app/task-draft-store";
 import { buildUrl, useRouter } from "@/app/router";
@@ -26,6 +28,7 @@ export function TaskDetailPage({
 }) {
   const { navigate } = useRouter();
   const issueQuery = useIssue(taskId);
+  const workspaceQuery = useWorkspace(issueQuery.data?.issue.project_id ?? null);
   const draftStore = useDraftStore();
   const redirectedRef = useRef(false);
 
@@ -108,16 +111,13 @@ export function TaskDetailPage({
 
       <PageSection
         title="任务详情（兼容）"
-        description="查看轨迹、证据与验收事实。"
+        description="查看轨迹、证据与验收事实，并执行验证与恢复动作。"
       >
-        <FactsHostPlaceholder taskId={taskId} />
+        <IssueInspector
+          issue={issue}
+          workspacePath={workspaceQuery.data?.workspace?.local_path ?? null}
+        />
       </PageSection>
     </PageFrame>
   );
-}
-
-// The facts host mounts with migration step T012; until then this renders
-// nothing user-visible so no fake facts or dead controls appear.
-function FactsHostPlaceholder(_props: { taskId: string }): null {
-  return null;
 }
