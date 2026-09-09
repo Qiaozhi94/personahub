@@ -19,6 +19,30 @@ updated: 2026-09-08
 
 `ApplicationShell` 只负责全局导航、路由出口、页面层级和全局反馈；`SurfaceRegistry` 只注册达到生产条件的工作面；`LegacyViewAdapter` 把现有 API DTO 转成过渡 view model，不反向写数据库。写动作继续调用 F001–F008 canonical API。共享 dialog / tabs / table / feedback primitives 统一承载可访问性契约。
 
+### M1 SurfaceRegistry manifest
+
+Registry state 只有 `enabled`、`visible-disabled`、`not-registered`。`enabled` 必须同时有真实 route、
+真实数据来源与至少一个可完成的用户目的；`not-registered` 不渲染导航控件、不可聚焦，也不接受
+deep link。M1 没有 `visible-disabled` 槽位：当前没有任何未交付一级面必须提前占位，提前显示只会
+形成无法完成的承诺。
+
+| 一级槽位 | Registry state | 默认 route | 真实数据来源 | M1 允许动作 | 生命周期 / 接管者 | URL 保持 |
+|---|---|---|---|---|---|---|
+| 任务 | `enabled` | `/tasks` | projects、issues、threads、runs、graph、trace、evidence、validation | 迁移矩阵 A004–A024 | stable shell + F011/F012 transitional hosts | `/tasks/:taskId` 保持；F011 只扩展 view |
+| 会话 | `not-registered` | — | 当前只有内部 Thread，无 Session identity | 无 | F012 注册 | 不保留未发布 URL |
+| 项目 | `enabled` | `/projects` | projects、workspace | 迁移矩阵 A001–A003 | stable shell + F013 transitional host | `/projects/:projectId` 保持；F013 只扩展 tab |
+| 自动化 | `not-registered` | — | 未交付 | 无 | v0.4 候选 Feature | 不保留未发布 URL |
+| 记忆 | `not-registered` | — | 未交付 | 无 | v0.4 候选 Feature | 不保留未发布 URL |
+| 能力 | `not-registered` | — | F009 无 Skill / MCP canonical API | 无 | F013 先注册 Skills；MCP 等后续 contract | 不保留未发布 URL |
+| 运行时 | `enabled` | `/runtime` | adapters、workspace lock、queue、background probe | 查看执行资源；在 `/runtime/adapters` 执行 A025–A027 | F012 transitional host | `/runtime` 保持，内部 projection 可替换 |
+| 统计 | `not-registered` | — | 未交付 | 无 | v0.4 Usage / Monitoring 候选 Feature | 不保留未发布 URL |
+| 设置 | `enabled` | `/settings/system-diagnostics` | runtime-health 中的 schema / app diagnostics、legacy workflow 读取 | 查看系统诊断；查看 legacy workflow 列表 / 详情 | stable shell + F013 legacy workflow host | 设置 base 保持；子页只在真实页面存在时注册 |
+
+数据与动作分置规则：adapter 配置和执行资源读数只在 `/runtime`；schema / 应用基础设施只在
+`/settings/system-diagnostics`；代码目录绑定只在 `/projects/:projectId` 的兼容区；legacy Workflow
+Template 只在 `/settings/legacy-workflows` 只读。相同事实可以来自同一 runtime-health response，
+但 registry projection 必须按上述归属裁剪，不在两个 surface 重复解释或提供动作。
+
 ## 3. 数据模型与 Migration
 
 不新增或改写业务表。需要保留的前端偏好仅限非领域 UI 状态；路由 alias 和页面迁移矩阵以代码 / 文档常量维护。旧 schema 的数据库升级不在本 Feature，F014 负责跨版本 migration；本 Feature 只保证 v0.2 当前 schema 数据可读可操作。
@@ -77,3 +101,4 @@ AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、r
 ## 10. 待确认设计问题
 
 - [x] DQ-001: M1 是否提前发布 Task view、Project tab 与 Session deep link？ — 决策：不提前发布；M1 只注册 route manifest 中已有稳定身份和真实页面的 base route，F011 / F013 / F012 分别在自身契约可用后扩展，非法子路径按 manifest 确定恢复。
+- [x] DQ-002: 九个 V3.44 一级槽位在 M1 是上线、占位还是隐藏？ — 决策：按 M1 SurfaceRegistry manifest 逐项注册；任务、项目、运行时、设置 enabled，其余 not-registered，M1 不设置 visible-disabled 一级槽位。

@@ -256,6 +256,31 @@ test('F009-DOC-R1-002: M1 routes have stable identities and deterministic failur
   verifyForbiddenMutation(documents, forbidden[0]);
 });
 
+test('F009-DOC-R1-003: M1 SurfaceRegistry enumerates every V3.44 primary slot', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+  ];
+  const phrases = [
+    'M1 SurfaceRegistry manifest',
+    '| 任务 | `enabled` | `/tasks`',
+    '| 会话 | `not-registered` | — |',
+    '| 项目 | `enabled` | `/projects`',
+    '| 自动化 | `not-registered` | — |',
+    '| 记忆 | `not-registered` | — |',
+    '| 能力 | `not-registered` | — |',
+    '| 运行时 | `enabled` | `/runtime`',
+    '| 统计 | `not-registered` | — |',
+    '| 设置 | `enabled` | `/settings/system-diagnostics`',
+    'M1 没有 `visible-disabled` 槽位',
+    '代码目录绑定只在 `/projects/:projectId`',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
   const documents = [
     read('docs/features/0.3/README.md'),

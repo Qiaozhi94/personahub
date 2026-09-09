@@ -74,7 +74,7 @@ updated: 2026-09-08
 
 ### 边界场景
 
-- 设计稿存在但领域能力未交付的工作面不进入生产导航；必须保留稳定槽位时只能显示不可误解的未开放状态。
+- 设计稿存在但领域能力未交付的工作面不进入生产导航；必须保留稳定槽位时只能显示不可误解的未开放状态。M1 没有必须提前占位的槽位，因此没有 visible-disabled 一级入口。
 - 旧字段无法表达最终语义时标为 compatibility / legacy，不猜成新对象。
 - 同一个写动作只有一个生产入口；迁移期间不得让旧页面与新页面并行修改同一对象。
 - F009 的兼容投影是过渡层，后续 canonical projection 接管后必须可删除。
@@ -83,7 +83,7 @@ updated: 2026-09-08
 
 ### 功能需求
 
-- **FR-001**：生产应用使用 V3.44 App Shell、导航层级和稳定路由承载所有已开放工作面。
+- **FR-001**：生产应用使用 V3.44 App Shell、导航层级和稳定路由承载所有已开放工作面；M1 `SurfaceRegistry` 必须逐项声明九个 V3.44 一级槽位的 enabled / visible-disabled / not-registered 状态，只有具有真实数据、可达页面和允许动作的 enabled surface 才进入生产导航。
 - **FR-002**：以开发前已冻结的 `migration-matrix.md` 覆盖 v0.1–v0.2 所有生产页面、入口和动作；每项记录 migrated / deferred / retired 结论，以及 stable-shell / final-surface / transitional-host 生命周期分类。transitional-host 必填 replacement_owner、delete_when 与 latest_milestone；实现阶段只能维护、校验和按既定结论迁移，不得首次发现范围。
 - **FR-003**：既有项目选择、任务创建、执行启动、人工介入、轨迹 / 文件变化查看、证据验收，以及 adapter 配置与 runtime health 入口在新界面中保持可用；Workflow Template 编辑按最终对象裁决退役，只保留只读迁移证据。
 - **FR-004**：以仓库与 release 证据建立已发布 URL inventory；当前已发布历史 URL inventory 只有根入口 `/`，因此只迁移有证据的历史 URL。F009 M1 新增 `/tasks`、`/tasks/:taskId`、`/projects`、`/projects/:projectId` canonical routes，支持直达、刷新恢复、History 前进 / 后退、未知 ID 和非法子路径的确定结果。`taskId` 在 M1 中严格等于既有 Issue ID，`projectId` 严格等于既有 Project ID；M1 不发布 `/sessions/:sessionId`，也不把尚未交付的 task view / project tab 伪装为可用。不得把新 deep link 写成旧收藏链接迁移。

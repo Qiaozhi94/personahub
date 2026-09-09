@@ -21,7 +21,7 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 
 - [ ] T001 (`FR-002`, `FR-007`, `NFR-004`): T001 只维护和校验已经冻结的矩阵；逐项迁移页面、路由、弹窗、动作、hook 和测试后更新状态与旧组件删除证据，发现漏项须先补矩阵门禁，禁止到实现末尾才反向盘点范围。 — verify: `node --test tools/check-v03-plan-contracts.test.mjs`
 - [ ] T002 (`UX-001`, `UX-002`): 对齐 V3.44 design tokens，并建立 dialog / tabs / table / feedback / page-state 共享原语。 — verify: `npm test --workspace web`
-- [ ] T003 (`FR-001`, `FR-005`): 实现 ApplicationShell、SurfaceRegistry、一级导航和稳定路由槽位。 — verify: `npm run typecheck`
+- [ ] T003 (`FR-001`, `FR-005`): 严格按 `design.md` 的 M1 SurfaceRegistry manifest 实现 ApplicationShell 与一级导航；测试九个槽位的 enabled / not-registered 状态、route、数据投影和允许动作，并断言未注册 surface 无导航控件、不可聚焦、deep link 进入 not-found。 — verify: `npm test --workspace web`
 
 ### Phase 2：既有能力迁入新结构
 
