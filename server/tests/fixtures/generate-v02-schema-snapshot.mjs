@@ -64,9 +64,7 @@ parts.push(
 );
 
 for (let version = 1; version <= SCHEMA_VERSION; version += 1) {
-  parts.push(
-    `INSERT INTO schema_version (version, applied_at) VALUES (${version}, '${APPLIED_AT}');`,
-  );
+  parts.push(`INSERT INTO schema_version (version, applied_at) VALUES (${version}, '${APPLIED_AT}');`);
 }
 
 const outPath = join(repoRoot, "server", "tests", "fixtures", "v02-schema-v10.sql");

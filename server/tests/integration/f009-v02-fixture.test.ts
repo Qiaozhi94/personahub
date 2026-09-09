@@ -5,11 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
-import {
-  buildV02Fixture,
-  loadV02SeedSql,
-  loadV02SnapshotSql,
-} from "../fixtures/build-v02-fixture.js";
+import { buildV02Fixture, loadV02SeedSql, loadV02SnapshotSql } from "../fixtures/build-v02-fixture.js";
 
 // F009 T000 — proves the committed v0.2 fixture (raw SQL snapshot + seed) is a
 // faithful schema-v10 database that the real v10 → v11 → head migration chain
@@ -55,13 +51,13 @@ function count(db: Database.Database, sql: string): number {
 function assertRepresentativeData(db: Database.Database): void {
   // FX-PROJECT: 2 projects, exactly one bound workspace.
   expect(count(db, "SELECT COUNT(*) AS c FROM projects")).toBe(2);
-  const bound = db
-    .prepare("SELECT default_workspace_id FROM projects WHERE id = 'prj_v02_alpha'")
-    .get() as { default_workspace_id: string | null };
+  const bound = db.prepare("SELECT default_workspace_id FROM projects WHERE id = 'prj_v02_alpha'").get() as {
+    default_workspace_id: string | null;
+  };
   expect(bound.default_workspace_id).toBe("ws_v02_alpha");
-  const unbound = db
-    .prepare("SELECT default_workspace_id FROM projects WHERE id = 'prj_v02_beta'")
-    .get() as { default_workspace_id: string | null };
+  const unbound = db.prepare("SELECT default_workspace_id FROM projects WHERE id = 'prj_v02_beta'").get() as {
+    default_workspace_id: string | null;
+  };
   expect(unbound.default_workspace_id).toBeNull();
 
   // FX-TASK: running / blocked / done all present, each with one primary thread.
@@ -125,9 +121,7 @@ function assertRepresentativeData(db: Database.Database): void {
   expect(count(db, "SELECT COUNT(*) AS c FROM run_file_changes WHERE run_id = 'run_v02_completed'")).toBe(2);
   const runningEvents = count(db, "SELECT COUNT(*) AS c FROM thread_events WHERE thread_id = 'thr_v02_running'");
   expect(runningEvents).toBe(16);
-  expect(
-    count(db, "SELECT COUNT(*) AS c FROM thread_events WHERE type = 'run.output_truncated'"),
-  ).toBe(1);
+  expect(count(db, "SELECT COUNT(*) AS c FROM thread_events WHERE type = 'run.output_truncated'")).toBe(1);
 
   // FX-EVIDENCE: complete group has handoff + test + summary; the partial group
   // (iss_v02_blocked) has handoff + failed test but no summary row.
@@ -142,11 +136,12 @@ function assertRepresentativeData(db: Database.Database): void {
     count(db, "SELECT COUNT(*) AS c FROM thread_events WHERE thread_id = 'thr_v02_done' AND type = 'handoff.created'"),
   ).toBe(1);
   expect(
-    count(db, "SELECT COUNT(*) AS c FROM thread_events WHERE thread_id = 'thr_v02_blocked' AND type = 'test.completed'"),
+    count(
+      db,
+      "SELECT COUNT(*) AS c FROM thread_events WHERE thread_id = 'thr_v02_blocked' AND type = 'test.completed'",
+    ),
   ).toBe(1);
-  expect(
-    count(db, "SELECT COUNT(*) AS c FROM evidence_summaries WHERE issue_id = 'iss_v02_blocked'"),
-  ).toBe(0);
+  expect(count(db, "SELECT COUNT(*) AS c FROM evidence_summaries WHERE issue_id = 'iss_v02_blocked'")).toBe(0);
 
   // FX-VALIDATION: two failed rounds then a pass, one validator Run per round.
   const rounds = db
@@ -156,9 +151,9 @@ function assertRepresentativeData(db: Database.Database): void {
     )
     .all() as Array<{ r: number; status: string }>;
   expect(rounds.map((r) => r.r)).toEqual([1, 2, 3]);
-  const roundCount = db
-    .prepare("SELECT validation_round_count AS c FROM issues WHERE id = 'iss_v02_done'")
-    .get() as { c: number };
+  const roundCount = db.prepare("SELECT validation_round_count AS c FROM issues WHERE id = 'iss_v02_done'").get() as {
+    c: number;
+  };
   expect(roundCount.c).toBe(3);
   // And a validator Run that died without a verdict (the BUG-003 wedge).
   const wedged = db
@@ -259,9 +254,7 @@ describe("F009 v0.2 schema-v10 fixture", () => {
       expect(row.a).toBe(1);
       expect(row.r).not.toBeNull();
     }
-    const validators = db
-      .prepare("SELECT id FROM runs WHERE role = 'validator'")
-      .all() as Array<{ id: string }>;
+    const validators = db.prepare("SELECT id FROM runs WHERE role = 'validator'").all() as Array<{ id: string }>;
     expect(validators.map((v) => v.id).sort()).toEqual([
       "run_v02_val_b1",
       "run_v02_val_b2",
