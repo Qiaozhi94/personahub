@@ -232,6 +232,30 @@ test('F009-DOC-R1-001: the frozen migration matrix is a development input', () =
   verifyMutation(documents, phrases);
 });
 
+test('F009-DOC-R1-002: M1 routes have stable identities and deterministic failures', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+  ];
+  const phrases = [
+    'M1 不发布 `/sessions/:sessionId`',
+    '`taskId` 在 M1 中严格等于既有 Issue ID',
+    '`projectId` 严格等于既有 Project ID',
+    '`/tasks/:taskId` | Task object',
+    '`/projects/:projectId` | Project object',
+    '`route_issue=unsupported-view`',
+    'History 前进 / 后退必须重放 URL',
+    'F012 发布 Session ID 后才注册 `/sessions/:sessionId`',
+  ];
+  const forbidden = ['F009 新增 `/tasks/:taskId/:view?`、`/projects/:projectId/:tab?`、`/sessions/:sessionId`'];
+
+  requirePhrases(documents, phrases);
+  forbidPhrases(documents, forbidden);
+  verifyMutation(documents, phrases);
+  verifyForbiddenMutation(documents, forbidden[0]);
+});
+
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
   const documents = [
     read('docs/features/0.3/README.md'),
@@ -242,8 +266,8 @@ test('V03-PLAN-R1-008: URL migration is based on published routes, not invented 
   ];
   const phrases = [
     '当前已发布历史 URL inventory 只有根入口 `/`',
-    '`/tasks/:taskId/:view?`',
-    '`/projects/:projectId/:tab?`',
+    '`/tasks/:taskId`',
+    '`/projects/:projectId`',
     '`/sessions/:sessionId`',
     '刷新恢复',
     '未知 ID',

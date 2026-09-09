@@ -25,7 +25,34 @@ updated: 2026-09-08
 
 ## 4. 接口、Contract 与 Event
 
-Route contract 为稳定的一级 surface + 对象 ID + 可选子视图：`/tasks/:taskId/:view?`、`/projects/:projectId/:tab?`、`/sessions/:sessionId`，其中 view / tab 使用显式白名单和默认值。当前生产 App 只通过 React local state 选对象，已发布 URL inventory 只有 `/`；legacy resolver 只接受 inventory 中有 release 证据的条目，不猜历史对象 ID。刷新先解析 route 再加载对象；未知 ID 返回对应列表并保留 not-found 诊断。兼容 projection 只组合现有 projects、issues、threads、runs、trace、evidence、adapters、workflow templates 和 runtime-health API。事件订阅继续使用现有 SSE cursor，route 切换不得重复订阅或制造事件。
+当前生产 App 只通过 React local state 选对象，已发布 URL inventory 只有 `/`；legacy resolver 只接受 inventory 中有 release 证据的条目，不猜历史对象 ID。M1 route manifest 如下：
+
+| Pattern | Route identity | M1 结果 | Canonicalization / failure |
+|---|---|---|---|
+| `/` | 已发布 legacy entry | 先加载 Project 列表；有数据时 `replace` 到 `/projects/:projectId`（API 稳定顺序的第一项），无数据时保留 `/` 并显示项目创建入口 | 不生成历史对象 alias；首次 replace 不增加 History 项 |
+| `/tasks` | Task list | 以选定 project query 或 Project 列表第一项加载既有 Issue 列表 | 无项目时显示可恢复 empty state；`not_found` / `from` query 只作诊断，不参与对象身份 |
+| `/tasks/:taskId` | Task object | `taskId` 在 M1 中严格等于既有 Issue ID；加载该 Issue 及内部 `primary_thread` | 未知 ID `replace` 到 `/tasks?not_found=<id>&from=<encoded-path>`；Thread ID 不进入公开 URL |
+| `/projects` | Project list | 加载既有 Project 列表 | 空列表显示创建入口 |
+| `/projects/:projectId` | Project object | `projectId` 严格等于既有 Project ID；显示项目兼容页 | 未知 ID `replace` 到 `/projects?not_found=<id>&from=<encoded-path>` |
+| `/runtime` | Runtime summary | 执行资源只读摘要 | 未知子路径进入统一非法子路径处理 |
+| `/runtime/adapters` | Adapter compatibility settings | 既有 adapter 配置唯一入口 | 写入仍走既有 canonical adapter API |
+| `/settings/system-diagnostics` | System diagnostics | schema / app infrastructure 只读诊断 | 不复制 runtime 状态 |
+| `/settings/legacy-workflows` | Legacy Workflow evidence | 只读列表 / 详情 | 所有模板写动作不可达 |
+
+M1 不发布 `/sessions/:sessionId`：当前 Thread ID 不是未来 Session ID，禁止生成 Thread→Session
+猜测 alias。F012 发布 Session ID 后才注册 `/sessions/:sessionId`，并拥有旧 Thread ID 的显式 alias /
+迁移契约。`/tasks/:taskId/:view` 在 F011 前、`/projects/:projectId/:tab` 在 F013 前都不注册；M1 收到
+这些路径时分别 `replace` 到对象 base route，并附加 `route_issue=unsupported-view` 或
+`route_issue=unsupported-tab` 与 `from=<encoded-path>`。F011 可在保持 base route 表示默认概览的
+前提下注册 `overview / conversation / acceptance / resources`；F013 可注册当时真实上线的 project
+tabs，未上线的项目记忆仍不进白名单。
+
+URL 是选择状态的唯一真相源。刷新先解析 route 再加载对象；History 前进 / 后退必须重放 URL、
+取消上一对象未完成的 loader，并且只在新对象解析成功后建立一份 SSE cursor 订阅。程序性默认跳转
+与 canonicalization 使用 `replace`，用户选择不同对象或 surface 使用 `push`。not-found 和非法子路径
+不得静默落到另一个对象，诊断 query 在用户明确选择有效对象后清除。兼容 projection 只组合现有
+projects、issues、threads、runs、trace、evidence、adapters、workflow templates 和 runtime-health
+API；route 切换不得重复订阅或制造事件。
 
 ## 5. Runtime、Workflow 与并发
 
@@ -49,4 +76,4 @@ AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、r
 
 ## 10. 待确认设计问题
 
-无。
+- [x] DQ-001: M1 是否提前发布 Task view、Project tab 与 Session deep link？ — 决策：不提前发布；M1 只注册 route manifest 中已有稳定身份和真实页面的 base route，F011 / F013 / F012 分别在自身契约可用后扩展，非法子路径按 manifest 确定恢复。
