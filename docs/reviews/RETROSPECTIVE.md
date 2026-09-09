@@ -924,3 +924,48 @@ archived ref 的消费限制与 F010 契约一致。
 6. 首个 CI 的 E2E 已绿，但 Verify 被已提交版本的断链阻塞；这说明脏工作树可能让本地文档门禁
    读取到尚未提交的修正，从而掩盖 HEAD 的真实状态。后续收口应额外对 `git show HEAD:<file>`
    或干净 worktree 跑涉及全仓链接的门禁，不能只看当前工作树全绿。
+
+---
+
+## 循环 19：F009 开发前设计检视（3轮）
+
+- **report_type**: doc-review
+- **周期**: 2026-09-08—2026-09-09，3轮 · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
+- **背景**: 以 `main@53c3c55` 为修复基线，对设计重构后的 F009 做开发前最后检视。
+  Round 1 全量扫描，Round 2/3 只复核修复 diff 与相邻契约。用户自有改动
+  `docs/quant-factor-research-tradingview-assessment.md` 全程排除且未暂存。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F009-DOC-R1-001 | 迁移矩阵尚未成为开发前设计输入 | High | 正确性 | 根因 | 流程缺口 | fixed | 冻结 11 个生产页面/入口与 31 个动作/事实的迁移矩阵，逐项记录处置、生命周期、新入口、canonical API、替换 owner、删除条件与期限 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-001` | 1 | 1 | readiness-prerequisite-unowned |
+| F009-DOC-R1-002 | canonical route 的身份和阶段语义未闭合 | High | 正确性 | 根因 | 规格漂移 | fixed | 固定 M1 route manifest；仅发布稳定 Task/Project 身份，Session route 延至 F012，并定义默认、非法值、异步失败和 history 行为 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-002` | 1 | 1 | route-id-contract-drift |
+| F009-DOC-R1-003 | M1 生产 SurfaceRegistry 没有枚举 | High | 正确性 | 根因 | 原方案 | fixed | 枚举九个一级槽位：Task/Project/Runtime/Settings enabled，其余 not-registered；禁止 visible-disabled 伪工作面 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-003` | 1 | 1 | surface-registry-boundary-underspecified |
+| F009-DOC-R1-004 | 既有写动作在 transitional-host 间归属不完整 | High | 正确性 | 根因 | 原方案 | fixed | 对 A001–A030 逐项指定唯一宿主、canonical API、生命周期和下游接管 owner，保留 validation trigger/unblock/reset 等现有动作 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-004` | 1 | 1 | migration-action-disposition-missing |
+| F009-DOC-R1-005 | v0.2 schema fixture 前置条件当前不可执行 | High | 测试覆盖 | 根因 | 流程缺口 | fixed | 新增 Phase 0 T000，钉 source commit `5ef5055`、schema v10、文本 SQL/raw seed 与 v10→v11→head 真实升级链；清除“最新 schema”双解 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-005` | 1 | 2 | readiness-prerequisite-unowned |
+| F009-DOC-R1-006 | 125 条 V3.44 browser checks 缺少适用性分母 | Medium | 测试覆盖 | 根因 | 流程缺口 | fixed | 逐条分类为 adapted 28/deferred 96/not-applicable 1，并以源 SHA256、连续 ID、精确计数及变异锁定分母 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-006` | 1 | 2 | acceptance-subset-without-denominator |
+| F009-DOC-R1-007 | 未提交草稿的保存边界不明确 | Medium | 正确性 | 根因 | 原方案 | fixed | ApplicationShell 持有按 Task 分键的内存 TaskDraftStore；定义切换/刷新、revision 匹配清理、提交失败和对象删除语义 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-007` | 1 | 1 | transient-state-owner-missing |
+| F009-DOC-R2-008 | 根入口与任务列表猜测首个 Project，破坏稳定身份 | High | 正确性 | 根因 | 修复引入 | fixed | `/` 固定跳转 `/projects`；无显式 project 的 `/tasks` 显示选择器，只有用户选择后才 push identity URL | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R2-008` | 2 | 2 | route-id-contract-drift |
+
+**问题与实际修复证据**
+
+- R1-001～R1-004 分别由 `1a098f8`、`55f8e2d`、`e605aad`、`f9af144` 关闭，把迁移范围、
+  route identity、SurfaceRegistry 和写动作 owner 从原则性文字变成可枚举开发输入。
+- R1-005～R1-007 分别由 `6f44d3c`/`bb31627`、`61c1dd0`/`aeb5ec4`、`e3e56cc` 关闭；
+  fixture 与 browser catalog 在 Round 2 又补了禁止模糊口径和源漂移的防线。
+- R2-008 是 Round 1 路由修复引入的相邻契约问题；`97b6eab` 删除首项目猜测，恢复“身份只来自
+  URL 或用户显式选择”的统一规则。
+- `b2a590b` 在全部 finding 关闭后才把 F009、BACKLOG、v0.3 README 与项目说明同步到
+  `ready-for-development`，同时记录不需要效用假设评估的具体豁免理由。
+
+**模式性教训**
+
+1. `origin` 分布：原方案 3、规格漂移 1、流程缺口 3、修复引入 1。修复自伤率 1/7，虽低于历史
+   区间，仍证明 Round 2 diff-only 必不可少；R2-008 在首轮修复前并不存在。
+2. `readiness-prerequisite-unowned` 再次出现 2 次：开发前依赖如果只写成“应已有”，而没有钉 source、
+   owner、产物和验证方法，就不是前置条件，只是愿望。迁移 inventory 与历史 fixture 都应进入 Phase 0。
+3. `route-id-contract-drift` 跨轮出现 2 次：仅列 route pattern 不等于定义身份。根入口、集合页、对象页、
+   默认参数、非法参数、history 和异步 not-found 必须一次写成 manifest，尤其禁止按列表顺序猜对象。
+4. R1-005/R1-006 最长存活 1 轮：首轮主体修复已完成，但 Round 2 才清除模糊残词并绑定源哈希；
+   这说明“有分类表/fixture 文档”仍不足以防漂移，必须增加禁止式与源绑定回归。
+5. 八条 finding 均有独立修复提交和仓库内回归；目标测试均先红后绿。Round 3 reviewer 视角复核未发现
+   新问题，开放问题、Feature 状态和路线图真相源同步一致。
