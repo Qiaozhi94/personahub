@@ -34,7 +34,7 @@ updated: 2026-09-08
 
 升级用户进入产品后，能在 V3.44 壳层中找到项目、任务、执行、轨迹和证据，并继续完成迁移矩阵标为 migrated 的 v0.1–v0.2 操作；被最终对象模型明确取代的管理动作按 retired 处理。
 
-**独立测试**：使用 v0.2 最新 schema fixture，从打开项目到创建任务、选择执行方式、启动、查看执行事实和验收结果，全程不进入旧 App Shell。
+**独立测试**：使用 `v02-fixture-contract.md` 固定的 v0.2 release v10 fixture，经真实 migration 升级后，从打开项目到创建任务、选择执行方式、启动、查看执行事实和验收结果，全程不进入旧 App Shell。
 
 1. Given 用户已有项目和任务，when 从已发布历史根入口 `/` 进入，then 到达保留原 ID 的项目列表且不猜选某个项目；when 用户明确选择对象或复制 F009 新 canonical deep link 后刷新，then 回到同一对象。
 2. Given 某项最终设计能力尚未交付，when 用户浏览导航或页面动作，then 不出现可点击死入口或伪造数据。

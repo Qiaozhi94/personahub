@@ -341,7 +341,9 @@ test('F009-DOC-R1-005: the v0.2 fixture has a pinned source and upgrade path', (
   ];
 
   requirePhrases(documents, phrases);
+  forbidPhrases(documents, ['v0.2 最新 schema fixture']);
   verifyMutation(documents, phrases);
+  verifyForbiddenMutation(documents, 'v0.2 最新 schema fixture');
 });
 
 test('F009-DOC-R1-006: all 125 V3.44 browser checks have an explicit disposition', () => {
