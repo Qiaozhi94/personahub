@@ -386,6 +386,26 @@ test('F009-DOC-R1-007: draft ownership and cleanup semantics are deterministic',
   verifyMutation(documents, phrases);
 });
 
+test('F009-DOC-R2-008: entry and task-list routes never guess an active project', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+  ];
+  const phrases = [
+    '`/` | 已发布 legacy entry | `replace` 到 `/projects`',
+    '`/tasks` | Task list | 未指定 `project` query 时显示项目选择',
+    '不得默认选择列表第一项',
+    '用户明确选择 Project 后才 `push`',
+  ];
+  const forbidden = ['API 稳定顺序的第一项', 'Project 列表第一项加载既有 Issue 列表'];
+
+  requirePhrases(documents, phrases);
+  forbidPhrases(documents, forbidden);
+  verifyMutation(documents, phrases);
+  verifyForbiddenMutation(documents, forbidden[0]);
+});
+
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
   const documents = [
     read('docs/features/0.3/README.md'),
