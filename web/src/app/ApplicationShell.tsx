@@ -1,15 +1,10 @@
-import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { FolderKanban, ListTodo, Search, Server, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "@/app/command-palette";
 import { SURFACE_REGISTRY, surfaceForPath, type SurfaceDefinition } from "@/app/surface-registry";
-import {
-  TaskDraftStore,
-  taskComposerKey,
-  type SubmitTicket,
-  type DraftEdit,
-  type DraftRecord,
-} from "@/app/task-draft-store";
+import { TaskDraftStore } from "@/app/task-draft-store";
+import { DraftStoreContext } from "@/app/draft-store-context";
 import { useRouter } from "@/app/router";
 import { canonicalTarget, resolveRoute } from "@/app/route-manifest";
 
@@ -18,33 +13,7 @@ import { canonicalTarget, resolveRoute } from "@/app/route-manifest";
 // sits above the route outlet so switching objects or surfaces never unmounts
 // the draft store away. The vertical rail is the only primary navigation.
 
-const DraftStoreContext = createContext<TaskDraftStore | null>(null);
-
-export function useDraftStore(): TaskDraftStore {
-  const store = useContext(DraftStoreContext);
-  if (!store) throw new Error("useDraftStore must be used inside ApplicationShell");
-  return store;
-}
-
-/** Convenience binding for the M1 composer key namespace. Values are read on
- *  every render so a draft mutation anywhere in the shell is picked up. */
-export function useComposerDraft(taskId: string): {
-  record: DraftRecord | null;
-  text: string;
-  edit: (edit: DraftEdit) => void;
-  discard: () => void;
-  beginSubmit: () => SubmitTicket | null;
-} {
-  const store = useDraftStore();
-  const key = taskComposerKey(taskId);
-  return {
-    record: store.record(key),
-    text: store.text(key),
-    edit: (edit: DraftEdit) => store.edit(key, edit),
-    discard: () => store.discard(key),
-    beginSubmit: () => store.beginSubmit(key),
-  };
-}
+export { useDraftStore, useComposerDraft } from "@/app/draft-store-context";
 
 const SURFACE_ICONS: Partial<Record<SurfaceDefinition["id"], React.ComponentType<{ className?: string }>>> = {
   tasks: ListTodo,

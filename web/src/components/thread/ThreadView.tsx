@@ -20,6 +20,7 @@ import { apiClient, toApiError } from "@/lib/api-client";
 import { ThreadEvent } from "@/components/thread/ThreadEvent";
 import { AgentSelector } from "@/components/thread/AgentSelector";
 import { GraceValidatorBanner } from "@/components/thread/GraceValidatorBanner";
+import { useComposerDraft } from "@/app/draft-store-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -414,9 +415,23 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
   const createRun = useCreateRun();
   const graphQuery = useGraph(issueId);
 
-  const [instructions, setInstructions] = useState("");
-  const [selectedAdapterId, setSelectedAdapterId] = useState<string | null>(null);
-  const [explicitConsult, setExplicitConsult] = useState(false);
+  // Composer text + selection live in the shell-owned TaskDraftStore so they
+  // survive task / project / surface switches and submit-revision matching
+  // (design.md §5). Returning to this task restores text, adapter, consult.
+  const draft = useComposerDraft(issueId);
+  const [selectedAdapterId, setSelectedAdapterId] = useState<string | null>(
+    draft.record?.adapterId ?? null,
+  );
+  const [explicitConsult, setExplicitConsult] = useState(draft.record?.explicitConsult ?? false);
+  const instructions = draft.text;
+
+  function updateDraft(next: { text?: string; adapterId?: string | null; explicitConsult?: boolean }) {
+    draft.edit({
+      text: next.text ?? instructions,
+      adapterId: next.adapterId !== undefined ? next.adapterId : selectedAdapterId,
+      explicitConsult: next.explicitConsult !== undefined ? next.explicitConsult : explicitConsult,
+    });
+  }
 
   const adapters = adaptersQuery.data?.adapters ?? [];
   const runs = runsQuery.data?.runs ?? [];
@@ -457,6 +472,10 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!canSend) return;
+    // Capture key + generation + revision now: only a success response that
+    // still matches may clear the draft. A failure keeps the record and the
+    // selection; a late or superseded response becomes a no-op.
+    const ticket = draft.beginSubmit();
     createRun.mutate(
       {
         issueId,
@@ -467,7 +486,12 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
         },
       },
       {
-        onSuccess: () => setInstructions(""),
+        onSuccess: () => {
+          if (ticket) draft.resolve(ticket, "success");
+        },
+        onError: () => {
+          if (ticket) draft.resolve(ticket, "failure");
+        },
       },
     );
   }
@@ -541,10 +565,16 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
             <AgentSelector
               adapters={adapters}
               selectedAdapterId={selectedAdapterId}
-              onSelect={setSelectedAdapterId}
+              onSelect={(adapterId) => {
+                setSelectedAdapterId(adapterId);
+                updateDraft({ adapterId });
+              }}
               issueStatus={issueStatus}
               explicitConsult={explicitConsult}
-              onExplicitConsultChange={setExplicitConsult}
+              onExplicitConsultChange={(next) => {
+                setExplicitConsult(next);
+                updateDraft({ explicitConsult: next });
+              }}
             />
 
             {disabledMessage ? (
@@ -557,7 +587,7 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
             <div className="flex items-start gap-2">
               <Textarea
                 value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
+                onChange={(e) => updateDraft({ text: e.target.value })}
                 placeholder="Enter agent instructions…"
                 className="min-h-[48px] flex-1 resize-none text-xs"
                 disabled={isTerminal}

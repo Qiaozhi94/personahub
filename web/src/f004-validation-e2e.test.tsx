@@ -17,6 +17,8 @@ import { IssueInspector } from "@/components/inspector/IssueInspector";
 vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
 
 import { apiClient } from "@/lib/api-client";
+import { TaskDraftStore } from "@/app/task-draft-store";
+import { DraftStoreContext } from "@/app/draft-store-context";
 
 const TS = "2026-07-19T00:00:00.000Z";
 
@@ -174,7 +176,9 @@ describe("F004 Validation E2E UI flows", () => {
 
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Done} projectId="prj_1" />
+        <DraftStoreContext.Provider value={new TaskDraftStore()}>
+          <ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Done} projectId="prj_1" />
+        </DraftStoreContext.Provider>
       </QueryClientProvider>
     );
 
@@ -250,7 +254,9 @@ describe("F004 Validation E2E UI flows", () => {
 
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Blocked} projectId="prj_1" />
+        <DraftStoreContext.Provider value={new TaskDraftStore()}>
+          <ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Blocked} projectId="prj_1" />
+        </DraftStoreContext.Provider>
       </QueryClientProvider>
     );
 

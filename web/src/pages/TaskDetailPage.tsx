@@ -5,6 +5,9 @@ import { toApiError } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { PageLoading, ErrorState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
+import { ThreadView } from "@/components/thread/ThreadView";
+import { useDraftStore } from "@/app/draft-store-context";
+import { taskComposerKey } from "@/app/task-draft-store";
 import { buildUrl, useRouter } from "@/app/router";
 import type { Diagnostics } from "@/app/route-manifest";
 import { PageFrame, PageSection } from "@/pages/page-frame";
@@ -23,6 +26,7 @@ export function TaskDetailPage({
 }) {
   const { navigate } = useRouter();
   const issueQuery = useIssue(taskId);
+  const draftStore = useDraftStore();
   const redirectedRef = useRef(false);
 
   const notFound =
@@ -31,6 +35,8 @@ export function TaskDetailPage({
   useEffect(() => {
     if (!notFound || redirectedRef.current) return;
     redirectedRef.current = true;
+    // The object is gone: clear its draft, keep the generation high-water.
+    draftStore.objectMissing(taskComposerKey(taskId));
     navigate(
       buildUrl("/tasks", {
         not_found: taskId,
@@ -38,7 +44,7 @@ export function TaskDetailPage({
       }),
       { replace: true },
     );
-  }, [notFound, taskId, navigate]);
+  }, [notFound, taskId, navigate, draftStore]);
 
   if (issueQuery.isLoading) {
     return <PageLoading label="正在加载任务" />;
@@ -87,7 +93,17 @@ export function TaskDetailPage({
         title="执行与会话（兼容）"
         description="查看执行事件、发送指令、启动或恢复执行。"
       >
-        <ExecutionHostPlaceholder taskId={taskId} />
+        {issue.primary_thread ? (
+          <ThreadView
+            threadId={issue.primary_thread.id}
+            issueId={issue.id}
+            issueStatus={issue.status}
+            projectId={issue.project_id}
+            validationDispatchDueAt={issue.validation_dispatch_due_at}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">没有关联的执行会话。</p>
+        )}
       </PageSection>
 
       <PageSection
@@ -100,12 +116,8 @@ export function TaskDetailPage({
   );
 }
 
-// The transitional hosts mount in migration steps T011/T012; until then these
-// render nothing user-visible so no fake facts or dead controls appear.
-function ExecutionHostPlaceholder(_props: { taskId: string }): null {
-  return null;
-}
-
+// The facts host mounts with migration step T012; until then this renders
+// nothing user-visible so no fake facts or dead controls appear.
 function FactsHostPlaceholder(_props: { taskId: string }): null {
   return null;
 }

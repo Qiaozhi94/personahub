@@ -4,6 +4,7 @@ import { useIssues } from "@/hooks/use-issues";
 import { useProjects } from "@/hooks/use-projects";
 import { toApiError } from "@/lib/api-client";
 import { CreateIssueDialog } from "@/components/issue/CreateIssueDialog";
+import { IntakeDialog } from "@/components/intake/IntakeDialog";
 import { IssueList } from "@/components/issue/IssueList";
 import { PageLoading, EmptyState, ErrorState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
@@ -125,6 +126,7 @@ function TaskProjectBoard({
   const projectsQuery = useProjects();
   const issuesQuery = useIssues(projectId);
   const [createOpen, setCreateOpen] = useState(false);
+  const [intakeOpen, setIntakeOpen] = useState(false);
 
   const projects = projectsQuery.data?.projects ?? [];
   const project = projects.find((candidate) => candidate.id === projectId) ?? null;
@@ -162,13 +164,22 @@ function TaskProjectBoard({
       <PageHeading
         title={project !== null ? `任务 · ${project.name}` : "任务"}
         actions={
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            新建任务
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIntakeOpen(true)}
+              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
+            >
+              推荐创建
+            </button>
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              新建任务
+            </button>
+          </div>
         }
       />
 
@@ -202,6 +213,13 @@ function TaskProjectBoard({
         projectId={projectId}
         open={createOpen}
         onOpenChange={setCreateOpen}
+        onCreated={(issueId) => navigate(buildUrl(`/tasks/${encodeURIComponent(issueId)}`))}
+      />
+
+      <IntakeDialog
+        projectId={projectId}
+        open={intakeOpen}
+        onOpenChange={setIntakeOpen}
         onCreated={(issueId) => navigate(buildUrl(`/tasks/${encodeURIComponent(issueId)}`))}
       />
     </PageFrame>

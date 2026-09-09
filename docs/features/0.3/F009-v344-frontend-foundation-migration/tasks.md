@@ -31,7 +31,7 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 ### Phase 2：既有能力迁入新结构
 
 - [x] T010 (`FR-003`, `FR-006`): 按迁移矩阵 A001–A005 迁移项目选择 / 创建、代码目录绑定、任务列表 / 创建和当前任务上下文，复用逐行指定的既有 API。 — verify: `npm test --workspace web`
-- [ ] T011 [P] (`FR-003`, `FR-006`, `NFR-004`): 按迁移矩阵 A006–A015 为推荐确认、执行启动、人工介入、Run / Graph 状态和会话事件建立唯一 transitional-host；不改领域契约，由 F012 验收时删除，latest_milestone=M3。 — verify: `npm test --workspace web`
+- [x] T011 [P] (`FR-003`, `FR-006`, `NFR-004`): 按迁移矩阵 A006–A015 为推荐确认、执行启动、人工介入、Run / Graph 状态和会话事件建立唯一 transitional-host；不改领域契约，由 F012 验收时删除，latest_milestone=M3。 — verify: `npm test --workspace web`
 - [ ] T012 [P] (`FR-003`, `UX-003`, `NFR-004`): 按迁移矩阵 A016–A024 建任务事实与验收 transitional-host；A016–A020 只读，A021–A024 保留 trigger validation、unblock、reset rounds 与摘要复制 / 下载动作并调用矩阵指定 API；由 F011 验收时删除，latest_milestone=M4。 — verify: `npm test --workspace web`
 - [ ] T013 [P] (`FR-003`, `FR-005`, `NFR-004`): 按迁移矩阵 A025–A029 将 adapter / runtime health 最小入口放入运行时 / 设置 transitional-host（F012 验收时删除，latest_milestone=M3）；旧 Workflow Template A030 只保留只读列表 / 详情（F013 验收时删除，latest_milestone=M2），不得重做管理写面或调用旧写 API。 — verify: `npm test --workspace web`
 - [ ] T014 (`FR-004`): 按 `design.md` 的 M1 route manifest 实现 `/`、Task / Project base routes 与管理子页；逐条覆盖直达、刷新、History 前进 / 后退、`/` replace 到列表、未选 project 时不猜第一项、用户选择后 push、未知 ID、非法子路径和诊断清除。F012 发布 Session ID 前不得注册 `/sessions/:sessionId`，F011 / F013 接管前不得注册 task view / project tab。 — verify: `npm test --workspace web`
