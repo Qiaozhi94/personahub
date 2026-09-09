@@ -80,7 +80,27 @@ API；route 切换不得重复订阅或制造事件。
 
 ## 5. Runtime、Workflow 与并发
 
-不改变 graph、run、validation 和 adapter runtime。页面切换保留当前对象与未提交输入；重复提交、SSE replay 和写后读一致性沿用现有 service contract。旧入口一旦从生产 registry 移除，不再接受新写入。
+不改变 graph、run、validation 和 adapter runtime。重复提交、SSE replay 和写后读一致性沿用现有 service contract。旧入口一旦从生产 registry 移除，不再接受新写入。
+
+`TaskDraftStore` 由 `ApplicationShell` 持有，位于 route outlet 之上，不由会被路由卸载的
+`ThreadView` / view component 持有。M1 唯一 key 是 `task:${taskId}:composer`；记录至少包含
+`text`、`adapterId`、`explicitConsult`、单调递增 `revision`。Thread ID 不进入 key，因为 M1 不公开
+Session / Thread 身份；F012 增加独立 Session composer 时使用新的 `session:${sessionId}:composer`
+namespace，不能复用 task key。
+
+草稿生命周期如下：
+
+- 输入变化同步写 shell 内存；切换 task、project、surface 或后续四个 task view 均不清除，回到同一
+  task 时按 key 恢复。
+- 提交开始时捕获 key + revision；提交失败保留原记录和用户选择。只有匹配 key 与 revision 的成功响应可以清除；旧 task 的迟到响应或提交期间继续输入产生的新 revision 不得清掉新草稿。
+- 用户显式“丢弃草稿”后清除；对象 not-found / deleted 时清除并给出诊断，terminal / blocked 只禁用
+  提交，不自动删除草稿。
+- 浏览器刷新不恢复草稿，也不写 localStorage / sessionStorage / 服务端；存在非空草稿时注册
+  `beforeunload` 原生提示，全部清空后立即移除。这样页面内导航连续，但敏感指令不会持久化到浏览器。
+
+Draft store 是 UI 临时状态，不得进入 API DTO、SSE payload 或 compatibility projection。组件测试覆盖
+reducer/key/revision，浏览器测试覆盖跨 task/project/surface 往返、提交成功、提交失败重试、迟到成功
+响应、显式丢弃、not-found 和刷新提示。
 
 动作所有权以 `migration-matrix.md` 的 action ID 为准：T010 迁移 A001–A005；T011 的执行 / 派工
 host 迁移 A006–A015；T012 的任务事实与验收 host 迁移 A016–A024，其中 A016–A020 是只读事实，
@@ -116,3 +136,4 @@ AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、r
 - [x] DQ-003: Trace / Evidence 的只读宿主是否可以省略 validation trigger、unblock 与 reset rounds？ — 决策：不可以；只读只限定 A016–A020 的事实投影，A021–A024 作为独立用户动作迁移并继续调用既有 canonical API。
 - [x] DQ-004: “v0.2 schema fixture”应取 release v10 还是当前 v11？ — 决策：来源固定为 F008 收口 commit `5ef5055` 的 v10；启动时必须走既有 v10 → v11 → current head migration，且 fixture 用 raw SQL snapshot / seed 生成，不调用当前 public API 自证。
 - [x] DQ-005: V3.44 的 125 条 browser checks 哪些属于 F009？ — 决策：以 `v344-browser-check-applicability.md` 逐条分类，当前分母为 adapted 28 / deferred 96 / not-applicable 1；F009 只为 adapted 行提供生产证据，deferred 行不得提前暴露入口。
+- [x] DQ-006: 未提交 composer 草稿由谁持有、何时保留或清除？ — 决策：由 ApplicationShell 上层的内存 TaskDraftStore 按 Task ID + composer 分键；页面内切换保留，匹配 revision 的成功提交 / 显式丢弃 / 对象消失才清除，刷新不持久化并用 beforeunload 提示。

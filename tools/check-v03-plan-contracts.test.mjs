@@ -365,6 +365,27 @@ test('F009-DOC-R1-006: all 125 V3.44 browser checks have an explicit disposition
   );
 });
 
+test('F009-DOC-R1-007: draft ownership and cleanup semantics are deterministic', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+  ];
+  const phrases = [
+    '`TaskDraftStore` 由 `ApplicationShell` 持有',
+    '`task:${taskId}:composer`',
+    '切换 task、project、surface 或后续四个 task view 均不清除',
+    '浏览器刷新不恢复草稿',
+    '`beforeunload`',
+    '提交失败保留原记录',
+    '只有匹配 key 与 revision 的成功响应可以清除',
+    '对象 not-found / deleted 时清除',
+    'T004 (`UX-002`, `NFR-002`)',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
   const documents = [
     read('docs/features/0.3/README.md'),
