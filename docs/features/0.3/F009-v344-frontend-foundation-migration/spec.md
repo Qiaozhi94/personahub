@@ -84,7 +84,7 @@ updated: 2026-09-08
 ### 功能需求
 
 - **FR-001**：生产应用使用 V3.44 App Shell、导航层级和稳定路由承载所有已开放工作面。
-- **FR-002**：建立覆盖 v0.1–v0.2 所有生产页面、入口和动作的迁移矩阵；每项记录 migrated / deferred / retired 结论，以及 stable-shell / final-surface / transitional-host 生命周期分类。transitional-host 必填 replacement_owner、delete_when 与 latest_milestone。
+- **FR-002**：以开发前已冻结的 `migration-matrix.md` 覆盖 v0.1–v0.2 所有生产页面、入口和动作；每项记录 migrated / deferred / retired 结论，以及 stable-shell / final-surface / transitional-host 生命周期分类。transitional-host 必填 replacement_owner、delete_when 与 latest_milestone；实现阶段只能维护、校验和按既定结论迁移，不得首次发现范围。
 - **FR-003**：既有项目选择、任务创建、执行启动、人工介入、轨迹 / 文件变化查看、证据验收，以及 adapter 配置与 runtime health 入口在新界面中保持可用；Workflow Template 编辑按最终对象裁决退役，只保留只读迁移证据。
 - **FR-004**：以仓库与 release 证据建立已发布 URL inventory；当前已发布历史 URL inventory 只有根入口 `/`，因此只迁移有证据的历史 URL。F009 新增 `/tasks/:taskId/:view?`、`/projects/:projectId/:tab?`、`/sessions/:sessionId` canonical deep links，支持刷新恢复、未知 ID 返回对应列表与明确 not-found。不得把新 deep link 写成旧收藏链接迁移。
 - **FR-005**：未交付工作面和动作不得伪装为可用；隐藏与置灰遵守 V3.44 对“没有页面”和“暂不可执行”的区分。
@@ -128,7 +128,7 @@ updated: 2026-09-08
 
 ### 测试策略
 
-保留 F001–F008 server / API 回归；为 App Shell、共享原语与兼容 projection 建组件状态矩阵；以 v0.2 fixture 建 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；从 V3.44 的 125 条 browser checks 中提取本 Feature 已进入生产的适用契约。
+保留 F001–F008 server / API 回归；以开发前冻结的 `migration-matrix.md` 为范围与处置真相源，为 App Shell、共享原语与兼容 projection 建组件状态矩阵；以 v0.2 fixture 建 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；从 V3.44 的 125 条 browser checks 中提取本 Feature 已进入生产的适用契约。
 
 ### 依赖
 

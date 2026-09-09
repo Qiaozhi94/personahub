@@ -191,6 +191,47 @@ test('V03-PLAN-R1-007: F009 limits transitional surfaces and assigns deletion ow
   verifyMutation(documents, phrases);
 });
 
+test('F009-DOC-R1-001: the migration matrix is a frozen development input', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md'),
+  ];
+  const phrases = [
+    'status**: frozen-for-development',
+    '本矩阵是 F009 进入编码前的冻结设计输入',
+    '页面与入口清单',
+    '动作与事实清单',
+    'T001 只维护和校验已经冻结的矩阵',
+    '发现漏项须先补矩阵门禁',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
+
+test('F009-DOC-R1-001: the frozen migration matrix is a development input', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md'),
+  ];
+  const phrases = [
+    '本矩阵是 F009 进入编码前的冻结设计输入',
+    'inventory_baseline: `main@53c3c55`',
+    '## 2. 页面与入口清单',
+    '## 3. 动作与事实清单',
+    'migrated / deferred / retired',
+    'stable-shell / final-surface / transitional-host',
+    'T001 只维护和校验已经冻结的矩阵',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
   const documents = [
     read('docs/features/0.3/README.md'),

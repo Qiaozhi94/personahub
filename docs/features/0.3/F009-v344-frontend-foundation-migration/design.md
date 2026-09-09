@@ -9,7 +9,7 @@ updated: 2026-09-08
 
 ## 0. 输入与约束
 
-输入为本目录 `spec.md`、V3.44 `design.md` / `implementation-notes.md`、F001–F008 release contract 和当前 `web/src` 实现。设计稿决定交互结构，PRD / Feature 决定生产范围；不得复制原型静态数据。
+输入为本目录 `spec.md`、开发前冻结的 `migration-matrix.md`、V3.44 `design.md` / `implementation-notes.md`、F001–F008 release contract 和当前 `web/src` 实现。设计稿决定交互结构，PRD / Feature 决定生产范围；不得复制原型静态数据。
 
 ## 1. 技术概要与影响面
 
