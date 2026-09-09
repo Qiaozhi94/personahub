@@ -358,8 +358,18 @@ test('F009-DOC-R1-006: all 125 V3.44 browser checks have an explicit disposition
   const sourceChecksum = createHash('sha256').update(implementationNotes).digest('hex');
   assert.ok(catalog.includes(`source_sha256: ${sourceChecksum}`), 'browser-check source checksum drifted');
   verifyBrowserCheckApplicability(catalog);
-  const mutated = catalog.replace(/^\| BC-001 \|.*\n/m, '');
+  const removeFirstCatalogRow = (input) =>
+    input.replace(/^\| BC-001 \|[^\r\n]*(?:\r?\n|$)/m, '');
+  const mutated = removeFirstCatalogRow(catalog);
+  assert.notEqual(mutated, catalog, 'LF mutation must remove BC-001');
   assert.throws(() => verifyBrowserCheckApplicability(mutated), /expected 125 classified browser checks/);
+  const crlfCatalog = catalog.replace(/\r?\n/g, '\r\n');
+  const crlfMutated = removeFirstCatalogRow(crlfCatalog);
+  assert.notEqual(crlfMutated, crlfCatalog, 'CRLF mutation must remove BC-001');
+  assert.throws(
+    () => verifyBrowserCheckApplicability(crlfMutated),
+    /expected 125 classified browser checks/,
+  );
   assert.notEqual(
     createHash('sha256').update(implementationNotes.replace('任务面是主角', '任务面')).digest('hex'),
     sourceChecksum,
