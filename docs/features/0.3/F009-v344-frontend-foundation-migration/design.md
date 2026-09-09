@@ -45,7 +45,7 @@ Template 只在 `/settings/legacy-workflows` 只读。相同事实可以来自�
 
 ## 3. 数据模型与 Migration
 
-不新增或改写业务表。需要保留的前端偏好仅限非领域 UI 状态；路由 alias 和页面迁移矩阵以代码 / 文档常量维护。旧 schema 的数据库升级不在本 Feature，F014 负责跨版本 migration；本 Feature 只保证 v0.2 当前 schema 数据可读可操作。
+不新增或改写业务表。需要保留的前端偏好仅限非领域 UI 状态；路由 alias 和页面迁移矩阵以代码 / 文档常量维护。F009 不拥有新 migration，但必须按 `v02-fixture-contract.md` 从 v0.2 release v10 原始 SQL 数据启动，执行既有 v10 → v11 → current head migration 后验证新壳层可读可操作；F014 负责覆盖更多发布 schema 与跨 Feature 最终 migration report，不能替代 F009 的 v10 基线。
 
 ## 4. 接口、Contract 与 Event
 
@@ -114,3 +114,4 @@ AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、r
 - [x] DQ-001: M1 是否提前发布 Task view、Project tab 与 Session deep link？ — 决策：不提前发布；M1 只注册 route manifest 中已有稳定身份和真实页面的 base route，F011 / F013 / F012 分别在自身契约可用后扩展，非法子路径按 manifest 确定恢复。
 - [x] DQ-002: 九个 V3.44 一级槽位在 M1 是上线、占位还是隐藏？ — 决策：按 M1 SurfaceRegistry manifest 逐项注册；任务、项目、运行时、设置 enabled，其余 not-registered，M1 不设置 visible-disabled 一级槽位。
 - [x] DQ-003: Trace / Evidence 的只读宿主是否可以省略 validation trigger、unblock 与 reset rounds？ — 决策：不可以；只读只限定 A016–A020 的事实投影，A021–A024 作为独立用户动作迁移并继续调用既有 canonical API。
+- [x] DQ-004: “v0.2 schema fixture”应取 release v10 还是当前 v11？ — 决策：来源固定为 F008 收口 commit `5ef5055` 的 v10；启动时必须走既有 v10 → v11 → current head migration，且 fixture 用 raw SQL snapshot / seed 生成，不调用当前 public API 自证。

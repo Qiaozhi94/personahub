@@ -99,7 +99,7 @@ updated: 2026-09-08
 
 ### 非功能需求
 
-- **NFR-001**：F001–F008 的 API / 领域回归测试保持通过；前端替换不改变持久化事实，回归报告按迁移矩阵解释 retired 项，不把退役管理动作算作能力回归。
+- **NFR-001**：F001–F008 的 API / 领域回归测试保持通过；前端替换不改变持久化事实。历史升级验收使用 `v02-fixture-contract.md` 固定的 release v10 原始 SQL fixture，经真实 v10 → v11 → current head migration 后进入同一浏览器旅程；回归报告按迁移矩阵解释 retired 项，不把退役管理动作算作能力回归。
 - **NFR-002**：关键生产路由具备浏览器 smoke、可访问性和控制台零错误门禁。
 - **NFR-003**：兼容 adapter 集中、可计数且无反向依赖，后续 Feature 可以逐项替换并删除。
 - **NFR-004**：不得为 transitional-host 重做最终视觉或新增领域逻辑；它只调用既有 canonical API，并在 owning Feature 验收时删除。
@@ -128,7 +128,7 @@ updated: 2026-09-08
 
 ### 测试策略
 
-保留 F001–F008 server / API 回归；以开发前冻结的 `migration-matrix.md` 为范围与处置真相源，为 App Shell、共享原语与兼容 projection 建组件状态矩阵；以 v0.2 fixture 建 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；从 V3.44 的 125 条 browser checks 中提取本 Feature 已进入生产的适用契约。
+保留 F001–F008 server / API 回归；以开发前冻结的 `migration-matrix.md` 为范围与处置真相源，为 App Shell、共享原语与兼容 projection 建组件状态矩阵；按 `v02-fixture-contract.md` 建 release v10 raw SQL fixture，通过真实升级后的同一个临时数据库运行 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；从 V3.44 的 125 条 browser checks 中提取本 Feature 已进入生产的适用契约。
 
 ### 依赖
 

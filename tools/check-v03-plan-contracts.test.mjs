@@ -302,6 +302,28 @@ test('F009-DOC-R1-004: every retained write has one transitional host and owner'
   verifyMutation(documents, phrases);
 });
 
+test('F009-DOC-R1-005: the v0.2 fixture has a pinned source and upgrade path', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/v02-fixture-contract.md'),
+  ];
+  const phrases = [
+    'source_commit: `5ef5055`',
+    'source_schema: `v10`',
+    'target_schema_at_review: `v11`',
+    '不得调用当前 public API 造数',
+    'v10 → v11 → current head',
+    '至少两个 Issue 与多个 Run 同时存在',
+    'T000 (`FR-003`, `NFR-001`)',
+    'Phase 0 fixture 通过前不得执行 T001',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
   const documents = [
     read('docs/features/0.3/README.md'),

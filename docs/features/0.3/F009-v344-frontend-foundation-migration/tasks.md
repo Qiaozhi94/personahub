@@ -13,9 +13,13 @@ updated: 2026-09-08
 
 ## 1. 前置条件
 
-V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contract 和 v0.2 schema fixture 可用；开始编码前完成本 Feature 三件套与当前 `web/src` 影响面检视。
+V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contract、`v02-fixture-contract.md` 与迁移矩阵已冻结；开始编码前完成本 Feature 三件套与当前 `web/src` 影响面检视。实际 fixture 由 Phase 0 T000 建立，Phase 0 fixture 通过前不得执行 T001。
 
 ## 2. 实现任务
+
+### Phase 0：历史数据库夹具
+
+- [ ] T000 (`FR-003`, `NFR-001`): 按 `v02-fixture-contract.md` 从 commit `5ef5055` 的 v10 migration 生成并审核 schema snapshot，以 raw SQL seed 建立多 Project / Issue / Run / Graph / Trace / FileChange / Evidence / validation round / adapter / Workflow Template / runtime-health fixture；验证来源指纹、v10 → v11 → current head、二次启动幂等和两项规定变异，禁止调用当前 public API 造数。 — verify: `npm test --workspace server -- f009-v02-fixture`
 
 ### Phase 1：迁移清单与前端基础
 
@@ -34,7 +38,7 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 ### Phase 3：旧入口退出与生产验证
 
 - [ ] T020 (`FR-007`, `NFR-003`, `NFR-004`): 移除生产 registry 中的旧 App Shell、Inspector、Dock、旧管理弹窗和重复写入口；静态断言每个 migrated action ID 只有一个生产 host、每个 retired action ID 无可达写入口，并校验所有 transitional-host 的替换 owner / 删除条件 / 最晚里程碑。 — verify: `node --test tools/check-v03-plan-contracts.test.mjs && npm run typecheck`
-- [ ] T021 (`AC-001`, `AC-003`): 用 v0.2 fixture 建立新壳层黄金旅程、历史根入口升级和新 canonical deep links Playwright 覆盖。 — verify: `npm run test:e2e`
+- [ ] T021 (`AC-001`, `AC-003`): 只使用 T000 builder 升级后的同一个临时数据库建立新壳层黄金旅程、历史根入口升级和新 canonical deep links Playwright 覆盖；不得用当前 API 重建第二套 E2E seed。 — verify: `npm run test:e2e`
 - [ ] T022 (`AC-002`, `AC-004`, `AC-005`): 加入迁移矩阵、死入口、键盘、语义、窄视口、console 和 canonical API 门禁。 — verify: `npm run verify:release`
 
 ## 3. 验证与验收任务
@@ -45,7 +49,7 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 
 ## 4. 依赖与并行关系
 
-T001 先于所有迁移；T002/T003 可在清单冻结后并行；T010 完成当前对象路由后，T011–T014 可并行；T020 等对应新入口通过测试后逐项执行；T021/T022/T030/T031 构成退出门禁。F010 只可在 F009 壳层边界冻结后开始，F011–F013 的生产 UI 只接入新壳层。
+T000→T001，Phase 0 fixture 通过前不得执行 T001；T001 先于所有迁移；T002/T003 可在清单冻结后并行；T010 完成当前对象路由后，T011–T014 可并行；T020 等对应新入口通过测试后逐项执行；T021/T022/T030/T031 构成退出门禁。F010 只可在 F009 壳层边界冻结后开始，F011–F013 的生产 UI 只接入新壳层。
 
 ## 5. 明确后移
 
