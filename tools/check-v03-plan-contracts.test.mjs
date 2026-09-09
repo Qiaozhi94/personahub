@@ -118,6 +118,33 @@ function verifyV03FixtureJourney(versionPlan) {
   );
 }
 
+function verifyDraftGenerationContract(documents) {
+  const phrases = [
+    '`generation` 是同一 key 的 shell 生命周期代际',
+    '清除记录不得重置 generation high-water',
+    '`revision` 只在同一 generation 内单调递增',
+    '提交开始时捕获 key + generation + revision',
+    '只有匹配 key、generation 与 revision 的成功响应可以清除',
+    '显式丢弃在 pending 期间仍然允许',
+    '旧请求迟到的成功或失败响应都只能成为 no-op',
+    'submit N → discard while pending → retype → old success',
+    '重置 generation high-water',
+    '只比较 revision',
+  ];
+  const normalized = documents.join('\n').replace(/\s+/g, '');
+  for (const phrase of phrases) {
+    assert.ok(
+      normalized.includes(phrase.replace(/\s+/g, '')),
+      `missing v0.3 planning contract: ${phrase}`,
+    );
+  }
+  assert.doesNotMatch(
+    normalized,
+    /只有匹配key与revision的成功响应可以清除/,
+    'draft cleanup must not compare revision without generation',
+  );
+}
+
 test('V03-PLAN-R1-001: acceptance writes have canonical owners and integration tasks', () => {
   const documents = [
     read('docs/features/0.3/F011-trusted-task-surface/spec.md'),
@@ -495,13 +522,34 @@ test('F009-DOC-R1-007: draft ownership and cleanup semantics are deterministic',
     '浏览器刷新不恢复草稿',
     '`beforeunload`',
     '提交失败保留原记录',
-    '只有匹配 key 与 revision 的成功响应可以清除',
-    '对象 not-found / deleted 时清除',
+    '提交开始时捕获 key + generation + revision',
+    '对象 not-found / deleted 时同样清除记录',
     'T004 (`UX-002`, `NFR-002`)',
   ];
 
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
+});
+
+test('F009-DOC-R6-012: discard and retype cannot reuse a pending draft identity', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+  ];
+
+  verifyDraftGenerationContract(documents);
+
+  const resetGeneration = documents.map((document) =>
+    document.replace('清除记录不得重置 generation high-water', '清除记录会重置 generation high-water'),
+  );
+  assert.notDeepEqual(resetGeneration, documents, 'generation-reset mutation must change the contract');
+  assert.throws(() => verifyDraftGenerationContract(resetGeneration), /missing v0\.3 planning contract/);
+
+  const revisionOnly = documents.map((document) =>
+    document.replace('提交开始时捕获 key + generation + revision', '提交开始时捕获 key + revision'),
+  );
+  assert.notDeepEqual(revisionOnly, documents, 'revision-only mutation must change the contract');
+  assert.throws(() => verifyDraftGenerationContract(revisionOnly), /missing v0\.3 planning contract/);
 });
 
 test('F009-DOC-R2-008: entry and task-list routes never guess an active project', () => {

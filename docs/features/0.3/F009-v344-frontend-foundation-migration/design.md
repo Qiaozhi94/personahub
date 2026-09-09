@@ -85,23 +85,30 @@ API；route 切换不得重复订阅或制造事件。
 
 `TaskDraftStore` 由 `ApplicationShell` 持有，位于 route outlet 之上，不由会被路由卸载的
 `ThreadView` / view component 持有。M1 唯一 key 是 `task:${taskId}:composer`；记录至少包含
-`text`、`adapterId`、`explicitConsult`、单调递增 `revision`。Thread ID 不进入 key，因为 M1 不公开
-Session / Thread 身份；F012 增加独立 Session composer 时使用新的 `session:${sessionId}:composer`
-namespace，不能复用 task key。
+`text`、`adapterId`、`explicitConsult`、`generation` 与 `revision`。`generation` 是同一 key 的 shell
+生命周期代际：创建一份新草稿记录时从该 key 的 high-water 分配更大值；high-water 独立于记录
+保存，清除记录不得重置 generation high-water。`revision` 只在同一 generation 内单调递增，
+可以从 1 开始，不能脱离 generation 单独比较。Thread ID 不进入 key，因为 M1 不公开 Session /
+Thread 身份；F012 增加独立 Session composer 时使用新的 `session:${sessionId}:composer` namespace，
+不能复用 task key。
 
 草稿生命周期如下：
 
 - 输入变化同步写 shell 内存；切换 task、project、surface 或后续四个 task view 均不清除，回到同一
   task 时按 key 恢复。
-- 提交开始时捕获 key + revision；提交失败保留原记录和用户选择。只有匹配 key 与 revision 的成功响应可以清除；旧 task 的迟到响应或提交期间继续输入产生的新 revision 不得清掉新草稿。
-- 用户显式“丢弃草稿”后清除；对象 not-found / deleted 时清除并给出诊断，terminal / blocked 只禁用
-  提交，不自动删除草稿。
+- 提交开始时捕获 key + generation + revision；提交失败保留原记录和用户选择。只有匹配 key、generation
+  与 revision 的成功响应可以清除；旧 task 的迟到响应或提交期间继续输入产生的新 revision 不得清掉
+  新草稿。
+- 显式丢弃在 pending 期间仍然允许：立即删除当前记录与刷新提示，但不取消已经发出的请求，也不回退
+  该 key 的 generation high-water。随后 retype 必须创建更大的 generation；旧请求迟到的成功或失败响应
+  都只能成为 no-op，既不能清除新草稿，也不能恢复已丢弃记录。对象 not-found / deleted 时同样清除记录
+  但保留 high-water 并给出诊断；terminal / blocked 只禁用提交，不自动删除草稿。
 - 浏览器刷新不恢复草稿，也不写 localStorage / sessionStorage / 服务端；存在非空草稿时注册
   `beforeunload` 原生提示，全部清空后立即移除。这样页面内导航连续，但敏感指令不会持久化到浏览器。
 
 Draft store 是 UI 临时状态，不得进入 API DTO、SSE payload 或 compatibility projection。组件测试覆盖
-reducer/key/revision，浏览器测试覆盖跨 task/project/surface 往返、提交成功、提交失败重试、迟到成功
-响应、显式丢弃、not-found 和刷新提示。
+reducer/key/generation/revision，浏览器测试覆盖跨 task/project/surface 往返、提交成功、提交失败重试、
+迟到成功响应、显式丢弃、`submit N → discard while pending → retype → old success`、not-found 和刷新提示。
 
 动作所有权以 `migration-matrix.md` 的 action ID 为准：T010 迁移 A001–A005；T011 的执行 / 派工
 host 迁移 A006–A015；T012 的任务事实与验收 host 迁移 A016–A024，其中 A016–A020 是只读事实，
