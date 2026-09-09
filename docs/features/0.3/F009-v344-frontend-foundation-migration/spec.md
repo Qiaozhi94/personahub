@@ -2,13 +2,15 @@
 kind: feature
 id: F009
 version: "0.3"
-status: draft
+status: ready-for-development
 gate_version: 1
+eval_contract: exempt
+eval_contract_exempt_reason: "本 Feature 改变用户旅程，但只迁移已交付能力到冻结设计，不提出需用效用数据决定保留或退役的不确定主张"
 related_features: [F001, F002, F003, F004, F005, F006, F007, F008, F010, F011, F012, F013, F014]
 topics: [frontend, v344, migration, app-shell, accessibility]
 doc_kind: spec
 created: 2026-09-08
-updated: 2026-09-08
+updated: 2026-09-09
 ---
 
 # F009：V3.44 Frontend Foundation & Migration
@@ -141,4 +143,4 @@ updated: 2026-09-08
 
 ## 8. 待确认问题
 
-无。
+无

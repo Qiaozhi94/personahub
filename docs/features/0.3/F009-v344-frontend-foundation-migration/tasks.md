@@ -2,7 +2,7 @@
 topics: [frontend, v344, migration, implementation]
 doc_kind: tasks
 created: 2026-09-08
-updated: 2026-09-08
+updated: 2026-09-09
 ---
 
 # F009：V3.44 Frontend Foundation & Migration - 任务

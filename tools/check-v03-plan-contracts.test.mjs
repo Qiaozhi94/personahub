@@ -415,6 +415,25 @@ test('F009-DOC-R2-008: entry and task-list routes never guess an active project'
   verifyForbiddenMutation(documents, forbidden[0]);
 });
 
+test('F009 design-gate status is synchronized across roadmap documents', () => {
+  const documents = [
+    read('CLAUDE.md'),
+    read('BACKLOG.md'),
+    read('docs/features/0.3/README.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
+  ];
+  const phrases = [
+    'status: ready-for-development',
+    'eval_contract: exempt',
+    '| F009 | 0.3     | V3.44 Frontend Foundation & Migration | ready-for-development |',
+    'F009 已完成开发前检视并进入 `ready-for-development`',
+    'F010–F014 仍为 `draft`',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
   const documents = [
     read('docs/features/0.3/README.md'),
