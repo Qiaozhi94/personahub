@@ -53,6 +53,54 @@ function verifyBrowserCheckApplicability(catalog) {
   );
 }
 
+function parseMigrationMatrixRows(matrix, idPrefix) {
+  return matrix
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith(`| ${idPrefix}`))
+    .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
+}
+
+function verifyMigrationMatrixProgress(matrix) {
+  const pageRows = parseMigrationMatrixRows(matrix, 'P');
+  const actionRows = parseMigrationMatrixRows(matrix, 'A');
+  assert.equal(pageRows.length, 11, 'expected 11 page/entry migration rows');
+  assert.equal(actionRows.length, 31, 'expected 31 action/fact migration rows');
+
+  const expectedIds = [
+    ...Array.from({ length: 11 }, (_, index) => `P${String(index + 1).padStart(3, '0')}`),
+    ...Array.from({ length: 31 }, (_, index) => `A${String(index + 1).padStart(3, '0')}`),
+  ];
+  const rows = [...pageRows, ...actionRows];
+  assert.deepEqual(rows.map((row) => row[0]), expectedIds, 'migration row ids must be unique and contiguous');
+
+  const targetDispositions = new Set(['migrated', 'deferred', 'retired']);
+  const implementationStatuses = new Set(['inventoried', 'migrated', 'deferred', 'retired']);
+  for (const row of rows) {
+    assert.ok(
+      row.length === (row[0].startsWith('P') ? 13 : 14),
+      `${row[0]} must include target disposition, implementation status, and completion evidence`,
+    );
+    const [id, , , , , targetDisposition, implementationStatus, completionEvidence] = row;
+    assert.ok(targetDispositions.has(targetDisposition), `${id} has invalid target disposition`);
+    assert.ok(implementationStatuses.has(implementationStatus), `${id} has invalid implementation status`);
+    assert.ok(completionEvidence, `${id} is missing completion evidence`);
+    if (implementationStatus === 'inventoried') {
+      assert.equal(completionEvidence, 'pending', `${id} must remain pending before implementation`);
+      continue;
+    }
+
+    assert.equal(implementationStatus, targetDisposition, `${id} implementation must match its frozen target`);
+    assert.notEqual(completionEvidence, 'pending', `${id} completed status requires evidence`);
+    if (implementationStatus === 'migrated') {
+      for (const evidenceKey of ['route=', 'data=', 'write=', 'browser=']) {
+        assert.ok(completionEvidence.includes(evidenceKey), `${id} migrated evidence is missing ${evidenceKey}`);
+      }
+    } else {
+      assert.ok(completionEvidence.includes('registry=absent'), `${id} removal evidence must prove registry absence`);
+    }
+  }
+}
+
 test('V03-PLAN-R1-001: acceptance writes have canonical owners and integration tasks', () => {
   const documents = [
     read('docs/features/0.3/F011-trusted-task-surface/spec.md'),
@@ -251,6 +299,26 @@ test('F009-DOC-R1-001: the frozen migration matrix is a development input', () =
 
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
+});
+
+test('F009-DOC-R6-010: migration targets and implementation progress are independently tracked', () => {
+  const matrix = read(
+    'docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md',
+  );
+
+  verifyMigrationMatrixProgress(matrix);
+
+  const missingStatus = matrix.replace('| migrated | inventoried | pending |', '| migrated | | pending |');
+  assert.notEqual(missingStatus, matrix, 'status mutation must change a migration row');
+  assert.throws(() => verifyMigrationMatrixProgress(missingStatus), /invalid implementation status/);
+
+  const forgedCompletion = matrix.replace('| migrated | inventoried | pending |', '| migrated | migrated | pending |');
+  assert.notEqual(forgedCompletion, matrix, 'completion mutation must change a migration row');
+  assert.throws(() => verifyMigrationMatrixProgress(forgedCompletion), /completed status requires evidence/);
+
+  const missingEvidence = matrix.replace('| migrated | inventoried | pending |', '| migrated | inventoried | |');
+  assert.notEqual(missingEvidence, matrix, 'evidence mutation must change a migration row');
+  assert.throws(() => verifyMigrationMatrixProgress(missingEvidence), /missing completion evidence/);
 });
 
 test('F009-DOC-R1-002: M1 routes have stable identities and deterministic failures', () => {
