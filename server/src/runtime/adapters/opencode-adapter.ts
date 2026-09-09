@@ -157,6 +157,11 @@ export class OpenCodeAdapter implements AgentAdapter {
       return failSpawn(`Failed to spawn process: ${String(err)}`);
     }
 
+    childProcess.on("error", (err) => {
+      runCleanup();
+      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage: `Process error: ${err.message}`, finalMessage: null });
+    });
+
     if (!childProcess || !childProcess.pid) {
       return failSpawn("Failed to spawn process: no PID");
     }
@@ -226,11 +231,6 @@ export class OpenCodeAdapter implements AgentAdapter {
         credentialFailureDetected = true;
       }
       emitOutput("stderr", data);
-    });
-
-    childProcess.on("error", (err) => {
-      runCleanup();
-      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage: `Process error: ${err.message}`, finalMessage: null });
     });
 
     childProcess.on("exit", (code, signal) => {
