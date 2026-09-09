@@ -45,7 +45,7 @@ builder 和 seed 不得调用当前 public API 造数，也不得先运行 curre
 | Fixture ID | v10 事实 | 最小数量 / 形态 | F009 必须证明 |
 |---|---|---|---|
 | FX-PROJECT | Project / Workspace | 2 Projects；1 个已绑定 workspace、1 个未绑定 | 列表顺序、选择、原 ID 与 empty/partial 状态不漂移 |
-| FX-TASK | Issue / primary Thread | 2 个以上 Issue，覆盖 running、blocked、done；每项 1 个 primary Thread | Task route 使用 Issue ID；状态与 Thread 归属不猜测 |
+| FX-TASK | Issue / primary Thread | 2 个以上 Issue，覆盖 running、blocked、done；每项 1 个 primary Thread；全部归属已绑定项目，未绑定项目名下无 Issue（其任务列表为空，充当空态 / 绑定指引断言对象）；Issue 携带非空 labels | Task route 使用 Issue ID；状态与 Thread 归属不猜测；标签域有真实数据（BC-006） |
 | FX-RUN | 顺序 Run / queue | 同一 workspace 至少 3 个 Run，含 completed、queued、failed | 多 Run 顺序、终态、失败原因与队列事实守恒 |
 | FX-GRAPH | Graph / Node / Edge | 1 个完成 fan-out/fan-in graph；1 个 blocked graph 含可重试 node | node/edge/result ref、cancel/retry/resolve 的目标身份守恒 |
 | FX-TRACE | ThreadEvent / Trace / FileChange | 同一 Run 至少 2 个命令事件、2 个文件变化和 1 个分页边界 | 时间序、分页 cursor、截断 / partial 标记不漂移 |

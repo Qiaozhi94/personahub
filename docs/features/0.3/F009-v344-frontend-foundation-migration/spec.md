@@ -133,6 +133,8 @@ updated: 2026-09-09
 
 保留 F001–F008 server / API 回归；以开发前冻结的 `migration-matrix.md` 为范围与处置真相源，为 App Shell、共享原语与兼容 projection 建组件状态矩阵；按 `v02-fixture-contract.md` 建 release v10 raw SQL fixture，通过真实升级后的同一个临时数据库运行 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；按 `v344-browser-check-applicability.md` 对 V3.44 的 125 条 browser checks 逐条执行 adapted / deferred / not-applicable 分类，分类分母必须等于 125，F009 的 adapted 行必须有生产门禁。
 
+对 self-test §3.2.1 旅程纪律的两条显式豁免：第④段「干净数据首屏」因数据策略只允许 v10 fixture 升级库而不可自动化，以未绑定项目指引、not-found 与非法子路径恢复态为自动化替代对象，真实升级场景首屏归 T031 人工确认；第⑤段「SSE 断线重连补读」在 M1 无活跃事件源，本 Feature 不断言，归 F011/F012 任务旅程。黄金旅程九步的 M1 投影、词汇对照与 adapted 断言对象集合规则见 `design.md` §8。
+
 ### 依赖
 
 依赖已完成的 F001–F008、V3.44 冻结设计和既有前端技术栈。F010–F013 在本 Feature 的壳层和共享原语上接入新领域能力；F014 接管跨 schema 迁移、最终兼容清零和发布证据。
