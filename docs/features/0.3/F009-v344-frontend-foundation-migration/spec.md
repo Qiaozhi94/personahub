@@ -2,7 +2,7 @@
 kind: feature
 id: F009
 version: "0.3"
-status: ready-for-development
+status: review
 gate_version: 1
 eval_contract: exempt
 eval_contract_exempt_reason: "本 Feature 改变用户旅程，但只迁移已交付能力到冻结设计，不提出需用效用数据决定保留或退役的不确定主张"
@@ -121,11 +121,11 @@ updated: 2026-09-09
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-001`, `FR-003`, `NFR-001`): v0.2 schema fixture 在新 App Shell 中完成项目 → 任务 → 执行 → 轨迹 → 验收代表旅程，既有事实与终态守恒。—— 测试 [任务级]：`server/tests/integration/f009-v02-fixture.test.ts`「F009 v0.2 schema-v10 fixture」（T000：来源指纹、v10 → v11 → head 升级链、幂等与变异）；[需求级] 待 T021 黄金旅程 E2E 落地后回填。 - tests: `server/tests/integration/f009-v02-fixture.test.ts`
-- [ ] **AC-002** (`FR-002`, `FR-005`, `FR-007`, `NFR-004`): 页面 / 路由 / 动作迁移矩阵 100% 有结论和生命周期分类；每个 transitional-host 有 replacement_owner、delete_when、latest_milestone，生产扫描无旧 Shell、死导航和并行写入口。—— 测试 [任务级]：`tools/check-v03-plan-contracts.test.mjs`「V03-PLAN 合同套件」（T001 随迁移持续维护）；T020 的单写入口 / 死入口静态扫描落地后追加。 - tests: `tools/check-v03-plan-contracts.test.mjs`
-- [ ] **AC-003** (`FR-004`, `UX-003`): 已发布 URL inventory 的来源逐项可核对；根入口升级、M1 route manifest 中每条 canonical route 的直达 / 刷新 / History、未知 ID 和非法子路径均有浏览器测试，不存在无证据的历史对象 URL 映射或提前发布的 Session / view / tab。—— 测试 [任务级]：`web/src/f009-shell.test.tsx`「M1 SurfaceRegistry manifest」「ApplicationShell rail」（T003，route 槽位与未注册 surface）；T014 route manifest 用例与 T021 浏览器覆盖落地后追加。 - tests: `web/src/f009-shell.test.tsx`
-- [ ] **AC-004** (`UX-001`, `UX-002`, `UX-004`, `NFR-002`): 共享弹层、页签、表格、导航、草稿生命周期和关键状态通过浏览器键盘、语义、跨 route、错误重试、窄视口及控制台检查。—— 测试 [任务级]：`web/src/f009-primitives.test.tsx`（T002：AppDialog / AppTabs / DataTable / PageState / Feedback）、`web/src/f009-task-draft-store.test.ts`（T004：generation / revision 契约与三个清理路径变异）；键盘 / 语义 / 窄视口 / console 断言由 T022 落地后补 [需求级]。 - tests: `web/src/f009-primitives.test.tsx` `web/src/f009-task-draft-store.test.ts`
-- [ ] **AC-005** (`FR-006`, `NFR-003`): 新前端写操作全部命中既有 canonical API，兼容 adapter 有独立清单、替换 owner 和删除条件。—— 测试 [任务级]：`web/src/f009-pages.test.tsx`（T010，A001–A005 写入命中既有 API）；T011–T013 迁移用例与 T020 canonical API 静态断言落地后追加。 - tests: `web/src/f009-pages.test.tsx`
+- [x] **AC-001** (`FR-001`, `FR-003`, `NFR-001`): v0.2 schema fixture 在新 App Shell 中完成项目 → 任务 → 执行 → 轨迹 → 验收代表旅程，既有事实与终态守恒。—— 测试 [任务级]：`server/tests/integration/f009-v02-fixture.test.ts`「F009 v0.2 schema-v10 fixture」（T000：来源指纹、v10 → v11 → head 升级链、幂等与变异）；[需求级] 已由 T021 黄金旅程 E2E 覆盖（fixture 升级 + 代表旅程 + 终态守恒）。 - tests: `server/tests/integration/f009-v02-fixture.test.ts` `e2e/tests/f009-golden-journey.spec.ts`
+- [x] **AC-002** (`FR-002`, `FR-005`, `FR-007`, `NFR-004`): 页面 / 路由 / 动作迁移矩阵 100% 有结论和生命周期分类；每个 transitional-host 有 replacement_owner、delete_when、latest_milestone，生产扫描无旧 Shell、死导航和并行写入口。—— 测试 [任务级]：`tools/check-v03-plan-contracts.test.mjs`「V03-PLAN 合同套件」（T001 随迁移持续维护）；T020 的单写入口 / 死入口静态扫描已落地（F009-T020-001/002）。 - tests: `tools/check-v03-plan-contracts.test.mjs`
+- [x] **AC-003** (`FR-004`, `UX-003`): 已发布 URL inventory 的来源逐项可核对；根入口升级、M1 route manifest 中每条 canonical route 的直达 / 刷新 / History、未知 ID 和非法子路径均有浏览器测试，不存在无证据的历史对象 URL 映射或提前发布的 Session / view / tab。—— 测试 [任务级]：`web/src/f009-shell.test.tsx`「M1 SurfaceRegistry manifest」「ApplicationShell rail」（T003，route 槽位与未注册 surface）；T014 route manifest 用例与 T021 浏览器覆盖已落地。 - tests: `web/src/f009-shell.test.tsx` `web/src/f009-routes.test.tsx` `e2e/tests/f009-golden-journey.spec.ts`
+- [x] **AC-004** (`UX-001`, `UX-002`, `UX-004`, `NFR-002`): 共享弹层、页签、表格、导航、草稿生命周期和关键状态通过浏览器键盘、语义、跨 route、错误重试、窄视口及控制台检查。—— 测试 [任务级]：`web/src/f009-primitives.test.tsx`（T002：AppDialog / AppTabs / DataTable / PageState / Feedback）、`web/src/f009-task-draft-store.test.ts`（T004：generation / revision 契约与三个清理路径变异）；键盘 / 语义 / 窄视口 / console 断言已由 T022 落地。 - tests: `web/src/f009-primitives.test.tsx` `web/src/f009-task-draft-store.test.ts` `e2e/tests/f009-a11y.spec.ts` `e2e/tests/f009-shell.spec.ts` `e2e/tests/f009-page-states.spec.ts`
+- [x] **AC-005** (`FR-006`, `NFR-003`): 新前端写操作全部命中既有 canonical API，兼容 adapter 有独立清单、替换 owner 和删除条件。—— 测试 [任务级]：`web/src/f009-pages.test.tsx`（T010，A001–A005 写入命中既有 API）；T011–T013 迁移用例与 T020 canonical API 静态断言已落地。 - tests: `web/src/f009-pages.test.tsx` `web/src/f009-execution-host.test.tsx` `web/src/f009-runtime-settings.test.tsx` `tools/check-v03-plan-contracts.test.mjs`
 
 ## 7. 测试、依赖与决策
 

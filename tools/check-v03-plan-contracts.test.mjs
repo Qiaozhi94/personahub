@@ -690,10 +690,10 @@ test('F009 design-gate status is synchronized across roadmap documents', () => {
     read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
   ];
   const phrases = [
-    'status: ready-for-development',
+    'status: review',
     'eval_contract: exempt',
-    '| F009 | 0.3     | V3.44 Frontend Foundation & Migration | ready-for-development |',
-    'F009 已完成开发前检视并进入 `ready-for-development`',
+    '| F009 | 0.3     | V3.44 Frontend Foundation & Migration | review |',
+    'F009 开发与自检已完成并进入 `review`（`npm run verify:release` 全绿）',
     'F010–F014 仍为 `draft`',
   ];
 
