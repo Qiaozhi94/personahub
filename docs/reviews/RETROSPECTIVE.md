@@ -927,10 +927,10 @@ archived ref 的消费限制与 F010 契约一致。
 
 ---
 
-## 循环 19：F009 开发前设计检视（3轮）
+## 循环 19：F009 开发前设计检视（5轮）
 
 - **report_type**: doc-review
-- **周期**: 2026-09-08—2026-09-09，3轮 · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
+- **周期**: 2026-09-08—2026-09-09，5轮（含 1 轮 CI 门禁重开） · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
 - **背景**: 以 `main@53c3c55` 为修复基线，对设计重构后的 F009 做开发前最后检视。
   Round 1 全量扫描，Round 2/3 只复核修复 diff 与相邻契约。用户自有改动
   `docs/quant-factor-research-tradingview-assessment.md` 全程排除且未暂存。
@@ -945,6 +945,7 @@ archived ref 的消费限制与 F010 契约一致。
 | F009-DOC-R1-006 | 125 条 V3.44 browser checks 缺少适用性分母 | Medium | 测试覆盖 | 根因 | 流程缺口 | fixed | 逐条分类为 adapted 28/deferred 96/not-applicable 1，并以源 SHA256、连续 ID、精确计数及变异锁定分母 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-006` | 1 | 2 | acceptance-subset-without-denominator |
 | F009-DOC-R1-007 | 未提交草稿的保存边界不明确 | Medium | 正确性 | 根因 | 原方案 | fixed | ApplicationShell 持有按 Task 分键的内存 TaskDraftStore；定义切换/刷新、revision 匹配清理、提交失败和对象删除语义 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-007` | 1 | 1 | transient-state-owner-missing |
 | F009-DOC-R2-008 | 根入口与任务列表猜测首个 Project，破坏稳定身份 | High | 正确性 | 根因 | 修复引入 | fixed | `/` 固定跳转 `/projects`；无显式 project 的 `/tasks` 显示选择器，只有用户选择后才 push identity URL | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R2-008` | 2 | 2 | route-id-contract-drift |
+| F009-DOC-R4-009 | browser catalog 删除变异只适配 LF | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | 行删除显式处理 LF/CRLF/文件末行，并在两种换行 fixture 上先断言输入实际变化、再断言 125 行校验转红 | `tools/check-v03-plan-contracts.test.mjs::F009-DOC-R1-006 (LF/CRLF mutation)` | 4 | 5 | mutation-not-platform-equivalent |
 
 **问题与实际修复证据**
 
@@ -954,18 +955,23 @@ archived ref 的消费限制与 F010 契约一致。
   fixture 与 browser catalog 在 Round 2 又补了禁止模糊口径和源漂移的防线。
 - R2-008 是 Round 1 路由修复引入的相邻契约问题；`97b6eab` 删除首项目猜测，恢复“身份只来自
   URL 或用户显式选择”的统一规则。
+- R4-009 由 GitHub Actions run `34305259879` 的 Windows Verify job 暴露：原删除正则显式匹配
+  `\n`，但 `.` 不消费 `\r`，所以 CRLF 下变异根本未发生；`6102e5b` 增加 mutation-applied 断言并
+  使用换行无关删除，Round 5 diff-only 复核无新增问题。
 - `b2a590b` 在全部 finding 关闭后才把 F009、BACKLOG、v0.3 README 与项目说明同步到
   `ready-for-development`，同时记录不需要效用假设评估的具体豁免理由。
 
 **模式性教训**
 
-1. `origin` 分布：原方案 3、规格漂移 1、流程缺口 3、修复引入 1。修复自伤率 1/7，虽低于历史
-   区间，仍证明 Round 2 diff-only 必不可少；R2-008 在首轮修复前并不存在。
+1. `origin` 分布：原方案 3、规格漂移 1、流程缺口 3、修复引入 2。两条修复引入问题分别由
+   Round 2 diff-only 与 Round 4 Windows CI 捕获，说明本地复核和异构 runner 缺一不可。
 2. `readiness-prerequisite-unowned` 再次出现 2 次：开发前依赖如果只写成“应已有”，而没有钉 source、
    owner、产物和验证方法，就不是前置条件，只是愿望。迁移 inventory 与历史 fixture 都应进入 Phase 0。
 3. `route-id-contract-drift` 跨轮出现 2 次：仅列 route pattern 不等于定义身份。根入口、集合页、对象页、
    默认参数、非法参数、history 和异步 not-found 必须一次写成 manifest，尤其禁止按列表顺序猜对象。
 4. R1-005/R1-006 最长存活 1 轮：首轮主体修复已完成，但 Round 2 才清除模糊残词并绑定源哈希；
    这说明“有分类表/fixture 文档”仍不足以防漂移，必须增加禁止式与源绑定回归。
-5. 八条 finding 均有独立修复提交和仓库内回归；目标测试均先红后绿。Round 3 reviewer 视角复核未发现
-   新问题，开放问题、Feature 状态和路线图真相源同步一致。
+5. 九条 finding 均有独立修复提交和仓库内回归；目标测试均先红后绿。Round 3 与 Round 5 的
+   reviewer diff-only 复核均未发现新问题，开放问题、Feature 状态和路线图真相源同步一致。
+6. `mutation-not-platform-equivalent` 是新的门禁模式：变异测试不能只断言“校验器抛错”，还必须先断言
+   变异确实改变输入；涉及文本行时至少用 LF 与 CRLF 两种 fixture，否则 Linux 绿不能代表 Windows CI。
