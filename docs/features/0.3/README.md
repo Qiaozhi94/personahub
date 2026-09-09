@@ -72,7 +72,9 @@ F009 先完成生产前端换壳和既有能力迁移。F010 与 F013 互不依�
 
 使用 PersonaHub 自身仓库完成一个真实 coding 任务：
 
-1. 从 v0.2 最新 fixture 的已发布根入口 `/` 升级并进入 V3.44 App Shell；随后创建的 canonical Project / Task deep link 可刷新恢复且没有旧写入口。
+1. 从 F009 `v02-fixture-contract.md` 固定的 source commit `5ef5055`、release schema v10 原始 fixture
+   启动，执行 v10 → v11 → current head 的真实升级链，再从已发布根入口 `/` 进入 V3.44 App Shell；
+   随后创建的 canonical Project / Task deep link 可刷新恢复且没有旧写入口。
 2. 配置项目主目录，检查一个 adapter 并得到至少一个可派工组合。
 3. 只输入目标创建任务；确认前零写入，重复确认不重复创建。
 4. 选择模型、思考深度和上下文范围；在撤销窗口结束后开始执行。

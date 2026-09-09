@@ -101,6 +101,23 @@ function verifyMigrationMatrixProgress(matrix) {
   }
 }
 
+function verifyV03FixtureJourney(versionPlan) {
+  requirePhrases(
+    [versionPlan],
+    [
+      '`v02-fixture-contract.md`',
+      'source commit `5ef5055`',
+      'release schema v10 原始 fixture',
+      'v10 → v11 → current head',
+    ],
+  );
+  assert.doesNotMatch(
+    versionPlan,
+    /v0\.2\s*(?:最新|latest)(?:\s+schema)?\s+fixture/i,
+    'v0.3 acceptance must not use an ambiguous latest v0.2 fixture',
+  );
+}
+
 test('V03-PLAN-R1-001: acceptance writes have canonical owners and integration tasks', () => {
   const documents = [
     read('docs/features/0.3/F011-trusted-task-surface/spec.md'),
@@ -413,6 +430,20 @@ test('F009-DOC-R1-005: the v0.2 fixture has a pinned source and upgrade path', (
   forbidPhrases(documents, ['v0.2 最新 schema fixture']);
   verifyMutation(documents, phrases);
   verifyForbiddenMutation(documents, 'v0.2 最新 schema fixture');
+});
+
+test('F009-DOC-R6-011: v0.3 acceptance starts from the pinned release v10 fixture', () => {
+  const versionPlan = read('docs/features/0.3/README.md');
+
+  verifyV03FixtureJourney(versionPlan);
+
+  const ambiguousSource = versionPlan.replace('release schema v10 原始 fixture', 'v0.2 最新 fixture');
+  assert.notEqual(ambiguousSource, versionPlan, 'fixture-source mutation must change the version plan');
+  assert.throws(() => verifyV03FixtureJourney(ambiguousSource), /missing v0\.3 planning contract|ambiguous latest/);
+
+  const skippedV10 = versionPlan.replace('v10 → v11 → current head', 'v11 → current head');
+  assert.notEqual(skippedV10, versionPlan, 'upgrade-chain mutation must change the version plan');
+  assert.throws(() => verifyV03FixtureJourney(skippedV10), /missing v0\.3 planning contract/);
 });
 
 test('F009-DOC-R1-006: all 125 V3.44 browser checks have an explicit disposition', () => {
