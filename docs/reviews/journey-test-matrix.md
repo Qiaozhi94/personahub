@@ -25,10 +25,10 @@ updated: 2026-09-09
 
 ## 0. 全局约束（对第一节所有行生效）
 
-- **数据策略（feature 级覆盖）**：全旅程只使用 T000 builder 从 v10 原始 fixture 经真实 v10 → v11 → current head 升级后的同一个临时数据库；不重复造 seed、不做 HTTP 播种、不建第二套 E2E 数据库、不驱动真实 CLI。这是对 `self-test-system-plan.md` §3.2 默认播种策略的 feature 级覆盖，理由是 AC-001 验证的是历史事实守恒（NFR-001、`v02-fixture-contract.md` §3 第 5 步）。
+- **数据策略（feature 级覆盖）**：全旅程只使用 T000 builder 从 v10 原始 fixture 经真实 v10 → v11 → current head 升级后的同一个临时数据库；不重复造 seed、不做 HTTP 播种、不建第二套 E2E 数据库、不驱动真实 CLI。旅程内经界面触发的 canonical 写是被测行为而非播种；不使用 `support/mock-run.ts` 造 Run 或事件（口径见 design.md §8）。这是对 `self-test-system-plan.md` §3.2 默认播种策略的 feature 级覆盖，理由是 AC-001 验证的是历史事实守恒（NFR-001、`v02-fixture-contract.md` §3 第 5 步）。
 - **路线冻结**：M1 不发布 `/sessions/:sessionId`；F011/F013 接管前不发布 task view（`/tasks/:taskId/:view`）与 project tab（`/projects/:projectId/:tab`）。旅程任何一步不得出现这些入口；反向断言（它们不可达）属于 S1 补充行。
 - **入口纪律（§3.2.1 第①段）**：旅程起点是唯一允许的 `page.goto("/")`；此后每一步的用户动作都必须从当前页面的可见导航、列表行或按钮点击出发，禁止 goto 跳过入口。唯一的例外是 S1 的 canonical deep link 用例——地址栏直达本身就是被测行为，不属于跳过入口。
-- **M1 子旅程裁剪**：README §5 的九步是 v0.3 版本级验收旅程（由 F014 收口）；F009 的 AC-001 只覆盖其中可由「v0.2 已交付能力 + v10 fixture 事实」承担的 M1 投影。每行用「M1 冻结边界」标注该步中归 F010–F014 的部分：这些内容不进入 T021 断言，旅程中也不得出现其控件或入口。
+- **M1 子旅程裁剪**：README §5 的九步是 v0.3 版本级验收旅程（由 F014 收口）；F009 的 AC-001 只覆盖其中可由「v0.2 已交付能力 + v10 fixture 事实」承担的 M1 投影。每行用「M1 冻结边界」标注该步中归 F010–F014 的部分：这些内容不进入 T021 断言，旅程中也不得出现其控件或入口。投影表已固化于 design.md §8「黄金旅程的 M1 投影（README §5 九步）」，本节行注与其一致。
 - **断言语言**：断言用用户可见的文本、角色与状态（§3.2.1 技术约束），不用 CSS 选择器、内部 test-id 链，也不使用界面禁止出现的迁移/设计术语（UX-003、BC-119/123/124）。
 - **证据保存位置**：自动化证据 = Playwright report（失败 trace/截图）+ CI `e2e` job 工件（self-test §3 需求级行）；人工证据 = T031 检查记录，缺陷与观察分别落 `dogfooding-bugs.md` / `dogfooding-notes.md`，其「旅程步骤」列使用本矩阵的步骤编号（J1–J9、S1）。
 - **步骤编号约定**：J1–J9 对应 README §5 的九步；S1 是 spec US-001 / AC-003 补充行（非 README 九步内容，不发明新旅程）。
@@ -42,7 +42,7 @@ updated: 2026-09-09
 | ①入口可发现 | J1（根入口 `/` 起点、竖栏四个已注册槽位）；J2–J9、S1 的用户动作全部从可见导航/列表点击出发（见 §0 入口纪律） |
 | ②主路径逐步反馈 | J2–J7、J9 的「预期可见反馈」列，每个动作对应可见的文本/状态/列表变化 |
 | ③失败与恢复 | J8（主：取消/失败/阻塞的守恒显示 + 重启恢复）；J3（次：确认失败保留草稿可重试）；S1（次：not-found 可恢复） |
-| ④空态与首次使用 | S1（未选项目的项目选择态、未知 ID not-found、非法子路径、未绑定项目指引）；「干净数据库首屏」受 §0 数据策略限制无法自动覆盖，残余归 T031（见 §3 AC-001 行注） |
+| ④空态与首次使用 | S1（未选项目的项目选择态、未知 ID not-found、非法子路径、未绑定项目指引）；「干净数据库首屏」受 §0 数据策略限制无法自动覆盖，残余归 T031（豁免已明文化于 spec §7 / design.md §8） |
 | ⑤刷新/重连后一致 | J9（主：deep link 直达/刷新/History 重放）；J1（根入口 replace 与不猜选）；J5（事实刷新守恒）。SSE 断线重连补读在 M1 无活跃事件源，处理见 J9 行注 |
 
 ### 1.1 步骤矩阵
@@ -58,11 +58,11 @@ updated: 2026-09-09
 | J6 | 对 FX-VALIDATION 所在 Issue 在验收兼容区手动触发 validation（A021），validator 选择与实现不同的 adapter；随后查看 rounds 列表 | 新 round 出现且计数 +1、状态可见（排队）；既有「2 失败 round + 1 通过 round」原样保留、不合并；新 round 的 validator Run 身份可读。M1 冻结边界：「换模型、冷启动、只给结果」与同源独立性降级归 F012/F011（README 步骤6 版本级；BC-028/042 deferred） | FX-VALIDATION（同一 Issue ≥2 失败 round 后通过；v11 回填 `validation_attempt=1`）、FX-ADAPTER（validator 可用） | 触发失败可重试；blocked Issue 提供 unblock 入口（A022，动作存在性在此断言，流程见 J8） | T021；任务级 T012（A021 写动作调用矩阵指定 API） | ② |
 | J7 | 查看既有 Issue 的证据与 validation 兼容详情（A018/A020）：complete 与 partial 两组 evidence、rounds / findings / summary；执行摘要复制/下载（A024）与 trace 导出（A019）；对 FX-VALIDATION Issue 执行 reset rounds（A023） | complete / partial 标记如实显示；rounds / findings / summary 内容与 fixture 一致，机器事实与摘要不混写；复制/下载与导出产出引用原 Run；reset 有确认说明与结果反馈。M1 冻结边界：主张 / 论证 / 未覆盖项 / 独立性状态归 F011（BC-009~018 deferred）；「同源负例明确降级」为 README 步骤7 版本级内容 | FX-EVIDENCE（complete 与 partial 各 1 组）、FX-VALIDATION、FX-TRACE | reset 为高风险动作：确认说明「会动什么 / 不动什么 / 如何恢复」（V3.44 全局契约）；partial evidence 显示缺什么与下一步（BC-046） | T021；T031 人工抽检导出 / 摘要内容与文案术语（UX-003、BC-119）；任务级 T012 | ② |
 | J8 | 取消 J4 产生的 queued Run（A011）与一个 graph（A013）；查看 FX-RUN 既有 failed Run 的失败原因；对 FX-GRAPH blocked node 执行重试（A014）与 resolve-executors（A015）；对 blocked Issue 提交 operator note 解除阻塞（A022）；重启 webServer（同一数据库二次启动）并刷新页面 | 被取消 Run / Graph 显示「已取消」，不冒充成功或失败（BC-047）；failed Run 显示可读失败原因；重试 / resolve / unblock 各自产生可见状态变化；重启后记录计数与 schema 不变（T000 幂等），刷新后所有事实与重启前一致。M1 冻结边界：「运行中 Attempt 标中断、从该步恢复」的完整语义依赖 F012 介入模型（README 步骤8 版本级）；M1 断言取消/失败/阻塞的守恒显示与恢复动作可达 | FX-RUN（queued + failed）、FX-GRAPH（blocked，含可重试 node）、FX-TASK（blocked）；重启复用同一临时库 | 即本步主体：每个异常状态给唯一主操作（V3.44 §5），操作后回到可继续状态 | T021；T022 `f009-page-states.spec.ts`（BC-047）；数据库幂等由 T000 任务级用例兜底 | ③（主） |
-| J9 | 从列表点选既有对象并复制 / 进入 canonical deep link（`/tasks/:taskId`、`/projects/:projectId`），刷新；浏览器 History 前进/后退往返两个对象；再次从 `/` 进入 | 直达与刷新后回到同一对象、同一事实；History 前进/后退重放正确对象，上一对象未完成的加载被取消；`/` 再次 replace 到列表且不猜选；全程未出现旧写入口。M1 冻结边界：「生成完成摘要并回放派工 / 上下文 / Artifact revision / 验证者结论」为版本级闭环（README 步骤9；F010/F011/F012/F014），M1 以 J7 的既有摘要只读事实与导出守恒承担可承担部分。行注：SSE 断线重连按 `event_sequence` 补读在 M1 无活跃事件源（fixture 全为终态、不驱动 CLI），本旅程不断言，归 F011/F012 旅程与 T031 裁定 | J3–J8 的写入与本库既有事实共存；「既有事实守恒」以 T000 基线计数核对 | 刷新后对象不存在 → not-found 恢复态（S1 同款）；加载失败 → PageState 唯一恢复动作 | T021（AC-003 的直达 / 刷新 / History 浏览器断言）；T031 人工复核 History 与诊断清除细节 | ⑤（主） |
+| J9 | 从列表点选既有对象并复制 / 进入 canonical deep link（`/tasks/:taskId`、`/projects/:projectId`），刷新；浏览器 History 前进/后退往返两个对象；再次从 `/` 进入 | 直达与刷新后回到同一对象、同一事实；History 前进/后退重放正确对象，上一对象未完成的加载被取消；`/` 再次 replace 到列表且不猜选；全程未出现旧写入口。M1 冻结边界：「生成完成摘要并回放派工 / 上下文 / Artifact revision / 验证者结论」为版本级闭环（README 步骤9；F010/F011/F012/F014），M1 以 J7 的既有摘要只读事实与导出守恒承担可承担部分。行注：SSE 断线重连按 `event_sequence` 补读在 M1 无活跃事件源（fixture 全为终态、不驱动 CLI），本旅程不断言（豁免已明文化于 spec §7 / design.md §8），归 F011/F012 旅程与 T031 裁定 | J3–J8 的写入与本库既有事实共存；「既有事实守恒」以 T000 基线计数核对 | 刷新后对象不存在 → not-found 恢复态（S1 同款）；加载失败 → PageState 唯一恢复动作 | T021（AC-003 的直达 / 刷新 / History 浏览器断言）；T031 人工复核 History 与诊断清除细节 | ⑤（主） |
 
 ## 2. 28 条 adapted 生产断言映射（对应 T022）
 
-**分母核对**：`browser-check.json` 的 checks 数组逐条点数为 125；applicability 表 BC-001–BC-125 连续无缺；分类 adapted 28 / deferred 96 / not-applicable 1，总数 125，与 spec §7 / DQ-005 一致。**未发现分母或分类不一致**。唯一 not-applicable 为 BC-045（不计入下表），由「生产代码禁止 `data-demo` / `data-unbuilt` 属性」的反向门禁取代。applicability 引用的 source 是 `browser-check.mjs`（附 sha256），本矩阵核对的是同目录 `browser-check.json`（125 条一致）；`.mjs` 的 sha 未复算（隔离轨不执行脚本）。
+**分母核对**：`browser-check.json` 的 checks 数组逐条点数为 125；applicability 表 BC-001–BC-125 连续无缺；分类 adapted 28 / deferred 96 / not-applicable 1，总数 125，与 spec §7 / DQ-005 一致。**未发现分母或分类不一致**。唯一 not-applicable 为 BC-045（不计入下表），由「生产代码禁止 `data-demo` / `data-unbuilt` 属性」的反向门禁取代。applicability 引用的 source 是 `browser-check.mjs`（附 sha256）；集成人已复算 `.mjs` 的 sha256 与 applicability 记录一致（`ebca2c9f…be8f7`），`browser-check.json` 的 125 条亦逐条点数一致。
 
 落点缩写：T022 各 spec 文件名均指 `e2e/tests/` 下 applicability「生产测试路径」列所指文件；「静态门禁」指 `web/src/f009-content-contract.test.ts` 等生产文案/占位反向门禁（T022 建立，随 `npm run verify` 常驻）。
 
@@ -71,9 +71,9 @@ updated: 2026-09-09
 | BC-001 | 任务舞台占主导、左栏收窄 | AC-001、AC-002 | P001 | T022 `f009-shell.spec.ts`；任务级 T002/T003 已有 jsdom 铺底 |
 | BC-002 | 删除底部面板、状态栏、图标活动栏 | AC-002 | P001（旧壳层退出） | T022 `f009-shell.spec.ts` |
 | BC-005 | 任务左栏按稳定组织维度分类 | AC-001、AC-003 | A004 | T022 `f009-shell.spec.ts`；M1 只断言列表骨架（分组维度的最终语义归 F011，行注见报告） |
-| BC-006 | 标签用下拉而非横排 chip | AC-004、AC-001 | A004 | T022 `f009-shell.spec.ts`；M1 断言共享交互形态，标签域数据是否在场由 T031 复核 |
+| BC-006 | 标签用下拉而非横排 chip | AC-004、AC-001 | A004 | T022 `f009-shell.spec.ts`；M1 断言共享交互形态，标签域数据由 fixture Issue labels 提供（design.md §8） |
 | BC-007 | 一级竖栏分日常与低频入口 | AC-002、AC-003 | P001 | T022 `f009-shell.spec.ts`（只对 M1 已注册四槽位断言相对分组） |
-| BC-030 | 命令面板可开关 | AC-004 | P001（全局导航原语） | T022 `f009-command-palette.spec.ts`；入口与触发方式规格未定义，T031 现场裁定（见 §3 AC-004 行注） |
+| BC-030 | 命令面板可开关 | AC-004 | P001（全局导航原语） | T022 `f009-command-palette.spec.ts`；入口（竖栏「跳转」按钮 + Ctrl+K）与语义已定义于 design.md「命令面板（全局导航原语，BC-030）」小节 |
 | BC-044 | 说明文字长度上限（单段 ≤150 字） | AC-004（UX-001） | 全部迁移文案 | T022 静态门禁 `web/src/f009-content-contract.test.ts` |
 | BC-046 | loading / empty / error / partial 有恢复 | AC-004（US-002.2） | 全部 M1 route；PageState 原语 | T022 `f009-page-states.spec.ts`；任务级 T002 已覆盖原语行为，本行补生产证据 |
 | BC-047 | interrupted / cancelled 不冒充成功 / 失败 | AC-001、AC-004 | A008/A012/A016（Run 状态显示） | T022 `f009-page-states.spec.ts`；fixture 终态守恒由 T000 兜底 |
@@ -81,7 +81,7 @@ updated: 2026-09-09
 | BC-049 | dialog 焦点陷阱、Esc、焦点归还 | AC-004 | 同上弹层集合 | T022 `f009-a11y.spec.ts` |
 | BC-050 | 每个 dialog 都支持 Esc（批量） | AC-004 | 同上弹层集合 | T022 `f009-a11y.spec.ts`（对矩阵全部 dialog 批量） |
 | BC-051 | 数据表列头 / 单元格语义 | AC-004 | A001/A004/A025/A029（列表表格） | T022 `f009-a11y.spec.ts` |
-| BC-052 | tabs 选择、tab stop 与键盘 | AC-004 | M1 真实 tabs（集合待 T031 确认） | T022 `f009-a11y.spec.ts`；「仅测 M1 真实 tabs」，四视图 / 项目 tab 未发布，断言对象集合规格未列全，T031 现场枚举 |
+| BC-052 | tabs 选择、tab stop 与键盘 | AC-004 | M1 真实 tabs（集合按 design.md §8 规则清点） | T022 `f009-a11y.spec.ts`；「仅测 M1 真实 tabs」，实例集合由 T022 清点回填 applicability，零实例时降为原语最小可达使用，T031 复核 |
 | BC-053 | 凭据默认遮罩并显式查看 | AC-004、AC-005 | A026 | T022 `f009-runtime-adapters.spec.ts` |
 | BC-056 | 新任务原文守恒、确认前零写、重复幂等 | AC-001、AC-005 | A006/A007 | T022 `f009-create-task.spec.ts`；与 T021 旅程 J3 共用同一临时库复证 |
 | BC-057 | 空目标不推荐也不创建 | AC-001 | A006 | T022 `f009-create-task.spec.ts` |
@@ -104,7 +104,7 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
 - **AC-001**（`FR-001`, `FR-003`, `NFR-001`）：
   - [任务级]：`server/tests/integration/f009-v02-fixture.test.ts`「F009 v0.2 schema-v10 fixture」（T000：来源指纹、v10 → v11 → head 升级链、幂等与变异）。
   - [需求级] 待 T021 回填：本矩阵 §1（J1–J9、S1）即其设计稿；applicability 指定的各 `f009-*.spec.ts` 承担对应步骤。
-  - 人工：无单独人工条目。「真实 CLI 旅程」部分按 self-test §3.3 属发布级（T030 / 版本收口），不计入本 AC 的浏览器旅程。残余人工项：「干净数据库首屏指引」（§3.2.1 第④段）受 §0 数据策略限制无法自动化，归 T031 在真实升级场景人工确认。
+  - 人工：无单独人工条目。「真实 CLI 旅程」部分按 self-test §3.3 属发布级（T030 / 版本收口），不计入本 AC 的浏览器旅程。残余人工项：「干净数据库首屏指引」（§3.2.1 第④段）受 §0 数据策略限制无法自动化（豁免已明文化于 spec §7），归 T031 在真实升级场景人工确认。
 - **AC-002**（`FR-002`, `FR-005`, `FR-007`, `NFR-004`）：
   - [任务级]：`tools/check-v03-plan-contracts.test.mjs`「V03-PLAN 合同套件」（T001 随迁移持续维护）。
   - [需求级] 待 T020 追加：单写入口 / 死入口静态扫描（每个 migrated action ID 唯一 host、retired 无可达写入口、transitional-host 三项非空）；T022 的 BC-001/002/007/070/072/097 从浏览器侧复证。
@@ -116,7 +116,7 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
 - **AC-004**（`UX-001`, `UX-002`, `UX-004`, `NFR-002`）：
   - [任务级]：`web/src/f009-primitives.test.tsx`（T002：AppDialog / AppTabs / DataTable / PageState / Feedback）、`web/src/f009-task-draft-store.test.ts`（T004：generation / revision 契约与三个清理路径变异）。
   - [需求级] 待 T022 回填：§2 中 BC-044/046/048–053/057/076/091/119/122–125 及键盘 / 语义 / 窄视口 / console 门禁；草稿跨 route 往返的浏览器断言随 J3/J4 落地。
-  - 只能人工验证：反馈与状态在真实浏览器中的可读性、一致性（US-002 整体观感）归 T031；BC-030（命令面板入口）、BC-052（M1 真实 tabs 集合）、BC-006（标签域数据在场与否）的断言对象规格未定义死，由 T031 现场裁定并回填规格。
+  - 只能人工验证：反馈与状态在真实浏览器中的可读性、一致性（US-002 整体观感）归 T031。BC-030 入口与语义已定义于 design.md「命令面板（全局导航原语，BC-030）」小节；BC-052 / BC-006 断言对象按 design.md §8「adapted 行断言对象集合」规则处理（BC-006 标签域由 fixture Issue labels 提供），T031 复核实例清点完整性。
 - **AC-005**（`FR-006`, `NFR-003`）：
   - [任务级]：`web/src/f009-pages.test.tsx`（T010，A001–A005 写入命中既有 API）。
   - [需求级] 待 T011–T013 追加（各迁移 host 的 API 命中用例）与 T020 追加（canonical API 静态断言）；T022 的 BC-053/056 从浏览器侧复证唯一写入口。
