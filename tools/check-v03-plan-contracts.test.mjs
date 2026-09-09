@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
@@ -354,9 +355,15 @@ test('F009-DOC-R1-006: all 125 V3.44 browser checks have an explicit disposition
     'ui-reference/personahub-draft/personahub-v3.1/browser-check.mjs',
   );
   assert.equal((implementationNotes.match(/await check\(/g) ?? []).length, 125);
+  const sourceChecksum = createHash('sha256').update(implementationNotes).digest('hex');
+  assert.ok(catalog.includes(`source_sha256: ${sourceChecksum}`), 'browser-check source checksum drifted');
   verifyBrowserCheckApplicability(catalog);
   const mutated = catalog.replace(/^\| BC-001 \|.*\n/m, '');
   assert.throws(() => verifyBrowserCheckApplicability(mutated), /expected 125 classified browser checks/);
+  assert.notEqual(
+    createHash('sha256').update(implementationNotes.replace('任务面是主角', '任务面')).digest('hex'),
+    sourceChecksum,
+  );
   requirePhrases(
     [catalog],
     [

@@ -11,6 +11,7 @@ updated: 2026-09-09
 
 - source: `ui-reference/personahub-draft/personahub-v3.1/browser-check.mjs`
 - source_count: 125
+- source_sha256: ebca2c9f43a86c0a22c3865698fe73d3022a5cb2dd4d22852977f980344be8f7
 - classification: adapted 28 / deferred 96 / not-applicable 1
 - classification_count: adapted: 28 · deferred: 96 · not-applicable: 1 · total: 125
 - denominator: adapted 28 + deferred 96 + not-applicable 1 = 125
