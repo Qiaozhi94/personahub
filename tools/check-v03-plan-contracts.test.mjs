@@ -60,6 +60,24 @@ function parseMigrationMatrixRows(matrix, idPrefix) {
     .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
 }
 
+function parseCompletionEvidence(id, completionEvidence) {
+  const evidence = new Map();
+  for (const entry of completionEvidence.split(';').map((part) => part.trim())) {
+    const match = /^([a-z][a-z-]*)=(.*)$/.exec(entry);
+    assert.ok(match, `${id} has invalid completion evidence syntax`);
+    const [, key, rawValue] = match;
+    const value = rawValue.trim();
+    assert.ok(value, `${id} missing evidence value: ${key}`);
+    assert.ok(!evidence.has(key), `${id} has duplicate completion evidence key: ${key}`);
+    evidence.set(key, value);
+  }
+  return evidence;
+}
+
+function requireEvidenceValue(id, evidence, key) {
+  assert.ok(evidence.get(key), `${id} missing evidence value: ${key}`);
+}
+
 function verifyMigrationMatrixProgress(matrix) {
   const pageRows = parseMigrationMatrixRows(matrix, 'P');
   const actionRows = parseMigrationMatrixRows(matrix, 'A');
@@ -91,12 +109,14 @@ function verifyMigrationMatrixProgress(matrix) {
 
     assert.equal(implementationStatus, targetDisposition, `${id} implementation must match its frozen target`);
     assert.notEqual(completionEvidence, 'pending', `${id} completed status requires evidence`);
+    const evidence = parseCompletionEvidence(id, completionEvidence);
     if (implementationStatus === 'migrated') {
-      for (const evidenceKey of ['route=', 'data=', 'write=', 'browser=']) {
-        assert.ok(completionEvidence.includes(evidenceKey), `${id} migrated evidence is missing ${evidenceKey}`);
+      for (const evidenceKey of ['route', 'data', 'write', 'browser']) {
+        requireEvidenceValue(id, evidence, evidenceKey);
       }
     } else {
-      assert.ok(completionEvidence.includes('registry=absent'), `${id} removal evidence must prove registry absence`);
+      assert.equal(evidence.get('registry'), 'absent', `${id} removal evidence must prove registry absence`);
+      requireEvidenceValue(id, evidence, implementationStatus === 'deferred' ? 'owner' : 'decision');
     }
   }
 }
@@ -363,6 +383,50 @@ test('F009-DOC-R6-010: migration targets and implementation progress are indepen
   const missingEvidence = matrix.replace('| migrated | inventoried | pending |', '| migrated | inventoried | |');
   assert.notEqual(missingEvidence, matrix, 'evidence mutation must change a migration row');
   assert.throws(() => verifyMigrationMatrixProgress(missingEvidence), /missing completion evidence/);
+});
+
+test('F009-DOC-R7-013: completed migration evidence has non-empty disposition-specific values', () => {
+  const matrix = read(
+    'docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md',
+  );
+
+  const emptyMigratedEvidence = matrix.replace(
+    '| migrated | inventoried | pending |',
+    '| migrated | migrated | route= data= write= browser= |',
+  );
+  assert.notEqual(emptyMigratedEvidence, matrix, 'empty migrated-evidence mutation must change a row');
+  assert.throws(
+    () => verifyMigrationMatrixProgress(emptyMigratedEvidence),
+    /invalid completion evidence|missing evidence value/,
+  );
+
+  const emptyCanonicalValues = matrix.replace(
+    '| migrated | inventoried | pending |',
+    '| migrated | migrated | route=; data=; write=; browser= |',
+  );
+  assert.notEqual(emptyCanonicalValues, matrix, 'empty canonical-value mutation must change a row');
+  assert.throws(() => verifyMigrationMatrixProgress(emptyCanonicalValues), /missing evidence value: route/);
+
+  const missingDecision = matrix.replace(
+    '| retired | inventoried | pending |',
+    '| retired | retired | registry=absent |',
+  );
+  assert.notEqual(missingDecision, matrix, 'retired-decision mutation must change a row');
+  assert.throws(() => verifyMigrationMatrixProgress(missingDecision), /missing evidence value: decision/);
+
+  const missingOwner = matrix.replace(
+    '| migrated | inventoried | pending |',
+    '| deferred | deferred | registry=absent |',
+  );
+  assert.notEqual(missingOwner, matrix, 'deferred-owner mutation must change a row');
+  assert.throws(() => verifyMigrationMatrixProgress(missingOwner), /missing evidence value: owner/);
+
+  const validMigratedEvidence = matrix.replace(
+    '| migrated | inventoried | pending |',
+    '| migrated | migrated | route=/tasks; data=GET /api/projects; write=read-only; browser=web/src/app.test.tsx::route-smoke |',
+  );
+  assert.notEqual(validMigratedEvidence, matrix, 'valid migrated-evidence mutation must change a row');
+  assert.doesNotThrow(() => verifyMigrationMatrixProgress(validMigratedEvidence));
 });
 
 test('F009-DOC-R1-002: M1 routes have stable identities and deterministic failures', () => {

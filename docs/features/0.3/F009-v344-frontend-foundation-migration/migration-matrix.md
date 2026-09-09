@@ -27,10 +27,13 @@ updated: 2026-09-09
   旧事实需要时只读保留并写明替代路径。实现不得自行改变目标处置。
 - `implementation_status` 是当前实施进度，只能从 `inventoried` 推进到与
   `target_disposition` 同名的终态。编码开始前全部为 `inventoried`；不得用目标处置冒充完成状态。
-- `completion_evidence` 在 `inventoried` 时固定为 `pending`。推进到 `migrated` 前必须同时记录
-  `route=<生产入口>`、`data=<真实数据或 canonical API>`、`write=<唯一写入口或 read-only / client-only / none>`
-  与 `browser=<浏览器证据>`；推进到 `deferred / retired` 前必须记录 `registry=absent` 及接管或产品
-  裁决证据。证据没有齐备时不得推进状态。
+- `completion_evidence` 在 `inventoried` 时固定为 `pending`；终态证据使用分号分隔的
+  `key=value; key=value` 语法，每个 key 唯一且 value 必须为非空、可复核的 route、canonical API、
+  测试名、Feature 或规格 / ADR 引用，不接受占位文字。推进到 `migrated` 前必须同时记录非空的
+  `route=<生产入口>; data=<真实数据或 canonical API>; write=<唯一写入口或 read-only / client-only / none>;
+  browser=<浏览器测试文件::测试名>`。推进到 `deferred` 前必须记录
+  `registry=absent; owner=<接管 Feature>`；推进到 `retired` 前必须记录
+  `registry=absent; decision=<规格或 ADR 裁决引用>`。证据没有齐备时不得推进状态。
 - `stable-shell`：F009 长期拥有的壳层能力。
 - `final-surface`：F009 已能直接落到最终工作面的既有能力，不需要过渡宿主。
 - `transitional-host`：只为连续使用既有能力存在；`replacement_owner`、`delete_when`、
