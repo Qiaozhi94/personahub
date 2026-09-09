@@ -1,0 +1,195 @@
+-- PersonaHub v0.2 release representative data (schema v10) — F009 T000.
+-- Contract: docs/features/0.3/F009-v344-frontend-foundation-migration/v02-fixture-contract.md §2.
+-- Raw SQL only: fixed IDs, fixed timestamps, no application-code involvement.
+-- Covers FX-PROJECT / FX-TASK / FX-RUN / FX-GRAPH / FX-TRACE / FX-EVIDENCE /
+-- FX-VALIDATION / FX-ADAPTER / FX-WORKFLOW / FX-HEALTH. Column sets are the
+-- v10 sets — deliberately without v11's runs.validation_attempt, which the
+-- real v10 → v11 → head migration must backfill.
+
+-- ---- FX-PROJECT: 2 projects, 1 bound workspace + 1 unbound ----------------
+INSERT INTO projects (id, name, description, default_workspace_id, default_coordinator_agent_id, default_adapter_config_id, created_at, updated_at) VALUES
+  ('prj_v02_alpha', 'Alpha Platform', 'v0.2 fixture project with a bound workspace', 'ws_v02_alpha', NULL, 'adp_v02_codex_impl', '2026-07-01T08:00:00.000Z', '2026-07-01T08:05:00.000Z'),
+  ('prj_v02_beta', 'Beta Archive', 'v0.2 fixture project without any workspace', NULL, NULL, NULL, '2026-07-01T08:10:00.000Z', '2026-07-01T08:10:00.000Z');
+
+INSERT INTO workspaces (id, project_id, local_path, local_path_normalized, git_branch, lock_state, locked_by_run_id, push_credentials_enabled, locked_at, created_at, updated_at) VALUES
+  ('ws_v02_alpha', 'prj_v02_alpha', '/repo/alpha', '/repo/alpha', 'main', 'locked', 'run_v02_running', 0, '2026-07-02T09:30:00.000Z', '2026-07-01T08:00:00.000Z', '2026-07-02T09:30:00.000Z');
+
+-- ---- FX-ADAPTER: implementation + validator, available + unavailable, plus
+-- ---- a never-probed (pending) adapter; workspace override for the validator.
+INSERT INTO agent_configs (id, project_id, name, role, cli_provider, command, args, capability_tags, default_model, status, last_checked_at, auth_type, model_provider, api_key, auth_status_message, created_at, updated_at) VALUES
+  ('adp_v02_codex_impl', 'prj_v02_alpha', 'Codex (alpha implementation)', 'implementation', 'codex', 'codex', '[]', '["implementation"]', NULL, 'available', '2026-07-02T08:30:00.000Z', 'oauth', NULL, NULL, NULL, '2026-07-01T08:20:00.000Z', '2026-07-02T08:30:00.000Z'),
+  ('adp_v02_claude_val', 'prj_v02_alpha', 'Claude (alpha validator)', 'validator', 'claude', 'claude', '[]', '["validator"]', NULL, 'unavailable', '2026-07-02T08:30:00.000Z', 'oauth', NULL, NULL, 'OAuth token expired', '2026-07-01T08:21:00.000Z', '2026-07-02T08:30:00.000Z'),
+  ('adp_v02_opencode_new', 'prj_v02_alpha', 'OpenCode (never probed)', 'implementation', 'opencode', 'opencode', '[]', '["implementation"]', NULL, 'unknown', NULL, 'oauth', NULL, NULL, 'Awaiting first availability probe', '2026-07-02T08:40:00.000Z', '2026-07-02T08:40:00.000Z');
+
+INSERT INTO adapter_workspace_status (adapter_config_id, workspace_id, status, last_checked_at, auth_status_message, updated_at) VALUES
+  ('adp_v02_claude_val', 'ws_v02_alpha', 'available', '2026-07-02T08:35:00.000Z', 'Re-authenticated for /repo/alpha', '2026-07-02T08:35:00.000Z');
+
+-- ---- FX-WORKFLOW: same issue_type with an active and an inactive version.
+-- wft_coding_default (active, v1) already comes from the schema snapshot; the
+-- inactive v2 below is the read-only legacy template pair.
+INSERT INTO workflow_templates (id, name, issue_type, collaboration_topology, agent_team_template_id, validation_policy_id, steps_json, handoff_policy_json, evidence_requirements_json, status, version, created_at, updated_at) VALUES
+  ('wft_v02_coding_v2', 'Coding Workflow (sequential v2 draft)', 'coding', 'sequential', NULL, 'vpl_coding_default', '{"schema_version":1,"steps":[{"id":"implementation","role":"implementation"},{"id":"validation","role":"validator"}]}', NULL, NULL, 'inactive', 2, '2026-07-01T09:00:00.000Z', '2026-07-01T09:00:00.000Z');
+
+INSERT INTO admin_audit_events (id, action, target_type, target_id, target_version, actor_type, actor_id, details_json, created_at) VALUES
+  ('aue_v02_1', 'template.version_created', 'workflow_template', 'wft_v02_coding_v2', 2, 'user', NULL, '{"source_template_id":"wft_coding_default"}', '2026-07-01T09:00:00.000Z');
+
+-- ---- FX-TASK: 4 issues on the bound project covering Running / Blocked /
+-- ---- Done (+ an active blocked graph on its own issue); each with exactly
+-- ---- one primary thread. The unbound project intentionally has no issues.
+INSERT INTO issues (id, project_id, workspace_id, primary_thread_id, issue_type, workflow_template_id, validation_policy_id, title, goal, status, owner_agent_id, coordinator_agent_id, priority, labels, validation_round_count, blocked_reason_code, blocked_reason_message, validation_dispatch_due_at, created_at, updated_at) VALUES
+  ('iss_v02_done', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_done', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Harden parser error paths', 'Add regression coverage for malformed input handling', 'Done', NULL, NULL, 'high', '["parser","regression"]', 3, NULL, NULL, NULL, '2026-07-02T08:00:00.000Z', '2026-07-02T09:50:05.000Z'),
+  ('iss_v02_running', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_running', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Streaming ingest pipeline', 'Stream records without buffering whole files', 'Running', NULL, NULL, 'normal', '["ingest"]', 0, NULL, NULL, NULL, '2026-07-02T09:00:00.000Z', '2026-07-02T09:35:00.000Z'),
+  ('iss_v02_graph_blocked', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_graph_blocked', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Split acceptance fixtures', 'Extract shared acceptance fixtures into a reusable module', 'Running', NULL, NULL, 'normal', '["acceptance"]', 0, NULL, NULL, NULL, '2026-07-02T10:00:00.000Z', '2026-07-02T10:39:10.000Z'),
+  ('iss_v02_blocked', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_blocked', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Fix flaky acceptance suite', 'Remove timing dependency from acceptance tests', 'Blocked', NULL, NULL, 'high', '["acceptance","flaky"]', 2, 'validator_run_failed', 'Validator run failed without producing a verdict', NULL, '2026-07-02T11:00:00.000Z', '2026-07-02T12:20:00.000Z');
+
+INSERT INTO threads (id, issue_id, room_id, thread_type, title, created_at, updated_at) VALUES
+  ('thr_v02_done', 'iss_v02_done', NULL, 'primary', 'Primary: Harden parser error paths', '2026-07-02T08:00:00.000Z', '2026-07-02T09:50:05.000Z'),
+  ('thr_v02_running', 'iss_v02_running', NULL, 'primary', 'Primary: Streaming ingest pipeline', '2026-07-02T09:00:00.000Z', '2026-07-02T09:35:00.000Z'),
+  ('thr_v02_graph_blocked', 'iss_v02_graph_blocked', NULL, 'primary', 'Primary: Split acceptance fixtures', '2026-07-02T10:00:00.000Z', '2026-07-02T10:39:10.000Z'),
+  ('thr_v02_blocked', 'iss_v02_blocked', NULL, 'primary', 'Primary: Fix flaky acceptance suite', '2026-07-02T11:00:00.000Z', '2026-07-02T12:20:00.000Z');
+
+-- ---- FX-TRACE: the sequential issue's thread carries 16 events (two command
+-- ---- pairs on run_v02_completed, a failure, then the active run) so the
+-- ---- trace endpoint paginates; run.output_truncated keeps a partial marker.
+INSERT INTO thread_events (id, event_sequence, thread_id, type, actor_type, actor_id, payload_json, evidence_refs, created_at) VALUES
+  ('evt_r01', 1, 'thr_v02_running', 'issue.created', 'system', NULL, '{"issue_id":"iss_v02_running","title":"Streaming ingest pipeline"}', '[]', '2026-07-02T09:00:00.000Z'),
+  ('evt_r02', 2, 'thr_v02_running', 'run.queued', 'system', NULL, '{"run_id":"run_v02_completed","adapter_config_id":"adp_v02_codex_impl"}', '[]', '2026-07-02T09:00:05.000Z'),
+  ('evt_r03', 3, 'thr_v02_running', 'run.started', 'system', NULL, '{"run_id":"run_v02_completed"}', '[]', '2026-07-02T09:00:10.000Z'),
+  ('evt_r04', 4, 'thr_v02_running', 'command.started', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_completed","command":"npm --workspace server test","sequence":1}', '["trace:run_v02_completed"]', '2026-07-02T09:05:00.000Z'),
+  ('evt_r05', 5, 'thr_v02_running', 'command.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_completed","command":"npm --workspace server test","exit_code":0}', '["trace:run_v02_completed"]', '2026-07-02T09:08:00.000Z'),
+  ('evt_r06', 6, 'thr_v02_running', 'command.started', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_completed","command":"npm run lint","sequence":2}', '["trace:run_v02_completed"]', '2026-07-02T09:09:00.000Z'),
+  ('evt_r07', 7, 'thr_v02_running', 'command.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_completed","command":"npm run lint","exit_code":0}', '["trace:run_v02_completed"]', '2026-07-02T09:12:00.000Z'),
+  ('evt_r08', 8, 'thr_v02_running', 'run.completed', 'system', NULL, '{"run_id":"run_v02_completed","exit_code":0}', '[]', '2026-07-02T09:15:00.000Z'),
+  ('evt_r09', 9, 'thr_v02_running', 'run.queued', 'system', NULL, '{"run_id":"run_v02_failed","adapter_config_id":"adp_v02_codex_impl"}', '[]', '2026-07-02T09:20:00.000Z'),
+  ('evt_r10', 10, 'thr_v02_running', 'run.started', 'system', NULL, '{"run_id":"run_v02_failed"}', '[]', '2026-07-02T09:20:05.000Z'),
+  ('evt_r11', 11, 'thr_v02_running', 'command.started', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_failed","command":"npm run build","sequence":1}', '["trace:run_v02_failed"]', '2026-07-02T09:21:00.000Z'),
+  ('evt_r12', 12, 'thr_v02_running', 'command.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_failed","command":"npm run build","exit_code":1}', '["trace:run_v02_failed"]', '2026-07-02T09:22:00.000Z'),
+  ('evt_r13', 13, 'thr_v02_running', 'run.failed', 'system', NULL, '{"run_id":"run_v02_failed","failure_reason":"adapter_exit_nonzero"}', '[]', '2026-07-02T09:25:00.000Z'),
+  ('evt_r14', 14, 'thr_v02_running', 'run.queued', 'system', NULL, '{"run_id":"run_v02_running","adapter_config_id":"adp_v02_codex_impl"}', '[]', '2026-07-02T09:29:00.000Z'),
+  ('evt_r15', 15, 'thr_v02_running', 'run.started', 'system', NULL, '{"run_id":"run_v02_running"}', '[]', '2026-07-02T09:30:00.000Z'),
+  ('evt_r16', 16, 'thr_v02_running', 'run.output_truncated', 'system', NULL, '{"run_id":"run_v02_running","truncated_bytes":48000}', '[]', '2026-07-02T09:35:00.000Z');
+
+-- ---- FX-GRAPH (completed) + FX-VALIDATION (2 failed rounds, then passed) on
+-- ---- the Done issue: fan-out (impl_a, impl_b) → fan-in (join), then three
+-- ---- validator rounds, one validator Run per round.
+INSERT INTO thread_events (id, event_sequence, thread_id, type, actor_type, actor_id, payload_json, evidence_refs, created_at) VALUES
+  ('evt_d01', 1, 'thr_v02_done', 'issue.created', 'system', NULL, '{"issue_id":"iss_v02_done","title":"Harden parser error paths"}', '[]', '2026-07-02T08:00:00.000Z'),
+  ('evt_d02', 2, 'thr_v02_done', 'graph.node_queued', 'system', NULL, '{"graph_run_id":"grun_v02_g1","node_key":"impl_a"}', '[]', '2026-07-02T08:01:00.000Z'),
+  ('evt_d03', 3, 'thr_v02_done', 'graph.node_queued', 'system', NULL, '{"graph_run_id":"grun_v02_g1","node_key":"impl_b"}', '[]', '2026-07-02T08:01:01.000Z'),
+  ('evt_d04', 4, 'thr_v02_done', 'command.started', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_done_n1","command":"npm --workspace server test -- parser","sequence":1}', '["trace:run_v02_done_n1"]', '2026-07-02T08:02:00.000Z'),
+  ('evt_d05', 5, 'thr_v02_done', 'command.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_done_n1","command":"npm --workspace server test -- parser","exit_code":0}', '["trace:run_v02_done_n1"]', '2026-07-02T08:10:00.000Z'),
+  ('evt_d06', 6, 'thr_v02_done', 'test.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_done_n1","verification":"test","result":"passed","suite":"parser"}', '["trace:run_v02_done_n1"]', '2026-07-02T08:11:00.000Z'),
+  ('evt_d07', 7, 'thr_v02_done', 'graph.node_result', 'agent', 'adp_v02_codex_impl', '{"graph_run_id":"grun_v02_g1","node_key":"impl_a","run_id":"run_v02_done_n1","outcome":"passed"}', '["trace:run_v02_done_n1"]', '2026-07-02T08:11:05.000Z'),
+  ('evt_d08', 8, 'thr_v02_done', 'graph.node_completed', 'system', NULL, '{"graph_run_id":"grun_v02_g1","node_key":"impl_a"}', '[]', '2026-07-02T08:11:10.000Z'),
+  ('evt_d09', 9, 'thr_v02_done', 'graph.edge_traversed', 'system', NULL, '{"graph_run_id":"grun_v02_g1","from":"impl_a","to":"join","outcome":"passed"}', '[]', '2026-07-02T08:11:11.000Z'),
+  ('evt_d10', 10, 'thr_v02_done', 'graph.node_result', 'agent', 'adp_v02_codex_impl', '{"graph_run_id":"grun_v02_g1","node_key":"impl_b","run_id":"run_v02_done_n2","outcome":"passed"}', '["trace:run_v02_done_n2"]', '2026-07-02T08:12:00.000Z'),
+  ('evt_d11', 11, 'thr_v02_done', 'graph.edge_traversed', 'system', NULL, '{"graph_run_id":"grun_v02_g1","from":"impl_b","to":"join","outcome":"passed"}', '[]', '2026-07-02T08:12:01.000Z'),
+  ('evt_d12', 12, 'thr_v02_done', 'graph.join_satisfied', 'system', NULL, '{"graph_run_id":"grun_v02_g1","node_key":"join"}', '[]', '2026-07-02T08:12:05.000Z'),
+  ('evt_d13', 13, 'thr_v02_done', 'graph.node_completed', 'system', NULL, '{"graph_run_id":"grun_v02_g1","node_key":"join"}', '[]', '2026-07-02T08:30:00.000Z'),
+  ('evt_d14', 14, 'thr_v02_done', 'graph.terminal', 'system', NULL, '{"graph_run_id":"grun_v02_g1","status":"completed"}', '[]', '2026-07-02T08:30:01.000Z'),
+  ('evt_d15', 15, 'thr_v02_done', 'handoff.created', 'system', NULL, '{"from_run_id":"run_v02_done_n3","to_role":"validator","summary_markdown":"## Handoff\\n\\nParser hardening merged with passing tests."}', '["trace:run_v02_done_n3"]', '2026-07-02T08:31:00.000Z'),
+  ('evt_d16', 16, 'thr_v02_done', 'validation.requested', 'system', NULL, '{"round":1,"validator_run_id":"run_v02_val_r1"}', '[]', '2026-07-02T08:32:00.000Z'),
+  ('evt_d17', 17, 'thr_v02_done', 'validation.finding', 'agent', 'adp_v02_claude_val', '{"round":1,"severity":"error","message":"Malformed input path skips the boundary test file","suggestion":"Extend fixtures to cover truncated tokens"}', '["trace:run_v02_val_r1"]', '2026-07-02T08:40:00.000Z'),
+  ('evt_d18', 18, 'thr_v02_done', 'validation.failed', 'system', NULL, '{"round":1,"validator_run_id":"run_v02_val_r1"}', '[]', '2026-07-02T08:41:00.000Z'),
+  ('evt_d19', 19, 'thr_v02_done', 'validation.requested', 'system', NULL, '{"round":2,"validator_run_id":"run_v02_val_r2"}', '[]', '2026-07-02T09:00:00.000Z'),
+  ('evt_d20', 20, 'thr_v02_done', 'validation.finding', 'agent', 'adp_v02_claude_val', '{"round":2,"severity":"warning","message":"Error taxonomy doc not updated","suggestion":"Document the new ParserErrorCode values"}', '["trace:run_v02_val_r2"]', '2026-07-02T09:10:00.000Z'),
+  ('evt_d21', 21, 'thr_v02_done', 'validation.failed', 'system', NULL, '{"round":2,"validator_run_id":"run_v02_val_r2"}', '[]', '2026-07-02T09:11:00.000Z'),
+  ('evt_d22', 22, 'thr_v02_done', 'validation.requested', 'system', NULL, '{"round":3,"validator_run_id":"run_v02_val_r3"}', '[]', '2026-07-02T09:30:00.000Z'),
+  ('evt_d23', 23, 'thr_v02_done', 'validation.passed', 'system', NULL, '{"round":3,"validator_run_id":"run_v02_val_r3"}', '[]', '2026-07-02T09:50:00.000Z'),
+  ('evt_d24', 24, 'thr_v02_done', 'issue.done', 'system', NULL, '{"issue_id":"iss_v02_done","evidence_summary_id":"evs_v02_done"}', '[]', '2026-07-02T09:50:05.000Z');
+
+-- ---- FX-GRAPH (blocked with retryable node) on its own Running issue.
+INSERT INTO thread_events (id, event_sequence, thread_id, type, actor_type, actor_id, payload_json, evidence_refs, created_at) VALUES
+  ('evt_g01', 1, 'thr_v02_graph_blocked', 'issue.created', 'system', NULL, '{"issue_id":"iss_v02_graph_blocked","title":"Split acceptance fixtures"}', '[]', '2026-07-02T10:00:00.000Z'),
+  ('evt_g02', 2, 'thr_v02_graph_blocked', 'graph.node_queued', 'system', NULL, '{"graph_run_id":"grun_v02_g2","node_key":"prep"}', '[]', '2026-07-02T10:30:01.000Z'),
+  ('evt_g03', 3, 'thr_v02_graph_blocked', 'command.started', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_g2_prep","command":"node scripts/acceptance/inventory.mjs","sequence":1}', '["trace:run_v02_g2_prep"]', '2026-07-02T10:31:00.000Z'),
+  ('evt_g04', 4, 'thr_v02_graph_blocked', 'command.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_g2_prep","command":"node scripts/acceptance/inventory.mjs","exit_code":0}', '["trace:run_v02_g2_prep"]', '2026-07-02T10:33:00.000Z'),
+  ('evt_g05', 5, 'thr_v02_graph_blocked', 'graph.node_result', 'agent', 'adp_v02_codex_impl', '{"graph_run_id":"grun_v02_g2","node_key":"prep","run_id":"run_v02_g2_prep","outcome":"passed"}', '["trace:run_v02_g2_prep"]', '2026-07-02T10:33:05.000Z'),
+  ('evt_g06', 6, 'thr_v02_graph_blocked', 'graph.node_completed', 'system', NULL, '{"graph_run_id":"grun_v02_g2","node_key":"prep"}', '[]', '2026-07-02T10:33:10.000Z'),
+  ('evt_g07', 7, 'thr_v02_graph_blocked', 'graph.node_queued', 'system', NULL, '{"graph_run_id":"grun_v02_g2","node_key":"impl"}', '[]', '2026-07-02T10:34:00.000Z'),
+  ('evt_g08', 8, 'thr_v02_graph_blocked', 'command.started', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_g2_impl","command":"npm run acceptance -- --split","sequence":1}', '["trace:run_v02_g2_impl"]', '2026-07-02T10:35:00.000Z'),
+  ('evt_g09', 9, 'thr_v02_graph_blocked', 'command.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_g2_impl","command":"npm run acceptance -- --split","exit_code":1}', '["trace:run_v02_g2_impl"]', '2026-07-02T10:37:00.000Z'),
+  ('evt_g10', 10, 'thr_v02_graph_blocked', 'graph.node_result', 'agent', 'adp_v02_codex_impl', '{"graph_run_id":"grun_v02_g2","node_key":"impl","run_id":"run_v02_g2_impl","outcome":"failed"}', '["trace:run_v02_g2_impl"]', '2026-07-02T10:37:05.000Z'),
+  ('evt_g11', 11, 'thr_v02_graph_blocked', 'graph.blocked', 'system', NULL, '{"graph_run_id":"grun_v02_g2","blocked_reason_code":"node_run_failed","blocked_node_keys":["impl"]}', '[]', '2026-07-02T10:37:10.000Z');
+
+-- ---- Blocked issue: implementation done, round 1 verdict failed, round 2
+-- ---- validator died without a verdict (the BUG-003 wedge v11 unbwedges).
+INSERT INTO thread_events (id, event_sequence, thread_id, type, actor_type, actor_id, payload_json, evidence_refs, created_at) VALUES
+  ('evt_b01', 1, 'thr_v02_blocked', 'issue.created', 'system', NULL, '{"issue_id":"iss_v02_blocked","title":"Fix flaky acceptance suite"}', '[]', '2026-07-02T11:00:00.000Z'),
+  ('evt_b02', 2, 'thr_v02_blocked', 'run.queued', 'system', NULL, '{"run_id":"run_v02_blocked_impl","adapter_config_id":"adp_v02_codex_impl"}', '[]', '2026-07-02T11:01:00.000Z'),
+  ('evt_b03', 3, 'thr_v02_blocked', 'run.started', 'system', NULL, '{"run_id":"run_v02_blocked_impl"}', '[]', '2026-07-02T11:01:05.000Z'),
+  ('evt_b04', 4, 'thr_v02_blocked', 'command.started', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_blocked_impl","command":"npm run acceptance -- --grep retry","sequence":1}', '["trace:run_v02_blocked_impl"]', '2026-07-02T11:05:00.000Z'),
+  ('evt_b05', 5, 'thr_v02_blocked', 'command.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_blocked_impl","command":"npm run acceptance -- --grep retry","exit_code":0}', '["trace:run_v02_blocked_impl"]', '2026-07-02T11:09:00.000Z'),
+  ('evt_b06', 6, 'thr_v02_blocked', 'test.completed', 'agent', 'adp_v02_codex_impl', '{"run_id":"run_v02_blocked_impl","verification":"test","result":"failed","suite":"acceptance","failed_cases":2}', '["trace:run_v02_blocked_impl"]', '2026-07-02T11:09:30.000Z'),
+  ('evt_b07', 7, 'thr_v02_blocked', 'run.completed', 'system', NULL, '{"run_id":"run_v02_blocked_impl","exit_code":0}', '[]', '2026-07-02T11:10:00.000Z'),
+  ('evt_b08', 8, 'thr_v02_blocked', 'handoff.created', 'system', NULL, '{"from_run_id":"run_v02_blocked_impl","to_role":"validator","summary_markdown":"## Handoff\\n\\nAcceptance suite still timing-dependent in two cases."}', '["trace:run_v02_blocked_impl"]', '2026-07-02T11:11:00.000Z'),
+  ('evt_b09', 9, 'thr_v02_blocked', 'validation.requested', 'system', NULL, '{"round":1,"validator_run_id":"run_v02_val_b1"}', '[]', '2026-07-02T11:12:00.000Z'),
+  ('evt_b10', 10, 'thr_v02_blocked', 'validation.finding', 'agent', 'adp_v02_claude_val', '{"round":1,"severity":"blocking","message":"Fixture clock still uses real time in retry assertions","suggestion":"Inject a fake timer into acceptanceSetup"}', '["trace:run_v02_val_b1"]', '2026-07-02T11:20:00.000Z'),
+  ('evt_b11', 11, 'thr_v02_blocked', 'validation.failed', 'system', NULL, '{"round":1,"validator_run_id":"run_v02_val_b1"}', '[]', '2026-07-02T11:21:00.000Z'),
+  ('evt_b12', 12, 'thr_v02_blocked', 'validation.requested', 'system', NULL, '{"round":2,"validator_run_id":"run_v02_val_b2"}', '[]', '2026-07-02T12:00:00.000Z'),
+  ('evt_b13', 13, 'thr_v02_blocked', 'run.failed', 'system', NULL, '{"run_id":"run_v02_val_b2","failure_reason":"output_parse_failed"}', '[]', '2026-07-02T12:10:00.000Z'),
+  ('evt_b14', 14, 'thr_v02_blocked', 'validation.blocked', 'system', NULL, '{"round":2,"reason":"validator_run_failed"}', '[]', '2026-07-02T12:20:00.000Z');
+
+-- ---- FX-GRAPH: graph_runs + node_runs (result_event_id points at the events
+-- ---- above; node attempts point back via runs.node_run_id).
+INSERT INTO graph_runs (id, issue_id, thread_id, workspace_id, definition_id, definition_version, status, blocked_reason_code, blocked_node_keys, target_files_json, target_files_hash, target_files_truncated, target_files_dropped_count, created_at, updated_at) VALUES
+  ('grun_v02_g1', 'iss_v02_done', 'thr_v02_done', 'ws_v02_alpha', 'coding_fanout_fanin_v1', 1, 'completed', NULL, NULL, '["src/parser/errors.ts","src/parser/errors.test.ts"]', 'sha256:5f1a0e9cd2341b0f7de9a33d4a8cf2f1d6b54c09e7a21f30ca4b6d95e0187ac2', 0, 0, '2026-07-02T08:00:30.000Z', '2026-07-02T08:30:01.000Z'),
+  ('grun_v02_g2', 'iss_v02_graph_blocked', 'thr_v02_graph_blocked', 'ws_v02_alpha', 'coding_sequential_v1', 1, 'blocked', 'node_run_failed', '["impl"]', '["e2e/tests/acceptance/fixtures"]', 'sha256:9c2bd4f6e0aa73c1d5f80b21e47c09d3a6f18e25bc7d34a09f1e6c87425d0bf3', 0, 0, '2026-07-02T10:30:00.000Z', '2026-07-02T10:37:10.000Z');
+
+INSERT INTO node_runs (id, graph_run_id, node_key, status, join_satisfied_at, result_event_id, assigned_adapter_config_id, created_at, updated_at) VALUES
+  ('node_v02_g1_a', 'grun_v02_g1', 'impl_a', 'completed', NULL, 'evt_d07', 'adp_v02_codex_impl', '2026-07-02T08:00:30.000Z', '2026-07-02T08:11:10.000Z'),
+  ('node_v02_g1_b', 'grun_v02_g1', 'impl_b', 'completed', NULL, 'evt_d10', 'adp_v02_codex_impl', '2026-07-02T08:00:30.000Z', '2026-07-02T08:12:00.000Z'),
+  ('node_v02_g1_join', 'grun_v02_g1', 'join', 'completed', '2026-07-02T08:12:05.000Z', 'evt_d13', 'adp_v02_codex_impl', '2026-07-02T08:00:30.000Z', '2026-07-02T08:30:00.000Z'),
+  ('node_v02_g2_prep', 'grun_v02_g2', 'prep', 'completed', NULL, 'evt_g06', 'adp_v02_codex_impl', '2026-07-02T10:30:00.000Z', '2026-07-02T10:33:10.000Z'),
+  ('node_v02_g2_impl', 'grun_v02_g2', 'impl', 'failed', '2026-07-02T10:34:00.000Z', 'evt_g10', 'adp_v02_codex_impl', '2026-07-02T10:30:00.000Z', '2026-07-02T10:37:05.000Z'),
+  ('node_v02_g2_verify', 'grun_v02_g2', 'verify', 'pending', NULL, NULL, 'adp_v02_codex_impl', '2026-07-02T10:30:00.000Z', '2026-07-02T10:30:00.000Z');
+
+-- ---- FX-RUN: 14 runs across the shared workspace — completed, failed,
+-- ---- running, queued, graph attempts, and validator rounds.
+INSERT INTO runs (id, issue_id, thread_id, workspace_id, adapter_config_id, status, failure_reason, instructions, started_at, completed_at, exit_code, error_message, role, workflow_step, validation_round, dispatch_source, final_message, adapter_identity_json, purpose, context_source_run_id, node_run_id, created_at, updated_at) VALUES
+  ('run_v02_done_n1', 'iss_v02_done', 'thr_v02_done', 'ws_v02_alpha', 'adp_v02_codex_impl', 'completed', NULL, 'impl_a: extend parser fixtures for truncated tokens', '2026-07-02T08:01:05.000Z', '2026-07-02T08:11:05.000Z', 0, NULL, 'graph_node', 'implementation', NULL, 'system', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', NULL, 'node_v02_g1_a', '2026-07-02T08:01:00.000Z', '2026-07-02T08:11:05.000Z'),
+  ('run_v02_done_n2', 'iss_v02_done', 'thr_v02_done', 'ws_v02_alpha', 'adp_v02_codex_impl', 'completed', NULL, 'impl_b: document the new ParserErrorCode taxonomy', '2026-07-02T08:01:06.000Z', '2026-07-02T08:12:00.000Z', 0, NULL, 'graph_node', 'implementation', NULL, 'system', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', NULL, 'node_v02_g1_b', '2026-07-02T08:01:00.000Z', '2026-07-02T08:12:00.000Z'),
+  ('run_v02_done_n3', 'iss_v02_done', 'thr_v02_done', 'ws_v02_alpha', 'adp_v02_codex_impl', 'completed', NULL, 'join: reconcile impl_a and impl_b outputs', '2026-07-02T08:12:06.000Z', '2026-07-02T08:30:00.000Z', 0, NULL, 'graph_node', 'implementation', NULL, 'system', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', NULL, 'node_v02_g1_join', '2026-07-02T08:12:05.000Z', '2026-07-02T08:30:00.000Z'),
+  ('run_v02_val_r1', 'iss_v02_done', 'thr_v02_done', 'ws_v02_alpha', 'adp_v02_claude_val', 'completed', NULL, 'Validation round 1 for iss_v02_done', '2026-07-02T08:32:05.000Z', '2026-07-02T08:41:00.000Z', 0, NULL, 'validator', 'validation', 1, 'system', '{"schema_version":1,"outcome":"failed","summary":"Malformed input path skips the boundary test file","findings":[{"severity":"error","message":"Malformed input path skips the boundary test file","suggestion":"Extend fixtures to cover truncated tokens","evidence_refs":["trace:run_v02_val_r1"],"file_path":"src/parser/errors.test.ts","line":42}],"evidence_refs":["trace:run_v02_val_r1"],"missing_evidence":[],"key_decisions":[],"lessons_candidate":[]}', '{"adapter_config_id":"adp_v02_claude_val","name":"Claude (alpha validator)","cli_provider":"claude","default_model":null}', 'workflow_bound', 'run_v02_done_n3', NULL, '2026-07-02T08:32:00.000Z', '2026-07-02T08:41:00.000Z'),
+  ('run_v02_val_r2', 'iss_v02_done', 'thr_v02_done', 'ws_v02_alpha', 'adp_v02_claude_val', 'completed', NULL, 'Validation round 2 for iss_v02_done', '2026-07-02T09:00:05.000Z', '2026-07-02T09:11:00.000Z', 0, NULL, 'validator', 'validation', 2, 'system', '{"schema_version":1,"outcome":"failed","summary":"Error taxonomy doc not updated","findings":[{"severity":"warning","message":"Error taxonomy doc not updated","suggestion":"Document the new ParserErrorCode values","evidence_refs":["trace:run_v02_val_r2"],"file_path":null,"line":null}],"evidence_refs":["trace:run_v02_val_r2"],"missing_evidence":[],"key_decisions":[],"lessons_candidate":[]}', '{"adapter_config_id":"adp_v02_claude_val","name":"Claude (alpha validator)","cli_provider":"claude","default_model":null}', 'workflow_bound', 'run_v02_done_n3', NULL, '2026-07-02T09:00:00.000Z', '2026-07-02T09:11:00.000Z'),
+  ('run_v02_val_r3', 'iss_v02_done', 'thr_v02_done', 'ws_v02_alpha', 'adp_v02_claude_val', 'completed', NULL, 'Validation round 3 for iss_v02_done', '2026-07-02T09:30:05.000Z', '2026-07-02T09:50:00.000Z', 0, NULL, 'validator', 'validation', 3, 'system', '{"schema_version":1,"outcome":"passed","summary":"All evidence requirements satisfied","findings":[],"evidence_refs":["trace:run_v02_val_r3","file:src/parser/errors.test.ts"],"missing_evidence":[],"key_decisions":[],"lessons_candidate":[]}', '{"adapter_config_id":"adp_v02_claude_val","name":"Claude (alpha validator)","cli_provider":"claude","default_model":null}', 'workflow_bound', 'run_v02_done_n3', NULL, '2026-07-02T09:30:00.000Z', '2026-07-02T09:50:00.000Z'),
+  ('run_v02_completed', 'iss_v02_running', 'thr_v02_running', 'ws_v02_alpha', 'adp_v02_codex_impl', 'completed', NULL, 'First streaming spike: chunked reader', '2026-07-02T09:00:10.000Z', '2026-07-02T09:15:00.000Z', 0, NULL, 'implementation', 'implementation', NULL, 'user_explicit', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', NULL, NULL, '2026-07-02T09:00:05.000Z', '2026-07-02T09:15:00.000Z'),
+  ('run_v02_failed', 'iss_v02_running', 'thr_v02_running', 'ws_v02_alpha', 'adp_v02_codex_impl', 'failed', 'adapter_exit_nonzero', 'Second streaming spike: backpressure', '2026-07-02T09:20:05.000Z', '2026-07-02T09:25:00.000Z', 1, 'npm run build exited with code 1', 'implementation', 'implementation', NULL, 'user_explicit', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', 'run_v02_completed', NULL, '2026-07-02T09:20:00.000Z', '2026-07-02T09:25:00.000Z'),
+  ('run_v02_running', 'iss_v02_running', 'thr_v02_running', 'ws_v02_alpha', 'adp_v02_codex_impl', 'running', NULL, 'Third streaming attempt: unbuffered pipe', '2026-07-02T09:30:00.000Z', NULL, NULL, NULL, 'implementation', 'implementation', NULL, 'user_explicit', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', 'run_v02_failed', NULL, '2026-07-02T09:29:00.000Z', '2026-07-02T09:30:00.000Z'),
+  ('run_v02_queued', 'iss_v02_running', 'thr_v02_running', 'ws_v02_alpha', 'adp_v02_codex_impl', 'queued', NULL, 'Fourth streaming attempt: bounded queue', NULL, NULL, NULL, NULL, 'implementation', 'implementation', NULL, 'user_explicit', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', 'run_v02_running', NULL, '2026-07-02T09:33:00.000Z', '2026-07-02T09:33:00.000Z'),
+  ('run_v02_g2_prep', 'iss_v02_graph_blocked', 'thr_v02_graph_blocked', 'ws_v02_alpha', 'adp_v02_codex_impl', 'completed', NULL, 'prep: inventory acceptance fixtures', '2026-07-02T10:30:05.000Z', '2026-07-02T10:33:05.000Z', 0, NULL, 'graph_node', 'implementation', NULL, 'system', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', NULL, 'node_v02_g2_prep', '2026-07-02T10:30:01.000Z', '2026-07-02T10:33:05.000Z'),
+  ('run_v02_g2_impl', 'iss_v02_graph_blocked', 'thr_v02_graph_blocked', 'ws_v02_alpha', 'adp_v02_codex_impl', 'failed', 'adapter_exit_nonzero', 'impl: split fixtures into a reusable module', '2026-07-02T10:34:05.000Z', '2026-07-02T10:37:05.000Z', 1, 'npm run acceptance -- --split exited with code 1', 'graph_node', 'implementation', NULL, 'system', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', 'run_v02_g2_prep', 'node_v02_g2_impl', '2026-07-02T10:34:00.000Z', '2026-07-02T10:37:05.000Z'),
+  ('run_v02_blocked_impl', 'iss_v02_blocked', 'thr_v02_blocked', 'ws_v02_alpha', 'adp_v02_codex_impl', 'completed', NULL, 'Stabilize the acceptance retry assertions', '2026-07-02T11:01:05.000Z', '2026-07-02T11:10:00.000Z', 0, NULL, 'implementation', 'implementation', NULL, 'user_explicit', NULL, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', 'workflow_bound', NULL, NULL, '2026-07-02T11:01:00.000Z', '2026-07-02T11:10:00.000Z'),
+  ('run_v02_val_b1', 'iss_v02_blocked', 'thr_v02_blocked', 'ws_v02_alpha', 'adp_v02_claude_val', 'completed', NULL, 'Validation round 1 for iss_v02_blocked', '2026-07-02T11:12:05.000Z', '2026-07-02T11:21:00.000Z', 0, NULL, 'validator', 'validation', 1, 'system', '{"schema_version":1,"outcome":"failed","summary":"Fixture clock still uses real time in retry assertions","findings":[{"severity":"blocking","message":"Fixture clock still uses real time in retry assertions","suggestion":"Inject a fake timer into acceptanceSetup","evidence_refs":["trace:run_v02_val_b1"],"file_path":"e2e/tests/acceptance/setup.ts","line":17}],"evidence_refs":["trace:run_v02_val_b1"],"missing_evidence":[],"key_decisions":[],"lessons_candidate":[]}', '{"adapter_config_id":"adp_v02_claude_val","name":"Claude (alpha validator)","cli_provider":"claude","default_model":null}', 'workflow_bound', 'run_v02_blocked_impl', NULL, '2026-07-02T11:12:00.000Z', '2026-07-02T11:21:00.000Z'),
+  ('run_v02_val_b2', 'iss_v02_blocked', 'thr_v02_blocked', 'ws_v02_alpha', 'adp_v02_claude_val', 'failed', 'output_parse_failed', 'Validation round 2 for iss_v02_blocked', '2026-07-02T12:00:05.000Z', '2026-07-02T12:10:00.000Z', 3, 'Validator envelope unparsable', 'validator', 'validation', 2, 'system', NULL, '{"adapter_config_id":"adp_v02_claude_val","name":"Claude (alpha validator)","cli_provider":"claude","default_model":null}', 'workflow_bound', 'run_v02_blocked_impl', NULL, '2026-07-02T12:00:00.000Z', '2026-07-02T12:10:00.000Z');
+
+-- ---- FX-TRACE: file changes on the paginated run and on a graph attempt.
+INSERT INTO run_file_changes (id, run_id, path, previous_path, change_type, before_fingerprint, after_fingerprint, created_at) VALUES
+  ('fc_v02_1', 'run_v02_completed', 'src/ingest/pipeline.ts', NULL, 'modified', 'sha256:1111111111111111111111111111111111111111111111111111111111111111', 'sha256:2222222222222222222222222222222222222222222222222222222222222222', '2026-07-02T09:14:00.000Z'),
+  ('fc_v02_2', 'run_v02_completed', 'src/ingest/pipeline.test.ts', NULL, 'added', NULL, 'sha256:3333333333333333333333333333333333333333333333333333333333333333', '2026-07-02T09:14:30.000Z'),
+  ('fc_v02_3', 'run_v02_done_n1', 'src/parser/errors.ts', NULL, 'modified', 'sha256:4444444444444444444444444444444444444444444444444444444444444444', 'sha256:5555555555555555555555555555555555555555555555555555555555555555', '2026-07-02T08:10:30.000Z'),
+  ('fc_v02_4', 'run_v02_done_n1', 'src/parser/errors.test.ts', NULL, 'modified', 'sha256:6666666666666666666666666666666666666666666666666666666666666666', 'sha256:7777777777777777777777777777777777777777777777777777777777777777', '2026-07-02T08:10:45.000Z'),
+  ('fc_v02_5', 'run_v02_g2_impl', 'e2e/tests/acceptance/fixtures/shared.ts', NULL, 'added', NULL, 'sha256:8888888888888888888888888888888888888888888888888888888888888888', '2026-07-02T10:36:30.000Z');
+
+-- ---- Development-trace states: captured, pending, and failed baselines.
+INSERT INTO run_trace_states (run_id, command_trace_capability, baseline_status, scanner_type, baseline_json, baseline_error_code, baseline_captured_at, finalized_at, created_at, updated_at) VALUES
+  ('run_v02_completed', 'supported', 'captured', 'git', '{"head":"3fa19c2","summary":{"files_changed":2,"insertions":64,"deletions":3}}', NULL, '2026-07-02T09:00:11.000Z', '2026-07-02T09:15:01.000Z', '2026-07-02T09:00:10.000Z', '2026-07-02T09:15:01.000Z'),
+  ('run_v02_running', 'supported', 'pending', 'git', NULL, NULL, NULL, NULL, '2026-07-02T09:30:00.000Z', '2026-07-02T09:30:00.000Z'),
+  ('run_v02_g2_impl', 'unsupported', 'failed', NULL, NULL, 'SCANNER_UNAVAILABLE', NULL, '2026-07-02T10:37:06.000Z', '2026-07-02T10:34:00.000Z', '2026-07-02T10:37:06.000Z'),
+  ('run_v02_val_b2', 'unknown', 'pending', NULL, NULL, NULL, NULL, NULL, '2026-07-02T12:00:00.000Z', '2026-07-02T12:00:00.000Z');
+
+-- ---- FX-EVIDENCE: one complete summary (handoff + test + summary all
+-- ---- present). The partial group is iss_v02_blocked: handoff and test
+-- ---- result exist but no summary row — evidence_summaries only stores
+-- ---- passed verdicts (schema v5 CHECK), which is exactly the v0.2 shape.
+INSERT INTO evidence_summaries (id, issue_id, thread_id, validator_run_id, implementation_run_id, validation_result, evidence_refs, summary_markdown, same_origin_validation, implementation_identity_json, validator_identity_json, policy_id, policy_version, policy_snapshot_json, policy_snapshot_hash, created_at) VALUES
+  ('evs_v02_done', 'iss_v02_done', 'thr_v02_done', 'run_v02_val_r3', 'run_v02_done_n3', 'passed', '["trace:run_v02_val_r3","trace:run_v02_done_n1","file:src/parser/errors.test.ts"]', '## Validation passed
+Round 3 accepted the parser hardening with a same-origin validator.
+
+- handoff: run_v02_done_n3 → run_v02_val_r3
+- verification: npm --workspace server test -- parser passed
+- files: src/parser/errors.ts, src/parser/errors.test.ts', 1, '{"adapter_config_id":"adp_v02_codex_impl","name":"Codex (alpha implementation)","cli_provider":"codex","default_model":null}', '{"adapter_config_id":"adp_v02_claude_val","name":"Claude (alpha validator)","cli_provider":"claude","default_model":null}', 'vpl_coding_default', 1, '{"policy_id":"vpl_coding_default","version":1,"max_validation_rounds":3,"evidence_requirements":{"require_handoff":true,"require_file_trace":true,"require_verification":true,"accepted_verification_kinds":["test","lint","typecheck","build"]}}', 'sha256:0d5c1a2f3e6b9a8741c2d5e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9c2b5d8e1f4a7', '2026-07-02T09:50:00.000Z');
+
+-- ---- F007: the sequential issue was created through an intake confirmation.
+INSERT INTO intake_confirmations (nonce, project_id, workspace_id, recommendation_id, chosen_json, issue_id, target_kind, target_id, issued_at, confirmed_at) VALUES
+  ('nonce_v02_streaming', 'prj_v02_alpha', 'ws_v02_alpha', 'rec_v02_streaming_1', '{"target_kind":"run","adapter_config_id":"adp_v02_codex_impl","default_adapter_used":false,"explicit_consult":false}', 'iss_v02_running', 'run', 'run_v02_completed', '2026-07-02T08:59:00.000Z', '2026-07-02T09:00:03.000Z');

@@ -19,7 +19,7 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 
 ### Phase 0：历史数据库夹具
 
-- [ ] T000 (`FR-003`, `NFR-001`): 按 `v02-fixture-contract.md` 从 commit `5ef5055` 的 v10 migration 生成并审核 schema snapshot，以 raw SQL seed 建立多 Project / Issue / Run / Graph / Trace / FileChange / Evidence / validation round / adapter / Workflow Template / runtime-health fixture；验证来源指纹、v10 → v11 → current head、二次启动幂等和两项规定变异，禁止调用当前 public API 造数。 — verify: `npm test --workspace server -- f009-v02-fixture`
+- [x] T000 (`FR-003`, `NFR-001`): 按 `v02-fixture-contract.md` 从 commit `5ef5055` 的 v10 migration 生成并审核 schema snapshot，以 raw SQL seed 建立多 Project / Issue / Run / Graph / Trace / FileChange / Evidence / validation round / adapter / Workflow Template / runtime-health fixture；验证来源指纹、v10 → v11 → current head、二次启动幂等和两项规定变异，禁止调用当前 public API 造数。 — verify: `npm test --workspace server -- f009-v02-fixture`
 
 ### Phase 1：迁移清单与前端基础
 
