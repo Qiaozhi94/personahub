@@ -12,6 +12,8 @@ export default tseslint.config(
       "**/dist/**",
       "**/coverage/**",
       "**/node_modules/**",
+      "e2e/playwright-report/**",
+      "e2e/test-results/**",
       ".claude/**",
       "docs/features/0.1/ux-prototype.html",
     ],

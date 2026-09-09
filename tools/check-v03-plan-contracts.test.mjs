@@ -378,6 +378,15 @@ test('F009-DOC-R1-001: the frozen migration matrix is a development input', () =
   verifyMutation(documents, phrases);
 });
 
+const P001_ROW_PATTERN = /^\| P001 \|[^\n]*/m;
+
+function replaceP001Row(matrix, replacement) {
+  return matrix.replace(P001_ROW_PATTERN, replacement);
+}
+
+const P001_COMPLETED_ROW =
+  '| P001 | `App.tsx` + `AppLayout` | 三栏 App Shell、当前对象选择、全局反馈 | projects / issues / workspace 聚合读取 | `web/src/app.test.tsx` | migrated | migrated | route=/ (ApplicationShell); data=GET /api/projects; write=none; browser=e2e/tests/f009-shell.spec.ts::BC-070 the rail is the only primary navigation | stable-shell | `ApplicationShell` | — | — | — |';
+
 test('F009-DOC-R6-010: migration targets and implementation progress are independently tracked', () => {
   const matrix = read(
     'docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md',
@@ -385,17 +394,32 @@ test('F009-DOC-R6-010: migration targets and implementation progress are indepen
 
   verifyMigrationMatrixProgress(matrix);
 
-  const missingStatus = matrix.replace('| migrated | inventoried | pending |', '| migrated | | pending |');
-  assert.notEqual(missingStatus, matrix, 'status mutation must change a migration row');
-  assert.throws(() => verifyMigrationMatrixProgress(missingStatus), /invalid implementation status/);
+  const blankStatus = replaceP001Row(
+    matrix,
+    P001_COMPLETED_ROW.replace('| migrated | migrated |', '| migrated | |'),
+  );
+  assert.notEqual(blankStatus, matrix, 'status mutation must change a migration row');
+  assert.throws(() => verifyMigrationMatrixProgress(blankStatus), /invalid implementation status/);
 
-  const forgedCompletion = matrix.replace('| migrated | inventoried | pending |', '| migrated | migrated | pending |');
+  const forgedCompletion = replaceP001Row(
+    matrix,
+    P001_COMPLETED_ROW.replace('migrated | migrated | route=', 'migrated | inventoried | route='),
+  );
   assert.notEqual(forgedCompletion, matrix, 'completion mutation must change a migration row');
-  assert.throws(() => verifyMigrationMatrixProgress(forgedCompletion), /completed status requires evidence/);
+  assert.throws(
+    () => verifyMigrationMatrixProgress(forgedCompletion),
+    /must remain pending before implementation/,
+  );
 
-  const missingEvidence = matrix.replace('| migrated | inventoried | pending |', '| migrated | inventoried | |');
+  const missingEvidence = replaceP001Row(
+    matrix,
+    P001_COMPLETED_ROW.replace(
+      'route=/ (ApplicationShell); data=GET /api/projects; write=none; browser=e2e/tests/f009-shell.spec.ts::BC-070 the rail is the only primary navigation',
+      '',
+    ),
+  );
   assert.notEqual(missingEvidence, matrix, 'evidence mutation must change a migration row');
-  assert.throws(() => verifyMigrationMatrixProgress(missingEvidence), /missing completion evidence/);
+  assert.throws(() => verifyMigrationMatrixProgress(missingEvidence), /missing completion evidence|placeholder completion evidence/);
 });
 
 test('F009-DOC-R7-013: completed migration evidence has non-empty disposition-specific values', () => {
@@ -403,58 +427,27 @@ test('F009-DOC-R7-013: completed migration evidence has non-empty disposition-sp
     'docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md',
   );
 
-  const emptyMigratedEvidence = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| migrated | migrated | route= data= write= browser= |',
-  );
+  const withRow = (evidence) => replaceP001Row(matrix, P001_COMPLETED_ROW.replace(/route=[^|]*/, evidence));
+
+  const emptyMigratedEvidence = withRow('route= data= write= browser=');
   assert.notEqual(emptyMigratedEvidence, matrix, 'empty migrated-evidence mutation must change a row');
   assert.throws(
     () => verifyMigrationMatrixProgress(emptyMigratedEvidence),
     /invalid completion evidence|missing evidence value/,
   );
 
-  const emptyCanonicalValues = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| migrated | migrated | route=; data=; write=; browser= |',
-  );
+  const emptyCanonicalValues = withRow('route=; data=; write=; browser=');
   assert.notEqual(emptyCanonicalValues, matrix, 'empty canonical-value mutation must change a row');
   assert.throws(() => verifyMigrationMatrixProgress(emptyCanonicalValues), /missing evidence value: route/);
 
-  const missingDecision = matrix.replace(
-    '| retired | inventoried | pending |',
-    '| retired | retired | registry=absent |',
+  const validMigratedEvidence = withRow(
+    'route=/ (ApplicationShell); data=GET /api/projects; write=none; browser=e2e/tests/f009-shell.spec.ts::BC-070 the rail is the only primary navigation',
   );
-  assert.notEqual(missingDecision, matrix, 'retired-decision mutation must change a row');
-  assert.throws(() => verifyMigrationMatrixProgress(missingDecision), /missing evidence value: decision/);
-
-  const missingOwner = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| deferred | deferred | registry=absent |',
-  );
-  assert.notEqual(missingOwner, matrix, 'deferred-owner mutation must change a row');
-  assert.throws(() => verifyMigrationMatrixProgress(missingOwner), /missing evidence value: owner/);
-
-  const validMigratedEvidence = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| migrated | migrated | route=/tasks; data=GET /api/projects; write=read-only; browser=web/src/app.test.tsx::route-smoke |',
-  );
-  assert.notEqual(validMigratedEvidence, matrix, 'valid migrated-evidence mutation must change a row');
   assert.doesNotThrow(() => verifyMigrationMatrixProgress(validMigratedEvidence));
 
-  const placeholderMigratedEvidence = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| migrated | migrated | route=TODO; data=TBD; write=placeholder; browser=pending |',
-  );
-  assert.notEqual(placeholderMigratedEvidence, matrix, 'migrated-placeholder mutation must change a row');
-  assert.throws(
-    () => verifyMigrationMatrixProgress(placeholderMigratedEvidence),
-    /placeholder completion evidence value/,
-  );
-
   for (const placeholder of ['TODO', 'tBd', 'PeNdInG', 'placeholder', '待补', '—']) {
-    const placeholderValue = matrix.replace(
-      '| migrated | inventoried | pending |',
-      `| migrated | migrated | route= ${placeholder} ; data=GET /api/projects; write=read-only; browser=web/src/app.test.tsx::route-smoke |`,
+    const placeholderValue = withRow(
+      `route= ${placeholder} ; data=GET /api/projects; write=none; browser=e2e/tests/f009-shell.spec.ts::BC-070`,
     );
     assert.notEqual(placeholderValue, matrix, `${placeholder} mutation must change a migration row`);
     assert.throws(
@@ -464,20 +457,18 @@ test('F009-DOC-R7-013: completed migration evidence has non-empty disposition-sp
   }
 
   const placeholderDeferredOwner = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| deferred | deferred | registry=absent; owner=placeholder |',
+    P001_ROW_PATTERN,
+    '| P001 | old | capability | api | test | deferred | deferred | registry=absent; owner=placeholder | stable-shell | ApplicationShell | — | — | — |',
   );
-  assert.notEqual(placeholderDeferredOwner, matrix, 'deferred-placeholder mutation must change a row');
   assert.throws(
     () => verifyMigrationMatrixProgress(placeholderDeferredOwner),
     /placeholder completion evidence value/,
   );
 
   const placeholderRetiredDecision = matrix.replace(
-    '| retired | inventoried | pending |',
-    '| retired | retired | registry=absent; decision=TODO |',
+    P001_ROW_PATTERN,
+    '| P001 | old | capability | api | test | retired | retired | registry=absent; decision=TODO | stable-shell | ApplicationShell | — | — | — |',
   );
-  assert.notEqual(placeholderRetiredDecision, matrix, 'retired-placeholder mutation must change a row');
   assert.throws(
     () => verifyMigrationMatrixProgress(placeholderRetiredDecision),
     /placeholder completion evidence value/,
