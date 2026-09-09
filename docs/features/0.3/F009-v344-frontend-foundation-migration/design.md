@@ -103,7 +103,7 @@ host 同时保留写按钮。切换期间若新 host 不满足可用条件，保
 
 ## 8. 测试策略与验收映射
 
-AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、route registry 扫描和旧组件入口断言覆盖；AC-003 用 release / source inventory 锁定历史根入口，并覆盖每类新 canonical route 的直达、刷新、未知 ID、非法子视图；AC-004 覆盖共享原语的 axe / 键盘 / viewport / console；AC-005 以 API mock 调用断言和 adapter dependency test 验证无第二写入口。
+AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、route registry 扫描和旧组件入口断言覆盖；AC-003 用 release / source inventory 锁定历史根入口，并覆盖每类新 canonical route 的直达、刷新、未知 ID、非法子视图；AC-004 以 `v344-browser-check-applicability.md` 为完整分母，只执行其中 adapted 的生产契约，并覆盖共享原语的 axe / 键盘 / viewport / console；AC-005 以 API mock 调用断言和 adapter dependency test 验证无第二写入口。分类总数和连续 ID 由文档测试校验；新增共享原语必须先做失败变异再实现。
 
 ## 9. 已确认决策与残余风险
 
@@ -115,3 +115,4 @@ AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、r
 - [x] DQ-002: 九个 V3.44 一级槽位在 M1 是上线、占位还是隐藏？ — 决策：按 M1 SurfaceRegistry manifest 逐项注册；任务、项目、运行时、设置 enabled，其余 not-registered，M1 不设置 visible-disabled 一级槽位。
 - [x] DQ-003: Trace / Evidence 的只读宿主是否可以省略 validation trigger、unblock 与 reset rounds？ — 决策：不可以；只读只限定 A016–A020 的事实投影，A021–A024 作为独立用户动作迁移并继续调用既有 canonical API。
 - [x] DQ-004: “v0.2 schema fixture”应取 release v10 还是当前 v11？ — 决策：来源固定为 F008 收口 commit `5ef5055` 的 v10；启动时必须走既有 v10 → v11 → current head migration，且 fixture 用 raw SQL snapshot / seed 生成，不调用当前 public API 自证。
+- [x] DQ-005: V3.44 的 125 条 browser checks 哪些属于 F009？ — 决策：以 `v344-browser-check-applicability.md` 逐条分类，当前分母为 adapted 28 / deferred 96 / not-applicable 1；F009 只为 adapted 行提供生产证据，deferred 行不得提前暴露入口。

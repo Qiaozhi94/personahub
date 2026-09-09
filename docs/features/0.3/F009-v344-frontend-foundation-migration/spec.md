@@ -128,7 +128,7 @@ updated: 2026-09-08
 
 ### 测试策略
 
-保留 F001–F008 server / API 回归；以开发前冻结的 `migration-matrix.md` 为范围与处置真相源，为 App Shell、共享原语与兼容 projection 建组件状态矩阵；按 `v02-fixture-contract.md` 建 release v10 raw SQL fixture，通过真实升级后的同一个临时数据库运行 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；从 V3.44 的 125 条 browser checks 中提取本 Feature 已进入生产的适用契约。
+保留 F001–F008 server / API 回归；以开发前冻结的 `migration-matrix.md` 为范围与处置真相源，为 App Shell、共享原语与兼容 projection 建组件状态矩阵；按 `v02-fixture-contract.md` 建 release v10 raw SQL fixture，通过真实升级后的同一个临时数据库运行 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；按 `v344-browser-check-applicability.md` 对 V3.44 的 125 条 browser checks 逐条执行 adapted / deferred / not-applicable 分类，分类分母必须等于 125，F009 的 adapted 行必须有生产门禁。
 
 ### 依赖
 

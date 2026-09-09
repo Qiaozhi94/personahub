@@ -39,12 +39,12 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 
 - [ ] T020 (`FR-007`, `NFR-003`, `NFR-004`): 移除生产 registry 中的旧 App Shell、Inspector、Dock、旧管理弹窗和重复写入口；静态断言每个 migrated action ID 只有一个生产 host、每个 retired action ID 无可达写入口，并校验所有 transitional-host 的替换 owner / 删除条件 / 最晚里程碑。 — verify: `node --test tools/check-v03-plan-contracts.test.mjs && npm run typecheck`
 - [ ] T021 (`AC-001`, `AC-003`): 只使用 T000 builder 升级后的同一个临时数据库建立新壳层黄金旅程、历史根入口升级和新 canonical deep links Playwright 覆盖；不得用当前 API 重建第二套 E2E seed。 — verify: `npm run test:e2e`
-- [ ] T022 (`AC-002`, `AC-004`, `AC-005`): 加入迁移矩阵、死入口、键盘、语义、窄视口、console 和 canonical API 门禁。 — verify: `npm run verify:release`
+- [ ] T022 (`AC-002`, `AC-004`, `AC-005`): 加入迁移矩阵、死入口、键盘、语义、窄视口、console 和 canonical API 门禁；逐条实现 `v344-browser-check-applicability.md` 的 28 条 adapted 生产断言，并对新增共享原语各做一次失败变异。 — verify: `npm run verify:release`
 
 ## 3. 验证与验收任务
 
 - [ ] T030 (`AC-001`, `AC-005`): 运行 F001–F008 全量回归并核对持久化事实、终态与调用路径未变。 — verify: `npm run verify`
-- [ ] T031 (`AC-002`, `AC-003`, `AC-004`): 人工按迁移矩阵逐项检查真实浏览器，抽取并运行 V3.44 当前适用断言。 — verify: `npm run verify:release`
+- [ ] T031 (`AC-002`, `AC-003`, `AC-004`): 人工按迁移矩阵逐项检查真实浏览器，核对 125 条适用性分母未变化，并运行 `v344-browser-check-applicability.md` 的全部 adapted 生产断言；deferred 项只能验证为无入口。 — verify: `npm run verify:release`
 - [ ] T032 (`SC-001`, `SC-002`, `SC-003`): 完成一次代码影响面复核，确认 F010–F014 不需要再向旧视觉容器增加功能。 — verify: `npm run check:features`
 
 ## 4. 依赖与并行关系

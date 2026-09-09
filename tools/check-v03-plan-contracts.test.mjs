@@ -32,6 +32,26 @@ function verifyForbiddenMutation(documents, phrase) {
   );
 }
 
+function verifyBrowserCheckApplicability(catalog) {
+  const rows = [...catalog.matchAll(/^\| BC-(\d{3}) \|.+\| (adapted|deferred|not-applicable) \|.+\|.+\|$/gm)];
+  assert.equal(rows.length, 125, `expected 125 classified browser checks, got ${rows.length}`);
+  assert.deepEqual(
+    rows.map((row) => Number(row[1])),
+    Array.from({ length: 125 }, (_, index) => index + 1),
+    'browser check ids must be unique and contiguous',
+  );
+  const counts = rows.reduce(
+    (result, row) => ({ ...result, [row[2]]: result[row[2]] + 1 }),
+    { adapted: 0, deferred: 0, 'not-applicable': 0 },
+  );
+  assert.match(
+    catalog,
+    new RegExp(
+      `adapted: ${counts.adapted} · deferred: ${counts.deferred} · not-applicable: ${counts['not-applicable']} · total: 125`,
+    ),
+  );
+}
+
 test('V03-PLAN-R1-001: acceptance writes have canonical owners and integration tasks', () => {
   const documents = [
     read('docs/features/0.3/F011-trusted-task-surface/spec.md'),
@@ -322,6 +342,27 @@ test('F009-DOC-R1-005: the v0.2 fixture has a pinned source and upgrade path', (
 
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
+});
+
+test('F009-DOC-R1-006: all 125 V3.44 browser checks have an explicit disposition', () => {
+  const catalog = read(
+    'docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md',
+  );
+  const implementationNotes = read(
+    'ui-reference/personahub-draft/personahub-v3.1/browser-check.mjs',
+  );
+  assert.equal((implementationNotes.match(/await check\(/g) ?? []).length, 125);
+  verifyBrowserCheckApplicability(catalog);
+  const mutated = catalog.replace(/^\| BC-001 \|.*\n/m, '');
+  assert.throws(() => verifyBrowserCheckApplicability(mutated), /expected 125 classified browser checks/);
+  requirePhrases(
+    [catalog],
+    [
+      '新增或改变共享交互形态时必须先更新本清单',
+      'adapted 必须落入 F009 生产浏览器门禁',
+      'deferred 不得进入 F009 production registry',
+    ],
+  );
 });
 
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
