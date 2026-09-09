@@ -85,7 +85,7 @@ updated: 2026-09-08
 
 - **FR-001**：生产应用使用 V3.44 App Shell、导航层级和稳定路由承载所有已开放工作面；M1 `SurfaceRegistry` 必须逐项声明九个 V3.44 一级槽位的 enabled / visible-disabled / not-registered 状态，只有具有真实数据、可达页面和允许动作的 enabled surface 才进入生产导航。
 - **FR-002**：以开发前已冻结的 `migration-matrix.md` 覆盖 v0.1–v0.2 所有生产页面、入口和动作；每项记录 migrated / deferred / retired 结论，以及 stable-shell / final-surface / transitional-host 生命周期分类。transitional-host 必填 replacement_owner、delete_when 与 latest_milestone；实现阶段只能维护、校验和按既定结论迁移，不得首次发现范围。
-- **FR-003**：既有项目选择、任务创建、执行启动、人工介入、轨迹 / 文件变化查看、证据验收，以及 adapter 配置与 runtime health 入口在新界面中保持可用；Workflow Template 编辑按最终对象裁决退役，只保留只读迁移证据。
+- **FR-003**：`migration-matrix.md` A001–A029 标为 migrated 的既有项目选择、任务创建、执行启动、人工介入、轨迹 / 文件变化查看、证据验收，以及 adapter 配置与 runtime health 能力在新界面中保持可用；其中 validation 的 findings / summary 是只读事实，但 trigger、unblock 与 reset rounds 仍是必须迁移的写动作。Workflow Template 编辑 A030 按最终对象裁决 retired，只保留只读迁移证据。
 - **FR-004**：以仓库与 release 证据建立已发布 URL inventory；当前已发布历史 URL inventory 只有根入口 `/`，因此只迁移有证据的历史 URL。F009 M1 新增 `/tasks`、`/tasks/:taskId`、`/projects`、`/projects/:projectId` canonical routes，支持直达、刷新恢复、History 前进 / 后退、未知 ID 和非法子路径的确定结果。`taskId` 在 M1 中严格等于既有 Issue ID，`projectId` 严格等于既有 Project ID；M1 不发布 `/sessions/:sessionId`，也不把尚未交付的 task view / project tab 伪装为可用。不得把新 deep link 写成旧收藏链接迁移。
 - **FR-005**：未交付工作面和动作不得伪装为可用；隐藏与置灰遵守 V3.44 对“没有页面”和“暂不可执行”的区分。
 - **FR-006**：新页面只经既有 canonical API 写入；兼容投影不得复制业务状态或引入第二套状态机。

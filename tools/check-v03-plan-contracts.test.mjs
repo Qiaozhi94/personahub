@@ -281,6 +281,27 @@ test('F009-DOC-R1-003: M1 SurfaceRegistry enumerates every V3.44 primary slot', 
   verifyMutation(documents, phrases);
 });
 
+test('F009-DOC-R1-004: every retained write has one transitional host and owner', () => {
+  const documents = [
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md'),
+    read('docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md'),
+  ];
+  const phrases = [
+    'A006–A015',
+    'A016–A020 是只读事实',
+    'A021–A024 是保留的用户动作',
+    '`POST /api/issues/:id/validation`',
+    '`POST /api/issues/:id/unblock`',
+    '`POST /api/issues/:id/validation-rounds/reset`',
+    '同一个 action ID 在生产 registry 中只能挂到一个 host',
+    '旧 Workflow Template 的 A030 保持 retired',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {
   const documents = [
     read('docs/features/0.3/README.md'),

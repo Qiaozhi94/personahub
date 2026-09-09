@@ -25,15 +25,15 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 
 ### Phase 2：既有能力迁入新结构
 
-- [ ] T010 (`FR-003`, `FR-006`): 迁移项目选择 / 创建、任务列表 / 创建和当前任务上下文，复用既有 API。 — verify: `npm test --workspace web`
-- [ ] T011 [P] (`FR-003`, `FR-006`, `NFR-004`): 为执行启动、路由预览、人工介入、Run / Graph 状态和会话事件建立最小 transitional-host；不改领域契约，由 F012 验收时删除，latest_milestone=M3。 — verify: `npm test --workspace web`
-- [ ] T012 [P] (`FR-003`, `UX-003`, `NFR-004`): 为 Trace、文件变化、Evidence 与 validation 建只读 transitional-host；由 F011 验收时删除，latest_milestone=M4。 — verify: `npm test --workspace web`
-- [ ] T013 [P] (`FR-003`, `FR-005`, `NFR-004`): 将 adapter / runtime health 最小入口放入设置 / 运行时 transitional-host（F012 验收时删除，latest_milestone=M3）；旧 Workflow Template 只保留只读列表 / 详情（F013 验收时删除，latest_milestone=M2），不得重做管理写面。 — verify: `npm test --workspace web`
+- [ ] T010 (`FR-003`, `FR-006`): 按迁移矩阵 A001–A005 迁移项目选择 / 创建、代码目录绑定、任务列表 / 创建和当前任务上下文，复用逐行指定的既有 API。 — verify: `npm test --workspace web`
+- [ ] T011 [P] (`FR-003`, `FR-006`, `NFR-004`): 按迁移矩阵 A006–A015 为推荐确认、执行启动、人工介入、Run / Graph 状态和会话事件建立唯一 transitional-host；不改领域契约，由 F012 验收时删除，latest_milestone=M3。 — verify: `npm test --workspace web`
+- [ ] T012 [P] (`FR-003`, `UX-003`, `NFR-004`): 按迁移矩阵 A016–A024 建任务事实与验收 transitional-host；A016–A020 只读，A021–A024 保留 trigger validation、unblock、reset rounds 与摘要复制 / 下载动作并调用矩阵指定 API；由 F011 验收时删除，latest_milestone=M4。 — verify: `npm test --workspace web`
+- [ ] T013 [P] (`FR-003`, `FR-005`, `NFR-004`): 按迁移矩阵 A025–A029 将 adapter / runtime health 最小入口放入运行时 / 设置 transitional-host（F012 验收时删除，latest_milestone=M3）；旧 Workflow Template A030 只保留只读列表 / 详情（F013 验收时删除，latest_milestone=M2），不得重做管理写面或调用旧写 API。 — verify: `npm test --workspace web`
 - [ ] T014 (`FR-004`): 按 `design.md` 的 M1 route manifest 实现 `/`、Task / Project base routes 与管理子页；逐条覆盖直达、刷新、History 前进 / 后退、默认 replace、未知 ID、非法子路径和诊断清除。F012 发布 Session ID 前不得注册 `/sessions/:sessionId`，F011 / F013 接管前不得注册 task view / project tab。 — verify: `npm test --workspace web`
 
 ### Phase 3：旧入口退出与生产验证
 
-- [ ] T020 (`FR-007`, `NFR-003`, `NFR-004`): 移除生产 registry 中的旧 App Shell、Inspector、Dock、旧管理弹窗和重复写入口；校验所有 transitional-host 的替换 owner / 删除条件 / 最晚里程碑。 — verify: `npm run typecheck`
+- [ ] T020 (`FR-007`, `NFR-003`, `NFR-004`): 移除生产 registry 中的旧 App Shell、Inspector、Dock、旧管理弹窗和重复写入口；静态断言每个 migrated action ID 只有一个生产 host、每个 retired action ID 无可达写入口，并校验所有 transitional-host 的替换 owner / 删除条件 / 最晚里程碑。 — verify: `node --test tools/check-v03-plan-contracts.test.mjs && npm run typecheck`
 - [ ] T021 (`AC-001`, `AC-003`): 用 v0.2 fixture 建立新壳层黄金旅程、历史根入口升级和新 canonical deep links Playwright 覆盖。 — verify: `npm run test:e2e`
 - [ ] T022 (`AC-002`, `AC-004`, `AC-005`): 加入迁移矩阵、死入口、键盘、语义、窄视口、console 和 canonical API 门禁。 — verify: `npm run verify:release`
 

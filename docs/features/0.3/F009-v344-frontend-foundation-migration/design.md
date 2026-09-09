@@ -82,6 +82,17 @@ API；route 切换不得重复订阅或制造事件。
 
 不改变 graph、run、validation 和 adapter runtime。页面切换保留当前对象与未提交输入；重复提交、SSE replay 和写后读一致性沿用现有 service contract。旧入口一旦从生产 registry 移除，不再接受新写入。
 
+动作所有权以 `migration-matrix.md` 的 action ID 为准：T010 迁移 A001–A005；T011 的执行 / 派工
+host 迁移 A006–A015；T012 的任务事实与验收 host 迁移 A016–A024，其中 A016–A020 是只读事实，
+A021–A024 是保留的用户动作（trigger validation、unblock、reset rounds、复制 / 下载摘要），不得因
+“Trace / Evidence 只读”而省略。T013 迁移 A025–A029；旧 Workflow Template 的 A030 保持 retired，
+前端不得调用其 create-version / activate / deactivate API。
+
+同一个 action ID 在生产 registry 中只能挂到一个 host。迁移顺序是：新 host 的目标回归测试先红，
+接入同一个 canonical API 后变绿，再从旧 registry 移除原入口；不得先删除旧入口，也不得在新旧
+host 同时保留写按钮。切换期间若新 host 不满足可用条件，保持旧 host 为唯一入口并阻止切流，
+不能以“双入口方便回退”作为恢复方案。
+
 ## 6. UI 与可观测性
 
 先落全局 token、字体层级、导航、主栏 / 副栏框架和 loading / empty / error / partial 组件，再迁移项目、任务与既有事实。执行 / validation 写入口以最小 transitional-host 保住 v0.2 旅程；Trace / Evidence 使用只读宿主；adapter / runtime health 只做设置或运行时的最小读取与既有配置入口；旧 Workflow Template 只保留只读列表 / 详情，不重做编辑器，由 F013 Skill 面替换。未交付工作面不注册。开发态提供 route / surface 清单和 legacy adapter 计数，生产界面不出现设计过程术语。
@@ -102,3 +113,4 @@ AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、r
 
 - [x] DQ-001: M1 是否提前发布 Task view、Project tab 与 Session deep link？ — 决策：不提前发布；M1 只注册 route manifest 中已有稳定身份和真实页面的 base route，F011 / F013 / F012 分别在自身契约可用后扩展，非法子路径按 manifest 确定恢复。
 - [x] DQ-002: 九个 V3.44 一级槽位在 M1 是上线、占位还是隐藏？ — 决策：按 M1 SurfaceRegistry manifest 逐项注册；任务、项目、运行时、设置 enabled，其余 not-registered，M1 不设置 visible-disabled 一级槽位。
+- [x] DQ-003: Trace / Evidence 的只读宿主是否可以省略 validation trigger、unblock 与 reset rounds？ — 决策：不可以；只读只限定 A016–A020 的事实投影，A021–A024 作为独立用户动作迁移并继续调用既有 canonical API。
