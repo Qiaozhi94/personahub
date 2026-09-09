@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AdapterAuthType, AgentCapability, CliProvider, type AdapterProviderMetadata } from "@personahub/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,9 @@ export interface AdapterAuthFieldsProps {
 }
 
 export function AdapterAuthFields({ value, onChange, providers, providerLocked, hasApiKey }: AdapterAuthFieldsProps) {
+  // BC-053: credentials render masked by default; revealing one requires this
+  // explicit, per-field toggle that never turns into a persistent setting.
+  const [revealApiKey, setRevealApiKey] = useState(false);
   const meta = providers.find((p) => p.cli_provider === value.cliProvider);
   const supportedAuthTypes = meta?.supported_auth_types ?? [AdapterAuthType.OAuth];
   const modelProviderAllowlist = meta?.model_provider_allowlist ?? [];
@@ -219,14 +223,25 @@ export function AdapterAuthFields({ value, onChange, providers, providerLocked, 
               )}
             </div>
           ) : (
-            <Input
-              id="adapter-api-key"
-              type="password"
-              value={value.apiKeyInput}
-              onChange={(e) => set({ apiKeyInput: e.target.value, apiKeyAction: "replace" })}
-              placeholder="sk-…"
-              autoComplete="off"
-            />
+            <div className="relative">
+              <Input
+                id="adapter-api-key"
+                type={revealApiKey ? "text" : "password"}
+                value={value.apiKeyInput}
+                onChange={(e) => set({ apiKeyInput: e.target.value, apiKeyAction: "replace" })}
+                placeholder="sk-…"
+                autoComplete="off"
+                className="pr-14"
+              />
+              <button
+                type="button"
+                onClick={() => setRevealApiKey((reveal) => !reveal)}
+                aria-pressed={revealApiKey}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {revealApiKey ? "Hide" : "Show"}
+              </button>
+            </div>
           )}
         </div>
       ) : null}

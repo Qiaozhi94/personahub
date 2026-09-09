@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
@@ -6,20 +5,16 @@ import { SERVER_PORT, WEB_PORT } from "./tests/support/env.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbDir = path.resolve(__dirname, ".tmp");
-try {
-  // Best-effort: start each run from a clean DB so .tmp doesn't grow
-  // unbounded. Not load-bearing for correctness — tests select their seeded
-  // Project by name (see support/app.ts) rather than relying on it being
-  // the only one in the DB — so a leftover file lock (e.g. a prior run's
-  // server process still releasing its handle on Windows) just means this
-  // run accumulates on top of the old file instead of failing outright.
-  fs.rmSync(dbDir, { recursive: true, force: true });
-} catch {
-  // ignore — see comment above.
-}
-fs.mkdirSync(dbDir, { recursive: true });
+
+// F009: the E2E database is the pinned v0.2 release fixture (T000 builder +
+// real migration chain), rebuilt fresh by the global setup below and then
+// opened by the real server through DB_PATH. The server's own startup
+// recovery is the only writer between seed and journey — there is no
+// API-seeded second database (v02-fixture-contract.md §3.5).
+const dbFile = path.join(dbDir, "v02-fixture.sqlite");
 
 export default defineConfig({
+  globalSetup: "./tests/support/f009-fixture-db.ts",
   testDir: "./tests",
   outputDir: "./test-results",
   fullyParallel: false,
@@ -38,7 +33,7 @@ export default defineConfig({
       command: "npm run dev:server",
       cwd: "..",
       env: {
-        DB_PATH: path.join(dbDir, "e2e.db"),
+        DB_PATH: dbFile,
         PORT: String(SERVER_PORT),
         HOST: "127.0.0.1",
       },

@@ -39,8 +39,8 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 ### Phase 3：旧入口退出与生产验证
 
 - [x] T020 (`FR-007`, `NFR-003`, `NFR-004`): 移除生产 registry 中的旧 App Shell、Inspector、Dock、旧管理弹窗和重复写入口；静态断言每个 migrated action ID 只有一个生产 host、每个 retired action ID 无可达写入口，并校验所有 transitional-host 的替换 owner / 删除条件 / 最晚里程碑。 — verify: `node --test tools/check-v03-plan-contracts.test.mjs && npm run typecheck`
-- [ ] T021 (`AC-001`, `AC-003`): 只使用 T000 builder 升级后的同一个临时数据库建立新壳层黄金旅程、历史根入口升级和新 canonical deep links Playwright 覆盖；不得用当前 API 重建第二套 E2E seed。 — verify: `npm run test:e2e`
-- [ ] T022 (`AC-002`, `AC-004`, `AC-005`): 加入迁移矩阵、死入口、键盘、语义、窄视口、console 和 canonical API 门禁；逐条实现 `v344-browser-check-applicability.md` 的 28 条 adapted 生产断言，并对新增共享原语各做一次失败变异。 — verify: `npm run verify:release`
+- [x] T021 (`AC-001`, `AC-003`): 只使用 T000 builder 升级后的同一个临时数据库建立新壳层黄金旅程、历史根入口升级和新 canonical deep links Playwright 覆盖；不得用当前 API 重建第二套 E2E seed。 — verify: `npm run test:e2e`
+- [x] T022 (`AC-002`, `AC-004`, `AC-005`): 加入迁移矩阵、死入口、键盘、语义、窄视口、console 和 canonical API 门禁；逐条实现 `v344-browser-check-applicability.md` 的 28 条 adapted 生产断言，并对新增共享原语各做一次失败变异。 — verify: `npm run verify:release`
 
 ## 3. 验证与验收任务
 
