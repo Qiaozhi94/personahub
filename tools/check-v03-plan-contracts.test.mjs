@@ -926,3 +926,21 @@ test('F009-T020-002: every transitional host in the matrix has owner, delete con
     assert.ok(milestone && /^M\d$/.test(milestone), `${row[0]} transitional host needs a latest_milestone`);
   }
 });
+test('F009-DOC-R6-014: review-state documents stay consistent with execution artifacts', () => {
+  const spec = read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md');
+  const statusMatch = /^status: (review|done)$/m.exec(spec);
+  assert.ok(statusMatch, 'F009 spec must declare review or done status for this gate');
+  const state = statusMatch[1];
+
+  const tasks = read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md');
+  const uncheckedTasks = [...tasks.matchAll(/^- \[ \] (T\d{3})/gm)].map((m) => m[1]);
+  assert.deepEqual(uncheckedTasks, [], `F009 is ${state} but tasks remain unchecked`);
+  const uncheckedAcs = [...spec.matchAll(/^- \[ \] \*\*(AC-\d{3})\*\*/gm)].map((m) => m[1]);
+  assert.deepEqual(uncheckedAcs, [], `F009 is ${state} but ACs remain unchecked`);
+
+  // T031 execution evidence must be archived in the journey matrix, bound to
+  // a real commit — no placeholder.
+  const journey = read('docs/reviews/journey-test-matrix.md');
+  assert.doesNotMatch(journey, /待 T021 回填|待 T022 回填|execution_evidence: pending/);
+  assert.match(journey, /execution_evidence_commit: [0-9a-f]{7,40}/);
+});

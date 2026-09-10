@@ -129,3 +129,16 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
 - **T031**：按 §1 逐步、§2 逐条对照真实浏览器；deferred 项只验证「无入口」；发现分母漂移先修 applicability 再继续检查。检查记录的「旅程步骤」列填 J*/S* 编号。
 - **升级规则（self-test §7.2 重复即升级）**：同一旅程步骤（以 J*/S* 计）第二次出现在 `dogfooding-bugs.md` 或 `dogfooding-notes.md`（任一表），即强制把该步骤补强为独立的需求级断言（在对应 spec 步骤加显式断言），不接受只修单点；`npm run bug:log` 的重复步骤清单是触发器。
 - **变更纪律**：旅程、迁移矩阵或 adapted 分母变化时，先改规格侧文档与本矩阵，再改测试；矩阵与现实的漂移由 `tools/check-v03-plan-contracts.test.mjs` 与文档门禁把关。
+
+## 5. 执行证据回填（T031 / R1-011 闭环）
+
+- execution_evidence_commit: d1a97ccae955
+- 自动化：`e2e/tests/f009-golden-journey.spec.ts` 以单次 `goto("/")` 连续执行 J1–J9（test.step 显式编号），S1 为独立深链用例；`npm run verify:release`（含 Playwright 24/24）在修复后提交上全绿。
+- 现场裁定（依 §4「断言对象集合按现场实现裁定」）：
+  - A010 graph 启动：fixture 工作区 `/repo/alpha` 不存在 → 启动请求确定性 500（数据策略禁止创建真实工作区驱动真实 CLI）。J4 按失败恢复半段断言：错误文本与节点选择保留、可原位重试（R1-010）。graph 执行语义归 F012 旅程。
+  - A021 触发验证：服务器合同仅允许 Validating 状态触发；M1 fixture 无活跃 Validating 任务，J6 断言非 Validating 任务上不存在伪造触发入口，A021 的写动作由任务级用例（`web/src/f004-validation-hooks.test.tsx`）承担。
+  - A023 reset rounds：入口仅在 RoundLimitReached 阻塞下出现；fixture 阻塞原因为 validator_run_failed，J7 断言该边界。写动作由 `web/src/f004-round-reset-dialog.test.tsx` 承担。
+  - A015 resolve-executors：界面仅在 no_capable_adapter 阻塞下出现；fixture 阻塞原因为 node_run_failed，J8 断言该边界。写动作由 `web/src/f006-graph-run-card.test.tsx` 承担。
+  - A011/A013 取消：J8 真实执行（确认对话框 → cancelled），连带排队 Run 取消的事实已断言。
+- 28 条 adapted 行落点复核：§2 表所列 spec 文件全部存在并随 `npm run verify:release` 执行；BC-052 的 M1 真实 tabs 实例为 /settings/legacy-workflows 的列表/详情对（R1-006 后补的生产实例）；BC-006 的标签域来自 fixture Issue labels（下拉筛选，无 chip 行）；console/pageerror 零错误门禁覆盖全部 M1 路由（`f009-a11y.spec.ts`）。
+- 人工（T031）残余：真实浏览器观感、干净库首屏指引与导出/摘要内容抽查按 §1 行注在合并前人工复核；「旅程步骤」列使用 J*/S1 编号。
