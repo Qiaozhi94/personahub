@@ -57,8 +57,18 @@ export function DataTable<Row>({ ariaLabel, columns, rows, getRowId, getValue, c
             rows.map((row) => (
               <tr key={getRowId(row)} className="border-b border-border last:border-b-0">
                 {columns.map((column) => {
+                  // A custom render returns a ReactNode that is rendered as-is
+                  // (review R1-013) — never stringified. Only the value
+                  // fallback goes through the empty-value and text contract.
                   const custom = column.render?.(row);
-                  const value = custom === undefined || custom === null ? getValue(row, column.key) : custom;
+                  if (custom !== undefined && custom !== null) {
+                    return (
+                      <td key={column.key} className={cn("px-3 py-2 align-top", column.className)}>
+                        {custom}
+                      </td>
+                    );
+                  }
+                  const value = getValue(row, column.key);
                   return (
                     <td key={column.key} className={cn("px-3 py-2 align-top", column.className)}>
                       {isEmptyValue(value) ? (column.emptyText ?? DEFAULT_EMPTY_TEXT) : String(value)}

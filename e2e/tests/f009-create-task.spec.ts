@@ -19,9 +19,7 @@ test("BC-057: an empty goal never triggers a recommendation", async ({ page }) =
 
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toHaveCount(0);
-  expect(
-    await page.getByRole("button", { name: /Harden parser error paths/ }).count(),
-  ).toBe(issuesBefore);
+  expect(await page.getByRole("button", { name: /Harden parser error paths/ }).count()).toBe(issuesBefore);
 });
 
 test("BC-056: confirm creates exactly one task with the goal text preserved", async ({ page }) => {
@@ -36,8 +34,8 @@ test("BC-056: confirm creates exactly one task with the goal text preserved", as
   // Nothing is written before confirmation: the task list is unchanged while
   // the recommendation is being prepared.
   await dialog.getByPlaceholder("Describe the goal in plain language…").fill(goal);
-  const recommendPromise = page.waitForResponse((res) =>
-    res.url().includes("/intake/recommend") && res.request().method() === "POST",
+  const recommendPromise = page.waitForResponse(
+    (res) => res.url().includes("/intake/recommend") && res.request().method() === "POST",
   );
   await dialog.getByRole("button", { name: "Recommend" }).click();
   await recommendPromise;
@@ -45,7 +43,14 @@ test("BC-056: confirm creates exactly one task with the goal text preserved", as
   await expect(dialog.getByRole("button", { name: /^Confirm$/ })).toBeVisible();
   expect(await page.getByRole("button", { name: new RegExp(goal) }).count()).toBe(0);
 
-  await dialog.getByRole("button", { name: /^Confirm$/ }).click();
+  // BC-056 repeat protection: the confirm control disables itself while the
+  // first request is in flight, so a rapid double click cannot double-create.
+  const confirmButton = dialog.getByRole("button", { name: /^Confirm$/ });
+  const confirmResponses = page.waitForResponse(
+    (res) => res.url().includes("/intake/confirm") && res.request().method() === "POST",
+  );
+  await confirmButton.dblclick();
+  await confirmResponses;
 
   // Confirming navigates to the created task; its goal is the original text.
   await page.waitForURL(/\/tasks\/iss_/);

@@ -3,21 +3,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProjectPicker } from "@/pages/project-picker";
 import { PageFrame, PageHeading, PageSection } from "@/pages/page-frame";
-import { PageLoading } from "@/components/primitives/page-state";
+import { PageLoading, ErrorState } from "@/components/primitives/page-state";
 import { useRuntimeHealth } from "@/hooks/use-runtime-health";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { diagnosticKey } from "@/components/runtime-health/diagnostic-code";
+import { SettingsCatalog } from "@/pages/settings-catalog";
 
 // /settings/system-diagnostics (A028 settings half): schema and application
 // infrastructure facts only. Adapter availability, locks, queues and
 // background probes live in /runtime — the same health response is projected
-// per surface and never rendered twice with actions.
+// per surface and never rendered twice with actions. The settings catalog
+// lists exactly the real settings sub-pages so the legacy-workflows page is
+// discoverable without typing a URL (review R1-004).
 
 export function SystemDiagnosticsPage() {
   const [projectId, setProjectId] = useState<string | null>(null);
-
   return (
     <PageFrame>
+      <SettingsCatalog active="/settings/system-diagnostics" />
+
       <PageHeading title="系统诊断" />
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} label="按项目查看诊断" />
       {projectId !== null ? <SchemaDiagnostics projectId={projectId} /> : null}
@@ -35,9 +39,11 @@ function SchemaDiagnostics({ projectId }: { projectId: string }) {
 
   if (healthQuery.isError) {
     return (
-      <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-        诊断读取失败：{(healthQuery.error as { message?: string })?.message ?? "未知错误"}
-      </div>
+      <ErrorState
+        title="诊断读取失败"
+        description={(healthQuery.error as { message?: string })?.message ?? "未知错误"}
+        action={{ label: "重试", onAction: () => void healthQuery.refetch() }}
+      />
     );
   }
 

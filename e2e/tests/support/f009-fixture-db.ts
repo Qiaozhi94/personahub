@@ -1,16 +1,15 @@
 import { mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import Database from "better-sqlite3";
 import { buildV02Fixture } from "../../../server/tests/fixtures/build-v02-fixture.js";
-import { applyMigrations } from "../../../server/src/db/migrations.js";
 
-// F009 T021 global setup: the E2E database IS the T000 fixture — the v0.2
-// schema-v10 snapshot + representative seed, materialized fresh into
-// e2e/.tmp, upgraded through the real v10 → v11 → head migration chain, and
-// then handed to the server via DB_PATH. No API-seeded second database exists
-// (v02-fixture-contract.md §3.5): the only writes after the seed come from
-// the server's own startup recovery, exactly like a real upgrade.
+// F009 T021 global setup: materializes the committed v0.2 schema-v10 fixture
+// (raw SQL snapshot + seed) into e2e/.tmp and hands the still-v10 database to
+// the real server via DB_PATH. The server's openDatabase() then performs the
+// genuine first-boot v10 → head migration itself (review R1-008: the setup
+// must NOT run applyMigrations here — the upgrade seam under test is "v10
+// file meets the current server at startup", exactly like a real upgrade).
+// There is no API-seeded second database (v02-fixture-contract.md §3.5).
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbDir = path.resolve(__dirname, "..", "..", ".tmp");
@@ -20,10 +19,9 @@ export default function buildE2EFixtureDatabase(): void {
   mkdirSync(dbDir, { recursive: true });
 
   const fixture = buildV02Fixture(dbDir);
-  applyMigrations(fixture);
   const version = fixture.prepare("SELECT MAX(version) AS v FROM schema_version").get() as { v: number };
-  if (version.v < 11) {
-    throw new Error(`fixture upgrade failed: schema version ${version.v}`);
+  if (version.v !== 10) {
+    throw new Error(`fixture is not a v10 database: MAX(schema_version)=${version.v}`);
   }
   fixture.close();
 }

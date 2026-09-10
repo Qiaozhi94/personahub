@@ -16,20 +16,13 @@ import { PageFrame, PageHeading, PageSection } from "@/pages/page-frame";
 // canonical API and lives only here while F013 owns the final repository
 // registry.
 
-export function ProjectDetailPage({
-  projectId,
-  diagnostics,
-}: {
-  projectId: string;
-  diagnostics: Diagnostics;
-}) {
+export function ProjectDetailPage({ projectId, diagnostics }: { projectId: string; diagnostics: Diagnostics }) {
   const { navigate } = useRouter();
   const projectQuery = useProject(projectId);
   const workspaceQuery = useWorkspace(projectId);
   const redirectedRef = useRef(false);
 
-  const notFound =
-    projectQuery.isError && toApiError(projectQuery.error).code === ErrorCode.PROJECT_NOT_FOUND;
+  const notFound = projectQuery.isError && toApiError(projectQuery.error).code === ErrorCode.PROJECT_NOT_FOUND;
 
   useEffect(() => {
     if (!notFound || redirectedRef.current) return;
@@ -69,23 +62,14 @@ export function ProjectDetailPage({
   return (
     <PageFrame>
       {diagnostics.routeIssue === "unsupported-tab" ? (
-        <StatusBanner
-          tone="info"
-          title="该链接指向的项目页签尚未开放"
-          description="已回到项目页。"
-        />
+        <StatusBanner tone="info" title="该链接指向的项目页签尚未开放" description="已回到项目页。" />
       ) : null}
 
       <PageHeading title={project.name} />
 
-      {project.description ? (
-        <p className="max-w-2xl text-sm text-muted-foreground">{project.description}</p>
-      ) : null}
+      {project.description ? <p className="max-w-2xl text-sm text-muted-foreground">{project.description}</p> : null}
 
-      <PageSection
-        title="代码目录（兼容）"
-        description="查看和绑定本地代码目录；后续版本将在此提供完整的仓库管理。"
-      >
+      <PageSection title="代码目录（兼容）" description="查看和绑定本地代码目录；后续版本将在此提供完整的仓库管理。">
         {workspaceQuery.isLoading ? (
           <PageLoading label="正在加载代码目录" />
         ) : (

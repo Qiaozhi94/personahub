@@ -19,21 +19,14 @@ import { PageFrame, PageSection } from "@/pages/page-frame";
 // falls through to another object. The execution and fact sections are the
 // transitional hosts owned by the migration matrix (A006–A024).
 
-export function TaskDetailPage({
-  taskId,
-  diagnostics,
-}: {
-  taskId: string;
-  diagnostics: Diagnostics;
-}) {
+export function TaskDetailPage({ taskId, diagnostics }: { taskId: string; diagnostics: Diagnostics }) {
   const { navigate } = useRouter();
   const issueQuery = useIssue(taskId);
   const workspaceQuery = useWorkspace(issueQuery.data?.issue.project_id ?? null);
   const draftStore = useDraftStore();
   const redirectedRef = useRef(false);
 
-  const notFound =
-    issueQuery.isError && toApiError(issueQuery.error).code === ErrorCode.ISSUE_NOT_FOUND;
+  const notFound = issueQuery.isError && toApiError(issueQuery.error).code === ErrorCode.ISSUE_NOT_FOUND;
 
   useEffect(() => {
     if (!notFound || redirectedRef.current) return;
@@ -84,18 +77,13 @@ export function TaskDetailPage({
           <Badge variant="outline" className="text-[11px]">
             {issue.status}
           </Badge>
-          {issue.primary_thread ? null : (
-            <span className="text-xs text-muted-foreground">没有关联的执行会话</span>
-          )}
+          {issue.primary_thread ? null : <span className="text-xs text-muted-foreground">没有关联的执行会话</span>}
         </div>
       </div>
 
       {issue.goal ? <p className="max-w-2xl text-sm text-muted-foreground">{issue.goal}</p> : null}
 
-      <PageSection
-        title="执行与会话（兼容）"
-        description="查看执行事件、发送指令、启动或恢复执行。"
-      >
+      <PageSection title="执行与会话（兼容）" description="查看执行事件、发送指令、启动或恢复执行。">
         {issue.primary_thread ? (
           <ThreadView
             threadId={issue.primary_thread.id}
@@ -109,14 +97,8 @@ export function TaskDetailPage({
         )}
       </PageSection>
 
-      <PageSection
-        title="任务详情（兼容）"
-        description="查看轨迹、证据与验收事实，并执行验证与恢复动作。"
-      >
-        <IssueInspector
-          issue={issue}
-          workspacePath={workspaceQuery.data?.workspace?.local_path ?? null}
-        />
+      <PageSection title="任务详情（兼容）" description="查看轨迹、证据与验收事实，并执行验证与恢复动作。">
+        <IssueInspector issue={issue} workspacePath={workspaceQuery.data?.workspace?.local_path ?? null} />
       </PageSection>
     </PageFrame>
   );

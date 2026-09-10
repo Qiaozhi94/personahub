@@ -97,14 +97,19 @@ export function ApplicationShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <div className="flex min-h-0 flex-1">
-          <nav aria-label="工作面" className="flex w-[58px] shrink-0 flex-col gap-0.5 border-r border-border bg-card px-1.5 py-2">
+          <nav
+            aria-label="工作面"
+            className="flex w-[58px] shrink-0 flex-col gap-0.5 border-r border-border bg-card px-1.5 py-2"
+          >
             <RailGroup surfaces={daily} activeSurface={activeSurface} navigate={navigate} />
             <div className="mt-auto grid gap-0.5">
               <RailGroup surfaces={lowFrequency} activeSurface={activeSurface} navigate={navigate} />
             </div>
           </nav>
 
-          <main className="min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
+          {/* The main column is the single vertical scroll owner: page content
+              taller than the viewport stays reachable here (review R1-001). */}
+          <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>
 

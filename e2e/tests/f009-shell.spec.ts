@@ -9,6 +9,8 @@ import { expect, test } from "@playwright/test";
 const M1_ROUTES = [
   "/projects",
   "/tasks",
+  "/tasks/iss_v02_done",
+  "/tasks/iss_v02_running",
   "/runtime",
   "/runtime/adapters",
   "/settings/system-diagnostics",
@@ -87,20 +89,58 @@ test("BC-091: no horizontal overflow on any M1 route across viewports", async ({
 });
 
 test("BC-097: the settings surface only lists pages that really exist", async ({ page }) => {
-  await page.goto("/settings/system-diagnostics");
-  await expect(page.getByRole("heading", { name: "系统诊断" })).toBeVisible();
+  await page.goto("/");
+  // R1-004: both settings pages must be reachable purely by clicking the
+  // settings catalog — never by typing a URL.
+  await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "设置" }).click();
+  await expect(page).toHaveURL(/\/settings\/system-diagnostics/);
 
-  // The two registered settings sub-pages are reachable; nothing else in the
-  // settings surface advertises a page.
-  await page.goto("/settings/legacy-workflows");
+  const catalog = page.getByRole("navigation", { name: "设置目录" });
+  await expect(catalog.getByRole("link", { name: "系统诊断" })).toHaveAttribute("aria-current", "page");
+  await expect(catalog.getByRole("link", { name: "历史工作流" })).toBeVisible();
+  expect(await catalog.getByRole("link").count()).toBe(2);
+
+  await catalog.getByRole("link", { name: "历史工作流" }).click();
+  await expect(page).toHaveURL(/\/settings\/legacy-workflows/);
   await expect(page.getByRole("heading", { name: "历史工作流" })).toBeVisible();
+
+  await page.getByRole("navigation", { name: "设置目录" }).getByRole("link", { name: "系统诊断" }).click();
+  await expect(page).toHaveURL(/\/settings\/system-diagnostics/);
 });
 
-test("BC-005/BC-006: the task list stays one scannable list without chip rows", async ({ page }) => {
+test("BC-005/BC-006: stable task list with a label dropdown filter over real labels", async ({ page }) => {
   await page.goto("/tasks?project=prj_v02_alpha");
+  // BC-005: the list lives under the stable project dimension heading.
+  await expect(page.getByRole("heading", { name: "任务 · Alpha Platform" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Harden parser error paths/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Streaming ingest pipeline/ })).toBeVisible();
 
-  // Task rows are plain list buttons; the M1 skeleton does not add label chip
-  // rows or a second search box (BC-006, design.md §3.1).
+  // BC-006: labels filter through a dropdown (fixture label domain), never a
+  // horizontal chip row and never a second search box.
   await expect(page.getByPlaceholder(/search/i)).toHaveCount(0);
+  const filter = page.getByLabel("按标签筛选");
+  await filter.selectOption("parser");
+  await expect(page.getByRole("button", { name: /Harden parser error paths/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Streaming ingest pipeline/ })).toHaveCount(0);
+  await expect(page.getByText("1 项")).toBeVisible();
+
+  await filter.selectOption("all");
+  await expect(page.getByRole("button", { name: /Streaming ingest pipeline/ })).toBeVisible();
+});
+
+test("R1-001: task detail content taller than the viewport stays reachable", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto("/tasks/iss_v02_done");
+  await expect(page.getByRole("heading", { name: "Harden parser error paths" })).toBeVisible();
+
+  // The main column is the single vertical scroll owner.
+  const scrollable = await page.evaluate(() => {
+    const main = document.querySelector("main");
+    return main ? main.scrollHeight > main.clientHeight : false;
+  });
+  expect(scrollable).toBe(true);
+
+  // The last fact section is reachable by scrolling to the bottom.
+  await page.locator("main").evaluate((main) => main.scrollTo(0, main.scrollHeight));
+  await expect(page.getByRole("button", { name: "Export Markdown" })).toBeVisible();
 });

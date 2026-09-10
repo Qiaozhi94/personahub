@@ -111,10 +111,7 @@ export class TaskDraftStore {
     if (outcome === "failure") return false;
     const record = this.records.get(ticket.key);
     if (!record) return false;
-    if (
-      record.generation !== ticket.generation ||
-      record.revision !== ticket.revision
-    ) {
+    if (record.generation !== ticket.generation || record.revision !== ticket.revision) {
       // A late response for a superseded draft: no-op by contract.
       return false;
     }

@@ -281,3 +281,30 @@ describe("Feedback", () => {
     expect(screen.getByText("没有可用的验证 adapter，先在运行时完成配置。")).toBeInTheDocument();
   });
 });
+
+describe("DataTable custom render (review R1-013)", () => {
+  it("renders a custom ReactNode as-is instead of stringifying it", () => {
+    render(
+      <DataTable
+        ariaLabel="自定义渲染"
+        columns={[
+          {
+            key: "status",
+            header: "状态",
+            render: () => <span data-testid="custom-node">可用</span>,
+          },
+          { key: "count", header: "数量" },
+          { key: "missing", header: "缺失", emptyText: "未提供" },
+        ]}
+        rows={[{ id: "r1", status: "x", count: 0, missing: null }]}
+        getRowId={(row) => row.id}
+        getValue={(row, key) => (row as Record<string, unknown>)[key]}
+      />,
+    );
+    expect(screen.getByTestId("custom-node")).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "0" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "未提供" })).toBeInTheDocument();
+    // The custom node must not be flattened into [object Object].
+    expect(screen.getByRole("table", { name: "自定义渲染" })).not.toHaveTextContent("[object Object]");
+  });
+});

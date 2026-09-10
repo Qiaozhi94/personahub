@@ -44,11 +44,16 @@ function createRouterStore() {
   }
 
   function subscribe(listener: Listener): () => void {
+    const wasEmpty = listeners.size === 0;
     listeners.add(listener);
-    window.addEventListener("popstate", notify);
+    // Register the window listener once for the store's lifetime and remove
+    // it only when the LAST subscriber goes away (review R1-009): browsers
+    // dedupe identical listeners, so a per-subscriber remove would detach the
+    // shared popstate handling while other subscribers are still listening.
+    if (wasEmpty) window.addEventListener("popstate", notify);
     return () => {
       listeners.delete(listener);
-      window.removeEventListener("popstate", notify);
+      if (listeners.size === 0) window.removeEventListener("popstate", notify);
     };
   }
 
@@ -79,10 +84,7 @@ export function useRouter(): Router {
 }
 
 /** Builds a URL string from pathname + query params, skipping empty values. */
-export function buildUrl(
-  pathname: string,
-  params: Record<string, string | null | undefined> = {},
-): string {
+export function buildUrl(pathname: string, params: Record<string, string | null | undefined> = {}): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== null && value !== undefined && value !== "") search.set(key, value);

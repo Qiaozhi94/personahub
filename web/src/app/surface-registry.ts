@@ -8,15 +8,7 @@
 // and a visible promise that cannot be completed is a dead entry.
 
 export type SurfaceId =
-  | "tasks"
-  | "sessions"
-  | "projects"
-  | "automation"
-  | "memory"
-  | "capabilities"
-  | "runtime"
-  | "stats"
-  | "settings";
+  "tasks" | "sessions" | "projects" | "automation" | "memory" | "capabilities" | "runtime" | "stats" | "settings";
 
 export type SurfaceRegistryState = "enabled" | "visible-disabled" | "not-registered";
 

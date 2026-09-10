@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "@/App";
 
@@ -216,5 +218,76 @@ describe("/settings/legacy-workflows (A029 read-only, A030 retired)", () => {
     for (const forbidden of [/create version/i, /activate/i, /deactivate/i, /new version/i]) {
       expect(screen.queryByRole("button", { name: forbidden })).not.toBeInTheDocument();
     }
+  });
+});
+
+describe("review R1-004/R1-006/R1-007 regressions", () => {
+  it("exposes a settings catalog with exactly the two real sub-pages", async () => {
+    renderApp("/settings/system-diagnostics");
+
+    const catalog = screen.getByRole("navigation", { name: "设置目录" });
+    const entries = Array.from(catalog.querySelectorAll("a")).map((a) => a.textContent);
+    expect(entries).toEqual(["系统诊断", "历史工作流"]);
+    expect(catalog.querySelector('a[aria-current="page"]')?.textContent).toBe("系统诊断");
+  });
+
+  it("drives the legacy detail/list views through the shared tabs primitive", async () => {
+    const user = userEvent.setup();
+    renderApp("/settings/legacy-workflows");
+
+    const tablist = await screen.findByRole("tablist", { name: "历史工作流视图" });
+    expect(tablist).toHaveAttribute("tabindex", "0");
+    const listTab = screen.getByRole("tab", { name: "模板列表" });
+    const detailTab = screen.getByRole("tab", { name: "模板详情" });
+    // The detail tab is not reachable until a template is selected.
+    expect(detailTab).toBeDisabled();
+    expect(listTab).toHaveAttribute("aria-selected", "true");
+
+    await user.click(screen.getByRole("button", { name: /Coding Workflow v1/ }));
+    expect(detailTab).toBeEnabled();
+
+    act(() => {
+      fireEvent.keyDown(listTab, { key: "ArrowRight" });
+    });
+    await waitFor(() => {
+      expect(detailTab).toHaveAttribute("aria-selected", "true");
+    });
+    expect(document.activeElement).toBe(detailTab);
+
+    act(() => {
+      fireEvent.keyDown(detailTab, { key: "Home" });
+    });
+    await waitFor(() => {
+      expect(listTab).toHaveAttribute("aria-selected", "true");
+    });
+  });
+
+  it("retries a failed template detail load for real", async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.workflowTemplates.get)
+      .mockRejectedValueOnce({ code: "X", message: "boom" })
+      .mockRejectedValueOnce({ code: "X", message: "boom" }); // retry: 1 consumes the second
+    renderApp("/settings/legacy-workflows");
+
+    await user.click(await screen.findByRole("button", { name: /Coding Workflow v1/ }));
+    expect(await screen.findByText("模板详情加载失败", {}, { timeout: 4000 })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "重试" }));
+    expect(await screen.findByRole("region", { name: "模板详情" })).toBeInTheDocument();
+    // initial + react-query retry(1) + the explicit 重试 click
+    expect(vi.mocked(apiClient.workflowTemplates.get).mock.calls.length).toBe(3);
+  });
+
+  it("shows a retryable ErrorState when the diagnostics query fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.runtimeHealth.get).mockRejectedValueOnce({ code: "X", message: "boom" });
+    renderApp("/settings/system-diagnostics");
+
+    await user.click(await screen.findByRole("radio", { name: "项目甲" }));
+    expect(await screen.findByText("诊断读取失败")).toBeInTheDocument();
+
+    vi.mocked(apiClient.runtimeHealth.get).mockResolvedValue(healthResponse());
+    await user.click(screen.getByRole("button", { name: "重试" }));
+    expect(await screen.findByText(/schema 10\/10/)).toBeInTheDocument();
   });
 });

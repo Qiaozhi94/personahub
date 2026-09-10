@@ -103,7 +103,7 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
 
 - **AC-001**（`FR-001`, `FR-003`, `NFR-001`）：
   - [任务级]：`server/tests/integration/f009-v02-fixture.test.ts`「F009 v0.2 schema-v10 fixture」（T000：来源指纹、v10 → v11 → head 升级链、幂等与变异）。
-  - [需求级] 待 T021 回填：本矩阵 §1（J1–J9、S1）即其设计稿；applicability 指定的各 `f009-*.spec.ts` 承担对应步骤。
+  - [需求级] 已回填（见 §5）：`e2e/tests/f009-golden-journey.spec.ts` 连续执行 J1–J9、S1；applicability 指定的各 `f009-*.spec.ts` 承担对应步骤。
   - 人工：无单独人工条目。「真实 CLI 旅程」部分按 self-test §3.3 属发布级（T030 / 版本收口），不计入本 AC 的浏览器旅程。残余人工项：「干净数据库首屏指引」（§3.2.1 第④段）受 §0 数据策略限制无法自动化（豁免已明文化于 spec §7），归 T031 在真实升级场景人工确认。
 - **AC-002**（`FR-002`, `FR-005`, `FR-007`, `NFR-004`）：
   - [任务级]：`tools/check-v03-plan-contracts.test.mjs`「V03-PLAN 合同套件」（T001 随迁移持续维护）。
@@ -115,7 +115,7 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
   - 只能人工验证：同 AC-002 的 inventory 来源核对（T031）。
 - **AC-004**（`UX-001`, `UX-002`, `UX-004`, `NFR-002`）：
   - [任务级]：`web/src/f009-primitives.test.tsx`（T002：AppDialog / AppTabs / DataTable / PageState / Feedback）、`web/src/f009-task-draft-store.test.ts`（T004：generation / revision 契约与三个清理路径变异）。
-  - [需求级] 待 T022 回填：§2 中 BC-044/046/048–053/057/076/091/119/122–125 及键盘 / 语义 / 窄视口 / console 门禁；草稿跨 route 往返的浏览器断言随 J3/J4 落地。
+  - [需求级] 已回填（见 §5）：§2 中各 BC 行随 `f009-shell` / `f009-a11y` / `f009-page-states` / `f009-create-task` / `f009-runtime-adapters` / `f009-command-palette` spec 与静态门禁落地，含键盘 / 语义 / 窄视口 / console 零错误门禁；草稿跨 route 往返随 J3/J4 断言。
   - 只能人工验证：反馈与状态在真实浏览器中的可读性、一致性（US-002 整体观感）归 T031。BC-030 入口与语义已定义于 design.md「命令面板（全局导航原语，BC-030）」小节；BC-052 / BC-006 断言对象按 design.md §8「adapted 行断言对象集合」规则处理（BC-006 标签域由 fixture Issue labels 提供），T031 复核实例清点完整性。
 - **AC-005**（`FR-006`, `NFR-003`）：
   - [任务级]：`web/src/f009-pages.test.tsx`（T010，A001–A005 写入命中既有 API）。

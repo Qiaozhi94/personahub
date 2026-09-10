@@ -38,4 +38,3 @@ export function useComposerDraft(taskId: string): {
     resolve: (ticket, outcome) => store.resolveSubmit(ticket, outcome),
   };
 }
-

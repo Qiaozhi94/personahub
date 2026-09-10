@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "@/App";
@@ -225,7 +225,9 @@ describe("composer drafts owned by the shell (UX-004)", () => {
 describe("intake host on /tasks (A006/A007)", () => {
   it("opens the recommend flow from the task board without writing anything", async () => {
     const user = userEvent.setup();
-    vi.mocked(apiClient.issues.listByProject).mockResolvedValue({ issues: [] });
+    vi.mocked(apiClient.issues.listByProject).mockResolvedValue({
+      issues: [issueWithThread("iss_1", "任务一", IssueStatus.Running)],
+    });
     renderApp("/tasks?project=prj_a");
 
     await user.click(await screen.findByRole("button", { name: "推荐创建" }));
@@ -250,5 +252,140 @@ describe("facts host on /tasks/:taskId (A011, A016–A024)", () => {
     expect(await screen.findByRole("heading", { name: "任务一" })).toBeInTheDocument();
     expect(await screen.findByText("Issue Inspector")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
+  });
+});
+
+describe("review R1-002/R1-003 regressions", () => {
+  const codexAdapter = {
+    id: "agt_codex",
+    project_id: "prj_a",
+    name: "Codex",
+    cli_provider: "codex",
+    command: "codex",
+    args: [],
+    capability_tags: ["implementation"] as never,
+    default_model: null,
+    status: "available" as never,
+    last_checked_at: TIMESTAMP,
+    auth_type: "oauth" as never,
+    model_provider: null,
+    has_api_key: false,
+    auth_status_message: null,
+    is_default: true,
+    created_at: TIMESTAMP,
+    updated_at: TIMESTAMP,
+  };
+  const claudeAdapter = { ...codexAdapter, id: "agt_claude", name: "Claude", is_default: false };
+
+  function primeAdapterMocks(): void {
+    vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({
+      adapters: [codexAdapter, claudeAdapter],
+    });
+    vi.mocked(apiClient.runs.create).mockResolvedValue({ run: {} } as never);
+  }
+
+  it("keeps adapter and consult selection per task key across cached navigations", async () => {
+    primeAdapterMocks();
+    vi.mocked(apiClient.issues.get).mockImplementation(async (id: string) => ({
+      issue: issueWithThread(id, `任务 ${id}`, IssueStatus.Running),
+    }));
+    renderApp("/tasks/iss_1");
+
+    const select = await screen.findByLabelText("Agent");
+    await userEvent.selectOptions(select, "agt_claude");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Ask (consult)" }));
+    fireEvent.change(screen.getByPlaceholderText("Enter agent instructions…"), {
+      target: { value: "iss1 指令" },
+    });
+
+    navigate("/tasks/iss_2");
+    await waitFor(() => {
+      expect(screen.getByLabelText("Agent")).toHaveValue("");
+    });
+    fireEvent.change(screen.getByPlaceholderText("Enter agent instructions…"), {
+      target: { value: "iss2 指令" },
+    });
+    expect(screen.getByRole("checkbox", { name: "Ask (consult)" })).not.toBeChecked();
+
+    navigate("/tasks/iss_1");
+    await waitFor(() => {
+      expect(screen.getByLabelText("Agent")).toHaveValue("agt_claude");
+    });
+    expect(screen.getByPlaceholderText("Enter agent instructions…")).toHaveValue("iss1 指令");
+    expect(screen.getByRole("checkbox", { name: "Ask (consult)" })).toBeChecked();
+
+    // Submitting on iss_2 posts iss_2's own selection, never iss_1's.
+    navigate("/tasks/iss_2");
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter agent instructions…")).toHaveValue("iss2 指令");
+    });
+    fireEvent.submit(screen.getByPlaceholderText("Enter agent instructions…").closest("form")!);
+    await waitFor(() => {
+      expect(apiClient.runs.create).toHaveBeenCalled();
+    });
+    const firstCreateCall = vi.mocked(apiClient.runs.create).mock.calls[0]!;
+    const payload = firstCreateCall[1];
+    // iss_2 has no explicit selection: the payload must not carry iss_1's
+    // claude pick — the server resolves the project default instead.
+    expect(payload.adapter_id).toBeUndefined();
+    expect(payload.purpose).toBeUndefined();
+  });
+
+  it("offers a production discard action that clears the draft and survives late responses", async () => {
+    primeAdapterMocks();
+    vi.mocked(apiClient.issues.get).mockResolvedValue({
+      issue: issueWithThread("iss_1", "任务一", IssueStatus.Running),
+    });
+    let releaseSuccess: (() => void) | undefined;
+    vi.mocked(apiClient.runs.create).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseSuccess = () => resolve({ run: {} } as never);
+        }),
+    );
+    renderApp("/tasks/iss_1");
+
+    const composer = await screen.findByPlaceholderText("Enter agent instructions…");
+    await userEvent.type(composer, "待丢弃的指令");
+    expect(screen.getByRole("button", { name: "丢弃草稿" })).toBeInTheDocument();
+
+    fireEvent.submit(composer.closest("form")!);
+    // Discard stays available while the submit is pending.
+    await screen.findByRole("button", { name: "丢弃草稿" });
+    await userEvent.click(screen.getByRole("button", { name: "丢弃草稿" }));
+    expect(screen.queryByRole("button", { name: "丢弃草稿" })).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Enter agent instructions…")).toHaveValue("");
+
+    // The superseded success response must not resurrect or clear anything.
+    releaseSuccess?.();
+    await waitFor(() => expect(apiClient.runs.create).toHaveBeenCalledOnce());
+    expect(screen.getByPlaceholderText("Enter agent instructions…")).toHaveValue("");
+  });
+
+  it("keeps the graph dialog open with its error on failure and closes only on success", async () => {
+    primeAdapterMocks();
+    vi.mocked(apiClient.issues.get).mockResolvedValue({
+      issue: issueWithThread("iss_empty", "空白任务", IssueStatus.Inbox),
+    });
+    renderApp("/tasks/iss_empty");
+
+    await screen.findByRole("button", { name: "Start Graph" }).then((button) => userEvent.click(button));
+    const dialog = await screen.findByRole("dialog", { name: "Start dual-review graph" });
+    const selects = within(dialog).getAllByRole("combobox");
+    for (const select of selects) {
+      await userEvent.selectOptions(select, "agt_codex");
+    }
+
+    vi.mocked(apiClient.issues.startGraph).mockRejectedValueOnce({ code: "GRAPH_CONFLICT", message: "graph conflict" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Start Graph" }));
+    expect(await screen.findByText("graph conflict")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Start dual-review graph" })).toBeInTheDocument();
+
+    vi.mocked(apiClient.issues.startGraph).mockResolvedValueOnce({ graph_run_id: "grun_1" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Start Graph" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Start dual-review graph" })).not.toBeInTheDocument();
+    });
+    expect(apiClient.issues.startGraph).toHaveBeenCalledTimes(2);
   });
 });

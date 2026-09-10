@@ -8,9 +8,9 @@ test("BC-046: an empty task list offers one recovery path", async ({ page }) => 
   // Beta Archive has no workspace and no issues.
   await page.goto("/tasks?project=prj_v02_beta");
   await expect(page.getByText("该项目还没有任务")).toBeVisible();
-  await expect(page.getByRole("button", { name: "新建任务" })).toHaveCount(2);
-  // The recovery entry is executable and stays on the canonical route.
-  await page.getByRole("button", { name: "新建任务" }).first().click();
+  // R1-007: exactly one executable recovery action.
+  await expect(page.getByRole("button", { name: "新建任务" })).toHaveCount(1);
+  await page.getByRole("button", { name: "新建任务" }).click();
   await expect(page.getByRole("dialog", { name: "New coding issue" })).toBeVisible();
   await page.keyboard.press("Escape");
 });
@@ -31,13 +31,19 @@ test("BC-046: not-found surfaces offer exactly one recovery action", async ({ pa
   await expect(page).toHaveURL(/\/projects$/);
 });
 
-test("BC-047: interrupted and queued runs keep their own status", async ({ page }) => {
-  await page.goto("/tasks/iss_v02_running");
-  await expect(page.getByRole("heading", { name: "Streaming ingest pipeline" })).toBeVisible();
-
-  // The fixture's interrupted run is labelled interrupted — not failed.
+test("BC-047: terminal run states keep their own status, never relabelled", async ({ page }) => {
+  // iss_v02_blocked's failed validator run (output_parse_failed) is conserved
+  // by every journey step — its failure reason stays readable and distinct.
+  await page.goto("/tasks/iss_v02_blocked");
+  await expect(page.getByRole("heading", { name: "Fix flaky acceptance suite" })).toBeVisible();
   const facts = page.locator("section", { has: page.getByText("任务详情（兼容）") });
-  await expect(facts.getByText("interrupted", { exact: true }).first()).toBeVisible();
+  await expect(facts.getByText("Failed to parse adapter output")).toBeVisible();
+
+  // The graph retry attempt stays queued or cancelled (per journey order) —
+  // never silently shown as failed or completed.
+  await page.goto("/tasks/iss_v02_graph_blocked");
+  const graphTask = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
+  await expect(graphTask.getByText(/^(queued|cancelled)$/).first()).toBeVisible();
 });
 
 test("BC-046: legacy workflow page keeps read-only facts with a partial-state explanation", async ({ page }) => {

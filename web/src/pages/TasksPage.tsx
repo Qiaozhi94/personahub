@@ -17,13 +17,7 @@ import { PageFrame, PageHeading, PageSection } from "@/pages/page-frame";
 // it lists that project's existing issues. Unknown projects keep their
 // diagnostics in the URL and offer exactly one recovery path.
 
-export function TasksPage({
-  projectQuery,
-  diagnostics,
-}: {
-  projectQuery: string | null;
-  diagnostics: Diagnostics;
-}) {
+export function TasksPage({ projectQuery, diagnostics }: { projectQuery: string | null; diagnostics: Diagnostics }) {
   const { navigate } = useRouter();
 
   if (projectQuery === null) {
@@ -36,20 +30,12 @@ export function TasksPage({
     );
   }
 
-  return (
-    <TaskProjectBoard
-      projectId={projectQuery}
-      diagnostics={diagnostics}
-      onReselect={() => navigate("/tasks")}
-    />
-  );
+  return <TaskProjectBoard projectId={projectQuery} diagnostics={diagnostics} onReselect={() => navigate("/tasks")} />;
 }
 
 function TaskNotFoundBanner({ diagnostics }: { diagnostics: Diagnostics }) {
   if (!diagnostics.notFound) return null;
-  return (
-    <StatusBanner tone="warning" title="任务不存在" description="链接指向的任务不存在或已删除。" />
-  );
+  return <StatusBanner tone="warning" title="任务不存在" description="链接指向的任务不存在或已删除。" />;
 }
 
 function TaskProjectSelection({
@@ -127,6 +113,9 @@ function TaskProjectBoard({
   const issuesQuery = useIssues(projectId);
   const [createOpen, setCreateOpen] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
+  // BC-006: labels filter through a dropdown over the stable task list — the
+  // label domain comes from the issues' own labels, never a chip row.
+  const [labelFilter, setLabelFilter] = useState("all");
 
   const projects = projectsQuery.data?.projects ?? [];
   const project = projects.find((candidate) => candidate.id === projectId) ?? null;
@@ -152,6 +141,9 @@ function TaskProjectBoard({
   }
 
   const issues = issuesQuery.data?.issues ?? [];
+  const labels = [...new Set(issues.flatMap((issue) => issue.labels ?? []))].sort((a, b) => a.localeCompare(b));
+  const visibleIssues =
+    labelFilter === "all" ? issues : issues.filter((issue) => (issue.labels ?? []).includes(labelFilter));
 
   function openTask(issueId: string) {
     navigate(buildUrl(`/tasks/${encodeURIComponent(issueId)}`));
@@ -164,22 +156,27 @@ function TaskProjectBoard({
       <PageHeading
         title={project !== null ? `任务 · ${project.name}` : "任务"}
         actions={
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setIntakeOpen(true)}
-              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
-            >
-              推荐创建
-            </button>
-            <button
-              type="button"
-              onClick={() => setCreateOpen(true)}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              新建任务
-            </button>
-          </div>
+          // The heading keeps one primary create action only while the list
+          // has content; an empty list's single recovery action lives in the
+          // EmptyState (review R1-007: exactly one executable recovery path).
+          issues.length > 0 ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIntakeOpen(true)}
+                className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
+              >
+                推荐创建
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                新建任务
+              </button>
+            </div>
+          ) : null
         }
       />
 
@@ -197,7 +194,32 @@ function TaskProjectBoard({
             action={{ label: "新建任务", onAction: () => setCreateOpen(true) }}
           />
         ) : (
-          <IssueList issues={issues} selectedIssueId={null} onSelect={openTask} />
+          <div className="grid gap-2">
+            <div className="flex items-center gap-2">
+              <label htmlFor="task-label-filter" className="text-xs text-muted-foreground">
+                按标签筛选
+              </label>
+              <select
+                id="task-label-filter"
+                value={labelFilter}
+                onChange={(event) => setLabelFilter(event.target.value)}
+                className="h-7 rounded-md border border-border bg-background px-2 text-xs"
+              >
+                <option value="all">全部标签</option>
+                {labels.map((label) => (
+                  <option key={label} value={label}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-muted-foreground">{visibleIssues.length} 项</span>
+            </div>
+            {visibleIssues.length === 0 ? (
+              <p className="px-2.5 text-xs text-muted-foreground">该标签下没有任务。</p>
+            ) : (
+              <IssueList issues={visibleIssues} selectedIssueId={null} onSelect={openTask} />
+            )}
+          </div>
         )}
       </PageSection>
 

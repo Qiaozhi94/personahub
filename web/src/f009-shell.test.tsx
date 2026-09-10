@@ -10,6 +10,7 @@ import { apiClient } from "@/lib/api-client";
 import { ApplicationShell, useDraftStore } from "@/app/ApplicationShell";
 import { RouterProvider } from "@/app/router";
 import { SURFACE_REGISTRY } from "@/app/surface-registry";
+import { useLocation } from "@/app/router";
 
 // T003 (FR-001/FR-005): the M1 SurfaceRegistry manifest and the ApplicationShell
 // rail. Only enabled surfaces render navigation controls; not-registered
@@ -201,8 +202,7 @@ describe("Shell draft store (T004 wiring)", () => {
       </QueryClientProvider>,
     );
     const store = draftStoreProbeRef.current!;
-    const dispatchUnload = (): boolean =>
-      window.dispatchEvent(new Event("beforeunload", { cancelable: true }));
+    const dispatchUnload = (): boolean => window.dispatchEvent(new Event("beforeunload", { cancelable: true }));
 
     // No draft anywhere: the refresh must not be blocked.
     expect(dispatchUnload()).toBe(true);
@@ -218,5 +218,67 @@ describe("Shell draft store (T004 wiring)", () => {
       store.discard("task:iss_1:composer");
     });
     expect(dispatchUnload()).toBe(true);
+  });
+});
+
+describe("router popstate listener lifetime (review R1-009)", () => {
+  function LocationProbe({ label }: { label: string }): React.JSX.Element {
+    const location = useLocation();
+    return (
+      <p>
+        {label}:{location.pathname}
+      </p>
+    );
+  }
+
+  it("keeps remaining subscribers updating after one unmounts", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    vi.mocked(apiClient.projects.list).mockResolvedValue({ projects: [] });
+    window.history.replaceState(null, "", "/projects");
+
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider>
+          <ApplicationShell>
+            <LocationProbe label="A" />
+            <LocationProbe label="B" />
+          </ApplicationShell>
+        </RouterProvider>
+      </QueryClientProvider>,
+    );
+    await screen.findByText("A:/projects");
+
+    // Unmount exactly one subscriber.
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider>
+          <ApplicationShell>
+            <LocationProbe label="A" />
+          </ApplicationShell>
+        </RouterProvider>
+      </QueryClientProvider>,
+    );
+
+    window.history.pushState(null, "", "/tasks");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    await waitFor(() => {
+      expect(screen.getByText("A:/tasks")).toBeInTheDocument();
+    });
+
+    // Unmounting the last subscriber detaches the window listener.
+    const removed: string[] = [];
+    const originalRemove = window.removeEventListener.bind(window);
+    vi.spyOn(window, "removeEventListener").mockImplementation(((
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions,
+    ) => {
+      removed.push(type);
+      return originalRemove(type, listener, options);
+    }) as typeof window.removeEventListener);
+    view.unmount();
+    expect(removed).toContain("popstate");
+    vi.restoreAllMocks();
   });
 });

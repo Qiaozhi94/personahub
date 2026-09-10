@@ -1,16 +1,19 @@
 import { useState } from "react";
-import type { WorkflowTemplateVersionSummary } from "@personahub/shared";
+import type { WorkflowTemplateDetail, WorkflowTemplateVersionSummary } from "@personahub/shared";
 import { apiClient } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { PageLoading, ErrorState } from "@/components/primitives/page-state";
+import { PageLoading, ErrorState, EmptyState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
 import { DataTable, type DataTableColumn } from "@/components/primitives/data-table";
+import { AppTabs, AppTabsList, AppTabsTrigger } from "@/components/primitives/app-tabs";
 import { PageFrame, PageHeading } from "@/pages/page-frame";
+import { SettingsCatalog } from "@/pages/settings-catalog";
 
 // /settings/legacy-workflows (A029 read-only, A030 retired): the workflow
 // template list and details remain viewable as migration evidence. Editing
 // was retired — new versions, activation and deactivation move to Skills
-// revisions (F013); this page calls only the read APIs.
+// revisions (F013); this page calls only the read APIs. The list / detail
+// pair is the M1's real tab instance for the shared tabs primitive (BC-052).
 
 const columns: Array<DataTableColumn<WorkflowTemplateVersionSummary>> = [
   { key: "name", header: "名称" },
@@ -28,6 +31,7 @@ export function LegacyWorkflowsPage() {
     queryKey: ["workflow-templates", selectedId],
     queryFn: () => apiClient.workflowTemplates.get(selectedId!),
     enabled: selectedId !== null,
+    retry: 1,
   });
 
   if (listQuery.isLoading) return <PageLoading label="正在加载历史工作流" />;
@@ -48,6 +52,7 @@ export function LegacyWorkflowsPage() {
 
   return (
     <PageFrame>
+      <SettingsCatalog active="/settings/legacy-workflows" />
       <StatusBanner
         tone="info"
         title="历史工作流只读"
@@ -55,76 +60,94 @@ export function LegacyWorkflowsPage() {
       />
       <PageHeading title="历史工作流" />
 
-      <DataTable
-        ariaLabel="历史工作流模板"
-        columns={columns}
-        rows={templates}
-        getRowId={(row) => row.id}
-        getValue={(row, key) => {
-          const value = (row as unknown as Record<string, unknown>)[key];
-          if (key === "validation_enabled") {
-            if (value === true) return "启用";
-            if (value === false) return "停用";
-            return null;
-          }
-          return typeof value === "string" || typeof value === "number" ? String(value) : null;
+      <AppTabs
+        defaultValue="list"
+        onValueChange={(next) => {
+          if (next === "list") setSelectedId(null);
         }}
-        className={
-          selectedId === null
-            ? undefined
-            : "[&_tbody_tr]:cursor-pointer [&_tbody_tr]:hover:bg-secondary/60"
-        }
-      />
+      >
+        <AppTabsList aria-label="历史工作流视图">
+          <AppTabsTrigger value="list">模板列表</AppTabsTrigger>
+          <AppTabsTrigger value="detail" disabled={selectedId === null}>
+            模板详情
+          </AppTabsTrigger>
+        </AppTabsList>
 
-      {/* Row selection uses an explicit list under the table to keep the
-          shared table primitive free of interactive-row semantics. */}
-      <div className="grid gap-1">
-        <span className="text-xs text-muted-foreground">选择一个模板查看详情：</span>
-        <ul className="flex flex-wrap gap-1.5">
-          {templates.map((template) => (
-            <li key={template.id}>
-              <button
-                type="button"
-                aria-pressed={selectedId === template.id}
-                onClick={() => setSelectedId(template.id === selectedId ? null : template.id)}
-                className={
-                  selectedId === template.id
-                    ? "rounded-full border border-primary bg-accent-soft px-3 py-1 text-xs text-primary"
-                    : "rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-accent"
-                }
-              >
-                {template.name} v{template.version}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+        <div role="tabpanel" aria-label="模板列表面板" className="grid gap-3 pt-3">
+          <DataTable
+            ariaLabel="历史工作流模板"
+            columns={columns}
+            rows={templates}
+            getRowId={(row) => row.id}
+            getValue={(row, key) => {
+              const value = (row as unknown as Record<string, unknown>)[key];
+              if (key === "validation_enabled") {
+                if (value === true) return "启用";
+                if (value === false) return "停用";
+                return null;
+              }
+              return typeof value === "string" || typeof value === "number" ? String(value) : null;
+            }}
+          />
 
-      {selectedId !== null ? (
-        <TemplateDetail
-          detailQuery={{
-            isLoading: detailQuery.isLoading,
-            error: detailQuery.error,
-            detail: detailQuery.data?.template ?? null,
-          }}
-        />
-      ) : null}
+          {/* Row selection uses an explicit list under the table to keep the
+              shared table primitive free of interactive-row semantics. */}
+          <div className="grid gap-1">
+            <span className="text-xs text-muted-foreground">选择一个模板查看详情：</span>
+            <ul className="flex flex-wrap gap-1.5">
+              {templates.map((template) => (
+                <li key={template.id}>
+                  <button
+                    type="button"
+                    aria-pressed={selectedId === template.id}
+                    onClick={() => setSelectedId(template.id === selectedId ? null : template.id)}
+                    className={
+                      selectedId === template.id
+                        ? "rounded-full border border-primary bg-accent-soft px-3 py-1 text-xs text-primary"
+                        : "rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-accent"
+                    }
+                  >
+                    {template.name} v{template.version}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div role="tabpanel" aria-label="模板详情面板" className="pt-3">
+          {selectedId === null ? (
+            <EmptyState title="还没有选择模板" description="在模板列表选择一个模板后，这里显示它的详情。" />
+          ) : (
+            <TemplateDetail
+              detailQuery={{
+                isLoading: detailQuery.isLoading,
+                error: detailQuery.error,
+                detail: detailQuery.data?.template ?? null,
+              }}
+              onRetry={() => void detailQuery.refetch()}
+            />
+          )}
+        </div>
+      </AppTabs>
     </PageFrame>
   );
 }
 
 function TemplateDetail({
   detailQuery,
+  onRetry,
 }: {
-  detailQuery: { isLoading: boolean; error: unknown; detail: import("@personahub/shared").WorkflowTemplateDetail | null };
+  detailQuery: { isLoading: boolean; error: unknown; detail: WorkflowTemplateDetail | null };
+  onRetry: () => void;
 }) {
   if (detailQuery.isLoading) return <PageLoading label="正在加载模板详情" />;
   if (detailQuery.error || detailQuery.detail === null) {
     return (
       <ErrorState
         title="模板详情加载失败"
-        description="请重新选择模板。"
-        action={{ label: "重试", onAction: () => undefined }}
+        description="请重新加载详情。"
+        action={{ label: "重试", onAction: onRetry }}
       />
     );
   }

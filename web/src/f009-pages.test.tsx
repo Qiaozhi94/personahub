@@ -302,3 +302,35 @@ describe("TaskDetailPage unknown id (FR-004)", () => {
     expect(await screen.findByText("任务不存在")).toBeInTheDocument();
   });
 });
+
+describe("review R1-006/R1-007 regressions", () => {
+  it("keeps exactly one create action when the task list is empty", async () => {
+    vi.mocked(apiClient.issues.listByProject).mockResolvedValue({ issues: [] });
+    renderApp("/tasks?project=prj_a");
+
+    expect(await screen.findByText("该项目还没有任务")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "新建任务" })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "推荐创建" })).not.toBeInTheDocument();
+  });
+
+  it("filters the task list through the label dropdown (BC-006)", async () => {
+    const user = userEvent.setup();
+    const labeled = [
+      { ...issue("iss_1", "任务一", IssueStatus.Running), labels: ["parser"] },
+      { ...issue("iss_2", "任务二", IssueStatus.Done), labels: ["ingest"] },
+    ];
+    vi.mocked(apiClient.issues.listByProject).mockResolvedValue({ issues: labeled });
+    renderApp("/tasks?project=prj_a");
+
+    expect(await screen.findByText("任务一")).toBeInTheDocument();
+    expect(screen.getByText("任务二")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("按标签筛选"), "parser");
+    expect(screen.getByText("任务一")).toBeInTheDocument();
+    expect(screen.queryByText("任务二")).not.toBeInTheDocument();
+    expect(screen.getByText("1 项")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("按标签筛选"), "all");
+    expect(screen.getByText("任务二")).toBeInTheDocument();
+  });
+});

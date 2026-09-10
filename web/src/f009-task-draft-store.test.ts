@@ -6,7 +6,10 @@ import { TaskDraftStore, taskComposerKey } from "@/app/task-draft-store";
 // would break it (resetting the generation high-water, comparing revision
 // without generation, clearing on any success response).
 
-function storeWithDraft(key: string, text = "初始草稿"): { store: TaskDraftStore; generation: number; revision: number } {
+function storeWithDraft(
+  key: string,
+  text = "初始草稿",
+): { store: TaskDraftStore; generation: number; revision: number } {
   const store = new TaskDraftStore();
   store.edit(key, { text });
   const record = store.record(key)!;
@@ -26,7 +29,7 @@ describe("draft lifecycle across tasks / projects / surfaces", () => {
     store.edit("task:iss_2:composer", { text: "任务二的草稿" });
 
     expect(store.text("task:iss_1:composer")).toBe("任务一的草稿");
-    expect(store.text("task:iss_2:composer", )).toBe("任务二的草稿");
+    expect(store.text("task:iss_2:composer")).toBe("任务二的草稿");
 
     // Editing task 2 does not disturb task 1's record (page-level round trip).
     store.edit("task:iss_2:composer", { text: "任务二的草稿（补充）" });
