@@ -1,7 +1,7 @@
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 import { SERVER_PORT, WEB_PORT } from "./tests/support/env.js";
-import { createInvocationDir } from "./tests/support/invocation-dir.js";
+import { createInvocationDir, isInvocationDirOwner } from "./tests/support/invocation-dir.js";
 import { buildE2EFixtureDatabase } from "./tests/support/f009-fixture-db.js";
 
 // F009: the E2E database is the pinned v0.2 release fixture (T000 builder +
@@ -31,7 +31,15 @@ const dbFile = path.join(invocationDir, "v02-fixture.sqlite");
 // migrated it straight to head, so writing the v10 snapshot afterwards
 // collided with columns the head migrations already added. Config-load time
 // is the only point guaranteed to run before webServer starts.
-buildE2EFixtureDatabase(invocationDir);
+//
+// review R3-017 follow-up #2: Playwright also re-evaluates this config
+// module inside each worker process it forks — `createInvocationDir` makes
+// those inherit the same directory, but only the owning (orchestrator)
+// process should actually build into it; a worker rebuilding the same
+// already-built file hits the identical "duplicate column name" collision.
+if (isInvocationDirOwner()) {
+  buildE2EFixtureDatabase(invocationDir);
+}
 
 export default defineConfig({
   globalTeardown: "./tests/support/invocation-dir-teardown.ts",

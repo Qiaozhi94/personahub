@@ -326,32 +326,40 @@ describe("F009 v0.2 schema-v10 fixture", () => {
     // setup delete or recreate another concurrently-running invocation's
     // database mid-test. This spawns two real OS processes — genuine
     // concurrency, not just interleaved sync calls in one thread — each
-    // building into its own mkdtemp'd directory, and proves neither
-    // observes the other's directory or data.
+    // calling the REAL e2e/tests/support/invocation-dir.ts::createInvocationDir()
+    // Playwright's config module calls (not a hand-rolled mkdtemp — a prior
+    // version of this test pre-created two directories itself and passed
+    // them in, which meant a regression back to a fixed/shared path inside
+    // createInvocationDir() itself would never have turned this test red).
     const execFileAsync = promisify(execFile);
     const tsxBin = join(process.cwd(), "..", "node_modules", ".bin", "tsx");
     const workerScript = join(process.cwd(), "tests", "fixtures", "concurrent-build-worker.ts");
-    const dirA = mkdtempSync(join(tmpdir(), "f009-v02-concurrent-a-"));
-    const dirB = mkdtempSync(join(tmpdir(), "f009-v02-concurrent-b-"));
-    try {
-      const [resultA, resultB] = await Promise.all([
-        execFileAsync(tsxBin, [workerScript, dirA]),
-        execFileAsync(tsxBin, [workerScript, dirB]),
-      ]);
+    const prefix = `f009-v02-concurrent-${process.pid}-`;
 
-      const parsedA = JSON.parse(resultA.stdout) as { version: number; projectCount: number };
-      const parsedB = JSON.parse(resultB.stdout) as { version: number; projectCount: number };
-      expect(parsedA).toEqual({ version: 10, projectCount: 2 });
-      expect(parsedB).toEqual({ version: 10, projectCount: 2 });
+    const [resultA, resultB] = await Promise.all([
+      execFileAsync(tsxBin, [workerScript, prefix]),
+      execFileAsync(tsxBin, [workerScript, prefix]),
+    ]);
+
+    const parsedA = JSON.parse(resultA.stdout) as { dir: string; version: number; projectCount: number };
+    const parsedB = JSON.parse(resultB.stdout) as { dir: string; version: number; projectCount: number };
+    try {
+      // The actual R3-017 invariant: two independent processes calling
+      // createInvocationDir() with the same prefix must never land on the
+      // same directory — that collision is exactly what let one
+      // invocation's setup delete/recreate another's database mid-run.
+      expect(parsedA.dir).not.toBe(parsedB.dir);
+      expect(parsedA).toEqual({ dir: parsedA.dir, version: 10, projectCount: 2 });
+      expect(parsedB).toEqual({ dir: parsedB.dir, version: 10, projectCount: 2 });
 
       // Each invocation's file lives only under its own directory.
-      expect(existsSync(join(dirA, "v02-fixture.sqlite"))).toBe(true);
-      expect(existsSync(join(dirB, "v02-fixture.sqlite"))).toBe(true);
-      expect(existsSync(join(dirA, "graphok-workspace"))).toBe(true);
-      expect(existsSync(join(dirB, "graphok-workspace"))).toBe(true);
+      expect(existsSync(join(parsedA.dir, "v02-fixture.sqlite"))).toBe(true);
+      expect(existsSync(join(parsedB.dir, "v02-fixture.sqlite"))).toBe(true);
+      expect(existsSync(join(parsedA.dir, "graphok-workspace"))).toBe(true);
+      expect(existsSync(join(parsedB.dir, "graphok-workspace"))).toBe(true);
     } finally {
-      rmSync(dirA, { recursive: true, force: true });
-      rmSync(dirB, { recursive: true, force: true });
+      rmSync(parsedA.dir, { recursive: true, force: true });
+      rmSync(parsedB.dir, { recursive: true, force: true });
     }
   });
 
