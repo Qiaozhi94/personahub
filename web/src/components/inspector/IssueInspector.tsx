@@ -274,6 +274,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
   // a `DialogTrigger`, which these dialogs don't use).
   const unblockTriggerRef = useRef<HTMLElement | null>(null);
   const resetRoundsTriggerRef = useRef<HTMLElement | null>(null);
+  const cancelTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     function handleUnblockEvent(e: CustomEvent) {
@@ -297,6 +298,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
   }, [issue.id]);
 
   function openCancelDialog(runId: string) {
+    cancelTriggerRef.current = document.activeElement as HTMLElement | null;
     setCancelTargetRunId(runId);
     setCancelDialogOpen(true);
   }
@@ -490,7 +492,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
       />
 
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent>
+        <DialogContent restoreFocusRef={cancelTriggerRef}>
           <DialogHeader>
             <DialogTitle>Cancel Run</DialogTitle>
           </DialogHeader>

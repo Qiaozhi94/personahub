@@ -111,6 +111,67 @@ test("BC-049: focus returns to the trigger for the unblock and intake dialogs", 
   await expect(intakeTrigger).toBeFocused();
 });
 
+// review R1-006/R3 carried-forward: BC-050's batch only proved Escape closes
+// every dialog, not that focus actually returns to the trigger afterwards —
+// this covers the instances BC-049 above didn't (create issue, adapter,
+// cancel run, start graph, reset rounds, command palette).
+test("BC-049: focus returns to the trigger for the remaining M1 dialogs (batch)", async ({ page }) => {
+  async function expectFocusReturns(trigger: ReturnType<typeof page.getByRole>, dialogTitle: string): Promise<void> {
+    const dialog = page.getByRole("dialog", { name: dialogTitle });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  }
+
+  // 1. Create issue.
+  await page.goto("/tasks?project=prj_v02_alpha");
+  await expect(page.getByRole("button", { name: /Harden parser error paths/ })).toBeVisible();
+  const createIssueTrigger = page.getByRole("button", { name: "新建任务" });
+  await createIssueTrigger.click();
+  await expectFocusReturns(createIssueTrigger, "New coding issue");
+
+  // 2. Command palette (opened via keyboard shortcut, not a click — the
+  // "trigger" to check is whatever had focus beforehand).
+  await page.keyboard.press("ControlOrMeta+k");
+  const palette = page.getByRole("dialog", { name: "跳转" });
+  await expect(palette).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(palette).toHaveCount(0);
+  await expect(createIssueTrigger).toBeFocused();
+
+  // 3. Start Graph (on a freshly created empty task).
+  await createIssueTrigger.click();
+  const createDialog = page.getByRole("dialog", { name: "New coding issue" });
+  await createDialog.getByLabel(/title/i).fill(`BC-049 focus-return dialog ${Date.now()}`);
+  await createDialog.getByLabel(/goal/i).fill("focus-return batch");
+  await createDialog.getByRole("button", { name: /^Create$/i }).click();
+  await page.waitForURL(/\/tasks\/iss_/);
+  const startGraphTrigger = page.getByRole("button", { name: "Start Graph" });
+  await startGraphTrigger.click();
+  await expectFocusReturns(startGraphTrigger, "Start dual-review graph");
+
+  // 4. Cancel Run confirmation.
+  await page.goto("/tasks/iss_v02_graph_blocked");
+  await expect(page.getByText("queued", { exact: true }).first()).toBeVisible();
+  const cancelRunTrigger = page.getByRole("button", { name: "Cancel Run" }).first();
+  await cancelRunTrigger.click();
+  await expectFocusReturns(cancelRunTrigger, "Cancel Run");
+
+  // 5. Reset Rounds (round-limit blocker fixture).
+  await page.goto("/tasks/iss_v02_roundlimit");
+  const resetRoundsTrigger = page.getByRole("button", { name: "Reset Rounds…" });
+  await resetRoundsTrigger.click();
+  await expectFocusReturns(resetRoundsTrigger, "Reset Validation Rounds");
+
+  // 6. Adapter (create + edit both route through the same dialog/trigger ref).
+  await page.goto("/runtime/adapters");
+  await page.getByRole("radio", { name: "Alpha Platform" }).click();
+  const adapterTrigger = page.getByRole("button", { name: "Configure adapter" });
+  await adapterTrigger.click();
+  await expectFocusReturns(adapterTrigger, "Configure adapter");
+});
+
 test("BC-052: the legacy list/detail tabs satisfy the keyboard contract", async ({ page }) => {
   await page.goto("/settings/legacy-workflows");
   const tablist = page.getByRole("tablist", { name: "历史工作流视图" });

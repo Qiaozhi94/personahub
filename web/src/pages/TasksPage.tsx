@@ -114,6 +114,14 @@ function TaskProjectBoard({
   const [createOpen, setCreateOpen] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const intakeTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // Two separate buttons (header action, empty-state recovery action) open
+  // this dialog, so capture whatever had focus at click time rather than a
+  // single fixed ref (review R1-006/BC-049).
+  const createIssueTriggerRef = useRef<HTMLElement | null>(null);
+  function openCreateIssueDialog() {
+    createIssueTriggerRef.current = document.activeElement as HTMLElement | null;
+    setCreateOpen(true);
+  }
   // BC-006: labels filter through a dropdown over the stable task list — the
   // label domain comes from the issues' own labels, never a chip row.
   const [labelFilter, setLabelFilter] = useState("all");
@@ -172,7 +180,7 @@ function TaskProjectBoard({
               </button>
               <button
                 type="button"
-                onClick={() => setCreateOpen(true)}
+                onClick={openCreateIssueDialog}
                 className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 新建任务
@@ -193,7 +201,7 @@ function TaskProjectBoard({
           <EmptyState
             title="该项目还没有任务"
             description="直接创建任务，或稍后通过推荐流程创建。"
-            action={{ label: "新建任务", onAction: () => setCreateOpen(true) }}
+            action={{ label: "新建任务", onAction: openCreateIssueDialog }}
           />
         ) : (
           <div className="grid gap-2">
@@ -238,6 +246,7 @@ function TaskProjectBoard({
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={(issueId) => navigate(buildUrl(`/tasks/${encodeURIComponent(issueId)}`))}
+        restoreFocusRef={createIssueTriggerRef}
       />
 
       <IntakeDialog

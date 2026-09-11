@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type RefObject } from "react";
 import {
   AdapterAuthType,
   AgentCapability,
@@ -20,6 +20,7 @@ interface AdapterDialogProps {
   onOpenChange: () => void;
   projectId: string;
   editingAdapter: AdapterConfig | null;
+  restoreFocusRef?: RefObject<HTMLElement | null>;
 }
 
 function initialAuthFieldsValue(editingAdapter: AdapterConfig | null): AdapterAuthFieldsValue {
@@ -34,7 +35,7 @@ function initialAuthFieldsValue(editingAdapter: AdapterConfig | null): AdapterAu
   };
 }
 
-export function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }: AdapterDialogProps) {
+export function AdapterDialog({ open, onOpenChange, projectId, editingAdapter, restoreFocusRef }: AdapterDialogProps) {
   const isEdit = editingAdapter !== null;
   const { data: providersData } = useAdapterProviders();
   const providers = providersData?.providers ?? [];
@@ -114,7 +115,7 @@ export function AdapterDialog({ open, onOpenChange, projectId, editingAdapter }:
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent restoreFocusRef={restoreFocusRef}>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit adapter" : "Configure adapter"}</DialogTitle>
         </DialogHeader>

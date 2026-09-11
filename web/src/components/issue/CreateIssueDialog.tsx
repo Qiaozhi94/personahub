@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type RefObject } from "react";
 import { IssuePriority } from "@personahub/shared";
 import { useCreateIssue } from "@/hooks/use-issues";
 import { toApiError } from "@/lib/api-client";
@@ -19,11 +19,18 @@ interface CreateIssueDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (issueId: string) => void;
+  restoreFocusRef?: RefObject<HTMLElement | null>;
 }
 
 const PRIORITIES: IssuePriority[] = [IssuePriority.Low, IssuePriority.Normal, IssuePriority.High];
 
-export function CreateIssueDialog({ projectId, open, onOpenChange, onCreated }: CreateIssueDialogProps) {
+export function CreateIssueDialog({
+  projectId,
+  open,
+  onOpenChange,
+  onCreated,
+  restoreFocusRef,
+}: CreateIssueDialogProps) {
   const [title, setTitle] = useState("");
   const [goal, setGoal] = useState("");
   const [priority, setPriority] = useState<IssuePriority>(IssuePriority.Normal);
@@ -64,7 +71,7 @@ export function CreateIssueDialog({ projectId, open, onOpenChange, onCreated }: 
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent restoreFocusRef={restoreFocusRef}>
         <DialogHeader>
           <DialogTitle>New coding issue</DialogTitle>
         </DialogHeader>
