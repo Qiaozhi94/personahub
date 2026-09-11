@@ -290,4 +290,17 @@ describe("review R1-004/R1-006/R1-007 regressions", () => {
     await user.click(screen.getByRole("button", { name: "重试" }));
     expect(await screen.findByText(/schema 10\/10/)).toBeInTheDocument();
   });
+
+  it("retries a failed runtime health panel load for real (review R2-CODE-R1-007)", async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.runtimeHealth.get).mockRejectedValueOnce({ code: "X", message: "boom" });
+    renderApp("/runtime");
+
+    await user.click(await screen.findByRole("radio", { name: "项目甲" }));
+    expect(await screen.findByText("运行时读取失败")).toBeInTheDocument();
+
+    vi.mocked(apiClient.runtimeHealth.get).mockResolvedValue(healthResponse());
+    await user.click(screen.getByRole("button", { name: "重试" }));
+    expect(await screen.findByTestId("runtime-health-panel")).toBeInTheDocument();
+  });
 });

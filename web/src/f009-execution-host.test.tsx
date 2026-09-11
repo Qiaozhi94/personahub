@@ -388,4 +388,21 @@ describe("review R1-002/R1-003 regressions", () => {
     });
     expect(apiClient.issues.startGraph).toHaveBeenCalledTimes(2);
   });
+
+  it("retries a failed thread-events load for real (review R2-CODE-R1-007)", async () => {
+    vi.mocked(apiClient.issues.get).mockResolvedValue({
+      issue: issueWithThread("iss_1", "任务一", IssueStatus.Running),
+    });
+    vi.mocked(apiClient.threads.getEvents).mockRejectedValueOnce({ code: "X", message: "boom" });
+    renderApp("/tasks/iss_1");
+
+    expect(await screen.findByText("boom")).toBeInTheDocument();
+
+    vi.mocked(apiClient.threads.getEvents).mockResolvedValue({ events: [] });
+    await userEvent.click(screen.getByRole("button", { name: "重试" }));
+    await waitFor(() => {
+      expect(screen.queryByText("boom")).not.toBeInTheDocument();
+    });
+    expect(screen.getByPlaceholderText("Enter agent instructions…")).toBeInTheDocument();
+  });
 });

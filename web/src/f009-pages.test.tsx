@@ -162,6 +162,24 @@ describe("ProjectDetailPage (A003)", () => {
     });
   });
 
+  it("distinguishes a workspace query failure from a real not-bound state and retries for real (review R2-CODE-R1-007)", async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.projects.get).mockResolvedValue({
+      project: { ...project("prj_a", "项目甲", false), default_workspace: null },
+    });
+    vi.mocked(apiClient.workspaces.getByProject).mockRejectedValueOnce({ code: "X", message: "boom" });
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByRole("heading", { name: "项目甲" });
+    expect(await screen.findByText("代码目录加载失败")).toBeInTheDocument();
+    expect(screen.queryByLabelText("代码目录路径")).not.toBeInTheDocument();
+
+    vi.mocked(apiClient.workspaces.getByProject).mockResolvedValue({ workspace: null });
+    await user.click(screen.getByRole("button", { name: "重试" }));
+    expect(await screen.findByLabelText("代码目录路径")).toBeInTheDocument();
+  });
+
   it("replaces an unknown project id with a diagnostic project list", async () => {
     vi.mocked(apiClient.projects.get).mockRejectedValue({
       code: "PROJECT_NOT_FOUND",

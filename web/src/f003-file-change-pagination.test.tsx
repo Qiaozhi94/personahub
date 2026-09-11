@@ -360,8 +360,8 @@ describe("FileChangeTraceCard pagination", () => {
     expect(screen.queryByText("... more available")).not.toBeInTheDocument();
   });
 
-  it("handles API error gracefully", async () => {
-    vi.mocked(apiClient.traces.getRunEvidence).mockRejectedValue(
+  it("handles API error gracefully and retries for real (review R2-CODE-R1-007)", async () => {
+    vi.mocked(apiClient.traces.getRunEvidence).mockRejectedValueOnce(
       new Error("Network error"),
     );
 
@@ -374,6 +374,18 @@ describe("FileChangeTraceCard pagination", () => {
     });
 
     expect(screen.queryByText("Load more")).not.toBeInTheDocument();
+
+    const page1 = makeEvidencePage({
+      file_changes: makeFileChanges(3, 0),
+      next_after_file_change_id: null,
+    });
+    vi.mocked(apiClient.traces.getRunEvidence).mockResolvedValue(page1);
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Failed to load file changes")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("src/file_0.ts (modified)")).toBeInTheDocument();
   });
 
   it("renders scan_failed event without evidence fetching", () => {
