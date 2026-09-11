@@ -1266,3 +1266,63 @@ test('F009-CODE-DEFERRED-INVENTORY: all 96 deferred browser checks are accounted
     );
   });
 });
+
+// review R3-018: CI's e2e job and root package.json's verify:release script
+// each separately list which E2E suites to run — nothing before this test
+// enforced they name the same set, so CI could stay green while
+// verify:release (the actual release gate) failed on a suite CI never ran.
+
+function extractE2EJobRunScripts(ciYaml) {
+  const jobBlocks = ciYaml.split(/\n(?=  \S)/);
+  const e2eJob = jobBlocks.find((block) => /^ {2}e2e:/.test(block));
+  assert.ok(e2eJob, 'ci.yml must have a top-level "e2e:" job');
+  return new Set([...e2eJob.matchAll(/run:\s*npm run (test:e2e[\w:-]*)/g)].map((m) => m[1]));
+}
+
+function extractVerifyReleaseE2EScripts(packageJsonText) {
+  const pkg = JSON.parse(packageJsonText);
+  const verifyRelease = pkg.scripts?.['verify:release'];
+  assert.ok(verifyRelease, 'package.json must have a "verify:release" script');
+  return new Set(
+    [...verifyRelease.matchAll(/npm run (test:e2e[\w:-]*)/g)]
+      .map((m) => m[1])
+      // Installing browsers is a prerequisite step, not an E2E suite itself.
+      .filter((name) => name !== 'test:e2e:install'),
+  );
+}
+
+test("F009-CODE-R3-018: CI's e2e job runs every E2E suite verify:release requires", () => {
+  const ciYaml = read('.github/workflows/ci.yml');
+  const packageJson = read('package.json');
+
+  const releaseScripts = extractVerifyReleaseE2EScripts(packageJson);
+  assert.ok(releaseScripts.size >= 2, 'sanity: verify:release should chain at least two E2E scripts');
+
+  const ciScripts = extractE2EJobRunScripts(ciYaml);
+  const missing = [...releaseScripts].filter((name) => !ciScripts.has(name));
+  assert.deepEqual(missing, [], `ci.yml's e2e job is missing: ${missing.join(', ')} (present in verify:release)`);
+
+  // Mutation proof: dropping the empty-db step from CI must turn this red —
+  // the exact regression the reviewer found (CI ran test:e2e but not
+  // test:e2e:empty-db while verify:release ran both).
+  const ciWithoutEmptyDb = ciYaml.replace(
+    /\r?\n {6}- name: Run E2E tests \(clean database\)\r?\n {8}run: npm run test:e2e:empty-db\r?\n/,
+    '\n',
+  );
+  assert.notEqual(ciWithoutEmptyDb, ciYaml, 'mutation must actually remove the empty-db step text');
+  const mutatedCiScripts = extractE2EJobRunScripts(ciWithoutEmptyDb);
+  const mutatedMissing = [...releaseScripts].filter((name) => !mutatedCiScripts.has(name));
+  assert.notDeepEqual(mutatedMissing, [], 'removing the empty-db CI step must be caught as a coverage gap');
+
+  // Same proof in the other direction: dropping the script from
+  // verify:release (so CI keeps running something the release gate no
+  // longer requires) is a config error this test should tolerate, not one
+  // it should require CI to also drop — confirm the comparison is
+  // one-directional (release ⊆ CI), not an exact-set-equality trap that
+  // would make loosening verify:release require touching CI too.
+  const releaseWithoutEmptyDb = packageJson.replace(' && npm run test:e2e:empty-db', '');
+  assert.notEqual(releaseWithoutEmptyDb, packageJson, 'mutation must actually remove the empty-db script reference');
+  const shrunkReleaseScripts = extractVerifyReleaseE2EScripts(releaseWithoutEmptyDb);
+  const stillMissing = [...shrunkReleaseScripts].filter((name) => !ciScripts.has(name));
+  assert.deepEqual(stillMissing, [], 'CI running a superset of a shrunk verify:release must still pass');
+});
