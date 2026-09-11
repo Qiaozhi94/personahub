@@ -14,6 +14,7 @@
 // both hold for a genuine invocation, not just for a hand-driven repro.
 
 import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -29,7 +30,14 @@ function listInvocationDirs() {
 const before = listInvocationDirs();
 
 console.log("Running a real Playwright invocation to observe its invocation-dir lifecycle...");
-execFileSync("npx", ["playwright", "test", "--config=playwright.config.ts", "f009-command-palette"], {
+// review R6-027: spawning the `npx` / `playwright` bin shim is not portable —
+// on Windows those exist only as .cmd/.ps1 files that execFile cannot launch
+// without a shell, and Windows CI failed here with `spawn npx ENOENT`.
+// Resolving Playwright's own CLI entry and running it with this node binary
+// is byte-identical on both platforms.
+const playwrightCli = createRequire(import.meta.url).resolve("@playwright/test/cli");
+
+execFileSync(process.execPath, [playwrightCli, "test", "--config=playwright.config.ts", "f009-command-palette"], {
   cwd: e2eDir,
   stdio: "inherit",
 });
