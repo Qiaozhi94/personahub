@@ -12,7 +12,19 @@ INSERT INTO projects (id, name, description, default_workspace_id, default_coord
   ('prj_v02_beta', 'Beta Archive', 'v0.2 fixture project without any workspace', NULL, NULL, NULL, '2026-07-01T08:10:00.000Z', '2026-07-01T08:10:00.000Z');
 
 INSERT INTO workspaces (id, project_id, local_path, local_path_normalized, git_branch, lock_state, locked_by_run_id, push_credentials_enabled, locked_at, created_at, updated_at) VALUES
-  ('ws_v02_alpha', 'prj_v02_alpha', '/repo/alpha', '/repo/alpha', 'main', 'locked', 'run_v02_running', 0, '2026-07-02T09:30:00.000Z', '2026-07-01T08:00:00.000Z', '2026-07-02T09:30:00.000Z');
+  ('ws_v02_alpha', 'prj_v02_alpha', '/repo/alpha', '/repo/alpha', 'main', 'locked', 'run_v02_running', 0, '2026-07-02T09:30:00.000Z', '2026-07-01T08:00:00.000Z', '2026-07-02T09:30:00.000Z'),
+  -- A second, real-path workspace on the same project (F009 review R1-005
+  -- J4): /repo/alpha is deliberately absent so real-adapter spawn fails
+  -- deterministically elsewhere; graph start's preflight glob does a real
+  -- realpathSync on the workspace root before any adapter is chosen, so a
+  -- graph can never reach queued/running there. /tmp exists on any host and
+  -- yields zero target files (glob misses are swallowed, not fatal) — this
+  -- workspace exists solely so the golden journey can exercise a real
+  -- graph dispatch to completion via the fake adapter. Graph creation also
+  -- rejects an empty target file set (GRAPH_TARGET_SET_EMPTY), so this path
+  -- must contain at least one file matching a dual_review targetGlob
+  -- (**/*.ts) — the e2e global setup (f009-fixture-db.ts) creates it.
+  ('ws_v02_graphok', 'prj_v02_alpha', '/tmp/f009-graphok-workspace', '/tmp/f009-graphok-workspace', NULL, 'idle', NULL, 0, NULL, '2026-07-02T15:50:00.000Z', '2026-07-02T15:50:00.000Z');
 
 -- ---- FX-ADAPTER: implementation + validator, available + unavailable, plus
 -- ---- a never-probed (pending) adapter; workspace override for the validator.
@@ -44,7 +56,8 @@ INSERT INTO issues (id, project_id, workspace_id, primary_thread_id, issue_type,
   ('iss_v02_blocked', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_blocked', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Fix flaky acceptance suite', 'Remove timing dependency from acceptance tests', 'Blocked', NULL, NULL, 'high', '["acceptance","flaky"]', 2, 'validator_run_failed', 'Validator run failed without producing a verdict', NULL, '2026-07-02T11:00:00.000Z', '2026-07-02T12:20:00.000Z'),
   ('iss_v02_validating', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_validating', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Add request tracing', 'Emit structured trace events for each request', 'Validating', NULL, NULL, 'normal', '["tracing"]', 0, NULL, NULL, '2099-01-01T00:00:00.000Z', '2026-07-02T13:00:00.000Z', '2026-07-02T13:30:00.000Z'),
   ('iss_v02_roundlimit', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_roundlimit', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Reduce cold-start latency', 'Cut cold-start under two seconds', 'Blocked', NULL, NULL, 'high', '["performance"]', 3, 'round_limit_reached', 'Three validation rounds failed without convergence', NULL, '2026-07-02T13:00:00.000Z', '2026-07-02T14:20:00.000Z'),
-  ('iss_v02_nocapable', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_nocapable', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Migrate config store', 'Move config to the new store', 'Running', NULL, NULL, 'normal', '["migration"]', 0, NULL, NULL, NULL, '2026-07-02T15:00:00.000Z', '2026-07-02T15:40:00.000Z');
+  ('iss_v02_nocapable', 'prj_v02_alpha', 'ws_v02_alpha', 'thr_v02_nocapable', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Migrate config store', 'Move config to the new store', 'Running', NULL, NULL, 'normal', '["migration"]', 0, NULL, NULL, NULL, '2026-07-02T15:00:00.000Z', '2026-07-02T15:40:00.000Z'),
+  ('iss_v02_graphok', 'prj_v02_alpha', 'ws_v02_graphok', 'thr_v02_graphok', 'coding', 'wft_coding_default', 'vpl_coding_default', 'Roll out dual-region config sync', 'Review the config sync rollout from two angles before merge', 'Inbox', NULL, NULL, 'normal', '["rollout"]', 0, NULL, NULL, NULL, '2026-07-02T15:50:00.000Z', '2026-07-02T15:50:00.000Z');
 
 INSERT INTO threads (id, issue_id, room_id, thread_type, title, created_at, updated_at) VALUES
   ('thr_v02_done', 'iss_v02_done', NULL, 'primary', 'Primary: Harden parser error paths', '2026-07-02T08:00:00.000Z', '2026-07-02T09:50:05.000Z'),
@@ -53,7 +66,8 @@ INSERT INTO threads (id, issue_id, room_id, thread_type, title, created_at, upda
   ('thr_v02_blocked', 'iss_v02_blocked', NULL, 'primary', 'Primary: Fix flaky acceptance suite', '2026-07-02T11:00:00.000Z', '2026-07-02T12:20:00.000Z'),
   ('thr_v02_validating', 'iss_v02_validating', NULL, 'primary', 'Primary: Add request tracing', '2026-07-02T13:00:00.000Z', '2026-07-02T13:30:00.000Z'),
   ('thr_v02_roundlimit', 'iss_v02_roundlimit', NULL, 'primary', 'Primary: Reduce cold-start latency', '2026-07-02T13:00:00.000Z', '2026-07-02T14:20:00.000Z'),
-  ('thr_v02_nocapable', 'iss_v02_nocapable', NULL, 'primary', 'Primary: Migrate config store', '2026-07-02T15:00:00.000Z', '2026-07-02T15:40:00.000Z');
+  ('thr_v02_nocapable', 'iss_v02_nocapable', NULL, 'primary', 'Primary: Migrate config store', '2026-07-02T15:00:00.000Z', '2026-07-02T15:40:00.000Z'),
+  ('thr_v02_graphok', 'iss_v02_graphok', NULL, 'primary', 'Primary: Roll out dual-region config sync', '2026-07-02T15:50:00.000Z', '2026-07-02T15:50:00.000Z');
 
 -- ---- FX-TRACE: the sequential issue's thread carries 16 events (two command
 -- ---- pairs on run_v02_completed, a failure, then the active run) so the
@@ -82,7 +96,7 @@ INSERT INTO thread_events (id, event_sequence, thread_id, type, actor_type, acto
   ('evt_v05', 5, 'thr_v02_validating', 'command.completed', 'agent', 'adp_v02_fake', '{"run_id":"run_v02_val_impl","command":"fixture-cli --trace","exit_code":0}', '["trace:run_v02_val_impl"]', '2026-07-02T13:02:00.000Z'),
   ('evt_v06', 6, 'thr_v02_validating', 'run.completed', 'system', NULL, '{"run_id":"run_v02_val_impl","exit_code":0}', '[]', '2026-07-02T13:05:00.000Z'),
   ('evt_v07', 7, 'thr_v02_validating', 'handoff.created', 'system', NULL, '{"from_run_id":"run_v02_val_impl","to_role":"validator","summary_markdown":"## Handoff — tracing events implemented"}', '["trace:run_v02_val_impl"]', '2026-07-02T13:06:00.000Z'),
-  ('evt_v08', 8, 'thr_v02_validating', 'validation.dispatch_pending', 'system', NULL, '{"issue_id":"iss_v02_validating","due_at":"2099-01-01T00:00:00.000Z"}', '[]', '2026-07-02T13:06:05.000Z'),
+  ('evt_v08', 8, 'thr_v02_validating', 'validation.dispatch_pending', 'system', NULL, '{"issue_id":"iss_v02_validating","thread_id":"thr_v02_validating","workspace_id":"ws_v02_alpha","validation_round":1,"implementation_run_id":"run_v02_val_impl","policy_id":"vpl_coding_default","policy_version":1,"policy_snapshot":{"policy_id":"vpl_coding_default","version":1,"max_validation_rounds":3,"evidence_requirements":{"require_handoff":true,"require_file_trace":true,"require_verification":true,"accepted_verification_kinds":["test","lint","typecheck","build"]}},"policy_snapshot_hash":"sha256:1b2ecec04848152750279507337f0e5e288f3fc7c478714dadf4a11b5067ea3d","dispatch_due_at":"2099-01-01T00:00:00.000Z","due_at":"2099-01-01T00:00:00.000Z"}', '[]', '2026-07-02T13:06:05.000Z'),
   ('evt_rl01', 1, 'thr_v02_roundlimit', 'issue.created', 'system', NULL, '{"issue_id":"iss_v02_roundlimit","title":"Reduce cold-start latency"}', '[]', '2026-07-02T13:00:00.000Z'),
   ('evt_rl02', 2, 'thr_v02_roundlimit', 'validation.requested', 'system', NULL, '{"round":1,"validator_run_id":"run_v02_rl_val1"}', '[]', '2026-07-02T13:10:00.000Z'),
   ('evt_rl03', 3, 'thr_v02_roundlimit', 'validation.finding', 'agent', 'adp_v02_claude_val', '{"round":1,"severity":"error","message":"Cold-start budget still exceeded"}', '["trace:run_v02_rl_val1"]', '2026-07-02T13:20:00.000Z'),
@@ -93,7 +107,8 @@ INSERT INTO thread_events (id, event_sequence, thread_id, type, actor_type, acto
   ('evt_rl08', 8, 'thr_v02_roundlimit', 'validation.failed', 'system', NULL, '{"round":3,"validator_run_id":"run_v02_rl_val3"}', '[]', '2026-07-02T14:10:00.000Z'),
   ('evt_rl09', 9, 'thr_v02_roundlimit', 'validation.blocked', 'system', NULL, '{"issue_id":"iss_v02_roundlimit","thread_id":"thr_v02_roundlimit","workspace_id":"ws_v02_alpha","round":3,"reason":"round_limit_reached"}', '[]', '2026-07-02T14:20:00.000Z'),
   ('evt_n01', 1, 'thr_v02_nocapable', 'issue.created', 'system', NULL, '{"issue_id":"iss_v02_nocapable","title":"Migrate config store"}', '[]', '2026-07-02T15:00:00.000Z'),
-  ('evt_n02', 2, 'thr_v02_nocapable', 'graph.blocked', 'system', NULL, '{"graph_run_id":"grun_v02_g3","blocked_reason_code":"no_capable_adapter","blocked_node_keys":["review_concurrency","review_contracts","synthesize"]}', '[]', '2026-07-02T15:40:00.000Z');
+  ('evt_n02', 2, 'thr_v02_nocapable', 'graph.blocked', 'system', NULL, '{"graph_run_id":"grun_v02_g3","blocked_reason_code":"no_capable_adapter","blocked_node_keys":["review_concurrency","review_contract","synthesize_findings"]}', '[]', '2026-07-02T15:40:00.000Z'),
+  ('evt_gok01', 1, 'thr_v02_graphok', 'issue.created', 'system', NULL, '{"issue_id":"iss_v02_graphok","title":"Roll out dual-region config sync"}', '[]', '2026-07-02T15:50:00.000Z');
 
 -- ---- FX-GRAPH (completed) + FX-VALIDATION (2 failed rounds, then passed) on
 -- ---- the Done issue: fan-out (impl_a, impl_b) → fan-in (join), then three
@@ -162,7 +177,7 @@ INSERT INTO thread_events (id, event_sequence, thread_id, type, actor_type, acto
 INSERT INTO graph_runs (id, issue_id, thread_id, workspace_id, definition_id, definition_version, status, blocked_reason_code, blocked_node_keys, target_files_json, target_files_hash, target_files_truncated, target_files_dropped_count, created_at, updated_at) VALUES
   ('grun_v02_g1', 'iss_v02_done', 'thr_v02_done', 'ws_v02_alpha', 'coding_fanout_fanin_v1', 1, 'completed', NULL, NULL, '["src/parser/errors.ts","src/parser/errors.test.ts"]', 'sha256:5f1a0e9cd2341b0f7de9a33d4a8cf2f1d6b54c09e7a21f30ca4b6d95e0187ac2', 0, 0, '2026-07-02T08:00:30.000Z', '2026-07-02T08:30:01.000Z'),
   ('grun_v02_g2', 'iss_v02_graph_blocked', 'thr_v02_graph_blocked', 'ws_v02_alpha', 'coding_sequential_v1', 1, 'blocked', 'node_run_failed', '["impl"]', '["e2e/tests/acceptance/fixtures"]', 'sha256:9c2bd4f6e0aa73c1d5f80b21e47c09d3a6f18e25bc7d34a09f1e6c87425d0bf3', 0, 0, '2026-07-02T10:30:00.000Z', '2026-07-02T10:37:10.000Z'),
-  ('grun_v02_g3', 'iss_v02_nocapable', 'thr_v02_nocapable', 'ws_v02_alpha', 'wgd_coding_dual_review', 1, 'blocked', 'no_capable_adapter', '["review_concurrency","review_contracts","synthesize"]', '["src/config/store.ts"]', 'sha256:1f8e2a5c7b9d03e4a6c8f1b2d3e45f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e', 0, 0, '2026-07-02T15:30:00.000Z', '2026-07-02T15:40:00.000Z');
+  ('grun_v02_g3', 'iss_v02_nocapable', 'thr_v02_nocapable', 'ws_v02_alpha', 'wgd_coding_dual_review', 1, 'blocked', 'no_capable_adapter', '["review_concurrency","review_contract","synthesize_findings"]', '["src/config/store.ts"]', 'sha256:1f8e2a5c7b9d03e4a6c8f1b2d3e45f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e', 0, 0, '2026-07-02T15:30:00.000Z', '2026-07-02T15:40:00.000Z');
 
 INSERT INTO node_runs (id, graph_run_id, node_key, status, join_satisfied_at, result_event_id, assigned_adapter_config_id, created_at, updated_at) VALUES
   ('node_v02_g1_a', 'grun_v02_g1', 'impl_a', 'completed', NULL, 'evt_d07', 'adp_v02_codex_impl', '2026-07-02T08:00:30.000Z', '2026-07-02T08:11:10.000Z'),
@@ -172,8 +187,8 @@ INSERT INTO node_runs (id, graph_run_id, node_key, status, join_satisfied_at, re
   ('node_v02_g2_impl', 'grun_v02_g2', 'impl', 'failed', '2026-07-02T10:34:00.000Z', 'evt_g10', 'adp_v02_codex_impl', '2026-07-02T10:30:00.000Z', '2026-07-02T10:37:05.000Z'),
   ('node_v02_g2_verify', 'grun_v02_g2', 'verify', 'pending', NULL, NULL, 'adp_v02_codex_impl', '2026-07-02T10:30:00.000Z', '2026-07-02T10:30:00.000Z'),
   ('node_v02_g3_rc', 'grun_v02_g3', 'review_concurrency', 'failed', NULL, NULL, 'adp_v02_claude_val', '2026-07-02T15:30:00.000Z', '2026-07-02T15:36:00.000Z'),
-  ('node_v02_g3_rb', 'grun_v02_g3', 'review_contracts', 'failed', NULL, NULL, 'adp_v02_claude_val', '2026-07-02T15:30:00.000Z', '2026-07-02T15:36:00.000Z'),
-  ('node_v02_g3_syn', 'grun_v02_g3', 'synthesize', 'pending', NULL, NULL, 'adp_v02_claude_val', '2026-07-02T15:30:00.000Z', '2026-07-02T15:30:00.000Z');
+  ('node_v02_g3_rb', 'grun_v02_g3', 'review_contract', 'failed', NULL, NULL, 'adp_v02_claude_val', '2026-07-02T15:30:00.000Z', '2026-07-02T15:36:00.000Z'),
+  ('node_v02_g3_syn', 'grun_v02_g3', 'synthesize_findings', 'pending', NULL, NULL, 'adp_v02_claude_val', '2026-07-02T15:30:00.000Z', '2026-07-02T15:30:00.000Z');
 
 -- ---- FX-RUN: 14 runs across the shared workspace — completed, failed,
 -- ---- running, queued, graph attempts, and validator rounds.

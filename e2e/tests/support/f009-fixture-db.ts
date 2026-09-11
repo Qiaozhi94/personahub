@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildV02Fixture } from "../../../server/tests/fixtures/build-v02-fixture.js";
@@ -14,9 +14,23 @@ import { buildV02Fixture } from "../../../server/tests/fixtures/build-v02-fixtur
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbDir = path.resolve(__dirname, "..", "..", ".tmp");
 
+// ws_v02_graphok (F009 review R1-005 J4) needs a real, on-disk workspace with
+// at least one file matching a dual_review targetGlob (**/*.ts) — graph
+// creation rejects an empty target file set. The path is fixed (not derived
+// from dbDir) because it's also the literal local_path baked into the raw
+// SQL fixture (v02-representative-seed.sql), which has no template step.
+const graphOkWorkspaceDir = "/tmp/f009-graphok-workspace";
+
 export default function buildE2EFixtureDatabase(): void {
   rmSync(dbDir, { recursive: true, force: true });
   mkdirSync(dbDir, { recursive: true });
+
+  rmSync(graphOkWorkspaceDir, { recursive: true, force: true });
+  mkdirSync(graphOkWorkspaceDir, { recursive: true });
+  writeFileSync(
+    path.join(graphOkWorkspaceDir, "config-store.ts"),
+    'export const configStore = { rollout: "dual-region" };\n',
+  );
 
   const fixture = buildV02Fixture(dbDir);
   const version = fixture.prepare("SELECT MAX(version) AS v FROM schema_version").get() as { v: number };
