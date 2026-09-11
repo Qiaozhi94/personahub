@@ -3,12 +3,7 @@ import { IssuePriority } from "@personahub/shared";
 import { useCreateIssue } from "@/hooks/use-issues";
 import { toApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -129,10 +124,7 @@ export function CreateIssueDialog({
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={!title.trim() || !goal.trim() || createIssue.isPending}
-            >
+            <Button type="submit" disabled={!title.trim() || !goal.trim() || createIssue.isPending}>
               {createIssue.isPending ? "Creating…" : "Create"}
             </Button>
           </div>

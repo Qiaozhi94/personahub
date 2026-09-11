@@ -61,6 +61,11 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e
 
+      # review R3-018: verify:release runs this too — without it here, CI
+      # could stay green while verify:release (the actual release gate) fails.
+      - name: Run E2E tests (clean database)
+        run: npm run test:e2e:empty-db
+
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4
