@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +14,8 @@ const FIXTURES_DIR = dirname(fileURLToPath(import.meta.url));
 export const V02_SNAPSHOT_PATH = join(FIXTURES_DIR, "v02-schema-v10.sql");
 export const V02_SEED_PATH = join(FIXTURES_DIR, "v02-representative-seed.sql");
 
+const GRAPHOK_WORKSPACE_PLACEHOLDER = "__GRAPHOK_WORKSPACE_PATH__";
+
 export function loadV02SnapshotSql(): string {
   return readFileSync(V02_SNAPSHOT_PATH, "utf8");
 }
@@ -23,12 +25,37 @@ export function loadV02SeedSql(): string {
 }
 
 /**
+ * ws_v02_graphok (review R1-005 J4) needs a real, on-disk workspace with a
+ * file matching a dual_review targetGlob — graph creation rejects an empty
+ * target file set. Review R3-017: a shared fixed path here (the literal
+ * /tmp/f009-graphok-workspace this used to be) is a real hazard, not a
+ * theoretical one — two overlapping test runs each recursively delete and
+ * recreate it, and a run that loses the race sees its fixture project/issue
+ * vanish mid-test. Always derived from the caller's own `dir` (already
+ * unique per invocation, e.g. mkdtempSync) instead, so this fixture owns no
+ * shared filesystem state at all.
+ */
+function prepareGraphOkWorkspace(dir: string): string {
+  const graphOkDir = join(dir, "graphok-workspace");
+  mkdirSync(graphOkDir, { recursive: true });
+  writeFileSync(join(graphOkDir, "config-store.ts"), 'export const configStore = { rollout: "dual-region" };\n');
+  return graphOkDir;
+}
+
+/**
  * Creates `<dir>/v02-fixture.sqlite` with the schema-v10 snapshot and the
  * representative seed applied under foreign-key enforcement, then proves the
- * file is internally consistent before handing it back.
+ * file is internally consistent before handing it back. `dir` must already
+ * be a directory this call owns exclusively (e.g. freshly mkdtemp'd) — the
+ * graphok workspace is created under it, and nothing here ever deletes an
+ * existing path, so a shared/reused `dir` is the caller's own risk, not
+ * this function's.
  */
 export function buildV02Fixture(dir: string): Database.Database {
   const dbPath = join(dir, "v02-fixture.sqlite");
+  const graphOkDir = prepareGraphOkWorkspace(dir);
+  const seedSql = loadV02SeedSql().replaceAll(GRAPHOK_WORKSPACE_PLACEHOLDER, graphOkDir);
+
   // Foreign keys must be ON *before* the seed runs so every relationship in
   // §2 is actually enforced, not merely declared.
   const db = new Database(dbPath);
@@ -36,7 +63,7 @@ export function buildV02Fixture(dir: string): Database.Database {
 
   try {
     db.exec(loadV02SnapshotSql());
-    db.exec(loadV02SeedSql());
+    db.exec(seedSql);
   } catch (error) {
     db.close();
     throw error;

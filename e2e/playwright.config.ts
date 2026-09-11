@@ -1,20 +1,40 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
 import { SERVER_PORT, WEB_PORT } from "./tests/support/env.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbDir = path.resolve(__dirname, ".tmp");
+import { createInvocationDir } from "./tests/support/invocation-dir.js";
+import { buildE2EFixtureDatabase } from "./tests/support/f009-fixture-db.js";
 
 // F009: the E2E database is the pinned v0.2 release fixture (T000 builder +
-// real migration chain), rebuilt fresh by the global setup below and then
-// opened by the real server through DB_PATH. The server's own startup
-// recovery is the only writer between seed and journey — there is no
-// API-seeded second database (v02-fixture-contract.md §3.5).
-const dbFile = path.join(dbDir, "v02-fixture.sqlite");
+// real migration chain), rebuilt fresh below and then opened by the real
+// server through DB_PATH. The server's own startup recovery is the only
+// writer between seed and journey — there is no API-seeded second database
+// (v02-fixture-contract.md §3.5).
+//
+// review R3-017: this directory must be freshly mkdtemp'd here, at config
+// module load, not a fixed path under e2e/ — a fixed path that setup
+// recursively deletes on every invocation is a real hazard: two overlapping
+// runs (e.g. one from a previous invocation whose server process is still
+// alive) delete and recreate each other's database and workspace mid-test.
+// outputDir and playwright-report intentionally stay at their normal fixed
+// locations — CI's "Upload Playwright report on failure" step references
+// e2e/playwright-report/ by that exact path, and Playwright's own clearing
+// of its configured outputDir at run start is a separate, well-tested
+// mechanism from this project's own ad hoc recursive deletes.
+const invocationDir = createInvocationDir("personahub-e2e-");
+const dbFile = path.join(invocationDir, "v02-fixture.sqlite");
+
+// review R3-017 follow-up: build the fixture here, at config-load time, not
+// via Playwright's `globalSetup` hook. This Playwright version always runs a
+// config's `webServer` plugin setup before `globalSetup` (see
+// f009-fixture-db.ts for the full explanation) — by the time a `globalSetup`
+// script ran, the server had already opened this (nonexistent) DB_PATH and
+// migrated it straight to head, so writing the v10 snapshot afterwards
+// collided with columns the head migrations already added. Config-load time
+// is the only point guaranteed to run before webServer starts.
+buildE2EFixtureDatabase(invocationDir);
 
 export default defineConfig({
-  globalSetup: "./tests/support/f009-fixture-db.ts",
+  globalTeardown: "./tests/support/invocation-dir-teardown.ts",
   testDir: "./tests",
   // Runs under its own config (playwright.empty-db.config.ts) against a
   // genuinely empty database — this config's webServer always seeds the

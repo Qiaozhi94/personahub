@@ -1,8 +1,10 @@
 import Database from "better-sqlite3";
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../../src/db/migrations.js";
 import { buildV02Fixture, loadV02SeedSql, loadV02SnapshotSql } from "../fixtures/build-v02-fixture.js";
@@ -316,6 +318,40 @@ describe("F009 v0.2 schema-v10 fixture", () => {
       drifted.close();
     } finally {
       rmSync(driftedDir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps two concurrent fixture builds fully isolated from each other (review R3-017)", async () => {
+    // The bug R3-017 caught: a fixed/shared temp path let one invocation's
+    // setup delete or recreate another concurrently-running invocation's
+    // database mid-test. This spawns two real OS processes — genuine
+    // concurrency, not just interleaved sync calls in one thread — each
+    // building into its own mkdtemp'd directory, and proves neither
+    // observes the other's directory or data.
+    const execFileAsync = promisify(execFile);
+    const tsxBin = join(process.cwd(), "..", "node_modules", ".bin", "tsx");
+    const workerScript = join(process.cwd(), "tests", "fixtures", "concurrent-build-worker.ts");
+    const dirA = mkdtempSync(join(tmpdir(), "f009-v02-concurrent-a-"));
+    const dirB = mkdtempSync(join(tmpdir(), "f009-v02-concurrent-b-"));
+    try {
+      const [resultA, resultB] = await Promise.all([
+        execFileAsync(tsxBin, [workerScript, dirA]),
+        execFileAsync(tsxBin, [workerScript, dirB]),
+      ]);
+
+      const parsedA = JSON.parse(resultA.stdout) as { version: number; projectCount: number };
+      const parsedB = JSON.parse(resultB.stdout) as { version: number; projectCount: number };
+      expect(parsedA).toEqual({ version: 10, projectCount: 2 });
+      expect(parsedB).toEqual({ version: 10, projectCount: 2 });
+
+      // Each invocation's file lives only under its own directory.
+      expect(existsSync(join(dirA, "v02-fixture.sqlite"))).toBe(true);
+      expect(existsSync(join(dirB, "v02-fixture.sqlite"))).toBe(true);
+      expect(existsSync(join(dirA, "graphok-workspace"))).toBe(true);
+      expect(existsSync(join(dirB, "graphok-workspace"))).toBe(true);
+    } finally {
+      rmSync(dirA, { recursive: true, force: true });
+      rmSync(dirB, { recursive: true, force: true });
     }
   });
 

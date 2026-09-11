@@ -17,14 +17,16 @@ INSERT INTO workspaces (id, project_id, local_path, local_path_normalized, git_b
   -- J4): /repo/alpha is deliberately absent so real-adapter spawn fails
   -- deterministically elsewhere; graph start's preflight glob does a real
   -- realpathSync on the workspace root before any adapter is chosen, so a
-  -- graph can never reach queued/running there. /tmp exists on any host and
-  -- yields zero target files (glob misses are swallowed, not fatal) — this
-  -- workspace exists solely so the golden journey can exercise a real
-  -- graph dispatch to completion via the fake adapter. Graph creation also
-  -- rejects an empty target file set (GRAPH_TARGET_SET_EMPTY), so this path
-  -- must contain at least one file matching a dual_review targetGlob
-  -- (**/*.ts) — the e2e global setup (f009-fixture-db.ts) creates it.
-  ('ws_v02_graphok', 'prj_v02_alpha', '/tmp/f009-graphok-workspace', '/tmp/f009-graphok-workspace', NULL, 'idle', NULL, 0, NULL, '2026-07-02T15:50:00.000Z', '2026-07-02T15:50:00.000Z');
+  -- graph can never reach queued/running there. This workspace exists
+  -- solely so the golden journey can exercise a real graph dispatch to
+  -- completion via the fake adapter. Graph creation also rejects an empty
+  -- target file set (GRAPH_TARGET_SET_EMPTY), so this path must contain at
+  -- least one file matching a dual_review targetGlob (**/*.ts).
+  -- __GRAPHOK_WORKSPACE_PATH__ is substituted by buildV02Fixture() (review
+  -- R3-017) with a per-invocation unique directory it creates itself — a
+  -- shared fixed path (e.g. a literal /tmp/... here) would let two
+  -- concurrent test runs delete/recreate each other's workspace.
+  ('ws_v02_graphok', 'prj_v02_alpha', '__GRAPHOK_WORKSPACE_PATH__', '__GRAPHOK_WORKSPACE_PATH__', NULL, 'idle', NULL, 0, NULL, '2026-07-02T15:50:00.000Z', '2026-07-02T15:50:00.000Z');
 
 -- ---- FX-ADAPTER: implementation + validator, available + unavailable, plus
 -- ---- a never-probed (pending) adapter; workspace override for the validator.
