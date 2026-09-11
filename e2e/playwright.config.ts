@@ -42,7 +42,6 @@ if (isInvocationDirOwner()) {
 }
 
 export default defineConfig({
-  globalTeardown: "./tests/support/invocation-dir-teardown.ts",
   testDir: "./tests",
   // Runs under its own config (playwright.empty-db.config.ts) against a
   // genuinely empty database — this config's webServer always seeds the

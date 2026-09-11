@@ -17,7 +17,6 @@ const dbFile = path.join(invocationDir, "empty.sqlite");
 
 export default defineConfig({
   globalSetup: "./tests/support/f009-empty-db.ts",
-  globalTeardown: "./tests/support/invocation-dir-teardown.ts",
   testDir: "./tests",
   testMatch: /f009-empty-database\.spec\.ts/,
   outputDir: "./test-results-empty-db",
