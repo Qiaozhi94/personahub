@@ -48,3 +48,31 @@ export function registerAgentAdapters(registry: AgentAdapterRegistry, options: {
   registry.register(new ClaudeCodeAdapter());
   registry.register(new OpenCodeAdapter());
 }
+
+/**
+ * The actual opt-in policy: only `ENABLE_FAKE_ADAPTER=1` turns the fake
+ * adapter on — every other value (unset, "0", "true", "yes", ...) keeps it
+ * off. Exported and pure (a plain env object in, a boolean out) so a test
+ * exercises the exact policy `server/src/index.ts` uses, without needing to
+ * boot the real server to reach it (review R3-016).
+ */
+export function resolveEnableFakeAdapter(env: NodeJS.ProcessEnv): boolean {
+  return env.ENABLE_FAKE_ADAPTER === "1";
+}
+
+/**
+ * The single call `server/src/index.ts` makes for its production adapter
+ * registry — resolving the opt-in policy from a real env object and
+ * registering every adapter in one step. Kept as one importable function
+ * (rather than index.ts inlining `resolveEnableFakeAdapter` + `new
+ * AgentAdapterRegistry()` + `registerAgentAdapters` itself) specifically so
+ * a test can call the exact production code path with a controlled `env`
+ * and assert on the resulting registry, instead of only exercising
+ * `registerAgentAdapters` with a manually-passed boolean that could drift
+ * from what index.ts actually computes (review R3-016).
+ */
+export function buildProductionAdapterRegistry(env: NodeJS.ProcessEnv): AgentAdapterRegistry {
+  const registry = new AgentAdapterRegistry();
+  registerAgentAdapters(registry, { enableFakeAdapter: resolveEnableFakeAdapter(env) });
+  return registry;
+}

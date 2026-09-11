@@ -40,9 +40,8 @@ import { RunDispatchService } from "./services/run-dispatch.js";
 import { ManualRoutingService } from "./services/manual-routing-service.js";
 import { ValidationDispatchScheduler } from "./services/validation-dispatch-scheduler.js";
 import { EventBus } from "./runtime/event-bus.js";
-import { AgentAdapterRegistry } from "./runtime/adapter-registry.js";
 import { AgentRunner } from "./runtime/agent-runner.js";
-import { registerAgentAdapters } from "./runtime/register-adapters.js";
+import { buildProductionAdapterRegistry } from "./runtime/register-adapters.js";
 import { registerRoutes } from "./api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "./api/errors.js";
 import { GraphConstraintError } from "./db/sqlite-errors.js";
@@ -70,12 +69,6 @@ const DB_PATH = process.env.DB_PATH ?? defaultDbPath;
 const defaultLogFile = path.resolve(__dirname, "..", "..", ".local", "logs", "server.log");
 const LOG_FILE = process.env.LOG_FILE ?? defaultLogFile;
 const CORS_ORIGINS = process.env.CORS_ORIGIN?.split(",") ?? ["http://127.0.0.1:5173", "http://localhost:5173"];
-// review R3-016: FakeAgentAdapter is a fixture-only test double (deterministic,
-// never drives a real CLI) — it must be an explicit opt-in, never registered
-// by default, so a real deployment can never end up dispatching through it
-// even if a `cli_provider=fake` row ever appeared in a real database. Only
-// the E2E Playwright configs set this.
-const ENABLE_FAKE_ADAPTER = process.env.ENABLE_FAKE_ADAPTER === "1";
 
 async function main() {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -127,8 +120,12 @@ async function main() {
     db,
   );
 
-  const adapterRegistry = new AgentAdapterRegistry();
-  registerAgentAdapters(adapterRegistry, { enableFakeAdapter: ENABLE_FAKE_ADAPTER });
+  // review R3-016: resolves the fixture-only fake adapter's opt-in from the
+  // real environment and registers every adapter in one call. Passing
+  // process.env through unmodified is load-bearing — a source-scan test in
+  // register-adapters.test.ts locks this exact call site so it can't
+  // silently diverge from what that file already proves about the function.
+  const adapterRegistry = buildProductionAdapterRegistry(process.env);
 
   const adapterConfigService = new AdapterConfigService(
     agentConfigRepo,
@@ -471,4 +468,11 @@ async function main() {
   }
 }
 
-main();
+// Guarded so importing this module (e.g. from a test asserting on its
+// production wiring) never boots a real server as a side effect — in normal
+// operation (`tsx src/index.ts`, or the compiled `node dist/index.js`) this
+// module always *is* the entrypoint, so the guard is a no-op there.
+const isEntrypoint = process.argv[1] !== undefined && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isEntrypoint) {
+  main();
+}
