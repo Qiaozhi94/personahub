@@ -3,9 +3,14 @@ import { expect, test } from "@playwright/test";
 // T021 golden journey, rebuilt per the frozen journey-test-matrix.md §1
 // (review R1-005): one browser session, the single allowed page.goto("/"),
 // then J1–J9 strictly through visible entries with numbered steps. Writes go
-// through canonical APIs; dispatch on this fixture deterministically fails at
-// spawn (the fixture workspace /repo/alpha does not exist), which is the
-// scripted failure-and-recovery half of J4/J8 — no real CLI is ever driven.
+// through canonical APIs. Two dispatch regimes coexist on this fixture, both
+// driving no real CLI: adp_v02_fake ("Fixture CLI") completes deterministically
+// (implementation output, graph nodes via a node_key-matched finalMessage, and
+// validator rounds via a canned failing verdict — see FakeAgentAdapter and its
+// registration in src/index.ts), which is what J4/J6 use to exercise real
+// write actions end to end; the real-CLI adapters (Codex/Claude) still fail at
+// spawn because the fixture workspace /repo/alpha does not exist, which is the
+// scripted failure-and-recovery half J8 exercises for retry/cancel.
 // S1 (deep links) is the only test allowed to address URLs directly.
 
 const ALPHA = "Alpha Platform";
@@ -13,9 +18,9 @@ const BETA = "Beta Archive";
 
 test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }) => {
   const consoleErrors: string[] = [];
-  // J4 故意让 graph 启动失败（fixture 工作区缺失 → 500；重试撞非终态图 →
-  // 409）：这些脚本化失败产生的 resource 错误按 (URL, 状态) 对豁免；其余
-  // 错误零容忍。
+  // 真实 CLI 适配器在 J5/J8 上仍会确定性 spawn 失败（fixture 工作区
+  // /repo/alpha 缺失）：这些脚本化失败产生的 resource 错误按 (URL, 状态)
+  // 对豁免；其余错误零容忍。
   const scriptedFailures: Array<{ urlPart: string; status: number }> = [];
   page.on("response", (response) => {
     if (response.status() >= 400) {
@@ -78,28 +83,21 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     await expect(page).toHaveURL(/\/runtime\/adapters/);
     await page.getByRole("radio", { name: ALPHA }).click();
 
-    const opencodeRow = page.locator("div.rounded-md", { hasText: "OpenCode (never probed)" }).last();
-    await expect(opencodeRow.getByText("never validated")).toBeVisible();
+    // A026: Fixture CLI 的探测是确定性的 —— revalidate 后保持 available，
+    // 探测时间刷新（不驱动真实 CLI）。
+    const fakeRow = page.locator("div.rounded-md", { hasText: "Fixture CLI (fake)" }).last();
+    await expect(fakeRow.getByText("available").first()).toBeVisible();
+    await fakeRow.getByRole("button", { name: "Revalidate" }).click();
+    await expect(fakeRow.getByText(/checked|seconds? ago|minutes? ago|just now/i).first()).toBeVisible({
+      timeout: 15_000,
+    });
 
-    // A026: revalidate drives a real probe; any outcome replaces the
-    // never-probed message with a readable, per-adapter result.
-    await opencodeRow.getByRole("button", { name: "Revalidate" }).click();
-    await expect(opencodeRow.getByText("never validated")).toHaveCount(0, { timeout: 15_000 });
-
-    // A027: when the probe made the adapter available the row offers the
-    // default switch — flip it to OpenCode and back to Codex; otherwise the
-    // probe failure path shows a readable reason instead (scripted J2 half).
-    const setDefaultOnOpencode = opencodeRow.getByRole("button", { name: /set as default/i });
-    if ((await setDefaultOnOpencode.count()) > 0) {
-      await setDefaultOnOpencode.click();
-      await expect(opencodeRow.getByText("Default")).toHaveCount(1);
-      const codexRow = page.locator("div.rounded-md", { hasText: "Codex (alpha implementation)" }).last();
-      await codexRow.getByRole("button", { name: /set as default/i }).click();
-      await expect(codexRow.getByText("Default")).toHaveCount(1);
-    } else {
-      // 探测失败的脚本分支：该行显示可读的失败原因。
-      await expect(opencodeRow.locator("span.text-destructive").first()).toBeVisible();
-    }
+    // A027: default 切换 —— 切到 Fixture CLI 再切回 Codex，两次真实写。
+    await fakeRow.getByRole("button", { name: /set as default/i }).click();
+    await expect(fakeRow.getByText("Default", { exact: true })).toBeVisible({ timeout: 10_000 });
+    const codexRow = page.locator("div.rounded-md", { hasText: "Codex (alpha implementation)" }).last();
+    await codexRow.getByRole("button", { name: /set as default/i }).click();
+    await expect(codexRow.getByText("Default", { exact: true })).toBeVisible({ timeout: 10_000 });
   });
 
   await test.step("J3 — 推荐创建任务：确认前零写、原文守恒、重复幂等（A006/A007）", async () => {
@@ -128,9 +126,32 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     // 确认前零写。
     expect(await board.locator("button").filter({ hasText: intakeGoal }).count()).toBe(0);
 
+    // 立刻重复确认一次：捕获首请求（URL + body），成功后原样重放同一
+    // canonical confirm —— 服务器按 nonce 幂等重放同一结果（200，同一
+    // issue_id），首次创建是 201；不是拒绝重复请求，而是不重复创建。
+    let confirmUrl = "";
+    let confirmBody = "";
+    page.on("request", (request) => {
+      if (request.url().includes("/intake/confirm") && request.method() === "POST") {
+        confirmUrl = request.url();
+        confirmBody = request.postData() ?? "";
+      }
+    });
+    const firstConfirm = page.waitForResponse(
+      (res) => res.url().includes("/intake/confirm") && res.request().method() === "POST",
+    );
     await confirm.click();
+    expect((await firstConfirm).status()).toBe(201);
     await page.waitForURL(/\/tasks\/iss_/);
     await expect(page.getByRole("heading", { name: intakeGoal })).toBeVisible();
+    const createdIssueId = page.url().match(/\/tasks\/(iss_[^/?#]+)/)?.[1];
+
+    const replay = await page.request.post(confirmUrl, {
+      data: JSON.parse(confirmBody),
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(replay.status()).toBe(200);
+    expect((await replay.json()).issue_id).toBe(createdIssueId);
 
     // 重复幂等：回到列表只多出这一条任务。
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
@@ -146,50 +167,45 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     expect(await fixtureTaskRows.count()).toBe(baseline);
   });
 
-  await test.step("J4 — 指令派工与 Graph 启动（A009/A010），失败可读（spawn 隔离）", async () => {
+  await test.step("J4 — 指令派工与 Graph 启动（A009/A010），确定性执行", async () => {
+    const execution = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
     // 打开 J3 创建的任务（列表第一条目标原文行）。
     await page.getByRole("button", { name: new RegExp(intakeGoal) }).click();
     await page.waitForURL(/\/tasks\/iss_/);
 
-    // A010: 直接创建一个空白任务（A005 直建），其空白线程提供 Start Graph
-    // 入口；两个节点选择 adapter 后启动，成功才关闭（R1-010）。节点派工在
-    // spawn 阶段确定性失败 → graph blocked（失败恢复半段）。
+    // A009: 用 Fixture CLI 派工 —— FakeAgentAdapter 确定性执行：run 排队后
+    // 被受理执行并完成，指令原文与输出事件可读（不驱动真实 CLI）。
+    const composer = page.getByPlaceholder("Enter agent instructions…");
+    await composer.waitFor({ state: "visible" });
+    await page.getByLabel("Agent").selectOption("adp_v02_fake");
+    await composer.fill("F009 旅程派工指令");
+    await page.getByRole("button", { name: "发送指令" }).click();
+    const facts = page.locator("section", { has: page.getByText("任务详情（兼容）") });
+    await expect(facts.getByText("completed", { exact: true }).first()).toBeVisible({ timeout: 20_000 });
+    await expect(execution.getByText("Fake agent output line 1").first()).toBeVisible({ timeout: 20_000 });
+
+    // A010: 空白线程已被派工占用 → Start Graph 入口在本任务不再出现；改在
+    // iss_v02_graphok 上启动 graph —— 这是唯一绑定真实存在路径工作区
+    // （/tmp，见 v02-representative-seed.sql）的 issue：graph 启动前的
+    // preflight 对工作区做真实 realpathSync，其余 issue 共用的 /repo/alpha
+    // 不存在，会在选择任何 adapter 之前就 500；只有这个 issue 能让 Graph
+    // 真正进入 queued/running 直至 FakeAgent 执行全部节点后 completed。
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
     await page.getByRole("button", { name: new RegExp(ALPHA) }).click();
     await expect(page).toHaveURL(/\/tasks\?project=prj_v02_alpha/);
-    await page.getByRole("button", { name: "新建任务" }).click();
-    const createDialog = page.getByRole("dialog", { name: "New coding issue" });
-    await createDialog.getByLabel(/title/i).fill(`F009 graph 旅程任务 ${Date.now()}`);
-    await createDialog.getByLabel(/goal/i).fill("验证 graph 启动与失败恢复");
-    await createDialog.getByRole("button", { name: /^Create$/i }).click();
-    await page.waitForURL(/\/tasks\/iss_/);
+    await page.getByRole("button", { name: /Roll out dual-region config sync/ }).click();
+    await expect(page).toHaveURL(/\/tasks\/iss_v02_graphok/);
 
     await page.getByRole("button", { name: "Start Graph" }).click();
     const dialog = page.getByRole("dialog", { name: "Start dual-review graph" });
     await expect(dialog).toBeVisible();
     for (const select of await dialog.locator("select").all()) {
-      await select.selectOption({ index: 1 });
+      await select.selectOption({ label: "Fixture CLI (fake)" });
     }
-    // fixture 工作区不存在 → graph 启动确定性失败。R1-010 修复后：错误文本
-    // 与节点选择保留在弹窗内，可原位重试（J4 的失败恢复脚本半段）。
-    const startResponse = page.waitForResponse(
-      (res) => res.url().includes("/graph-runs") && res.request().method() === "POST",
-    );
     await dialog.getByRole("button", { name: "Start Graph" }).click();
-    expect((await startResponse).status()).toBe(500);
-    await expect(dialog.getByText("An internal error occurred.")).toBeVisible();
-    // 节点选择必须原样保留（R1-010）。
-    for (const select of await dialog.locator("select").all()) {
-      await expect(select).not.toHaveValue("");
-    }
-    const retryResponse = page.waitForResponse(
-      (res) => res.url().includes("/graph-runs") && res.request().method() === "POST",
-    );
-    await dialog.getByRole("button", { name: "Start Graph" }).click();
-    expect((await retryResponse).status()).toBe(500);
-    await expect(dialog.getByText("An internal error occurred.")).toBeVisible();
-    await dialog.getByRole("button", { name: "Close" }).click();
-    await expect(dialog).toHaveCount(0);
+    await expect(dialog).toHaveCount(0, { timeout: 20_000 });
+    const execution2 = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
+    await expect(execution2.getByText("completed").first()).toBeVisible({ timeout: 30_000 });
   });
 
   await test.step("J5 — 既有 Run 的事实：命令、截断标记、文件变化、分页（A012/A016/A017）", async () => {
@@ -198,18 +214,6 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     await expect(page).toHaveURL(/\/tasks\?project=prj_v02_alpha/);
     await page.getByRole("button", { name: /Streaming ingest pipeline/ }).click();
     await expect(page).toHaveURL(/\/tasks\/iss_v02_running/);
-
-    // A009: 选择 adapter、输入指令并发送 —— 派工在 spawn 阶段确定性失败
-    // （fixture 工作区不存在），失败原因可读（J4 的失败恢复半段）。
-    const composer = page.getByPlaceholder("Enter agent instructions…");
-    await composer.waitFor({ state: "visible" });
-    await page.getByLabel("Agent").selectOption("adp_v02_codex_impl");
-    await composer.fill("F009 旅程派工指令");
-    await page.getByRole("button", { name: "发送指令" }).click();
-    const facts = page.locator("section", { has: page.getByText("任务详情（兼容）") });
-    await expect(facts.getByText("Failed to spawn adapter process").first()).toBeVisible({
-      timeout: 20_000,
-    });
 
     const execution = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
     await expect(execution.getByText("issue.created", { exact: true })).toBeVisible();
@@ -221,15 +225,38 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     await expect(execution.getByText("file.change_scan_failed", { exact: true }).first()).toBeVisible();
   });
 
-  await test.step("J6 — 验证兼容事实只读呈现（A020）；A021 触发仅对 Validating 开放", async () => {
+  await test.step("J6 — 手动触发验证（A021），真实写动作产生新 round", async () => {
+    // 非 Validating 任务上不存在伪造的触发入口 —— 边界仍然断言。
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
     await page.getByRole("button", { name: new RegExp(ALPHA) }).click();
     await page.getByRole("button", { name: /Streaming ingest pipeline/ }).click();
     await expect(page).toHaveURL(/\/tasks\/iss_v02_running/);
+    await expect(page.getByRole("button", { name: /start automatic validator now/i })).toHaveCount(0);
 
-    // 触发验证（A021）只对 Validating 状态开放（服务器合同）；非 Validating
-    // 任务的界面上不存在伪造的触发入口 —— 这本身是断言的一部分。
-    await expect(page.getByRole("button", { name: /trigger validation/i })).toHaveCount(0);
+    // iss_v02_validating：grace 窗口打开（due 2099），validator 选择对该
+    // project 确定性地落在 Fixture CLI（唯一 eligible validator）。点击后
+    // 触发真实写：新 validator Run 派工、执行、回传 verdict —— round 从 0
+    // 变为 1，Issue 回到 Running（未撞 round-limit）。
+    await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
+    await page.getByRole("button", { name: new RegExp(ALPHA) }).click();
+    await page.getByRole("button", { name: /Add request tracing/ }).click();
+    await expect(page).toHaveURL(/\/tasks\/iss_v02_validating/);
+
+    const facts = page.locator("section", { has: page.getByText("任务详情（兼容）") });
+    await expect(facts.getByText("Validating").first()).toBeVisible();
+    const startValidator = page.getByRole("button", { name: /start automatic validator now/i });
+    await expect(startValidator).toBeVisible();
+    await startValidator.click();
+
+    // 触发后横幅让位（due_at 被清空），随后 verdict 落地：新 round 出现、
+    // 状态回到 Running，既有 iss_v02_done 的历史 round（J7）不受影响。
+    await expect(page.getByRole("button", { name: /start automatic validator now/i })).toHaveCount(0, {
+      timeout: 20_000,
+    });
+    const execution = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
+    await expect(execution.getByText("Validation failed").first()).toBeVisible({ timeout: 20_000 });
+    await expect(facts.getByText("Running").first()).toBeVisible();
+    await expect(facts.getByText("Failures").first()).toBeVisible();
   });
 
   await test.step("J7 — 验收兼容详情：rounds / findings / summary / 导出（A018/A019/A020/A024）", async () => {
@@ -260,6 +287,28 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     const exportDownload = page.waitForEvent("download");
     await facts.getByRole("button", { name: "Export Markdown" }).click();
     (await exportDownload).cancel();
+
+    // A023 reset rounds：只在 RoundLimitReached 阻塞下出现，真实写把
+    // round 计数清零、Issue 保持 Blocked（需另行 unblock）。
+    await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
+    await page.getByRole("button", { name: new RegExp(ALPHA) }).click();
+    await page.getByRole("button", { name: /Reduce cold-start latency/ }).click();
+    await expect(page).toHaveURL(/\/tasks\/iss_v02_roundlimit/);
+
+    const rlFacts = page.locator("section", { has: page.getByText("任务详情（兼容）") });
+    const rlExecution = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
+    await expect(rlFacts.getByText("Failures").first()).toBeVisible();
+    await rlFacts.getByRole("button", { name: "Reset Rounds…" }).click();
+    const resetDialog = page.getByRole("dialog", { name: "Reset Validation Rounds" });
+    await expect(resetDialog).toBeVisible();
+    await resetDialog.getByLabel(/operator note/i).fill("F009 旅程：批准额外验证轮次");
+    await resetDialog.getByRole("button", { name: "Reset Rounds" }).click();
+    await expect(resetDialog).toHaveCount(0);
+    await expect(rlExecution.getByText("validation.round_reset", { exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
+    // Issue 保持 Blocked —— Reset Rounds 不等于 unblock。
+    await expect(rlFacts.getByRole("button", { name: "Resolve Blocker…" })).toBeVisible();
   });
 
   await test.step("J8 — 取消/重试/resolve/unblock：异常态守恒与唯一恢复（A011/A013/A014/A015/A022）", async () => {
@@ -301,6 +350,26 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     // A015 的 executor 重选界面只在 no_capable_adapter 阻塞下出现；本图的
     // 阻塞原因是 node_run_failed，因此该界面不应出现（边界断言）。
     await expect(execution.getByText("Reassign executors")).toHaveCount(0);
+
+    // A015: no_capable_adapter 阻塞下的真实 resolve-executors —— 为每个
+    // 受阻节点选择新 adapter 并提交，写动作立即让面板让位（图脱离阻塞）。
+    await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
+    await page.getByRole("button", { name: new RegExp(ALPHA) }).click();
+    await page.getByRole("button", { name: /Migrate config store/ }).click();
+    await expect(page).toHaveURL(/\/tasks\/iss_v02_nocapable/);
+
+    const nocapableExecution = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
+    const reassignPanel = nocapableExecution.locator("div", { has: page.getByText("Reassign executors") }).last();
+    await expect(nocapableExecution.getByText("Reassign executors")).toBeVisible();
+    for (const select of await reassignPanel.locator("select").all()) {
+      await select.selectOption({ label: "Fixture CLI (fake)" });
+    }
+    const resolveResponse = page.waitForResponse(
+      (res) => res.url().includes("/resolve-executors") && res.request().method() === "POST",
+    );
+    await nocapableExecution.getByRole("button", { name: "Resolve Executors" }).click();
+    expect((await resolveResponse).status()).toBe(202);
+    await expect(nocapableExecution.getByText("Reassign executors")).toHaveCount(0, { timeout: 15_000 });
 
     // A022: 对 blocked Issue 提交 operator note 解除阻塞。
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
