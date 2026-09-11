@@ -43,18 +43,40 @@ test("BC-056: confirm creates exactly one task with the goal text preserved", as
   await expect(dialog.getByRole("button", { name: /^Confirm$/ })).toBeVisible();
   expect(await page.getByRole("button", { name: new RegExp(goal) }).count()).toBe(0);
 
-  // BC-056 repeat protection: the confirm control disables itself while the
-  // first request is in flight, so a rapid double click cannot double-create.
+  // BC-056 client-side repeat protection: the confirm control disables
+  // itself while the first request is in flight, so a rapid double click
+  // cannot fire two requests.
   const confirmButton = dialog.getByRole("button", { name: /^Confirm$/ });
-  const confirmResponses = page.waitForResponse(
+  let confirmUrl = "";
+  let confirmBody = "";
+  page.on("request", (request) => {
+    if (request.url().includes("/intake/confirm") && request.method() === "POST") {
+      confirmUrl = request.url();
+      confirmBody = request.postData() ?? "";
+    }
+  });
+  const firstConfirm = page.waitForResponse(
     (res) => res.url().includes("/intake/confirm") && res.request().method() === "POST",
   );
   await confirmButton.dblclick();
-  await confirmResponses;
+  const firstConfirmResponse = await firstConfirm;
+  expect(firstConfirmResponse.status()).toBe(201);
 
   // Confirming navigates to the created task; its goal is the original text.
   await page.waitForURL(/\/tasks\/iss_/);
   await expect(page.getByText(goal).first()).toBeVisible();
+  const createdIssueId = page.url().match(/\/tasks\/(iss_[^/?#]+)/)?.[1];
+
+  // BC-056 canonical-confirm idempotence: replaying the exact same canonical
+  // confirm request as a genuine second HTTP call (not a client-blocked
+  // double-click) must not create a second task — the server replays the
+  // original result by nonce (200, same issue_id) instead.
+  const replay = await page.request.post(confirmUrl, {
+    data: JSON.parse(confirmBody),
+    headers: { "Content-Type": "application/json" },
+  });
+  expect(replay.status()).toBe(200);
+  expect((await replay.json()).issue_id).toBe(createdIssueId);
 
   // Exactly one task with this goal exists (repeat-submit idempotence).
   await page.goto("/tasks?project=prj_v02_alpha");
