@@ -999,7 +999,7 @@ archived ref 的消费限制与 F010 契约一致。
 ## 循环 20：F009 实现代码检视（6轮）
 
 - **report_type**: fix-verification
-- **周期**: 2026-09-10—2026-09-12，6轮（Round 1 全量扫描，Round 2-6 diff-only） · **状态**: 已收敛（Round 6 的 GitHub Actions run 34626457401 两个 job 全绿）
+- **周期**: 2026-09-10—2026-09-12，6轮（Round 1 全量扫描，Round 2-6 diff-only） · **状态**: 已收敛（Round 6 的 GitHub Actions run 34626457401 两个 job 全绿；随后纯文档提交的 run 34626995603 因 Windows runner 的 `net::ERR_NO_BUFFER_SPACE` 偶发红一次，重跑同一 commit 即绿，见 R6-029）
 - **背景**: F009 开发与自检完成、状态进入 `review` 后，对 v0.1/v0.2 生产前端迁移成果做实现级检视。
   基线依次为 `f009-v344-frontend-foundation@`（R1）→ `6dee56e`（R4 起）→ `d2ecc74`（R5 复核对象）。
   修复方以 `FIX-log.md` 按轮追加声明，检视方对每条声明做独立变异核对后才翻状态；
@@ -1037,6 +1037,7 @@ archived ref 的消费限制与 F010 契约一致。
 | F009-CODE-R6-026 | invocation 目录清理放在 globalTeardown，Windows 上必然 EPERM | High | 正确性 | 根因 | 修复引入 | fixed | 把清理移到 webServer 真正关闭之后的生命周期钩子 | Playwright 在 globalTeardown 之后才关 webServer，此时 SQLite 文件仍被占用；改为 owner 进程的 `process.on("exit")` + rmSync maxRetries，删除 globalTeardown 与 invocation-dir-teardown.ts（`91a244c`） | `e2e/tests/support/verify-invocation-dir-lifecycle.mjs` | 6 | 6 | cleanup-in-wrong-lifecycle-hook |
 | F009-CODE-R6-027 | lifecycle 校验脚本 spawn `npx` 外壳脚本，Windows 上 ENOENT | High | 正确性 | 根因 | 修复引入 | fixed | 解析 @playwright/test/cli 并用 process.execPath 运行 | `createRequire(import.meta.url).resolve("@playwright/test/cli")`（`7883b98`） | `e2e/tests/support/verify-invocation-dir-lifecycle.mjs` 自身在 CI 的 Windows runner 上通过 | 6 | 6 | bin-shim-not-portable |
 | F009-CODE-R6-028 | R6-026 的退出清理让父进程再也 stat 不到 worker 目录，断言必然失败 | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | 把「每个 invocation 拥有完整 fixture」的观察点移进拥有该目录的进程 | worker 自检 hasDatabase/hasWorkspace 并回传，父进程断言这两个布尔 + 两目录不同（`22b4c6c`） | `server/tests/integration/f009-v02-fixture.test.ts::keeps two concurrent fixture builds fully isolated` | 6 | 6 | cleanup-invalidates-observer |
+| F009-CODE-R6-029 | 黄金旅程的零 console error 断言会被 runner 级瞬时网络失败打红 | Medium | 测试覆盖 | 根因 | 初始实现 | open | CI 上给该 spec 配 retries: 1，或把 `net::ERR_*` 这类传输层资源加载失败与应用级 console error 分开断言 | — | — | 6 | — | gate-sensitive-to-runner-transient |
 | F009-CODE-R5-023 | createInvocationDir 会沿用外部环境里已存在的同名变量 | Low | 质量 | 根因 | 修复引入 | open | 用 owner pid 的祖先关系或额外的 invocation nonce 判断继承来源，而非只看变量是否存在 | — | — | 5 | — | env-inherited-state-trusted |
 
 **问题与实际修复证据**
@@ -1094,3 +1095,9 @@ archived ref 的消费限制与 F010 契约一致。
 10. **角色合并确实收敛**：Round 6 按 skill 第 7 条的升级选项 (b) 让检视人带着完整报告上下文亲自
    下场修复，从 CI 红到 CI 绿只用了一轮三个提交。对比 Round 3→4 的对抗式分离循环（五条"已修复"
    声明全部被变异推翻），这个差异和 skill 里记录的实测一致。
+
+11. **R6-029 是最后一条、也是唯一一条与产品无关的红**：一个纯文档提交让 Windows CI 的黄金旅程
+   变红，原因是浏览器侧出现 `Failed to load resource: net::ERR_NO_BUFFER_SPACE`——runner 的
+   socket/缓冲资源瞬时耗尽，被"零 console error"断言如实捕获。重跑同一 commit 即绿。
+   这条没有当场修，因为两个候选方案（CI 上配 retries vs. 把传输层失败与应用级 console error
+   分开断言）各自都有掩盖真实缺陷的风险，需要一次明确取舍而不是顺手加个重试。
