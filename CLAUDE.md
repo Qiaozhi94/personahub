@@ -6,7 +6,7 @@
 
 v0.1（F001-F005：Workspace/Issue 基础、Agent Command Center、Development Trace、Autonomous Validation、Multi-Agent Manual Routing）与 v0.2（F006-F008：Orchestrated Coding Graph Slice、Coordinator Agent & Routing Recommendation、Workflow Template Admin & Runtime Health）均已收口。交付范围、已知限制与技术基线见 `docs/features/releases/0.1.md` / `0.2.md`；逐条 FR/AC 见对应 `docs/features/0.{1,2}/Fxxx-*/spec.md`（历史 Feature，均为 `gate_version: 0`）。
 
-当前 active 版本是 v0.3 Trusted Task Workbench。V3.44 交互设计已于 2026-09-08 完成最终检视；路线已重排为 F009（V3.44 Frontend Foundation & Migration）先迁移 v0.1–v0.2 生产前端，F010–F013 再补齐 Artifact、可信任务面、会话 / 派工与项目 / Skills，F014 负责端到端收口。F009 已完成开发前检视并进入 `ready-for-development`，F010–F014 仍为 `draft`。旧的独立 Room/Squad 规划已废止；F014 是唯一端到端交付 owner。版本顺序与边界见 `docs/features/0.3/README.md`。
+当前 active 版本是 v0.3 Trusted Task Workbench。V3.44 交互设计已于 2026-09-08 完成最终检视；路线已重排为 F009（V3.44 Frontend Foundation & Migration）先迁移 v0.1–v0.2 生产前端，F010–F013 再补齐 Artifact、可信任务面、会话 / 派工与项目 / Skills，F014 负责端到端收口。F009 开发与自检已完成并进入 `review`（`npm run verify:release` 全绿），F010–F014 仍为 `draft`。旧的独立 Room/Squad 规划已废止；F014 是唯一端到端交付 owner。版本顺序与边界见 `docs/features/0.3/README.md`。
 
 图执行（F006）与推荐路由（F007）留下的跨 feature 契约——`createGraph()` / `resolveEligibleAdapter()` / HMAC 签名确认 token 等——仍由各自 `design.md` 拥有。v0.3 通过兼容迁移复用这些能力，不得把旧 UI 概念（AI 成员、Primary Thread、独立 Validation Policy）继续带入新模型。
 

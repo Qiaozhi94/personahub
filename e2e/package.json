@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
+    "test:empty-db": "playwright test --config=playwright.empty-db.config.ts",
+    "test:invocation-lifecycle": "node tests/support/verify-invocation-dir-lifecycle.mjs",
     "test:ui": "playwright test --ui",
     "typecheck": "tsc --noEmit"
   },

@@ -47,9 +47,12 @@ docs/reviews/FIX-log.md
 server/scripts/codex-probe-*.jsonl
 
 # Playwright E2E runtime artifacts (browsers themselves live outside the
-# repo, in the OS-level Playwright cache — nothing binary to ignore there)
-e2e/.tmp/
+# repo, in the OS-level Playwright cache — nothing binary to ignore there).
+# The fixture/empty databases and the graphok workspace no longer live under
+# e2e/ at all (review R3-017): each invocation mkdtemp's its own directory
+# under the OS temp dir instead, so there's nothing repo-local to ignore.
 e2e/test-results/
+e2e/test-results-empty-db/
 e2e/playwright-report/
 e2e/blob-report/
 

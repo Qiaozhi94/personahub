@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
+import { TaskDraftStore } from "@/app/task-draft-store";
+import { DraftStoreContext } from "@/app/draft-store-context";
 import {
   AdapterStatus,
   AdapterAuthType,
@@ -31,16 +33,24 @@ export function createTestQueryClient() {
 
 export function renderWithQuery(ui: React.ReactNode) {
   const queryClient = createTestQueryClient();
+  // ThreadView's composer reads the shell-owned draft store through context;
+  // standalone renders get a fresh store the same way ApplicationShell mounts.
+  const draftStore = new TaskDraftStore();
   const view = render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    <QueryClientProvider client={queryClient}>
+      <DraftStoreContext.Provider value={draftStore}>{ui}</DraftStoreContext.Provider>
+    </QueryClientProvider>,
   );
 
   return {
     ...view,
     queryClient,
+    draftStore,
     rerenderWithQuery(nextUi: React.ReactNode) {
       view.rerender(
-        <QueryClientProvider client={queryClient}>{nextUi}</QueryClientProvider>,
+        <QueryClientProvider client={queryClient}>
+          <DraftStoreContext.Provider value={draftStore}>{nextUi}</DraftStoreContext.Provider>
+        </QueryClientProvider>,
       );
     },
   };

@@ -40,12 +40,8 @@ import { RunDispatchService } from "./services/run-dispatch.js";
 import { ManualRoutingService } from "./services/manual-routing-service.js";
 import { ValidationDispatchScheduler } from "./services/validation-dispatch-scheduler.js";
 import { EventBus } from "./runtime/event-bus.js";
-import { AgentAdapterRegistry } from "./runtime/adapter-registry.js";
 import { AgentRunner } from "./runtime/agent-runner.js";
-import { FakeAgentAdapter } from "./runtime/adapters/fake-adapter.js";
-import { CodexCliAdapter } from "./runtime/adapters/codex-cli-adapter.js";
-import { ClaudeCodeAdapter } from "./runtime/adapters/claude-code-adapter.js";
-import { OpenCodeAdapter } from "./runtime/adapters/opencode-adapter.js";
+import { buildProductionAdapterRegistry } from "./runtime/register-adapters.js";
 import { registerRoutes } from "./api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "./api/errors.js";
 import { GraphConstraintError } from "./db/sqlite-errors.js";
@@ -124,11 +120,12 @@ async function main() {
     db,
   );
 
-  const adapterRegistry = new AgentAdapterRegistry();
-  adapterRegistry.register(new FakeAgentAdapter());
-  adapterRegistry.register(new CodexCliAdapter());
-  adapterRegistry.register(new ClaudeCodeAdapter());
-  adapterRegistry.register(new OpenCodeAdapter());
+  // review R3-016: resolves the fixture-only fake adapter's opt-in from the
+  // real environment and registers every adapter in one call. Passing
+  // process.env through unmodified is load-bearing — a source-scan test in
+  // register-adapters.test.ts locks this exact call site so it can't
+  // silently diverge from what that file already proves about the function.
+  const adapterRegistry = buildProductionAdapterRegistry(process.env);
 
   const adapterConfigService = new AdapterConfigService(
     agentConfigRepo,
@@ -471,4 +468,11 @@ async function main() {
   }
 }
 
-main();
+// Guarded so importing this module (e.g. from a test asserting on its
+// production wiring) never boots a real server as a side effect — in normal
+// operation (`tsx src/index.ts`, or the compiled `node dist/index.js`) this
+// module always *is* the entrypoint, so the guard is a no-op there.
+const isEntrypoint = process.argv[1] !== undefined && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isEntrypoint) {
+  main();
+}

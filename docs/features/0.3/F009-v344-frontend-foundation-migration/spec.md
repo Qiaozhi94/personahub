@@ -2,7 +2,7 @@
 kind: feature
 id: F009
 version: "0.3"
-status: ready-for-development
+status: review
 gate_version: 1
 eval_contract: exempt
 eval_contract_exempt_reason: "本 Feature 改变用户旅程，但只迁移已交付能力到冻结设计，不提出需用效用数据决定保留或退役的不确定主张"
@@ -10,7 +10,7 @@ related_features: [F001, F002, F003, F004, F005, F006, F007, F008, F010, F011, F
 topics: [frontend, v344, migration, app-shell, accessibility]
 doc_kind: spec
 created: 2026-09-08
-updated: 2026-09-09
+updated: 2026-09-11
 ---
 
 # F009：V3.44 Frontend Foundation & Migration
@@ -121,17 +121,19 @@ updated: 2026-09-09
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-001`, `FR-003`, `NFR-001`): v0.2 schema fixture 在新 App Shell 中完成项目 → 任务 → 执行 → 轨迹 → 验收代表旅程，既有事实与终态守恒。
-- [ ] **AC-002** (`FR-002`, `FR-005`, `FR-007`, `NFR-004`): 页面 / 路由 / 动作迁移矩阵 100% 有结论和生命周期分类；每个 transitional-host 有 replacement_owner、delete_when、latest_milestone，生产扫描无旧 Shell、死导航和并行写入口。
-- [ ] **AC-003** (`FR-004`, `UX-003`): 已发布 URL inventory 的来源逐项可核对；根入口升级、M1 route manifest 中每条 canonical route 的直达 / 刷新 / History、未知 ID 和非法子路径均有浏览器测试，不存在无证据的历史对象 URL 映射或提前发布的 Session / view / tab。
-- [ ] **AC-004** (`UX-001`, `UX-002`, `UX-004`, `NFR-002`): 共享弹层、页签、表格、导航、草稿生命周期和关键状态通过浏览器键盘、语义、跨 route、错误重试、窄视口及控制台检查。
-- [ ] **AC-005** (`FR-006`, `NFR-003`): 新前端写操作全部命中既有 canonical API，兼容 adapter 有独立清单、替换 owner 和删除条件。
+- [x] **AC-001** (`FR-001`, `FR-003`, `NFR-001`): v0.2 schema fixture 在新 App Shell 中完成项目 → 任务 → 执行 → 轨迹 → 验收代表旅程，既有事实与终态守恒。—— 测试 [任务级]：`server/tests/integration/f009-v02-fixture.test.ts`「F009 v0.2 schema-v10 fixture」（T000：来源指纹、v10 → v11 → head 升级链、幂等与变异）；测试 [需求级]：`e2e/tests/f009-golden-journey.spec.ts`「黄金旅程」（T021：fixture 升级 + 代表旅程 + 终态守恒）。 - tests: `server/tests/integration/f009-v02-fixture.test.ts` `e2e/tests/f009-golden-journey.spec.ts`
+- [x] **AC-002** (`FR-002`, `FR-005`, `FR-007`, `NFR-004`): 页面 / 路由 / 动作迁移矩阵 100% 有结论和生命周期分类；每个 transitional-host 有 replacement_owner、delete_when、latest_milestone，生产扫描无旧 Shell、死导航和并行写入口。—— 测试 [任务级]：`tools/check-v03-plan-contracts.test.mjs`「V03-PLAN 合同套件」（T001 随迁移持续维护）「F009-T020-001/002」（T020 单写入口 / 死入口静态扫描）；测试 [需求级]：`e2e/tests/f009-shell.spec.ts`「BC-001/002/007/070/072/097 adapted 断言」（T022，浏览器侧复证无旧 Shell / 死导航）。 - tests: `tools/check-v03-plan-contracts.test.mjs` `e2e/tests/f009-shell.spec.ts`
+- [x] **AC-003** (`FR-004`, `UX-003`): 已发布 URL inventory 的来源逐项可核对；根入口升级、M1 route manifest 中每条 canonical route 的直达 / 刷新 / History、未知 ID 和非法子路径均有浏览器测试，不存在无证据的历史对象 URL 映射或提前发布的 Session / view / tab。—— 测试 [任务级]：`web/src/f009-shell.test.tsx`「M1 SurfaceRegistry manifest」「ApplicationShell rail」（T003，route 槽位与未注册 surface）、`web/src/f009-routes.test.tsx`（T014，route manifest 全分支）；测试 [需求级]：`e2e/tests/f009-golden-journey.spec.ts`「canonical route 直达 / 刷新 / History / 未知 ID / 非法子路径」（T021）。 - tests: `web/src/f009-shell.test.tsx` `web/src/f009-routes.test.tsx` `e2e/tests/f009-golden-journey.spec.ts`
+- [x] **AC-004** (`UX-001`, `UX-002`, `UX-004`, `NFR-002`): 共享弹层、页签、表格、导航、草稿生命周期和关键状态通过浏览器键盘、语义、跨 route、错误重试、窄视口及控制台检查。—— 测试 [任务级]：`web/src/f009-primitives.test.tsx`（T002：AppDialog / AppTabs / DataTable / PageState / Feedback）、`web/src/f009-task-draft-store.test.ts`（T004：generation / revision 契约与三个清理路径变异）；测试 [需求级]：`e2e/tests/f009-a11y.spec.ts`「BC-048–052 adapted 断言」（T022，键盘 / 语义）、`e2e/tests/f009-page-states.spec.ts`「BC-046/047」（状态恢复与守恒显示）、`e2e/tests/f009-shell.spec.ts`「BC-091」（窄视口 / console）。 - tests: `web/src/f009-primitives.test.tsx` `web/src/f009-task-draft-store.test.ts` `e2e/tests/f009-a11y.spec.ts` `e2e/tests/f009-page-states.spec.ts` `e2e/tests/f009-shell.spec.ts`
+- [x] **AC-005** (`FR-006`, `NFR-003`): 新前端写操作全部命中既有 canonical API，兼容 adapter 有独立清单、替换 owner 和删除条件。—— 测试 [任务级]：`web/src/f009-pages.test.tsx`（T010，A001–A005 写入命中既有 API）、`web/src/f009-execution-host.test.tsx`（T011）、`web/src/f009-runtime-settings.test.tsx`（T013）与 T020 canonical API 静态断言（`tools/check-v03-plan-contracts.test.mjs`）；测试 [需求级]：`e2e/tests/f009-create-task.spec.ts`「BC-056」（T022，确认前零写 / 重复幂等）、`e2e/tests/f009-runtime-adapters.spec.ts`「BC-053」（adapter 配置唯一写入口）。 - tests: `web/src/f009-pages.test.tsx` `web/src/f009-execution-host.test.tsx` `web/src/f009-runtime-settings.test.tsx` `tools/check-v03-plan-contracts.test.mjs` `e2e/tests/f009-create-task.spec.ts` `e2e/tests/f009-runtime-adapters.spec.ts`
 
 ## 7. 测试、依赖与决策
 
 ### 测试策略
 
 保留 F001–F008 server / API 回归；以开发前冻结的 `migration-matrix.md` 为范围与处置真相源，为 App Shell、共享原语与兼容 projection 建组件状态矩阵；按 `v02-fixture-contract.md` 建 release v10 raw SQL fixture，通过真实升级后的同一个临时数据库运行 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；按 `v344-browser-check-applicability.md` 对 V3.44 的 125 条 browser checks 逐条执行 adapted / deferred / not-applicable 分类，分类分母必须等于 125，F009 的 adapted 行必须有生产门禁。
+
+对 self-test §3.2.1 旅程纪律的一条显式豁免：第⑤段「SSE 断线重连补读」在 M1 无活跃事件源，本 Feature 不断言，归 F011/F012 任务旅程。第④段「干净数据首屏」最初也按同一理由（黄金旅程 T021 只能用 T000 v10 fixture 升级库、不存在干净库）豁免为不可自动化、归 T031 人工确认；round 6 复核后发现这条豁免范围过宽——真正受数据策略约束的只是「T021 黄金旅程内不能出现第二套数据库」，与「能不能有一个完全独立、不共用 T021 webServer 配置的空库测试」是两回事。按「自动化与人工判断边界纪律」（`docs/SOP.md`）拆分后，`e2e/playwright.empty-db.config.ts` + `f009-empty-database.spec.ts` 用一个独立 webServer 配置（DB_PATH 指向不存在的文件，真实 server 从零启动迁移）覆盖了空态组件是否正确、恢复动作是否唯一等结构性事实；仅空态文案措辞是否读起来舒服，仍是 T031 的持续性人工体验复核，不阻塞本 Feature 的 review 状态。黄金旅程九步的 M1 投影、词汇对照与 adapted 断言对象集合规则见 `design.md` §8；T031 的自动化边界裁决见 `design.md` §10 DQ-008。
 
 ### 依赖
 

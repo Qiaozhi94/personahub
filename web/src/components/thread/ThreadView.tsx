@@ -20,13 +20,12 @@ import { apiClient, toApiError } from "@/lib/api-client";
 import { ThreadEvent } from "@/components/thread/ThreadEvent";
 import { AgentSelector } from "@/components/thread/AgentSelector";
 import { GraceValidatorBanner } from "@/components/thread/GraceValidatorBanner";
+import { useComposerDraft } from "@/app/draft-store-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface ThreadViewProps {
   threadId: string;
@@ -38,8 +37,7 @@ interface ThreadViewProps {
 }
 
 type DisplayEvent =
-  | ThreadEventData
-  | { merged: true; events: ThreadEventData[]; id: string; type: string; created_at: string };
+  ThreadEventData | { merged: true; events: ThreadEventData[]; id: string; type: string; created_at: string };
 
 function mergeConsecutiveOutputEvents(events: ThreadEventData[]): DisplayEvent[] {
   const result: DisplayEvent[] = [];
@@ -72,21 +70,16 @@ function mergeConsecutiveOutputEvents(events: ThreadEventData[]): DisplayEvent[]
   return result;
 }
 
-const GRAPH_RUN_STATUS_VARIANT: Record<
-  GraphRunStatus,
-  "secondary" | "brand" | "success" | "destructive" | "warning"
-> = {
-  [GraphRunStatus.Running]: "brand",
-  [GraphRunStatus.Blocked]: "destructive",
-  [GraphRunStatus.Cancelling]: "warning",
-  [GraphRunStatus.Completed]: "success",
-  [GraphRunStatus.Cancelled]: "secondary",
-};
+const GRAPH_RUN_STATUS_VARIANT: Record<GraphRunStatus, "secondary" | "brand" | "success" | "destructive" | "warning"> =
+  {
+    [GraphRunStatus.Running]: "brand",
+    [GraphRunStatus.Blocked]: "destructive",
+    [GraphRunStatus.Cancelling]: "warning",
+    [GraphRunStatus.Completed]: "success",
+    [GraphRunStatus.Cancelled]: "secondary",
+  };
 
-const NODE_RUN_STATUS_VARIANT: Record<
-  NodeRunStatus,
-  "secondary" | "brand" | "success" | "destructive" | "warning"
-> = {
+const NODE_RUN_STATUS_VARIANT: Record<NodeRunStatus, "secondary" | "brand" | "success" | "destructive" | "warning"> = {
   [NodeRunStatus.Pending]: "secondary",
   [NodeRunStatus.Ready]: "brand",
   [NodeRunStatus.Running]: "brand",
@@ -239,18 +232,27 @@ export function StartGraphDialog({
           })}
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
         </div>
-        <DialogClose asChild>
-          <Button
-            size="sm"
-            className="w-full"
-            disabled={!allAssigned || startGraph.isPending}
-            onClick={() => {
-              startGraph.mutate({ issueId, nodeAssignments: assignments });
-            }}
-          >
-            {startGraph.isPending ? "Starting…" : "Start Graph"}
-          </Button>
-        </DialogClose>
+        {/* No unconditional DialogClose (review R1-010): the dialog stays
+            open while the request is pending and on failure, so the error and
+            the node assignments remain visible for an in-place retry. */}
+        <Button
+          size="sm"
+          className="w-full"
+          disabled={!allAssigned || startGraph.isPending}
+          onClick={() => {
+            startGraph.mutate(
+              { issueId, nodeAssignments: assignments },
+              {
+                onSuccess: () => {
+                  setAssignments({});
+                  setOpen(false);
+                },
+              },
+            );
+          }}
+        >
+          {startGraph.isPending ? "Starting…" : "Start Graph"}
+        </Button>
       </DialogContent>
     </Dialog>
   );
@@ -273,11 +275,11 @@ export function GraphRunCard({
   const isTerminal = graphRun.status === GraphRunStatus.Completed || graphRun.status === GraphRunStatus.Cancelled;
   const retryError = retryNode.isError ? toApiError(retryNode.error).message : null;
   const cancelError = cancelGraph.isError ? toApiError(cancelGraph.error).message : null;
-  const isNoCapableAdapter =
-    isBlocked && graphRun.blocked_reason_code === GraphBlockReason.NoCapableAdapter;
+  const isNoCapableAdapter = isBlocked && graphRun.blocked_reason_code === GraphBlockReason.NoCapableAdapter;
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const blockedNodeKeys = isBlocked ? graphRun.blocked_node_keys : [];
-  const defaultFor = (key: string) => assignments[key] ?? nodes.find((n) => n.node_key === key)?.attempts[0]?.adapter_config_id ?? "";
+  const defaultFor = (key: string) =>
+    assignments[key] ?? nodes.find((n) => n.node_key === key)?.attempts[0]?.adapter_config_id ?? "";
 
   return (
     <Card className="border-border bg-card">
@@ -307,9 +309,7 @@ export function GraphRunCard({
             {GRAPH_BLOCK_REASON_LABELS[graphRun.blocked_reason_code] ?? graphRun.blocked_reason_code}
           </p>
         ) : null}
-        {isCancelling ? (
-          <p className="text-xs text-warning">Cancelling… waiting for active attempts to exit.</p>
-        ) : null}
+        {isCancelling ? <p className="text-xs text-warning">Cancelling… waiting for active attempts to exit.</p> : null}
       </CardHeader>
       <CardContent className="grid gap-2 p-4 pt-0">
         {nodes.map((node) => {
@@ -390,9 +390,7 @@ export function GraphRunCard({
                 blockedNodeKeys.length === 0 ||
                 blockedNodeKeys.some((key) => !assignments[key])
               }
-              onClick={() =>
-                resolveExecutors.mutate({ graphRunId: graphRun.id, nodeAssignments: assignments })
-              }
+              onClick={() => resolveExecutors.mutate({ graphRunId: graphRun.id, nodeAssignments: assignments })}
             >
               <Wrench className="mr-1 h-3 w-3" />
               Resolve Executors
@@ -408,15 +406,28 @@ export function GraphRunCard({
 }
 
 export function ThreadView({ threadId, issueId, issueStatus, projectId, validationDispatchDueAt }: ThreadViewProps) {
-  const { data, isLoading, isError, error } = useThreadEvents(threadId);
+  const { data, isLoading, isError, error, refetch: refetchEvents } = useThreadEvents(threadId);
   const runsQuery = useRuns(issueId);
   const adaptersQuery = useAdapters(projectId);
   const createRun = useCreateRun();
   const graphQuery = useGraph(issueId);
 
-  const [instructions, setInstructions] = useState("");
-  const [selectedAdapterId, setSelectedAdapterId] = useState<string | null>(null);
-  const [explicitConsult, setExplicitConsult] = useState(false);
+  // Composer text, adapter and consult live ONLY in the shell-owned
+  // TaskDraftStore (review R1-002): all three read from the current task's
+  // record each render, so switching to a cached task can never show or
+  // submit another task's selection (design.md §5).
+  const draft = useComposerDraft(issueId);
+  const selectedAdapterId = draft.record?.adapterId ?? null;
+  const explicitConsult = draft.record?.explicitConsult ?? false;
+  const instructions = draft.text;
+
+  function updateDraft(next: { text?: string; adapterId?: string | null; explicitConsult?: boolean }) {
+    draft.edit({
+      text: next.text ?? instructions,
+      adapterId: next.adapterId !== undefined ? next.adapterId : selectedAdapterId,
+      explicitConsult: next.explicitConsult !== undefined ? next.explicitConsult : explicitConsult,
+    });
+  }
 
   const adapters = adaptersQuery.data?.adapters ?? [];
   const runs = runsQuery.data?.runs ?? [];
@@ -457,6 +468,10 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!canSend) return;
+    // Capture key + generation + revision now: only a success response that
+    // still matches may clear the draft. A failure keeps the record and the
+    // selection; a late or superseded response becomes a no-op.
+    const ticket = draft.beginSubmit();
     createRun.mutate(
       {
         issueId,
@@ -467,23 +482,27 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
         },
       },
       {
-        onSuccess: () => setInstructions(""),
+        onSuccess: () => {
+          if (ticket) draft.resolve(ticket, "success");
+        },
+        onError: () => {
+          if (ticket) draft.resolve(ticket, "failure");
+        },
       },
     );
   }
 
   if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-        Loading thread…
-      </div>
-    );
+    return <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Loading thread…</div>;
   }
 
   if (isError) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-destructive">
-        {toApiError(error).message}
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">
+        <span>{toApiError(error).message}</span>
+        <Button variant="outline" size="sm" onClick={() => void refetchEvents()}>
+          重试
+        </Button>
       </div>
     );
   }
@@ -529,6 +548,14 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
                 adapters={adapters}
               />
             ) : null}
+            {/* A010 entry: an Inbox task can start a graph even after its
+                creation event — the empty-thread branch above can never be
+                the only place this offer appears. */}
+            {issueStatus === IssueStatus.Inbox && !graphQuery.data?.current ? (
+              <div className="mx-auto w-full max-w-[720px]">
+                <StartGraphDialog issueId={issueId} adapters={adapters} disabled={adaptersQuery.isLoading} />
+              </div>
+            ) : null}
           </>
         )}
       </div>
@@ -541,10 +568,14 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
             <AgentSelector
               adapters={adapters}
               selectedAdapterId={selectedAdapterId}
-              onSelect={setSelectedAdapterId}
+              onSelect={(adapterId) => {
+                updateDraft({ adapterId });
+              }}
               issueStatus={issueStatus}
               explicitConsult={explicitConsult}
-              onExplicitConsultChange={setExplicitConsult}
+              onExplicitConsultChange={(next) => {
+                updateDraft({ explicitConsult: next });
+              }}
             />
 
             {disabledMessage ? (
@@ -557,24 +588,35 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
             <div className="flex items-start gap-2">
               <Textarea
                 value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
+                onChange={(e) => updateDraft({ text: e.target.value })}
                 placeholder="Enter agent instructions…"
                 className="min-h-[48px] flex-1 resize-none text-xs"
                 disabled={isTerminal}
                 rows={2}
               />
+              {draft.record ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0"
+                  title="删除未发送的草稿；已发出的请求不受影响"
+                  onClick={() => draft.discard()}
+                >
+                  丢弃草稿
+                </Button>
+              ) : null}
               <Button
                 type="submit"
                 size="icon"
+                aria-label="发送指令"
                 className="h-9 w-9 shrink-0"
                 disabled={!canSend || createRun.isPending}
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            {createRunError ? (
-              <p className="text-xs text-destructive">{createRunError}</p>
-            ) : null}
+            {createRunError ? <p className="text-xs text-destructive">{createRunError}</p> : null}
           </form>
         )}
       </div>

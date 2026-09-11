@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   IssueStatus,
@@ -232,5 +233,37 @@ describe("ValidationInspectorSection", () => {
     await waitFor(() => {
       expect(screen.getByText(/error/i)).toBeInTheDocument();
     });
+  });
+
+  it("retries a failed validation status load for real (review R2-CODE-R1-007)", async () => {
+    vi.mocked(apiClient.validation.getValidation).mockRejectedValueOnce({ code: "X", message: "boom" });
+    vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [] });
+    vi.mocked(apiClient.threads.getEvents).mockResolvedValue({ events: [] });
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <ValidationInspectorSection issueId="iss_1" />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByRole("button", { name: "Retry" })).toBeInTheDocument();
+
+    vi.mocked(apiClient.validation.getValidation).mockResolvedValue({
+      issue_id: "iss_1",
+      status: IssueStatus.Running,
+      current_round: null,
+      completed_failed_rounds: 0,
+      max_rounds: 3,
+      active_validator_run: null,
+      latest_result: null,
+      latest_findings: [],
+      blocker: null,
+      evidence_summary: null,
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Running")).toBeInTheDocument();
   });
 });

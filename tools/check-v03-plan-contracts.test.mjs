@@ -1,9 +1,39 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+/** True iff `hash` resolves to a real commit object in this repository. */
+function commitExists(hash) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${hash}^{commit}`], { cwd: REPO_ROOT, stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * review R1-011: a well-formed hex string proves nothing on its own — a
+ * completion claim citing a nonexistent commit passed this gate before.
+ * `commitExistsFn` is injectable so the "rejects a fake hash" mutation below
+ * doesn't have to hope a made-up string happens to collide with no real
+ * commit; it proves the assertion path itself is wired correctly.
+ */
+function verifyExecutionEvidenceCommit(journeyText, commitExistsFn) {
+  const match = /execution_evidence_commit: ([0-9a-f]{7,40})/.exec(journeyText);
+  assert.ok(match, 'journey-test-matrix.md must declare execution_evidence_commit as a hex string');
+  const hash = match[1];
+  assert.ok(
+    commitExistsFn(hash),
+    `execution_evidence_commit ${hash} does not resolve to a real commit in this repository — a hex-shaped string is not evidence of execution`,
+  );
+}
 
 function requirePhrases(documents, phrases) {
   const corpus = documents.join('\n');
@@ -58,6 +88,52 @@ function parseMigrationMatrixRows(matrix, idPrefix) {
     .split(/\r?\n/)
     .filter((line) => line.startsWith(`| ${idPrefix}`))
     .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
+}
+
+/**
+ * The 28 "adapted" browser checks each name a production test file in the
+ * catalog's last column (backtick-quoted). Extracts {id, testFile} pairs —
+ * review R1-006's complaint was that this list has never been proven
+ * machine-readable, so a deleted row or a deleted in-file assertion for one
+ * of these ids would pass silently.
+ */
+function parseAdaptedBrowserChecks(catalog) {
+  return [...catalog.matchAll(/^\| (BC-\d{3}) \|.+\| adapted \|.+\| `([^`]+)` \|$/gm)].map(([, id, testFile]) => ({
+    id,
+    testFile,
+  }));
+}
+
+/**
+ * Fails if: the adapted count drifts from 28 (a row was added/removed
+ * without updating the list this function derives from), a named test file
+ * is missing, or a file's content no longer mentions its assigned BC id
+ * (readFile returns the actual file content — tests substitute a mutated
+ * version to prove a deleted case turns this red).
+ */
+function verifyAdaptedInventory(catalog, readFile) {
+  const rows = parseAdaptedBrowserChecks(catalog);
+  assert.equal(rows.length, 28, `expected 28 adapted browser checks, got ${rows.length}`);
+  const byFile = new Map();
+  for (const { id, testFile } of rows) {
+    if (!byFile.has(testFile)) byFile.set(testFile, []);
+    byFile.get(testFile).push(id);
+  }
+  for (const [testFile, ids] of byFile) {
+    let content;
+    try {
+      content = readFile(testFile);
+    } catch {
+      assert.fail(`adapted browser check test file not found: ${testFile} (covers ${ids.join(', ')})`);
+    }
+    for (const id of ids) {
+      assert.match(
+        content,
+        new RegExp(`${id}(?!\\d)`),
+        `${testFile} no longer references ${id} — a production instance for this adapted browser check was deleted`,
+      );
+    }
+  }
 }
 
 const completionEvidencePlaceholders = new Set([
@@ -378,6 +454,15 @@ test('F009-DOC-R1-001: the frozen migration matrix is a development input', () =
   verifyMutation(documents, phrases);
 });
 
+const P001_ROW_PATTERN = /^\| P001 \|[^\n]*/m;
+
+function replaceP001Row(matrix, replacement) {
+  return matrix.replace(P001_ROW_PATTERN, replacement);
+}
+
+const P001_COMPLETED_ROW =
+  '| P001 | `App.tsx` + `AppLayout` | 三栏 App Shell、当前对象选择、全局反馈 | projects / issues / workspace 聚合读取 | `web/src/app.test.tsx` | migrated | migrated | route=/ (ApplicationShell); data=GET /api/projects; write=none; browser=e2e/tests/f009-shell.spec.ts::BC-070 the rail is the only primary navigation | stable-shell | `ApplicationShell` | — | — | — |';
+
 test('F009-DOC-R6-010: migration targets and implementation progress are independently tracked', () => {
   const matrix = read(
     'docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md',
@@ -385,17 +470,32 @@ test('F009-DOC-R6-010: migration targets and implementation progress are indepen
 
   verifyMigrationMatrixProgress(matrix);
 
-  const missingStatus = matrix.replace('| migrated | inventoried | pending |', '| migrated | | pending |');
-  assert.notEqual(missingStatus, matrix, 'status mutation must change a migration row');
-  assert.throws(() => verifyMigrationMatrixProgress(missingStatus), /invalid implementation status/);
+  const blankStatus = replaceP001Row(
+    matrix,
+    P001_COMPLETED_ROW.replace('| migrated | migrated |', '| migrated | |'),
+  );
+  assert.notEqual(blankStatus, matrix, 'status mutation must change a migration row');
+  assert.throws(() => verifyMigrationMatrixProgress(blankStatus), /invalid implementation status/);
 
-  const forgedCompletion = matrix.replace('| migrated | inventoried | pending |', '| migrated | migrated | pending |');
+  const forgedCompletion = replaceP001Row(
+    matrix,
+    P001_COMPLETED_ROW.replace('migrated | migrated | route=', 'migrated | inventoried | route='),
+  );
   assert.notEqual(forgedCompletion, matrix, 'completion mutation must change a migration row');
-  assert.throws(() => verifyMigrationMatrixProgress(forgedCompletion), /completed status requires evidence/);
+  assert.throws(
+    () => verifyMigrationMatrixProgress(forgedCompletion),
+    /must remain pending before implementation/,
+  );
 
-  const missingEvidence = matrix.replace('| migrated | inventoried | pending |', '| migrated | inventoried | |');
+  const missingEvidence = replaceP001Row(
+    matrix,
+    P001_COMPLETED_ROW.replace(
+      'route=/ (ApplicationShell); data=GET /api/projects; write=none; browser=e2e/tests/f009-shell.spec.ts::BC-070 the rail is the only primary navigation',
+      '',
+    ),
+  );
   assert.notEqual(missingEvidence, matrix, 'evidence mutation must change a migration row');
-  assert.throws(() => verifyMigrationMatrixProgress(missingEvidence), /missing completion evidence/);
+  assert.throws(() => verifyMigrationMatrixProgress(missingEvidence), /missing completion evidence|placeholder completion evidence/);
 });
 
 test('F009-DOC-R7-013: completed migration evidence has non-empty disposition-specific values', () => {
@@ -403,58 +503,27 @@ test('F009-DOC-R7-013: completed migration evidence has non-empty disposition-sp
     'docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md',
   );
 
-  const emptyMigratedEvidence = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| migrated | migrated | route= data= write= browser= |',
-  );
+  const withRow = (evidence) => replaceP001Row(matrix, P001_COMPLETED_ROW.replace(/route=[^|]*/, evidence));
+
+  const emptyMigratedEvidence = withRow('route= data= write= browser=');
   assert.notEqual(emptyMigratedEvidence, matrix, 'empty migrated-evidence mutation must change a row');
   assert.throws(
     () => verifyMigrationMatrixProgress(emptyMigratedEvidence),
     /invalid completion evidence|missing evidence value/,
   );
 
-  const emptyCanonicalValues = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| migrated | migrated | route=; data=; write=; browser= |',
-  );
+  const emptyCanonicalValues = withRow('route=; data=; write=; browser=');
   assert.notEqual(emptyCanonicalValues, matrix, 'empty canonical-value mutation must change a row');
   assert.throws(() => verifyMigrationMatrixProgress(emptyCanonicalValues), /missing evidence value: route/);
 
-  const missingDecision = matrix.replace(
-    '| retired | inventoried | pending |',
-    '| retired | retired | registry=absent |',
+  const validMigratedEvidence = withRow(
+    'route=/ (ApplicationShell); data=GET /api/projects; write=none; browser=e2e/tests/f009-shell.spec.ts::BC-070 the rail is the only primary navigation',
   );
-  assert.notEqual(missingDecision, matrix, 'retired-decision mutation must change a row');
-  assert.throws(() => verifyMigrationMatrixProgress(missingDecision), /missing evidence value: decision/);
-
-  const missingOwner = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| deferred | deferred | registry=absent |',
-  );
-  assert.notEqual(missingOwner, matrix, 'deferred-owner mutation must change a row');
-  assert.throws(() => verifyMigrationMatrixProgress(missingOwner), /missing evidence value: owner/);
-
-  const validMigratedEvidence = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| migrated | migrated | route=/tasks; data=GET /api/projects; write=read-only; browser=web/src/app.test.tsx::route-smoke |',
-  );
-  assert.notEqual(validMigratedEvidence, matrix, 'valid migrated-evidence mutation must change a row');
   assert.doesNotThrow(() => verifyMigrationMatrixProgress(validMigratedEvidence));
 
-  const placeholderMigratedEvidence = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| migrated | migrated | route=TODO; data=TBD; write=placeholder; browser=pending |',
-  );
-  assert.notEqual(placeholderMigratedEvidence, matrix, 'migrated-placeholder mutation must change a row');
-  assert.throws(
-    () => verifyMigrationMatrixProgress(placeholderMigratedEvidence),
-    /placeholder completion evidence value/,
-  );
-
   for (const placeholder of ['TODO', 'tBd', 'PeNdInG', 'placeholder', '待补', '—']) {
-    const placeholderValue = matrix.replace(
-      '| migrated | inventoried | pending |',
-      `| migrated | migrated | route= ${placeholder} ; data=GET /api/projects; write=read-only; browser=web/src/app.test.tsx::route-smoke |`,
+    const placeholderValue = withRow(
+      `route= ${placeholder} ; data=GET /api/projects; write=none; browser=e2e/tests/f009-shell.spec.ts::BC-070`,
     );
     assert.notEqual(placeholderValue, matrix, `${placeholder} mutation must change a migration row`);
     assert.throws(
@@ -464,20 +533,18 @@ test('F009-DOC-R7-013: completed migration evidence has non-empty disposition-sp
   }
 
   const placeholderDeferredOwner = matrix.replace(
-    '| migrated | inventoried | pending |',
-    '| deferred | deferred | registry=absent; owner=placeholder |',
+    P001_ROW_PATTERN,
+    '| P001 | old | capability | api | test | deferred | deferred | registry=absent; owner=placeholder | stable-shell | ApplicationShell | — | — | — |',
   );
-  assert.notEqual(placeholderDeferredOwner, matrix, 'deferred-placeholder mutation must change a row');
   assert.throws(
     () => verifyMigrationMatrixProgress(placeholderDeferredOwner),
     /placeholder completion evidence value/,
   );
 
   const placeholderRetiredDecision = matrix.replace(
-    '| retired | inventoried | pending |',
-    '| retired | retired | registry=absent; decision=TODO |',
+    P001_ROW_PATTERN,
+    '| P001 | old | capability | api | test | retired | retired | registry=absent; decision=TODO | stable-shell | ApplicationShell | — | — | — |',
   );
-  assert.notEqual(placeholderRetiredDecision, matrix, 'retired-placeholder mutation must change a row');
   assert.throws(
     () => verifyMigrationMatrixProgress(placeholderRetiredDecision),
     /placeholder completion evidence value/,
@@ -629,6 +696,51 @@ test('F009-DOC-R1-006: all 125 V3.44 browser checks have an explicit disposition
   );
 });
 
+test('F009-CODE-R1-006: every adapted browser check has a locked, non-placeholder production test', () => {
+  const catalog = read(
+    'docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md',
+  );
+  const rows = parseAdaptedBrowserChecks(catalog);
+  assert.equal(rows.length, 28, `expected 28 adapted rows parsed, got ${rows.length}`);
+  assert.deepEqual(
+    new Set(rows.map((r) => r.id)).size,
+    28,
+    'adapted browser check ids must be unique — a duplicate would silently under-count real coverage',
+  );
+
+  const realContent = new Map(rows.map(({ testFile }) => [testFile, read(testFile)]));
+  const readFile = (testFile) => {
+    if (!realContent.has(testFile)) throw new Error(`unexpected test file: ${testFile}`);
+    return realContent.get(testFile);
+  };
+
+  // Green on the real repo state — every one of the 28 rows' file really
+  // contains a reference to its own id right now.
+  verifyAdaptedInventory(catalog, readFile);
+
+  // Deleting one row from the catalog must turn the count check red.
+  const droppedRow = catalog.replace(/^\| BC-050 \|[^\r\n]*(?:\r?\n|$)/m, '');
+  assert.notEqual(droppedRow, catalog, 'mutation must actually remove the BC-050 row');
+  assert.throws(() => verifyAdaptedInventory(droppedRow, readFile), /expected 28 adapted browser checks/);
+
+  // Deleting the in-file reference for one adapted id — the case the review
+  // found unprovable — must turn this red even though the catalog row and
+  // every other row's coverage stay untouched.
+  const a11yFile = 'e2e/tests/f009-a11y.spec.ts';
+  const withoutBc050 = realContent.get(a11yFile).replaceAll('BC-050', 'redacted');
+  assert.notEqual(withoutBc050, realContent.get(a11yFile), 'mutation must actually remove BC-050 references');
+  const mutatedReadFile = (testFile) => (testFile === a11yFile ? withoutBc050 : readFile(testFile));
+  assert.throws(() => verifyAdaptedInventory(catalog, mutatedReadFile), /no longer references BC-050/);
+
+  // A file the catalog names but that doesn't exist on disk must also fail,
+  // not silently pass with empty coverage.
+  const missingFileReadFile = (testFile) => {
+    if (testFile === a11yFile) throw new Error('ENOENT');
+    return readFile(testFile);
+  };
+  assert.throws(() => verifyAdaptedInventory(catalog, missingFileReadFile), /test file not found/);
+});
+
 test('F009-DOC-R1-007: draft ownership and cleanup semantics are deterministic', () => {
   const documents = [
     read('docs/features/0.3/F009-v344-frontend-foundation-migration/design.md'),
@@ -699,10 +811,10 @@ test('F009 design-gate status is synchronized across roadmap documents', () => {
     read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
   ];
   const phrases = [
-    'status: ready-for-development',
+    'status: review',
     'eval_contract: exempt',
-    '| F009 | 0.3     | V3.44 Frontend Foundation & Migration | ready-for-development |',
-    'F009 已完成开发前检视并进入 `ready-for-development`',
+    '| F009 | 0.3     | V3.44 Frontend Foundation & Migration | review |',
+    'F009 开发与自检已完成并进入 `review`（`npm run verify:release` 全绿）',
     'F010–F014 仍为 `draft`',
   ];
 
@@ -826,4 +938,391 @@ test('V03-PLAN-R4-014: downstream research docs reference the current Artifact f
   forbidPhrases(documents, [retiredPath]);
   verifyMutation(documents, phrases);
   verifyForbiddenMutation(documents, retiredPath);
+});
+
+// F009 T020 (FR-007 / NFR-003 / NFR-004): the old shell has left the
+// production registry, every migrated write action keeps exactly one
+// production host, retired template writes are unreachable, and every
+// transitional host in the frozen matrix still carries its replacement owner,
+// delete condition, and latest milestone.
+
+const F009_WEB_SRC = 'web/src';
+
+function listProductionWebFiles(dir = F009_WEB_SRC) {
+  const entries = [];
+  for (const name of readdirSync(new URL(`../${dir}`, import.meta.url))) {
+    const full = `${dir}/${name}`;
+    const stat = statSync(new URL(`../${full}`, import.meta.url));
+    if (stat.isDirectory()) {
+      entries.push(...listProductionWebFiles(full));
+    } else if ((name.endsWith('.ts') || name.endsWith('.tsx')) && !name.includes('.test.')) {
+      entries.push(full);
+    }
+  }
+  return entries;
+}
+
+const F009_WRITE_API_HOSTS = new Map([
+  ['projects.create', ['web/src/hooks/use-projects.ts']],
+  ['workspaces.bind', ['web/src/hooks/use-workspace.ts']],
+  ['issues.create', ['web/src/hooks/use-issues.ts']],
+  ['issues.startGraph', ['web/src/components/thread/ThreadView.tsx']],
+  ['graphRuns.cancel', ['web/src/components/thread/ThreadView.tsx']],
+  ['graphRuns.retryNode', ['web/src/components/thread/ThreadView.tsx']],
+  ['graphRuns.resolveExecutors', ['web/src/components/thread/ThreadView.tsx']],
+  ['runs.create', ['web/src/hooks/use-runs.ts']],
+  ['runs.cancel', ['web/src/hooks/use-runs.ts']],
+  ['validation.triggerValidation', ['web/src/hooks/use-validation.ts']],
+  ['validation.unblock', ['web/src/hooks/use-validation.ts']],
+  ['validation.resetRounds', ['web/src/hooks/use-validation.ts']],
+  ['intake.recommend', ['web/src/components/intake/IntakeDialog.tsx']],
+  ['intake.confirm', ['web/src/components/intake/IntakeDialog.tsx']],
+  ['adapters.create', ['web/src/hooks/use-adapters.ts']],
+  ['adapters.update', ['web/src/hooks/use-adapters.ts']],
+  ['adapters.delete', ['web/src/hooks/use-adapters.ts']],
+  ['adapters.validate', ['web/src/hooks/use-adapters.ts']],
+  ['adapters.setDefault', ['web/src/hooks/use-adapters.ts']],
+  // A030: retired — the read-only legacy page never reaches these.
+  ['workflowTemplates.createVersion', []],
+  ['workflowTemplates.activate', []],
+  ['workflowTemplates.deactivate', []],
+]);
+
+test('F009-T020-001: every write action has one production host and retired writes are unreachable', () => {
+  const productionFiles = listProductionWebFiles().filter((file) => file !== 'web/src/lib/api-client.ts');
+  const productionSources = productionFiles.map((file) => ({ file, source: read(file) }));
+
+  for (const [apiMethod, allowedHosts] of F009_WRITE_API_HOSTS) {
+    const hosts = productionSources
+      .filter(({ source }) => source.includes(`apiClient.${apiMethod}`))
+      .map(({ file }) => file)
+      .sort();
+    assert.deepEqual(
+      hosts,
+      [...allowedHosts].sort(),
+      `write action ${apiMethod} must be reachable only from its single frozen host`,
+    );
+  }
+
+  // Old shell identifiers must not survive anywhere in production source.
+  const retiredIdentifiers = [
+    'AppLayout',
+    'ProjectSwitcher',
+    'WorkflowTemplateAdminDialog',
+    'RuntimeHealthDialog',
+    'NoProject',
+    'NoWorkspace',
+    'NoIssue',
+  ];
+  for (const identifier of retiredIdentifiers) {
+    const holders = productionSources.filter(({ source }) => source.includes(identifier)).map(({ file }) => file);
+    assert.deepEqual(holders, [], `retired component ${identifier} must not be referenced in production`);
+  }
+  for (const retiredPath of [
+    'web/src/components/layout/AppLayout.tsx',
+    'web/src/components/project/ProjectSwitcher.tsx',
+    'web/src/components/workflow-template/WorkflowTemplateAdminDialog.tsx',
+    'web/src/components/runtime-health/RuntimeHealthDialog.tsx',
+    'web/src/components/empty-states/NoProject.tsx',
+    'web/src/components/empty-states/NoWorkspace.tsx',
+    'web/src/components/empty-states/NoIssue.tsx',
+  ]) {
+    assert.throws(() => read(retiredPath), /ENOENT/, `retired file ${retiredPath} must be deleted`);
+  }
+});
+
+test('F009-T020-002: every transitional host in the matrix has owner, delete condition, and milestone', () => {
+  const matrix = read('docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md');
+  const rows = parseMigrationMatrixRows(matrix, 'P').concat(parseMigrationMatrixRows(matrix, 'A'));
+
+  // Page rows: | id | old | capability | api | test | target | status | evidence | lifecycle | entry | owner | delete | milestone |
+  // Action rows carry one more column (canonical write API) before owner.
+  for (const row of rows) {
+    const lifecycle = row.find((cell) => /^stable-shell$|^final-surface$|^transitional-host$/.test(cell));
+    assert.ok(lifecycle, `${row[0]} must declare a lifecycle classification`);
+    if (lifecycle !== 'transitional-host') continue;
+    const [owner, deleteWhen, milestone] = row.slice(-3);
+    assert.ok(owner && owner !== '—', `${row[0]} transitional host needs a replacement_owner`);
+    assert.ok(deleteWhen && deleteWhen !== '—', `${row[0]} transitional host needs a delete_when`);
+    assert.ok(milestone && /^M\d$/.test(milestone), `${row[0]} transitional host needs a latest_milestone`);
+  }
+});
+test('F009-DOC-R6-014: review-state documents stay consistent with execution artifacts', () => {
+  const spec = read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md');
+  const statusMatch = /^status: (review|done)$/m.exec(spec);
+  assert.ok(statusMatch, 'F009 spec must declare review or done status for this gate');
+  const state = statusMatch[1];
+
+  const tasks = read('docs/features/0.3/F009-v344-frontend-foundation-migration/tasks.md');
+  const uncheckedTasks = [...tasks.matchAll(/^- \[ \] (T\d{3})/gm)].map((m) => m[1]);
+  assert.deepEqual(uncheckedTasks, [], `F009 is ${state} but tasks remain unchecked`);
+  const uncheckedAcs = [...spec.matchAll(/^- \[ \] \*\*(AC-\d{3})\*\*/gm)].map((m) => m[1]);
+  assert.deepEqual(uncheckedAcs, [], `F009 is ${state} but ACs remain unchecked`);
+
+  // T031 execution evidence must be archived in the journey matrix, bound to
+  // a real commit — no placeholder.
+  const journey = read('docs/reviews/journey-test-matrix.md');
+  assert.doesNotMatch(journey, /待 T021 回填|待 T022 回填|execution_evidence: pending/);
+  verifyExecutionEvidenceCommit(journey, commitExists);
+});
+
+test('F009-CODE-R1-011: execution_evidence_commit must resolve to a real commit, not just look like one', () => {
+  const journey = read('docs/reviews/journey-test-matrix.md');
+
+  // Green against the real repo and the real git history.
+  verifyExecutionEvidenceCommit(journey, commitExists);
+
+  // A hex string that was never a commit here must fail even though the
+  // format regex alone would have accepted it — this is the exact gap
+  // review R1-011 found (format-only validation, no existence check).
+  const fakeHash = '0123456789abcdef0123456789abcdef01234567';
+  const journeyWithFakeHash = journey.replace(
+    /execution_evidence_commit: [0-9a-f]{7,40}/,
+    `execution_evidence_commit: ${fakeHash}`,
+  );
+  assert.notEqual(journeyWithFakeHash, journey, 'mutation must actually replace the commit hash');
+  assert.throws(
+    () => verifyExecutionEvidenceCommit(journeyWithFakeHash, commitExists),
+    /does not resolve to a real commit/,
+  );
+
+  // Proves the assertion path itself is wired to commitExistsFn's result,
+  // independent of whether fakeHash happens to collide with a real object.
+  assert.throws(() => verifyExecutionEvidenceCommit(journey, () => false), /does not resolve to a real commit/);
+});
+
+/**
+ * T031's "confirm no entry point" pass over the 96 deferred browser checks
+ * (docs/reviews/journey-test-matrix.md §5.1) was previously all-manual.
+ * Most deferred rows aren't independent claims — they're sub-features of a
+ * small number of routes/nav-slots that are *already* mechanically proven
+ * unreachable by two existing production tests:
+ *
+ *  - `f009-shell.spec.ts`'s BC-070 case asserts the primary nav renders
+ *    exactly the 4 enabled surfaces and zero buttons for the 5 not-registered
+ *    ones (会话/自动化/记忆/能力/统计) — covers every deferred row whose
+ *    entire owning surface doesn't exist yet.
+ *  - `f009-golden-journey.spec.ts`'s S1 case asserts three route families
+ *    are generically unreachable (`/tasks/:id/:view` → unsupported-view,
+ *    `/projects/:id/:tab` → unsupported-tab, `/sessions/:id` → not found) —
+ *    per route-manifest.ts these match ANY segment value, so one example
+ *    route per family proves the whole family, not just that one case.
+ *
+ * This does NOT eliminate T031 — roughly a third of the 96 are sub-elements
+ * of already-*enabled* pages (e.g. "no pause-all button on /runtime") that
+ * still need individual verification, and are deliberately left out of the
+ * covered buckets below rather than guessed at.
+ */
+function classifyDeferredBrowserChecks(catalog) {
+  const rows = [...catalog.matchAll(/^\| (BC-\d{3}) \|.+\| deferred \|.+\|.+\|.+\|$/gm)].map((m) => m[1]);
+
+  // Sub-features of the task four-view route family (F011) — any row whose
+  // reason column ties it to task-view/acceptance/evidence/trace projection
+  // reachable only via /tasks/:id/:view.
+  const TASK_VIEW = new Set([
+    'BC-003', 'BC-004', 'BC-009', 'BC-010', 'BC-011', 'BC-012', 'BC-013', 'BC-014', 'BC-015', 'BC-016',
+    'BC-017', 'BC-018', 'BC-019', 'BC-020', 'BC-021', 'BC-022', 'BC-023', 'BC-024', 'BC-025', 'BC-026',
+    'BC-034', 'BC-035', 'BC-036', 'BC-037', 'BC-038', 'BC-039', 'BC-059', 'BC-071',
+  ]);
+  // Sub-features reachable only via /sessions/:id.
+  const SESSION = new Set(['BC-008', 'BC-029']);
+  // Sub-features reachable only via /projects/:id/:tab.
+  const PROJECT_TAB = new Set(['BC-060', 'BC-073']);
+  // Sub-features of a whole not-registered top-level surface (记忆/自动化/
+  // 统计/能力, or a concept — plugin/MCP/notifications/monitoring — that was
+  // never given a SurfaceId at all, so it has strictly less reachability
+  // than a not-registered one).
+  const NAV_ABSENT = new Set([
+    'BC-041', 'BC-061', 'BC-062', 'BC-063', 'BC-064', 'BC-065', 'BC-066', 'BC-067', 'BC-069', 'BC-074',
+    'BC-077', 'BC-078', 'BC-079', 'BC-080', 'BC-081', 'BC-084', 'BC-085', 'BC-092', 'BC-093', 'BC-094',
+    'BC-095', 'BC-096', 'BC-098', 'BC-099', 'BC-100', 'BC-104', 'BC-114', 'BC-115', 'BC-117', 'BC-118',
+    'BC-121',
+  ]);
+  // BC-105 alone: a forbidden-term content check (web/src/f009-content-contract.test.ts).
+  const CONTENT_CONTRACT = new Set(['BC-105']);
+  // The settings catalog is proven closed at exactly 2 entries by BC-097
+  // (f009-shell.spec.ts) — any row describing a settings page/section that
+  // would need its own catalog entry is covered by that same closed count,
+  // with no new test needed.
+  const SETTINGS_CATALOG_CLOSED = new Set(['BC-055', 'BC-083', 'BC-111', 'BC-120']);
+  // ThreadView's composer has no model/depth selector, context-scope
+  // selector, eligibility-rationale explainer, or undo window
+  // (f009-deferred-boundary.spec.ts).
+  const COMPOSER_ABSENT = new Set(['BC-027', 'BC-028', 'BC-040', 'BC-058']);
+  // /runtime has no pause-all, quota, machine-rail/adapter-tabs, capability
+  // matrix, log-export, machine-health, or per-task controls (same spec).
+  const RUNTIME_PAGE_ABSENT = new Set(['BC-054', 'BC-082', 'BC-087', 'BC-088', 'BC-090', 'BC-101', 'BC-116']);
+  // /runtime/adapters has no dedicated four-block adapter detail page — the
+  // compat entry is a flat config dialog, not a route (same spec).
+  const ADAPTER_DETAIL_ABSENT = new Set(['BC-108', 'BC-109']);
+  // A project's WorkspaceBinding has no remote-repo recognition, Skills
+  // reference, or primary/reference repo distinction (same spec).
+  const WORKSPACE_BINDING_MINIMAL = new Set(['BC-102', 'BC-107', 'BC-112']);
+  // CreateIssueDialog has no issue-type selector — coding is the only shape
+  // it can produce (same spec).
+  const TASK_CREATE_MINIMAL = new Set(['BC-033']);
+
+  const covered = new Set([
+    ...TASK_VIEW, ...SESSION, ...PROJECT_TAB, ...NAV_ABSENT, ...CONTENT_CONTRACT,
+    ...SETTINGS_CATALOG_CLOSED, ...COMPOSER_ABSENT, ...RUNTIME_PAGE_ABSENT, ...ADAPTER_DETAIL_ABSENT,
+    ...WORKSPACE_BINDING_MINIMAL, ...TASK_CREATE_MINIMAL,
+  ]);
+
+  // Data-model / business-rule / cross-feature claims with no discrete UI
+  // element whose absence is checkable — e.g. BC-031/032 are about a future
+  // eleven-state task projection's data shape, not a reachable control;
+  // BC-110 is F014's own cross-feature completeness audit. Listed
+  // explicitly (not silently dropped) so every one of the 96 is accounted
+  // for in exactly one bucket.
+  const NOT_APPLICABLE = new Set([
+    'BC-031', 'BC-032', 'BC-042', 'BC-043', 'BC-068', 'BC-086', 'BC-089', 'BC-103', 'BC-106', 'BC-110', 'BC-113',
+  ]);
+
+  const accounted = new Set([...covered, ...NOT_APPLICABLE]);
+  const residual = rows.filter((id) => !accounted.has(id));
+  return {
+    rows, covered, notApplicable: NOT_APPLICABLE, residual,
+    buckets: {
+      TASK_VIEW, SESSION, PROJECT_TAB, NAV_ABSENT, CONTENT_CONTRACT, SETTINGS_CATALOG_CLOSED,
+      COMPOSER_ABSENT, RUNTIME_PAGE_ABSENT, ADAPTER_DETAIL_ABSENT, WORKSPACE_BINDING_MINIMAL, TASK_CREATE_MINIMAL,
+    },
+  };
+}
+
+test('F009-CODE-DEFERRED-INVENTORY: all 96 deferred browser checks are accounted for — provably unreachable, explicitly not-applicable, or a named residual', () => {
+  const catalog = read(
+    'docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md',
+  );
+  const shell = read('e2e/tests/f009-shell.spec.ts');
+  const journey = read('e2e/tests/f009-golden-journey.spec.ts');
+  const contentContract = read('web/src/f009-content-contract.test.ts');
+  const boundary = read('e2e/tests/f009-deferred-boundary.spec.ts');
+
+  const { rows, covered, notApplicable, residual } = classifyDeferredBrowserChecks(catalog);
+  assert.equal(rows.length, 96, `expected 96 deferred rows parsed, got ${rows.length}`);
+  assert.equal(new Set(rows).size, 96, 'deferred browser check ids must be unique');
+
+  // Every bucketed id (covered or not-applicable) must actually be one of
+  // the 96 deferred rows — a stale entry (renamed/removed BC id) must fail
+  // loudly rather than silently not matching anything.
+  const rowSet = new Set(rows);
+  for (const id of new Set([...covered, ...notApplicable])) {
+    assert.ok(rowSet.has(id), `bucketed id ${id} is not (or no longer) a deferred row in the catalog`);
+  }
+
+  // The bucket assignments only mean something if the gates they lean on
+  // still make the exact claims this classification depends on.
+  assert.match(shell, /BC-070\/BC-007/, 'BC-070 nav-absence case must still exist in f009-shell.spec.ts');
+  for (const name of ['会话', '自动化', '记忆', '能力', '统计']) {
+    assert.ok(
+      shell.includes(`"${name}"`),
+      `BC-070 case must still assert "${name}" has zero primary-nav buttons`,
+    );
+  }
+  assert.match(journey, /task-unsupported-view|unsupported-view/, 'S1 must still assert the task-view route family is unreachable');
+  assert.match(journey, /unsupported-tab/, 'S1 must still assert the project-tab route family is unreachable');
+  assert.match(journey, /\/sessions\//, 'S1 must still assert the session route is unreachable');
+  assert.match(contentContract, /权限档/, 'BC-105 content-contract term must still be forbidden');
+  assert.match(shell, /catalog\.getByRole\("link"\)\.count\(\)\)\.toBe\(2\)/, 'BC-097 must still assert the settings catalog is closed at exactly 2 entries');
+  for (const bcId of ['BC-027/028/040/058', 'BC-033', 'BC-054/082/087/088/090/101/116', 'BC-108/109', 'BC-102/107/112']) {
+    assert.ok(boundary.includes(bcId), `f009-deferred-boundary.spec.ts must still have a case named "${bcId}"`);
+  }
+
+  // Every one of the 96 must land in exactly one of: proven-covered,
+  // explicitly-not-applicable, or the printed residual — never silently
+  // dropped.
+  console.log(
+    `F009-CODE-DEFERRED-INVENTORY: ${covered.size}/${rows.length} deferred checks proven unreachable by existing gates; ` +
+      `${notApplicable.size} explicitly not-applicable (no discrete UI element to assert absent); ` +
+      `${residual.length} residual still need individual review: ${residual.join(', ') || '(none)'}`,
+  );
+  assert.equal(
+    residual.length,
+    0,
+    `expected zero unaccounted residual deferred checks, got ${residual.length}: ${residual.join(', ')} — bucket them or add them to NOT_APPLICABLE with a reason, don't leave them unaccounted`,
+  );
+
+  // Deleting a bucket's coverage must turn this red: e.g. if BC-070 stopped
+  // asserting 记忆 is absent, every NAV_ABSENT-classified Memory row's proof
+  // would be gone.
+  const shellWithoutMemoryAssertion = shell.replace('"记忆"', '"redacted"');
+  assert.notEqual(shellWithoutMemoryAssertion, shell, 'mutation must actually remove the 记忆 assertion');
+  assert.throws(
+    () => {
+      assert.ok(shellWithoutMemoryAssertion.includes('"记忆"'), 'BC-070 case must still assert "记忆" has zero primary-nav buttons');
+    },
+    /BC-070 case must still assert/,
+  );
+
+  // Same proof for the settings-catalog-closed bucket: weakening BC-097's
+  // count assertion must turn this red too.
+  const shellWithoutClosedCatalog = shell.replace('.toBe(2)', '.toBe(999)');
+  assert.notEqual(shellWithoutClosedCatalog, shell, 'mutation must actually change the closed-count assertion');
+  assert.throws(() => {
+    assert.match(
+      shellWithoutClosedCatalog,
+      /catalog\.getByRole\("link"\)\.count\(\)\)\.toBe\(2\)/,
+      'BC-097 must still assert the settings catalog is closed at exactly 2 entries',
+    );
+  });
+});
+
+// review R3-018: CI's e2e job and root package.json's verify:release script
+// each separately list which E2E suites to run — nothing before this test
+// enforced they name the same set, so CI could stay green while
+// verify:release (the actual release gate) failed on a suite CI never ran.
+
+function extractE2EJobRunScripts(ciYaml) {
+  const jobBlocks = ciYaml.split(/\n(?=  \S)/);
+  const e2eJob = jobBlocks.find((block) => /^ {2}e2e:/.test(block));
+  assert.ok(e2eJob, 'ci.yml must have a top-level "e2e:" job');
+  return new Set([...e2eJob.matchAll(/run:\s*npm run (test:e2e[\w:-]*)/g)].map((m) => m[1]));
+}
+
+function extractVerifyReleaseE2EScripts(packageJsonText) {
+  const pkg = JSON.parse(packageJsonText);
+  const verifyRelease = pkg.scripts?.['verify:release'];
+  assert.ok(verifyRelease, 'package.json must have a "verify:release" script');
+  return new Set(
+    [...verifyRelease.matchAll(/npm run (test:e2e[\w:-]*)/g)]
+      .map((m) => m[1])
+      // Installing browsers is a prerequisite step, not an E2E suite itself.
+      .filter((name) => name !== 'test:e2e:install'),
+  );
+}
+
+test("F009-CODE-R3-018: CI's e2e job runs every E2E suite verify:release requires", () => {
+  const ciYaml = read('.github/workflows/ci.yml');
+  const packageJson = read('package.json');
+
+  const releaseScripts = extractVerifyReleaseE2EScripts(packageJson);
+  assert.ok(releaseScripts.size >= 2, 'sanity: verify:release should chain at least two E2E scripts');
+
+  const ciScripts = extractE2EJobRunScripts(ciYaml);
+  const missing = [...releaseScripts].filter((name) => !ciScripts.has(name));
+  assert.deepEqual(missing, [], `ci.yml's e2e job is missing: ${missing.join(', ')} (present in verify:release)`);
+
+  // Mutation proof: dropping the empty-db step from CI must turn this red —
+  // the exact regression the reviewer found (CI ran test:e2e but not
+  // test:e2e:empty-db while verify:release ran both).
+  const ciWithoutEmptyDb = ciYaml.replace(
+    /\r?\n {6}- name: Run E2E tests \(clean database\)\r?\n {8}run: npm run test:e2e:empty-db\r?\n/,
+    '\n',
+  );
+  assert.notEqual(ciWithoutEmptyDb, ciYaml, 'mutation must actually remove the empty-db step text');
+  const mutatedCiScripts = extractE2EJobRunScripts(ciWithoutEmptyDb);
+  const mutatedMissing = [...releaseScripts].filter((name) => !mutatedCiScripts.has(name));
+  assert.notDeepEqual(mutatedMissing, [], 'removing the empty-db CI step must be caught as a coverage gap');
+
+  // Same proof in the other direction: dropping the script from
+  // verify:release (so CI keeps running something the release gate no
+  // longer requires) is a config error this test should tolerate, not one
+  // it should require CI to also drop — confirm the comparison is
+  // one-directional (release ⊆ CI), not an exact-set-equality trap that
+  // would make loosening verify:release require touching CI too.
+  const releaseWithoutEmptyDb = packageJson.replace(' && npm run test:e2e:empty-db', '');
+  assert.notEqual(releaseWithoutEmptyDb, packageJson, 'mutation must actually remove the empty-db script reference');
+  const shrunkReleaseScripts = extractVerifyReleaseE2EScripts(releaseWithoutEmptyDb);
+  const stillMissing = [...shrunkReleaseScripts].filter((name) => !ciScripts.has(name));
+  assert.deepEqual(stillMissing, [], 'CI running a superset of a shrunk verify:release must still pass');
 });

@@ -208,6 +208,10 @@ export class CodexCliAdapter implements AgentAdapter {
       return failSpawn(`Failed to spawn process: ${String(err)}`);
     }
 
+    childProcess.on("error", (err) => {
+      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage: `Process error: ${err.message}`, finalMessage: null });
+    });
+
     if (!childProcess || !childProcess.pid) {
       return failSpawn("Failed to spawn process: no PID");
     }
@@ -236,10 +240,6 @@ export class CodexCliAdapter implements AgentAdapter {
         credentialFailureDetected = true;
       }
       emitOutput("stderr", data);
-    });
-
-    childProcess.on("error", (err) => {
-      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage: `Process error: ${err.message}`, finalMessage: null });
     });
 
     childProcess.on("exit", (code, signal) => {

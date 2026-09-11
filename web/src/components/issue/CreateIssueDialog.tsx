@@ -1,14 +1,9 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type RefObject } from "react";
 import { IssuePriority } from "@personahub/shared";
 import { useCreateIssue } from "@/hooks/use-issues";
 import { toApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,11 +14,18 @@ interface CreateIssueDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (issueId: string) => void;
+  restoreFocusRef?: RefObject<HTMLElement | null>;
 }
 
 const PRIORITIES: IssuePriority[] = [IssuePriority.Low, IssuePriority.Normal, IssuePriority.High];
 
-export function CreateIssueDialog({ projectId, open, onOpenChange, onCreated }: CreateIssueDialogProps) {
+export function CreateIssueDialog({
+  projectId,
+  open,
+  onOpenChange,
+  onCreated,
+  restoreFocusRef,
+}: CreateIssueDialogProps) {
   const [title, setTitle] = useState("");
   const [goal, setGoal] = useState("");
   const [priority, setPriority] = useState<IssuePriority>(IssuePriority.Normal);
@@ -64,7 +66,7 @@ export function CreateIssueDialog({ projectId, open, onOpenChange, onCreated }: 
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent restoreFocusRef={restoreFocusRef}>
         <DialogHeader>
           <DialogTitle>New coding issue</DialogTitle>
         </DialogHeader>
@@ -122,10 +124,7 @@ export function CreateIssueDialog({ projectId, open, onOpenChange, onCreated }: 
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={!title.trim() || !goal.trim() || createIssue.isPending}
-            >
+            <Button type="submit" disabled={!title.trim() || !goal.trim() || createIssue.isPending}>
               {createIssue.isPending ? "Creating…" : "Create"}
             </Button>
           </div>

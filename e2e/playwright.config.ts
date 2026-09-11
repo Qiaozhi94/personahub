@@ -1,26 +1,54 @@
-import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
 import { SERVER_PORT, WEB_PORT } from "./tests/support/env.js";
+import { createInvocationDir, isInvocationDirOwner } from "./tests/support/invocation-dir.js";
+import { buildE2EFixtureDatabase } from "./tests/support/f009-fixture-db.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbDir = path.resolve(__dirname, ".tmp");
-try {
-  // Best-effort: start each run from a clean DB so .tmp doesn't grow
-  // unbounded. Not load-bearing for correctness — tests select their seeded
-  // Project by name (see support/app.ts) rather than relying on it being
-  // the only one in the DB — so a leftover file lock (e.g. a prior run's
-  // server process still releasing its handle on Windows) just means this
-  // run accumulates on top of the old file instead of failing outright.
-  fs.rmSync(dbDir, { recursive: true, force: true });
-} catch {
-  // ignore — see comment above.
+// F009: the E2E database is the pinned v0.2 release fixture (T000 builder +
+// real migration chain), rebuilt fresh below and then opened by the real
+// server through DB_PATH. The server's own startup recovery is the only
+// writer between seed and journey — there is no API-seeded second database
+// (v02-fixture-contract.md §3.5).
+//
+// review R3-017: this directory must be freshly mkdtemp'd here, at config
+// module load, not a fixed path under e2e/ — a fixed path that setup
+// recursively deletes on every invocation is a real hazard: two overlapping
+// runs (e.g. one from a previous invocation whose server process is still
+// alive) delete and recreate each other's database and workspace mid-test.
+// outputDir and playwright-report intentionally stay at their normal fixed
+// locations — CI's "Upload Playwright report on failure" step references
+// e2e/playwright-report/ by that exact path, and Playwright's own clearing
+// of its configured outputDir at run start is a separate, well-tested
+// mechanism from this project's own ad hoc recursive deletes.
+const invocationDir = createInvocationDir("personahub-e2e-");
+const dbFile = path.join(invocationDir, "v02-fixture.sqlite");
+
+// review R3-017 follow-up: build the fixture here, at config-load time, not
+// via Playwright's `globalSetup` hook. This Playwright version always runs a
+// config's `webServer` plugin setup before `globalSetup` (see
+// f009-fixture-db.ts for the full explanation) — by the time a `globalSetup`
+// script ran, the server had already opened this (nonexistent) DB_PATH and
+// migrated it straight to head, so writing the v10 snapshot afterwards
+// collided with columns the head migrations already added. Config-load time
+// is the only point guaranteed to run before webServer starts.
+//
+// review R3-017 follow-up #2: Playwright also re-evaluates this config
+// module inside each worker process it forks — `createInvocationDir` makes
+// those inherit the same directory, but only the owning (orchestrator)
+// process should actually build into it; a worker rebuilding the same
+// already-built file hits the identical "duplicate column name" collision.
+if (isInvocationDirOwner()) {
+  buildE2EFixtureDatabase(invocationDir);
 }
-fs.mkdirSync(dbDir, { recursive: true });
 
 export default defineConfig({
+  globalTeardown: "./tests/support/invocation-dir-teardown.ts",
   testDir: "./tests",
+  // Runs under its own config (playwright.empty-db.config.ts) against a
+  // genuinely empty database — this config's webServer always seeds the
+  // v0.2 fixture, so running it here would assert empty-state copy against
+  // a non-empty database and fail for the wrong reason.
+  testIgnore: /f009-empty-database\.spec\.ts/,
   outputDir: "./test-results",
   fullyParallel: false,
   workers: 1,
@@ -30,17 +58,18 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-  ],
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
       command: "npm run dev:server",
       cwd: "..",
       env: {
-        DB_PATH: path.join(dbDir, "e2e.db"),
+        DB_PATH: dbFile,
         PORT: String(SERVER_PORT),
         HOST: "127.0.0.1",
+        // review R3-016: the fake adapter is opt-in only; this fixture's
+        // validator dispatch relies on it for a deterministic verdict.
+        ENABLE_FAKE_ADAPTER: "1",
       },
       url: `http://127.0.0.1:${SERVER_PORT}/api/health`,
       // Always spawn fresh: this suite's whole data-isolation story rests

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { XCircle, RotateCcw } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { XCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   FailureReason,
   IssueStatus,
@@ -52,29 +52,21 @@ const FAILURE_REASON_LABELS: Record<FailureReason, string> = {
 };
 
 const BLOCKED_BY_EXPLANATIONS: Record<string, string> = {
-  credential_isolation:
-    "Push blocked by credential isolation — no push credentials provisioned",
-  pre_execution_approval:
-    "Push blocked by pre-execution approval — command was rejected before execution",
-  post_hoc_detection:
-    "Push detected after execution — this is post-hoc detection, not pre-execution blocking",
+  credential_isolation: "Push blocked by credential isolation — no push credentials provisioned",
+  pre_execution_approval: "Push blocked by pre-execution approval — command was rejected before execution",
+  post_hoc_detection: "Push detected after execution — this is post-hoc detection, not pre-execution blocking",
 };
 
-const GRAPH_RUN_STATUS_VARIANT: Record<
-  GraphRunStatus,
-  "secondary" | "brand" | "success" | "destructive" | "warning"
-> = {
-  [GraphRunStatus.Running]: "brand",
-  [GraphRunStatus.Blocked]: "destructive",
-  [GraphRunStatus.Cancelling]: "warning",
-  [GraphRunStatus.Completed]: "success",
-  [GraphRunStatus.Cancelled]: "secondary",
-};
+const GRAPH_RUN_STATUS_VARIANT: Record<GraphRunStatus, "secondary" | "brand" | "success" | "destructive" | "warning"> =
+  {
+    [GraphRunStatus.Running]: "brand",
+    [GraphRunStatus.Blocked]: "destructive",
+    [GraphRunStatus.Cancelling]: "warning",
+    [GraphRunStatus.Completed]: "success",
+    [GraphRunStatus.Cancelled]: "secondary",
+  };
 
-const NODE_RUN_STATUS_VARIANT: Record<
-  NodeRunStatus,
-  "secondary" | "brand" | "success" | "destructive" | "warning"
-> = {
+const NODE_RUN_STATUS_VARIANT: Record<NodeRunStatus, "secondary" | "brand" | "success" | "destructive" | "warning"> = {
   [NodeRunStatus.Pending]: "secondary",
   [NodeRunStatus.Ready]: "brand",
   [NodeRunStatus.Running]: "brand",
@@ -106,37 +98,8 @@ function useGraph(issueId: string) {
   });
 }
 
-function useRetryGraphNode() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ graphRunId, nodeKey }: { graphRunId: string; nodeKey: string }) =>
-      apiClient.graphRuns.retryNode(graphRunId, nodeKey),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["issue-graph"] });
-      qc.invalidateQueries({ queryKey: ["runs"] });
-      qc.invalidateQueries({ queryKey: ["issue"] });
-    },
-  });
-}
-
-function useCancelGraphRun() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (graphRunId: string) => apiClient.graphRuns.cancel(graphRunId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["issue-graph"] });
-      qc.invalidateQueries({ queryKey: ["runs"] });
-      qc.invalidateQueries({ queryKey: ["issue"] });
-    },
-  });
-}
-
 function GraphInspectorSection({ issueId }: { issueId: string }) {
   const graphQuery = useGraph(issueId);
-  const retryNode = useRetryGraphNode();
-  const cancelGraph = useCancelGraphRun();
-  const retryError = retryNode.isError ? toApiError(retryNode.error).message : null;
-  const cancelError = cancelGraph.isError ? toApiError(cancelGraph.error).message : null;
 
   if (graphQuery.isLoading) {
     return (
@@ -149,13 +112,18 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
 
   const current = graphQuery.data?.current;
   const history = graphQuery.data?.history ?? [];
-  const lastTerminal = history.find((h) => h.status === GraphRunStatus.Completed || h.status === GraphRunStatus.Cancelled);
+  const lastTerminal = history.find(
+    (h) => h.status === GraphRunStatus.Completed || h.status === GraphRunStatus.Cancelled,
+  );
 
   if (!current) {
     return lastTerminal ? (
       <section className="grid min-w-0 gap-2 rounded-lg border border-border bg-card p-3.5">
         <strong className="text-sm">Graph Run</strong>
-        <InspectorRow label="Status" value={`${lastTerminal.status} (last run ${new Date(lastTerminal.created_at).toLocaleString()})`} />
+        <InspectorRow
+          label="Status"
+          value={`${lastTerminal.status} (last run ${new Date(lastTerminal.created_at).toLocaleString()})`}
+        />
       </section>
     ) : null;
   }
@@ -163,30 +131,15 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
   const { graph_run, nodes, edges } = current;
   const isBlocked = graph_run.status === GraphRunStatus.Blocked;
   const isCancelling = graph_run.status === GraphRunStatus.Cancelling;
-  const isTerminal = graph_run.status === GraphRunStatus.Completed || graph_run.status === GraphRunStatus.Cancelled;
   const activeRunIds = nodes.flatMap((n) => n.attempts.filter((a) => a.status === "running").map((a) => a.run_id));
 
   return (
     <section className="grid min-w-0 gap-2 rounded-lg border border-border bg-card p-3.5">
       <div className="flex items-center justify-between">
         <strong className="text-sm">Graph Run</strong>
-        <div className="flex items-center gap-2">
-          {!isTerminal ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 text-[11px]"
-              disabled={cancelGraph.isPending}
-              onClick={() => cancelGraph.mutate(graph_run.id)}
-            >
-              <XCircle className="mr-1 h-3 w-3" />
-              {isCancelling ? "Force Cancel" : "Cancel"}
-            </Button>
-          ) : null}
-          <Badge variant={GRAPH_RUN_STATUS_VARIANT[graph_run.status]} className="text-[11px]">
-            {graph_run.status}
-          </Badge>
-        </div>
+        <Badge variant={GRAPH_RUN_STATUS_VARIANT[graph_run.status]} className="text-[11px]">
+          {graph_run.status}
+        </Badge>
       </div>
 
       <InspectorRow label="Definition" value={`${graph_run.definition_id} v${graph_run.definition_version}`} />
@@ -214,16 +167,7 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
                 <li key={key} className="flex items-center justify-between gap-2 text-xs">
                   <span className="min-w-0 break-words [overflow-wrap:anywhere]">{key}</span>
                   {canRetry ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-[11px]"
-                      disabled={retryNode.isPending || isCancelling}
-                      onClick={() => retryNode.mutate({ graphRunId: graph_run.id, nodeKey: key })}
-                    >
-                      <RotateCcw className="mr-1 h-3 w-3" />
-                      Retry
-                    </Button>
+                    <span className="text-muted-foreground">Failed node: retry in the execution section</span>
                   ) : null}
                 </li>
               );
@@ -253,7 +197,10 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
           <span className="text-xs text-muted-foreground">Nodes</span>
           <ul className="mt-1 grid gap-1">
             {nodes.map((node) => (
-              <li key={node.node_key} className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2 py-1">
+              <li
+                key={node.node_key}
+                className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2 py-1"
+              >
                 <span className="min-w-0 truncate text-xs font-medium">{node.node_key}</span>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <span className="text-[11px] text-muted-foreground">{node.attempts.length}</span>
@@ -288,9 +235,6 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
           </ul>
         </div>
       ) : null}
-
-      {retryError ? <p className="text-xs text-destructive">{retryError}</p> : null}
-      {cancelError ? <p className="text-xs text-destructive">{cancelError}</p> : null}
     </section>
   );
 }
@@ -307,14 +251,10 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
   const eventsQuery = useThreadEvents(threadId);
   const allEvents = eventsQuery.data?.events ?? [];
   const runLogs = latestRun
-    ? allEvents.filter(
-        (e) => e.type === ThreadEventType.RunOutput && e.payload_json?.run_id === latestRun.id,
-      )
+    ? allEvents.filter((e) => e.type === ThreadEventType.RunOutput && e.payload_json?.run_id === latestRun.id)
     : [];
   const hasTruncation = latestRun
-    ? allEvents.some(
-        (e) => e.type === ThreadEventType.RunOutputTruncated && e.payload_json?.run_id === latestRun.id,
-      )
+    ? allEvents.some((e) => e.type === ThreadEventType.RunOutputTruncated && e.payload_json?.run_id === latestRun.id)
     : false;
 
   const logContainerRef = useRef<HTMLDivElement | null>(null);
@@ -327,15 +267,25 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
   const [cancelTargetRunId, setCancelTargetRunId] = useState<string | null>(null);
   const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
   const [resetRoundsDialogOpen, setResetRoundsDialogOpen] = useState(false);
+  // These dialogs open via a window CustomEvent from a trigger button that
+  // lives in a sibling component (ValidationInspectorSection), so there is
+  // no direct ref to thread through props — capture whatever had focus at
+  // dispatch time instead (V3.44 BC-049: Radix only auto-restores focus to
+  // a `DialogTrigger`, which these dialogs don't use).
+  const unblockTriggerRef = useRef<HTMLElement | null>(null);
+  const resetRoundsTriggerRef = useRef<HTMLElement | null>(null);
+  const cancelTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     function handleUnblockEvent(e: CustomEvent) {
       if (e.detail?.issueId === issue.id) {
+        unblockTriggerRef.current = document.activeElement as HTMLElement | null;
         setUnblockDialogOpen(true);
       }
     }
     function handleResetRoundsEvent(e: CustomEvent) {
       if (e.detail?.issueId === issue.id) {
+        resetRoundsTriggerRef.current = document.activeElement as HTMLElement | null;
         setResetRoundsDialogOpen(true);
       }
     }
@@ -348,6 +298,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
   }, [issue.id]);
 
   function openCancelDialog(runId: string) {
+    cancelTriggerRef.current = document.activeElement as HTMLElement | null;
     setCancelTargetRunId(runId);
     setCancelDialogOpen(true);
   }
@@ -377,23 +328,19 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
               </div>
               {latestRun?.failure_reason ? (
                 <p className="text-xs text-destructive/80">
-                  {
-                    BLOCKED_BY_EXPLANATIONS[
-                      latestRun.failure_reason === FailureReason.CredentialIsolationBlocked
-                        ? "credential_isolation"
-                        : latestRun.failure_reason === FailureReason.PreExecutionApprovalRejected
-                          ? "pre_execution_approval"
-                          : latestRun.failure_reason === FailureReason.PostHocEscalation
-                            ? "post_hoc_detection"
-                            : ""
-                    ] ?? FAILURE_REASON_LABELS[latestRun.failure_reason]
-                  }
+                  {BLOCKED_BY_EXPLANATIONS[
+                    latestRun.failure_reason === FailureReason.CredentialIsolationBlocked
+                      ? "credential_isolation"
+                      : latestRun.failure_reason === FailureReason.PreExecutionApprovalRejected
+                        ? "pre_execution_approval"
+                        : latestRun.failure_reason === FailureReason.PostHocEscalation
+                          ? "post_hoc_detection"
+                          : ""
+                  ] ?? FAILURE_REASON_LABELS[latestRun.failure_reason]}
                 </p>
               ) : null}
               {latestRun?.error_message ? (
-                <p className="text-xs text-muted-foreground">
-                  {latestRun.error_message}
-                </p>
+                <p className="text-xs text-muted-foreground">{latestRun.error_message}</p>
               ) : null}
             </div>
           </div>
@@ -409,10 +356,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
         <strong className="text-sm">Issue</strong>
         <InspectorRow label="Status" value={issue.status} />
         <InspectorRow label="Priority" value={issue.priority} />
-        <InspectorRow
-          label="Labels"
-          value={issue.labels.length > 0 ? issue.labels.join(", ") : "—"}
-        />
+        <InspectorRow label="Labels" value={issue.labels.length > 0 ? issue.labels.join(", ") : "—"} />
         <InspectorRow label="Round" value={String(issue.validation_round_count)} />
         <InspectorRow label="Workspace" value={workspacePath ?? "—"} />
         <InspectorRow label="Created" value={new Date(issue.created_at).toLocaleString()} />
@@ -442,9 +386,11 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
           <InspectorRow label="Purpose" value={runPurposeLabel(latestRun)} />
           <InspectorRow
             label="Adapter"
-            value={latestRun.adapter_identity
-              ? `${latestRun.adapter_identity.name} (${latestRun.adapter_identity.cli_provider}${latestRun.adapter_identity.default_model ? ` · ${latestRun.adapter_identity.default_model}` : ""})`
-              : "unknown provider"}
+            value={
+              latestRun.adapter_identity
+                ? `${latestRun.adapter_identity.name} (${latestRun.adapter_identity.cli_provider}${latestRun.adapter_identity.default_model ? ` · ${latestRun.adapter_identity.default_model}` : ""})`
+                : "unknown provider"
+            }
           />
           <InspectorRow label="Source" value={latestRun.dispatch_source} />
           {latestRun.context_source_run_id ? (
@@ -461,10 +407,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
             label="Completed"
             value={latestRun.completed_at ? new Date(latestRun.completed_at).toLocaleString() : "—"}
           />
-          <InspectorRow
-            label="Exit code"
-            value={latestRun.exit_code !== null ? String(latestRun.exit_code) : "—"}
-          />
+          <InspectorRow label="Exit code" value={latestRun.exit_code !== null ? String(latestRun.exit_code) : "—"} />
           {latestRun.failure_reason ? (
             <InspectorRow
               label="Failure"
@@ -473,9 +416,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
           ) : null}
           {latestRun.error_message ? (
             <div className="border-t border-border pt-1.5">
-              <p className="text-xs text-destructive whitespace-pre-wrap break-words">
-                {latestRun.error_message}
-              </p>
+              <p className="text-xs text-destructive whitespace-pre-wrap break-words">{latestRun.error_message}</p>
             </div>
           ) : null}
 
@@ -492,7 +433,11 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
                   return (
                     <pre
                       key={e.id}
-                      className={stream === "stderr" ? "text-destructive whitespace-pre-wrap break-words" : "whitespace-pre-wrap break-words"}
+                      className={
+                        stream === "stderr"
+                          ? "text-destructive whitespace-pre-wrap break-words"
+                          : "whitespace-pre-wrap break-words"
+                      }
                     >
                       {chunk}
                     </pre>
@@ -505,8 +450,7 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
             </div>
           ) : null}
 
-          {(latestRun.status === RunStatus.Queued ||
-            latestRun.status === RunStatus.Running) ? (
+          {latestRun.status === RunStatus.Queued || latestRun.status === RunStatus.Running ? (
             <div className="border-t border-border pt-1.5">
               <Button
                 variant="destructive"
@@ -537,38 +481,30 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
         issueId={issue.id}
         open={unblockDialogOpen}
         onOpenChange={() => setUnblockDialogOpen(false)}
+        restoreFocusRef={unblockTriggerRef}
       />
 
       <ResetRoundsDialog
         issueId={issue.id}
         open={resetRoundsDialogOpen}
         onOpenChange={() => setResetRoundsDialogOpen(false)}
+        restoreFocusRef={resetRoundsTriggerRef}
       />
 
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent>
+        <DialogContent restoreFocusRef={cancelTriggerRef}>
           <DialogHeader>
             <DialogTitle>Cancel Run</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to cancel this run? This action cannot be undone.
           </p>
-          {cancelError ? (
-            <p className="text-xs text-destructive">{cancelError}</p>
-          ) : null}
+          {cancelError ? <p className="text-xs text-destructive">{cancelError}</p> : null}
           <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setCancelDialogOpen(false)}
-              disabled={cancelRun.isPending}
-            >
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)} disabled={cancelRun.isPending}>
               Keep running
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCancelConfirm}
-              disabled={cancelRun.isPending}
-            >
+            <Button variant="destructive" onClick={handleCancelConfirm} disabled={cancelRun.isPending}>
               {cancelRun.isPending ? "Cancelling…" : "Yes, cancel run"}
             </Button>
           </div>

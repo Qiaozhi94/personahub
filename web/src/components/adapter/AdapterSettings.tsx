@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { AdapterStatus, AgentCapability, type AdapterConfig } from "@personahub/shared";
 import { useAdapters } from "@/hooks/use-adapters";
@@ -20,13 +20,19 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAdapter, setEditingAdapter] = useState<AdapterConfig | null>(null);
+  // Two separate triggers (the "Configure adapter" button, each row's Edit
+  // button) open this dialog, so capture whatever had focus at click time
+  // rather than a single fixed ref (review R1-006/BC-049).
+  const dialogTriggerRef = useRef<HTMLElement | null>(null);
 
   function openCreate() {
+    dialogTriggerRef.current = document.activeElement as HTMLElement | null;
     setEditingAdapter(null);
     setDialogOpen(true);
   }
 
   function openEdit(adapter: AdapterConfig) {
+    dialogTriggerRef.current = document.activeElement as HTMLElement | null;
     setEditingAdapter(adapter);
     setDialogOpen(true);
   }
@@ -98,6 +104,7 @@ export function AdapterSettings({ projectId }: AdapterSettingsProps) {
         onOpenChange={handleDialogClose}
         projectId={projectId}
         editingAdapter={editingAdapter}
+        restoreFocusRef={dialogTriggerRef}
       />
     </section>
   );

@@ -993,3 +993,83 @@ archived ref 的消费限制与 F010 契约一致。
 7. `structural-check-misses-semantics` 说明解析出合法 `key=value` 只证明结构存在，不能证明值可用；
    自动门禁应机械拒绝团队已定义的占位全集，同时把引用存在性和与实现一致性明确交给状态推进 PR
    复核，避免“门禁能自动证明任意自由文本语义”的虚假承诺。
+
+---
+
+## 循环 20：F009 实现代码检视（5轮）
+
+- **report_type**: fix-verification
+- **周期**: 2026-09-10—2026-09-12，5轮（Round 1 全量扫描，Round 2-5 diff-only） · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
+- **背景**: F009 开发与自检完成、状态进入 `review` 后，对 v0.1/v0.2 生产前端迁移成果做实现级检视。
+  基线依次为 `f009-v344-frontend-foundation@`（R1）→ `6dee56e`（R4 起）→ `d2ecc74`（R5 复核对象）。
+  修复方以 `FIX-log.md` 按轮追加声明，检视方对每条声明做独立变异核对后才翻状态；
+  Round 4 的独立变异一次性推翻了 5 条"已修复"声明，Round 5 全部复核通过。
+  用户既有未提交文件 `docs/quant-factor-research-tradingview-assessment.md` 全程排除。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| F009-CODE-R1-001 | 主区域不可滚动，超出视口的任务详情无法到达 | High | 正确性 | 根因 | 初始实现 | fixed | — | main 成为纵向滚动 owner | `e2e/tests/f009-shell.spec.ts::R1-001` | 1 | 2 | scroll-container-missing |
+| F009-CODE-R1-002 | Composer 的 adapter/consult 状态在缓存任务之间串用 | High | 正确性 | 根因 | 初始实现 | fixed | — | 草稿与 adapter/consult 状态按 task key 隔离 | `web/src/f009-execution-host.test.tsx::keeps adapter and consult selection per task key` | 1 | 2 | route-scoped-state-leak |
+| F009-CODE-R1-003 | 生产界面没有显式丢弃草稿动作（设计已定义，实现缺失） | High | 正确性 | 根因 | 初始实现 | fixed | — | 增加 pending 状态可用的丢弃动作 | `web/src/f009-execution-host.test.tsx::offers a production discard action` | 1 | 2 | marked-done-not-implemented |
+| F009-CODE-R1-004 | 历史工作流页存在路由但无任何入口可发现 | High | 正确性 | 根因 | 初始实现 | fixed | — | 设置目录只列真实可达子页 | `e2e/tests/f009-shell.spec.ts::BC-097` | 1 | 2 | route-exists-but-undiscoverable |
+| F009-CODE-R1-005 | 黄金旅程未真正执行冻结的关键写动作，改由单元测试断言入口存在 | High | 测试覆盖 | 根因 | 初始实现 | fixed | — | J1-J9 通过确定性 fixture 真实执行写动作并写后读 | `e2e/tests/f009-golden-journey.spec.ts::J1-J9` | 1 | 3 | test-simulates-itself |
+| F009-CODE-R1-006 | adapted 行未锁住全部生产交互实例（连续三轮补散点、每轮仍漏一个触发分支） | High | 测试覆盖 | 根因 | 初始实现 | fixed | 先建可执行的 dialog×触发分支分母，再参数化覆盖完整分母 | `DIALOG_INSTANCES` 可执行清单（每个生产 dialog、每个打开方式各一行）+ 单一参数化测试体，补齐 Adapter Edit 分支 | `e2e/tests/f009-a11y.spec.ts::BC-048/049/050 ×10 实例` | 1 | 5 | acceptance-subset-without-denominator |
+| F009-CODE-R1-007 | 错误与空状态恢复合同不完整，多个 query surface 无真实重试 | High | 正确性 | 根因 | 初始实现 | fixed | — | 五个剩余 query surface 均接入真实 retry/refetch | `web/src/f009-pages.test.tsx` 等 F009 recovery 测试 | 1 | 3 | partial-symmetric-fix |
+| F009-CODE-R1-008 | 未覆盖真实 server 首启迁移这一集成缝 | Medium | 测试覆盖 | 根因 | 初始实现 | fixed | — | v10 fixture 由真实 server 首启迁移产生 | `e2e/tests/f009-golden-journey.spec.ts::J1 schema head` | 1 | 2 | integration-seam-not-exercised |
+| F009-CODE-R1-009 | popstate 监听生命周期错误，最后一个订阅注销后仍残留 | Medium | 正确性 | 根因 | 初始实现 | fixed | — | 首订阅注册、末订阅注销 | `web/src/f009-shell.test.tsx::keeps remaining subscribers updating` | 1 | 2 | shared-listener-lifetime |
+| F009-CODE-R1-010 | Graph 弹窗在异步结果返回前就关闭，失败无处显示 | Medium | 正确性 | 根因 | 初始实现 | fixed | — | 失败保留弹窗、仅成功关闭 | `web/src/f009-execution-host.test.tsx::keeps the graph dialog open on failure` | 1 | 2 | async-dialog-closes-before-outcome |
+| F009-CODE-R1-011 | T031 完成标记与执行证据不一致，上下游文档互相矛盾 | Medium | 测试覆盖 | 根因 | 流程缺口 | fixed | 作一次真正的规格裁决并同步全部证据，不能只改下游 tasks/matrix | design.md §10 新增 DQ-008 裁决「结构事实必须自动化、只有审美判断留人工」，spec/design/tasks/journey-matrix 四处口径同步；门禁计数重新实跑核对 | `design.md §10 DQ-008` + `tools/check-v03-plan-contracts.test.mjs::F009-CODE-DEFERRED-INVENTORY` | 1 | 5 | marked-done-not-recorded |
+| F009-CODE-R1-012 | format 门禁的增量目标漏掉 F009 新增文件 | Medium | 质量 | 根因 | 初始实现 | fixed | — | 扩展 package.json 的增量 format targets | `npm run format:check` | 1 | 2 | gate-coverage-gap |
+| F009-CODE-R1-013 | DataTable 把自定义 ReactNode 字符串化后渲染 | Low | 质量 | 根因 | 初始实现 | fixed | — | custom ReactNode 原样渲染 | `web/src/f009-primitives.test.tsx::renders a custom ReactNode as-is` | 1 | 2 | render-contract-stringifies-node |
+| F009-CODE-R2-014 | tabs 只切换选中态、不切换可见面板 | Medium | 正确性 | 根因 | 修复引入 | fixed | — | 可见 tabpanel 与 active tab 绑定 | `e2e/tests/f009-a11y.spec.ts::BC-052` | 2 | 3 | control-state-not-bound-to-content |
+| F009-CODE-R2-015 | 新增回归测试未等待 React 更新，缺陷存在时仍绿 | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | — | 手工 popstate dispatch 由 act 包裹 | `web/src/f009-execution-host.test.tsx`、`web/src/f009-shell.test.tsx` | 2 | 3 | unawaited-react-update |
+| F009-CODE-R3-016 | 测试用 FakeAgentAdapter 可重新进入生产启动路径而测试不红 | High | 测试覆盖 | 根因 | 修复引入 | fixed | 把环境解析与 registry 构造收进一个可导入的 production composition 函数并直接断言默认环境结果 | 抽出 `buildProductionAdapterRegistry(env)` 作为 index.ts 唯一调用点，源码扫描锁定该调用点传入未修改的 `process.env`；`main()` 加 entrypoint 守卫以便测试导入 | `server/tests/unit/register-adapters.test.ts::server/src/index.ts wiring` | 3 | 5 | test-double-in-production-wiring |
+| F009-CODE-R3-017 | E2E invocation 生命周期未被回归锁定，且 teardown 实际每次泄漏目录 | High | 正确性 | 根因 | 修复引入 | fixed | 以真实 invocation lifecycle 做并发回归，并断言运行结束后目录消失 | 并发回归改为调用真实 `createInvocationDir()`；定位到 Playwright 会在每个 worker 进程重复求值 config 才是泄漏根因，改为按进程树幂等（worker 继承 orchestrator 目录）并新增真实运行后断言零残留的 lifecycle 校验，接入 CI 与 verify:release | `server/tests/integration/f009-v02-fixture.test.ts::keeps two concurrent fixture builds fully isolated` + `e2e/tests/support/verify-invocation-dir-lifecycle.mjs` | 3 | 5 | shared-fixed-temp-path |
+| F009-CODE-R3-018 | CI 与发布门禁的 E2E 集合一致性没有可失败的契约测试 | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | 解析根 scripts 与 workflow，断言两者包含相同 E2E 集合 | 静态契约测试提取 CI e2e job 与 verify:release 的 `test:e2e*` 集合，断言 release ⊆ CI，并做双向变异 | `tools/check-v03-plan-contracts.test.mjs::F009-CODE-R3-018` | 3 | 5 | release-gate-diverges-from-ci |
+| F009-CODE-R5-019 | DIALOG_INSTANCES 是手工清单，新增 dialog 不会让任何测试变红 | Medium | 测试覆盖 | 根因 | 初始实现 | open | 仿 R3-016 的源码扫描，加一条测试统计生产 DialogTitle/AppDialog 实例并断言与清单条目一一对应 | — | — | 5 | — | acceptance-subset-without-denominator |
+| F009-CODE-R5-020 | 并发 fixture 回归在 worker 失败时泄漏 mkdtemp 目录 | Low | 质量 | 根因 | 修复引入 | open | 把 execFileAsync 的 Promise.all 移回 try 内，或在 catch 内按 prefix 兜底清理 | — | — | 5 | — | cleanup-outside-try |
+| F009-CODE-R5-021 | lifecycle 校验脚本用全局 tmp 快照差分，并发运行会误报泄漏 | Low | 质量 | 根因 | 初始实现 | open | 给该次调用指定专属 TMPDIR 或独占 prefix，只在该范围内快照差分 | — | — | 5 | — | global-snapshot-diff-not-isolated |
+| F009-CODE-R5-022 | 检视过程稿被提交进 git，违反 gitignore 纪律 | Medium | 质量 | 根因 | 流程缺口 | fixed | 回写 RETROSPECTIVE 后从版本库移除，保留 .gitignore 规则 | 闭环时由检视人把 issue 表回写本文件并 `git rm --cached` 两份过程稿 | `git check-ignore -v docs/reviews/CURRENT-code.md docs/reviews/FIX-log.md` | 5 | 5 | process-artifact-committed |
+| F009-CODE-R5-024 | 新增的 e2e `.mjs` 校验脚本未纳入 format 门禁目标 | Low | 质量 | 根因 | 修复引入 | open | 把 `e2e/tests/support/*.mjs` 加进 package.json 的 format targets | — | — | 5 | — | gate-coverage-gap |
+| F009-CODE-R5-023 | createInvocationDir 会沿用外部环境里已存在的同名变量 | Low | 质量 | 根因 | 修复引入 | open | 用 owner pid 的祖先关系或额外的 invocation nonce 判断继承来源，而非只看变量是否存在 | — | — | 5 | — | env-inherited-state-trusted |
+
+**问题与实际修复证据**
+
+- Round 4 的独立变异是这个循环最关键的一轮：五条被声明"已修复"的 finding，逐条把生产代码改坏后
+  目标测试**全部仍然绿**——R1-006 的 a11y 用例只点了 Adapter 的 Configure 分支、R3-016 的测试只调用
+  helper 而从不触及 `index.ts` 真实调用点、R3-017 的并发用例自己预建两个目录从而绕过
+  `createInvocationDir()`、R3-018 根本没有测试、R1-011 只改了下游 tasks/matrix。这一轮证明
+  "声明+计数"不能替代独立变异：修复方当轮报告的门禁计数（主 E2E 30/30、server 1695）与检视方
+  独立实跑（31/31、1692）也对不上。
+- Round 5 逐条复核通过：R3-016 变异后 `register-adapters.test.ts` 2 failed；R3-017 两个变异分别
+  复现 `SqliteError: duplicate column name` 与真实残留目录；R1-006 变异后**只有** `adapter — edit branch`
+  一条变红；R3-018 两个方向的 workflow 变异都让契约测试变红。R1-011 的四处文档口径与
+  `docs/SOP.md` 的被引章节均已核对存在，FIX-log 的门禁计数与独立实跑逐项相等。
+- R3-017 的根因在 Round 5 之前一直被当作"teardown 没删干净"的症状处理。真正原因是 Playwright
+  会在 orchestrator 之外、每个 forked worker 里**再次求值 config 模块**，无条件的 `mkdtemp()` 因此
+  每个 worker 都多造一个永不回收的目录。修复改为按进程树幂等 + 只有 owner 进程建 fixture。
+- 检视人另做了一项相邻风险核对：R3-016 为可测试性给 `main()` 加了 entrypoint 守卫，而
+  `node dist/index.js` 这条生产入口没有任何测试覆盖。实跑编译产物确认启动正常、`/api/health` 返回 ok。
+- 轮末全量门禁（检视人独立实跑）：`npm run verify` PASS；server 129 files / 1699 tests；
+  web 31 files / 268 tests；`npm run build` 1771 modules；主 E2E 37/37；empty-db 4/4；
+  invocation-lifecycle PASS 且 `/tmp` 零残留。
+
+**模式性教训**
+
+1. `origin` 分布：初始实现 13、修复引入 9、流程缺口 2。修复引入占到三分之一，且其中
+   R3-016/R3-017/R3-018 三条都是"上一轮修复本身没有被门禁锁住"——修复引入的问题不都是
+   行为回归，更多是**修复没有留下能变红的证据**。
+2. `acceptance-subset-without-denominator` 在本循环与循环 19 各出现一次，且本次连续三轮
+   反复复发：每轮补上一个被点名的遗漏实例，下一轮独立变异又找出另一个。只有在第 4 轮
+   触发不收敛升级协议、改成"先建可执行分母再参数化覆盖"之后才真正关闭。教训是：
+   同形态的散点补丁连续失败两次就应该停手改结构，不要等第三次。
+3. 最长存活的是 R1-006 与 R1-011（首次出现 1、关闭于 5，存活 4 轮），其次是
+   R3-016/R3-017/R3-018（3→5，存活 2 轮）。两条 4 轮存活的都不是难修，而是每轮都在
+   修症状：一个补断言、一个改下游文档，都没碰真正的不变量/规格本身。
+4. 裁决分布：accepted 18、partial 0、rejected 0；`suggested_fix` 与 `fix_summary` 实质一致的
+   有 5/5（Round 4 五条 carried-forward 全部按建议方向修复，且 R3-017 在建议之外自行
+   定位到更深的 worker 重复求值根因）。零拒绝在本循环是合理的——Round 4 的五条都附了
+   可复现的变异证据，没有留下"觉得没必要"的空间。
+5. `process-artifact-committed` 是本循环新增的流程教训：过程稿虽在 `.gitignore` 里，仍可能被
+   `git add -f` 以"跨机同步"为由提交进版本库。跨机续作的正确载体是 RETROSPECTIVE 或
+   分支上的代码本身，不是把检视协议的过程稿变成版本库文件。

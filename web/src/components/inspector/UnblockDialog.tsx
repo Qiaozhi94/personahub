@@ -14,9 +14,10 @@ interface UnblockDialogProps {
   issueId: string | null;
   open: boolean;
   onOpenChange: () => void;
+  restoreFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
-export function UnblockDialog({ issueId, open, onOpenChange }: UnblockDialogProps) {
+export function UnblockDialog({ issueId, open, onOpenChange, restoreFocusRef }: UnblockDialogProps) {
   const [note, setNote] = useState("");
   const mutation = useUnblock(issueId);
 
@@ -46,7 +47,7 @@ export function UnblockDialog({ issueId, open, onOpenChange }: UnblockDialogProp
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent restoreFocusRef={restoreFocusRef}>
         <DialogHeader>
           <DialogTitle>Resolve Blocker</DialogTitle>
         </DialogHeader>

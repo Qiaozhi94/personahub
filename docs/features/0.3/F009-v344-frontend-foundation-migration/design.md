@@ -2,7 +2,7 @@
 topics: [frontend, v344, migration, app-shell, accessibility]
 doc_kind: design
 created: 2026-09-08
-updated: 2026-09-09
+updated: 2026-09-11
 ---
 
 # F009：V3.44 Frontend Foundation & Migration - 设计
@@ -42,6 +42,16 @@ deep link。M1 没有 `visible-disabled` 槽位：当前没有任何未交付一
 `/settings/system-diagnostics`；代码目录绑定只在 `/projects/:projectId` 的兼容区；legacy Workflow
 Template 只在 `/settings/legacy-workflows` 只读。相同事实可以来自同一 runtime-health response，
 但 registry projection 必须按上述归属裁剪，不在两个 surface 重复解释或提供动作。
+
+### 命令面板（全局导航原语，BC-030）
+
+命令面板是 `ApplicationShell` 拥有的全局导航原语，不是独立工作面。入口为竖栏「跳转」按钮与
+`Ctrl+K` 快捷键，二者等价；打开后是由共享 dialog 原语承载的「跳转」弹层（combobox 语义，遵守
+BC-048/049 的可访问标题、焦点陷阱与焦点归还契约）。候选目标只来自 SurfaceRegistry 中
+`enabled` 槽位及其列表中的真实对象；`not-registered` 槽位（会话、自动化、记忆、能力、统计）
+不得作为候选出现。Enter 携带选择导航并关闭弹层；Escape 关闭且不改变当前 route。BC-030
+「命令面板可开可关」的生产断言对象即此原语：打开可见 → Esc 关闭隐藏，且候选集合满足上述
+注册边界。
 
 ## 3. 数据模型与 Migration
 
@@ -133,6 +143,75 @@ host 同时保留写按钮。切换期间若新 host 不满足可用条件，保
 
 AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、route registry 扫描和旧组件入口断言覆盖；AC-003 用 release / source inventory 锁定历史根入口，并覆盖每类新 canonical route 的直达、刷新、未知 ID、非法子视图；AC-004 以 `v344-browser-check-applicability.md` 为完整分母，只执行其中 adapted 的生产契约，并覆盖共享原语的 axe / 键盘 / viewport / console；AC-005 以 API mock 调用断言和 adapter dependency test 验证无第二写入口。分类总数和连续 ID 由文档测试校验；新增共享原语必须先做失败变异再实现。
 
+### 黄金旅程的 M1 投影（README §5 九步）
+
+README §5 的九步是 v0.3 版本级验收旅程（F014 收口）；F009 的 AC-001 / T021 只断言其中可由
+「v0.2 已交付能力 + v10 fixture 事实」承担的 M1 投影。逐步断言设计稿见
+`docs/reviews/journey-test-matrix.md` §1（J1–J9、S1）。
+
+| 版本级步骤 | 归属 | M1 投影（T021 断言） |
+|---|---|---|
+| 1 fixture 升级启动 + canonical deep link | F009 | 全量投影：J1 / S1 / J9（升级链启动、根入口 replace、deep link 直达 / 刷新 / History） |
+| 2 配置主目录、检查 adapter 得可派工组合 | 组合语义归 F012 | J2：绑定查看（A003）、adapter 验证 + 设默认（A026/A027）；「可派工组合」断言为验证通过事实 + 默认标记 |
+| 3 只输入目标创建、确认前零写、重复幂等 | Dispatch 语义归 F012 | J3 全量（A006/A007 + BC-056/057） |
+| 4 模型 / 深度 / 上下文 + 撤销窗口 | F012（BC-027/028/058 deferred） | 不投影；J4 只断言既有 adapter 选择与启动（A008/A009），无撤销窗口控件 |
+| 5 Artifact revision、资源视图追到 Attempt | F010/F011（BC-023/059 deferred） | 不投影；J5 断言既有 Run 事实（命令事件 / 文件变化 / trace 归属）只读守恒 |
+| 6 换模型冷启动、只给结果验证 | F012/F011（BC-028/042 deferred） | 不投影；J6 断言既有手动 trigger validation（A021）与 rounds 守恒 |
+| 7 主张 / 论证 / 证据 / 未覆盖项、同源降级 | F011（BC-009~018 deferred） | 不投影；J7 断言 complete/partial evidence、rounds / findings / summary 只读 + A022–A024 动作 |
+| 8 中断重启、不重跑、可恢复 | 完整语义归 F012 介入模型 | J8：取消 / 失败 / 阻塞守恒显示 + 重试 / resolve / unblock 可达 + 重启幂等；不断言 Attempt 中断恢复 |
+| 9 完成摘要回放派工 / 上下文 / revision | F010/F011/F012/F014 | 不投影；J9 以既有摘要只读 + 导出守恒（A019/A024）与 deep link / History 承担 AC-003 |
+
+版本级词汇与 M1 界面对应物的对照（断言文本按右列推导，界面不出现左列最终术语，遵守 UX-003）：
+
+| 版本级词汇 | M1 界面对应物 |
+|---|---|
+| 可派工组合 | adapter 验证通过事实 + 项目默认标记（「执行组合」四维语义归 F012） |
+| 派工 | 启动执行（A009/A010），沿用既有 v0.2 界面词汇 |
+| Attempt / 执行单位 | Run / Graph Run（既有执行事实） |
+| 主张—论证—证据、未覆盖项 | 验收兼容区 rounds / findings / summary 与 complete/partial evidence（F011 接管后替换） |
+| 完成摘要 | 执行摘要只读事实 + 复制 / 下载（A024）；版本级回放归 F014 |
+| 撤销窗口 | 无对应控件（F012 交付前不出现） |
+
+### 需求级豁免与 E2E 数据口径
+
+对 self-test §3.2.1 的一条显式豁免：第⑤段「SSE 断线重连按 `event_sequence` 补读」在 M1
+无活跃事件源（fixture 全为终态、旅程不驱动真实 CLI），本 Feature 不断言，归 F011/F012 的
+任务旅程，残余由 T031 裁定。
+
+第④段「干净数据首屏」最初也按「T021 黄金旅程只能用 T000 v10 fixture 升级库、不存在干净库」
+的理由整体豁免为不可自动化，自动化替代断言对象为未绑定项目绑定指引、not-found 与非法子路径
+恢复态（S1），首屏指引整体归 T031 人工确认。DQ-008（见 §10）裁定这条豁免范围过宽：数据策略
+约束的是 T021 黄金旅程内部不得出现第二套数据库，不禁止另建一个完全独立、不共用 T021
+webServer 配置的空库测试。`e2e/playwright.empty-db.config.ts` + `f009-empty-database.spec.ts`
+即是这样一个独立配置——DB_PATH 指向不存在的文件，真实 server 从零迁移，断言 `/`、`/tasks`、
+`/runtime`、`/settings/legacy-workflows` 在零数据时渲染正确的空态组件与唯一可执行恢复动作；
+S1 的未绑定项目 / not-found / 非法子路径恢复态仍由 T021 旅程本身覆盖，不重复。首屏文案措辞
+是否读起来舒服，仍是 T031 的人工判断范围。
+
+E2E 数据口径：T000 builder 升级后的临时数据库是唯一 seed；旅程内通过界面触发的 canonical 写
+（A006/A007/A009/A021/A022/A023 等）是被测行为而非播种；不使用 `support/mock-run.ts` 造 Run
+或事件。T021 的旅程 spec 为 `e2e/tests/f009-golden-journey.spec.ts`；applicability「生产测试
+路径」列指定的其余 `f009-*.spec.ts` 属 T022 门禁，可承载对应旅程步骤的复证，但与 T021 共用
+同一临时库与同一 webServer 配置，不得另建数据路径。
+
+### adapted 行断言对象集合
+
+adapted 行的断言对象是该共享交互形态在已注册 surface 中的实际实例集合。T022 实现时逐行清点
+实例并回填 applicability 对应行；某行在 M1 暂无实例时，断言对象降为该原语在任一已注册 surface
+的最小可达使用，不得静默跳过；T031 复核实例清点完整性。BC-005 的分组维度、BC-006 的标签域、
+BC-052 的 tabs 实例均按此口径执行——fixture 中 Issue 携带非空 labels，标签域有真实数据。
+
+### T031 人工检查记录
+
+T031 按 `docs/reviews/journey-test-matrix.md` §1 逐步、§2 逐条对照真实浏览器执行；发现以
+J*/S* 步骤编号回流 `dogfooding-bugs.md`（缺陷）与 `dogfooding-notes.md`（观察），分母核对
+结果与逐条结论随 F009 收口文档归档，不把「未执行」写成「通过」——这条原则本身没有改变。
+DQ-008（见 §10）改变的是 T031 的**范围**，不是这条原则：T031 里能被结构/行为事实表达的部分
+（125 条分母核对、干净数据库首屏结构）已经转成门禁和 e2e 断言，`tasks.md` 的 T031 勾选仅代表
+这部分范围通过；真正主观的审美 / 语感判断（黄金旅程逐步走查的视觉合理性、导出文案措辞）
+从 T031 的完成条件里拆出，作为独立于开发流程、持续进行的人工体验复核，不写成某一轮的
+「通过」或「未执行」，因为它本来就不是一次性可关闭的任务，而是常态化维护活动。
+
 ## 9. 已确认决策与残余风险
 
 确认 F009 是 v0.3 首个实施 Feature；它迁移现有能力，不等待 F010–F013 的新模型，也不承诺设计稿九个工作面全部上线。迁移矩阵每个 transitional-host 必须记录 `replacement_owner`、`delete_when`、`latest_milestone`，并由 F011 / F012 / F013 验收时删除。残余风险是视觉迁移扩大为业务重写，以“数据库零变更、canonical API 不变”“不得为 transitional-host 重做最终视觉或新增领域逻辑”和迁移矩阵作为硬边界。
@@ -146,3 +225,4 @@ AC-001 使用 v0.2 fixture 黄金旅程；AC-002 由迁移矩阵静态校验、r
 - [x] DQ-005: V3.44 的 125 条 browser checks 哪些属于 F009？ — 决策：以 `v344-browser-check-applicability.md` 逐条分类，当前分母为 adapted 28 / deferred 96 / not-applicable 1；F009 只为 adapted 行提供生产证据，deferred 行不得提前暴露入口。
 - [x] DQ-006: 未提交 composer 草稿由谁持有、何时保留或清除？ — 决策：由 ApplicationShell 上层的内存 TaskDraftStore 按 Task ID + composer 分键；页面内切换保留，匹配 revision 的成功提交 / 显式丢弃 / 对象消失才清除，刷新不持久化并用 beforeunload 提示。
 - [x] DQ-007: legacy 根入口与无 project query 的任务列表是否自动选择第一项？ — 决策：不选择；`/` 只 replace 到项目列表，`/tasks` 显示项目选择，用户明确选择后才 push 带身份的 URL，避免 Project 更新时间改变默认对象。
+- [x] DQ-008（review R1-011，2026-09-11）: 「干净数据库首屏」与 T031 其余可结构化验证的部分，是否必须整体留给人工、不可拆分自动化？ — 决策：不必须。原豁免把「T021 黄金旅程不能有第二套数据库」误推广成了「不存在任何空库测试」；两者不等价——一个不共用 T021 webServer 配置的独立 Playwright config 不违反前者。按新确立的「自动化与人工判断边界纪律」（`docs/SOP.md`）拆分：结构/行为事实（干净库首屏的空态组件与恢复动作是否正确、125 条适用性分母是否漂移）必须转成门禁或 e2e 断言，成为 T031 勾选的前提；只有真正的审美/语感判断（首屏文案措辞、黄金旅程视觉分组的舒适度）留给人工，且明确为独立于开发流程的持续性活动，不是 T031 一次性完成条件的一部分，也不阻塞 F009 的 review 状态。落地：`e2e/playwright.empty-db.config.ts` + `e2e/tests/f009-empty-database.spec.ts`（干净库首屏结构）、`tools/check-v03-plan-contracts.test.mjs::F009-CODE-DEFERRED-INVENTORY`（125 条分母核对，residual 0）。

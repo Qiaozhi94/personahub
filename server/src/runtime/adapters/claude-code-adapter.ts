@@ -131,6 +131,11 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       return failSpawn(`Failed to spawn process: ${String(err)}`);
     }
 
+    childProcess.on("error", (err) => {
+      hookCleanup?.();
+      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage: `Process error: ${err.message}`, finalMessage: null });
+    });
+
     if (!childProcess || !childProcess.pid) {
       hookCleanup?.();
       return failSpawn("Failed to spawn process: no PID");
@@ -214,11 +219,6 @@ export class ClaudeCodeAdapter implements AgentAdapter {
         credentialFailureDetected = true;
       }
       emitOutput("stderr", data);
-    });
-
-    childProcess.on("error", (err) => {
-      hookCleanup?.();
-      callExit({ exitCode: null, failureReason: FR.SpawnFailed, errorMessage: `Process error: ${err.message}`, finalMessage: null });
     });
 
     childProcess.on("exit", (code, signal) => {

@@ -13,7 +13,13 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
+      # Full history, not the default shallow (depth 1) clone: test:docs
+      # verifies execution_evidence_commit resolves to a real commit object
+      # (review R1-011) via `git cat-file`, which a shallow clone can't
+      # satisfy for any commit but the checked-out tip.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node LTS
         uses: actions/setup-node@v4
@@ -54,6 +60,16 @@ jobs:
 
       - name: Run E2E tests
         run: npm run test:e2e
+
+      # review R3-018: verify:release runs this too — without it here, CI
+      # could stay green while verify:release (the actual release gate) fails.
+      # A contract test (tools/check-v03-plan-contracts.test.mjs::F009-CODE-R3-018)
+      # keeps this step set in sync with verify:release's own E2E scripts.
+      - name: Run E2E tests (clean database)
+        run: npm run test:e2e:empty-db
+
+      - name: Run E2E tests (invocation directory lifecycle)
+        run: npm run test:e2e:invocation-lifecycle
 
       - name: Upload Playwright report on failure
         if: failure()

@@ -57,6 +57,18 @@ export class FakeAgentAdapter implements AgentAdapter {
 
   async start(input: AgentRunInput): Promise<RunHandle> {
     const opts = this.defaultOptions;
+    // GraphNodeInstructionBuilder always opens with "## Node: <key>" (see
+    // runtime/graph/instruction-builder.ts) — the only per-request signal
+    // AgentRunInput carries for which role this dispatch plays. A graph node
+    // dispatch needs a findings_v1/synthesis_v1-shaped finalMessage (the
+    // node_key must round-trip) so parseNodeResult accepts it and the node
+    // reaches Completed instead of ResultUnparsable; anything else falls
+    // back to the configured default (validator dispatches parse it as a
+    // ValidationResultEnvelope, implementation dispatches ignore it).
+    const graphNodeMatch = /^## Node: (.+)$/m.exec(input.instructions);
+    const finalMessage = graphNodeMatch
+      ? JSON.stringify({ node_key: graphNodeMatch[1].trim(), findings: [], not_reviewed: [] })
+      : opts.finalMessage;
     let cancelled = false;
     let outputTimer: ReturnType<typeof setTimeout> | null = null;
     let exitTimer: ReturnType<typeof setTimeout> | null = null;
@@ -107,7 +119,7 @@ export class FakeAgentAdapter implements AgentAdapter {
           exitCode: opts.exitCode,
           failureReason: opts.failureReason,
           errorMessage: opts.errorMessage,
-          finalMessage: opts.finalMessage,
+          finalMessage,
         };
         for (const cb of exitCallbacks) {
           cb(result);
