@@ -16,6 +16,11 @@ const dbFile = path.join(dbDir, "v02-fixture.sqlite");
 export default defineConfig({
   globalSetup: "./tests/support/f009-fixture-db.ts",
   testDir: "./tests",
+  // Runs under its own config (playwright.empty-db.config.ts) against a
+  // genuinely empty database — this config's webServer always seeds the
+  // v0.2 fixture, so running it here would assert empty-state copy against
+  // a non-empty database and fail for the wrong reason.
+  testIgnore: /f009-empty-database\.spec\.ts/,
   outputDir: "./test-results",
   fullyParallel: false,
   workers: 1,

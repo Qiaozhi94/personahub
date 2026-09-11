@@ -49,7 +49,9 @@ server/scripts/codex-probe-*.jsonl
 # Playwright E2E runtime artifacts (browsers themselves live outside the
 # repo, in the OS-level Playwright cache — nothing binary to ignore there)
 e2e/.tmp/
+e2e/.tmp-empty/
 e2e/test-results/
+e2e/test-results-empty-db/
 e2e/playwright-report/
 e2e/blob-report/
 

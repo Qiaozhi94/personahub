@@ -5,6 +5,6 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["tests/**/*", "playwright.config.ts"],
-  "exclude": ["node_modules", "test-results", "playwright-report"]
+  "include": ["tests/**/*", "playwright.config.ts", "playwright.empty-db.config.ts"],
+  "exclude": ["node_modules", "test-results", "test-results-empty-db", "playwright-report"]
 }
