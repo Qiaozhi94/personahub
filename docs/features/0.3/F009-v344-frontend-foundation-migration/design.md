@@ -2,7 +2,7 @@
 topics: [frontend, v344, migration, app-shell, accessibility]
 doc_kind: design
 created: 2026-09-08
-updated: 2026-09-09
+updated: 2026-09-11
 ---
 
 # F009：V3.44 Frontend Foundation & Migration - 设计
@@ -174,11 +174,19 @@ README §5 的九步是 v0.3 版本级验收旅程（F014 收口）；F009 的 A
 
 ### 需求级豁免与 E2E 数据口径
 
-对 self-test §3.2.1 的两条显式豁免：第④段「干净数据首屏」不可自动化——数据策略只允许
-T000 v10 fixture 升级库，不存在干净库；自动化替代断言对象为未绑定项目绑定指引、not-found
-与非法子路径恢复态（S1），真实升级场景的首屏指引由 T031 人工确认。第⑤段「SSE 断线重连按
-`event_sequence` 补读」在 M1 无活跃事件源（fixture 全为终态、旅程不驱动真实 CLI），本 Feature
-不断言，归 F011/F012 的任务旅程，残余由 T031 裁定。
+对 self-test §3.2.1 的一条显式豁免：第⑤段「SSE 断线重连按 `event_sequence` 补读」在 M1
+无活跃事件源（fixture 全为终态、旅程不驱动真实 CLI），本 Feature 不断言，归 F011/F012 的
+任务旅程，残余由 T031 裁定。
+
+第④段「干净数据首屏」最初也按「T021 黄金旅程只能用 T000 v10 fixture 升级库、不存在干净库」
+的理由整体豁免为不可自动化，自动化替代断言对象为未绑定项目绑定指引、not-found 与非法子路径
+恢复态（S1），首屏指引整体归 T031 人工确认。DQ-008（见 §10）裁定这条豁免范围过宽：数据策略
+约束的是 T021 黄金旅程内部不得出现第二套数据库，不禁止另建一个完全独立、不共用 T021
+webServer 配置的空库测试。`e2e/playwright.empty-db.config.ts` + `f009-empty-database.spec.ts`
+即是这样一个独立配置——DB_PATH 指向不存在的文件，真实 server 从零迁移，断言 `/`、`/tasks`、
+`/runtime`、`/settings/legacy-workflows` 在零数据时渲染正确的空态组件与唯一可执行恢复动作；
+S1 的未绑定项目 / not-found / 非法子路径恢复态仍由 T021 旅程本身覆盖，不重复。首屏文案措辞
+是否读起来舒服，仍是 T031 的人工判断范围。
 
 E2E 数据口径：T000 builder 升级后的临时数据库是唯一 seed；旅程内通过界面触发的 canonical 写
 （A006/A007/A009/A021/A022/A023 等）是被测行为而非播种；不使用 `support/mock-run.ts` 造 Run
@@ -197,7 +205,12 @@ BC-052 的 tabs 实例均按此口径执行——fixture 中 Issue 携带非空 
 
 T031 按 `docs/reviews/journey-test-matrix.md` §1 逐步、§2 逐条对照真实浏览器执行；发现以
 J*/S* 步骤编号回流 `dogfooding-bugs.md`（缺陷）与 `dogfooding-notes.md`（观察），分母核对
-结果与逐条结论随 F009 收口文档归档，不把「未执行」写成「通过」。
+结果与逐条结论随 F009 收口文档归档，不把「未执行」写成「通过」——这条原则本身没有改变。
+DQ-008（见 §10）改变的是 T031 的**范围**，不是这条原则：T031 里能被结构/行为事实表达的部分
+（125 条分母核对、干净数据库首屏结构）已经转成门禁和 e2e 断言，`tasks.md` 的 T031 勾选仅代表
+这部分范围通过；真正主观的审美 / 语感判断（黄金旅程逐步走查的视觉合理性、导出文案措辞）
+从 T031 的完成条件里拆出，作为独立于开发流程、持续进行的人工体验复核，不写成某一轮的
+「通过」或「未执行」，因为它本来就不是一次性可关闭的任务，而是常态化维护活动。
 
 ## 9. 已确认决策与残余风险
 
@@ -212,3 +225,4 @@ J*/S* 步骤编号回流 `dogfooding-bugs.md`（缺陷）与 `dogfooding-notes.m
 - [x] DQ-005: V3.44 的 125 条 browser checks 哪些属于 F009？ — 决策：以 `v344-browser-check-applicability.md` 逐条分类，当前分母为 adapted 28 / deferred 96 / not-applicable 1；F009 只为 adapted 行提供生产证据，deferred 行不得提前暴露入口。
 - [x] DQ-006: 未提交 composer 草稿由谁持有、何时保留或清除？ — 决策：由 ApplicationShell 上层的内存 TaskDraftStore 按 Task ID + composer 分键；页面内切换保留，匹配 revision 的成功提交 / 显式丢弃 / 对象消失才清除，刷新不持久化并用 beforeunload 提示。
 - [x] DQ-007: legacy 根入口与无 project query 的任务列表是否自动选择第一项？ — 决策：不选择；`/` 只 replace 到项目列表，`/tasks` 显示项目选择，用户明确选择后才 push 带身份的 URL，避免 Project 更新时间改变默认对象。
+- [x] DQ-008（review R1-011，2026-09-11）: 「干净数据库首屏」与 T031 其余可结构化验证的部分，是否必须整体留给人工、不可拆分自动化？ — 决策：不必须。原豁免把「T021 黄金旅程不能有第二套数据库」误推广成了「不存在任何空库测试」；两者不等价——一个不共用 T021 webServer 配置的独立 Playwright config 不违反前者。按新确立的「自动化与人工判断边界纪律」（`docs/SOP.md`）拆分：结构/行为事实（干净库首屏的空态组件与恢复动作是否正确、125 条适用性分母是否漂移）必须转成门禁或 e2e 断言，成为 T031 勾选的前提；只有真正的审美/语感判断（首屏文案措辞、黄金旅程视觉分组的舒适度）留给人工，且明确为独立于开发流程的持续性活动，不是 T031 一次性完成条件的一部分，也不阻塞 F009 的 review 状态。落地：`e2e/playwright.empty-db.config.ts` + `e2e/tests/f009-empty-database.spec.ts`（干净库首屏结构）、`tools/check-v03-plan-contracts.test.mjs::F009-CODE-DEFERRED-INVENTORY`（125 条分母核对，residual 0）。

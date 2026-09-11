@@ -10,7 +10,7 @@ related_features: [F001, F002, F003, F004, F005, F006, F007, F008, F010, F011, F
 topics: [frontend, v344, migration, app-shell, accessibility]
 doc_kind: spec
 created: 2026-09-08
-updated: 2026-09-09
+updated: 2026-09-11
 ---
 
 # F009：V3.44 Frontend Foundation & Migration
@@ -133,7 +133,7 @@ updated: 2026-09-09
 
 保留 F001–F008 server / API 回归；以开发前冻结的 `migration-matrix.md` 为范围与处置真相源，为 App Shell、共享原语与兼容 projection 建组件状态矩阵；按 `v02-fixture-contract.md` 建 release v10 raw SQL fixture，通过真实升级后的同一个临时数据库运行 Playwright 黄金旅程、已发布根入口升级、canonical deep link 直达 / 刷新 / 未知 ID、键盘与可访问性测试；按 `v344-browser-check-applicability.md` 对 V3.44 的 125 条 browser checks 逐条执行 adapted / deferred / not-applicable 分类，分类分母必须等于 125，F009 的 adapted 行必须有生产门禁。
 
-对 self-test §3.2.1 旅程纪律的两条显式豁免：第④段「干净数据首屏」因数据策略只允许 v10 fixture 升级库而不可自动化，以未绑定项目指引、not-found 与非法子路径恢复态为自动化替代对象，真实升级场景首屏归 T031 人工确认；第⑤段「SSE 断线重连补读」在 M1 无活跃事件源，本 Feature 不断言，归 F011/F012 任务旅程。黄金旅程九步的 M1 投影、词汇对照与 adapted 断言对象集合规则见 `design.md` §8。
+对 self-test §3.2.1 旅程纪律的一条显式豁免：第⑤段「SSE 断线重连补读」在 M1 无活跃事件源，本 Feature 不断言，归 F011/F012 任务旅程。第④段「干净数据首屏」最初也按同一理由（黄金旅程 T021 只能用 T000 v10 fixture 升级库、不存在干净库）豁免为不可自动化、归 T031 人工确认；round 6 复核后发现这条豁免范围过宽——真正受数据策略约束的只是「T021 黄金旅程内不能出现第二套数据库」，与「能不能有一个完全独立、不共用 T021 webServer 配置的空库测试」是两回事。按「自动化与人工判断边界纪律」（`docs/SOP.md`）拆分后，`e2e/playwright.empty-db.config.ts` + `f009-empty-database.spec.ts` 用一个独立 webServer 配置（DB_PATH 指向不存在的文件，真实 server 从零启动迁移）覆盖了空态组件是否正确、恢复动作是否唯一等结构性事实；仅空态文案措辞是否读起来舒服，仍是 T031 的持续性人工体验复核，不阻塞本 Feature 的 review 状态。黄金旅程九步的 M1 投影、词汇对照与 adapted 断言对象集合规则见 `design.md` §8；T031 的自动化边界裁决见 `design.md` §10 DQ-008。
 
 ### 依赖
 
