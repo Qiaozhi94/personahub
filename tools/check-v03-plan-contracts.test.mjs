@@ -1,9 +1,39 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+/** True iff `hash` resolves to a real commit object in this repository. */
+function commitExists(hash) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${hash}^{commit}`], { cwd: REPO_ROOT, stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * review R1-011: a well-formed hex string proves nothing on its own — a
+ * completion claim citing a nonexistent commit passed this gate before.
+ * `commitExistsFn` is injectable so the "rejects a fake hash" mutation below
+ * doesn't have to hope a made-up string happens to collide with no real
+ * commit; it proves the assertion path itself is wired correctly.
+ */
+function verifyExecutionEvidenceCommit(journeyText, commitExistsFn) {
+  const match = /execution_evidence_commit: ([0-9a-f]{7,40})/.exec(journeyText);
+  assert.ok(match, 'journey-test-matrix.md must declare execution_evidence_commit as a hex string');
+  const hash = match[1];
+  assert.ok(
+    commitExistsFn(hash),
+    `execution_evidence_commit ${hash} does not resolve to a real commit in this repository — a hex-shaped string is not evidence of execution`,
+  );
+}
 
 function requirePhrases(documents, phrases) {
   const corpus = documents.join('\n');
@@ -1033,5 +1063,30 @@ test('F009-DOC-R6-014: review-state documents stay consistent with execution art
   // a real commit — no placeholder.
   const journey = read('docs/reviews/journey-test-matrix.md');
   assert.doesNotMatch(journey, /待 T021 回填|待 T022 回填|execution_evidence: pending/);
-  assert.match(journey, /execution_evidence_commit: [0-9a-f]{7,40}/);
+  verifyExecutionEvidenceCommit(journey, commitExists);
+});
+
+test('F009-CODE-R1-011: execution_evidence_commit must resolve to a real commit, not just look like one', () => {
+  const journey = read('docs/reviews/journey-test-matrix.md');
+
+  // Green against the real repo and the real git history.
+  verifyExecutionEvidenceCommit(journey, commitExists);
+
+  // A hex string that was never a commit here must fail even though the
+  // format regex alone would have accepted it — this is the exact gap
+  // review R1-011 found (format-only validation, no existence check).
+  const fakeHash = '0123456789abcdef0123456789abcdef01234567';
+  const journeyWithFakeHash = journey.replace(
+    /execution_evidence_commit: [0-9a-f]{7,40}/,
+    `execution_evidence_commit: ${fakeHash}`,
+  );
+  assert.notEqual(journeyWithFakeHash, journey, 'mutation must actually replace the commit hash');
+  assert.throws(
+    () => verifyExecutionEvidenceCommit(journeyWithFakeHash, commitExists),
+    /does not resolve to a real commit/,
+  );
+
+  // Proves the assertion path itself is wired to commitExistsFn's result,
+  // independent of whether fakeHash happens to collide with a real object.
+  assert.throws(() => verifyExecutionEvidenceCommit(journey, () => false), /does not resolve to a real commit/);
 });
