@@ -132,13 +132,21 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
 
 ## 5. 执行证据回填（T031 / R1-011 闭环）
 
-- execution_evidence_commit: d1a97ccae955
-- 自动化：`e2e/tests/f009-golden-journey.spec.ts` 以单次 `goto("/")` 连续执行 J1–J9（test.step 显式编号），S1 为独立深链用例；`npm run verify:release`（含 Playwright 24/24）在修复后提交上全绿。
-- 现场裁定（依 §4「断言对象集合按现场实现裁定」）：
-  - A010 graph 启动：fixture 工作区 `/repo/alpha` 不存在 → 启动请求确定性 500（数据策略禁止创建真实工作区驱动真实 CLI）。J4 按失败恢复半段断言：错误文本与节点选择保留、可原位重试（R1-010）。graph 执行语义归 F012 旅程。
-  - A021 触发验证：服务器合同仅允许 Validating 状态触发；M1 fixture 无活跃 Validating 任务，J6 断言非 Validating 任务上不存在伪造触发入口，A021 的写动作由任务级用例（`web/src/f004-validation-hooks.test.tsx`）承担。
-  - A023 reset rounds：入口仅在 RoundLimitReached 阻塞下出现；fixture 阻塞原因为 validator_run_failed，J7 断言该边界。写动作由 `web/src/f004-round-reset-dialog.test.tsx` 承担。
-  - A015 resolve-executors：界面仅在 no_capable_adapter 阻塞下出现；fixture 阻塞原因为 node_run_failed，J8 断言该边界。写动作由 `web/src/f006-graph-run-card.test.tsx` 承担。
-  - A011/A013 取消：J8 真实执行（确认对话框 → cancelled），连带排队 Run 取消的事实已断言。
-- 28 条 adapted 行落点复核：§2 表所列 spec 文件全部存在并随 `npm run verify:release` 执行；BC-052 的 M1 真实 tabs 实例为 /settings/legacy-workflows 的列表/详情对（R1-006 后补的生产实例）；BC-006 的标签域来自 fixture Issue labels（下拉筛选，无 chip 行）；console/pageerror 零错误门禁覆盖全部 M1 路由（`f009-a11y.spec.ts`）。
-- 人工（T031）残余：真实浏览器观感、干净库首屏指引与导出/摘要内容抽查按 §1 行注在合并前人工复核；「旅程步骤」列使用 J*/S1 编号。
+- execution_evidence_commit: 5d1f08c3dc82d2ae1a481afe4b629aa25693c368
+- 自动化：`e2e/tests/f009-golden-journey.spec.ts` 以单次 `goto("/")` 连续执行 J1–J9（test.step 显式编号），S1 为独立深链用例；`npm run verify:release`（含全量 e2e 套件 25/25）在修复后提交上全绿。
+- 原「现场裁定」（依 §4「断言对象集合按现场实现裁定」）已被 review R1-005 判定为「测试模拟自身」而推翻：A010/A021/A023/A015 当时都以「M1 fixture 无可达状态」为由，把写动作让给任务级单元测试断言入口存在性，旅程本身从未真正执行这些写动作。round-3/4 修复补齐了可达 fixture 和一个确定性、不驱动真实 CLI 的 fixture adapter（`adp_v02_fake` / `FakeAgentAdapter`，见 `server/src/runtime/adapters/fake-adapter.ts` 与其在 `src/index.ts` 的注册），四个动作现在都由旅程本身真实执行：
+  - A010 graph 启动：新增 `ws_v02_graphok`（真实存在的 `/tmp/f009-graphok-workspace`，含一个匹配 dual_review targetGlob 的文件）与 `iss_v02_graphok`，专门承担 graph 成功路径——其余 issue 仍共用 `/repo/alpha`（故意不存在，供 J8 的真实 CLI spawn 失败半段使用）。J4 在这个新 issue 上选择 Fixture CLI 启动 graph：`FakeAgentAdapter` 按 `## Node: <key>` 标记识别节点、回传 `{node_key, findings: []}`，graph 真实跑到 completed，而不是断言一个脚本化 500。
+  - A021 触发验证：`iss_v02_validating` 的 grace 窗口打开（`validation_dispatch_due_at` 设到 2099），J6 真实点击「Start automatic validator now」，`adp_v02_fake` 作为唯一 eligible validator 派工执行、回传一个非空 findings 的失败 verdict（"failed" 结局按 `result-parser.ts` 的不变量要求至少一条 finding），断言 round 计数从 0 变 1、Issue 回到 Running、`Validation failed` 事实出现——不再是「非 Validating 任务上不存在入口」的边界断言。
+  - A023 reset rounds：`iss_v02_roundlimit` 保持 RoundLimitReached 阻塞，J7 真实点击 Reset Rounds、提交 operator note，断言 `validation.round_reset` 事件与 Issue 仍保持 Blocked（reset ≠ unblock）。
+  - A015 resolve-executors：新增 `iss_v02_nocapable` / `grun_v02_g3`（修正了原有 `review_contracts`/`synthesize` 与真实图定义 key 不符的 fixture bug，改为 `review_contract`/`synthesize_findings`），J8 真实为三个受阻节点选择 Fixture CLI 并提交，断言 202 响应与「Reassign executors」面板让位。
+  - A011/A013 取消：J8 真实执行（确认对话框 → cancelled），连带排队 Run 取消的事实已断言，行为未变。
+  - 上述四项不再有对应的任务级单元测试依赖（`web/src/f004-validation-hooks.test.tsx`、`f004-round-reset-dialog.test.tsx`、`f006-graph-run-card.test.tsx` 这三个文件名引用已过时，不代表这些写动作唯一的执行证据仍在那里）。
+- 28 条 adapted 行落点复核：§2 表所列 spec 文件全部存在并随 `npm run verify:release` 执行，且现在有机器可读门禁锁定（`tools/check-v03-plan-contracts.test.mjs::F009-CODE-R1-006`：解析全部 28 行、按登记文件分组、断言每个 BC id 在其文件里仍有引用，删行/删引用/文件缺失三种变异均可验证会变红）。BC-049（dialog 焦点归还）修的是一个真实无障碍性缺陷——所有对话框用普通 `<button>` 触发而非 Radix `DialogTrigger`，导致 `context.triggerRef` 恒为 null，关闭时 Radix 自身默认恢复被无条件 `preventDefault()` 取消却又没有替代目标，焦点落回 `<body>`；已通过 `DialogContent` 新增的 `restoreFocusRef` 修复并在 create-project/unblock/intake 三个对话框验证。BC-050 新增 Reset Rounds 到批量 Escape 断言（此前因「round-limit 阻塞在本 fixture 不可达」被跳过，现在 `iss_v02_roundlimit` 已可达）。BC-056 新增服务端幂等的真实第二次请求重放证明（原 dblclick 断言只证明了客户端防连点）。BC-052 的 M1 真实 tabs 实例为 /settings/legacy-workflows 的列表/详情对（R1-006 后补的生产实例，且已修复 R2-014：选中面板此前不随 tab 切换）；BC-006 的标签域来自 fixture Issue labels（下拉筛选，无 chip 行）；console/pageerror 零错误门禁覆盖全部 M1 路由（`f009-a11y.spec.ts`）。
+- 人工（T031）残余：真实浏览器观感、干净库首屏指引与导出/摘要内容抽查按 §1 行注在合并前人工复核；「旅程步骤」列使用 J*/S1 编号。**本条截至本次回填仍未执行**——round-3/4 只完成了自动化部分的真实写动作与门禁，T031 逐步/逐条对照真实浏览器仍待单独进行，见下方「人工走查清单」。
+
+### 5.1 人工走查清单（T031 待执行，未随本次回填一并完成）
+
+1. **125 条分母核对**：对照 `v344-browser-check-applicability.md`，28 条 adapted 逐条打开界面肉眼核对体验，96 条 deferred 逐条确认「在 M1 生产环境里确实没有入口」，1 条 not-applicable 确认未被误植入生产代码；过程中发现分类该变先改 applicability 文档再继续。
+2. **黄金旅程 J1–J9 + S1 逐步走一遍真实浏览器**，按 §1「预期可见反馈」列核对，重点是自动化测不到的部分：J1 竖栏日常/低频分组的视觉合理性与设置目录条目清晰度；J7 导出 Markdown / 复制摘要的文案措辞是否符合 UX-003 / BC-119；全程关注**干净数据库首屏**（E2E fixture 从不是真正空库，首次打开各页面的空态引导文案需要一个真正未 seed 过的库人工看一遍）。
+3. 逐步写下人工结论（J1–J9、S1 各一条，不能留空），缺陷记 `dogfooding-bugs.md`、体验观察记 `dogfooding-notes.md`，两边「旅程步骤」列用本矩阵的编号。
+4. 全部完成后，`tasks.md` T031 的勾选才有对应证据可查。
