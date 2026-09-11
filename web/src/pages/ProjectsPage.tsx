@@ -47,14 +47,19 @@ export function ProjectsPage({ diagnostics }: { diagnostics: Diagnostics }) {
 
       <div className="flex items-center justify-between">
         <h1 className="text-base font-semibold">项目</h1>
-        <button
-          ref={createTriggerRef}
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          新建项目
-        </button>
+        {/* Exactly one executable recovery action when the list is empty —
+            it lives in the EmptyState below, not here too (BC-046 / R1-007,
+            same pattern as TasksPage's heading action). */}
+        {projects.length > 0 ? (
+          <button
+            ref={createTriggerRef}
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            新建项目
+          </button>
+        ) : null}
       </div>
 
       {projects.length === 0 ? (
@@ -62,6 +67,7 @@ export function ProjectsPage({ diagnostics }: { diagnostics: Diagnostics }) {
           title="还没有项目"
           description="创建第一个项目，绑定代码目录后即可开始派工。"
           action={{ label: "新建项目", onAction: () => setCreateOpen(true) }}
+          actionRef={createTriggerRef}
         />
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2">

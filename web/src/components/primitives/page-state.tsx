@@ -27,10 +27,15 @@ export function EmptyState({
   title,
   description,
   action,
+  actionRef,
 }: {
   title: string;
   description?: string;
   action?: PageStateAction;
+  /** Lets a caller that opens a dialog from this action (e.g. via
+   *  restoreFocusRef) restore focus here on close, same as any other
+   *  dialog trigger — see DialogContent's restoreFocusRef (BC-049). */
+  actionRef?: React.RefObject<HTMLButtonElement | null>;
 }) {
   return (
     <div className="grid place-items-center gap-2 p-8 text-center">
@@ -38,6 +43,7 @@ export function EmptyState({
       {description ? <p className="max-w-md text-sm text-muted-foreground">{description}</p> : null}
       {action ? (
         <button
+          ref={actionRef}
           type="button"
           onClick={action.onAction}
           className="mt-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
