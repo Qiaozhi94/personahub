@@ -996,14 +996,16 @@ archived ref 的消费限制与 F010 契约一致。
 
 ---
 
-## 循环 20：F009 实现代码检视（5轮）
+## 循环 20：F009 实现代码检视（6轮）
 
 - **report_type**: fix-verification
-- **周期**: 2026-09-10—2026-09-12，5轮（Round 1 全量扫描，Round 2-5 diff-only） · **状态**: 已收敛（最终闭环以本总结提交对应的 GitHub Actions 全绿为准）
+- **周期**: 2026-09-10—2026-09-12，6轮（Round 1 全量扫描，Round 2-6 diff-only） · **状态**: 已收敛（Round 6 的 GitHub Actions run 34626457401 两个 job 全绿）
 - **背景**: F009 开发与自检完成、状态进入 `review` 后，对 v0.1/v0.2 生产前端迁移成果做实现级检视。
   基线依次为 `f009-v344-frontend-foundation@`（R1）→ `6dee56e`（R4 起）→ `d2ecc74`（R5 复核对象）。
   修复方以 `FIX-log.md` 按轮追加声明，检视方对每条声明做独立变异核对后才翻状态；
-  Round 4 的独立变异一次性推翻了 5 条"已修复"声明，Round 5 全部复核通过。
+  Round 4 的独立变异一次性推翻了 5 条"已修复"声明，Round 5 全部复核通过并触发最终 CI；
+  CI 在 Windows 上红，按停止条件第 3 条重开 Round 6（角色合并：检视人带着报告上下文亲自下场修复），
+  Round 6 修完 3 条 Windows 可移植性缺陷 + 1 条自伤后 CI 全绿。
   用户既有未提交文件 `docs/quant-factor-research-tradingview-assessment.md` 全程排除。
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
@@ -1027,10 +1029,14 @@ archived ref 的消费限制与 F010 契约一致。
 | F009-CODE-R3-017 | E2E invocation 生命周期未被回归锁定，且 teardown 实际每次泄漏目录 | High | 正确性 | 根因 | 修复引入 | fixed | 以真实 invocation lifecycle 做并发回归，并断言运行结束后目录消失 | 并发回归改为调用真实 `createInvocationDir()`；定位到 Playwright 会在每个 worker 进程重复求值 config 才是泄漏根因，改为按进程树幂等（worker 继承 orchestrator 目录）并新增真实运行后断言零残留的 lifecycle 校验，接入 CI 与 verify:release | `server/tests/integration/f009-v02-fixture.test.ts::keeps two concurrent fixture builds fully isolated` + `e2e/tests/support/verify-invocation-dir-lifecycle.mjs` | 3 | 5 | shared-fixed-temp-path |
 | F009-CODE-R3-018 | CI 与发布门禁的 E2E 集合一致性没有可失败的契约测试 | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | 解析根 scripts 与 workflow，断言两者包含相同 E2E 集合 | 静态契约测试提取 CI e2e job 与 verify:release 的 `test:e2e*` 集合，断言 release ⊆ CI，并做双向变异 | `tools/check-v03-plan-contracts.test.mjs::F009-CODE-R3-018` | 3 | 5 | release-gate-diverges-from-ci |
 | F009-CODE-R5-019 | DIALOG_INSTANCES 是手工清单，新增 dialog 不会让任何测试变红 | Medium | 测试覆盖 | 根因 | 初始实现 | open | 仿 R3-016 的源码扫描，加一条测试统计生产 DialogTitle/AppDialog 实例并断言与清单条目一一对应 | — | — | 5 | — | acceptance-subset-without-denominator |
-| F009-CODE-R5-020 | 并发 fixture 回归在 worker 失败时泄漏 mkdtemp 目录 | Low | 质量 | 根因 | 修复引入 | open | 把 execFileAsync 的 Promise.all 移回 try 内，或在 catch 内按 prefix 兜底清理 | — | — | 5 | — | cleanup-outside-try |
+| F009-CODE-R5-020 | 并发 fixture 回归在 worker 失败时泄漏 mkdtemp 目录 | Low | 质量 | 根因 | 修复引入 | fixed | 把 execFileAsync 的 Promise.all 移回 try 内，或在 catch 内按 prefix 兜底清理 | await 移进 try，finally 改为按 prefix 扫描清理（与 R6-025 同一语句，`32831f8`） | `server/tests/integration/f009-v02-fixture.test.ts::keeps two concurrent fixture builds fully isolated` | 5 | 6 | cleanup-outside-try |
 | F009-CODE-R5-021 | lifecycle 校验脚本用全局 tmp 快照差分，并发运行会误报泄漏 | Low | 质量 | 根因 | 初始实现 | open | 给该次调用指定专属 TMPDIR 或独占 prefix，只在该范围内快照差分 | — | — | 5 | — | global-snapshot-diff-not-isolated |
 | F009-CODE-R5-022 | 检视过程稿被提交进 git，违反 gitignore 纪律 | Medium | 质量 | 根因 | 流程缺口 | fixed | 回写 RETROSPECTIVE 后从版本库移除，保留 .gitignore 规则 | 闭环时由检视人把 issue 表回写本文件并 `git rm --cached` 两份过程稿 | `git check-ignore -v docs/reviews/CURRENT-code.md docs/reviews/FIX-log.md` | 5 | 5 | process-artifact-committed |
 | F009-CODE-R5-024 | 新增的 e2e `.mjs` 校验脚本未纳入 format 门禁目标 | Low | 质量 | 根因 | 修复引入 | open | 把 `e2e/tests/support/*.mjs` 加进 package.json 的 format targets | — | — | 5 | — | gate-coverage-gap |
+| F009-CODE-R6-025 | 并发回归测试 spawn `node_modules/.bin/tsx`，Windows 上 ENOENT | High | 正确性 | 根因 | 修复引入 | fixed | 改用 `node --import tsx` 这种两个平台一致的 spawn 形式 | `execFileAsync(process.execPath, ["--import", "tsx", ...])`（`32831f8`） | `server/tests/integration/f009-v02-fixture.test.ts::keeps two concurrent fixture builds fully isolated` | 6 | 6 | bin-shim-not-portable |
+| F009-CODE-R6-026 | invocation 目录清理放在 globalTeardown，Windows 上必然 EPERM | High | 正确性 | 根因 | 修复引入 | fixed | 把清理移到 webServer 真正关闭之后的生命周期钩子 | Playwright 在 globalTeardown 之后才关 webServer，此时 SQLite 文件仍被占用；改为 owner 进程的 `process.on("exit")` + rmSync maxRetries，删除 globalTeardown 与 invocation-dir-teardown.ts（`91a244c`） | `e2e/tests/support/verify-invocation-dir-lifecycle.mjs` | 6 | 6 | cleanup-in-wrong-lifecycle-hook |
+| F009-CODE-R6-027 | lifecycle 校验脚本 spawn `npx` 外壳脚本，Windows 上 ENOENT | High | 正确性 | 根因 | 修复引入 | fixed | 解析 @playwright/test/cli 并用 process.execPath 运行 | `createRequire(import.meta.url).resolve("@playwright/test/cli")`（`7883b98`） | `e2e/tests/support/verify-invocation-dir-lifecycle.mjs` 自身在 CI 的 Windows runner 上通过 | 6 | 6 | bin-shim-not-portable |
+| F009-CODE-R6-028 | R6-026 的退出清理让父进程再也 stat 不到 worker 目录，断言必然失败 | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | 把「每个 invocation 拥有完整 fixture」的观察点移进拥有该目录的进程 | worker 自检 hasDatabase/hasWorkspace 并回传，父进程断言这两个布尔 + 两目录不同（`22b4c6c`） | `server/tests/integration/f009-v02-fixture.test.ts::keeps two concurrent fixture builds fully isolated` | 6 | 6 | cleanup-invalidates-observer |
 | F009-CODE-R5-023 | createInvocationDir 会沿用外部环境里已存在的同名变量 | Low | 质量 | 根因 | 修复引入 | open | 用 owner pid 的祖先关系或额外的 invocation nonce 判断继承来源，而非只看变量是否存在 | — | — | 5 | — | env-inherited-state-trusted |
 
 **问题与实际修复证据**
@@ -1056,7 +1062,7 @@ archived ref 的消费限制与 F010 契约一致。
 
 **模式性教训**
 
-1. `origin` 分布：初始实现 13、修复引入 9、流程缺口 2。修复引入占到三分之一，且其中
+1. `origin` 分布：初始实现 13、修复引入 13、流程缺口 2。修复引入占到三分之一，且其中
    R3-016/R3-017/R3-018 三条都是"上一轮修复本身没有被门禁锁住"——修复引入的问题不都是
    行为回归，更多是**修复没有留下能变红的证据**。
 2. `acceptance-subset-without-denominator` 在本循环与循环 19 各出现一次，且本次连续三轮
@@ -1073,3 +1079,18 @@ archived ref 的消费限制与 F010 契约一致。
 5. `process-artifact-committed` 是本循环新增的流程教训：过程稿虽在 `.gitignore` 里，仍可能被
    `git add -f` 以"跨机同步"为由提交进版本库。跨机续作的正确载体是 RETROSPECTIVE 或
    分支上的代码本身，不是把检视协议的过程稿变成版本库文件。
+
+8. **Round 6 是"本地全绿 ≠ 可闭环"的又一次实证**（循环 19 的 R4-009 是第一次）。本地 Linux 上
+   `verify` + build + 三套 E2E 全绿，Windows CI 仍然红三处，而且三处全部出自本循环的 R3-017 修复：
+   两处 `bin-shim-not-portable`（spawn `.bin/tsx`、spawn `npx`——Windows 上它们只有 `.cmd`/`.ps1`
+   外壳，Node 加固后 execFile 无法直接启动），一处 `cleanup-in-wrong-lifecycle-hook`
+   （Playwright 在 globalTeardown 之后才关 webServer，POSIX 允许 unlink 已打开文件而 Windows 不允许，
+   所以那份清理在 Windows 上从来就不可能成功）。教训：跨平台 CI 是停止条件的一部分而不是形式，
+   凡是"spawn 一个 node_modules/.bin 下的东西"或"删除一个可能被子进程占用的文件"的代码，
+   本地绿都不构成证据。
+9. **修复自伤率再次兑现**：Round 6 的三条修复又引入了 R6-028（退出清理让父进程无法再观察 worker
+   目录），当轮的轮末全量门禁抓到。这正是 skill 里"细提交、粗验证"的价值——如果只在最后跑一次
+   门禁并直接 push，这条会变成下一轮的 CI 红。
+10. **角色合并确实收敛**：Round 6 按 skill 第 7 条的升级选项 (b) 让检视人带着完整报告上下文亲自
+   下场修复，从 CI 红到 CI 绿只用了一轮三个提交。对比 Round 3→4 的对抗式分离循环（五条"已修复"
+   声明全部被变异推翻），这个差异和 skill 里记录的实测一致。
