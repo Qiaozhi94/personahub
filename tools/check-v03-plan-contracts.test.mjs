@@ -1140,34 +1140,78 @@ function classifyDeferredBrowserChecks(catalog) {
   ]);
   // BC-105 alone: a forbidden-term content check (web/src/f009-content-contract.test.ts).
   const CONTENT_CONTRACT = new Set(['BC-105']);
+  // The settings catalog is proven closed at exactly 2 entries by BC-097
+  // (f009-shell.spec.ts) — any row describing a settings page/section that
+  // would need its own catalog entry is covered by that same closed count,
+  // with no new test needed.
+  const SETTINGS_CATALOG_CLOSED = new Set(['BC-055', 'BC-083', 'BC-111', 'BC-120']);
+  // ThreadView's composer has no model/depth selector, context-scope
+  // selector, eligibility-rationale explainer, or undo window
+  // (f009-deferred-boundary.spec.ts).
+  const COMPOSER_ABSENT = new Set(['BC-027', 'BC-028', 'BC-040', 'BC-058']);
+  // /runtime has no pause-all, quota, machine-rail/adapter-tabs, capability
+  // matrix, log-export, machine-health, or per-task controls (same spec).
+  const RUNTIME_PAGE_ABSENT = new Set(['BC-054', 'BC-082', 'BC-087', 'BC-088', 'BC-090', 'BC-101', 'BC-116']);
+  // /runtime/adapters has no dedicated four-block adapter detail page — the
+  // compat entry is a flat config dialog, not a route (same spec).
+  const ADAPTER_DETAIL_ABSENT = new Set(['BC-108', 'BC-109']);
+  // A project's WorkspaceBinding has no remote-repo recognition, Skills
+  // reference, or primary/reference repo distinction (same spec).
+  const WORKSPACE_BINDING_MINIMAL = new Set(['BC-102', 'BC-107', 'BC-112']);
+  // CreateIssueDialog has no issue-type selector — coding is the only shape
+  // it can produce (same spec).
+  const TASK_CREATE_MINIMAL = new Set(['BC-033']);
 
-  const covered = new Set([...TASK_VIEW, ...SESSION, ...PROJECT_TAB, ...NAV_ABSENT, ...CONTENT_CONTRACT]);
-  const residual = rows.filter((id) => !covered.has(id));
-  return { rows, covered, residual, buckets: { TASK_VIEW, SESSION, PROJECT_TAB, NAV_ABSENT, CONTENT_CONTRACT } };
+  const covered = new Set([
+    ...TASK_VIEW, ...SESSION, ...PROJECT_TAB, ...NAV_ABSENT, ...CONTENT_CONTRACT,
+    ...SETTINGS_CATALOG_CLOSED, ...COMPOSER_ABSENT, ...RUNTIME_PAGE_ABSENT, ...ADAPTER_DETAIL_ABSENT,
+    ...WORKSPACE_BINDING_MINIMAL, ...TASK_CREATE_MINIMAL,
+  ]);
+
+  // Data-model / business-rule / cross-feature claims with no discrete UI
+  // element whose absence is checkable — e.g. BC-031/032 are about a future
+  // eleven-state task projection's data shape, not a reachable control;
+  // BC-110 is F014's own cross-feature completeness audit. Listed
+  // explicitly (not silently dropped) so every one of the 96 is accounted
+  // for in exactly one bucket.
+  const NOT_APPLICABLE = new Set([
+    'BC-031', 'BC-032', 'BC-042', 'BC-043', 'BC-068', 'BC-086', 'BC-089', 'BC-103', 'BC-106', 'BC-110', 'BC-113',
+  ]);
+
+  const accounted = new Set([...covered, ...NOT_APPLICABLE]);
+  const residual = rows.filter((id) => !accounted.has(id));
+  return {
+    rows, covered, notApplicable: NOT_APPLICABLE, residual,
+    buckets: {
+      TASK_VIEW, SESSION, PROJECT_TAB, NAV_ABSENT, CONTENT_CONTRACT, SETTINGS_CATALOG_CLOSED,
+      COMPOSER_ABSENT, RUNTIME_PAGE_ABSENT, ADAPTER_DETAIL_ABSENT, WORKSPACE_BINDING_MINIMAL, TASK_CREATE_MINIMAL,
+    },
+  };
 }
 
-test('F009-CODE-DEFERRED-INVENTORY: most of the 96 deferred browser checks are provably unreachable, not just manually eyeballed', () => {
+test('F009-CODE-DEFERRED-INVENTORY: all 96 deferred browser checks are accounted for — provably unreachable, explicitly not-applicable, or a named residual', () => {
   const catalog = read(
     'docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md',
   );
   const shell = read('e2e/tests/f009-shell.spec.ts');
   const journey = read('e2e/tests/f009-golden-journey.spec.ts');
   const contentContract = read('web/src/f009-content-contract.test.ts');
+  const boundary = read('e2e/tests/f009-deferred-boundary.spec.ts');
 
-  const { rows, covered, residual } = classifyDeferredBrowserChecks(catalog);
+  const { rows, covered, notApplicable, residual } = classifyDeferredBrowserChecks(catalog);
   assert.equal(rows.length, 96, `expected 96 deferred rows parsed, got ${rows.length}`);
   assert.equal(new Set(rows).size, 96, 'deferred browser check ids must be unique');
 
-  // Every id in a covered bucket must actually be one of the 96 deferred
-  // rows — a stale bucket entry (renamed/removed BC id) must fail loudly
-  // rather than silently not matching anything.
+  // Every bucketed id (covered or not-applicable) must actually be one of
+  // the 96 deferred rows — a stale entry (renamed/removed BC id) must fail
+  // loudly rather than silently not matching anything.
   const rowSet = new Set(rows);
-  for (const id of covered) {
+  for (const id of new Set([...covered, ...notApplicable])) {
     assert.ok(rowSet.has(id), `bucketed id ${id} is not (or no longer) a deferred row in the catalog`);
   }
 
-  // The bucket assignments only mean something if the two gates they lean
-  // on still make the exact claims this classification depends on.
+  // The bucket assignments only mean something if the gates they lean on
+  // still make the exact claims this classification depends on.
   assert.match(shell, /BC-070\/BC-007/, 'BC-070 nav-absence case must still exist in f009-shell.spec.ts');
   for (const name of ['会话', '自动化', '记忆', '能力', '统计']) {
     assert.ok(
@@ -1179,14 +1223,24 @@ test('F009-CODE-DEFERRED-INVENTORY: most of the 96 deferred browser checks are p
   assert.match(journey, /unsupported-tab/, 'S1 must still assert the project-tab route family is unreachable');
   assert.match(journey, /\/sessions\//, 'S1 must still assert the session route is unreachable');
   assert.match(contentContract, /权限档/, 'BC-105 content-contract term must still be forbidden');
+  assert.match(shell, /catalog\.getByRole\("link"\)\.count\(\)\)\.toBe\(2\)/, 'BC-097 must still assert the settings catalog is closed at exactly 2 entries');
+  for (const bcId of ['BC-027/028/040/058', 'BC-033', 'BC-054/082/087/088/090/101/116', 'BC-108/109', 'BC-102/107/112']) {
+    assert.ok(boundary.includes(bcId), `f009-deferred-boundary.spec.ts must still have a case named "${bcId}"`);
+  }
 
-  // The residual is real and shrinking, not hidden: exactly the rows not
-  // proven above still need individual per-page verification (T031).
+  // Every one of the 96 must land in exactly one of: proven-covered,
+  // explicitly-not-applicable, or the printed residual — never silently
+  // dropped.
   console.log(
     `F009-CODE-DEFERRED-INVENTORY: ${covered.size}/${rows.length} deferred checks proven unreachable by existing gates; ` +
-      `${residual.length} residual still need individual review: ${residual.join(', ')}`,
+      `${notApplicable.size} explicitly not-applicable (no discrete UI element to assert absent); ` +
+      `${residual.length} residual still need individual review: ${residual.join(', ') || '(none)'}`,
   );
-  assert.equal(residual.length, 32, `expected exactly 32 residual deferred checks, got ${residual.length} — update the buckets or this count deliberately, don't let it drift silently`);
+  assert.equal(
+    residual.length,
+    0,
+    `expected zero unaccounted residual deferred checks, got ${residual.length}: ${residual.join(', ')} — bucket them or add them to NOT_APPLICABLE with a reason, don't leave them unaccounted`,
+  );
 
   // Deleting a bucket's coverage must turn this red: e.g. if BC-070 stopped
   // asserting 记忆 is absent, every NAV_ABSENT-classified Memory row's proof
@@ -1199,4 +1253,16 @@ test('F009-CODE-DEFERRED-INVENTORY: most of the 96 deferred browser checks are p
     },
     /BC-070 case must still assert/,
   );
+
+  // Same proof for the settings-catalog-closed bucket: weakening BC-097's
+  // count assertion must turn this red too.
+  const shellWithoutClosedCatalog = shell.replace('.toBe(2)', '.toBe(999)');
+  assert.notEqual(shellWithoutClosedCatalog, shell, 'mutation must actually change the closed-count assertion');
+  assert.throws(() => {
+    assert.match(
+      shellWithoutClosedCatalog,
+      /catalog\.getByRole\("link"\)\.count\(\)\)\.toBe\(2\)/,
+      'BC-097 must still assert the settings catalog is closed at exactly 2 entries',
+    );
+  });
 });
