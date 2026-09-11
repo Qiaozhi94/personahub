@@ -60,6 +60,52 @@ function parseMigrationMatrixRows(matrix, idPrefix) {
     .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
 }
 
+/**
+ * The 28 "adapted" browser checks each name a production test file in the
+ * catalog's last column (backtick-quoted). Extracts {id, testFile} pairs —
+ * review R1-006's complaint was that this list has never been proven
+ * machine-readable, so a deleted row or a deleted in-file assertion for one
+ * of these ids would pass silently.
+ */
+function parseAdaptedBrowserChecks(catalog) {
+  return [...catalog.matchAll(/^\| (BC-\d{3}) \|.+\| adapted \|.+\| `([^`]+)` \|$/gm)].map(([, id, testFile]) => ({
+    id,
+    testFile,
+  }));
+}
+
+/**
+ * Fails if: the adapted count drifts from 28 (a row was added/removed
+ * without updating the list this function derives from), a named test file
+ * is missing, or a file's content no longer mentions its assigned BC id
+ * (readFile returns the actual file content — tests substitute a mutated
+ * version to prove a deleted case turns this red).
+ */
+function verifyAdaptedInventory(catalog, readFile) {
+  const rows = parseAdaptedBrowserChecks(catalog);
+  assert.equal(rows.length, 28, `expected 28 adapted browser checks, got ${rows.length}`);
+  const byFile = new Map();
+  for (const { id, testFile } of rows) {
+    if (!byFile.has(testFile)) byFile.set(testFile, []);
+    byFile.get(testFile).push(id);
+  }
+  for (const [testFile, ids] of byFile) {
+    let content;
+    try {
+      content = readFile(testFile);
+    } catch {
+      assert.fail(`adapted browser check test file not found: ${testFile} (covers ${ids.join(', ')})`);
+    }
+    for (const id of ids) {
+      assert.match(
+        content,
+        new RegExp(`${id}(?!\\d)`),
+        `${testFile} no longer references ${id} — a production instance for this adapted browser check was deleted`,
+      );
+    }
+  }
+}
+
 const completionEvidencePlaceholders = new Set([
   'todo',
   'tbd',
@@ -618,6 +664,51 @@ test('F009-DOC-R1-006: all 125 V3.44 browser checks have an explicit disposition
       'deferred 不得进入 F009 production registry',
     ],
   );
+});
+
+test('F009-CODE-R1-006: every adapted browser check has a locked, non-placeholder production test', () => {
+  const catalog = read(
+    'docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md',
+  );
+  const rows = parseAdaptedBrowserChecks(catalog);
+  assert.equal(rows.length, 28, `expected 28 adapted rows parsed, got ${rows.length}`);
+  assert.deepEqual(
+    new Set(rows.map((r) => r.id)).size,
+    28,
+    'adapted browser check ids must be unique — a duplicate would silently under-count real coverage',
+  );
+
+  const realContent = new Map(rows.map(({ testFile }) => [testFile, read(testFile)]));
+  const readFile = (testFile) => {
+    if (!realContent.has(testFile)) throw new Error(`unexpected test file: ${testFile}`);
+    return realContent.get(testFile);
+  };
+
+  // Green on the real repo state — every one of the 28 rows' file really
+  // contains a reference to its own id right now.
+  verifyAdaptedInventory(catalog, readFile);
+
+  // Deleting one row from the catalog must turn the count check red.
+  const droppedRow = catalog.replace(/^\| BC-050 \|[^\r\n]*(?:\r?\n|$)/m, '');
+  assert.notEqual(droppedRow, catalog, 'mutation must actually remove the BC-050 row');
+  assert.throws(() => verifyAdaptedInventory(droppedRow, readFile), /expected 28 adapted browser checks/);
+
+  // Deleting the in-file reference for one adapted id — the case the review
+  // found unprovable — must turn this red even though the catalog row and
+  // every other row's coverage stay untouched.
+  const a11yFile = 'e2e/tests/f009-a11y.spec.ts';
+  const withoutBc050 = realContent.get(a11yFile).replaceAll('BC-050', 'redacted');
+  assert.notEqual(withoutBc050, realContent.get(a11yFile), 'mutation must actually remove BC-050 references');
+  const mutatedReadFile = (testFile) => (testFile === a11yFile ? withoutBc050 : readFile(testFile));
+  assert.throws(() => verifyAdaptedInventory(catalog, mutatedReadFile), /no longer references BC-050/);
+
+  // A file the catalog names but that doesn't exist on disk must also fail,
+  // not silently pass with empty coverage.
+  const missingFileReadFile = (testFile) => {
+    if (testFile === a11yFile) throw new Error('ENOENT');
+    return readFile(testFile);
+  };
+  assert.throws(() => verifyAdaptedInventory(catalog, missingFileReadFile), /test file not found/);
 });
 
 test('F009-DOC-R1-007: draft ownership and cleanup semantics are deterministic', () => {
