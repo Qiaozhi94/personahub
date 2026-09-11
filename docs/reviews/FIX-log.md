@@ -1,0 +1,120 @@
+## Round 3 · 2026-09-11
+
+- findings: F009-CODE-R1-005, F009-CODE-R1-006 (partial — see below), F009-CODE-R1-007, F009-CODE-R2-014, F009-CODE-R2-015
+- commits:
+  - F009-CODE-R1-005: `db8cf6e` (FakeAgentAdapter parseable results), `151cb10` (fixture bug fixes + ws_v02_graphok), `5d1f08c` (golden journey J2/J4/J6/J7/J8 real write actions)
+  - F009-CODE-R2-014: `b499d94` (AppTabsContent binds visible panel to active tab) — this fix predates this round's diff (was already staged uncommitted at round-3 start) but had not been committed or independently re-verified until now
+  - F009-CODE-R1-006 (partial): `cab6669` (dialog focus-restoration production fix, closes the BC-049 half), `3e80f7a` (a11y test coverage: BC-049 real assertions, BC-050 Reset Rounds reachable, BC-052 panel-visibility regression)
+  - F009-CODE-R1-007: `6e7b8df` (production: Retry action on all 5 remaining query surfaces), `8e0937d` (regression tests: real reject→retry→recover for each)
+  - F009-CODE-R2-015: `57ccc39` (wrap manual popstate dispatch in act() in the two cited test files)
+- regression_tests:
+  - `e2e/tests/f009-golden-journey.spec.ts` — full J1-J9 now exercises real dispatch-to-verdict for A021/A023/A015/graph-start (R1-005)
+  - `e2e/tests/f009-a11y.spec.ts::BC-048/049`, `::BC-049`, `::BC-050`, `::BC-052` — real focus-restore + Reset Rounds reachability + panel-visibility assertions (R1-006 partial)
+  - `web/src/f009-runtime-settings.test.tsx::retries a failed runtime health panel load for real (review R2-CODE-R1-007)`
+  - `web/src/f009-pages.test.tsx::distinguishes a workspace query failure from a real not-bound state and retries for real (review R2-CODE-R1-007)`
+  - `web/src/f009-execution-host.test.tsx::retries a failed thread-events load for real (review R2-CODE-R1-007)`
+  - `web/src/f004-inspector-validation.test.tsx::retries a failed validation status load for real (review R2-CODE-R1-007)`
+  - `web/src/f003-file-change-pagination.test.tsx::handles API error gracefully and retries for real (review R2-CODE-R1-007)`
+  - `web/src/f009-execution-host.test.tsx`, `web/src/f009-shell.test.tsx` — zero `act()` warnings confirmed via direct grep on test output (R2-015)
+- gate: `npm run verify` — PASS (exit 0), run after each commit group above, last full run 2026-09-11 ~15:30 local. `npx playwright test --config=e2e/playwright.config.ts` (full 25-spec suite) — 25/25 PASS, run repeatedly (including immediately after the R1-005 fixture/adapter changes and again after the R1-007/R2-015 changes) to confirm no regression and no flakiness. `npm run build` — PASS. Server suite (`npm -w @personahub/server test`) — 128 files / 1688 tests PASS, unaffected throughout. Web suite (`npm -w @personahub/web test`) — 268/268 PASS after all changes.
+
+**Known incomplete / explicitly not done this round (do not treat as fixed):**
+
+- **F009-CODE-R1-006 is only partially closed.** The core ask — a machine-readable inventory of the 28 adapted cases with a gate that turns red if any case or production instance is deleted — was not built this round. BC-049/BC-050/BC-052/R2-014 fixes are real, verified sub-fixes cited within R1-006's finding text, not the finding's full closure.
+- **T031's 125-item manual real-browser walkthrough was not performed this round.** `tasks.md:48` already shows it checked from a prior round; this round did not re-verify it, and the round-2 report's complaint that no per-item human conclusion exists (`journey-test-matrix.md:144`) is still unaddressed. Do not read the fixes above as satisfying T031.
+- **`execution_evidence_commit` hash-authenticity gap not addressed** — the check-v03-plan-contracts gate still only validates hex format, not that the hash resolves to a real commit.
+- **Round-1's `d1a97cc` (13 findings in one commit) was not retroactively split.** Per this session's own "one finding per commit" commits above, going forward is fixed; the historical commit was left as-is rather than rewriting shared history — recorded here as the discrepancy the review asked to at least document honestly when a historical commit can't be split.
+
+## Round 4 · 2026-09-11
+
+- findings: F009-CODE-R1-006 (closes the round-3 partial), F009-CODE-R1-011 (execution_evidence_commit sub-issue only — see below)
+- commits:
+  - F009-CODE-R1-006: `a886826` (BC-056: real second-request idempotency proof, not just client dblclick prevention), `7eaa1b2` (machine-readable inventory of all 28 adapted browser checks + gate that reds on a deleted catalog row, a deleted in-file BC id reference, or a missing test file)
+  - F009-CODE-R1-011 (execution_evidence_commit only): `0d65308` (verifyExecutionEvidenceCommit resolves the hash against real git history via `git cat-file`, not just hex-format regex; also switched the CI verify job's checkout to fetch-depth: 0 since the gate needs full history to resolve older commits)
+- regression_tests:
+  - `e2e/tests/f009-create-task.spec.ts::BC-056` — replays the actual confirm request as a second independent POST, asserts 201 then 200/same-issue_id
+  - `tools/check-v03-plan-contracts.test.mjs::F009-CODE-R1-006` — three mutations (dropped catalog row, deleted BC-050 in-file reference, missing test file) each proven to turn the gate red
+  - `tools/check-v03-plan-contracts.test.mjs::F009-CODE-R1-011` — fake-hash mutation and an injected always-false commitExistsFn both proven to turn the gate red
+- gate: `npm run verify` — PASS (exit 0) after each commit above. `node --test tools/check-v03-plan-contracts.test.mjs` run standalone after each change (32 then 33 tests, all pass). Full e2e suite (25 specs) — PASS, re-run after the BC-056 change. `npm run build` unaffected (docs/tools-only + one e2e spec + CI yaml this round, no app code touched).
+
+**Still not done — do not treat as fixed:**
+
+- **T031's 125-item manual real-browser walkthrough** — explicitly out of scope for round 4 per the user's own instruction (manual walkthrough excluded); still open.
+- **F009-CODE-R1-011's other three complaints** (T031 per-item human conclusion, `d1a97cc` bundling, FIX-log itself not yet reviewer-countersigned) are unaffected by this round — only the hash-authenticity sub-issue was in scope.
+- The new `F009-CODE-R1-006` inventory gate proves each of the 28 rows' *named test file* still contains a reference to that row's BC id. It does not (and structurally cannot from static text alone) prove the referenced assertion is behaviorally strong — a file could reference "BC-050" in a weak or wrong assertion and still pass this specific gate. Treat it as "the case wasn't silently deleted," not "the case is behaviorally sufficient."
+
+## Round 5 · 2026-09-11
+
+- findings: F009-DOC (journey-test-matrix.md §5 drift — not a numbered CURRENT-code.md finding, but the exact kind of doc/code inconsistency R1-011 and R1-006 both warned would recur if left alone)
+- commits:
+  - `4535926` — rewrote §5 "执行证据回填" to describe what J4/J6/J7/J8 actually do post round-3/4 (real graph completion via ws_v02_graphok, real A021/A023/A015) instead of the stale round-1 "现场裁定" framing (scripted 500, deferred-to-unit-test write actions) that R1-005 had already invalidated; updated execution_evidence_commit to `5d1f08c` (the commit that produced the current golden-journey.spec.ts content) since the old `d1a97ccae955` no longer matches what the file does; added a §5.1 manual-walkthrough checklist so T031's remaining scope is explicit rather than implied by an unchanged residual line.
+- regression_tests: none new — this is a docs-only sync. Verified via the existing `F009-DOC-R6-014` / `F009-CODE-R1-011` gates in `tools/check-v03-plan-contracts.test.mjs`, which re-validated the new commit hash resolves and the required phrases are still present.
+- gate: `npm run verify` — PASS (exit 0). `node --test tools/check-v03-plan-contracts.test.mjs` — 33/33 PASS.
+
+**Still not done:** T031's manual walkthrough itself (§5.1 is a checklist for it, not the walkthrough).
+
+## Round 6 · 2026-09-11
+
+- findings: T031 automation split (user-directed: convert the structurally-checkable half of the manual walkthrough to real gates; codify the automation/manual boundary as a standing rule)
+- commits:
+  - `26685b5` — real bug found by the new empty-db suite: ProjectsPage rendered two identical "新建项目" buttons when the project list was empty (header action never hid), violating EmptyState's own "exactly one recovery action" contract. Fixed by hiding the header action when empty (same pattern TasksPage already used) and adding EmptyState an `actionRef` so its own button can still be a dialog's restoreFocusRef target.
+  - `07f9c16` — new `playwright.empty-db.config.ts` + `f009-empty-database.spec.ts`: a second Playwright config whose webServer points DB_PATH at a file that doesn't exist, so the real server creates and migrates a genuinely empty database (zero projects/issues/workspaces, only schema-baked wft_coding_default/vpl_coding_default). Asserts the right empty-state component and one real recovery action render on `/`, `/tasks`, `/runtime` (representing the shared ProjectPicker), and `/settings/legacy-workflows`. Wired into `test:e2e:empty-db` / `verify:release`, excluded from the main config's testMatch.
+  - `58e55c9` — `F009-CODE-DEFERRED-INVENTORY` in check-v03-plan-contracts.test.mjs: hand-classified all 96 deferred browser checks into TASK_VIEW/SESSION/PROJECT_TAB/NAV_ABSENT/CONTENT_CONTRACT (64 rows) against what BC-070 (nav-absence) and S1 (route-unreachability, generic per route-manifest.ts) actually assert right now — re-verified by string-matching those tests' source, so weakening either test reds this gate. Also added BC-105's "权限档" to the existing forbidden-copy content-contract list (1 more row covered). Residual: 32 rows are sub-elements of already-*enabled* pages, printed explicitly by the gate, not hidden.
+  - `61dd4d8` — docs(SOP): new "自动化与人工判断边界纪律" section — the test is "structural/behavioral fact" (always automatable) vs "aesthetic/wording-quality judgment" (automation only proves unchanged-from-last-time, not good); former must become a gate, never sit on a manual checklist. Synced journey-test-matrix.md §5.1 to the actual post-round-6 split.
+- regression_tests:
+  - `e2e/tests/f009-empty-database.spec.ts` (4 new cases) — genuinely empty database, not the shared fixture
+  - `tools/check-v03-plan-contracts.test.mjs::F009-CODE-DEFERRED-INVENTORY` — mutation proof: deleting BC-070's "记忆" assertion is shown to break the classification's own re-verification
+  - `web/src/f009-content-contract.test.ts` — extended forbidden-copy list covers BC-105
+- gate: `npm run verify` — PASS (exit 0) after every commit above. Full main e2e suite (25 specs) + new empty-db suite (4 specs) — 29/29 PASS. Server suite — 128 files/1688 tests PASS. Web suite — 268/268 PASS. `npm run build` — PASS.
+
+**Still not done:**
+- T031's residual: the genuinely subjective half (J1 nav-grouping visual sensibility, J7 export/summary wording quality, empty-state copy quality) — SOP now says this is correctly manual, not a gap.
+- The 32-row DEFERRED residual (enabled-page sub-elements like "/runtime has no pause-all button") — printed by the new gate but not yet individually verified or automated one by one.
+- The 28 adapted checks' "is the experience actually good" half — R1-006's inventory gate proves the case wasn't deleted, not that it's well-designed.
+
+## Round 7 · 2026-09-11
+
+- findings: close the 32-row DEFERRED residual from round 6 (user-directed: "继续处理剩下的32条 deferred 检查")
+- commits:
+  - `f0f8902` — inspected the real current DOM for each target page (ThreadView composer, /runtime, /runtime/adapters, WorkspaceBinding, CreateIssueDialog) before writing assertions, not guessed. New `e2e/tests/f009-deferred-boundary.spec.ts` (5 cases) proves 21 of the 32 rows absent on their respective already-*enabled* pages. Found that BC-097's existing closed-count assertion (settings catalog == exactly 2) already covers 4 more rows (BC-055/083/111/120) for free — no new test needed, just a locked dependency. Total newly covered: 25. Classified the remaining 11 (BC-031/032/042/043/068/086/089/103/106/110/113) as NOT_APPLICABLE — data-model/business-rule/cross-feature claims with no discrete UI element whose absence is checkable — each with its own stated reason, not silently dropped.
+  - `6dee56e` — docs sync: journey-test-matrix.md §5.1 now says residual 0 for the deferred item, matching the gate.
+- regression_tests: `e2e/tests/f009-deferred-boundary.spec.ts` (5 new cases, all passed on first real run against actual current DOM — no guessed assertions needed correction); `tools/check-v03-plan-contracts.test.mjs::F009-CODE-DEFERRED-INVENTORY` updated to assert residual === 0 and to re-verify all 11 buckets' backing tests (including a new mutation proof for the settings-catalog-closed dependency).
+- gate: `npm run verify` — PASS (exit 0). Full main e2e suite — 30/30 PASS (25 prior + 5 new). Classification gate output: `85/96 deferred checks proven unreachable by existing gates; 11 explicitly not-applicable; 0 residual`.
+
+**Still not done:** T031's genuinely subjective half (unchanged from round 6) and the 28 adapted checks' "is it actually good" half.
+
+## Round 8 · 2026-09-11
+
+- findings: F009-CODE-R1-006 (carried-forward, closes the BC-049 instance-coverage gap), F009-CODE-R3-016 (new), F009-CODE-R3-017 (new, reviewer-reproduced), F009-CODE-R1-011 (carried-forward, T031 checkbox contradiction), F009-CODE-R3-018 (new)
+- commits (in the reviewer's suggested order — R3-017 → R3-016 → R1-006 → R3-018 → R1-011):
+  - F009-CODE-R3-017: `16ee90f` — replaced the fixed/shared E2E temp path (`e2e/.tmp`, global `/tmp/f009-graphok-workspace`) with a per-invocation `mkdtemp` directory (new `e2e/tests/support/invocation-dir.ts`, bridged from Playwright config to globalTeardown via an env var), plus a `globalTeardown` that removes it. Root-caused and fixed a second, self-introduced bug along the way: this Playwright version always runs a config's `webServer` plugin setup *before* `globalSetup` (confirmed by reading Playwright's own `runner/index.js` task ordering), so building the fixture in `globalSetup` meant the server had already migrated the (until-then nonexistent) DB_PATH straight to head by the time the v10 snapshot tried to write into it ("duplicate column name"). Fixed by building the fixture synchronously at config-load time instead — the only point guaranteed to run before webServer starts. Added a regression test that spawns two real concurrent OS processes building into separate directories and proves neither observes the other's directory or data.
+  - F009-CODE-R3-016: `07bc03a` — FakeAgentAdapter was unconditionally registered in `server/src/index.ts`'s production startup path. Extracted registration into `runtime/register-adapters.ts` (index.ts's module body unconditionally boots the real server on import, so it can't be unit-tested directly) and gated the fake adapter behind `ENABLE_FAKE_ADAPTER=1`, set only by the E2E Playwright config. New unit test proves the default (production) wiring never registers it.
+  - F009-CODE-R1-006: `2cffa22` — BC-049 (dialog focus-return) only covered Create Project/Unblock/Intake. Wired `restoreFocusRef` into `CreateIssueDialog.tsx` (two triggers: header button + empty-state action), `AdapterDialog.tsx` (two triggers: "Configure adapter" + each row's Edit), and the Cancel Run dialog in `IssueInspector.tsx`, capturing `document.activeElement` at click time in each case since none of them use a real `DialogPrimitive.Trigger`. Start Graph and the command palette needed no fix — verified they already use a real `DialogTrigger` / the generic `AppDialog` primitive respectively, both of which restore focus correctly on their own. Verified the fix is real by temporarily reverting the Adapter wiring and confirming a genuine `toBeFocused()` failure, then restoring it.
+  - F009-CODE-R3-018: `9141946` — CI's `e2e` job ran `test:e2e` but not `test:e2e:empty-db`, so CI could stay green while `verify:release` (which runs both) failed. Added the missing step.
+  - F009-CODE-R1-011: `d2ecc74` — `tasks.md` marked T031 done while `journey-test-matrix.md` said the manual walkthrough was still outstanding. Resolved by applying the already-codified automation/human-judgment boundary rule to T031 itself: its entire mechanically verifiable scope (125-item denominator, clean-DB first screen structure) is gated by tests, so T031 stays checked; the remaining aesthetic/wording judgment is reframed as a continuous, out-of-band review that never gated it and doesn't block F009's review status. Also fixed a second, related staleness: §1.0's "clean database first screen" row still said it couldn't be automated, though it already had been in round 6.
+- regression_tests:
+  - `server/tests/integration/f009-v02-fixture.test.ts::keeps two concurrent fixture builds fully isolated from each other (review R3-017)` — two real child processes, `server/tests/fixtures/concurrent-build-worker.ts`
+  - `server/tests/unit/register-adapters.test.ts` (3 new cases) — default wiring has no fake adapter; opting in registers it; the three real providers register regardless
+  - `e2e/tests/f009-a11y.spec.ts::BC-049: focus returns to the trigger for the remaining M1 dialogs (batch)` — create issue, command palette, start graph, cancel run, reset rounds, adapter (6 previously-unproven instances)
+- gate: `npm run verify` — PASS (exit 0) after every commit above. Full main e2e suite — 30/30 PASS (including 5 re-runs during the R3-017 duplicate-execution investigation). Empty-db suite — 4/4 PASS. Server suite — 129 files/1695 tests PASS (includes the 3 new register-adapters tests + 1 new concurrency test). Web suite — 268/268 PASS. `npm run build` unaffected (verified via `npm -w @personahub/web run typecheck` and `npm -w @personahub/server run typecheck`, both clean).
+
+**Still not done:** T031's genuinely subjective half (unchanged since round 6) and the 28 adapted checks' "is it actually good" half (unchanged since round 7). No new findings surfaced this round in those areas — round 8 was scoped entirely to CURRENT-code.md's round-3 five findings.
+
+## Round 9 · 2026-09-11
+
+- findings: CURRENT-code.md round 4 — an independent-variation review of round 8's five fixes found each one's regression test had a real gap that let the reviewer's own mutation slip through: F009-CODE-R1-006 (carried-forward — AdapterSettings' Edit branch had production focus-capture but no test exercised it), F009-CODE-R3-016 (carried-forward — the test only ever called the extracted helper with a manually-passed boolean, never the real index.ts call site), F009-CODE-R3-017 (carried-forward — the concurrency test bypassed the real createInvocationDir(), and the reviewer directly observed leaked `/tmp/personahub-e2e-*` directories after every real run), F009-CODE-R1-011 (carried-forward — round 8 only edited tasks.md/journey-test-matrix.md, leaving spec.md and design.md still asserting the old, contradicted position), F009-CODE-R3-018 (carried-forward — CI/verify:release parity had no test, so the fix itself could regress silently).
+- commits (reviewer's suggested order — R3-017 → R3-016 → R1-006 → R3-018 → R1-011):
+  - F009-CODE-R3-017: `111f257` — two independent fixes. (a) The regression test pre-created its own two directories and handed them to the worker script, bypassing `createInvocationDir()` entirely; `concurrent-build-worker.ts` now calls the real function. (b) Root-caused the leaked directories: Playwright evaluates a config module more than once per invocation (once in the orchestrator, again in each forked worker — confirmed via `process.pid` logging), so the unconditional `mkdtemp()` at config-load time created a second, never-torn-down directory per worker. `createInvocationDir()` is now idempotent per process tree (a worker inherits its parent's directory via an env var instead of minting a new one), and only the owning process builds the fixture. Added `e2e/tests/support/verify-invocation-dir-lifecycle.mjs` (wired into `verify:release` and CI) — a real end-to-end check that runs Playwright and asserts no invocation directory survives the process exiting.
+  - F009-CODE-R3-016: `5037ec3` — extracted the full policy (resolve `ENABLE_FAKE_ADAPTER` from a real env object + register every adapter) into `register-adapters.ts::buildProductionAdapterRegistry(env)`, the exact function `index.ts` now calls with an unmodified `process.env`. A source-scan test locks that one call site. `main()` is now guarded behind an entrypoint check so importing `index.ts` for this purpose never boots the real server.
+  - F009-CODE-R1-006: `7433152` — replaced the three separate BC-048/049/050 tests with a single `DIALOG_INSTANCES` array (one entry per production dialog *and* per distinct way to open it) and one generic parameterized test body iterating it, per the reviewer's explicit non-convergence instruction. Added the previously-missing "adapter — edit branch" entry.
+  - F009-CODE-R3-018: `517d0f8` — added a static contract test extracting the `test:e2e*` scripts CI's `e2e` job and `verify:release` each run, asserting the latter is a subset of the former.
+  - F009-CODE-R1-011: `8ee6373` — added DQ-008 to `design.md` §10 as an explicit, dated decision: the original exemption ("T021's golden journey can't have a second database") had been overgeneralized into "no clean-database test is possible at all." `spec.md` §7 and `design.md`'s "干净数据首屏"/"T031 人工检查记录" sections now point at this decision instead of repeating the stale claim. Also fixed `journey-test-matrix.md` §5's remaining staleness (still described the fake adapter as unconditionally registered, and the graphok workspace as a fixed `/tmp` path — both fixed by this round's R3-016/R3-017 commits above).
+- regression_tests:
+  - `server/tests/integration/f009-v02-fixture.test.ts::keeps two concurrent fixture builds fully isolated from each other` — now calls the real `createInvocationDir()` via `concurrent-build-worker.ts`, verified via a real mutation (temporarily hardcoding a fixed path) reproducing the exact `SqliteError: duplicate column name` the bypass would have missed
+  - `e2e/tests/support/verify-invocation-dir-lifecycle.mjs` — verified via a real mutation (temporarily no-op teardown) reproducing a real leaked-directory failure
+  - `server/tests/unit/register-adapters.test.ts` (10 tests total, 7 new this round) — `resolveEnableFakeAdapter`, `buildProductionAdapterRegistry`, and a source-scan + mutation proof on `index.ts`'s own call site
+  - `e2e/tests/f009-a11y.spec.ts` — 10 independently-named dialog-instance tests generated from `DIALOG_INSTANCES`, verified via a real mutation (temporarily removing `openEdit()`'s focus capture) reproducing a real `toBeFocused()` failure
+  - `tools/check-v03-plan-contracts.test.mjs::F009-CODE-R3-018` — verified via a real mutation (temporarily removing CI's empty-db step) reproducing the reviewer's exact "missing: test:e2e:empty-db" failure
+- gate: `npm run verify` — PASS (exit 0), re-run after every commit above. `npm run build` — PASS (1771 modules). Main e2e suite — 37/37 PASS (up from 30, reflecting the 6 new per-instance dialog tests plus the pre-existing net gain from consolidating 3 tests into 10). Empty-db suite — 4/4 PASS. Invocation-lifecycle check — PASS, confirmed zero leaked directories via direct filesystem inspection after each run. Server suite — 129 files / 1699 tests PASS. Web suite — 31 files / 268 tests PASS. All counts in this entry were captured from a fresh run immediately before writing it, specifically because round 8's counts (30/30, 1695) didn't match this round's independent re-run (31/31, 1692) and were flagged as a discrepancy.
+
+**Still not done:** T031's genuinely subjective half (unchanged since round 6) and the 28 adapted checks' "is it actually good" half (unchanged since round 7) — both intentionally out of scope; this round was scoped entirely to CURRENT-code.md round 4's five carried-forward findings.
