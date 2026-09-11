@@ -5,16 +5,17 @@ import { expect, test } from "@playwright/test";
 // the trigger. The batch (BC-050) covers EVERY production dialog reachable on
 // the M1 fixture: create project, create issue, intake, start graph, cancel
 // run, unblock, adapter, command palette. (Reset Rounds only appears for
-// round-limit blockers — not reachable on this fixture; boundary noted.)
+// round-limit blockers — reachable on the round-limit fixture task.)
 // BC-051/BC-125: data tables carry accessible names and full columnheader/
 // cell semantics. BC-052: the legacy list/detail pair is the M1's real tab
 // instance and must satisfy the shared keyboard contract.
 
-test("BC-048/049: the create-project dialog has semantics and takes focus", async ({ page }) => {
+test("BC-048/049: the create-project dialog has semantics, takes focus, and returns it", async ({ page }) => {
   await page.goto("/projects");
   await expect(page.getByRole("heading", { name: "项目" })).toBeVisible();
 
-  await page.getByRole("button", { name: "新建项目" }).first().click();
+  const trigger = page.getByRole("button", { name: "新建项目" }).first();
+  await trigger.click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveAttribute("aria-modal", "true");
@@ -24,6 +25,10 @@ test("BC-048/049: the create-project dialog has semantics and takes focus", asyn
     return dialogEl ? dialogEl.contains(document.activeElement) : false;
   });
   expect(focusInside).toBe(true);
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
 });
 
 test("BC-050: every production dialog closes on Escape (batch over all M1 dialogs)", async ({ page }) => {
@@ -72,11 +77,38 @@ test("BC-050: every production dialog closes on Escape (batch over all M1 dialog
   await page.getByRole("button", { name: "Resolve Blocker…" }).click();
   await openAndEscape("Resolve Blocker");
 
-  // 8. Adapter.
+  // 8. Reset Rounds (round-limit blocker fixture).
+  await page.goto("/tasks/iss_v02_roundlimit");
+  await page.getByRole("button", { name: "Reset Rounds…" }).click();
+  await openAndEscape("Reset Validation Rounds");
+
+  // 9. Adapter.
   await page.goto("/runtime/adapters");
   await page.getByRole("radio", { name: "Alpha Platform" }).click();
   await page.getByRole("button", { name: "Configure adapter" }).click();
   await openAndEscape("Configure adapter");
+});
+
+test("BC-049: focus returns to the trigger for the unblock and intake dialogs", async ({ page }) => {
+  // Unblock dialog on the blocked fixture issue.
+  await page.goto("/tasks/iss_v02_blocked");
+  const unblockTrigger = page.getByRole("button", { name: "Resolve Blocker…" });
+  await unblockTrigger.click();
+  const unblockDialog = page.getByRole("dialog", { name: "Resolve Blocker" });
+  await expect(unblockDialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(unblockDialog).toHaveCount(0);
+  await expect(unblockTrigger).toBeFocused();
+
+  // Intake dialog.
+  await page.goto("/tasks?project=prj_v02_alpha");
+  const intakeTrigger = page.getByRole("button", { name: "推荐创建" });
+  await intakeTrigger.click();
+  const intakeDialog = page.getByRole("dialog", { name: "Intake" });
+  await expect(intakeDialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(intakeDialog).toHaveCount(0);
+  await expect(intakeTrigger).toBeFocused();
 });
 
 test("BC-052: the legacy list/detail tabs satisfy the keyboard contract", async ({ page }) => {
@@ -86,20 +118,35 @@ test("BC-052: the legacy list/detail tabs satisfy the keyboard contract", async 
 
   const listTab = page.getByRole("tab", { name: "模板列表" });
   const detailTab = page.getByRole("tab", { name: "模板详情" });
+  const listPanel = page.getByRole("tabpanel", { name: /模板列表/ });
+  const detailPanel = page.getByRole("tabpanel", { name: /模板详情/ });
+
+  // Initial state: list selected, exactly one visible panel.
   await expect(listTab).toHaveAttribute("aria-selected", "true");
+  await expect(listPanel).toBeVisible();
+  await expect(detailPanel).toHaveCount(0);
 
-  // Select a template so the detail tab becomes reachable, then switch tabs
-  // with the keyboard: ArrowRight, Home.
+  // Selecting a template switches to the detail panel (R2-014: control state
+  // bound to content).
   await page.getByRole("button", { name: /Coding Workflow v1/ }).click();
-  await expect(detailTab).toBeEnabled();
+  await expect(detailTab).toHaveAttribute("aria-selected", "true");
+  await expect(detailPanel).toBeVisible();
+  await expect(page.getByRole("region", { name: "模板详情" })).toBeVisible();
+  await expect(listPanel).toHaveCount(0);
 
+  // Keyboard: ArrowRight/Home drive selection with focus following.
   await listTab.focus();
   await page.keyboard.press("ArrowRight");
   await expect(detailTab).toHaveAttribute("aria-selected", "true");
   await expect(detailTab).toBeFocused();
+  await expect(detailPanel).toBeVisible();
+  await expect(listPanel).toHaveCount(0);
 
+  await detailTab.focus();
   await page.keyboard.press("Home");
   await expect(listTab).toHaveAttribute("aria-selected", "true");
+  await expect(listPanel).toBeVisible();
+  await expect(detailPanel).toHaveCount(0);
 });
 
 test("BC-051/BC-125: the legacy workflow table has full table semantics", async ({ page }) => {
