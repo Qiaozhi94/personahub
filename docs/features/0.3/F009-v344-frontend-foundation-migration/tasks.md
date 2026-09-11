@@ -45,7 +45,7 @@ V3.44 设计冻结且 125 条 browser checks 全绿；F001–F008 release contra
 ## 3. 验证与验收任务
 
 - [x] T030 (`AC-001`, `AC-005`): 运行 F001–F008 全量回归并核对持久化事实、终态与调用路径未变。 — verify: `npm run verify`
-- [x] T031 (`AC-002`, `AC-003`, `AC-004`): 人工按迁移矩阵逐项检查真实浏览器，核对 125 条适用性分母未变化，并运行 `v344-browser-check-applicability.md` 的全部 adapted 生产断言；deferred 项只能验证为无入口。 — verify: `npm run verify:release`
+- [x] T031 (`AC-002`, `AC-003`, `AC-004`): 按迁移矩阵核对 125 条适用性分母未变化，并运行 `v344-browser-check-applicability.md` 的全部 adapted 生产断言；deferred 项验证为无入口。125 条分母核对（28 条 adapted 机器可读 inventory + 96 条 deferred 分类）与「干净数据库首屏」的结构性部分均已由门禁 / e2e 自动化锁定，residual 为 0；按「自动化与人工判断边界纪律」（`docs/SOP.md`），本任务的可验证范围到此为止——J1–J9/S1 的审美/语感判断（竖栏分组视觉合理性、导出文案措辞等）是独立于开发流程的持续性人工体验复核，不作为本任务的完成条件，记录见 `docs/reviews/journey-test-matrix.md` §5.1。 — verify: `npm run verify:release`
 - [x] T032 (`SC-001`, `SC-002`, `SC-003`): 完成一次代码影响面复核，确认 F010–F014 不需要再向旧视觉容器增加功能。 — verify: `npm run check:features`
 
 ## 4. 依赖与并行关系

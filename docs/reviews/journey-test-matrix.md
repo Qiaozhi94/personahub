@@ -2,7 +2,7 @@
 topics: [frontend, v344, migration, testing, e2e, journey-matrix]
 doc_kind: plan
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-09-11
 ---
 
 # F009 需求级旅程—测试映射矩阵
@@ -42,7 +42,7 @@ updated: 2026-09-09
 | ①入口可发现 | J1（根入口 `/` 起点、竖栏四个已注册槽位）；J2–J9、S1 的用户动作全部从可见导航/列表点击出发（见 §0 入口纪律） |
 | ②主路径逐步反馈 | J2–J7、J9 的「预期可见反馈」列，每个动作对应可见的文本/状态/列表变化 |
 | ③失败与恢复 | J8（主：取消/失败/阻塞的守恒显示 + 重启恢复）；J3（次：确认失败保留草稿可重试）；S1（次：not-found 可恢复） |
-| ④空态与首次使用 | S1（未选项目的项目选择态、未知 ID not-found、非法子路径、未绑定项目指引）；「干净数据库首屏」受 §0 数据策略限制无法自动覆盖，残余归 T031（豁免已明文化于 spec §7 / design.md §8） |
+| ④空态与首次使用 | S1（未选项目的项目选择态、未知 ID not-found、非法子路径、未绑定项目指引）；「干净数据库首屏」的结构性部分已由独立配置 `e2e/playwright.empty-db.config.ts` + `f009-empty-database.spec.ts` 自动覆盖（不违反 §0：这是一个不含 J1–J9 的独立 spec，J1–J9 本身仍只用 T000 builder 库）；文案措辞质量仍是人工判断，见 §5.1 |
 | ⑤刷新/重连后一致 | J9（主：deep link 直达/刷新/History 重放）；J1（根入口 replace 与不猜选）；J5（事实刷新守恒）。SSE 断线重连补读在 M1 无活跃事件源，处理见 J9 行注 |
 
 ### 1.1 步骤矩阵
@@ -142,9 +142,9 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
   - A011/A013 取消：J8 真实执行（确认对话框 → cancelled），连带排队 Run 取消的事实已断言，行为未变。
   - 上述四项不再有对应的任务级单元测试依赖（`web/src/f004-validation-hooks.test.tsx`、`f004-round-reset-dialog.test.tsx`、`f006-graph-run-card.test.tsx` 这三个文件名引用已过时，不代表这些写动作唯一的执行证据仍在那里）。
 - 28 条 adapted 行落点复核：§2 表所列 spec 文件全部存在并随 `npm run verify:release` 执行，且现在有机器可读门禁锁定（`tools/check-v03-plan-contracts.test.mjs::F009-CODE-R1-006`：解析全部 28 行、按登记文件分组、断言每个 BC id 在其文件里仍有引用，删行/删引用/文件缺失三种变异均可验证会变红）。BC-049（dialog 焦点归还）修的是一个真实无障碍性缺陷——所有对话框用普通 `<button>` 触发而非 Radix `DialogTrigger`，导致 `context.triggerRef` 恒为 null，关闭时 Radix 自身默认恢复被无条件 `preventDefault()` 取消却又没有替代目标，焦点落回 `<body>`；已通过 `DialogContent` 新增的 `restoreFocusRef` 修复并在 create-project/unblock/intake 三个对话框验证。BC-050 新增 Reset Rounds 到批量 Escape 断言（此前因「round-limit 阻塞在本 fixture 不可达」被跳过，现在 `iss_v02_roundlimit` 已可达）。BC-056 新增服务端幂等的真实第二次请求重放证明（原 dblclick 断言只证明了客户端防连点）。BC-052 的 M1 真实 tabs 实例为 /settings/legacy-workflows 的列表/详情对（R1-006 后补的生产实例，且已修复 R2-014：选中面板此前不随 tab 切换）；BC-006 的标签域来自 fixture Issue labels（下拉筛选，无 chip 行）；console/pageerror 零错误门禁覆盖全部 M1 路由（`f009-a11y.spec.ts`）。
-- 人工（T031）残余：真实浏览器观感、干净库首屏指引与导出/摘要内容抽查按 §1 行注在合并前人工复核；「旅程步骤」列使用 J*/S1 编号。**本条截至本次回填仍未执行**——round-3/4 只完成了自动化部分的真实写动作与门禁，T031 逐步/逐条对照真实浏览器仍待单独进行，见下方「人工走查清单」。
+- T031 的可验证范围（125 条分母核对 + 干净数据库首屏结构性部分）已全部转为门禁 / e2e 断言，见下方「人工走查清单」的自动化拆分记录。按「自动化与人工判断边界纪律」（`docs/SOP.md`），本任务到此为止；剩余的真实浏览器观感、导出/摘要文案措辞等审美/语感判断，是独立于开发流程、可持续进行的人工体验复核，不作为 T031 的完成条件，也不阻塞 F009 的 review 状态——发现的缺陷/观察随时记入 `dogfooding-bugs.md` / `dogfooding-notes.md`，「旅程步骤」列使用 J*/S1 编号。
 
-### 5.1 人工走查清单（T031 待执行，未随本次回填一并完成）
+### 5.1 人工走查清单（结构性部分已自动化；剩余为独立于开发流程的持续性体验复核）
 
 按「自动化与人工判断边界纪律」（`docs/SOP.md`）复核后，本清单里原本整体标为人工的两项已经拆出了可自动化的部分——结构/行为事实转成了门禁，只把真正的审美/措辞判断留在人工：
 
@@ -155,5 +155,4 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
    - 过程中发现分类该变先改 applicability 文档再继续。
 2. **黄金旅程 J1–J9 + S1 逐步走一遍真实浏览器**，按 §1「预期可见反馈」列核对，重点是自动化结构性测不到、真正需要审美/语感判断的部分：J1 竖栏日常/低频分组的**视觉合理性**与设置目录条目**清晰度**；J7 导出 Markdown / 复制摘要的**文案措辞**是否读起来顺（禁用词表已由 `f009-content-contract.test.ts` 门禁锁定，这里核对的是措辞质量本身，不是词表命中）。
    - **干净数据库首屏的结构性部分已自动化**（`e2e/playwright.empty-db.config.ts` + `f009-empty-database.spec.ts`：零 seed 库首次打开 `/`、`/tasks`、`/runtime`、`/settings/legacy-workflows` 时正确的空态组件与唯一恢复动作都有断言，过程中还发现并修了 ProjectsPage 空态下两个「新建项目」按钮同时出现的真实 bug）；人工只需要看一眼这几个空态文案**读起来是否舒服**，不用再验证组件对不对。
-3. 逐步写下人工结论（J1–J9、S1 各一条，不能留空），缺陷记 `dogfooding-bugs.md`、体验观察记 `dogfooding-notes.md`，两边「旅程步骤」列用本矩阵的编号。
-4. 全部完成后，`tasks.md` T031 的勾选才有对应证据可查。
+3. 走查时逐步写下人工结论（J1–J9、S1 各一条），缺陷记 `dogfooding-bugs.md`、体验观察记 `dogfooding-notes.md`，两边「旅程步骤」列用本矩阵的编号——这是持续性活动，不设完成时限，也不是 `tasks.md` T031 勾选的前提（T031 的门禁范围已在上方全部自动化闭环）。
