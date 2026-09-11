@@ -344,21 +344,38 @@ describe("F009 v0.2 schema-v10 fixture", () => {
 
     try {
       const [resultA, resultB] = await Promise.all([runWorker(), runWorker()]);
-      const parsedA = JSON.parse(resultA.stdout) as { dir: string; version: number; projectCount: number };
-      const parsedB = JSON.parse(resultB.stdout) as { dir: string; version: number; projectCount: number };
+      type WorkerResult = {
+        dir: string;
+        version: number;
+        projectCount: number;
+        hasDatabase: boolean;
+        hasWorkspace: boolean;
+      };
+      const parsedA = JSON.parse(resultA.stdout) as WorkerResult;
+      const parsedB = JSON.parse(resultB.stdout) as WorkerResult;
       // The actual R3-017 invariant: two independent processes calling
       // createInvocationDir() with the same prefix must never land on the
       // same directory — that collision is exactly what let one
       // invocation's setup delete/recreate another's database mid-run.
       expect(parsedA.dir).not.toBe(parsedB.dir);
-      expect(parsedA).toEqual({ dir: parsedA.dir, version: 10, projectCount: 2 });
-      expect(parsedB).toEqual({ dir: parsedB.dir, version: 10, projectCount: 2 });
-
-      // Each invocation's file lives only under its own directory.
-      expect(existsSync(join(parsedA.dir, "v02-fixture.sqlite"))).toBe(true);
-      expect(existsSync(join(parsedB.dir, "v02-fixture.sqlite"))).toBe(true);
-      expect(existsSync(join(parsedA.dir, "graphok-workspace"))).toBe(true);
-      expect(existsSync(join(parsedB.dir, "graphok-workspace"))).toBe(true);
+      // Each invocation built a complete fixture under its own directory.
+      // The per-worker existence flags are observed inside the owning
+      // process (review R6-026: the directory is removed when that process
+      // exits, so the parent can no longer stat it afterwards).
+      expect(parsedA).toEqual({
+        dir: parsedA.dir,
+        version: 10,
+        projectCount: 2,
+        hasDatabase: true,
+        hasWorkspace: true,
+      });
+      expect(parsedB).toEqual({
+        dir: parsedB.dir,
+        version: 10,
+        projectCount: 2,
+        hasDatabase: true,
+        hasWorkspace: true,
+      });
     } finally {
       // review R5-020: sweep by prefix rather than by the two parsed paths —
       // a worker that throws never prints its directory, so cleanup keyed on
