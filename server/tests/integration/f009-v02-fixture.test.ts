@@ -91,7 +91,7 @@ function assertRepresentativeData(db: Database.Database): void {
     status: string;
     blocked_node_keys: string | null;
   }>;
-  expect(graphs.map((g) => g.status)).toEqual(["completed", "blocked"]);
+  expect(graphs.map((g) => g.status)).toEqual(["completed", "blocked", "blocked"]);
   const blockedGraph = graphs.find((g) => g.status === "blocked");
   expect(JSON.parse(blockedGraph!.blocked_node_keys ?? "[]")).toEqual(["impl"]);
   expect(
@@ -101,7 +101,7 @@ function assertRepresentativeData(db: Database.Database): void {
        JOIN graph_runs g ON g.id = nr.graph_run_id
        WHERE g.status = 'blocked' AND nr.status = 'failed'`,
     ),
-  ).toBe(1);
+  ).toBe(3);
   const danglingResultEvents = count(
     db,
     `SELECT COUNT(*) AS c FROM node_runs WHERE result_event_id IS NOT NULL
@@ -248,7 +248,7 @@ describe("F009 v0.2 schema-v10 fixture", () => {
         "SELECT id, role, validation_round AS r, validation_attempt AS a FROM runs WHERE validation_attempt IS NOT NULL",
       )
       .all() as Array<{ id: string; role: string; r: number | null; a: number | null }>;
-    expect(attemptRows.length).toBe(5);
+    expect(attemptRows.length).toBe(8);
     for (const row of attemptRows) {
       expect(row.role).toBe("validator");
       expect(row.a).toBe(1);
@@ -256,13 +256,16 @@ describe("F009 v0.2 schema-v10 fixture", () => {
     }
     const validators = db.prepare("SELECT id FROM runs WHERE role = 'validator'").all() as Array<{ id: string }>;
     expect(validators.map((v) => v.id).sort()).toEqual([
+      "run_v02_rl_val1",
+      "run_v02_rl_val2",
+      "run_v02_rl_val3",
       "run_v02_val_b1",
       "run_v02_val_b2",
       "run_v02_val_r1",
       "run_v02_val_r2",
       "run_v02_val_r3",
     ]);
-    expect(validators.length).toBe(5);
+    expect(validators.length).toBe(8);
 
     // Identity conservation: IDs, rounds, threads, timestamps, verdicts.
     const after = snapshotRuns(db);
