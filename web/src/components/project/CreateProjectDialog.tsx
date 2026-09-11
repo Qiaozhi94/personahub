@@ -15,9 +15,10 @@ interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (projectId: string) => void;
+  restoreFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
-export function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDialogProps) {
+export function CreateProjectDialog({ open, onOpenChange, onCreated, restoreFocusRef }: CreateProjectDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const createProject = useCreateProject();
@@ -48,7 +49,7 @@ export function CreateProjectDialog({ open, onOpenChange, onCreated }: CreatePro
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent restoreFocusRef={restoreFocusRef}>
         <DialogHeader>
           <DialogTitle>Create project</DialogTitle>
         </DialogHeader>

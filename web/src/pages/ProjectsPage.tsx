@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Project } from "@personahub/shared";
 import { useProjects } from "@/hooks/use-projects";
 import { CreateProjectDialog } from "@/components/project/CreateProjectDialog";
@@ -15,6 +15,7 @@ export function ProjectsPage({ diagnostics }: { diagnostics: Diagnostics }) {
   const { navigate } = useRouter();
   const projectsQuery = useProjects();
   const [createOpen, setCreateOpen] = useState(false);
+  const createTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   function openProject(project: Project) {
     navigate(buildUrl(`/projects/${encodeURIComponent(project.id)}`));
@@ -47,6 +48,7 @@ export function ProjectsPage({ diagnostics }: { diagnostics: Diagnostics }) {
       <div className="flex items-center justify-between">
         <h1 className="text-base font-semibold">项目</h1>
         <button
+          ref={createTriggerRef}
           type="button"
           onClick={() => setCreateOpen(true)}
           className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -85,6 +87,7 @@ export function ProjectsPage({ diagnostics }: { diagnostics: Diagnostics }) {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={(projectId) => navigate(buildUrl(`/projects/${encodeURIComponent(projectId)}`))}
+        restoreFocusRef={createTriggerRef}
       />
     </PageFrame>
   );

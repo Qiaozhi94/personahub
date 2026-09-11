@@ -14,9 +14,10 @@ interface ResetRoundsDialogProps {
   issueId: string | null;
   open: boolean;
   onOpenChange: () => void;
+  restoreFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
-export function ResetRoundsDialog({ issueId, open, onOpenChange }: ResetRoundsDialogProps) {
+export function ResetRoundsDialog({ issueId, open, onOpenChange, restoreFocusRef }: ResetRoundsDialogProps) {
   const [note, setNote] = useState("");
   const mutation = useResetRounds(issueId);
 
@@ -46,7 +47,7 @@ export function ResetRoundsDialog({ issueId, open, onOpenChange }: ResetRoundsDi
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent restoreFocusRef={restoreFocusRef}>
         <DialogHeader>
           <DialogTitle>Reset Validation Rounds</DialogTitle>
         </DialogHeader>

@@ -22,6 +22,7 @@ interface IntakeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (issueId: string) => void;
+  restoreFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 type Status = "idle" | "loading" | "recommended" | "blocked" | "confirming" | "stale" | "confirmed";
@@ -145,7 +146,7 @@ function RecommendationDetails<T>({
   );
 }
 
-export function IntakeDialog({ projectId, open, onOpenChange, onCreated }: IntakeDialogProps) {
+export function IntakeDialog({ projectId, open, onOpenChange, onCreated, restoreFocusRef }: IntakeDialogProps) {
   const queryClient = useQueryClient();
   const [goal, setGoal] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -265,7 +266,7 @@ export function IntakeDialog({ projectId, open, onOpenChange, onCreated }: Intak
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-h-[85vh] overflow-y-auto" restoreFocusRef={restoreFocusRef}>
         <DialogHeader>
           <DialogTitle>Intake</DialogTitle>
         </DialogHeader>

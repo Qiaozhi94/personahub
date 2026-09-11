@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ErrorCode } from "@personahub/shared";
 import { useIssues } from "@/hooks/use-issues";
 import { useProjects } from "@/hooks/use-projects";
@@ -113,6 +113,7 @@ function TaskProjectBoard({
   const issuesQuery = useIssues(projectId);
   const [createOpen, setCreateOpen] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const intakeTriggerRef = useRef<HTMLButtonElement | null>(null);
   // BC-006: labels filter through a dropdown over the stable task list — the
   // label domain comes from the issues' own labels, never a chip row.
   const [labelFilter, setLabelFilter] = useState("all");
@@ -162,6 +163,7 @@ function TaskProjectBoard({
           issues.length > 0 ? (
             <div className="flex gap-2">
               <button
+                ref={intakeTriggerRef}
                 type="button"
                 onClick={() => setIntakeOpen(true)}
                 className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
@@ -243,6 +245,7 @@ function TaskProjectBoard({
         open={intakeOpen}
         onOpenChange={setIntakeOpen}
         onCreated={(issueId) => navigate(buildUrl(`/tasks/${encodeURIComponent(issueId)}`))}
+        restoreFocusRef={intakeTriggerRef}
       />
     </PageFrame>
   );

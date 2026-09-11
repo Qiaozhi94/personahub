@@ -267,15 +267,24 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
   const [cancelTargetRunId, setCancelTargetRunId] = useState<string | null>(null);
   const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
   const [resetRoundsDialogOpen, setResetRoundsDialogOpen] = useState(false);
+  // These dialogs open via a window CustomEvent from a trigger button that
+  // lives in a sibling component (ValidationInspectorSection), so there is
+  // no direct ref to thread through props — capture whatever had focus at
+  // dispatch time instead (V3.44 BC-049: Radix only auto-restores focus to
+  // a `DialogTrigger`, which these dialogs don't use).
+  const unblockTriggerRef = useRef<HTMLElement | null>(null);
+  const resetRoundsTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     function handleUnblockEvent(e: CustomEvent) {
       if (e.detail?.issueId === issue.id) {
+        unblockTriggerRef.current = document.activeElement as HTMLElement | null;
         setUnblockDialogOpen(true);
       }
     }
     function handleResetRoundsEvent(e: CustomEvent) {
       if (e.detail?.issueId === issue.id) {
+        resetRoundsTriggerRef.current = document.activeElement as HTMLElement | null;
         setResetRoundsDialogOpen(true);
       }
     }
@@ -466,12 +475,18 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
 
       <GraphInspectorSection issueId={issue.id} />
 
-      <UnblockDialog issueId={issue.id} open={unblockDialogOpen} onOpenChange={() => setUnblockDialogOpen(false)} />
+      <UnblockDialog
+        issueId={issue.id}
+        open={unblockDialogOpen}
+        onOpenChange={() => setUnblockDialogOpen(false)}
+        restoreFocusRef={unblockTriggerRef}
+      />
 
       <ResetRoundsDialog
         issueId={issue.id}
         open={resetRoundsDialogOpen}
         onOpenChange={() => setResetRoundsDialogOpen(false)}
+        restoreFocusRef={resetRoundsTriggerRef}
       />
 
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
