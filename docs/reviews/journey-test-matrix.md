@@ -150,7 +150,7 @@ T031 对本节的职责：核对 125 条分母未漂移；全部 adapted 行逐�
 
 1. **125 条分母核对**：
    - 28 条 adapted：机器可读 inventory 已锁定（`tools/check-v03-plan-contracts.test.mjs::F009-CODE-R1-006`），但「体验是否合理」仍是人工判断——逐条打开界面肉眼核对。
-   - 96 条 deferred：`tools/check-v03-plan-contracts.test.mjs::F009-CODE-DEFERRED-INVENTORY` 已把其中 64 条锁定为「已被 BC-070 导航缺失断言或 S1 路由不可达断言证明无入口」，人工只需覆盖**剩下 32 条**（已启用页面上的具体元素，如 `/runtime` 的暂停全部派工按钮、composer 的模型/深度选择器等）——见该门禁输出的 residual 列表，逐条打开对应已启用页面确认元素不存在。
+   - 96 条 deferred：`tools/check-v03-plan-contracts.test.mjs::F009-CODE-DEFERRED-INVENTORY` 已把全部 96 条归类完毕——85 条被 BC-070 导航缺失断言、S1 路由不可达断言、BC-097 设置目录 closed-count 断言或新增的 `e2e/tests/f009-deferred-boundary.spec.ts`（composer/`/runtime`/`/runtime/adapters`/WorkspaceBinding/CreateIssueDialog 五组页面级元素缺失断言）证明无入口；11 条（BC-031/032/042/043/068/086/089/103/106/110/113）是数据模型/业务规则/跨 Feature 完成度声明，没有可断言"不存在"的具体 UI 元素，已在门禁里显式标注 NOT_APPLICABLE 并写明原因，不需要也不应该人工去找一个不存在的入口来验证。residual 现在锁定为 0——人工在这一项上**没有剩余工作**。
    - 1 条 not-applicable：确认未被误植入生产代码。
    - 过程中发现分类该变先改 applicability 文档再继续。
 2. **黄金旅程 J1–J9 + S1 逐步走一遍真实浏览器**，按 §1「预期可见反馈」列核对，重点是自动化结构性测不到、真正需要审美/语感判断的部分：J1 竖栏日常/低频分组的**视觉合理性**与设置目录条目**清晰度**；J7 导出 Markdown / 复制摘要的**文案措辞**是否读起来顺（禁用词表已由 `f009-content-contract.test.ts` 门禁锁定，这里核对的是措辞质量本身，不是词表命中）。
