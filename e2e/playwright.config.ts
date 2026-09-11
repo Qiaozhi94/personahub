@@ -59,6 +59,9 @@ export default defineConfig({
         DB_PATH: dbFile,
         PORT: String(SERVER_PORT),
         HOST: "127.0.0.1",
+        // review R3-016: the fake adapter is opt-in only; this fixture's
+        // validator dispatch relies on it for a deterministic verdict.
+        ENABLE_FAKE_ADAPTER: "1",
       },
       url: `http://127.0.0.1:${SERVER_PORT}/api/health`,
       // Always spawn fresh: this suite's whole data-isolation story rests

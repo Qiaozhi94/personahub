@@ -42,10 +42,7 @@ import { ValidationDispatchScheduler } from "./services/validation-dispatch-sche
 import { EventBus } from "./runtime/event-bus.js";
 import { AgentAdapterRegistry } from "./runtime/adapter-registry.js";
 import { AgentRunner } from "./runtime/agent-runner.js";
-import { FakeAgentAdapter } from "./runtime/adapters/fake-adapter.js";
-import { CodexCliAdapter } from "./runtime/adapters/codex-cli-adapter.js";
-import { ClaudeCodeAdapter } from "./runtime/adapters/claude-code-adapter.js";
-import { OpenCodeAdapter } from "./runtime/adapters/opencode-adapter.js";
+import { registerAgentAdapters } from "./runtime/register-adapters.js";
 import { registerRoutes } from "./api/index.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "./api/errors.js";
 import { GraphConstraintError } from "./db/sqlite-errors.js";
@@ -73,6 +70,12 @@ const DB_PATH = process.env.DB_PATH ?? defaultDbPath;
 const defaultLogFile = path.resolve(__dirname, "..", "..", ".local", "logs", "server.log");
 const LOG_FILE = process.env.LOG_FILE ?? defaultLogFile;
 const CORS_ORIGINS = process.env.CORS_ORIGIN?.split(",") ?? ["http://127.0.0.1:5173", "http://localhost:5173"];
+// review R3-016: FakeAgentAdapter is a fixture-only test double (deterministic,
+// never drives a real CLI) — it must be an explicit opt-in, never registered
+// by default, so a real deployment can never end up dispatching through it
+// even if a `cli_provider=fake` row ever appeared in a real database. Only
+// the E2E Playwright configs set this.
+const ENABLE_FAKE_ADAPTER = process.env.ENABLE_FAKE_ADAPTER === "1";
 
 async function main() {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -125,40 +128,7 @@ async function main() {
   );
 
   const adapterRegistry = new AgentAdapterRegistry();
-  // Fixture-only "fake" provider: never a real CLI. Graph node dispatches
-  // get a node_key-matched finalMessage from FakeAgentAdapter itself (see
-  // its "## Node:" detection); anything else — a validator round trigger —
-  // falls back to this default, a deterministic failing round so fixtures
-  // that live-trigger validation (F009 journey) get a real, parseable verdict
-  // instead of blocking on "no final message".
-  adapterRegistry.register(
-    new FakeAgentAdapter({
-      finalMessage: JSON.stringify({
-        schema_version: 1,
-        outcome: "failed",
-        summary: "Fixture CLI validator: deterministic failing round for fixture-driven journeys.",
-        // A "failed" outcome requires >=1 finding (result-parser.ts invariant)
-        // or parseValidationResult rejects the envelope as unparsable.
-        findings: [
-          {
-            severity: "warning",
-            message: "Fixture CLI validator: no real review was performed.",
-            suggestion: null,
-            evidence_refs: [],
-            file_path: null,
-            line: null,
-          },
-        ],
-        evidence_refs: [],
-        missing_evidence: [],
-        key_decisions: [],
-        lessons_candidate: [],
-      }),
-    }),
-  );
-  adapterRegistry.register(new CodexCliAdapter());
-  adapterRegistry.register(new ClaudeCodeAdapter());
-  adapterRegistry.register(new OpenCodeAdapter());
+  registerAgentAdapters(adapterRegistry, { enableFakeAdapter: ENABLE_FAKE_ADAPTER });
 
   const adapterConfigService = new AdapterConfigService(
     agentConfigRepo,
