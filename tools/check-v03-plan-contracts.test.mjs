@@ -1090,3 +1090,113 @@ test('F009-CODE-R1-011: execution_evidence_commit must resolve to a real commit,
   // independent of whether fakeHash happens to collide with a real object.
   assert.throws(() => verifyExecutionEvidenceCommit(journey, () => false), /does not resolve to a real commit/);
 });
+
+/**
+ * T031's "confirm no entry point" pass over the 96 deferred browser checks
+ * (docs/reviews/journey-test-matrix.md §5.1) was previously all-manual.
+ * Most deferred rows aren't independent claims — they're sub-features of a
+ * small number of routes/nav-slots that are *already* mechanically proven
+ * unreachable by two existing production tests:
+ *
+ *  - `f009-shell.spec.ts`'s BC-070 case asserts the primary nav renders
+ *    exactly the 4 enabled surfaces and zero buttons for the 5 not-registered
+ *    ones (会话/自动化/记忆/能力/统计) — covers every deferred row whose
+ *    entire owning surface doesn't exist yet.
+ *  - `f009-golden-journey.spec.ts`'s S1 case asserts three route families
+ *    are generically unreachable (`/tasks/:id/:view` → unsupported-view,
+ *    `/projects/:id/:tab` → unsupported-tab, `/sessions/:id` → not found) —
+ *    per route-manifest.ts these match ANY segment value, so one example
+ *    route per family proves the whole family, not just that one case.
+ *
+ * This does NOT eliminate T031 — roughly a third of the 96 are sub-elements
+ * of already-*enabled* pages (e.g. "no pause-all button on /runtime") that
+ * still need individual verification, and are deliberately left out of the
+ * covered buckets below rather than guessed at.
+ */
+function classifyDeferredBrowserChecks(catalog) {
+  const rows = [...catalog.matchAll(/^\| (BC-\d{3}) \|.+\| deferred \|.+\|.+\|.+\|$/gm)].map((m) => m[1]);
+
+  // Sub-features of the task four-view route family (F011) — any row whose
+  // reason column ties it to task-view/acceptance/evidence/trace projection
+  // reachable only via /tasks/:id/:view.
+  const TASK_VIEW = new Set([
+    'BC-003', 'BC-004', 'BC-009', 'BC-010', 'BC-011', 'BC-012', 'BC-013', 'BC-014', 'BC-015', 'BC-016',
+    'BC-017', 'BC-018', 'BC-019', 'BC-020', 'BC-021', 'BC-022', 'BC-023', 'BC-024', 'BC-025', 'BC-026',
+    'BC-034', 'BC-035', 'BC-036', 'BC-037', 'BC-038', 'BC-039', 'BC-059', 'BC-071',
+  ]);
+  // Sub-features reachable only via /sessions/:id.
+  const SESSION = new Set(['BC-008', 'BC-029']);
+  // Sub-features reachable only via /projects/:id/:tab.
+  const PROJECT_TAB = new Set(['BC-060', 'BC-073']);
+  // Sub-features of a whole not-registered top-level surface (记忆/自动化/
+  // 统计/能力, or a concept — plugin/MCP/notifications/monitoring — that was
+  // never given a SurfaceId at all, so it has strictly less reachability
+  // than a not-registered one).
+  const NAV_ABSENT = new Set([
+    'BC-041', 'BC-061', 'BC-062', 'BC-063', 'BC-064', 'BC-065', 'BC-066', 'BC-067', 'BC-069', 'BC-074',
+    'BC-077', 'BC-078', 'BC-079', 'BC-080', 'BC-081', 'BC-084', 'BC-085', 'BC-092', 'BC-093', 'BC-094',
+    'BC-095', 'BC-096', 'BC-098', 'BC-099', 'BC-100', 'BC-104', 'BC-114', 'BC-115', 'BC-117', 'BC-118',
+    'BC-121',
+  ]);
+  // BC-105 alone: a forbidden-term content check (web/src/f009-content-contract.test.ts).
+  const CONTENT_CONTRACT = new Set(['BC-105']);
+
+  const covered = new Set([...TASK_VIEW, ...SESSION, ...PROJECT_TAB, ...NAV_ABSENT, ...CONTENT_CONTRACT]);
+  const residual = rows.filter((id) => !covered.has(id));
+  return { rows, covered, residual, buckets: { TASK_VIEW, SESSION, PROJECT_TAB, NAV_ABSENT, CONTENT_CONTRACT } };
+}
+
+test('F009-CODE-DEFERRED-INVENTORY: most of the 96 deferred browser checks are provably unreachable, not just manually eyeballed', () => {
+  const catalog = read(
+    'docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md',
+  );
+  const shell = read('e2e/tests/f009-shell.spec.ts');
+  const journey = read('e2e/tests/f009-golden-journey.spec.ts');
+  const contentContract = read('web/src/f009-content-contract.test.ts');
+
+  const { rows, covered, residual } = classifyDeferredBrowserChecks(catalog);
+  assert.equal(rows.length, 96, `expected 96 deferred rows parsed, got ${rows.length}`);
+  assert.equal(new Set(rows).size, 96, 'deferred browser check ids must be unique');
+
+  // Every id in a covered bucket must actually be one of the 96 deferred
+  // rows — a stale bucket entry (renamed/removed BC id) must fail loudly
+  // rather than silently not matching anything.
+  const rowSet = new Set(rows);
+  for (const id of covered) {
+    assert.ok(rowSet.has(id), `bucketed id ${id} is not (or no longer) a deferred row in the catalog`);
+  }
+
+  // The bucket assignments only mean something if the two gates they lean
+  // on still make the exact claims this classification depends on.
+  assert.match(shell, /BC-070\/BC-007/, 'BC-070 nav-absence case must still exist in f009-shell.spec.ts');
+  for (const name of ['会话', '自动化', '记忆', '能力', '统计']) {
+    assert.ok(
+      shell.includes(`"${name}"`),
+      `BC-070 case must still assert "${name}" has zero primary-nav buttons`,
+    );
+  }
+  assert.match(journey, /task-unsupported-view|unsupported-view/, 'S1 must still assert the task-view route family is unreachable');
+  assert.match(journey, /unsupported-tab/, 'S1 must still assert the project-tab route family is unreachable');
+  assert.match(journey, /\/sessions\//, 'S1 must still assert the session route is unreachable');
+  assert.match(contentContract, /权限档/, 'BC-105 content-contract term must still be forbidden');
+
+  // The residual is real and shrinking, not hidden: exactly the rows not
+  // proven above still need individual per-page verification (T031).
+  console.log(
+    `F009-CODE-DEFERRED-INVENTORY: ${covered.size}/${rows.length} deferred checks proven unreachable by existing gates; ` +
+      `${residual.length} residual still need individual review: ${residual.join(', ')}`,
+  );
+  assert.equal(residual.length, 32, `expected exactly 32 residual deferred checks, got ${residual.length} — update the buckets or this count deliberately, don't let it drift silently`);
+
+  // Deleting a bucket's coverage must turn this red: e.g. if BC-070 stopped
+  // asserting 记忆 is absent, every NAV_ABSENT-classified Memory row's proof
+  // would be gone.
+  const shellWithoutMemoryAssertion = shell.replace('"记忆"', '"redacted"');
+  assert.notEqual(shellWithoutMemoryAssertion, shell, 'mutation must actually remove the 记忆 assertion');
+  assert.throws(
+    () => {
+      assert.ok(shellWithoutMemoryAssertion.includes('"记忆"'), 'BC-070 case must still assert "记忆" has zero primary-nav buttons');
+    },
+    /BC-070 case must still assert/,
+  );
+});

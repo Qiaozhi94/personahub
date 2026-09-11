@@ -45,6 +45,9 @@ const FORBIDDEN_COPY = [
   "本机",
   "单用户",
   "单机",
+  // BC-105 (deferred): path authorization's final UI is F013's, but the
+  // term itself never shows up as a stray/double name in F009's compat UI.
+  "权限档",
 ];
 
 describe("F009 production copy contract", () => {
