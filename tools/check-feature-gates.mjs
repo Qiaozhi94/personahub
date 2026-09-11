@@ -26,6 +26,15 @@ const LEGAL_STATUSES = [
   'done',
 ];
 const INCOMPLETE_MARKERS = ['TODO', 'TBD', '待补', '未补', 'pending'];
+
+/**
+ * Removes inline code spans (`like this`) from a Markdown line. Used before
+ * scanning for INCOMPLETE_MARKERS so a quoted identifier that happens to
+ * contain one of them is not read as an incompleteness declaration.
+ */
+export function stripInlineCode(line) {
+  return String(line).replace(/`[^`]*`/g, " ");
+}
 const REQ_ID_RE = /\b(FR|DR|TR|IR|UX|NFR)-(\d{3})\b/g;
 const REQ_PREFIXES = ['FR', 'DR', 'TR', 'IR', 'UX', 'NFR'];
 
@@ -1299,10 +1308,18 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
       }
     }
 
-    // Checked tasks must not contain incomplete markers
+    // Checked tasks must not contain incomplete markers.
+    // Inline code spans are stripped first: a marker inside backticks is
+    // quoting an identifier — a test name, a state value, an env var — not
+    // declaring unfinished work. F009 T004 is the case that forced this:
+    // its scenario reference `submit N → discard while pending → retype →
+    // old success` is the verbatim describe() name in
+    // web/src/f009-task-draft-store.test.ts, so the alternative was renaming
+    // a real test to satisfy a lexical scan. A genuinely unfinished task
+    // writes its marker in prose, which still fails.
     for (const task of allTasks) {
       if (task.checked) {
-        const lower = task.raw.toLowerCase();
+        const lower = stripInlineCode(task.raw).toLowerCase();
         for (const marker of INCOMPLETE_MARKERS) {
           const markerLower = marker.toLowerCase();
           if (lower.includes(markerLower)) {

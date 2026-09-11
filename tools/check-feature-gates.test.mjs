@@ -1209,6 +1209,50 @@ test('Done: checked task with 待补 marker fails', async () => {
   }
 });
 
+test('Done: a marker inside an inline code span is an identifier, not an incompleteness declaration', async () => {
+  let repo;
+  try {
+    repo = createTempRepo();
+    writeTestFile(repo, 'server/tests/test.test.ts');
+    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
+      spec: makeDoneSpec(),
+      tasks: makeTasks({
+        sec2: `### Phase 1：基础
+
+- [x] T001 (\`FR-001\`, \`AC-001\`): cover \`submit N → discard while pending → retype → old success\` - verify: \`server/tests/test.test.ts\``,
+        sec3: checkedSec3(),
+      }),
+    });
+    const base = checkFeatureBase(dir, repo);
+    const v1 = checkFeatureGateV1(dir, repo, base.feature);
+    assert.ok(!v1.errors.some((e) => e.includes('incomplete marker')));
+  } finally {
+    cleanup(repo);
+  }
+});
+
+test('Done: the same marker in prose still fails even when the line also has code spans', async () => {
+  let repo;
+  try {
+    repo = createTempRepo();
+    writeTestFile(repo, 'server/tests/test.test.ts');
+    const dir = writeFeature(repo, '0.1', 'F001', 'test', {
+      spec: makeDoneSpec(),
+      tasks: makeTasks({
+        sec2: `### Phase 1：基础
+
+- [x] T001 (\`FR-001\`, \`AC-001\`): \`TaskDraftStore\` wiring still pending - verify: \`server/tests/test.test.ts\``,
+        sec3: checkedSec3(),
+      }),
+    });
+    const base = checkFeatureBase(dir, repo);
+    const v1 = checkFeatureGateV1(dir, repo, base.feature);
+    assert.ok(v1.errors.some((e) => e.includes('incomplete marker') && e.includes('pending')));
+  } finally {
+    cleanup(repo);
+  }
+});
+
 // ---------------------------------------------------------------------------
 // AC / requirement ID tests
 // ---------------------------------------------------------------------------

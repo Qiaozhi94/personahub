@@ -803,7 +803,7 @@ test('F009-DOC-R2-008: entry and task-list routes never guess an active project'
   verifyForbiddenMutation(documents, forbidden[0]);
 });
 
-test('F009 design-gate status is synchronized across roadmap documents', () => {
+test('F009 done status is synchronized across roadmap documents', () => {
   const documents = [
     read('CLAUDE.md'),
     read('BACKLOG.md'),
@@ -811,15 +811,23 @@ test('F009 design-gate status is synchronized across roadmap documents', () => {
     read('docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md'),
   ];
   const phrases = [
-    'status: review',
+    'status: done',
     'eval_contract: exempt',
-    '| F009 | 0.3     | V3.44 Frontend Foundation & Migration | review |',
-    'F009 开发与自检已完成并进入 `review`（`npm run verify:release` 全绿）',
+    'F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿',
     'F010–F014 仍为 `draft`',
+  ];
+  // A done Feature must also be gone from BACKLOG's active table and must not
+  // still describe itself as in review anywhere — check-feature-gates.mjs
+  // enforces the table row, this keeps the prose from drifting behind it.
+  const forbidden = [
+    '| F009 | 0.3     | V3.44 Frontend Foundation & Migration | review |',
+    'F009 开发与自检已完成并进入 `review`',
   ];
 
   requirePhrases(documents, phrases);
+  forbidPhrases(documents, forbidden);
   verifyMutation(documents, phrases);
+  verifyForbiddenMutation(documents, forbidden[0]);
 });
 
 test('V03-PLAN-R1-008: URL migration is based on published routes, not invented history', () => {

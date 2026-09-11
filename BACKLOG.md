@@ -2,14 +2,15 @@
 topics: [backlog]
 doc_kind: note
 created: 2026-07-11
-updated: 2026-09-08
+updated: 2026-09-12
 ---
 
 # Feature Roadmap
 
 > **Replan complete (2026-09-08)**: V3.44 interaction design has passed final review. The design
-> freeze is lifted. F009 has passed its revised spec/design/tasks and current-code impact review and is
-> `ready-for-development`; F010-F014 remain `draft` until their own reviews close. The former Room/Squad plan has been replaced by the trusted task workbench
+> freeze is lifted. F009 shipped on 2026-09-12 — implementation review cycle 20 converged in 6 rounds and
+> `npm run verify:release` plus Windows CI are green, so it is `done` and has left the active table;
+> F010-F014 remain `draft` until their own reviews close. The former Room/Squad plan has been replaced by the trusted task workbench
 > sequence in [`docs/features/0.3/README.md`](docs/features/0.3/README.md).
 
 > **Rules**: Only active Features (idea/spec/ready-for-development/in-progress/review). Move to done after completion.
@@ -18,7 +19,6 @@ updated: 2026-09-08
 
 | ID   | Version | Name                             | Status | Owner | Link                                                            |
 | ---- | ------- | -------------------------------- | ------ | ----- | --------------------------------------------------------------- |
-| F009 | 0.3     | V3.44 Frontend Foundation & Migration | review | unassigned | `docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md` |
 | F010 | 0.3     | Artifact & Provenance Foundation | draft | unassigned | `docs/features/0.3/F010-artifact-foundation-provenance/spec.md` |
 | F011 | 0.3     | Trusted Task Surface | draft | unassigned | `docs/features/0.3/F011-trusted-task-surface/spec.md` |
 | F012 | 0.3     | Session, Dispatch & Intervention | draft | unassigned | `docs/features/0.3/F012-session-dispatch-intervention/spec.md` |
@@ -29,7 +29,7 @@ updated: 2026-09-08
 > `0.2.md`；均不再出现在上方活跃表。v0.2 期间多轮独立检视的完整逐条记录见
 > `docs/reviews/RETROSPECTIVE.md`（循环 3-4），不在本文件重复。
 >
-> v0.3 的 F009-F014 已按“前端迁移先行”路线重排 `spec.md` / `design.md` / `tasks.md`；F009 开发与自检已完成并进入 `review`（`npm run verify:release` 全绿），F010–F014 仍为 `draft` 并处于影响面与开发前审查阶段。F014 是唯一端到端交付 owner。版本范围、顺序与验收旅程
+> v0.3 的 F009-F014 已按“前端迁移先行”路线重排 `spec.md` / `design.md` / `tasks.md`；F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿，逐条 finding 见 `docs/reviews/RETROSPECTIVE.md` 循环 20），F010–F014 仍为 `draft` 并处于影响面与开发前审查阶段。F014 是唯一端到端交付 owner。版本范围、顺序与验收旅程
 > 见 `docs/features/0.3/README.md`。
 
 ## v0.2 拆分说明（历史背景，供理解 v0.3 延续的拆分惯例参考）
