@@ -259,8 +259,10 @@ describe("router popstate listener lifetime (review R1-009)", () => {
       </QueryClientProvider>,
     );
 
-    window.history.pushState(null, "", "/tasks");
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    act(() => {
+      window.history.pushState(null, "", "/tasks");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
 
     await waitFor(() => {
       expect(screen.getByText("A:/tasks")).toBeInTheDocument();
