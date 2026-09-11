@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -332,18 +332,20 @@ describe("F009 v0.2 schema-v10 fixture", () => {
     // them in, which meant a regression back to a fixed/shared path inside
     // createInvocationDir() itself would never have turned this test red).
     const execFileAsync = promisify(execFile);
-    const tsxBin = join(process.cwd(), "..", "node_modules", ".bin", "tsx");
     const workerScript = join(process.cwd(), "tests", "fixtures", "concurrent-build-worker.ts");
     const prefix = `f009-v02-concurrent-${process.pid}-`;
+    // review R6-025: Windows has no extensionless `node_modules/.bin/tsx` to
+    // spawn — only tsx.cmd/tsx.ps1 shims, which execFile cannot launch
+    // without a shell since Node hardened .cmd spawning. Running node itself
+    // with tsx's loader is the one spawn form that is byte-identical on both
+    // platforms, so this test stops being Linux-only (it failed Windows CI
+    // with `spawn ...\.bin\tsx ENOENT`).
+    const runWorker = () => execFileAsync(process.execPath, ["--import", "tsx", workerScript, prefix]);
 
-    const [resultA, resultB] = await Promise.all([
-      execFileAsync(tsxBin, [workerScript, prefix]),
-      execFileAsync(tsxBin, [workerScript, prefix]),
-    ]);
-
-    const parsedA = JSON.parse(resultA.stdout) as { dir: string; version: number; projectCount: number };
-    const parsedB = JSON.parse(resultB.stdout) as { dir: string; version: number; projectCount: number };
     try {
+      const [resultA, resultB] = await Promise.all([runWorker(), runWorker()]);
+      const parsedA = JSON.parse(resultA.stdout) as { dir: string; version: number; projectCount: number };
+      const parsedB = JSON.parse(resultB.stdout) as { dir: string; version: number; projectCount: number };
       // The actual R3-017 invariant: two independent processes calling
       // createInvocationDir() with the same prefix must never land on the
       // same directory — that collision is exactly what let one
@@ -358,8 +360,12 @@ describe("F009 v0.2 schema-v10 fixture", () => {
       expect(existsSync(join(parsedA.dir, "graphok-workspace"))).toBe(true);
       expect(existsSync(join(parsedB.dir, "graphok-workspace"))).toBe(true);
     } finally {
-      rmSync(parsedA.dir, { recursive: true, force: true });
-      rmSync(parsedB.dir, { recursive: true, force: true });
+      // review R5-020: sweep by prefix rather than by the two parsed paths —
+      // a worker that throws never prints its directory, so cleanup keyed on
+      // the parsed output leaked whenever this test failed.
+      for (const name of readdirSync(tmpdir()).filter((entry) => entry.startsWith(prefix))) {
+        rmSync(join(tmpdir(), name), { recursive: true, force: true });
+      }
     }
   });
 
