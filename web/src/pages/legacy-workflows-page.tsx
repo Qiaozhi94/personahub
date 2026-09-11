@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PageLoading, ErrorState, EmptyState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
 import { DataTable, type DataTableColumn } from "@/components/primitives/data-table";
-import { AppTabs, AppTabsList, AppTabsTrigger } from "@/components/primitives/app-tabs";
+import { AppTabs, AppTabsContent, AppTabsList, AppTabsTrigger } from "@/components/primitives/app-tabs";
 import { PageFrame, PageHeading } from "@/pages/page-frame";
 import { SettingsCatalog } from "@/pages/settings-catalog";
 
@@ -26,6 +26,7 @@ const columns: Array<DataTableColumn<WorkflowTemplateVersionSummary>> = [
 
 export function LegacyWorkflowsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("list");
   const listQuery = useQuery({ queryKey: ["workflow-templates"], queryFn: () => apiClient.workflowTemplates.list() });
   const detailQuery = useQuery({
     queryKey: ["workflow-templates", selectedId],
@@ -60,12 +61,7 @@ export function LegacyWorkflowsPage() {
       />
       <PageHeading title="历史工作流" />
 
-      <AppTabs
-        defaultValue="list"
-        onValueChange={(next) => {
-          if (next === "list") setSelectedId(null);
-        }}
-      >
+      <AppTabs value={activeTab} onValueChange={setActiveTab}>
         <AppTabsList aria-label="历史工作流视图">
           <AppTabsTrigger value="list">模板列表</AppTabsTrigger>
           <AppTabsTrigger value="detail" disabled={selectedId === null}>
@@ -73,7 +69,7 @@ export function LegacyWorkflowsPage() {
           </AppTabsTrigger>
         </AppTabsList>
 
-        <div role="tabpanel" aria-label="模板列表面板" className="grid gap-3 pt-3">
+        <AppTabsContent value="list" className="grid gap-3 pt-3">
           <DataTable
             ariaLabel="历史工作流模板"
             columns={columns}
@@ -100,7 +96,11 @@ export function LegacyWorkflowsPage() {
                   <button
                     type="button"
                     aria-pressed={selectedId === template.id}
-                    onClick={() => setSelectedId(template.id === selectedId ? null : template.id)}
+                    onClick={() => {
+                      const next = template.id === selectedId ? null : template.id;
+                      setSelectedId(next);
+                      setActiveTab(next === null ? "list" : "detail");
+                    }}
                     className={
                       selectedId === template.id
                         ? "rounded-full border border-primary bg-accent-soft px-3 py-1 text-xs text-primary"
@@ -113,9 +113,9 @@ export function LegacyWorkflowsPage() {
               ))}
             </ul>
           </div>
-        </div>
+        </AppTabsContent>
 
-        <div role="tabpanel" aria-label="模板详情面板" className="pt-3">
+        <AppTabsContent value="detail" className="pt-3">
           {selectedId === null ? (
             <EmptyState title="还没有选择模板" description="在模板列表选择一个模板后，这里显示它的详情。" />
           ) : (
@@ -128,7 +128,7 @@ export function LegacyWorkflowsPage() {
               onRetry={() => void detailQuery.refetch()}
             />
           )}
-        </div>
+        </AppTabsContent>
       </AppTabs>
     </PageFrame>
   );

@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 
 export const AppTabs = TabsPrimitive.Root;
 
+/** Panel bound to its trigger via Radix Content: hidden/shown by the active
+ *  value with the aria-controls/aria-labelledby association (R2-014). */
+export const AppTabsContent = TabsPrimitive.Content;
+
 export function AppTabsList({ className, ...props }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>) {
   return <TabsPrimitive.List className={cn("flex items-stretch gap-1 border-b border-border", className)} {...props} />;
 }
