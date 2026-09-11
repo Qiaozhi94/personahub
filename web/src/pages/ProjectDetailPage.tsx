@@ -72,6 +72,12 @@ export function ProjectDetailPage({ projectId, diagnostics }: { projectId: strin
       <PageSection title="代码目录（兼容）" description="查看和绑定本地代码目录；后续版本将在此提供完整的仓库管理。">
         {workspaceQuery.isLoading ? (
           <PageLoading label="正在加载代码目录" />
+        ) : workspaceQuery.isError ? (
+          <ErrorState
+            title="代码目录加载失败"
+            description={toApiError(workspaceQuery.error).message}
+            action={{ label: "重试", onAction: () => void workspaceQuery.refetch() }}
+          />
         ) : (
           <WorkspaceBinding projectId={projectId} workspace={workspaceQuery.data?.workspace ?? null} />
         )}

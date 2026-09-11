@@ -406,7 +406,7 @@ export function GraphRunCard({
 }
 
 export function ThreadView({ threadId, issueId, issueStatus, projectId, validationDispatchDueAt }: ThreadViewProps) {
-  const { data, isLoading, isError, error } = useThreadEvents(threadId);
+  const { data, isLoading, isError, error, refetch: refetchEvents } = useThreadEvents(threadId);
   const runsQuery = useRuns(issueId);
   const adaptersQuery = useAdapters(projectId);
   const createRun = useCreateRun();
@@ -498,8 +498,11 @@ export function ThreadView({ threadId, issueId, issueStatus, projectId, validati
 
   if (isError) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-destructive">
-        {toApiError(error).message}
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">
+        <span>{toApiError(error).message}</span>
+        <Button variant="outline" size="sm" onClick={() => void refetchEvents()}>
+          重试
+        </Button>
       </div>
     );
   }

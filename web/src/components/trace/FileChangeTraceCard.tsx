@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { type ThreadEvent } from "@personahub/shared";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useRunEvidence } from "@/hooks/use-trace";
 
 interface FileChangeTraceCardProps {
@@ -29,6 +30,7 @@ export function FileChangeTraceCard({ event }: FileChangeTraceCardProps) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    refetch: refetchEvidence,
   } = useRunEvidence(viewAll ? runId ?? null : null);
 
   if (event.type === "file.change_scan_failed") {
@@ -67,7 +69,12 @@ export function FileChangeTraceCard({ event }: FileChangeTraceCardProps) {
       {viewAll && evidenceLoading ? (
         <p className="mt-1.5 text-[10px] text-muted-foreground">Loading...</p>
       ) : viewAll && evidenceError ? (
-        <p className="mt-1.5 text-[10px] text-destructive">Failed to load file changes</p>
+        <div className="mt-1.5 flex items-center gap-2">
+          <p className="text-[10px] text-destructive">Failed to load file changes</p>
+          <Button variant="outline" size="sm" className="h-6 px-2 text-[10px]" onClick={() => void refetchEvidence()}>
+            Retry
+          </Button>
+        </div>
       ) : viewAll && allFileChanges.length === 0 ? (
         <p className="mt-1.5 text-[10px] text-muted-foreground">No file changes recorded</p>
       ) : viewAll ? (

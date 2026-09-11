@@ -33,6 +33,9 @@ export function ValidationInspectorSection({ issueId }: ValidationInspectorSecti
         <span className="text-xs text-destructive">
           Error loading: {toApiError(validationQuery.error).message}
         </span>
+        <Button variant="outline" size="sm" onClick={() => void validationQuery.refetch()}>
+          Retry
+        </Button>
       </section>
     );
   }

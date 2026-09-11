@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PageLoading } from "@/components/primitives/page-state";
+import { PageLoading, ErrorState } from "@/components/primitives/page-state";
 import { useRuntimeHealth } from "@/hooks/use-runtime-health";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { diagnosticKey, renderDiagnosticCode, type DiagnosticRender } from "./diagnostic-code";
@@ -41,9 +41,11 @@ export function RuntimeHealthPanel({ projectId }: { projectId: string }) {
 
   if (healthQuery.isError) {
     return (
-      <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-        运行时读取失败：{(healthQuery.error as { message?: string })?.message ?? "未知错误"}
-      </div>
+      <ErrorState
+        title="运行时读取失败"
+        description={(healthQuery.error as { message?: string })?.message ?? "未知错误"}
+        action={{ label: "重试", onAction: () => void healthQuery.refetch() }}
+      />
     );
   }
 
