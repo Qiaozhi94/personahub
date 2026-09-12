@@ -31,9 +31,9 @@ F009 新壳层和前端接入边界已冻结；ADR 0010 已接受；Evidence ref
 
 ## 3. 验证与验收任务
 
-- [ ] T020 (`AC-001`, `AC-002`): 通过 ArtifactService 命名 `testHooks` 覆盖每个发布步骤 crash、丢弃实例后同 dbPath restart、同 / 异内容并发 CAS、Win32 目标已存在、junction / symlink 越界、宽限期 orphan 清理、source 变化和 hash mismatch；测试不得自行编排发布步骤，逐点断言不可观察半成品。 — verify: `npm test`
-- [ ] T021 (`AC-003`): 完成 Run / Artifact / Evidence 双向追溯集成测试。 — verify: `npm test`
-- [ ] T022 (`AC-001`, `AC-002`, `AC-003`): 运行全量质量门。 — verify: `npm run verify:release`
+- [x] T020 (`AC-001`, `AC-002`): 通过 ArtifactService 命名 `testHooks` 覆盖每个发布步骤 crash、丢弃实例后同 dbPath restart、同 / 异内容并发 CAS、Win32 目标已存在、junction / symlink 越界、宽限期 orphan 清理、source 变化和 hash mismatch；测试不得自行编排发布步骤，逐点断言不可观察半成品。 — verify: `npm test`
+- [x] T021 (`AC-003`): 完成 Run / Artifact / Evidence 双向追溯集成测试。 — verify: `npm test`
+- [x] T022 (`AC-001`, `AC-002`, `AC-003`): 运行全量质量门。 — verify: `npm run verify:release`
 
 ## 4. 依赖与并行关系
 
