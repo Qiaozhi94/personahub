@@ -25,7 +25,7 @@ F009 新壳层和前端接入边界已冻结；ADR 0010 已接受；Evidence ref
 
 ### Phase 2：服务、事件与读取面
 
-- [ ] T010 (`FR-001`, `FR-002`, `TR-001`): 实现 content-addressed archive 先行、DB 可见性 commit 后置的 create / revise 唯一写入口、CAS、事务内 `pendingEvents` + commit 后广播、带 DB 租约与宽限期的 orphan sweep；不引入持久化 outbox。 — verify: `npm test --workspace server`
+- [x] T010 (`FR-001`, `FR-002`, `TR-001`): 实现 content-addressed archive 先行、DB 可见性 commit 后置的 create / revise 唯一写入口、CAS、事务内 `pendingEvents` + commit 后广播、带 DB 租约与宽限期的 orphan sweep；不引入持久化 outbox。 — verify: `npm test --workspace server`
 - [ ] T011 (`FR-004`, `FR-005`): 提供幂等 `recordConsumption(dispatch_id, run_id, revision_ref)` 公共契约与双向 provenance 查询；不接入尚未存在的上下文组装器。 — verify: `npm test --workspace server`
 - [ ] T012 [P] (`FR-005`): 增加 API client、共享类型与只读 hooks，区分 loading / empty / ready / missing / invalid / hash mismatch；不注册 `SurfaceRegistry` 槽位、不交付可见组件。 — verify: `npm test --workspace web`
 
