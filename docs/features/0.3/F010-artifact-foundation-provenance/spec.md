@@ -4,11 +4,11 @@ id: F010
 version: "0.3"
 status: draft
 gate_version: 1
-related_features: [F003, F004, F006, F009, F011, F014]
+related_features: [F003, F004, F006, F009, F011, F012, F014]
 topics: [artifact, revision, provenance, evidence, typed-ref]
 doc_kind: spec
 created: 2026-08-09
-updated: 2026-09-08
+updated: 2026-09-12
 ---
 
 # F010：Artifact & Provenance Foundation
@@ -87,7 +87,7 @@ updated: 2026-09-08
 
 ## 5. 生命周期与不变量
 
-Artifact 实体可 active / retired；revision 一经发布不可变。retired 不影响历史解析。当前 revision 只是指针，历史 ref 永不跟随它漂移。未发布草稿不能被派工消费。
+Artifact 实体可 active / retired；revision 一经发布不可变。retired 不影响历史解析。当前 revision 只是指针，历史 ref 永不跟随它漂移。F010 不持久化 draft revision；临时内容只有在 manifest 事务提交后才成为 published revision，未发布的临时内容不能被派工消费。
 
 ## 6. 成功与验收
 
@@ -98,19 +98,19 @@ Artifact 实体可 active / retired；revision 一经发布不可变。retired �
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 两类存储均可创建、修订、重启后读取，历史 revision 不变；文件发布每个故障点 crash 后 resolver 都只能返回完整 published revision 或 not-found。
-- [ ] **AC-002** (`FR-003`, `NFR-002`): 缺失、越权、hash mismatch、未知类型均在消费前可观察失败。
-- [ ] **AC-003** (`FR-004`, `FR-005`, `TR-001`): Run / Artifact / Evidence 双向追溯与事件回放一致。
+- [ ] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 两类存储均可创建、修订、重启后读取，历史 revision 不变；文件发布每个故障点 crash 后 resolver 都只能返回完整 published revision 或 not-found。 - tests: `server/tests/integration/artifact-publication.test.ts` `server/tests/integration/migration-artifact.test.ts`
+- [ ] **AC-002** (`FR-003`, `NFR-002`): 缺失、越权、hash mismatch、未知类型均在消费前可观察失败。 - tests: `server/tests/unit/artifact-ref.test.ts` `server/tests/integration/artifact-resolver.test.ts`
+- [ ] **AC-003** (`FR-004`, `FR-005`, `TR-001`): Run / Artifact / Evidence 双向追溯与事件回放一致。 - tests: `server/tests/integration/artifact-provenance.test.ts` `web/src/f010-artifact-read-model.test.ts`
 
 ## 7. 测试、依赖与决策
 
 ### 测试策略
 
-Repository / resolver 单测；migration、CAS、文件跨资源一致性和 restart 集成测试；API contract 与最小浏览器读取测试。
+Repository / resolver 单测；migration、CAS、文件跨资源一致性和 restart 集成测试；API client 与只读 hooks contract 测试。可见资源视图及浏览器验收归 F011。
 
 ### 依赖
 
-依赖 F003、F004、F006 的数据契约；实施顺序上等待 F009 壳层边界冻结，读取 UI 直接接入新壳层。F011、F012、F014 消费本契约。
+依赖 F003、F004、F006 的数据契约；实施顺序上等待 F009 壳层边界冻结。F010 只交付读取 client / hooks，不交付可见 UI；F011、F012、F014 消费本契约。
 
 ### 决策与风险
 

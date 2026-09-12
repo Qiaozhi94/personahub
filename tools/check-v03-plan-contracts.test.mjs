@@ -56,6 +56,18 @@ function verifyMutation(documents, phrases) {
   assert.throws(() => requirePhrases(mutated, [first, ...rest]), /missing v0\.3 planning contract/);
 }
 
+function verifyEachPhraseMutation(documents, phrases) {
+  const corpus = documents.join('\n');
+  for (const phrase of phrases) {
+    const mutated = [corpus.replaceAll(phrase, '')];
+    assert.throws(
+      () => requirePhrases(mutated, phrases),
+      /missing v0\.3 planning contract/,
+      `removing contract phrase must fail the gate: ${phrase}`,
+    );
+  }
+}
+
 function verifyForbiddenMutation(documents, phrase) {
   assert.throws(
     () => forbidPhrases([...documents, phrase], [phrase]),
@@ -352,6 +364,30 @@ test('V03-PLAN-R1-004: file artifact publication never exposes a missing revisio
 
   requirePhrases(documents, phrases);
   verifyMutation(documents, phrases);
+});
+
+test('F010-DOC-R1-HIGH: reviewed ownership and runtime decisions remain frozen', () => {
+  const documents = [
+    read('docs/features/0.3/F010-artifact-foundation-provenance/design.md'),
+    read('docs/features/0.3/F010-artifact-foundation-provenance/tasks.md'),
+    read('server/src/evidence-ref.ts'),
+  ];
+  const phrases = [
+    'DB commit 成功后统一广播',
+    'F010 不新增持久化 outbox',
+    '`UNIQUE (artifact_id, idempotency_key)`',
+    '`afterTempWrite`、`afterFsync`、`afterRename`、`afterRevisionInsert`、`afterPointerCas`、`afterCommit`',
+    '测试不得自行编排发布步骤',
+    '不注册任何 `SurfaceRegistry` 槽位、不交付可见组件',
+    '资源 / 验收视图由 F011 拥有',
+    '调用点由 F012 上下文组装器拥有，F010 不接入',
+    '`ParsedRef` 增加可选 `revision?: number`',
+    '`resolveForDispatch()`',
+    'F010 计划中的 `artifact:`',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
 });
 
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {

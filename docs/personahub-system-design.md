@@ -107,17 +107,24 @@ v0.3 首批只要求一个 Space 和一台执行机器，但表 / API 不应重�
 
 ```text
 artifacts
-  id, issue_id, type, title, current_revision, state,
+  id, issue_id, thread_id, type, title, current_revision, state,
+  created_by,
   created_at, updated_at
 
 artifact_revisions
   artifact_id, revision, storage_kind,
-  inline_content | relative_path, content_hash,
-  source_room_id, source_run_id, source_attempt_id,
-  created_by, created_at
+  inline_content | (source_relative_path, archive_relative_path),
+  content_hash, source_run_id,
+  created_by, idempotency_key, request_fingerprint, created_at
 
 artifact_consumptions
   artifact_id, revision, dispatch_id, run_id, purpose, consumed_at
+
+artifact_evidence_links
+  artifact_id, revision, evidence_ref
+
+artifact_maintenance_leases
+  name, owner_id, expires_at_ms
 
 claims
   id, issue_id, requirement_key, statement, source_kind, state
@@ -128,6 +135,8 @@ arguments
 claim_evidence_links
   claim_id, argument_id, evidence_ref, relation, independence
 ```
+
+F010 冻结约束：Artifact 以 `issue_id` 为唯一归属，Project / Workspace 由 Issue 推导；现有 `runs` 行即 Attempt，因此 revision 只保存 `source_run_id`，不创建悬空的 `source_attempt_id`。文件 revision 分存可变 source locator 与 content-addressed archive locator；`(artifact_id, idempotency_key)` 唯一，消费主键固定到确定 revision。完整字段约束、发布协议与错误语义以 F010 `design.md` 为准。
 
 不变量：revision 发布后不可变；进入 Dispatch 的 ref 必须带 revision；不存在 / 越权 / hash 不符不得解析成“当前内容”。Claim 状态是证据投影，不是百分比。
 
