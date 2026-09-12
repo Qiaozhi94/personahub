@@ -97,6 +97,17 @@ type Scope = {
 - **交集算法**：`effective.read = 逐层 containment 收窄`——下层的每个前缀必须被上层某个前缀包含，否则该前缀被丢弃并记 `scope_narrowed` 诊断；`effective.write = read ∩ 各层 write`。任何一层 `write` 为空，结果 write 即为空。
 - 前缀比较用规范化后的 `path.relative` 判断包含关系，不用字符串 `startsWith`（`src/ab` 不在 `src/a` 内）。
 
+**输入校验先于比较**。`path.relative` 只回答"A 是否在 B 内"，不检查 A 本身是否是合法的仓库内相对前缀；把未净化的输入直接送进比较，`C:\x`、`\\server\share`、`../../etc` 都可能得出"看起来在范围内"的结果。因此每个前缀在**入库前**逐条校验，任一不通过即整体拒绝并返回 `SCOPE_INVALID_PREFIX`（不静默丢弃该条，否则用户以为限制生效了）：
+
+1. 必须是相对路径：`path.isAbsolute()` 为真即拒绝；同时显式拒绝 Windows 盘符（`^[A-Za-z]:`）与 UNC（`^\\\\`）——POSIX 的 `isAbsolute` 不认这两种。
+2. 规范化后不得逃逸：`path.posix.normalize()` 后不得以 `..` 开头或等于 `..`。
+3. 字符约束：拒绝 NUL（`\0`）与控制字符；拒绝反斜杠（统一用 `/`，避免同一目录两种写法绕过去重）。
+4. 归一化：去掉首尾 `/`、折叠重复 `/`、`.` 段移除；空串保留为"整仓"的唯一表示（`"."` 与 `"/"` 都归一成 `""`）。
+5. 大小写：**存原文**，比较时按平台语义（Windows / macOS 不敏感，Linux 敏感）。不在入库时统一小写——那会让 Linux 上两个真实不同的目录合并。
+6. 去重：归一化后同值的前缀合并；一个前缀若被同数组中另一前缀包含，保留较短者（`src` 与 `src/a` 同时存在时 `src/a` 是冗余的）。
+
+`write` ⊆ `read` 在校验阶段就断言：`write` 中每个前缀必须被 `read` 中某个前缀包含，否则 `SCOPE_WRITE_NOT_IN_READ`。
+
 `project_repository_refs`
 
 - `(project_id, repository_id)` 复合主键、`role TEXT NOT NULL CHECK (role IN ('primary','reference'))`
@@ -372,6 +383,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-001` | integration | `server/tests/integration/legacy-compat-projection.test.ts` | 升级后经 `IssueService` 创建带 Project 的任务，三列仍按兼容投影写入且 v0.2 执行链路可跑通；**F013 之后新建的 Project 绑定 primary 仓库时自动 upsert legacy workspace 行**，其任务同样可进入执行链；改绑 primary 后投影指向新行；reference 角色的 `legacy_workspace_id` 恒为 NULL；游离任务三列为空且不进入该链路 |
 | `AC-001` | integration | `server/tests/integration/migration-space.test.ts`（同上文件，批量断言） | fixture 含多 Project / 多 Issue / 多 legacy workflow；空态由未绑定 workspace 的 Project 覆盖，**fixture 内不存在无 workspace 的 Issue**（v10 该列 NOT NULL） |
 | `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内、`src/ab` 不在 `src/a` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
+| `AC-002` | unit | `server/tests/unit/scope-validation.test.ts` | 六类非法前缀逐一被拒并返回 `SCOPE_INVALID_PREFIX`——绝对路径、`C:\x` 盘符、`\\server\share` UNC、`../..` 逃逸、含 NUL / 控制字符、含反斜杠；`.` 与 `/` 归一成 `""`；同值与被包含前缀去重保留较短者；大小写按平台语义比较且不在入库时小写化；`write` 不在 `read` 内时返回 `SCOPE_WRITE_NOT_IN_READ` |
 | `AC-002` | integration | `server/tests/integration/authorization-recheck.test.ts` | 授权后把 symlink 换靶 → `REPO_IDENTITY_CHANGED`；删除目录再同名重建 → 同样拒绝；路径失联 → `REPO_UNRESOLVED`；三层 scope 交集（含"某层 write 为空则结果 write 为空"与缺省继承）逐例断言；成功复核更新 `last_verified_at` |
 | `AC-002` | integration | `server/tests/integration/project-lifecycle.test.ts` | archive 后默认列表不含该项目、按 ID 深链仍可读、历史任务证据可读；归档态下新建 Issue / 改绑仓库 / 改默认 Skill 均返回 `PROJECT_ARCHIVED`；restore 后恢复；有 Issue / 仓库引用 / Skill 引用时 DELETE 返回 `PROJECT_HAS_REFERENCES` 并列出阻塞类别；全部清空后可删 |
 | `AC-002` | unit | `server/tests/unit/git-identity.test.ts` | identity 实时从 `git config` 读取并带 `read_at`，`repositories` 表无 `git_identity` 列 |
