@@ -179,6 +179,18 @@ type Scope = {
   - **翻译协议**：把 revision 的 steps + completion requirements 渲染成该 CLI 的原生指令文件。渲染器是纯函数（输入 revision、输出字节），可单测。
   - **失败语义**：激活事务**不包含**下发。激活先提交（Skill 进入 `active`、每个候选安装写 `pending`），下发在其后逐安装执行：成功 `delivered` 并记 `target_path`，该 CLI 不支持 `unsupported`，异常 `failed` 并保留 `detail`。**单个安装失败不回滚激活、不影响其他安装**（ADR 0014「所有权与失败局部化」）。重试是按行幂等重放；`failed` 与 `pending` 在读取契约里都必须可见，不能表现为"已下发"。
 
+**Evidence adapter registry（按 kind 固定，不可由要求覆写）**
+
+每个 `evidence_kind` 的摘要、预览、打开动作与原生状态域由注册表一次性定义；`EvidenceSpec` 只选 kind 与状态映射，不重新描述这三件事。这样 F012 拿到一条 completion requirement 就能确定适配器输出契约。
+
+| kind              | summary                 | preview                             | open action            | 原生状态域（`status_map` 的合法取值）             |
+| ----------------- | ----------------------- | ----------------------------------- | ---------------------- | ------------------------------------------------- |
+| `event`           | 事件类型 + 时间 + actor | 事件 payload 摘要（截断，不含正文） | 轨迹定位到该事件       | `emitted` / `missing`                             |
+| `file_change_set` | 变更文件数 + 增删行数   | 文件清单（不含 diff 正文）          | 变更集视图             | `present` / `empty` / `missing`                   |
+| `artifact`        | 类型 + revision + 标题  | F010 六态读取契约的 `ready` 投影    | Artifact revision 详情 | `ready` / `missing` / `invalid` / `hash_mismatch` |
+
+校验规则：`status_map` 三个键必须齐全；取值必须落在该 kind 的原生状态域内，越域拒绝激活（`SKILL_EVIDENCE_STATUS_UNKNOWN`）；同一原生状态不得出现在两个键下（互斥）；**原生状态域内未被映射的取值按 `failed` 处理**，不静默当作 `satisfied`。`artifact` kind 在 F010 契约冻结前不可用于激活，否则报 `SKILL_EVIDENCE_KIND_UNAVAILABLE`。
+
 #### canonical revision schema
 
 `steps_json` 与 `completion_requirements_json` 的形状是 F012 的消费契约，必须冻结：
@@ -194,32 +206,27 @@ type Requirement = {
 };
 
 // ADR 0010：完成要求必须提供 Evidence Adapter 契约。
-// evidence_kind 直接复用 server/src/evidence-ref.ts 的 EvidenceRefKind 域，
-// 不另造一套名字——否则验收侧拿到 kind 后无法交给已有 resolver。
+// kind 复用 server/src/evidence-ref.ts 的 EvidenceRefKind 域，adapter 能力由
+// 下表按 kind 固定，不由每条要求自由声明——否则 F012 无法从要求推出适配器输出契约。
+type EvidenceKind = "event" | "file_change_set" | "artifact"; // artifact 待 F010 冻结后启用
+
 type EvidenceSpec = {
-  // 与 EvidenceRefKind 同域：F004 已有 "event" | "file_change_set"，
-  // F010 冻结后加入 "artifact"。新增种类必须先扩 REF_PREFIX_BY_KIND 再用。
-  evidence_kind: "event" | "file_change_set" | "artifact";
-  // 打开方式由 kind 决定，不由本字段自由指定：
-  //   event            → 轨迹定位到该事件
-  //   file_change_set  → 变更集视图
-  //   artifact         → Artifact revision 详情（F010 §6 的只读 hooks）
-  // 因此这里只声明"是否必须可打开"，不重新定义 open action。
-  open_required: boolean;
+  evidence_kind: EvidenceKind;
   freshness: { scope: "per_attempt" | "per_dispatch" | "persistent" };
   independence_required: boolean; // true 时同源验证不计入（v0.3 不变量 6）
-  // 键域固定为下面三个领域状态，互斥且必须覆盖全集：
-  //   satisfied / failed / not_applicable
-  // 未列出的 ref 状态一律归入 unmapped，按 hard 要求处理为"未满足"，
-  // 不静默当作 satisfied。
-  status_map: {
-    satisfied: string[];
-    failed: string[];
-    not_applicable: string[];
-  };
-  decomposable: false; // v0.3 不支持要求再分解；写死避免实现方自行递归
+  status_map: StatusMap;
+  decomposable: false; // v0.3 不支持要求再分解
 };
 
+// 领域状态是**闭集枚举**，不是自由字符串——字符串全集无法静态验证
+type EvidenceDomainStatus = "satisfied" | "failed" | "not_applicable";
+
+// 每个 kind 的原生状态取值域固定在此，激活时按 kind 校验 status_map 的键是否越域
+type StatusMap = {
+  satisfied: string[];
+  failed: string[];
+  not_applicable: string[];
+};
 type Step = { id: string; order: number; title: string; requirements: Requirement[] };
 ```
 
@@ -468,7 +475,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-003` | unit + contract    | `web/src/f013-project-skills.test.tsx`                                                              | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `AC-001` | integration        | `server/tests/integration/legacy-skill-migration.test.ts`                                           | 每条历史 Issue 的组合都能经 `skill_legacy_combo_map` 解析到确定 `skill@version`（逐行断言 + 反查零缺失，不接受"大部分能解析"）；**同一 workflow 配两个 policy 时两条组合各自解析到不同 revision**（这是 alias 单行表达不了的场景）；无 policy 的旧行用哨兵 `'-'` 命中；Issue 上的 policy 优先于 workflow 自带；两旧表同 ID 时 alias 复合主键各自保真；自由文本要求不被伪造成 tags                                                                                                                                                              |
 | `AC-004` | integration        | `server/tests/integration/effective-requirements.test.ts`                                           | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `AC-004` | unit               | `server/tests/unit/evidence-spec.test.ts`                                                           | `evidence_kind` 取值必须在 `evidence-ref.ts` 的 `REF_PREFIX_BY_KIND` 域内，超域拒绝激活；`status_map` 三键齐全且取值互斥，同一 ref 状态重复出现即拒绝；未映射状态按 hard 要求判为未满足而非 satisfied；`completion` 类缺 `evidence` 时拒绝                                                                                                                                                                                                                                                                                                     |
+| `AC-004` | unit               | `server/tests/unit/evidence-spec.test.ts`                                                           | `evidence_kind` 超出 `EvidenceRefKind` 域即拒绝；`status_map` 取值越出该 kind 的原生状态域报 `SKILL_EVIDENCE_STATUS_UNKNOWN`；三键齐全且互斥，同一原生状态出现在两键即拒；**原生域内未映射的取值按 `failed` 判定而非 `satisfied`**；`artifact` kind 在 F010 冻结前报 `SKILL_EVIDENCE_KIND_UNAVAILABLE`；registry 的 summary/preview/open 由 kind 决定，要求侧不可覆写                                                                                                                                                                          |
 | `AC-003` | integration        | `server/tests/integration/skill-revision-schema.test.ts`                                            | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同                                                                                                                                                                                                                                                                                                                          |
 | `AC-003` | integration        | `server/tests/integration/skill-default-ref.test.ts`                                                | 一个项目至多一条 `is_default=1`；**四个反例逐一被拒**——① ghost Skill + NULL pinned（复合 FK 的 MATCH SIMPLE 漏洞，必须由单列 FK 拦下）② `current_revision` 写 NULL（列无条件非空，**disabled 也没有特例**——这正是 Round 3 复现的 `disabled-empty + NULL pinned` 反例）③ 删除正被 current_revision 引用的 revision ④ 删除正被 pinned_version 引用的 revision；正例：disabled Skill 的默认 ref 仍解析到真实且已发布的 revision                                                                                                                   |
 | `AC-005` | integration        | `server/tests/integration/skill-space-boundary.test.ts`                                             | 引用另一 Space 的 Skill 被 trigger 拒绝（`SKILL_SPACE_MISMATCH`），INSERT 与 UPDATE 都覆盖；引用全局 Skill 允许；**全局 Skill 与 Space 内同名 Skill 会被分到同一组并双双在该 Space 置 `conflict`**（不是各自生效）；**global Skill 在 Space A 冲突不影响它在 Space B 的 `active`**；`resolve-conflict` 不带 `space_id` 时拒绝；选中 global 保留只改它在该 Space 的行 **先建全局 Skill、后建 Space**：新 Space 创建后立即查询即可看到该 Skill（行已在创建事务内物化，不依赖下次 scan）；先建 Space 后建全局 Skill 同样为所有现存 Space 物化行   |
