@@ -183,15 +183,31 @@ type Requirement = {
   evidence?: EvidenceSpec; // kind="completion" 时必填，见下
 };
 
-// ADR 0010：完成要求必须提供 Evidence Adapter 契约，否则验收侧拿不到"这条要求靠什么证明"
+// ADR 0010：完成要求必须提供 Evidence Adapter 契约。
+// evidence_kind 直接复用 server/src/evidence-ref.ts 的 EvidenceRefKind 域，
+// 不另造一套名字——否则验收侧拿到 kind 后无法交给已有 resolver。
 type EvidenceSpec = {
-  evidence_kind: "test_run" | "file_change" | "command_output" | "artifact" | "human_attestation";
-  ref_hint?: string; // 典型 ref 形状提示，如 "event:" / "artifact:<id>@<rev>"
-  presentation: "inline" | "open_external" | "none"; // 验收面如何呈现
-  freshness: { scope: "per_attempt" | "per_dispatch" | "persistent" }; // 何时过期需重取
-  independence_required: boolean; // true 时同源验证不得计入（v0.3 不变量 6）
-  status_map: { satisfied: string[]; failed: string[] }; // 证据状态 → 要求状态的映射
-  decomposable: false; // v0.3 不支持要求再分解；显式写死，避免实现方自行递归
+  // 与 EvidenceRefKind 同域：F004 已有 "event" | "file_change_set"，
+  // F010 冻结后加入 "artifact"。新增种类必须先扩 REF_PREFIX_BY_KIND 再用。
+  evidence_kind: "event" | "file_change_set" | "artifact";
+  // 打开方式由 kind 决定，不由本字段自由指定：
+  //   event            → 轨迹定位到该事件
+  //   file_change_set  → 变更集视图
+  //   artifact         → Artifact revision 详情（F010 §6 的只读 hooks）
+  // 因此这里只声明"是否必须可打开"，不重新定义 open action。
+  open_required: boolean;
+  freshness: { scope: "per_attempt" | "per_dispatch" | "persistent" };
+  independence_required: boolean; // true 时同源验证不计入（v0.3 不变量 6）
+  // 键域固定为下面三个领域状态，互斥且必须覆盖全集：
+  //   satisfied / failed / not_applicable
+  // 未列出的 ref 状态一律归入 unmapped，按 hard 要求处理为"未满足"，
+  // 不静默当作 satisfied。
+  status_map: {
+    satisfied: string[];
+    failed: string[];
+    not_applicable: string[];
+  };
+  decomposable: false; // v0.3 不支持要求再分解；写死避免实现方自行递归
 };
 
 type Step = { id: string; order: number; title: string; requirements: Requirement[] };
