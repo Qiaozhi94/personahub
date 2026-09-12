@@ -79,6 +79,19 @@ F010 只提供幂等的 `recordConsumption(dispatch_id, run_id, revision_ref)` �
 - `name TEXT PRIMARY KEY`、`owner_id TEXT NOT NULL`、`expires_at_ms INTEGER NOT NULL`。
 - `archive-maintenance` 租约只由 orphan sweeper 以 CAS 获取，同一时刻最多一个 sweeper 运行；租约过期后才允许新 owner 接管。发布路径不参与租约；发布与 sweep 的隔离由宽限期加 manifest 反查保证，不靠全局互斥，因此不同 Artifact 可并发发布。
 
+### 索引
+
+```sql
+CREATE INDEX idx_artifact_consumptions_run
+  ON artifact_consumptions(run_id);
+CREATE INDEX idx_artifacts_issue
+  ON artifacts(issue_id, state);
+CREATE INDEX idx_artifact_evidence_links_ref
+  ON artifact_evidence_links(evidence_ref);
+```
+
+三条索引分别支撑 `GET /api/runs/:id/artifacts`、`GET /api/artifacts?issue_id=...` 与 `GET /api/evidence/artifacts?ref=...`；对应表的主键最左前缀都不是这些查询键，不得依赖全表扫描。
+
 ### 状态与兼容
 
 Artifact 只在 `active → retired` 间单向流转；retired 禁止新 revision，但历史 revision 仍可解析。F010 不持久化 draft revision：写入中的 inline payload 或临时 blob 不是 revision，只有 manifest 事务 commit 后才成为 published revision，因此“未发布的临时内容不能进入派工”有明确载体边界。
@@ -146,7 +159,7 @@ ArtifactService 的发布路径接受生产默认 `undefined` 的 `testHooks`：
 | 验收项 | 测试层级 | 计划文件 / 场景 | 关键断言 |
 |---|---|---|---|
 | `AC-001` | integration | `server/tests/integration/artifact-publication.test.ts` | inline/file 创建修订、六个 hook 逐点 crash + reopen；resolver 只能返回完整 published revision 或 not-found；历史 revision 不漂移 |
-| `AC-001` | integration | `server/tests/integration/migration-artifact.test.ts` | 真实旧 schema 顺延、重复 migration 幂等、既有表和查询仍可读 |
+| `AC-001` | integration | `server/tests/integration/migration-artifact.test.ts` | 真实旧 schema 顺延、重复 migration 幂等、既有表和查询仍可读，三条反查索引均存在 |
 | `AC-002` | unit + integration | `server/tests/unit/artifact-ref.test.ts`、`server/tests/integration/artifact-resolver.test.ts` | 缺失、越界、unknown、floating dispatch ref、hash mismatch、Win32 target-exists 与 junction/symlink 均显式拒绝或按契约恢复 |
 | `AC-003` | integration | `server/tests/integration/artifact-provenance.test.ts` | 多个 Artifact / Run / Dispatch / Evidence 同时存在时双向映射不串行；重复 consumption 幂等；事件只在 commit 后可回放 |
 | `AC-003` | unit / contract | `web/src/f010-artifact-read-model.test.ts` | API client / hooks 区分 loading、empty、ready、missing、invalid、hash_mismatch；无可见组件或 Surface 注册 |

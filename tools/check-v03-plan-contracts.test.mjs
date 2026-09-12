@@ -499,6 +499,20 @@ test('F010-DOC-R2-025: feature guide shows the AC syntax accepted by the gate', 
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R3-027: reverse artifact queries have migration-owned indexes', () => {
+  const documents = [read('docs/features/0.3/F010-artifact-foundation-provenance/design.md')];
+  const phrases = [
+    'CREATE INDEX idx_artifact_consumptions_run',
+    'CREATE INDEX idx_artifacts_issue',
+    'CREATE INDEX idx_artifact_evidence_links_ref',
+    '三条反查索引均存在',
+    '不得依赖全表扫描',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
