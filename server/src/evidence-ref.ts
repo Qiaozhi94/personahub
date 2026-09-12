@@ -4,8 +4,8 @@
  * （与 `id.ts` 对 ULID 生成的约定同源）。
  *
  * ADR 0014 P4：此前只有解析侧收敛（`parseEvidenceRef`），构造侧散在 7 个文件
- * 的 18 处模板字符串里。现在两个方向都从 `REF_PREFIX_BY_KIND` 派生，因此两个
- * 方向不可能漂移。
+ * 的 18 处模板字符串里。现在两个方向都从 `REF_PREFIX_BY_KIND` 派生，新增一种
+ * ref 种类（F010 计划中的 `artifact:`）只需改这张表一行，两个方向不可能漂移。
  *
  * F010：新增 `artifact` kind 与可选 revision。公共线格式为
  * `artifact:<artifact_id>@<revision>`，交互读取 current 可省略 `@revision`。
