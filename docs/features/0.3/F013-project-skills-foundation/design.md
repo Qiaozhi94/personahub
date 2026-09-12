@@ -383,7 +383,7 @@ try {
 - `POST /api/repositories`、`PUT /api/projects/:id/repositories`（整体设置 primary + references）
 - `POST /api/projects/:id/archive`、`POST /api/projects/:id/restore`、`DELETE /api/projects/:id`（受引用保护，见 §3）；`GET /api/projects` 默认只返回 `state='active'`，`?include_archived=1` 才含归档项
 - `GET /api/skills`、`GET /api/skills/:id/revisions/:version`、`POST /api/skills/:id/revisions`、`POST /api/skills/:id/{activate,disable}`
-- `POST /api/skills:scan`（重新枚举来源，按 `source_identity` 对齐）、`POST /api/skills/:id/resolve-conflict`（选定保留方，其余置 disabled）
+- `POST /api/skills:scan`（重新枚举来源，按 `source_identity` 对齐）、`POST /api/skills/:id/resolve-conflict`（**必须带 `space_id`**；该 Space 内选定保留方置 `active`、其余置 `shadowed`，不动任何 Skill 的全局 `state`）
 - `GET /api/skills/:id/revisions/:version/files`（只读文件清单 + hash）、`GET /api/skills/:id/revisions/:version/delivery`（按 adapter 的下发事实）
 - `PUT /api/projects/:id/default-skill`
 - `GET /api/skills/:id/effective-requirements?version=<n>`：返回能力要求与完成要求的并集，**按 revision ref 确定**；version 走 query 而非 path segment，避免 `@` 在 path 中的编码歧义。

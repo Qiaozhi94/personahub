@@ -313,6 +313,7 @@ test('F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access
   // **必须对每份文档分别断言**——合起来查的话，改一侧另一侧还在，正好漏掉单侧漂移。
   const design = read('docs/features/0.3/F013-project-skills-foundation/design.md');
   const tasks = read('docs/features/0.3/F013-project-skills-foundation/tasks.md');
+  const spec = read('docs/features/0.3/F013-project-skills-foundation/spec.md');
 
   // 两份文档都必须写到的事实：任一侧改动而不同步另一侧即变红
   const sharedPhrases = [
@@ -325,6 +326,11 @@ test('F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access
     requirePhrases([doc], sharedPhrases);
     verifyEachPhraseMutation([doc], sharedPhrases);
   }
+
+  // spec 必须写出同一套两层状态语义——Round 5 的 stale spec 正是因为锁点不覆盖 spec 才能全绿
+  const specPhrases = ['某个 Space 内的生效结果是 active / shadowed / conflict'];
+  requirePhrases([spec], specPhrases);
+  verifyEachPhraseMutation([spec], specPhrases);
 
   // 只属于 design 的结构性约束
   const designOnly = [

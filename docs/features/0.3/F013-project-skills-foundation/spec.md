@@ -97,7 +97,7 @@ updated: 2026-09-08
 
 ## 5. 生命周期与不变量
 
-Space 可 active / archived，v0.3 不支持物理删除；项目归档可恢复，删除受引用保护。`issues.space_id` 非空，`issues.project_id` 可空。Skill revision 不可变，active / disabled / conflict 是当前生效状态；禁用不改历史。编组表现只从 Run 现算，不保存评分字段。
+Space 可 active / archived，v0.3 不支持物理删除；项目归档可恢复，删除受引用保护。`issues.space_id` 非空，`issues.project_id` 可空。Skill revision 不可变。生效状态分两层：Skill 的全局意图是 active / disabled，某个 Space 内的生效结果是 active / shadowed / conflict；两层同时为 active 才可用。禁用不改历史。编组表现只从 Run 现算，不保存评分字段。
 
 ## 6. 成功与验收
 
