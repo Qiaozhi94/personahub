@@ -57,6 +57,13 @@ updated: 2026-09-12
 
 生命周期：`create` 写入新行（首个 Space 同时置 `is_default=1, is_selected=1`）；`select` 在单事务内清旧选中、置新选中，目标必须 `state='active'`；`archive` 要求目标非当前选中且非 default，否则返回 `SPACE_ARCHIVE_BLOCKED`——**默认 Space 永不可归档**，因为历史数据以它为归属根；`restore` 把 `archived` 改回 `active`，不自动选中。v0.3 不支持物理删除（spec §5）。
 
+`projects`（既有表，rebuild 时补列）
+
+- 除 `space_id` 外增 `state TEXT NOT NULL DEFAULT 'active' CHECK (state IN ('active','archived'))`、`archived_at TEXT`。spec §5「项目归档可恢复，删除受引用保护」在 Round 1 只有一句话，没有承载它的列——归档态因此无处存放。
+- `archive` 置 `state='archived'` 并记 `archived_at`；`restore` 置回 `active` 并清空。归档项目**不出现在默认列表**（`GET /api/projects` 默认 `state='active'`，`?include_archived=1` 才返回），但按 ID 深链仍可读，其历史任务的文件 refs、执行与证据照常可读（US-001 场景 2）。
+- 归档态下**禁止**新建 Issue、改绑仓库、改默认 Skill；这三个写入口在 service 层 fail-closed 返回 `PROJECT_ARCHIVED`，不靠前端隐藏按钮。
+- **删除保护**：`DELETE /api/projects/:id` 仅当该 Project 名下无 Issue、无 `project_repository_refs`、无 `project_skill_refs` 时允许；否则返回 `PROJECT_HAS_REFERENCES` 并列出阻塞项类别。v0.3 不提供级联删除。
+
 `repositories` — 仓库事实，跨项目共享同一份
 
 - `id TEXT PRIMARY KEY`、`kind TEXT NOT NULL CHECK (kind IN ('local_dir','remote_url'))`
@@ -268,6 +275,7 @@ try {
 - **Space 作用域规则**：`GET /api/projects` 与 `GET /api/issues` 默认按当前 `is_selected` 的 Space 过滤，并接受显式 `space_id` 覆盖；按 ID 直接读取单个 Project / Issue **不做 Space 过滤**，否则 F009 已发布的 `/projects/:projectId` 深链在切换 Space 后会 404（跨 Feature 不变量 8）。返回体带 `space_id`，由前端提示"该对象属于其它 Space"。
 - `POST /api/repositories:resolve`：输入本地路径或 URL，返回自动识别的 `kind`、`display_name`、`real_path`、`git_remote_url`、`git_identity` 与授权预判；**不落库**，供 UI 先看后存（FR-004 的"不要求手填名称"）。
 - `POST /api/repositories`、`PUT /api/projects/:id/repositories`（整体设置 primary + references）
+- `POST /api/projects/:id/archive`、`POST /api/projects/:id/restore`、`DELETE /api/projects/:id`（受引用保护，见 §3）；`GET /api/projects` 默认只返回 `state='active'`，`?include_archived=1` 才含归档项
 - `GET /api/skills`、`GET /api/skills/:id/revisions/:version`、`POST /api/skills/:id/revisions`、`POST /api/skills/:id/{activate,disable}`
 - `POST /api/skills:scan`（重新枚举来源，按 `source_identity` 对齐）、`POST /api/skills/:id/resolve-conflict`（选定保留方，其余置 disabled）
 - `GET /api/skills/:id/revisions/:version/files`（只读文件清单 + hash）、`GET /api/skills/:id/revisions/:version/delivery`（按 adapter 的下发事实）
@@ -354,6 +362,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-001` | integration | `server/tests/integration/migration-space.test.ts`（同上文件，批量断言） | fixture 含多 Project / 多 Issue / 多 legacy workflow；空态由未绑定 workspace 的 Project 覆盖，**fixture 内不存在无 workspace 的 Issue**（v10 该列 NOT NULL） |
 | `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内、`src/ab` 不在 `src/a` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
 | `AC-002` | integration | `server/tests/integration/authorization-recheck.test.ts` | 授权后把 symlink 换靶 → `REPO_IDENTITY_CHANGED`；删除目录再同名重建 → 同样拒绝；路径失联 → `REPO_UNRESOLVED`；三层 scope 交集（含"某层 write 为空则结果 write 为空"与缺省继承）逐例断言；成功复核更新 `last_verified_at` |
+| `AC-002` | integration | `server/tests/integration/project-lifecycle.test.ts` | archive 后默认列表不含该项目、按 ID 深链仍可读、历史任务证据可读；归档态下新建 Issue / 改绑仓库 / 改默认 Skill 均返回 `PROJECT_ARCHIVED`；restore 后恢复；有 Issue / 仓库引用 / Skill 引用时 DELETE 返回 `PROJECT_HAS_REFERENCES` 并列出阻塞类别；全部清空后可删 |
 | `AC-002` | unit | `server/tests/unit/git-identity.test.ts` | identity 实时从 `git config` 读取并带 `read_at`，`repositories` 表无 `git_identity` 列 |
 | `AC-003` | unit + contract | `web/src/f013-project-skills.test.tsx` | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册 |
 | `AC-001` | integration | `server/tests/integration/legacy-skill-migration.test.ts` | 每条历史 Issue 的组合都能经 `skill_legacy_combo_map` 解析到确定 `skill@version`（逐行断言 + 反查零缺失，不接受"大部分能解析"）；**同一 workflow 配两个 policy 时两条组合各自解析到不同 revision**（这是 alias 单行表达不了的场景）；无 policy 的旧行用哨兵 `'-'` 命中；Issue 上的 policy 优先于 workflow 自带；两旧表同 ID 时 alias 复合主键各自保真；自由文本要求不被伪造成 tags |
