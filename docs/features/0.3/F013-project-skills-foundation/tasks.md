@@ -26,7 +26,7 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 - [ ] T004 (`FR-003`, `FR-004`, `NFR-002`): 定义仓库、机器路径、项目引用（含项目级 `access` 与 `role='reference'` 恒只读的 CHECK）与 `Scope` contract，含入库前前缀校验（绝对路径 / 盘符 / UNC / `..` / NUL / 反斜杠 / 归一化 / 去重）。 — verify: `npm run typecheck`
 - [ ] T005 (`FR-003`, `FR-004`, `NFR-001`): 实现 repository migration、registry、`realpathSync` 解析、`authorized_identity` 记录与 Git remote 探测；identity 按 runtime 实时读取不落库。 — verify: `npm test --workspace server`
 - [ ] T006 (`FR-003`, `NFR-002`): 实现 `verifyAuthorization()`——重解析 `raw_path`、比对 identity、三层 scope 交集、更新 `last_verified_at`，并冻结为 F012 可消费的只读契约。**本任务只交付契约与其单测，不接入 Dispatch**；派工侧接入由 F012 拥有。 — verify: `npm test --workspace server`
-- [ ] T007 (`FR-003`, `FR-004`): 实现 `legacy_workspace_id` 桥：迁移回填、新建 / 改绑 primary 时同事务 upsert、reference 恒 NULL。 — verify: `npm test --workspace server`
+- [ ] T007 (`FR-003`, `FR-004`): 实现 `legacy_workspace_id` 桥，区分两条路径：**迁移产生的 reference 保留**旧 workspace id 供历史追溯，**新建的 reference 恒 NULL**；primary 在迁移时回填、在新建 / 改绑时同事务 upsert；兼容投影只读 primary 行。 — verify: `npm test --workspace server`
 - [ ] T008 (`FR-001`, `FR-002`): 实现首次设置的 Space 创建 / 选择与游离任务创建旅程。 — verify: `npm run test:e2e`
 
 ### Phase 2：Skills 与项目 UI
