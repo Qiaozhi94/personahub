@@ -54,10 +54,7 @@ export function resolveSourceWithinRoot(
   try {
     fileReal = realpathSync(join(rootPath, sourceRelative));
   } catch {
-    throw new AppError(
-      ErrorCode.WORKSPACE_PATH_NOT_FOUND,
-      `Artifact source file does not exist: ${sourceRelative}`,
-    );
+    throw new AppError(ErrorCode.WORKSPACE_PATH_NOT_FOUND, `Artifact source file does not exist: ${sourceRelative}`);
   }
   if (!isPathWithinRoot(rootReal, fileReal, opts)) {
     throw new AppError(

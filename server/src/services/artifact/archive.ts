@@ -208,7 +208,9 @@ export class ArtifactArchive {
     if (!existsSync(this.tempDir)) {
       return [];
     }
-    return readdirSync(this.tempDir).sort().map((name) => join(this.tempDir, name));
+    return readdirSync(this.tempDir)
+      .sort()
+      .map((name) => join(this.tempDir, name));
   }
 
   removeArchiveFile(archiveRelative: string): void {

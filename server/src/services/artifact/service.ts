@@ -106,7 +106,8 @@ export class ArtifactService {
     const pendingEvents: ThreadEvent[] = [];
     let result: ArtifactWriteResult;
     try {
-      result = this.deps.db.transaction(() => {        const now = new Date().toISOString();
+      result = this.deps.db.transaction(() => {
+        const now = new Date().toISOString();
         const artifactRow: Artifact = {
           id: input.artifact_id,
           issue_id: input.issue_id,
@@ -241,16 +242,27 @@ export class ArtifactService {
 
   recordConsumption(input: RecordConsumptionInput): ArtifactConsumption {
     const check = resolveForDispatch(parseEvidenceRef(input.revisionRef));
-    const rejectThread = () => input.dispatchThreadId ?? this.deps.artifactRepo.getArtifact(check.ok ? check.artifactId : "")?.thread_id ?? null;
+    const rejectThread = () =>
+      input.dispatchThreadId ?? this.deps.artifactRepo.getArtifact(check.ok ? check.artifactId : "")?.thread_id ?? null;
     if (!check.ok) {
       this.rejectResolve(input.revisionRef, "record_consumption", ErrorCode.ARTIFACT_REF_INVALID, rejectThread());
     }
     const artifact = this.deps.artifactRepo.getArtifact(check.artifactId);
     if (!artifact) {
-      this.rejectResolve(input.revisionRef, "record_consumption", ErrorCode.ARTIFACT_NOT_FOUND, input.dispatchThreadId ?? null);
+      this.rejectResolve(
+        input.revisionRef,
+        "record_consumption",
+        ErrorCode.ARTIFACT_NOT_FOUND,
+        input.dispatchThreadId ?? null,
+      );
     }
     if (!this.deps.artifactRepo.getRevision(artifact.id, check.revision!)) {
-      this.rejectResolve(input.revisionRef, "record_consumption", ErrorCode.ARTIFACT_REVISION_NOT_FOUND, artifact.thread_id);
+      this.rejectResolve(
+        input.revisionRef,
+        "record_consumption",
+        ErrorCode.ARTIFACT_REVISION_NOT_FOUND,
+        artifact.thread_id,
+      );
     }
     if (!this.deps.runRepo.getById(input.runId)) {
       throw new AppError(ErrorCode.RUN_NOT_FOUND, `Run not found: ${input.runId}`);
@@ -258,9 +270,15 @@ export class ArtifactService {
 
     const pendingEvents: ThreadEvent[] = [];
     let consumed: ArtifactConsumption | null = null;
-    this.deps.db.transaction(() => {      consumed =
-        this.deps.artifactRepo.getConsumption(input.dispatchId, input.runId, artifact.id, check.revision!, input.purpose) ??
-        null;
+    this.deps.db.transaction(() => {
+      consumed =
+        this.deps.artifactRepo.getConsumption(
+          input.dispatchId,
+          input.runId,
+          artifact.id,
+          check.revision!,
+          input.purpose,
+        ) ?? null;
       if (consumed) return;
       const row: ArtifactConsumption = {
         artifact_id: artifact.id,
@@ -276,20 +294,31 @@ export class ArtifactService {
         // Concurrent identical insert: the PK winner's row is the answer.
         if (!isUniqueViolation(error, "artifact_consumptions.")) throw error;
         consumed =
-          this.deps.artifactRepo.getConsumption(input.dispatchId, input.runId, artifact.id, check.revision!, input.purpose) ??
-          null;
+          this.deps.artifactRepo.getConsumption(
+            input.dispatchId,
+            input.runId,
+            artifact.id,
+            check.revision!,
+            input.purpose,
+          ) ?? null;
         if (!consumed) throw error;
         return;
       }
       pendingEvents.push(
-        this.deps.threadEventService.write(artifact.thread_id, ThreadEventType.ArtifactConsumed, ActorType.System, null, {
-          artifact_id: artifact.id,
-          revision: row.revision,
-          issue_id: artifact.issue_id,
-          dispatch_id: input.dispatchId,
-          run_id: input.runId,
-          purpose: input.purpose,
-        }),
+        this.deps.threadEventService.write(
+          artifact.thread_id,
+          ThreadEventType.ArtifactConsumed,
+          ActorType.System,
+          null,
+          {
+            artifact_id: artifact.id,
+            revision: row.revision,
+            issue_id: artifact.issue_id,
+            dispatch_id: input.dispatchId,
+            run_id: input.runId,
+            purpose: input.purpose,
+          },
+        ),
       );
       consumed = row;
     })();
@@ -339,7 +368,13 @@ export class ArtifactService {
     if (storage.storage_kind !== "workspace_file") {
       return null;
     }
-    return stageAndPublishFile(this.deps.archive, this.deps.maxBytes, this.workspaceRoot(issueId), storage.source_path, this.deps.testHooks);
+    return stageAndPublishFile(
+      this.deps.archive,
+      this.deps.maxBytes,
+      this.workspaceRoot(issueId),
+      storage.source_path,
+      this.deps.testHooks,
+    );
   }
 
   private revisionRow(
@@ -419,8 +454,6 @@ export class ArtifactService {
 
 function isUniqueViolation(error: unknown, columnFragment: string): boolean {
   return (
-    error instanceof Error &&
-    /UNIQUE constraint failed/.test(error.message) &&
-    error.message.includes(columnFragment)
+    error instanceof Error && /UNIQUE constraint failed/.test(error.message) && error.message.includes(columnFragment)
   );
 }

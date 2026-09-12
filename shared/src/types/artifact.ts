@@ -91,8 +91,7 @@ export interface ArtifactReadFailure {
 
 /** 单实体读取（GET /api/artifacts/:id）。 */
 export type ArtifactEntityRead =
-  | { status: "ready"; artifact: Artifact }
-  | ({ status: "missing" | "invalid" } & ArtifactReadFailure);
+  { status: "ready"; artifact: Artifact } | ({ status: "missing" | "invalid" } & ArtifactReadFailure);
 
 /**
  * 确定 revision 读取（GET /api/artifacts/:id/revisions/:revision）。
@@ -111,14 +110,10 @@ export type ArtifactRevisionRead =
   | ({ status: "missing" | "invalid" | "hash_mismatch" } & ArtifactReadFailure);
 
 /** Issue 下 Artifact 列表（GET /api/artifacts?issue_id=...）。 */
-export type ArtifactListRead =
-  | { status: "empty" }
-  | { status: "ready"; artifacts: Artifact[] };
+export type ArtifactListRead = { status: "empty" } | { status: "ready"; artifacts: Artifact[] };
 
 /** Run 反查消费过的 Artifact revision（GET /api/runs/:id/artifacts）。 */
-export type RunArtifactRead =
-  | { status: "empty" }
-  | { status: "ready"; consumptions: ArtifactConsumption[] };
+export type RunArtifactRead = { status: "empty" } | { status: "ready"; consumptions: ArtifactConsumption[] };
 
 /** Evidence ref 反查关联 Artifact（GET /api/evidence/artifacts?ref=...）。 */
 export type EvidenceArtifactRead =
@@ -132,8 +127,7 @@ export type ArtifactProvenanceRead =
 
 /** inline / file 互斥的 storage payload；create 与 revise 共用。 */
 export type ArtifactStoragePayload =
-  | { storage_kind: "inline_markdown"; inline_content: string }
-  | { storage_kind: "workspace_file"; source_path: string };
+  { storage_kind: "inline_markdown"; inline_content: string } | { storage_kind: "workspace_file"; source_path: string };
 
 export interface CreateArtifactInput {
   /** 调用方生成的稳定 Artifact ID（客户端 ULID；幂等重放的关键之一）。 */

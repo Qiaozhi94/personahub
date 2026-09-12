@@ -141,7 +141,9 @@ export class ArtifactRepository {
     const result =
       expected === null
         ? this.db
-            .prepare("UPDATE artifacts SET current_revision = ?, updated_at = ? WHERE id = ? AND current_revision IS NULL")
+            .prepare(
+              "UPDATE artifacts SET current_revision = ?, updated_at = ? WHERE id = ? AND current_revision IS NULL",
+            )
             .run(next, updatedAt, artifactId)
         : this.db
             .prepare("UPDATE artifacts SET current_revision = ?, updated_at = ? WHERE id = ? AND current_revision = ?")
@@ -272,14 +274,18 @@ export class ArtifactRepository {
 
   listEvidenceLinksByArtifact(artifactId: string): ArtifactEvidenceLink[] {
     const rows = this.db
-      .prepare("SELECT artifact_id, revision, evidence_ref FROM artifact_evidence_links WHERE artifact_id = ? ORDER BY revision ASC, evidence_ref ASC")
+      .prepare(
+        "SELECT artifact_id, revision, evidence_ref FROM artifact_evidence_links WHERE artifact_id = ? ORDER BY revision ASC, evidence_ref ASC",
+      )
       .all(artifactId) as ArtifactEvidenceLink[];
     return rows;
   }
 
   listByEvidenceRef(ref: string): Array<{ artifact_id: string; revision: number }> {
     const rows = this.db
-      .prepare("SELECT artifact_id, revision FROM artifact_evidence_links WHERE evidence_ref = ? ORDER BY artifact_id ASC, revision ASC")
+      .prepare(
+        "SELECT artifact_id, revision FROM artifact_evidence_links WHERE evidence_ref = ? ORDER BY artifact_id ASC, revision ASC",
+      )
       .all(ref) as Array<{ artifact_id: string; revision: number }>;
     return rows;
   }
@@ -290,9 +296,9 @@ export class ArtifactRepository {
    *  A live lease held by someone else (including a previous incarnation of
    *  the same sweeper) is never stolen before expiry. */
   tryAcquireLease(name: string, ownerId: string, nowMs: number, durationMs: number): boolean {
-    const existing = this.db.prepare("SELECT owner_id, expires_at_ms FROM artifact_maintenance_leases WHERE name = ?").get(name) as
-      | { owner_id: string; expires_at_ms: number }
-      | undefined;
+    const existing = this.db
+      .prepare("SELECT owner_id, expires_at_ms FROM artifact_maintenance_leases WHERE name = ?")
+      .get(name) as { owner_id: string; expires_at_ms: number } | undefined;
     if (!existing) {
       this.db
         .prepare("INSERT INTO artifact_maintenance_leases (name, owner_id, expires_at_ms) VALUES (?, ?, ?)")
@@ -303,7 +309,9 @@ export class ArtifactRepository {
       return false;
     }
     const result = this.db
-      .prepare("UPDATE artifact_maintenance_leases SET owner_id = ?, expires_at_ms = ? WHERE name = ? AND expires_at_ms <= ?")
+      .prepare(
+        "UPDATE artifact_maintenance_leases SET owner_id = ?, expires_at_ms = ? WHERE name = ? AND expires_at_ms <= ?",
+      )
       .run(ownerId, nowMs + durationMs, name, nowMs);
     return result.changes === 1;
   }
@@ -313,9 +321,9 @@ export class ArtifactRepository {
   }
 
   getLease(name: string): ArtifactLease | null {
-    const row = this.db.prepare("SELECT name, owner_id, expires_at_ms FROM artifact_maintenance_leases WHERE name = ?").get(name) as
-      | ArtifactLease
-      | undefined;
+    const row = this.db
+      .prepare("SELECT name, owner_id, expires_at_ms FROM artifact_maintenance_leases WHERE name = ?")
+      .get(name) as ArtifactLease | undefined;
     return row ?? null;
   }
 }

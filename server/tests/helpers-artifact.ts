@@ -17,7 +17,15 @@ import { ThreadEventService } from "../src/services/thread-event.js";
 import { ArtifactArchive } from "../src/services/artifact/archive.js";
 import { ArtifactService } from "../src/services/artifact/service.js";
 import { ArtifactResolver } from "../src/services/artifact/resolver.js";
-import { AdapterStatus, IssuePriority, IssueStatus, IssueType, RunStatus, ThreadType, WorkspaceLockState } from "@personahub/shared/types";
+import {
+  AdapterStatus,
+  IssuePriority,
+  IssueStatus,
+  IssueType,
+  RunStatus,
+  ThreadType,
+  WorkspaceLockState,
+} from "@personahub/shared/types";
 
 /**
  * Shared harness for the F010 resolver / provenance suites: a file-backed DB

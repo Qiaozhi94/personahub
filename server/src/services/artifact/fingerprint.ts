@@ -26,5 +26,7 @@ export function canonicalizeJson(value: JsonValue): JsonValue {
 }
 
 export function canonicalRequestFingerprint(payload: Record<string, JsonValue>): string {
-  return createHash("sha256").update(JSON.stringify(canonicalizeJson(payload))).digest("hex");
+  return createHash("sha256")
+    .update(JSON.stringify(canonicalizeJson(payload)))
+    .digest("hex");
 }

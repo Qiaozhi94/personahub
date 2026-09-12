@@ -1,5 +1,17 @@
 import { ErrorCode, type ErrorCode as ErrorCodeValue } from "@personahub/shared/errors";
-import { ActorType, ThreadEventType, type Artifact, type ArtifactConsumption, type ArtifactEntityRead, type ArtifactListRead, type ArtifactProvenanceRead, type ArtifactRevision, type ArtifactRevisionRead, type EvidenceArtifactRead, type RunArtifactRead } from "@personahub/shared/types";
+import {
+  ActorType,
+  ThreadEventType,
+  type Artifact,
+  type ArtifactConsumption,
+  type ArtifactEntityRead,
+  type ArtifactListRead,
+  type ArtifactProvenanceRead,
+  type ArtifactRevision,
+  type ArtifactRevisionRead,
+  type EvidenceArtifactRead,
+  type RunArtifactRead,
+} from "@personahub/shared/types";
 import { parseEvidenceRef, resolveForRead } from "../../evidence-ref.js";
 import type { ArtifactRepository } from "../../repositories/artifact.js";
 import type { ThreadEventService } from "../thread-event.js";
@@ -87,7 +99,12 @@ export class ArtifactResolver {
   getProvenance(artifactId: string): ArtifactProvenanceRead {
     const artifact = this.deps.artifactRepo.getArtifact(artifactId);
     if (!artifact) {
-      return { status: "missing", code: ErrorCode.ARTIFACT_NOT_FOUND, ref: null, message: `Artifact not found: ${artifactId}` };
+      return {
+        status: "missing",
+        code: ErrorCode.ARTIFACT_NOT_FOUND,
+        ref: null,
+        message: `Artifact not found: ${artifactId}`,
+      };
     }
     return {
       status: "ready",

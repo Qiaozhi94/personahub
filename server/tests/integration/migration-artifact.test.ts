@@ -260,7 +260,9 @@ describe("F010 artifact repository invariants", () => {
     expect(() => insertRevision({ source_relative_path: "reports/summary.md" })).toThrow(/CHECK/i);
     // file must carry both locators and no inline body
     expect(() => insertRevision({ inline_content: null, source_relative_path: null })).toThrow(/CHECK/i);
-    expect(() => insertRevision({ ...publishedFileRevisionRow(), revision: 2, idempotency_key: "idem-2" })).not.toThrow();
+    expect(() =>
+      insertRevision({ ...publishedFileRevisionRow(), revision: 2, idempotency_key: "idem-2" }),
+    ).not.toThrow();
   });
 
   it("keeps the pointer CAS exact: null expected only matches an unpublished artifact", () => {

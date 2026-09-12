@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  buildEvidenceRef,
-  parseEvidenceRef,
-  resolveForRead,
-  resolveForDispatch,
-} from "../../src/evidence-ref.js";
+import { buildEvidenceRef, parseEvidenceRef, resolveForRead, resolveForDispatch } from "../../src/evidence-ref.js";
 
 // F010 T003: the `artifact` ref kind with its optional `@revision` segment.
 // The wire contract (design §4): `artifact:<id>@<revision>` for definite
@@ -75,11 +70,19 @@ describe("F010 artifact ref wire format", () => {
 
   describe("resolveForRead", () => {
     it("allows a floating ref and reads current", () => {
-      expect(resolveForRead(parseEvidenceRef("artifact:art_1"))).toEqual({ ok: true, artifactId: "art_1", revision: null });
+      expect(resolveForRead(parseEvidenceRef("artifact:art_1"))).toEqual({
+        ok: true,
+        artifactId: "art_1",
+        revision: null,
+      });
     });
 
     it("passes a pinned revision through", () => {
-      expect(resolveForRead(parseEvidenceRef("artifact:art_1@4"))).toEqual({ ok: true, artifactId: "art_1", revision: 4 });
+      expect(resolveForRead(parseEvidenceRef("artifact:art_1@4"))).toEqual({
+        ok: true,
+        artifactId: "art_1",
+        revision: 4,
+      });
     });
 
     it("rejects non-artifact and unknown kinds", () => {

@@ -56,14 +56,30 @@ describe("F010 provenance bidirectionality", () => {
     session.service.createArtifact(inlineInput("art_b", "# B", [evidenceB]));
 
     const [run0, run1] = fixture.graph.runIds;
-    session.service.recordConsumption({ dispatchId: "dsp_1", runId: run0, revisionRef: "artifact:art_a@1", purpose: "context" });
-    session.service.recordConsumption({ dispatchId: "dsp_1", runId: run1, revisionRef: "artifact:art_a@1", purpose: "context" });
-    session.service.recordConsumption({ dispatchId: "dsp_2", runId: run1, revisionRef: "artifact:art_b@1", purpose: "validation" });
+    session.service.recordConsumption({
+      dispatchId: "dsp_1",
+      runId: run0,
+      revisionRef: "artifact:art_a@1",
+      purpose: "context",
+    });
+    session.service.recordConsumption({
+      dispatchId: "dsp_1",
+      runId: run1,
+      revisionRef: "artifact:art_a@1",
+      purpose: "context",
+    });
+    session.service.recordConsumption({
+      dispatchId: "dsp_2",
+      runId: run1,
+      revisionRef: "artifact:art_b@1",
+      purpose: "validation",
+    });
 
     // artifact -> consumers
     const provA = session.resolver.getProvenance("art_a");
     expect(provA.status).toBe("ready");
-    const consumptionsA = (provA as { provenance: { consumptions: Array<{ dispatch_id: string; run_id: string }> } }).provenance.consumptions;
+    const consumptionsA = (provA as { provenance: { consumptions: Array<{ dispatch_id: string; run_id: string }> } })
+      .provenance.consumptions;
     expect(consumptionsA).toEqual([
       expect.objectContaining({ artifact_id: "art_a", dispatch_id: "dsp_1", run_id: run0 }),
       expect.objectContaining({ artifact_id: "art_a", dispatch_id: "dsp_1", run_id: run1 }),
@@ -132,9 +148,9 @@ describe("F010 provenance bidirectionality", () => {
     const types = session.events.map((e) => e.type);
     expect(types).toEqual([ThreadEventType.ArtifactCreated, ThreadEventType.ArtifactRevised]);
     // every recorded event is replayable from the persisted thread_events table
-    const persisted = session.db.prepare("SELECT type FROM thread_events WHERE thread_id = ? ORDER BY event_sequence").all(
-      fixture.graph.threadId,
-    ) as Array<{ type: string }>;
+    const persisted = session.db
+      .prepare("SELECT type FROM thread_events WHERE thread_id = ? ORDER BY event_sequence")
+      .all(fixture.graph.threadId) as Array<{ type: string }>;
     expect(persisted.map((r) => r.type)).toEqual(types);
   });
 });
@@ -179,7 +195,11 @@ describe("F010 HTTP read surface", () => {
     expect(created.revision.revision).toBe(1);
 
     // idempotent replay over HTTP returns the same revision with 200
-    const replayRes = await app.inject({ method: "POST", url: "/api/artifacts", payload: { ...inlineInput("art_http", "# http", [evidenceRef]) } });
+    const replayRes = await app.inject({
+      method: "POST",
+      url: "/api/artifacts",
+      payload: { ...inlineInput("art_http", "# http", [evidenceRef]) },
+    });
     expect(replayRes.statusCode).toBe(200);
     expect(replayRes.json().revision.revision).toBe(1);
     expect(replayRes.json().replayed).toBe(true);
@@ -236,12 +256,19 @@ describe("F010 HTTP read surface", () => {
       method: "GET",
       url: "/api/artifacts/art_http/provenance",
     });
-    session.service.recordConsumption({ dispatchId: "dsp_h", runId: fixture.graph.runIds[0], revisionRef: "artifact:art_http@2", purpose: "context" });
+    session.service.recordConsumption({
+      dispatchId: "dsp_h",
+      runId: fixture.graph.runIds[0],
+      revisionRef: "artifact:art_http@2",
+      purpose: "context",
+    });
     const provRes = await app.inject({ method: "GET", url: "/api/artifacts/art_http/provenance" });
     const prov = provRes.json();
     expect(prov.status).toBe("ready");
     expect(prov.provenance.consumptions).toHaveLength(1);
-    expect(prov.provenance.evidence_links).toEqual([{ artifact_id: "art_http", revision: 1, evidence_ref: evidenceRef }]);
+    expect(prov.provenance.evidence_links).toEqual([
+      { artifact_id: "art_http", revision: 1, evidence_ref: evidenceRef },
+    ]);
 
     // run -> artifacts
     const runRes = await app.inject({ method: "GET", url: `/api/runs/${fixture.graph.runIds[0]}/artifacts` });
@@ -252,7 +279,10 @@ describe("F010 HTTP read surface", () => {
       method: "GET",
       url: `/api/evidence/artifacts?ref=${encodeURIComponent(evidenceRef)}`,
     });
-    expect(evidenceRes.json()).toMatchObject({ status: "ready", items: [{ artifact: { id: "art_http" }, revision: 1 }] });
+    expect(evidenceRes.json()).toMatchObject({
+      status: "ready",
+      items: [{ artifact: { id: "art_http" }, revision: 1 }],
+    });
     expect((await app.inject({ method: "GET", url: "/api/evidence/artifacts" })).statusCode).toBe(400);
   });
 

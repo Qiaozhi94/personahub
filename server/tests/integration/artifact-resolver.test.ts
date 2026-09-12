@@ -41,7 +41,11 @@ function createInlineArtifact(session: ReturnType<typeof openArtifactSession>, a
   });
 }
 
-function createFileArtifact(session: ReturnType<typeof openArtifactSession>, artifactId: string, content = "archive me") {
+function createFileArtifact(
+  session: ReturnType<typeof openArtifactSession>,
+  artifactId: string,
+  content = "archive me",
+) {
   const rel = `docs/${artifactId}.md`;
   mkdirSync(join(fixture.workspaceDir, "docs"), { recursive: true });
   writeFileSync(join(fixture.workspaceDir, rel), content);
@@ -88,7 +92,9 @@ describe("F010 resolver read states", () => {
 
     const pinned = session.resolver.resolveForReadRef("artifact:art_float@1");
     expect(pinned.status).toBe("ready");
-    expect((pinned as { revision: { revision: number; inline_content: string | null } }).revision.inline_content).toBe("# v1");
+    expect((pinned as { revision: { revision: number; inline_content: string | null } }).revision.inline_content).toBe(
+      "# v1",
+    );
 
     const unpinnedEntity = session.resolver.getRevisionRead("art_float", 1);
     expect(unpinnedEntity.status).toBe("ready");
@@ -225,7 +231,12 @@ describe("F010 recordConsumption", () => {
 
     // floating refs never enter consumption records
     try {
-      session.service.recordConsumption({ dispatchId: "dsp_1", runId, revisionRef: "artifact:art_consumed", purpose: "context" });
+      session.service.recordConsumption({
+        dispatchId: "dsp_1",
+        runId,
+        revisionRef: "artifact:art_consumed",
+        purpose: "context",
+      });
       expect.unreachable("floating ref must be rejected");
     } catch (error) {
       expect((error as AppError).code).toBe(ErrorCode.ARTIFACT_REF_INVALID);

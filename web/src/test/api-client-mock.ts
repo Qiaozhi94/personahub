@@ -77,6 +77,16 @@ export const apiClient = {
       },
     }),
   },
+  artifacts: {
+    create: vi.fn(),
+    revise: vi.fn(),
+    listByIssue: vi.fn(),
+    get: vi.fn(),
+    getRevision: vi.fn(),
+    getProvenance: vi.fn(),
+    listByRun: vi.fn(),
+    listByEvidenceRef: vi.fn(),
+  },
 };
 
 export const toApiError = vi.fn((error: unknown) => {

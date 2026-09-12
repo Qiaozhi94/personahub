@@ -63,7 +63,12 @@ import { ArtifactRepository } from "./repositories/artifact.js";
 import { ArtifactArchive } from "./services/artifact/archive.js";
 import { ArtifactService } from "./services/artifact/service.js";
 import { ArtifactResolver } from "./services/artifact/resolver.js";
-import { ArtifactOrphanSweeper, resolveArtifactMaxBytes, resolveOrphanGraceMs, resolveSweepLeaseMs } from "./services/artifact/sweeper.js";
+import {
+  ArtifactOrphanSweeper,
+  resolveArtifactMaxBytes,
+  resolveOrphanGraceMs,
+  resolveSweepLeaseMs,
+} from "./services/artifact/sweeper.js";
 
 const PORT = Number(process.env.PORT ?? 4321);
 const HOST = process.env.HOST ?? "127.0.0.1";

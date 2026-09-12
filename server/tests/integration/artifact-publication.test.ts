@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync, existsSync, readdirSync, readFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  utimesSync,
+  writeFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase } from "../../src/db/index.js";
@@ -133,7 +143,9 @@ function openSession(fixture: Fixture, hooks?: ArtifactPublicationTestHooks, max
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(new ThreadEventRepository(db), eventBus);
   const received: Array<{ type: ThreadEventType; payload: Record<string, unknown> }> = [];
-  eventBus.subscribe(fixture.graph.threadId, (event) => received.push({ type: event.type, payload: event.payload_json }));
+  eventBus.subscribe(fixture.graph.threadId, (event) =>
+    received.push({ type: event.type, payload: event.payload_json }),
+  );
   const service = new ArtifactService({
     db,
     artifactRepo,
@@ -167,7 +179,12 @@ function inlineCreateInput(fixture: Fixture, artifactId: string, content = "# re
   };
 }
 
-function fileCreateInput(fixture: Fixture, artifactId: string, sourceRel = "docs/report.md", content = "file body v1"): CreateArtifactInput {
+function fileCreateInput(
+  fixture: Fixture,
+  artifactId: string,
+  sourceRel = "docs/report.md",
+  content = "file body v1",
+): CreateArtifactInput {
   const abs = join(fixture.workspaceDir, sourceRel);
   mkdirSync(join(abs, ".."), { recursive: true });
   writeFileSync(abs, content);
@@ -207,7 +224,12 @@ describe("F010 inline publication", () => {
     expect(session.received).toEqual([
       {
         type: ThreadEventType.ArtifactCreated,
-        payload: { artifact_id: "art_inline1", revision: 1, issue_id: fixture.graph.issueId, source_run_id: fixture.graph.runId },
+        payload: {
+          artifact_id: "art_inline1",
+          revision: 1,
+          issue_id: fixture.graph.issueId,
+          source_run_id: fixture.graph.runId,
+        },
       },
     ]);
     session.db.close();
@@ -261,7 +283,10 @@ describe("F010 inline publication", () => {
       expect((error as AppError).code).toBe(ErrorCode.ARTIFACT_REVISION_CONFLICT);
     }
     expect(session.artifactRepo.getArtifact("art_cas")!.current_revision).toBe(2);
-    expect(session.received.map((e) => e.type)).toEqual([ThreadEventType.ArtifactCreated, ThreadEventType.ArtifactRevised]);
+    expect(session.received.map((e) => e.type)).toEqual([
+      ThreadEventType.ArtifactCreated,
+      ThreadEventType.ArtifactRevised,
+    ]);
     session.db.close();
   });
 
@@ -311,7 +336,11 @@ describe("F010 file publication crash matrix", () => {
 
   for (const [hook, expectation] of crashCases) {
     it(`crash at ${hook} leaves no consumable revision after restart`, () => {
-      const session = openSession(fixture, { [hook]: () => { throw new Error("crash"); } } as ArtifactPublicationTestHooks);
+      const session = openSession(fixture, {
+        [hook]: () => {
+          throw new Error("crash");
+        },
+      } as ArtifactPublicationTestHooks);
       expect(() => session.service.createArtifact(fileCreateInput(fixture, "art_crash"))).toThrowError("crash");
       session.db.close();
 
@@ -336,8 +365,14 @@ describe("F010 file publication crash matrix", () => {
   }
 
   it("crash after commit keeps the complete published revision but drops the broadcast", () => {
-    const session = openSession(fixture, { afterCommit: () => { throw new Error("crash-after-commit"); } });
-    expect(() => session.service.createArtifact(fileCreateInput(fixture, "art_aftercommit"))).toThrowError("crash-after-commit");
+    const session = openSession(fixture, {
+      afterCommit: () => {
+        throw new Error("crash-after-commit");
+      },
+    });
+    expect(() => session.service.createArtifact(fileCreateInput(fixture, "art_aftercommit"))).toThrowError(
+      "crash-after-commit",
+    );
     session.db.close();
 
     const reopened = openSession(fixture);
@@ -358,7 +393,9 @@ describe("F010 file publication crash matrix", () => {
     expect(created.revision.storage_kind).toBe("workspace_file");
     expect(created.revision.source_relative_path).toBe("docs/report.md");
     expect(created.revision.archive_relative_path).toMatch(/^[0-9a-f]{2}\/[0-9a-f]{64}$/);
-    expect(created.revision.archive_relative_path).toBe(`${created.revision.content_hash.slice(0, 2)}/${created.revision.content_hash}`);
+    expect(created.revision.archive_relative_path).toBe(
+      `${created.revision.content_hash.slice(0, 2)}/${created.revision.content_hash}`,
+    );
 
     writeFileSync(join(fixture.workspaceDir, "docs/report.md"), "file body v2");
     const revised = session.service.reviseArtifact("art_file", {
@@ -377,10 +414,14 @@ describe("F010 file publication crash matrix", () => {
   it("shares the archive entry when the target exists with identical bytes", () => {
     const session = openSession(fixture);
     const first = session.service.createArtifact(fileCreateInput(fixture, "art_share1"));
-    const second = session.service.createArtifact(fileCreateInput(fixture, "art_share2", "docs/copy.md", "file body v1"));
+    const second = session.service.createArtifact(
+      fileCreateInput(fixture, "art_share2", "docs/copy.md", "file body v1"),
+    );
     // same bytes -> same content address, one archive object for both revisions
     expect(second.revision.archive_relative_path).toBe(first.revision.archive_relative_path);
-    expect(sha256(fixture.archive.readArchive(first.revision.archive_relative_path!)!)).toBe(first.revision.content_hash);
+    expect(sha256(fixture.archive.readArchive(first.revision.archive_relative_path!)!)).toBe(
+      first.revision.content_hash,
+    );
     session.db.close();
   });
 
