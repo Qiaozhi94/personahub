@@ -119,6 +119,7 @@ artifact_revisions
 
 artifact_consumptions
   artifact_id, revision, dispatch_id, run_id, purpose, consumed_at
+  PK(dispatch_id, run_id, artifact_id, revision, purpose)
 
 artifact_evidence_links
   artifact_id, revision, evidence_ref

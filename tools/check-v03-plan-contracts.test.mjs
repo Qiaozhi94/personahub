@@ -417,6 +417,21 @@ test('F010-DOC-R2-020: orphan maintenance never serializes artifact publication'
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R2-021: consumption identity preserves every run in a dispatch', () => {
+  const documents = [
+    read('docs/features/0.3/F010-artifact-foundation-provenance/design.md'),
+    read('docs/personahub-system-design.md'),
+  ];
+  const phrases = [
+    '`PRIMARY KEY (dispatch_id, run_id, artifact_id, revision, purpose)`',
+    '同一 Dispatch 换 Run 续做时各记一条',
+    'PK(dispatch_id, run_id, artifact_id, revision, purpose)',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
