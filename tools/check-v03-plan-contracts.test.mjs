@@ -489,6 +489,16 @@ test('F010-DOC-R2-023: pre-F012 dispatch links are explicit soft references', ()
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R2-025: feature guide shows the AC syntax accepted by the gate', () => {
+  const documents = [read('docs/features/README.md')];
+  const phrases = [
+    '- [ ] **AC-001** (`FR-001`, `NFR-002`): 可观察行为 - tests: `server/tests/integration/example.test.ts`',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),

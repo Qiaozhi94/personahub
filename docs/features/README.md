@@ -261,7 +261,7 @@ eval_contract_exempt_reason: "两问为何都是 no"
 - 唯一格式为：
 
   ```markdown
-  - [ ] **AC-001** (`FR-001`, `NFR-002`): 可观察行为 — tests: `server/tests/integration/example.test.ts`
+  - [ ] **AC-001** (`FR-001`, `NFR-002`): 可观察行为 - tests: `server/tests/integration/example.test.ts`
   ```
 
 - `draft`、`ready-for-development`、`in-progress` 阶段允许 `tests:` 暂缺；此时 AC
