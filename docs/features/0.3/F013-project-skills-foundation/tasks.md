@@ -2,14 +2,14 @@
 topics: [project, repository, skill, implementation]
 doc_kind: tasks
 created: 2026-08-09
-updated: 2026-09-08
+updated: 2026-09-12
 ---
 
 # F013：Space, Project & Skills Foundation - 任务
 
 ## 0. 来源与执行规则
 
-行为以 `spec.md`、迁移与安全边界以 `design.md` 为准。旧数据 fixture 必须覆盖非标准 Workflow JSON。
+行为以 `spec.md`、迁移与安全边界以 `design.md` 为准。旧数据 fixture 必须覆盖非标准 Workflow JSON。**正式升级 fixture 必须是合法 v10 数据**（`issues.workspace_id` 非空、未绑定 Project 名下无 Issue）；损坏库场景另建显式命名的 adversarial fixture，见 `design.md` §8。
 
 ## 1. 前置条件
 
@@ -17,30 +17,44 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 
 ## 2. 实现任务
 
-### Phase 1：仓库与项目边界
+### Phase 1：Space、项目与仓库边界
 
-- [ ] T000 (`FR-001`, `FR-002`, `NFR-001`): 定义 Space contract，新增 schema 与幂等默认 Space migration；以清洁库与仅含历史 Project / Issue 的旧库 fixture 验证归属、原 ID 和游离任务语义。 — verify: `npm test --workspace server`
-- [ ] T001 (`FR-003`, `FR-004`, `NFR-002`): 定义仓库、机器路径和项目引用 contract。 — verify: `npm run typecheck`
-- [ ] T002 (`FR-003`, `FR-004`, `NFR-001`): 实现 migration、registry、真实路径与 Git 探测。 — verify: `npm test --workspace server`
-- [ ] T003 (`FR-003`, `NFR-002`): 接入派工前权限交集校验。 — verify: `npm test --workspace server`
-- [ ] T004 (`FR-001`, `FR-002`): 实现首次设置的 Space 创建 / 选择与游离任务创建旅程。 — verify: `npm run test:e2e`
+- [ ] T000 (`FR-001`, `FR-002`, `NFR-001`): 定义 Space contract 与 `is_default` / `is_selected` 双事实；新增 schema 与幂等默认 Space migration。 — verify: `npm test --workspace server`
+- [ ] T001 (`FR-001`, `FR-002`, `NFR-001`): 实现本版本专用 migration orchestration——事务外开关 `foreign_keys` 并断言读回值、事务内 `foreign_key_check` 与 `schema_version` 原子提交、`finally` 恢复；覆盖注入异常的失败路径。 — verify: `npm test --workspace server`
+- [ ] T002 (`FR-001`, `NFR-001`): 在同一 migration 内 rebuild `projects` 与 `issues`（补 `space_id`、`projects.state` / `archived_at`，放宽 `issues` 四列），重建索引与触发器，回填默认 Space。 — verify: `npm test --workspace server`
+- [ ] T003 (`FR-001`): 实现 Space 与 Project 的归属约束：`ISSUE_SPACE_MISMATCH` trigger、游离任务创建契约、Project archive / restore / 引用保护删除。 — verify: `npm test --workspace server`
+- [ ] T004 (`FR-003`, `FR-004`, `NFR-002`): 定义仓库、机器路径、项目引用与 `Scope` contract，含入库前前缀校验（绝对路径 / 盘符 / UNC / `..` / NUL / 反斜杠 / 归一化 / 去重）。 — verify: `npm run typecheck`
+- [ ] T005 (`FR-003`, `FR-004`, `NFR-001`): 实现 repository migration、registry、`realpathSync` 解析、`authorized_identity` 记录与 Git remote 探测；identity 按 runtime 实时读取不落库。 — verify: `npm test --workspace server`
+- [ ] T006 (`FR-003`, `NFR-002`): 实现 `verifyAuthorization()`——重解析 `raw_path`、比对 identity、三层 scope 交集、更新 `last_verified_at`，并冻结为 F012 可消费的只读契约。**本任务只交付契约与其单测，不接入 Dispatch**；派工侧接入由 F012 拥有。 — verify: `npm test --workspace server`
+- [ ] T007 (`FR-003`, `FR-004`): 实现 `legacy_workspace_id` 桥：迁移回填、新建 / 改绑 primary 时同事务 upsert、reference 恒 NULL。 — verify: `npm test --workspace server`
+- [ ] T008 (`FR-001`, `FR-002`): 实现首次设置的 Space 创建 / 选择与游离任务创建旅程。 — verify: `npm run test:e2e`
 
 ### Phase 2：Skills 与项目 UI
 
-- [ ] T010 (`FR-005`, `FR-006`): 定义 Skill revision schema、激活 / 冲突与 effective requirements。 — verify: `npm test`
-- [ ] T011 (`FR-005`, `FR-007`, `NFR-001`): 迁移 Workflow Template 为 Skill refs 并保留 alias / legacy payload。 — verify: `npm test --workspace server`
-- [ ] T012 [P] (`FR-003`, `FR-004`, `FR-007`): 实现项目文件 / Skills / 设置工作面。 — verify: `npm test --workspace web`
-- [ ] T013 [P] (`FR-005`, `FR-008`): 实现能力面 Skills 表、筛选和整页详情。 — verify: `npm test --workspace web`
+- [ ] T010 (`FR-005`, `FR-006`): 定义 canonical revision schema——`Requirement` / `Step` / `EvidenceSpec` DTO、未知字段 fail-closed、id 与 order 规则、按 `(kind, tags)` 的合并去重与稳定排序。 — verify: `npm run typecheck`
+- [ ] T011 (`FR-005`, `NFR-001`): 实现 `skills` / `skill_revisions` 存储与三个不可变 trigger（UPDATE / DELETE / `skill_revision_files` 写拦截），以及 §3 的四道引用完整性约束。 — verify: `npm test --workspace server`
+- [ ] T012 (`FR-005`, `FR-008`): 实现 Skill 文件快照——激活时入库、`rel_path` containment 与大小上限、读取时 hash 核验。 — verify: `npm test --workspace server`
+- [ ] T013 (`FR-005`): 实现扫描、按 `source_identity` 对齐、按 Space 可见集分组的冲突检测、`resolve-conflict` 与自动恢复 `active`。 — verify: `npm test --workspace server`
+- [ ] T014 (`FR-006`, `FR-008`): 实现 `skill_delivery_status`——adapter 身份取自 `agent_configs`、渲染器纯函数、激活先提交后逐 adapter 下发、单个失败不回滚且可幂等重试。 — verify: `npm test --workspace server`
+- [ ] T015 (`FR-005`, `FR-007`, `NFR-001`): 迁移 legacy Workflow + Validation Policy——按 `(workflow, policy)` 组合生成 revision、写 `skill_legacy_aliases` 与 `skill_legacy_combo_map`、Issue 上的 policy 优先。 — verify: `npm test --workspace server`
+- [ ] T016 (`FR-006`): 实现 `EffectiveRequirementsResolver` 与 `SKILL_EVIDENCE_CONFLICT` 判定，冻结为 F012 可消费的只读契约。 — verify: `npm test --workspace server`
+- [ ] T017 [P] (`FR-003`, `FR-004`, `FR-007`): 实现项目文件 / Skills / 设置三个 tab（不注册项目记忆 tab）。 — verify: `npm test --workspace web`
+- [ ] T018 [P] (`FR-005`, `FR-008`): 实现能力面 Skills 表、筛选与整页详情（来源、版本、要求、下发状态、只读文件）。 — verify: `npm test --workspace web`
 
 ## 3. 验证与验收任务
 
-- [ ] T020 (`AC-001`, `AC-002`, `AC-004`, `AC-005`): 覆盖默认 Space、真实路径、软链、参考仓库写拒绝、旧 Skill ref requirements、冲突与 restart。 — verify: `npm test`
-- [ ] T021 (`AC-001`, `AC-003`): 完成首次设置、项目 / Skill Playwright 旅程。 — verify: `npm run test:e2e`
-- [ ] T022 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 运行发布质量门。 — verify: `npm run verify:release`
+- [ ] T020 (`AC-001`, `AC-002`): 覆盖默认 Space 与双表 rebuild、migration runner 的 FK 开关与失败恢复、兼容投影、真实路径 / 软链 / identity 变更、scope 校验与交集、参考仓库写拒绝。 — verify: `npm test`
+- [ ] T021 (`AC-003`, `AC-005`): 覆盖 revision schema 拒绝规则、四道引用完整性反例、文件快照不漂移、delivery 失败局部化、冲突分组与消解闭环、跨 Space 引用拒绝。 — verify: `npm test`
+- [ ] T022 (`AC-001`, `AC-004`): 覆盖 legacy 组合迁移的逐 Issue 可解析断言与旧 ref requirements 逐字不变。 — verify: `npm test`
+- [ ] T023 (`AC-001`, `AC-003`): 完成首次设置、项目 / Skill Playwright 旅程。 — verify: `npm run test:e2e`
+- [ ] T024 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 按 `migration-matrix.md` 逐行删除 owner 为 F013 的 8 个 transitional-host（P002、P003、P009、A001、A002、A003、A029、A030）并核对 `delete_when`。 — verify: `npm run test:e2e`
+- [ ] T025 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 运行发布质量门。 — verify: `npm run verify:release`
 
 ## 4. 依赖与并行关系
 
-T000→T001→T002/T003/T004；T010→T011/T013；T012 等待仓库与 Skill API。两条 Phase 可在 Space、共享 ID / version contract 冻结后并行；完成 effective requirements contract 后 F012 才可实现 eligibility。
+T000→T001→T002→T003；T004→T005→T006/T007；T008 依赖 T003。Phase 2：T010→T011→T012/T013/T014/T015→T016；T017 等待仓库 API（T005/T007），T018 等待 Skill API（T013/T014）。两条 Phase 可在 Space 与共享 ID / version contract 冻结后并行。
+
+**跨 Feature 边界**：T006 与 T016 只交付**只读契约与单测**，不接入派工；`verifyAuthorization` 与 `resolveEffectiveRequirements` 的 Dispatch 侧集成由 F012 拥有并验收（`design.md` §0 / §4）。完成这两个 contract 后 F012 才可实现 eligibility。
 
 ## 5. 明确后移
 
