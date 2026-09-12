@@ -175,7 +175,11 @@ type Step = { id: string; order: number; title: string; requirements: Requiremen
 
 四道合起来才等价于"默认 ref 永远解析到一个真实 revision"。`pinned_version` 为 NULL 时跟随 `skills.current_revision`，后者由第 3、4 条保证非空且存在。
 
-`skill_legacy_aliases`：`(source_kind, legacy_id)` **复合主键**（`source_kind IN ('workflow_template','validation_policy')`）、`skill_id`、`version`、`raw_payload_json TEXT NOT NULL`。两张旧表各有自己的 ID 空间，单列主键在两表出现相同 ID 时只能保真一条；复合主键消除这个碰撞。原始行整体保存在 `raw_payload_json`，无法无损映射的字段不猜测语义（spec §7 决策）。
+legacy 迁移需要**两张职责不同的表**，合成一张必然矛盾：一个 workflow 配过两个 policy 会产生两条 revision，而"这个旧对象长什么样"每个旧 ID 只有一行。
+
+- `skill_legacy_aliases` — **来源追溯**：`(source_kind, legacy_id)` 复合主键（`source_kind IN ('workflow_template','validation_policy')`）、`raw_payload_json TEXT NOT NULL`。一行对应一个旧对象，保存其原始 payload，无法无损映射的字段不猜测语义（spec §7 决策）。两张旧表 ID 空间独立，复合主键消除碰撞。**这张表不指向 revision**——一个 workflow 可能参与多条 revision，写不下。
+- `skill_legacy_combo_map` — **组合解析**：`(workflow_template_id, validation_policy_id)` 复合主键 → `skill_id`、`version`。这才是"历史 Issue 的组合 → 确定 `skill@version`"的解析入口。`validation_policy_id` 可能为 NULL（旧行未配 policy），因 SQLite 主键列不接受 NULL，用哨兵值 `'-'` 表示"无 policy"，并在 CHECK 中固定该约定。
+  - 迁移按 Issue 实际出现过的组合 + workflow 自带默认组合去重后建行；**每条历史 Issue 的 `(workflow_template_id, validation_policy_id)` 都必须在此表命中**，迁移末尾以一条反查 SQL 断言零缺失。
 
 ### 索引
 
@@ -219,11 +223,11 @@ ADR 0012 第 7 条要求两者**一起**收敛进 Skill——只迁 workflow 会
 | `workflow_templates.steps_json` | `skill_revisions.steps_json` | 逐步转 `Step`，`order` 按原数组下标；无 id 的步骤生成 `legacy-step-<n>` |
 | `workflow_templates.evidence_requirements_json` | step / Skill 级 `completion` Requirement | 能映射成 tags 的转为结构化 Requirement；纯自由文本转 `description` 且 `strength='soft'`，**不伪造 tags** |
 | `validation_policies` 的判定条件 | Skill 级 `completion` Requirement，`strength='hard'` | 验证要求默认是硬要求 |
-| 两表其余字段 | `skill_legacy_aliases.raw_payload_json` | 原样保留，不猜测语义 |
+| 两表其余字段 | `skill_legacy_aliases.raw_payload_json` | 原样保留，不猜测语义；该表只做来源追溯，不承担组合解析 |
 
 **取哪个 policy**：`workflow_templates.validation_policy_id` 与 `issues.validation_policy_id` 都存在且不同时，**以 Issue 上的为准**——它是这条历史任务实际执行时生效的那份，workflow 上的只是创建时的默认值。为此迁移按 `(workflow_template_id, validation_policy_id)` **组合**生成 Skill revision：同一 workflow 配过两个 policy，就产生两个 revision，各自 alias 指回来源组合。没有任何 Issue 引用的 workflow 用其自带 policy 生成一条 revision。
 
-**逐 Issue 保真**：迁移后每条历史 Issue 的 `(workflow_template_id, validation_policy_id)` 组合都必须能经 alias 解析到确定的 `skill@version`；迁移测试逐行断言这一点，不允许"大部分能解析"。
+**逐 Issue 保真**：迁移后每条历史 Issue 的 `(workflow_template_id, validation_policy_id)` 组合都必须能经 `skill_legacy_combo_map` 解析到确定的 `skill@version`（**不是经 alias 表**——那张表每个旧 ID 只有一行，表达不了一对多）；迁移末尾以反查 SQL 断言零缺失，测试逐行验证，不允许"大部分能解析"。
 
 ### Migration orchestration（本 Feature 需要改 runner）
 
@@ -347,7 +351,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-002` | integration | `server/tests/integration/authorization-recheck.test.ts` | 授权后把 symlink 换靶 → `REPO_IDENTITY_CHANGED`；删除目录再同名重建 → 同样拒绝；路径失联 → `REPO_UNRESOLVED`；三层 scope 交集（含"某层 write 为空则结果 write 为空"与缺省继承）逐例断言；成功复核更新 `last_verified_at` |
 | `AC-002` | unit | `server/tests/unit/git-identity.test.ts` | identity 实时从 `git config` 读取并带 `read_at`，`repositories` 表无 `git_identity` 列 |
 | `AC-003` | unit + contract | `web/src/f013-project-skills.test.tsx` | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册 |
-| `AC-001` | integration | `server/tests/integration/legacy-skill-migration.test.ts` | 每条历史 Issue 的 `(workflow_template_id, validation_policy_id)` 组合都能经 alias 解析到确定 `skill@version`（逐行断言，不接受"大部分能解析"）；Issue 上的 policy 优先于 workflow 自带；同 workflow 配两个 policy 产生两个 revision；两表同 ID 时复合主键各自保真；自由文本要求不被伪造成 tags |
+| `AC-001` | integration | `server/tests/integration/legacy-skill-migration.test.ts` | 每条历史 Issue 的组合都能经 `skill_legacy_combo_map` 解析到确定 `skill@version`（逐行断言 + 反查零缺失，不接受"大部分能解析"）；**同一 workflow 配两个 policy 时两条组合各自解析到不同 revision**（这是 alias 单行表达不了的场景）；无 policy 的旧行用哨兵 `'-'` 命中；Issue 上的 policy 优先于 workflow 自带；两旧表同 ID 时 alias 复合主键各自保真；自由文本要求不被伪造成 tags |
 | `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
 | `AC-003` | integration | `server/tests/integration/skill-revision-schema.test.ts` | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同 |
 | `AC-003` | integration | `server/tests/integration/skill-default-ref.test.ts` | 一个项目至多一条 `is_default=1`；**四个反例逐一被拒**——① ghost Skill + NULL pinned（复合 FK 的 MATCH SIMPLE 漏洞，必须由单列 FK 拦下）② 非 disabled Skill 的 current_revision 为 NULL ③ 删除正被 current_revision 引用的 revision ④ 删除正被 pinned_version 引用的 revision；正例：默认 ref 永远解析到真实 revision |
