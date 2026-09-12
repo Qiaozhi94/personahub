@@ -220,6 +220,12 @@ CREATE INDEX idx_projects_space          ON projects(space_id);
 7. `PRAGMA foreign_key_check` 必须零行，否则整事务 rollback；
 8. 事务提交后 `PRAGMA foreign_keys=ON`。
 
+#### Issue 与 Project 的 Space 必须一致
+
+`issues.space_id` 与 `projects.space_id` 是两个独立的列，没有约束时可以指向不同 Space——那会让一个任务同时"属于 A 空间"和"属于 B 空间的项目"，列表过滤按哪个都对不齐。SQLite 的 `CHECK` 不能跨表，因此用 **`BEFORE INSERT` / `BEFORE UPDATE` trigger**：当 `NEW.project_id IS NOT NULL` 且 `NEW.space_id <> (SELECT space_id FROM projects WHERE id = NEW.project_id)` 时 `RAISE(ABORT, 'ISSUE_SPACE_MISMATCH')`。Project 改 Space 在 v0.3 不提供（没有这个用例），因此不需要级联更新。
+
+**游离任务的创建契约**：`POST /api/issues` 的 `space_id` 必填、`project_id` 可省略。省略时该任务只属于 Space，三个 legacy 列为空且不进入 v0.2 执行链（§7）。`space_id` 缺省**不从"当前选中 Space"隐式推断**——写入口显式要求它，避免请求在用户刚切换 Space 时落到意料之外的归属；前端负责带上当前 Space。
+
 **保留三列而不是删除**，因为 v0.1–v0.2 的历史 Run / Trace / Evidence 引用它们（`docs/features/0.3/README.md` 跨 Feature 不变量 8：迁移不得破坏历史 refs）。新建 Issue 在 F012 接管前仍按 §7「分阶段兼容」写入这三列；旧行原值不动。
 
 ### 默认 Space 升级
@@ -272,6 +278,7 @@ try {
 ### API
 
 - `POST /api/spaces`、`GET /api/spaces`、`POST /api/spaces/:id/select`、`POST /api/spaces/:id/archive`、`POST /api/spaces/:id/restore`；`GET /api/spaces` 返回每行的 `is_default` / `is_selected`，前端不自行推断"当前 Space"。
+- `POST /api/issues`：`space_id` 必填、`project_id` 可省略（游离任务）；`space_id` 不从当前选中 Space 隐式推断，见 §3。
 - **Space 作用域规则**：`GET /api/projects` 与 `GET /api/issues` 默认按当前 `is_selected` 的 Space 过滤，并接受显式 `space_id` 覆盖；按 ID 直接读取单个 Project / Issue **不做 Space 过滤**，否则 F009 已发布的 `/projects/:projectId` 深链在切换 Space 后会 404（跨 Feature 不变量 8）。返回体带 `space_id`，由前端提示"该对象属于其它 Space"。
 - `POST /api/repositories:resolve`：输入本地路径或 URL，返回自动识别的 `kind`、`display_name`、`real_path`、`git_remote_url`、`git_identity` 与授权预判；**不落库**，供 UI 先看后存（FR-004 的"不要求手填名称"）。
 - `POST /api/repositories`、`PUT /api/projects/:id/repositories`（整体设置 primary + references）
@@ -356,6 +363,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | 验收项 | 测试层级 | 计划文件 / 场景 | 关键断言 |
 |---|---|---|---|
 | `AC-001` | integration | `server/tests/integration/migration-space.test.ts` | v10 fixture 升级后 `issues.space_id` 与 `projects.space_id` 全部非空、`issues.project_id` 语义可空、原 Project / Issue ID 逐一守恒；重复升级只有一个 `is_default=1` 与一个 `is_selected=1`；`PRAGMA foreign_key_check` 零行；五条新索引存在 |
+| `AC-001` | integration | `server/tests/integration/issue-space-consistency.test.ts` | 直接插入 `space_id` 与其 Project 不一致的 Issue 被 trigger 拒绝（`ISSUE_SPACE_MISMATCH`），INSERT 与 UPDATE 两条路径都覆盖；`POST /api/issues` 缺 `space_id` 时拒绝而非取当前选中 Space；省略 `project_id` 时创建成功且三个 legacy 列为空 |
 | `AC-001` | integration | `server/tests/integration/space-first-run.test.ts` | 清洁库首次创建 Space 后可创建游离任务（`project_id` 为空）；`select` 后重启服务，当前 Space 仍是选中的那个；默认 Space 归档被拒绝（`SPACE_ARCHIVE_BLOCKED`）；按 ID 深链读取其它 Space 的 Project 不 404 |
 | `AC-001` | integration | `server/tests/integration/migration-runner-fk.test.ts` | migration 前后 `PRAGMA foreign_keys` 均为 ON；注入异常的失败路径提交后仍恢复 ON；失败时 `schema_version` 未推进且表结构未改（无"表已改、版本没记"中间态） |
 | `AC-001` | integration | `server/tests/integration/legacy-compat-projection.test.ts` | 升级后经 `IssueService` 创建带 Project 的任务，三列仍按兼容投影写入且 v0.2 执行链路可跑通；**F013 之后新建的 Project 绑定 primary 仓库时自动 upsert legacy workspace 行**，其任务同样可进入执行链；改绑 primary 后投影指向新行；reference 角色的 `legacy_workspace_id` 恒为 NULL；游离任务三列为空且不进入该链路 |
