@@ -19,7 +19,7 @@ F009 新壳层和前端接入边界已冻结；ADR 0010 已接受；Evidence ref
 
 ### Phase 1：Contract 与存储
 
-- [ ] T001 (`FR-001`, `FR-002`): 定义 Artifact / revision / consumption 共享类型与校验。 — verify: `npm run typecheck`
+- [x] T001 (`FR-001`, `FR-002`): 定义 Artifact / revision / consumption 共享类型与校验。 — verify: `npm run typecheck`
 - [ ] T002 (`FR-001`, `FR-002`, `NFR-001`): 增加顺延 migration、Repository、`(artifact_id, idempotency_key)` 唯一约束、source/archive locator 分离、maintenance lease 与不变量测试；证明 forward-only 升级不破坏既有查询。 — verify: `npm test --workspace server`
 - [ ] T003 (`FR-003`, `NFR-002`): 在 `server/src/evidence-ref.ts` 实现统一 ref parser / builder 的可选 revision，增加 `resolveForRead` / `resolveForDispatch`，覆盖路径、SHA-256 与 floating ref 拒绝。 — verify: `npm test --workspace server`
 
