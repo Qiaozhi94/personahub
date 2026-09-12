@@ -23,7 +23,7 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 - [ ] T001 (`FR-001`, `FR-002`, `NFR-001`): 实现本版本专用 migration orchestration——事务外开关 `foreign_keys` 并断言读回值、事务内 `foreign_key_check` 与 `schema_version` 原子提交、`finally` 恢复；覆盖注入异常的失败路径。 — verify: `npm test --workspace server`
 - [ ] T002 (`FR-001`, `NFR-001`): 在同一 migration 内 rebuild `projects` 与 `issues`（补 `space_id`、`projects.state` / `archived_at`，放宽 `issues` 四列），重建索引与触发器，回填默认 Space。 — verify: `npm test --workspace server`
 - [ ] T003 (`FR-001`): 实现 Space 与 Project 的归属约束：`ISSUE_SPACE_MISMATCH` trigger、游离任务创建契约、Project archive / restore / 引用保护删除。 — verify: `npm test --workspace server`
-- [ ] T004 (`FR-003`, `FR-004`, `NFR-002`): 定义仓库、机器路径、项目引用与 `Scope` contract，含入库前前缀校验（绝对路径 / 盘符 / UNC / `..` / NUL / 反斜杠 / 归一化 / 去重）。 — verify: `npm run typecheck`
+- [ ] T004 (`FR-003`, `FR-004`, `NFR-002`): 定义仓库、机器路径、项目引用（含项目级 `access` 与 `role='reference'` 恒只读的 CHECK）与 `Scope` contract，含入库前前缀校验（绝对路径 / 盘符 / UNC / `..` / NUL / 反斜杠 / 归一化 / 去重）。 — verify: `npm run typecheck`
 - [ ] T005 (`FR-003`, `FR-004`, `NFR-001`): 实现 repository migration、registry、`realpathSync` 解析、`authorized_identity` 记录与 Git remote 探测；identity 按 runtime 实时读取不落库。 — verify: `npm test --workspace server`
 - [ ] T006 (`FR-003`, `NFR-002`): 实现 `verifyAuthorization()`——重解析 `raw_path`、比对 identity、三层 scope 交集、更新 `last_verified_at`，并冻结为 F012 可消费的只读契约。**本任务只交付契约与其单测，不接入 Dispatch**；派工侧接入由 F012 拥有。 — verify: `npm test --workspace server`
 - [ ] T007 (`FR-003`, `FR-004`): 实现 `legacy_workspace_id` 桥：迁移回填、新建 / 改绑 primary 时同事务 upsert、reference 恒 NULL。 — verify: `npm test --workspace server`
