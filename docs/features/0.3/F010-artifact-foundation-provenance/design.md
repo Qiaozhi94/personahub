@@ -102,7 +102,9 @@ Artifact 只在 `active → retired` 间单向流转；retired 禁止新 revisio
 
 公共线格式为 `artifact:<artifact_id>@<revision>`；交互读取 current 可使用 `artifact:<artifact_id>`。`server/src/evidence-ref.ts` 扩展 `EvidenceRefKind` 的 `artifact`，并让 `ParsedRef` 增加可选 `revision?: number`；`@revision` 的切分、正整数校验和 builder 均在该模块完成，既有 `event` / `file_change_set` kind 及返回语义不变。
 
-parser 不抛异常：`artifact:<id>` 返回 `kind: "artifact"` 且 `revision: undefined`；`artifact:<id>@<正整数>` 返回确定 revision；空值、未知前缀、空 id、重复 `@` 或非正整数 revision 返回 `kind: "unknown"` 并保留冒号后的原始 payload 供诊断。`resolveForRead()` 允许无 revision ref 并读取 current；`resolveForDispatch()` 与 `recordConsumption()` 遇无 revision、未知 kind 或非法 revision 时返回 `ARTIFACT_REF_INVALID`，并使用调用方提供的 thread context 写 `artifact.resolve_rejected`，禁止调用方绕过该模式把 floating ref 放入 Dispatch snapshot。
+parser 不抛异常：`artifact:<id>` 返回 `kind: "artifact"` 且 `revision: undefined`；`artifact:<id>@<正整数>` 返回确定 revision；空值、未知前缀、空 id、重复 `@` 或非正整数 revision 返回 `kind: "unknown"` 并保留冒号后的原始 payload 供诊断。`resolveForRead()` 允许无 revision ref 并读取 current；`resolveForDispatch()` 与 `recordConsumption()` 遇无 revision、未知 kind 或非法 revision 时返回 `ARTIFACT_REF_INVALID`，禁止调用方绕过该模式把 floating ref 放入 Dispatch snapshot。
+
+拒绝事件的 thread 载体按可得性降级：Dispatch / consumption 路径使用调用方提供的 Dispatch 所属 thread；其他路径能定位到 Artifact 时使用该 Artifact 的 `thread_id`。ref 无法解析或 Artifact 不存在且调用方也没有 thread context 时，只返回稳定错误码并写服务日志，不写 `thread_events`；不得编造 thread id。
 
 ### Event / Trace contract
 
@@ -130,7 +132,7 @@ archive locator 固定为 `<sha256前2位>/<sha256>`。目标已存在时先校�
 
 ## 7. 失败、恢复、安全与兼容
 
-- **hash**：发布时与 resolver 每次读取时都对原始字节计算 SHA-256；inline 使用 UTF-8 编码后的字节。mismatch 返回 `ARTIFACT_HASH_MISMATCH` 并写 `artifact.resolve_rejected`，绝不返回受损正文。sweep 只用 hash 判断候选文件名，不替代读取时校验。
+- **hash**：发布时与 resolver 每次读取时都对原始字节计算 SHA-256；inline 使用 UTF-8 编码后的字节。hash mismatch 已定位到 revision，始终使用 `artifacts.thread_id` 写 `artifact.resolve_rejected`，返回 `ARTIFACT_HASH_MISMATCH` 且绝不返回受损正文。sweep 只用 hash 判断候选文件名，不替代读取时校验。
 - **路径边界**：先 `realpath` 授权根目录与 source 文件，再用平台原生 `relative(root, file)` 判断结果不得为绝对路径、`..` 或以 `..${sep}` 开头；这会解析 junction / symlink，并按 Windows 大小写不敏感语义比较。越界返回 `ARTIFACT_SOURCE_OUTSIDE_ROOT`。
 - **恢复与租约**：`PERSONAHUB_ARTIFACT_ORPHAN_GRACE_MS` 默认 `3600000`（1 小时），`PERSONAHUB_ARTIFACT_SWEEP_LEASE_MS` 默认 `30000`（30 秒）。发布者与 sweeper 竞争 `archive-maintenance` DB 租约；重启清理只删除超过安全宽限期且未被任何 manifest 引用的 orphan，并额外要求 hash 文件名合法。临时文件也只在超过宽限期后删除。
 - **只读边界**：content-addressed 命名和 ArtifactService“不打开既有 archive 做写入”是应用约定，不是操作系统级只读隔离；同用户的外部进程仍可能修改文件。resolver 每次读取 hash 校验是完整性兜底，本 Feature 不声称 chmod / ACL 安全边界。

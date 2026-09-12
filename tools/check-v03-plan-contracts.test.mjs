@@ -390,6 +390,21 @@ test('F010-DOC-R1-HIGH: reviewed ownership and runtime decisions remain frozen',
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R2-019: resolver rejection events always have a real thread carrier', () => {
+  const documents = [
+    read('docs/features/0.3/F010-artifact-foundation-provenance/design.md'),
+    read('docs/features/0.3/F010-artifact-foundation-provenance/spec.md'),
+  ];
+  const phrases = [
+    '无法定位 Artifact 的 ref 失败只记录服务日志并返回稳定错误码',
+    '不得编造 thread id',
+    'hash mismatch 已定位到 revision，始终使用 `artifacts.thread_id` 写 `artifact.resolve_rejected`',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
