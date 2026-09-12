@@ -129,6 +129,28 @@ CREATE INDEX idx_projects_space          ON projects(space_id);
 
 升级器以稳定幂等键（`is_default = 1` 的部分唯一索引）创建唯一默认 Space，再回填历史 Project / Issue / Space 级 Skill；**不改变任何既有 ID**（FR-002）。重复执行因索引冲突而幂等。旧 `workflow_templates` 每行转为一条 `source='legacy-workflow'` 的 Skill revision，并在 `skill_legacy_aliases` 保留旧 ID 与原始 payload。
 
+### Migration orchestration（本 Feature 需要改 runner）
+
+当前 `server/src/db/migrations.ts:84-92` 把每个版本整体包进 `db.transaction(() => { db.exec(SCHEMA_Vn); insert schema_version })()`。**SQLite 在事务内切换 `PRAGMA foreign_keys` 是静默 no-op**——照现有框架直接写 rebuild，外键不会真的关闭，`DROP TABLE projects` 会因子表引用而失败或留下悬空引用，而 DDL 本身不报错，失败方式是沉默的。
+
+因此本版本 migration 不能复用既有形状，需要一个显式的 orchestration 分支：
+
+```
+db.pragma('foreign_keys = OFF');            // 事务外，返回值需断言已生效
+try {
+  db.transaction(() => {
+    /* rebuild projects → rebuild issues → 建新表 → 回填 */
+    const violations = db.pragma('foreign_key_check');
+    if (violations.length > 0) throw new Error(...);   // 事务内检查，违规即 rollback
+    db.prepare('INSERT INTO schema_version ...').run(N, now);
+  })();
+} finally {
+  db.pragma('foreign_keys = ON');           // 无论成败都恢复，异常路径不得留下关闭状态
+}
+```
+
+三条约束必须由测试锁定：`foreign_keys` 在 migration 前后都为 `ON`；**抛异常的失败路径也必须恢复为 `ON`**；`schema_version` 与表结构在同一事务内提交，不存在"表已改、版本没记"的中间态。`db.pragma('foreign_keys')` 的读回值是断言对象，不能只看没报错。
+
 ### Migration 版本号与 F010 的并行协调
 
 `CURRENT_SCHEMA_VERSION` 当前为 11，F010 与 F013 并行且都要顺延。**两者都不预占版本号**：实施时读取仓库当前值 +1；先合入者取得该号，后合入者 rebase 后重新编号并改 migration 文件名。禁止在文档或 tasks 中写死 `v12`。Migration 除上述 `issues` 重建外只追加表 / 索引；仓库没有 down migration，不声明不可执行的「回滚前检查」。
@@ -189,6 +211,8 @@ F009 的 8 个 transitional-host 在本 Feature 验收时按 `migration-matrix.m
 - **路径授权**：`realpathSync` 解析后比较，沿用 `server/src/runtime/graph/preflight.ts:29` 的既有模式，**不是** `server/src/services/workspace.ts:25` 的 `path.resolve`——后者不解析 symlink，无法满足 NFR-002 的"真实路径"。解析失败（路径不存在 / 无权限）一律不授权并返回 `REPO_PATH_UNRESOLVED`。迁移旧 workspace 时，`local_path_normalized` 是 `path.resolve` 的产物，**不得直接当作已授权真实路径**：迁移只填 `raw_path`，`real_path` 留待首次授权时解析。
 - **安全边界的如实声明**：realpath + 前缀比较能挡住 symlink 逃逸与 `..`，但**不是操作系统级隔离**——同用户的 agent 进程仍可用绝对路径访问未授权目录。本 Feature 提供的是"宿主不会把未授权路径下发给 adapter"，不声称"adapter 无法访问"。结构性隔离仍按 `docs/SOP.md`「结构性隔离与安全边界声明纪律」留待容器 / 受限账户方案（v0.7 多执行机器）。
 - **Windows / POSIX**：`real_path` 比较按平台语义——Windows 大小写不敏感、分隔符归一，junction 由 `realpathSync` 解析；比较用 `path.relative(root, target)` 判断结果非绝对路径且不以 `..` 开头，不用字符串 `startsWith`（`/a/bc` 会被误判为在 `/a/b` 内）。
+- **分阶段兼容：F013 放宽列，但不切断 legacy 写**。`server/src/services/issue.ts:102` 当前以 `project_id` / `workspace_id` / `workflow_template_id` / `validation_policy_id` 四个必填字段创建 Issue，现有 Run / Graph / Validation 链路继续读 `workspace_id`。依赖顺序是 F013 → F012 → F011，**如果 F013 在放宽列的同时就停止写这三列，F012 接管前的创建与执行旅程会当场断掉**——这不是旧 UI 隐藏与否的问题，而是运行时读取方还没换。
+  因此本 Feature 的边界是：schema 允许为空、新对象模型不再依赖它们，但 `IssueService` 在有 Project 上下文时**继续按兼容投影写入**（`workspace_id` 取该 Project 主仓库对应的 workspace 行，`workflow_template_id` / `validation_policy_id` 取 legacy 默认）；游离任务（无 Project）三列为空，且**不得进入 v0.2 执行链路**，直到 F012 接管派工。兼容投影的删除条件绑定 `migration-matrix.md` 的 A003 / A005 / A007 / A009 行，由 F012 / F011 在各自验收时逐行删除，F013 只负责不提前破坏它们。
 - **引用保护**：仓库被任何 `project_repository_refs` 引用时不可删除；项目归档可恢复，归档后历史任务的文件 refs、执行与证据仍可读（US-001 场景 2）。
 - **迁移兼容**：legacy Skill 保留 alias 与 raw payload，可回放旧任务但不可从旧 UI 再编辑；旧 workflow-template 写 API 保留供历史兼容但 UI 不可达（migration-matrix A030）。
 
@@ -200,6 +224,8 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 |---|---|---|---|
 | `AC-001` | integration | `server/tests/integration/migration-space.test.ts` | v10 fixture 升级后 `issues.space_id` 与 `projects.space_id` 全部非空、`issues.project_id` 语义可空、原 Project / Issue ID 逐一守恒；重复升级只有一个 `is_default=1` 与一个 `is_selected=1`；`PRAGMA foreign_key_check` 零行；五条新索引存在 |
 | `AC-001` | integration | `server/tests/integration/space-first-run.test.ts` | 清洁库首次创建 Space 后可创建游离任务（`project_id` 为空）；`select` 后重启服务，当前 Space 仍是选中的那个；默认 Space 归档被拒绝（`SPACE_ARCHIVE_BLOCKED`）；按 ID 深链读取其它 Space 的 Project 不 404 |
+| `AC-001` | integration | `server/tests/integration/migration-runner-fk.test.ts` | migration 前后 `PRAGMA foreign_keys` 均为 ON；注入异常的失败路径提交后仍恢复 ON；失败时 `schema_version` 未推进且表结构未改（无"表已改、版本没记"中间态） |
+| `AC-001` | integration | `server/tests/integration/legacy-compat-projection.test.ts` | 升级后经 `IssueService` 创建带 Project 的任务，三列仍按兼容投影写入且 v0.2 执行链路可跑通；游离任务三列为空且不进入该链路 |
 | `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
 | `AC-003` | unit + contract | `web/src/f013-project-skills.test.tsx` | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册 |
 | `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
@@ -213,7 +239,9 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 
 | 决策 / 风险 | 结论或缓解 | 理由 | 替代方案 / 后续 |
 |---|---|---|---|
-| `issues` 表重建 | 12-step rebuild，放宽四列，保留三个退役列不删 | SQLite 无法 ALTER COLUMN；删列会破坏 v0.1–v0.2 历史 refs（不变量 8） | 若未来确认无历史引用，由独立清理 Feature 删除 |
+| `projects` / `issues` 表重建 | 同一 migration 内先后 rebuild，放宽 issues 四列，保留三个退役列不删 | SQLite 无法 ALTER COLUMN，且 `ADD COLUMN NOT NULL` 要常量默认值而默认 Space id 是运行时 ULID；删列会破坏 v0.1–v0.2 历史 refs（不变量 8） | 若未来确认无历史引用，由独立清理 Feature 删除 |
+| migration runner 改造 | 本版本用专用分支：事务外开关 FK、事务内 `foreign_key_check` 与 schema_version 原子提交、`finally` 恢复 FK | 现有 runner 把 migration 包进事务，而事务内切换 `PRAGMA foreign_keys` 是静默 no-op——照抄会得到"看起来成功"的错误迁移 | 若后续还有 rebuild 需求，把该分支提炼成 runner 能力 |
+| legacy 写入口的退场时机 | F013 只放宽 schema，不停止写三列；兼容投影由 F012 / F011 按 migration-matrix A003/A005/A007/A009 删除 | 依赖顺序是 F013 → F012 → F011，读取方尚未换；提前切断会在 F012 接管前破坏创建与执行旅程 | — |
 | Skill 归属形状 | `skills.space_id` 一对多，取代规划期的 `space_skills` 关联表（用户裁决 2026-09-12） | 多对多会把 `conflict` 变成 per-space 状态、连带重定义激活 / 禁用写入口与 UI 状态显示，而 v0.3 只有一个 Space，这些复杂度零消费者；spec §3「范围外」明确排除跨 Space 共享（PRD §15） | 未来共享叠加 `skill_visibility` 表，纯追加 migration；见 §3 与 DQ-001 |
 | 同名冲突的表达 | 不用唯一约束，由 SkillRegistry 事务内检测并把双方置 `conflict` | 唯一约束会让第二来源插入失败，无法满足"两者都不生效且状态可见" | — |
 | 默认 Space 唯一性 | 部分唯一索引 `WHERE is_default = 1` | 把幂等性交给数据库而不是升级器的判断顺序 | — |
