@@ -316,7 +316,7 @@ test('F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access
 
   // 两份文档都必须写到的事实：任一侧改动而不同步另一侧即变红
   const sharedPhrases = [
-    'trg_skills_current_published',
+    'trg_skills_current_published_ins',
     '五个发布态 trigger',
     'skill_space_state',
     '`(skill_id, version, runtime_id, cli_provider)`',

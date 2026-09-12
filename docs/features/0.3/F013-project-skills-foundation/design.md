@@ -269,7 +269,13 @@ type Step = { id: string; order: number; title: string; requirements: Requiremen
 - `project_skill_refs` 两道 FK 并存：**单列** `FOREIGN KEY (skill_id) REFERENCES skills(id)` 挡 ghost Skill（与 `pinned_version` 无关）；`FOREIGN KEY (skill_id, pinned_version) REFERENCES skill_revisions(skill_id, version)` 在 pinned 非空时挡不存在的 revision。
 - `BEFORE DELETE ON skill_revisions` trigger：被 `skills.current_revision` 或 `project_skill_refs.pinned_version` 引用的 revision 不可删。
 - `skills.current_revision` **只能指向 `published_at IS NOT NULL` 的 revision**，由**数据库**保证而非"激活事务自觉"——Round 4 的反例正是 `current_revision=1` 指向 `published_at=NULL` 的 revision 可以提交。两个 trigger 各管一端：
-  - `trg_skills_current_published`：`BEFORE INSERT` 与 `BEFORE UPDATE OF current_revision ON skills`，当 `(SELECT published_at FROM skill_revisions WHERE skill_id=NEW.id AND version=NEW.current_revision) IS NULL` 时 `RAISE(ABORT,'SKILL_CURRENT_NOT_PUBLISHED')`。
+  - **两个 trigger，不是一个**：SQLite 的 `CREATE TRIGGER` 只能绑定单一事件，`BEFORE INSERT OR UPDATE OF ...` 直接报 `near "OR": syntax error`（实测）。因此写成：
+    - `trg_skills_current_published_ins`：`BEFORE INSERT ON skills`
+    - `trg_skills_current_published_upd`：`BEFORE UPDATE OF current_revision ON skills`
+
+    两者体相同：当 `(SELECT published_at FROM skill_revisions WHERE skill_id = NEW.id AND version = NEW.current_revision) IS NULL` 时 `RAISE(ABORT,'SKILL_CURRENT_NOT_PUBLISHED')`。
+    §3 其余五个发布态 trigger 本来就各绑一种事件，不受此影响。
+
   - 这要求写入时序是：**先插 revision（构建期）→ 写文件 → 置 `published_at` → 再插/更新 `skills` 行**。因此 `skill_revisions.skill_id → skills(id)` 的外键必须 `DEFERRABLE INITIALLY DEFERRED`（revision 先于 skills 行存在，到事务末才校验），而 `skills` 侧的 published 检查是**即时**的。两个方向一延迟一即时，合起来既允许该时序，又不留下 draft current 的窗口。
   - 反过来的 `skills.(id, current_revision) → skill_revisions(skill_id, version)` 外键保留且同样 DEFERRABLE，防止指向根本不存在的版本号。
 

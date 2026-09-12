@@ -32,7 +32,7 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 ### Phase 2：Skills 与项目 UI
 
 - [ ] T010 (`FR-005`, `FR-006`): 定义 canonical revision schema——`Requirement` / `Step` / `EvidenceSpec` DTO、未知字段 fail-closed、id 与 order 规则、按 `(kind, tags)` 的合并去重与稳定排序。 — verify: `npm run typecheck`
-- [ ] T011 (`FR-005`, `NFR-001`): 实现 `skills` / `skill_revisions` 存储，其中 `current_revision` 非空、`state` 只有 active/disabled；**五个发布态 trigger**（revision 的 UPDATE / DELETE 与 `skill_revision_files` 的 INSERT / UPDATE / DELETE，各绑一种事件并带 `published_at IS NOT NULL` 条件），加 `trg_skills_current_published` 即时校验与两个方向的 DEFERRABLE 外键。 — verify: `npm test --workspace server`
+- [ ] T011 (`FR-005`, `NFR-001`): 实现 `skills` / `skill_revisions` 存储，其中 `current_revision` 非空、`state` 只有 active/disabled；**五个发布态 trigger**（revision 的 UPDATE / DELETE 与 `skill_revision_files` 的 INSERT / UPDATE / DELETE，各绑一种事件并带 `published_at IS NOT NULL` 条件），加 `trg_skills_current_published_ins` / `_upd` **两个**即时校验 trigger（SQLite 不支持单 trigger 绑双事件）与两个方向的 DEFERRABLE 外键。 — verify: `npm test --workspace server`
 - [ ] T012 (`FR-005`, `FR-008`): 实现 Skill 文件快照——激活时入库、`rel_path` containment 与大小上限、读取时 hash 核验。 — verify: `npm test --workspace server`
 - [ ] T013 (`FR-005`): 实现扫描、按 `source_identity` 对齐、按 Space 可见集分组的冲突检测；`skill_space_state` 的物化（Space 创建与全局 Skill 激活两个入口各自在同事务内插行）、带 `space_id` 的 `resolve-conflict` 与 per-Space 自动恢复。 — verify: `npm test --workspace server`
 - [ ] T014 (`FR-006`, `FR-008`): 实现 `skill_delivery_status`，主键 `(skill_id, version, runtime_id, cli_provider)` 并记录 `target_path`；候选安装由该 runtime 的 `cli_provider` 去重得到（同 provider 多配置只一行），渲染器纯函数，激活先提交后逐安装下发，单个失败不回滚且可幂等重试。 — verify: `npm test --workspace server`
