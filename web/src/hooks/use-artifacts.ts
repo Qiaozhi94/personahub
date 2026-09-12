@@ -1,6 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { apiClient, toApiError } from "@/lib/api-client";
-import { ErrorCode, type Artifact, type ArtifactProvenance, type ArtifactConsumption } from "@personahub/shared";
+import {
+  ErrorCode,
+  type Artifact,
+  type ArtifactProvenance,
+  type ArtifactConsumption,
+  type ArtifactEntityRead,
+  type ArtifactRevisionRead,
+  type ArtifactListRead,
+  type ArtifactProvenanceRead,
+  type RunArtifactRead,
+  type EvidenceArtifactRead,
+} from "@personahub/shared";
 
 /**
  * F010 read-only artifact hooks (design §6): every hook exposes the explicit
@@ -54,16 +65,22 @@ function errorState(error: unknown): ArtifactReadFailureState {
   return failureState("invalid", apiError.code, null, apiError.message);
 }
 
-/** The failure status is the payload's own server-declared status — never
- *  re-derived per hook, so `missing` and `invalid` cannot merge. */
-function useArtifactReadModel<TData, TResponse extends { status: string }>(
-  query: ReturnType<typeof useQuery<TResponse, Error>>,
-  pick: (payload: TResponse) => TData,
+/**
+ * The failure status is the payload's own server-declared status — never
+ * re-derived per hook, so `missing` and `invalid` cannot merge. `pick` only
+ * ever sees the `ready` member of the response union.
+ */
+function useArtifactReadModel<TResponse extends { status: string }, TData>(
+  query: UseQueryResult<TResponse, Error>,
+  pick: (payload: Extract<TResponse, { status: "ready" }>) => TData,
 ): ArtifactReadModel<TData> {
   if (query.isPending) return { state: "loading" };
   if (query.isError) return errorState(query.error);
   const data = query.data;
-  if (data.status === "ready") return { state: "ready", data: pick(data) };
+  if (data.status === "ready") {
+    // the status check above is exactly the Extract discriminator
+    return { state: "ready", data: pick(data as Extract<TResponse, { status: "ready" }>) };
+  }
   if (data.status === "empty") return { state: "empty" };
   const failure = data as unknown as { status: FailureStatus; code: string; ref: string | null; message: string };
   return failureState(failure.status, failure.code, failure.ref, failure.message);
@@ -75,10 +92,7 @@ export function useArtifact(artifactId: string | null): ArtifactReadModel<Artifa
     queryFn: () => apiClient.artifacts.get(artifactId!),
     enabled: artifactId !== null,
   });
-  return useArtifactReadModel<typeof query.data, typeof query.data>(
-    query,
-    (payload) => payload.artifact as ArtifactEntityModel,
-  );
+  return useArtifactReadModel<ArtifactEntityRead, ArtifactEntityModel>(query, (payload) => payload.artifact);
 }
 
 export function useArtifactRevision(
@@ -92,10 +106,7 @@ export function useArtifactRevision(
   });
   // The full ready payload (artifact + revision + content) is the model so
   // F011 views can render provenance next to the body.
-  return useArtifactReadModel<typeof query.data, typeof query.data>(
-    query,
-    (payload) => payload as unknown as ArtifactRevisionModel,
-  );
+  return useArtifactReadModel<ArtifactRevisionRead, ArtifactRevisionModel>(query, (payload) => payload);
 }
 
 export function useArtifactsByIssue(issueId: string | null): ArtifactReadModel<ArtifactEntityModel[]> {
@@ -104,10 +115,7 @@ export function useArtifactsByIssue(issueId: string | null): ArtifactReadModel<A
     queryFn: () => apiClient.artifacts.listByIssue(issueId!),
     enabled: issueId !== null,
   });
-  return useArtifactReadModel<typeof query.data, typeof query.data>(
-    query,
-    (payload) => payload.artifacts as ArtifactEntityModel[],
-  );
+  return useArtifactReadModel<ArtifactListRead, ArtifactEntityModel[]>(query, (payload) => payload.artifacts);
 }
 
 export function useArtifactProvenance(artifactId: string | null): ArtifactReadModel<ArtifactProvenanceModel> {
@@ -116,10 +124,7 @@ export function useArtifactProvenance(artifactId: string | null): ArtifactReadMo
     queryFn: () => apiClient.artifacts.getProvenance(artifactId!),
     enabled: artifactId !== null,
   });
-  return useArtifactReadModel<typeof query.data, typeof query.data>(
-    query,
-    (payload) => payload.provenance as ArtifactProvenanceModel,
-  );
+  return useArtifactReadModel<ArtifactProvenanceRead, ArtifactProvenanceModel>(query, (payload) => payload.provenance);
 }
 
 export function useRunArtifacts(runId: string | null): ArtifactReadModel<RunArtifactsModel> {
@@ -128,10 +133,7 @@ export function useRunArtifacts(runId: string | null): ArtifactReadModel<RunArti
     queryFn: () => apiClient.artifacts.listByRun(runId!),
     enabled: runId !== null,
   });
-  return useArtifactReadModel<typeof query.data, typeof query.data>(
-    query,
-    (payload) => payload.consumptions as RunArtifactsModel,
-  );
+  return useArtifactReadModel<RunArtifactRead, RunArtifactsModel>(query, (payload) => payload.consumptions);
 }
 
 export function useEvidenceArtifacts(ref: string | null): ArtifactReadModel<EvidenceArtifactsModel> {
@@ -140,8 +142,5 @@ export function useEvidenceArtifacts(ref: string | null): ArtifactReadModel<Evid
     queryFn: () => apiClient.artifacts.listByEvidenceRef(ref!),
     enabled: ref !== null,
   });
-  return useArtifactReadModel<typeof query.data, typeof query.data>(
-    query,
-    (payload) => payload.items as EvidenceArtifactsModel,
-  );
+  return useArtifactReadModel<EvidenceArtifactRead, EvidenceArtifactsModel>(query, (payload) => payload.items);
 }

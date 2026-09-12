@@ -78,12 +78,14 @@ describe("apiClient.artifacts", () => {
       .mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ status: "empty" }), { status: 200 })));
     try {
       await real.apiClient.artifacts.listByEvidenceRef("event:evt 1/x?y");
-      const called = vi.mocked(global.fetch).mock.calls[0][0] as string;
+      const called = vi.mocked(global.fetch).mock.calls[0]?.[0] as string | undefined;
       expect(called).toBe(`/api/evidence/artifacts?ref=${encodeURIComponent("event:evt 1/x?y")}`);
       expect(called).not.toContain("%25");
 
       await real.apiClient.artifacts.listByIssue("iss a&b");
-      expect(vi.mocked(global.fetch).mock.calls[1][0]).toBe(`/api/artifacts?issue_id=${encodeURIComponent("iss a&b")}`);
+      expect(vi.mocked(global.fetch).mock.calls[1]?.[0]).toBe(
+        `/api/artifacts?issue_id=${encodeURIComponent("iss a&b")}`,
+      );
     } finally {
       vi.restoreAllMocks();
     }
@@ -198,9 +200,12 @@ describe("artifact read-model states", () => {
     });
     const { result } = renderHook(() => useArtifactRevision("art_1", 1), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.state).toBe("ready"));
-    const data = result.current.state === "ready" ? result.current.data : null;
-    expect(data?.content.storage_kind).toBe("workspace_file");
-    expect(Buffer.from(data?.content.content_base64 ?? "", "base64").toString()).toBe("# body");
+    const content = result.current.state === "ready" ? result.current.data.content : null;
+    expect(content?.storage_kind).toBe("workspace_file");
+    if (content?.storage_kind !== "workspace_file") {
+      throw new Error("expected workspace_file content");
+    }
+    expect(Buffer.from(content.content_base64, "base64").toString()).toBe("# body");
   });
 
   it("keeps the in-flight promise unobserved until the query resolves (loading guard)", async () => {

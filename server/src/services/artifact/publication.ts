@@ -3,7 +3,7 @@ import { ErrorCode } from "@personahub/shared/errors";
 import { ulid } from "ulid";
 import { AppError } from "../../api/errors.js";
 import type { ArtifactPublicationTestHooks } from "./service.js";
-import { ArtifactArchive, sha256Hex, type StagedBlob } from "./archive.js";
+import { ArtifactArchive, sha256Hex } from "./archive.js";
 import { resolveSourceWithinRoot } from "./paths.js";
 import { canonicalRequestFingerprint } from "./fingerprint.js";
 

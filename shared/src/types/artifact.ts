@@ -64,7 +64,7 @@ export interface ArtifactEvidenceLink {
 }
 
 /** Artifact → 反向证据链查询返回的单条关系视图（不复制 Evidence / Run 状态）。 */
-export interface ArtifactEvidenceLinkView extends ArtifactEvidenceLink {}
+export type ArtifactEvidenceLinkView = ArtifactEvidenceLink;
 
 /** provenance 读取：一个 Artifact 的全部来源与消费关系。 */
 export interface ArtifactProvenance {
