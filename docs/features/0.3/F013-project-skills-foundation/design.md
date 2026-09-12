@@ -61,16 +61,34 @@ updated: 2026-09-12
 
 - `id TEXT PRIMARY KEY`、`kind TEXT NOT NULL CHECK (kind IN ('local_dir','remote_url'))`
 - `display_name TEXT NOT NULL`（自动识别得到，不要求用户手填，FR-004）
-- `git_remote_url TEXT`、`git_identity TEXT`：只读探测结果，探测失败留空不阻断保存
+- `git_remote_url TEXT`：仓库自身的事实，跨机器一致，可以存在这里；探测失败留空不阻断保存
 - `created_at`、`updated_at`
+- **不存 `git_identity`**：提交身份是 `git config user.name / user.email`，属于**执行机器**而非仓库——V3.44 `implementation-notes.md:168` 明确"读执行机器上的 git config，不另存一份"。存成 repositories 的列会在两台机器取值不同时互相覆盖或误报。identity 由 `GET /api/repositories/:id/identity?runtime_id=` 在读取时实时探测返回，带 `read_at` 时间戳，不落库。
 
 `repository_machine_paths` — 每台机器一份真实路径授权
 
 - `(repository_id, runtime_id)` 复合主键（`runtime_id` 见 ADR 0015；v0.3 只有一台执行机器，但不把它硬编码成全局唯一行）
-- `raw_path TEXT NOT NULL`：用户输入原文，仅用于展示与诊断
-- `real_path TEXT NOT NULL`：`realpathSync` 解析后的绝对路径，**授权判定只用这一列**
+- `raw_path TEXT NOT NULL`：用户输入原文；**每次派工复核都从它重新解析**，不是只用于展示
+- `real_path TEXT NOT NULL`：授权时 `realpathSync` 的结果，作为"授权当时指向哪里"的基线
+- `authorized_identity TEXT NOT NULL`：授权时该真实路径的文件系统 identity（`dev:ino`，Windows 用 `volumeSerial:fileIndex`）。目录被删后重建会得到新 identity，即使路径字符串不变
 - `access TEXT NOT NULL CHECK (access IN ('read_write','read_only'))`
-- `authorized_at TEXT NOT NULL`、`last_verified_at TEXT`
+- `scope_json TEXT`：机器级读写范围，形状见下方「scope schema」
+- `authorized_at TEXT NOT NULL`、`last_verified_at TEXT`（每次成功复核时更新，是新鲜度事实而非装饰）
+
+#### scope schema
+
+`repository_machine_paths.scope_json` 与 `project_repository_refs.scope_json` 共用同一形状，Task 级范围由 F012 在派工请求里以同样形状传入：
+
+```ts
+type Scope = {
+  read:  string[];   // 相对仓库根的 POSIX 风格前缀，"" 表示整仓
+  write: string[];   // 必须是 read 的子集；read_only 仓库恒为 []
+};
+```
+
+- 缺省值：机器级 `{read:[""], write:[""]}`（read_write）或 `{read:[""], write:[]}`（read_only）；项目级与任务级缺省为"继承上层"（字段缺失 ≠ 空数组，空数组表示"显式不允许"）。
+- **交集算法**：`effective.read = 逐层 containment 收窄`——下层的每个前缀必须被上层某个前缀包含，否则该前缀被丢弃并记 `scope_narrowed` 诊断；`effective.write = read ∩ 各层 write`。任何一层 `write` 为空，结果 write 即为空。
+- 前缀比较用规范化后的 `path.relative` 判断包含关系，不用字符串 `startsWith`（`src/ab` 不在 `src/a` 内）。
 
 `project_repository_refs`
 
@@ -207,16 +225,34 @@ try {
 
 ### 供 F012 消费的只读契约（跨 Feature 边界）
 
-```
+```ts
 resolveEffectiveRequirements(skill_ref: "<skill_id>@<version>") -> {
-  capability_tags: string[],          // 步骤 tags 与 Skill tags 的并集
+  capability_requirements: Requirement[],   // Skill 级 ∪ 所有 step，按 §3 合并规则去重排序
   completion_requirements: Requirement[],
   source_revision: { skill_id, version },
+} | { not_found: true }
+
+// 每次派工前调用；不是读缓存，而是当场重新解析文件系统
+verifyAuthorization(input: {
+  repository_id, runtime_id, project_id, task_scope?: Scope
+}) -> {
+  ok: true,
+  real_path: string,                 // 本次重新 realpath 的结果
+  access: "read_write" | "read_only",
+  effective_scope: Scope,            // 机器 ∩ 项目 ∩ 任务，算法见 §3
+  verified_at: string,
+} | {
+  ok: false,
+  reason: "REPO_PATH_UNRESOLVED" | "REPO_IDENTITY_CHANGED" | "REPO_NOT_AUTHORIZED"
+        | "REPO_SCOPE_EMPTY",
 }
-getAuthorization(repository_id, runtime_id) -> { real_path, access } | null
 ```
 
-两者都是纯读、无副作用，**遇到未知 ref 返回显式 not-found 而非抛异常**（与 `server/src/evidence-ref.ts` 的既有约定同源）。F012 负责把结果冻结进 Dispatch snapshot；F013 不感知 snapshot 是否存在。
+`resolveEffectiveRequirements` 纯读；**遇到未知 ref 返回显式 not-found 而非抛异常**（与 `server/src/evidence-ref.ts` 的既有约定同源）。
+
+`verifyAuthorization` 是 NFR-002「每次派工前复核」的落点，**不返回已保存的 `real_path`，而是当场重做三件事**：① 从 `raw_path` 重新 `realpathSync`；② 读取当前 identity 并与 `authorized_identity` 比对，不一致即 `REPO_IDENTITY_CHANGED`（覆盖授权后 symlink 换靶、目录删除后重建这两种"路径没变但目标变了"的情况）；③ 计算三层 scope 交集。成功时更新 `last_verified_at`。它有一次写（时间戳），因此不是纯读，但不改变任何授权决定。
+
+F012 负责把结果冻结进 Dispatch snapshot；F013 不感知 snapshot 是否存在。**Task scope 由 F012 作为入参传入**——F013 不读 Dispatch，也不猜测任务范围从哪来。
 
 ### Event / Trace contract
 
@@ -226,7 +262,7 @@ getAuthorization(repository_id, runtime_id) -> { real_path, access } | null
 
 ## 5. Runtime、Workflow 与并发
 
-派工前的授权复核（NFR-002）取三者交集：机器路径授权 ∩ 项目范围 ∩ 任务范围，任一层缺失即不授权。范围只能逐层收紧，`ProjectService` 无法放宽 `RepositoryRegistry` 的 `access`；参考仓库的 `read_write` 请求**硬拒绝**而非降级。
+派工前的授权复核（NFR-002）由 `verifyAuthorization()` 执行，取三者交集：机器路径授权 ∩ 项目范围 ∩ 任务范围，任一层缺失即不授权。**复核是一次真实的文件系统读取**（重新 realpath + 比对 identity），不是读回授权时保存的结论——否则授权后被换掉的 symlink 会一直沿用旧结论。范围只能逐层收紧，`ProjectService` 无法放宽 `RepositoryRegistry` 的 `access`；参考仓库的 `read_write` 请求**硬拒绝**而非降级。
 
 Skill requirements 与步骤 requirements 取**并集**，只会加严，不存在"步骤放宽 Skill 要求"的路径。
 
@@ -264,7 +300,9 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-001` | integration | `server/tests/integration/space-first-run.test.ts` | 清洁库首次创建 Space 后可创建游离任务（`project_id` 为空）；`select` 后重启服务，当前 Space 仍是选中的那个；默认 Space 归档被拒绝（`SPACE_ARCHIVE_BLOCKED`）；按 ID 深链读取其它 Space 的 Project 不 404 |
 | `AC-001` | integration | `server/tests/integration/migration-runner-fk.test.ts` | migration 前后 `PRAGMA foreign_keys` 均为 ON；注入异常的失败路径提交后仍恢复 ON；失败时 `schema_version` 未推进且表结构未改（无"表已改、版本没记"中间态） |
 | `AC-001` | integration | `server/tests/integration/legacy-compat-projection.test.ts` | 升级后经 `IssueService` 创建带 Project 的任务，三列仍按兼容投影写入且 v0.2 执行链路可跑通；游离任务三列为空且不进入该链路 |
-| `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
+| `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内、`src/ab` 不在 `src/a` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
+| `AC-002` | integration | `server/tests/integration/authorization-recheck.test.ts` | 授权后把 symlink 换靶 → `REPO_IDENTITY_CHANGED`；删除目录再同名重建 → 同样拒绝；路径失联 → `REPO_UNRESOLVED`；三层 scope 交集（含"某层 write 为空则结果 write 为空"与缺省继承）逐例断言；成功复核更新 `last_verified_at` |
+| `AC-002` | unit | `server/tests/unit/git-identity.test.ts` | identity 实时从 `git config` 读取并带 `read_at`，`repositories` 表无 `git_identity` 列 |
 | `AC-003` | unit + contract | `web/src/f013-project-skills.test.tsx` | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册 |
 | `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
 | `AC-003` | integration | `server/tests/integration/skill-revision-schema.test.ts` | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同 |
