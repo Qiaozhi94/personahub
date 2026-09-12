@@ -294,7 +294,9 @@ test('V03-PLAN-R1-002: Space has a v0.3 schema, migration, and feature owner', (
   ];
   const phrases = [
     'F013 是 Space schema、默认数据迁移与首次设置的唯一 owner',
-    '`spaces`、`space_skills`',
+    // 2026-09-12 用户裁决：Skill 归属由规划期的 `space_skills` 多对多改为 `skills.space_id`
+    // 一对多（F013 design.md DQ-001）。未来共享叠加 skill_visibility 表，不回退本决策。
+    '`spaces` 与 `skills.space_id`',
     '`issues.space_id` 非空',
     '`issues.project_id` 可空',
     'T000 (`FR-001`, `FR-002`, `NFR-001`)',
@@ -302,7 +304,7 @@ test('V03-PLAN-R1-002: Space has a v0.3 schema, migration, and feature owner', (
   ];
 
   requirePhrases(documents, phrases);
-  verifyMutation(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
 });
 
 test('V03-PLAN-R1-003: feature dependencies form an acyclic executable order', () => {
