@@ -67,6 +67,7 @@ F009 先完成生产前端换壳和既有能力迁移。F010 与 F013 互不依�
 9. 新功能只进入 V3.44 壳层；旧界面不得与新界面并存第二个可写入口。
 10. AcceptanceService 唯一写完成要求、主张链、风险接受与完成摘要；IssueService 只消费 `acceptance.completed` 推进 done，F014 只调用公开 API。
 11. F013 是 Space schema、默认数据迁移与首次设置的唯一 owner；`issues.space_id` 非空，`issues.project_id` 可空，游离任务仍有明确归属根。
+12. `artifact_consumptions.dispatch_id` 在 F010 是 soft reference；F012 接入 `recordConsumption` 时必须在同一事务内校验 Dispatch 存在且与 `run_id` 归属一致，v0.3 不为补 FK 重建该表。
 
 ## 5. 版本验收旅程
 

@@ -513,6 +513,18 @@ test('F010-DOC-R3-027: reverse artifact queries have migration-owned indexes', (
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R3-028: F012 owns dispatch soft-reference validation', () => {
+  const documents = [read('docs/features/0.3/README.md')];
+  const phrases = [
+    '12. `artifact_consumptions.dispatch_id` 在 F010 是 soft reference',
+    'F012 接入 `recordConsumption` 时必须在同一事务内校验 Dispatch 存在且与 `run_id` 归属一致',
+    'v0.3 不为补 FK 重建该表',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
