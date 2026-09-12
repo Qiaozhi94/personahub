@@ -118,7 +118,7 @@ Space 可 active / archived，v0.3 不支持物理删除；项目归档可恢复
 
 ### 测试策略
 
-Space / 路径边界、Skill schema 与 versioned effective requirements 单测；默认 Space、repo/Skill migration 和旧 revision 解析集成测试；首次设置、项目四 tab与 Skill 详情 Playwright。
+Space / 路径边界、Skill schema 与 versioned effective requirements 单测；默认 Space、repo/Skill migration 和旧 revision 解析集成测试；首次设置、项目三 tab（文件 / Skills / 设置）与 Skill 详情 Playwright。项目记忆 tab 在 v0.3 无真实数据，不由本 Feature 注册，其验收随 Memory 能力交付时由对应 Feature 负责。
 
 ### 依赖
 
