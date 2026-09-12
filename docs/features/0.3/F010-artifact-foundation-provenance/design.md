@@ -91,7 +91,7 @@ Artifact 只在 `active → retired` 间单向流转；retired 禁止新 revisio
 - `POST /api/artifacts`：请求含调用方生成的 `artifact_id`、`issue_id`、`thread_id`、`type`、`title`、storage payload、`source_run_id?`、`evidence_refs?`、`created_by`、`idempotency_key`；以稳定 Artifact ID + revision 幂等键重放，成功返回 Artifact 和 revision 1。
 - `POST /api/artifacts/:artifactId/revisions`：请求含 storage payload、`source_run_id?`、`evidence_refs?`、`created_by`、`idempotency_key`、`expected_current_revision`；CAS 成功返回新 revision，冲突返回 `ARTIFACT_REVISION_CONFLICT`。
 - `GET /api/artifacts?issue_id=...`、`GET /api/artifacts/:id`、`GET /api/artifacts/:id/revisions/:revision`：返回列表、实体/current 指针和确定 revision。
-- `GET /api/artifacts/:id/provenance`、`GET /api/runs/:id/artifacts` 与 `GET /api/evidence/:ref/artifacts`：使用同一 link / consumption 数据双向查询。
+- `GET /api/artifacts/:id/provenance`、`GET /api/runs/:id/artifacts` 与 `GET /api/evidence/artifacts?ref=<encodeURIComponent(ref)>`：使用同一 link / consumption 数据双向查询。typed ref 只放 query，不放 path segment；客户端必须编码一次，Fastify query parser 解码一次，service 接收解码后的原始 ref，禁止 route/service 重复解码。
 - `recordConsumption(dispatch_id, run_id, revision_ref, purpose)`：只接受含 revision 的 Artifact ref；按 `(dispatch_id, run_id, artifact_id, revision, purpose)` 幂等，重放返回既有记录，同一 Dispatch 的不同 Run 分别记录。
 
 所有 create / revise 调用都必须携带调用方生成的 `idempotency_key`，create 还必须携带稳定的 `artifact_id`。Repository 持久化排除时间戳后的规范化请求 SHA-256 到 `request_fingerprint`；`UNIQUE (artifact_id, idempotency_key)` 冲突时，相同指纹返回既有 revision，不同指纹返回 `ARTIFACT_IDEMPOTENCY_CONFLICT`，不得静默复用不相同内容。

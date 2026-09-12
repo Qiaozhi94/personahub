@@ -461,6 +461,18 @@ test('F010-DOC-R1-MEDIUM-LOW: reviewed artifact details remain executable', () =
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R2-022: evidence refs use one encoded query boundary', () => {
+  const documents = [read('docs/features/0.3/F010-artifact-foundation-provenance/design.md')];
+  const phrases = [
+    '`GET /api/evidence/artifacts?ref=<encodeURIComponent(ref)>`',
+    'typed ref 只放 query，不放 path segment',
+    '禁止 route/service 重复解码',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
