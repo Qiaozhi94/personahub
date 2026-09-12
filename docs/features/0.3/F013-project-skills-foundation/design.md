@@ -95,6 +95,11 @@ type Scope = {
 - `(project_id, repository_id)` 复合主键、`role TEXT NOT NULL CHECK (role IN ('primary','reference'))`
 - `UNIQUE INDEX idx_project_primary_repo ON project_repository_refs(project_id) WHERE role = 'primary'`：主目录最多一个（spec 边界场景），由索引而非应用逻辑保证。
 - `scope_json TEXT`：项目级文件范围，只能在机器授权之上收紧。
+- `legacy_workspace_id TEXT REFERENCES workspaces(id)`：**Repository ↔ legacy workspace 的临时桥**，§7 的兼容投影靠它取到 `issues.workspace_id` 要写的值。桥放在这张表而不是 `repositories`，因为 `workspaces` 是 per-project 的（`(project_id, local_path_normalized)` 唯一），而 `repositories` 跨项目共享，挂在共享行上会串线。
+  - **迁移时**：每个 Project 的旧 `workspaces` 行生成一个 `local_dir` Repository 与一条 `role='primary'` 的引用，`legacy_workspace_id` 回填该旧行 id。
+  - **新建 / 改绑 primary 时**：`ProjectService` 在同一事务内按 `(project_id, local_path_normalized)` upsert 一行 `workspaces` 并回填该列——**不复用其它 Project 的 workspace 行**。没有这一步，F013 之后新建的 Project 会因为拿不到 `workspace_id` 而无法进入 v0.2 执行链，"只放宽不切断"就失效了。
+  - `role='reference'` 的行 `legacy_workspace_id` 恒为 NULL：参考仓库只读，不参与 v0.2 执行。
+  - **删除条件**：该列随 §7 兼容投影一起退场，绑定 `migration-matrix.md` 的 A003 / A005 / A007 / A009，由 F012 接管派工后删除；删除前它是 v0.2 链路可用的唯一依据。
 
 `skills` / `skill_revisions`
 
@@ -332,7 +337,7 @@ F009 的 8 个 transitional-host 在本 Feature 验收时按 `migration-matrix.m
 - **安全边界的如实声明**：realpath + 前缀比较能挡住 symlink 逃逸与 `..`，但**不是操作系统级隔离**——同用户的 agent 进程仍可用绝对路径访问未授权目录。本 Feature 提供的是"宿主不会把未授权路径下发给 adapter"，不声称"adapter 无法访问"。结构性隔离仍按 `docs/SOP.md`「结构性隔离与安全边界声明纪律」留待容器 / 受限账户方案（v0.7 多执行机器）。
 - **Windows / POSIX**：`real_path` 比较按平台语义——Windows 大小写不敏感、分隔符归一，junction 由 `realpathSync` 解析；比较用 `path.relative(root, target)` 判断结果非绝对路径且不以 `..` 开头，不用字符串 `startsWith`（`/a/bc` 会被误判为在 `/a/b` 内）。
 - **分阶段兼容：F013 放宽列，但不切断 legacy 写**。`server/src/services/issue.ts:102` 当前以 `project_id` / `workspace_id` / `workflow_template_id` / `validation_policy_id` 四个必填字段创建 Issue，现有 Run / Graph / Validation 链路继续读 `workspace_id`。依赖顺序是 F013 → F012 → F011，**如果 F013 在放宽列的同时就停止写这三列，F012 接管前的创建与执行旅程会当场断掉**——这不是旧 UI 隐藏与否的问题，而是运行时读取方还没换。
-  因此本 Feature 的边界是：schema 允许为空、新对象模型不再依赖它们，但 `IssueService` 在有 Project 上下文时**继续按兼容投影写入**（`workspace_id` 取该 Project 主仓库对应的 workspace 行，`workflow_template_id` / `validation_policy_id` 取 legacy 默认）；游离任务（无 Project）三列为空，且**不得进入 v0.2 执行链路**，直到 F012 接管派工。兼容投影的删除条件绑定 `migration-matrix.md` 的 A003 / A005 / A007 / A009 行，由 F012 / F011 在各自验收时逐行删除，F013 只负责不提前破坏它们。
+  因此本 Feature 的边界是：schema 允许为空、新对象模型不再依赖它们，但 `IssueService` 在有 Project 上下文时**继续按兼容投影写入**（`workspace_id` 取 `project_repository_refs.legacy_workspace_id`（该列的迁移回填与新建 upsert 规则见 §3，没有它这条投影无值可写），`workflow_template_id` / `validation_policy_id` 取 legacy 默认）；游离任务（无 Project）三列为空，且**不得进入 v0.2 执行链路**，直到 F012 接管派工。兼容投影的删除条件绑定 `migration-matrix.md` 的 A003 / A005 / A007 / A009 行，由 F012 / F011 在各自验收时逐行删除，F013 只负责不提前破坏它们。
 - **引用保护**：仓库被任何 `project_repository_refs` 引用时不可删除；项目归档可恢复，归档后历史任务的文件 refs、执行与证据仍可读（US-001 场景 2）。
 - **迁移兼容**：legacy Skill 保留 alias 与 raw payload，可回放旧任务但不可从旧 UI 再编辑；旧 workflow-template 写 API 保留供历史兼容但 UI 不可达（migration-matrix A030）。
 
@@ -345,7 +350,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-001` | integration | `server/tests/integration/migration-space.test.ts` | v10 fixture 升级后 `issues.space_id` 与 `projects.space_id` 全部非空、`issues.project_id` 语义可空、原 Project / Issue ID 逐一守恒；重复升级只有一个 `is_default=1` 与一个 `is_selected=1`；`PRAGMA foreign_key_check` 零行；五条新索引存在 |
 | `AC-001` | integration | `server/tests/integration/space-first-run.test.ts` | 清洁库首次创建 Space 后可创建游离任务（`project_id` 为空）；`select` 后重启服务，当前 Space 仍是选中的那个；默认 Space 归档被拒绝（`SPACE_ARCHIVE_BLOCKED`）；按 ID 深链读取其它 Space 的 Project 不 404 |
 | `AC-001` | integration | `server/tests/integration/migration-runner-fk.test.ts` | migration 前后 `PRAGMA foreign_keys` 均为 ON；注入异常的失败路径提交后仍恢复 ON；失败时 `schema_version` 未推进且表结构未改（无"表已改、版本没记"中间态） |
-| `AC-001` | integration | `server/tests/integration/legacy-compat-projection.test.ts` | 升级后经 `IssueService` 创建带 Project 的任务，三列仍按兼容投影写入且 v0.2 执行链路可跑通；游离任务三列为空且不进入该链路 |
+| `AC-001` | integration | `server/tests/integration/legacy-compat-projection.test.ts` | 升级后经 `IssueService` 创建带 Project 的任务，三列仍按兼容投影写入且 v0.2 执行链路可跑通；**F013 之后新建的 Project 绑定 primary 仓库时自动 upsert legacy workspace 行**，其任务同样可进入执行链；改绑 primary 后投影指向新行；reference 角色的 `legacy_workspace_id` 恒为 NULL；游离任务三列为空且不进入该链路 |
 | `AC-001` | integration | `server/tests/integration/migration-space.test.ts`（同上文件，批量断言） | fixture 含多 Project / 多 Issue / 多 legacy workflow；空态由未绑定 workspace 的 Project 覆盖，**fixture 内不存在无 workspace 的 Issue**（v10 该列 NOT NULL） |
 | `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内、`src/ab` 不在 `src/a` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
 | `AC-002` | integration | `server/tests/integration/authorization-recheck.test.ts` | 授权后把 symlink 换靶 → `REPO_IDENTITY_CHANGED`；删除目录再同名重建 → 同样拒绝；路径失联 → `REPO_UNRESOLVED`；三层 scope 交集（含"某层 write 为空则结果 write 为空"与缺省继承）逐例断言；成功复核更新 `last_verified_at` |
