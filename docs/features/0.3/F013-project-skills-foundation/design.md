@@ -314,7 +314,7 @@ ADR 0012 第 7 条要求两者**一起**收敛进 Skill——只迁 workflow 会
 | `validation_policies` 的判定条件                | Skill 级 `completion` Requirement，`strength='hard'` | 验证要求默认是硬要求                                                                                     |
 | 两表其余字段                                    | `skill_legacy_aliases.raw_payload_json`              | 原样保留，不猜测语义；该表只做来源追溯，不承担组合解析                                                   |
 
-**取哪个 policy**：`workflow_templates.validation_policy_id` 与 `issues.validation_policy_id` 都存在且不同时，**以 Issue 上的为准**——它是这条历史任务实际执行时生效的那份，workflow 上的只是创建时的默认值。为此迁移按 `(workflow_template_id, validation_policy_id)` **组合**生成 Skill revision：同一 workflow 配过两个 policy，就产生两个 revision，各自 alias 指回来源组合。没有任何 Issue 引用的 workflow 用其自带 policy 生成一条 revision。
+**取哪个 policy**：`workflow_templates.validation_policy_id` 与 `issues.validation_policy_id` 都存在且不同时，**以 Issue 上的为准**——它是这条历史任务实际执行时生效的那份，workflow 上的只是创建时的默认值。为此迁移按 `(workflow_template_id, validation_policy_id)` **组合**生成 Skill revision：同一 workflow 配过两个 policy，就产生两个 revision，各自由 `skill_legacy_combo_map` 的一行指向（**不是 alias 表**——它每个旧 ID 只有一行，承担不了一对多）。没有任何 Issue 引用的 workflow 用其自带 policy 生成一条 revision。
 
 **逐 Issue 保真**：迁移后每条历史 Issue 的 `(workflow_template_id, validation_policy_id)` 组合都必须能经 `skill_legacy_combo_map` 解析到确定的 `skill@version`（**不是经 alias 表**——那张表每个旧 ID 只有一行，表达不了一对多）；迁移末尾以反查 SQL 断言零缺失，测试逐行验证，不允许"大部分能解析"。
 
