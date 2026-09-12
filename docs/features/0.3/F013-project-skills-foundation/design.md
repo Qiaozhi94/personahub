@@ -148,7 +148,7 @@ type Step = { id: string; order: number; title: string; requirements: Requiremen
 - `UNIQUE INDEX idx_project_default_skill ON project_skill_refs(project_id) WHERE is_default = 1`：spec FR-007 的"默认 Skill ref"是单数，由索引保证唯一，不靠应用逻辑。
 - `FOREIGN KEY (skill_id, pinned_version) REFERENCES skill_revisions(skill_id, version)`：pin 一个不存在的 revision 会被数据库拒绝。`pinned_version` 为 NULL 时跟随 `skills.current_revision`，而后者由 revision 插入事务维护，**不存在指向空 revision 的默认 ref**。
 
-`skill_legacy_aliases`：`legacy_id TEXT PRIMARY KEY`、`skill_id`、`version`、`raw_payload_json TEXT NOT NULL`。旧 `workflow_templates` / `validation_policies` 的原始行整体保存在 `raw_payload_json`，无法无损映射的字段不猜测语义（spec §7 决策）。
+`skill_legacy_aliases`：`(source_kind, legacy_id)` **复合主键**（`source_kind IN ('workflow_template','validation_policy')`）、`skill_id`、`version`、`raw_payload_json TEXT NOT NULL`。两张旧表各有自己的 ID 空间，单列主键在两表出现相同 ID 时只能保真一条；复合主键消除这个碰撞。原始行整体保存在 `raw_payload_json`，无法无损映射的字段不猜测语义（spec §7 决策）。
 
 ### 索引
 
@@ -181,7 +181,22 @@ CREATE INDEX idx_projects_space          ON projects(space_id);
 
 ### 默认 Space 升级
 
-升级器以稳定幂等键（`is_default = 1` 的部分唯一索引）创建唯一默认 Space，再回填历史 Project / Issue / Space 级 Skill；**不改变任何既有 ID**（FR-002）。重复执行因索引冲突而幂等。旧 `workflow_templates` 每行转为一条 `source='legacy-workflow'` 的 Skill revision，并在 `skill_legacy_aliases` 保留旧 ID 与原始 payload。
+升级器以稳定幂等键（`is_default = 1` 的部分唯一索引）创建唯一默认 Space，再回填历史 Project / Issue / Space 级 Skill；**不改变任何既有 ID**（FR-002）。重复执行因索引冲突而幂等。
+
+#### legacy Workflow + Validation Policy 的合并映射
+
+ADR 0012 第 7 条要求两者**一起**收敛进 Skill——只迁 workflow 会丢掉完成标准，而完成标准正是 Skill revision 要承载的东西。映射矩阵：
+
+| 旧字段 | 去向 | 规则 |
+|---|---|---|
+| `workflow_templates.steps_json` | `skill_revisions.steps_json` | 逐步转 `Step`，`order` 按原数组下标；无 id 的步骤生成 `legacy-step-<n>` |
+| `workflow_templates.evidence_requirements_json` | step / Skill 级 `completion` Requirement | 能映射成 tags 的转为结构化 Requirement；纯自由文本转 `description` 且 `strength='soft'`，**不伪造 tags** |
+| `validation_policies` 的判定条件 | Skill 级 `completion` Requirement，`strength='hard'` | 验证要求默认是硬要求 |
+| 两表其余字段 | `skill_legacy_aliases.raw_payload_json` | 原样保留，不猜测语义 |
+
+**取哪个 policy**：`workflow_templates.validation_policy_id` 与 `issues.validation_policy_id` 都存在且不同时，**以 Issue 上的为准**——它是这条历史任务实际执行时生效的那份，workflow 上的只是创建时的默认值。为此迁移按 `(workflow_template_id, validation_policy_id)` **组合**生成 Skill revision：同一 workflow 配过两个 policy，就产生两个 revision，各自 alias 指回来源组合。没有任何 Issue 引用的 workflow 用其自带 policy 生成一条 revision。
+
+**逐 Issue 保真**：迁移后每条历史 Issue 的 `(workflow_template_id, validation_policy_id)` 组合都必须能经 alias 解析到确定的 `skill@version`；迁移测试逐行断言这一点，不允许"大部分能解析"。
 
 ### Migration orchestration（本 Feature 需要改 runner）
 
@@ -304,6 +319,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-002` | integration | `server/tests/integration/authorization-recheck.test.ts` | 授权后把 symlink 换靶 → `REPO_IDENTITY_CHANGED`；删除目录再同名重建 → 同样拒绝；路径失联 → `REPO_UNRESOLVED`；三层 scope 交集（含"某层 write 为空则结果 write 为空"与缺省继承）逐例断言；成功复核更新 `last_verified_at` |
 | `AC-002` | unit | `server/tests/unit/git-identity.test.ts` | identity 实时从 `git config` 读取并带 `read_at`，`repositories` 表无 `git_identity` 列 |
 | `AC-003` | unit + contract | `web/src/f013-project-skills.test.tsx` | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册 |
+| `AC-001` | integration | `server/tests/integration/legacy-skill-migration.test.ts` | 每条历史 Issue 的 `(workflow_template_id, validation_policy_id)` 组合都能经 alias 解析到确定 `skill@version`（逐行断言，不接受"大部分能解析"）；Issue 上的 policy 优先于 workflow 自带；同 workflow 配两个 policy 产生两个 revision；两表同 ID 时复合主键各自保真；自由文本要求不被伪造成 tags |
 | `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
 | `AC-003` | integration | `server/tests/integration/skill-revision-schema.test.ts` | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同 |
 | `AC-003` | integration | `server/tests/integration/skill-default-ref.test.ts` | 一个项目至多一条 `is_default=1`；pin 不存在的 revision 被外键拒绝；默认 ref 永远能解析到一个真实 revision |
@@ -327,7 +343,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | 配置类事件的载体 | 写 `admin_audit_events`，不写 `thread_events` | `thread_events.thread_id` 非空，配置界面没有会话上下文，编造 thread id 会污染会话流 | 若 v0.4 引入全局事件流再迁移 |
 | 路径授权的安全等级 | 应用层过滤，如实声明不是 OS 级隔离 | 同用户 agent 进程仍可用绝对路径绕过；按 SOP 纪律不得把前者写成后者 | 容器 / 受限账户在 v0.7 评估 |
 | Migration 版本号 | 不预占，先合入者取号，后者 rebase 重编号 | F010 与 F013 并行，任何一方写死版本号都会在合入时撞车 | — |
-| legacy workflow 映射 | 保留 alias + raw payload，不猜测语义 | 旧自由 JSON 无法全部映射 | 未迁移字段数量由 F014 统计 |
+| legacy workflow 映射 | 按 `(workflow, policy)` 组合生成 revision，Issue 上的 policy 优先；alias 用 `(source_kind, legacy_id)` 复合主键；保留 raw payload，不猜测语义 | ADR 0012 要求两者一起收敛，只迁 workflow 会丢完成标准；Issue 上的 policy 才是历史任务实际生效的那份；两张旧表 ID 空间独立，单列主键会碰撞 | 未迁移字段数量由 F014 统计 |
 
 ## 10. 待确认设计问题
 
