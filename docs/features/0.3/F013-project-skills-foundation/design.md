@@ -169,12 +169,15 @@ type Step = { id: string; order: number; title: string; requirements: Requiremen
 冲突不是终态，必须有出口（spec US-002 场景 1）：
 
 1. **扫描入口** `POST /api/skills:scan` 重新枚举 builtin 与 user 来源，按 `source_identity` 对齐已有行——同一来源重扫是更新，不是新建。
-2. **检测**：同一 `(space_id, lower(display_name))` 下出现多个不同 `source_identity` 的 active 候选 → 在同一事务内把**全部**涉及行置 `conflict`，并写 `skill.conflict_detected`。
+2. **检测**：分组键不能直接用 `(space_id, lower(display_name))`——`space_id IS NULL` 的全局 Skill 会自成一组，永远不与任何 Space 内的同名 Skill 相遇，而用户看到的是同一张列表里两个同名项都"生效"。正确的分组是**按每个 Space 求可见集**：对 Space `S`，候选集 = `space_id = S` ∪ `space_id IS NULL`，在该集合内按 `lower(display_name)` 分组。同一组出现多个不同 `source_identity` 的 active 候选 → 在同一事务内把**全部**涉及行置 `conflict`，并写 `skill.conflict_detected`。
+   - 一个全局 Skill 可能同时与多个 Space 的 Skill 冲突。`skills.state` 是单值，因此**全局 Skill 一旦在任一 Space 冲突即整体置 `conflict`**（保守侧：宁可全局不可用，也不让某个 Space 里出现两个同名生效项）。该取舍写在这里，避免实现时误以为可以 per-space 生效。
 3. **消解**：`POST /api/skills/:id/resolve-conflict`，用户选定保留哪一个 → 事务内把选中行置 `active`、其余同组行置 `disabled`（不是删除，来源仍在）。
 4. **恢复**：当一组冲突只剩一个非 disabled 成员时（例如另一方被禁用或其来源消失），扫描或消解动作把它自动置回 `active`；**不会有"冲突已消失但仍卡在 conflict"的悬挂状态**。
 5. UI 的 `conflict` 状态必须给出可执行下一步，对应的就是第 3 步这个 API。
 
-`project_skill_refs`：`(project_id, skill_id)` 主键 + `is_default INTEGER NOT NULL DEFAULT 0` + `pinned_version INTEGER NULL`（NULL = 跟随 current）。只存引用，不复制内容（FR-007）。两条完整性约束：
+`project_skill_refs`：`(project_id, skill_id)` 主键 + `is_default INTEGER NOT NULL DEFAULT 0` + `pinned_version INTEGER NULL`（NULL = 跟随 current）。只存引用，不复制内容（FR-007）。
+
+**不得跨 Space 引用 Skill**：被引用的 Skill 必须满足 `skills.space_id IS NULL`（全局）或 `= 该 Project 的 space_id`。否则 A 空间的项目会把 B 空间的 Skill 带进派工，Space 作为归属根就形同虚设。跨表条件同样用 `BEFORE INSERT` / `BEFORE UPDATE` trigger 实现，违反时 `RAISE(ABORT, 'SKILL_SPACE_MISMATCH')`——列表过滤只是显示层，挡不住直接调 API 传入别的 skill_id。两条完整性约束：
 
 - `UNIQUE INDEX idx_project_default_skill ON project_skill_refs(project_id) WHERE is_default = 1`：spec FR-007 的"默认 Skill ref"是单数，由索引保证唯一，不靠应用逻辑。
 
@@ -377,6 +380,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
 | `AC-003` | integration | `server/tests/integration/skill-revision-schema.test.ts` | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同 |
 | `AC-003` | integration | `server/tests/integration/skill-default-ref.test.ts` | 一个项目至多一条 `is_default=1`；**四个反例逐一被拒**——① ghost Skill + NULL pinned（复合 FK 的 MATCH SIMPLE 漏洞，必须由单列 FK 拦下）② 非 disabled Skill 的 current_revision 为 NULL ③ 删除正被 current_revision 引用的 revision ④ 删除正被 pinned_version 引用的 revision；正例：默认 ref 永远解析到真实 revision |
+| `AC-005` | integration | `server/tests/integration/skill-space-boundary.test.ts` | 引用另一 Space 的 Skill 被 trigger 拒绝（`SKILL_SPACE_MISMATCH`），INSERT 与 UPDATE 都覆盖；引用全局 Skill 允许；**全局 Skill 与 Space 内同名 Skill 会被分到同一组并双双置 `conflict`**（不是各自生效）；全局 Skill 在任一 Space 冲突即整体 `conflict` |
 | `AC-005` | integration | `server/tests/integration/skill-conflict.test.ts` | 同名双来源**双方**都进入 `conflict` 且都不生效；`resolve-conflict` 后保留方 `active`、其余 `disabled`；一组只剩一个非 disabled 成员时自动回 `active`（无悬挂 conflict）；同一 `source_identity` 重扫是更新不是新建；非法 steps schema / 保留 ID / 无来源在激活前拒绝；重启后冲突状态可见 |
 | `AC-003` | integration | `server/tests/integration/skill-files-snapshot.test.ts` | 正文在激活时快照入库；激活后改动或删除源目录，详情页内容逐字节不变；`rel_path` 越界（绝对路径 / `..` / 软链出根）与超限被拒绝；快照 hash 不符时报 `SKILL_FILE_HASH_MISMATCH` 而非返回正文 |
 | `AC-003` | integration | `server/tests/integration/skill-delivery.test.ts` | 下发状态按 adapter 独立记录且 `adapter_id` 来自 `agent_configs`；单个 adapter `failed` 不回滚激活、不影响其他 adapter；重试按行幂等重放；`active` 不能推断出 `delivered`；`failed` 在读取契约里可见可重试 |
