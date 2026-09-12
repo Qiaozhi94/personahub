@@ -24,10 +24,7 @@ interface SqliteError {
 export function isSqliteUniqueConstraint(error: unknown, indexOrColumn: string): boolean {
   if (!(error instanceof Error)) return false;
   const sqliteErr = error as unknown as SqliteError;
-  return (
-    sqliteErr.code === SQLITE_CONSTRAINT_UNIQUE &&
-    sqliteErr.message.includes(indexOrColumn)
-  );
+  return sqliteErr.code === SQLITE_CONSTRAINT_UNIQUE && sqliteErr.message.includes(indexOrColumn);
 }
 
 export function isActiveGraphAttemptConflict(error: unknown): boolean {
@@ -42,6 +39,14 @@ export function isNodeRunDuplicateConflict(error: unknown): boolean {
   return isSqliteUniqueConstraint(error, "node_runs.graph_run_id");
 }
 
+/** Message-based UNIQUE detection for code paths that don't go through the
+ *  typed constraint codes above (better-sqlite3 raises plain SqliteError). */
+export function isUniqueViolation(error: unknown, tableFragment: string): boolean {
+  return (
+    error instanceof Error && /UNIQUE constraint failed/.test(error.message) && error.message.includes(tableFragment)
+  );
+}
+
 export interface GraphConstraintContext {
   issueId?: string;
   graphRunRepo: GraphRunRepository;
@@ -51,10 +56,7 @@ export function mapGraphConstraint(error: unknown, context: GraphConstraintConte
   if (!(error instanceof GraphConstraintError)) throw error;
 
   if (error.kind === "active_attempt") {
-    throw new AppError(
-      ErrorCode.NODE_RUN_ATTEMPT_IN_PROGRESS,
-      "This graph node already has an active attempt.",
-    );
+    throw new AppError(ErrorCode.NODE_RUN_ATTEMPT_IN_PROGRESS, "This graph node already has an active attempt.");
   }
   if (error.kind === "duplicate_node") {
     throw new AppError(

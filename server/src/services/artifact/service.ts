@@ -11,7 +11,8 @@ import {
 } from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import { AppError } from "../../api/errors.js";
-import { parseEvidenceRef, resolveForDispatch } from "../../evidence-ref.js";
+import { isUniqueViolation } from "../../db/sqlite-errors.js";
+import { parseEvidenceRef } from "../../evidence-ref.js";
 import type { ArtifactRepository } from "../../repositories/artifact.js";
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { ThreadRepository } from "../../repositories/thread.js";
@@ -19,6 +20,7 @@ import type { RunRepository } from "../../repositories/run.js";
 import type { WorkspaceRepository } from "../../repositories/workspace.js";
 import type { ThreadEventService } from "../thread-event.js";
 import type { ArtifactArchive } from "./archive.js";
+import { ArtifactConsumptionLedger, type RecordConsumptionInput } from "./consumption.js";
 import {
   artifactCreateFingerprint,
   artifactReviseFingerprint,
@@ -31,7 +33,9 @@ import {
 /**
  * F010 ArtifactService — the single write entry for create / revise / retire /
  * recordConsumption (design §2). The repository is not exposed to routes or
- * F012; reads go through ArtifactResolver.
+ * F012; reads go through ArtifactResolver. recordConsumption is implemented by
+ * the consumption ledger (consumption.ts) and re-exported here so callers
+ * keep one write entry.
  *
  * Publication protocol (design §5): inline revisions commit manifest, pointer
  * CAS and events in one DB transaction. File revisions stage a temp blob →
@@ -40,6 +44,10 @@ import {
  * is the only visibility point; every earlier crash leaves at most an
  * unreferenced archive orphan for the sweeper. Events broadcast only after
  * commit — the intake-service pendingEvents pattern.
+ *
+ * Observability (design §6): every public operation logs the artifact id,
+ * revision, operation, duration and — on failure — the stable reason code,
+ * never body content.
  */
 
 /** Production default is `undefined`; fault tests throw inside these seams
@@ -73,22 +81,33 @@ export interface ArtifactWriteResult {
   replayed: boolean;
 }
 
-export interface RecordConsumptionInput {
-  dispatchId: string;
-  runId: string;
-  /** Only `artifact:<id>@<revision>` is accepted; floating refs are rejected. */
-  revisionRef: string;
-  purpose: string;
-  /** Dispatch-owned thread for rejection events (F012 supplies it). */
-  dispatchThreadId?: string;
-}
+export type { RecordConsumptionInput } from "./consumption.js";
 
 export class ArtifactService {
-  constructor(private deps: ArtifactServiceDeps) {}
+  private readonly ledger: ArtifactConsumptionLedger;
+
+  constructor(private deps: ArtifactServiceDeps) {
+    this.ledger = new ArtifactConsumptionLedger({
+      db: deps.db,
+      artifactRepo: deps.artifactRepo,
+      runRepo: deps.runRepo,
+      threadEventService: deps.threadEventService,
+      log: deps.log,
+    });
+  }
 
   // ------------------------------------------------------------------ create
 
   createArtifact(input: CreateArtifactInput): ArtifactWriteResult {
+    return this.withOpLog(
+      "create",
+      input.artifact_id,
+      () => this.createArtifactInner(input),
+      (r) => r.revision.revision,
+    );
+  }
+
+  private createArtifactInner(input: CreateArtifactInput): ArtifactWriteResult {
     const fingerprint = artifactCreateFingerprint(input);
 
     // Replay short-circuit before any file work: the same (artifact, key) with
@@ -165,6 +184,15 @@ export class ArtifactService {
   // ------------------------------------------------------------------ revise
 
   reviseArtifact(artifactId: string, input: ReviseArtifactInput): ArtifactWriteResult {
+    return this.withOpLog(
+      "revise",
+      artifactId,
+      () => this.reviseArtifactInner(artifactId, input),
+      (r) => r.revision.revision,
+    );
+  }
+
+  private reviseArtifactInner(artifactId: string, input: ReviseArtifactInput): ArtifactWriteResult {
     const fingerprint = artifactReviseFingerprint(artifactId, input);
 
     // Key hit outranks revision allocation: a retried revise whose current
@@ -227,6 +255,15 @@ export class ArtifactService {
   // ------------------------------------------------------------------ retire
 
   retireArtifact(artifactId: string): Artifact {
+    return this.withOpLog(
+      "retire",
+      artifactId,
+      () => this.retireArtifactInner(artifactId),
+      (r) => r.current_revision,
+    );
+  }
+
+  private retireArtifactInner(artifactId: string): Artifact {
     const artifact = this.deps.artifactRepo.getArtifact(artifactId);
     if (!artifact) {
       throw new AppError(ErrorCode.ARTIFACT_NOT_FOUND, `Artifact not found: ${artifactId}`);
@@ -241,116 +278,34 @@ export class ArtifactService {
   // ------------------------------------------------------- recordConsumption
 
   recordConsumption(input: RecordConsumptionInput): ArtifactConsumption {
-    const check = resolveForDispatch(parseEvidenceRef(input.revisionRef));
-    const rejectThread = () =>
-      input.dispatchThreadId ?? this.deps.artifactRepo.getArtifact(check.ok ? check.artifactId : "")?.thread_id ?? null;
-    if (!check.ok) {
-      this.rejectResolve(input.revisionRef, "record_consumption", ErrorCode.ARTIFACT_REF_INVALID, rejectThread());
-    }
-    const artifact = this.deps.artifactRepo.getArtifact(check.artifactId);
-    if (!artifact) {
-      this.rejectResolve(
-        input.revisionRef,
-        "record_consumption",
-        ErrorCode.ARTIFACT_NOT_FOUND,
-        input.dispatchThreadId ?? null,
-      );
-    }
-    if (!this.deps.artifactRepo.getRevision(artifact.id, check.revision!)) {
-      this.rejectResolve(
-        input.revisionRef,
-        "record_consumption",
-        ErrorCode.ARTIFACT_REVISION_NOT_FOUND,
-        artifact.thread_id,
-      );
-    }
-    if (!this.deps.runRepo.getById(input.runId)) {
-      throw new AppError(ErrorCode.RUN_NOT_FOUND, `Run not found: ${input.runId}`);
-    }
-
-    const pendingEvents: ThreadEvent[] = [];
-    let consumed: ArtifactConsumption | null = null;
-    this.deps.db.transaction(() => {
-      consumed =
-        this.deps.artifactRepo.getConsumption(
-          input.dispatchId,
-          input.runId,
-          artifact.id,
-          check.revision!,
-          input.purpose,
-        ) ?? null;
-      if (consumed) return;
-      const row: ArtifactConsumption = {
-        artifact_id: artifact.id,
-        revision: check.revision!,
-        dispatch_id: input.dispatchId,
-        run_id: input.runId,
-        purpose: input.purpose,
-        consumed_at: new Date().toISOString(),
-      };
-      try {
-        this.deps.artifactRepo.insertConsumption(row);
-      } catch (error) {
-        // Concurrent identical insert: the PK winner's row is the answer.
-        if (!isUniqueViolation(error, "artifact_consumptions.")) throw error;
-        consumed =
-          this.deps.artifactRepo.getConsumption(
-            input.dispatchId,
-            input.runId,
-            artifact.id,
-            check.revision!,
-            input.purpose,
-          ) ?? null;
-        if (!consumed) throw error;
-        return;
-      }
-      pendingEvents.push(
-        this.deps.threadEventService.write(
-          artifact.thread_id,
-          ThreadEventType.ArtifactConsumed,
-          ActorType.System,
-          null,
-          {
-            artifact_id: artifact.id,
-            revision: row.revision,
-            issue_id: artifact.issue_id,
-            dispatch_id: input.dispatchId,
-            run_id: input.runId,
-            purpose: input.purpose,
-          },
-        ),
-      );
-      consumed = row;
-    })();
-    for (const event of pendingEvents) this.deps.threadEventService.broadcast(event);
-    return consumed!;
+    return this.ledger.record(input);
   }
 
   // ----------------------------------------------------------------- helpers
 
-  /** Resolve rejection (TR-001): persist `artifact.resolve_rejected` on the
-   *  best-available thread and broadcast; when no thread is derivable, only
-   *  the service log records the refusal — never a fabricated thread id. */
-  private rejectResolve(ref: string, callerMode: string, reasonCode: ErrorCode, threadId: string | null): never {
-    if (threadId) {
-      const event = this.deps.threadEventService.write(
-        threadId,
-        ThreadEventType.ArtifactResolveRejected,
-        ActorType.System,
-        null,
-        { ref, caller_mode: callerMode, reason_code: reasonCode },
-      );
-      this.deps.threadEventService.broadcast(event);
-    } else {
+  /** Design §6 observability: op + artifact id + revision + duration on
+   *  success, plus the stable reason code on failure; never body content. */
+  private withOpLog<T>(op: string, artifactId: string, fn: () => T, revisionOf: (result: T) => number | null): T {
+    const started = Date.now();
+    try {
+      const result = fn();
       this.deps.log?.({
-        event: "artifact.resolve_rejected",
-        persisted: false,
-        ref,
-        caller_mode: callerMode,
-        reason_code: reasonCode,
+        event: `artifact.${op}`,
+        artifact_id: artifactId,
+        revision: revisionOf(result),
+        duration_ms: Date.now() - started,
       });
+      return result;
+    } catch (error) {
+      this.deps.log?.({
+        event: `artifact.${op}`,
+        artifact_id: artifactId,
+        revision: null,
+        duration_ms: Date.now() - started,
+        reason_code: error instanceof AppError ? error.code : ErrorCode.INTERNAL_ERROR,
+      });
+      throw error;
     }
-    throw new AppError(reasonCode, `Artifact ref rejected (${reasonCode}): ${ref}`);
   }
 
   private assertActiveArtifact(artifactId: string): Artifact {
@@ -450,10 +405,4 @@ export class ArtifactService {
     if (!workspace) throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, `Workspace not found: ${issue.workspace_id}`);
     return workspace.local_path;
   }
-}
-
-function isUniqueViolation(error: unknown, columnFragment: string): boolean {
-  return (
-    error instanceof Error && /UNIQUE constraint failed/.test(error.message) && error.message.includes(columnFragment)
-  );
 }
