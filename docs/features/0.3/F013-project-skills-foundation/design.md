@@ -111,8 +111,14 @@ type Scope = {
 - `skill_revisions`：`(skill_id, version)` 复合主键、`title`、`description`、`capability_tags_json`、`steps_json`（可空；非空即编组，FR-005）、`completion_requirements_json`、`source_locator TEXT`、`content_hash TEXT NOT NULL`、`created_at`
   - `content_hash` 是规范化 JSON（键排序、去空白）的 SHA-256，既是 revision 的完整性锚点，也让"同内容重复导入"可判定。
   - **不可变由数据库保证**，不依赖 repository 自觉：`BEFORE UPDATE` trigger 对内容列的任何 UPDATE 抛 `SQLITE_CONSTRAINT`；**`BEFORE DELETE` trigger 同样拦截**——只禁改不禁删，删掉再以同版本号重插就绕过了不可变；`skill_revision_files` 的 INSERT / UPDATE / DELETE 也一并拦截，否则 revision 行没变而它的文件集变了，`content_hash` 之外的内容照样漂移。三个 trigger 合起来才等于"published revision 冻结"。
-- `skill_revision_files`：`(skill_id, version, rel_path)` 主键 + `content_hash`、`size_bytes`。承载 FR-008 的"只读文件"清单；文件内容按 `source_locator` + `rel_path` 读取，API 只返回清单与 hash，正文单独取。
-- `skill_delivery_status`：`(skill_id, version, adapter_id)` 主键 + `state TEXT CHECK (state IN ('delivered','unsupported','failed'))`、`native_format TEXT`、`detail TEXT`、`updated_at`。**"下发状态"是"翻译成哪些 adapter 原生格式"的事实，不能由 `skills.state='active'` 推断**（V3.44 语义）。v0.3 由 SkillRegistry 在激活时写入，adapter 不支持即 `unsupported`，不阻断激活。
+- `skill_revision_files`：`(skill_id, version, rel_path)` 主键 + `content BLOB NOT NULL`、`content_hash`、`size_bytes`。
+  - **正文在激活时快照进库，不在读取时回源**。`source_locator` 指向的是可变的外部目录：如果详情页每次从那里现读，同一个 revision 今天和明天可以显示不同内容，"revision 不可变"就只是文档里的一句话。快照后 `source_locator` 只用于解释来源与重新导入。
+  - 导入时逐文件校验：`rel_path` 必须规范化后仍落在 `source_locator` 根内（用 `path.relative` 判断，不用 `startsWith`），拒绝绝对路径、`..`、符号链接指向根外；单文件与总量各有上限（默认 1 MiB / 10 MiB），超限报 `SKILL_FILES_TOO_LARGE` 并整体拒绝激活。
+  - 读取时用 `content_hash` 核验快照自身；不一致报 `SKILL_FILE_HASH_MISMATCH`，不返回可疑正文。源目录事后失联**不影响**已激活 revision 的可读性——这正是快照的目的。
+- `skill_delivery_status`：`(skill_id, version, adapter_id)` 主键 + `state TEXT CHECK (state IN ('pending','delivered','unsupported','failed'))`、`native_format TEXT`、`detail TEXT`、`attempted_at`、`updated_at`。**"下发状态"是"翻译成哪些 adapter 原生格式"的事实，不能由 `skills.state='active'` 推断**（V3.44 语义）。
+  - **adapter 身份来源**：`adapter_id` 取自既有 `agent_configs` 行（ADR 0012 的"adapter + 配置"两层中的配置层），不新造一套 adapter 注册表；当前机器上不存在该配置时不建行，而不是建一个悬空行。
+  - **翻译协议**：v0.3 只做一件事——把 revision 的 steps + completion requirements 渲染成该 adapter 的原生指令文件（Claude Code / Codex / OpenCode 各自格式），写入其约定位置。渲染器是纯函数，输入 revision、输出字节，可单测。
+  - **失败语义**：激活事务**不包含**下发。激活先提交（Skill 进入 `active`、全部 adapter 行写 `pending`），下发在其后逐 adapter 执行，成功写 `delivered`、不支持写 `unsupported`、异常写 `failed` 并保留 `detail`。**单个 adapter 失败不回滚激活、也不影响其他 adapter**（ADR 0014「所有权与失败局部化」）。重试是幂等的按行重放，不新建行；`failed` 行在 UI 上必须可见且可重试，不能表现为"已下发"。
 
 #### canonical revision schema
 
@@ -346,7 +352,8 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-003` | integration | `server/tests/integration/skill-revision-schema.test.ts` | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同 |
 | `AC-003` | integration | `server/tests/integration/skill-default-ref.test.ts` | 一个项目至多一条 `is_default=1`；**四个反例逐一被拒**——① ghost Skill + NULL pinned（复合 FK 的 MATCH SIMPLE 漏洞，必须由单列 FK 拦下）② 非 disabled Skill 的 current_revision 为 NULL ③ 删除正被 current_revision 引用的 revision ④ 删除正被 pinned_version 引用的 revision；正例：默认 ref 永远解析到真实 revision |
 | `AC-005` | integration | `server/tests/integration/skill-conflict.test.ts` | 同名双来源**双方**都进入 `conflict` 且都不生效；`resolve-conflict` 后保留方 `active`、其余 `disabled`；一组只剩一个非 disabled 成员时自动回 `active`（无悬挂 conflict）；同一 `source_identity` 重扫是更新不是新建；非法 steps schema / 保留 ID / 无来源在激活前拒绝；重启后冲突状态可见 |
-| `AC-003` | integration | `server/tests/integration/skill-delivery.test.ts` | 下发状态按 adapter 独立记录，`unsupported` 不阻断激活；`active` 不能推断出 `delivered` |
+| `AC-003` | integration | `server/tests/integration/skill-files-snapshot.test.ts` | 正文在激活时快照入库；激活后改动或删除源目录，详情页内容逐字节不变；`rel_path` 越界（绝对路径 / `..` / 软链出根）与超限被拒绝；快照 hash 不符时报 `SKILL_FILE_HASH_MISMATCH` 而非返回正文 |
+| `AC-003` | integration | `server/tests/integration/skill-delivery.test.ts` | 下发状态按 adapter 独立记录且 `adapter_id` 来自 `agent_configs`；单个 adapter `failed` 不回滚激活、不影响其他 adapter；重试按行幂等重放；`active` 不能推断出 `delivered`；`failed` 在读取契约里可见可重试 |
 
 批量场景（`review-convergence` 第 5 条）：migration 测试的 fixture 必须同时含**多个** Project、多个 Issue 与多个 legacy workflow，不能只测单条记录——`issues` 重建与 Space 回填正是典型的"单条通过、批量错位"场景。
 
