@@ -395,15 +395,15 @@ F012 负责把结果冻结进 Dispatch snapshot；F013 不感知 snapshot 是否
 
 事件类型覆盖**每一个改变归属、授权或生效状态的动作**，缺一则该状态变化不可回放：
 
-| 分组    | 事件                                                                                                                    |
-| ------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Space   | `space.created`、`space.selected`、`space.archived`、`space.restored`                                                   |
-| Project | `project.refs_changed`、`project.default_skill_changed`、`project.archived`、`project.restored`、`project.deleted`      |
-| 授权    | `repository.authorized`、`repository.revoked`、`repository.scope_changed`、`repository.verify_failed`（带 reason code） |
-| Skill   | `skill.revision_activated`、`skill.disabled`、`skill.conflict_detected`、`skill.conflict_resolved`、`skill.scanned`     |
-| 下发    | `skill.delivery_succeeded`、`skill.delivery_failed`（带 adapter_id 与 detail）                                          |
+| 分组       | 事件                                                                                                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Space      | `space.created`、`space.selected`、`space.archived`、`space.restored`                                                                                                                            |
+| Project    | `project.created`、`project.refs_changed`、`project.default_skill_changed`、`project.archived`、`project.restored`、`project.deleted`                                                            |
+| 仓库与授权 | `repository.created`、`repository.authorized`、`repository.revoked`、`repository.scope_changed`、`repository.verify_failed`（带 reason code）                                                    |
+| Skill      | `skill.created`、`skill.revision_created`、`skill.revision_activated`、`skill.disabled`、`skill.conflict_detected`（带 `space_id`）、`skill.conflict_resolved`（带 `space_id`）、`skill.scanned` |
+| 下发       | `skill.delivery_pending`、`skill.delivery_succeeded`、`skill.delivery_unsupported`、`skill.delivery_failed`（四者均带 `runtime_id` / `cli_provider`，失败另带 detail）                           |
 
-`repository.verify_failed` 与 `skill.delivery_failed` 是失败事件但同样必须落账——它们正是事后排查"为什么这次派工没跑起来"的唯一线索。
+**创建类动作同样落账**（`project.created` / `repository.created` / `skill.created` / `skill.revision_created`）——只记变更不记创建，回放时第一条记录会凭空出现一个已存在的对象。`repository.verify_failed` 与 `skill.delivery_failed` 是失败事件但同样必须落账——它们正是事后排查"为什么这次派工没跑起来"的唯一线索。
 
 `thread_events.thread_id` 是 `NOT NULL REFERENCES threads(id)`（`schema-v1.ts`），而上述事件多数发生在**没有会话上下文**的配置界面。因此：配置类事件**不写 `thread_events`**，改写 `admin_audit_events`（该表已存在，v0.2 起用于管理动作审计）；只有由任务内动作触发的 Skill 引用变更才带 thread 上下文。**不得为配置事件编造 thread id。**
 

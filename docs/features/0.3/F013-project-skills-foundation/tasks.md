@@ -38,7 +38,7 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 - [ ] T014 (`FR-006`, `FR-008`): 实现 `skill_delivery_status`——adapter 身份取自 `agent_configs`、渲染器纯函数、激活先提交后逐 adapter 下发、单个失败不回滚且可幂等重试。 — verify: `npm test --workspace server`
 - [ ] T015 (`FR-005`, `FR-007`, `NFR-001`): 迁移 legacy Workflow + Validation Policy——按 `(workflow, policy)` 组合生成 revision、写 `skill_legacy_aliases` 与 `skill_legacy_combo_map`、Issue 上的 policy 优先。 — verify: `npm test --workspace server`
 - [ ] T016 (`FR-006`): 实现 `EffectiveRequirementsResolver` 与 `SKILL_EVIDENCE_CONFLICT` 判定，冻结为 F012 可消费的只读契约。 — verify: `npm test --workspace server`
-- [ ] T016b (`FR-001`, `FR-003`, `FR-005`): 实现 §4 五组审计事件的写入——Space / Project / 仓库与授权 / Skill / 下发，含创建类与失败类动作，payload 带 `space_id`、`runtime_id` / `cli_provider` 等归属字段；全部写 `admin_audit_events`，不写 `thread_events`。 — verify: `npm test --workspace server`
+- [ ] T019 (`FR-001`, `FR-003`, `FR-005`): 实现 §4 五组审计事件写入（Space / Project / 仓库与授权 / Skill / 下发，含创建类与失败类动作），payload 带 `space_id`、`runtime_id` / `cli_provider` 归属字段，全部写 `admin_audit_events`。 — verify: `npm test --workspace server`
 - [ ] T017 [P] (`FR-003`, `FR-004`, `FR-007`): 实现项目文件 / Skills / 设置三个 tab（不注册项目记忆 tab）。 — verify: `npm test --workspace web`
 - [ ] T018 [P] (`FR-005`, `FR-008`): 实现能力面 Skills 表、筛选与整页详情（来源、版本、要求、下发状态、只读文件）。 — verify: `npm test --workspace web`
 
@@ -47,14 +47,14 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 - [ ] T020 (`AC-001`, `AC-002`): 覆盖默认 Space 与双表 rebuild、migration runner 的 FK 开关与失败恢复、兼容投影、真实路径 / 软链 / identity 变更、scope 校验与交集、参考仓库写拒绝。 — verify: `npm test`
 - [ ] T021 (`AC-003`, `AC-005`): 覆盖 revision schema 拒绝规则、四道引用完整性反例、文件快照不漂移、delivery 失败局部化、冲突分组与消解闭环、跨 Space 引用拒绝。 — verify: `npm test`
 - [ ] T022 (`AC-001`, `AC-004`): 覆盖 legacy 组合迁移的逐 Issue 可解析断言、单一 primary Workspace 选取与旧 ref requirements 逐字不变。 — verify: `npm test`
-- [ ] T022b (`AC-001`, `AC-005`): 断言五组审计事件齐全——按 §4 事件表逐项触发对应动作并核对落账，缺一即失败。 — verify: `npm test --workspace server`
-- [ ] T023 (`AC-001`, `AC-003`): 完成首次设置、项目 / Skill Playwright 旅程。 — verify: `npm run test:e2e`
-- [ ] T024 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 按 `migration-matrix.md` 逐行删除 owner 为 F013 的 8 个 transitional-host（P002、P003、P009、A001、A002、A003、A029、A030）并核对 `delete_when`。 — verify: `npm run test:e2e`
-- [ ] T025 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 运行发布质量门。 — verify: `npm run verify:release`
+- [ ] T023 (`AC-001`, `AC-005`): 按 §4 事件表逐项触发对应动作并核对落账，缺一即失败。 — verify: `npm test --workspace server`
+- [ ] T024 (`AC-001`, `AC-003`): 完成首次设置、项目 / Skill Playwright 旅程。 — verify: `npm run test:e2e`
+- [ ] T025 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 按 `migration-matrix.md` 逐行删除 owner 为 F013 的 8 个 transitional-host（P002、P003、P009、A001、A002、A003、A029、A030）并核对 `delete_when`。 — verify: `npm run test:e2e`
+- [ ] T026 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 运行发布质量门。 — verify: `npm run verify:release`
 
 ## 4. 依赖与并行关系
 
-T000→T001→T002→T003；T004→T005→T006/T007；T008 依赖 T003。Phase 2：T010→T011→T012/T013/T014/T015→T016→T016b；T017 等待仓库 API（T005/T007），T018 等待 Skill API（T013/T014）。两条 Phase 可在 Space 与共享 ID / version contract 冻结后并行。
+T000→T001→T002→T003；T004→T005→T006/T007；T008 依赖 T003。Phase 2：T010→T011→T012/T013/T014/T015→T016→T019；T017 等待仓库 API（T005/T007），T018 等待 Skill API（T013/T014）。两条 Phase 可在 Space 与共享 ID / version contract 冻结后并行。
 
 **跨 Feature 边界**：T006 与 T016 只交付**只读契约与单测**，不接入派工；`verifyAuthorization` 与 `resolveEffectiveRequirements` 的 Dispatch 侧集成由 F012 拥有并验收（`design.md` §0 / §4）。完成这两个 contract 后 F012 才可实现 eligibility。
 
