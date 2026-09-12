@@ -47,8 +47,15 @@ updated: 2026-09-12
 `spaces`
 
 - `id TEXT PRIMARY KEY`、`name TEXT NOT NULL`、`state TEXT NOT NULL CHECK (state IN ('active','archived'))`
-- `is_default INTEGER NOT NULL DEFAULT 0`、`created_at`、`updated_at`
+- `is_default INTEGER NOT NULL DEFAULT 0`、`is_selected INTEGER NOT NULL DEFAULT 0`、`created_at`、`updated_at`
 - `UNIQUE INDEX idx_spaces_default ON spaces(is_default) WHERE is_default = 1`：**部分唯一索引**保证默认 Space 至多一个，重复升级不可能创建第二个。
+- `UNIQUE INDEX idx_spaces_selected ON spaces(is_selected) WHERE is_selected = 1`：同上，当前选中的 Space 至多一个。
+
+**default 与 selected 是两个不同的事实，不可互相推导**：`is_default` 是**升级归属根**——历史 Project / Issue / Skill 回填到它，一经创建不再改变，用于保证旧数据永远有归属；`is_selected` 是**当前工作焦点**，用户每次切换即改写。二者初始重合（首个 Space 既是 default 也是 selected），之后独立演化。
+
+选中态**存在服务端**而非前端：ADR 0012 允许本地多 Space 与切换，若只存浏览器状态，重启、换浏览器或多标签页会得到不同的"当前 Space"，而 Space 决定任务列表的可见范围，这类漂移会直接表现为"任务不见了"。
+
+生命周期：`create` 写入新行（首个 Space 同时置 `is_default=1, is_selected=1`）；`select` 在单事务内清旧选中、置新选中，目标必须 `state='active'`；`archive` 要求目标非当前选中且非 default，否则返回 `SPACE_ARCHIVE_BLOCKED`——**默认 Space 永不可归档**，因为历史数据以它为归属根；`restore` 把 `archived` 改回 `active`，不自动选中。v0.3 不支持物理删除（spec §5）。
 
 `repositories` — 仓库事实，跨项目共享同一份
 
@@ -96,23 +103,27 @@ CREATE INDEX idx_repo_machine_paths_real ON repository_machine_paths(real_path);
 CREATE INDEX idx_project_repo_refs_repo  ON project_repository_refs(repository_id);
 CREATE INDEX idx_skill_revisions_skill   ON skill_revisions(skill_id);
 CREATE INDEX idx_issues_space            ON issues(space_id);
+CREATE INDEX idx_projects_space          ON projects(space_id);
 ```
 
-前两条支撑「这个真实路径是否已授权」与「删除仓库时的引用保护」，第三条支撑按 skill 取版本列表，第四条支撑 Space 内任务列表；四张表的主键最左前缀都不是这些查询键。
+前两条支撑「这个真实路径是否已授权」与「删除仓库时的引用保护」，第三条支撑按 skill 取版本列表，后两条支撑 Space 内的任务列表与项目列表；五张表的主键最左前缀都不是这些查询键。
 
-### 重建 `issues` 表（本 Feature 唯一一处修改既有列）
+### 重建 `projects` 与 `issues`（本 Feature 唯一两处修改既有列）
 
-`issues` 当前有四个与最终模型冲突的 `NOT NULL` 列（`server/src/db/schema-v1.ts`）：`project_id`、`workspace_id`、`workflow_template_id`、`validation_policy_id`。FR-001 要求 `project_id` 可空，ADR 0012 要求后三者退出新 UI。**SQLite 无法 ALTER COLUMN 去掉 NOT NULL**，因此采用官方 12-step table rebuild：
+**`projects` 同样需要 `space_id`**：FR-001 把 Space 定为 Project 的归属根，Space 切换后项目列表必须按 Space 隔离；仅给 `issues` 加 Space 而让 `projects` 悬空，会让"当前 Space 的项目"无法查询，AC-001 也无法断言 Project 归属。`projects` 现有列无 `space_id`，且需要 `NOT NULL`——`ALTER TABLE ADD COLUMN NOT NULL` 要求编译期常量默认值，而默认 Space 的 ULID 是运行时生成的，因此 `projects` 与 `issues` 在同一 migration 内一起走 rebuild。
 
-1. 事务外 `PRAGMA foreign_keys=OFF`；
-2. 事务内建 `issues_new`：新增 `space_id TEXT NOT NULL REFERENCES spaces(id)`；`project_id` 放宽为可空；`workspace_id` / `workflow_template_id` / `validation_policy_id` **保留但放宽为可空**；其余列与约束逐字保留；
-3. `INSERT INTO issues_new SELECT …`，`space_id` 回填为默认 Space；
-4. `DROP TABLE issues`、`ALTER TABLE issues_new RENAME TO issues`；
-5. 重建全部索引与触发器；
-6. `PRAGMA foreign_key_check` 必须零行；
-7. 事务提交后 `PRAGMA foreign_keys=ON`。
+`issues` 另有四个与最终模型冲突的 `NOT NULL` 列（`server/src/db/schema-v1.ts`）：`project_id`、`workspace_id`、`workflow_template_id`、`validation_policy_id`。FR-001 要求 `project_id` 可空，ADR 0012 要求后三者退出新 UI。**SQLite 无法 ALTER COLUMN 去掉 NOT NULL**，因此采用官方 table rebuild：
 
-**保留三列而不是删除**，因为 v0.1–v0.2 的历史 Run / Trace / Evidence 引用它们（`docs/features/0.3/README.md` 跨 Feature 不变量 8：迁移不得破坏历史 refs）。新建 Issue 一律不写这三列；旧行原值不动。
+1. 事务外 `PRAGMA foreign_keys=OFF`（见下方「migration orchestration」——不能在事务内切换）；
+2. 先建 `spaces` 并写入默认 Space，取得其 id；
+3. 事务内建 `projects_new`：新增 `space_id TEXT NOT NULL REFERENCES spaces(id)`，其余列逐字保留；`INSERT … SELECT`，`space_id` 回填默认 Space id；
+4. 事务内建 `issues_new`：新增 `space_id TEXT NOT NULL REFERENCES spaces(id)`；`project_id` 放宽为可空；`workspace_id` / `workflow_template_id` / `validation_policy_id` **保留但放宽为可空**；其余列与约束逐字保留；`INSERT … SELECT` 同样回填 `space_id`；
+5. `DROP TABLE` 旧表、`ALTER TABLE … RENAME TO` 新名，**先 projects 后 issues**（issues 的外键指向 projects）；
+6. 重建两张表的全部索引与触发器；
+7. `PRAGMA foreign_key_check` 必须零行，否则整事务 rollback；
+8. 事务提交后 `PRAGMA foreign_keys=ON`。
+
+**保留三列而不是删除**，因为 v0.1–v0.2 的历史 Run / Trace / Evidence 引用它们（`docs/features/0.3/README.md` 跨 Feature 不变量 8：迁移不得破坏历史 refs）。新建 Issue 在 F012 接管前仍按 §7「分阶段兼容」写入这三列；旧行原值不动。
 
 ### 默认 Space 升级
 
@@ -126,7 +137,8 @@ CREATE INDEX idx_issues_space            ON issues(space_id);
 
 ### API
 
-- `POST /api/spaces`、`GET /api/spaces`、`POST /api/spaces/:id/select`、`POST /api/spaces/:id/archive`
+- `POST /api/spaces`、`GET /api/spaces`、`POST /api/spaces/:id/select`、`POST /api/spaces/:id/archive`、`POST /api/spaces/:id/restore`；`GET /api/spaces` 返回每行的 `is_default` / `is_selected`，前端不自行推断"当前 Space"。
+- **Space 作用域规则**：`GET /api/projects` 与 `GET /api/issues` 默认按当前 `is_selected` 的 Space 过滤，并接受显式 `space_id` 覆盖；按 ID 直接读取单个 Project / Issue **不做 Space 过滤**，否则 F009 已发布的 `/projects/:projectId` 深链在切换 Space 后会 404（跨 Feature 不变量 8）。返回体带 `space_id`，由前端提示"该对象属于其它 Space"。
 - `POST /api/repositories:resolve`：输入本地路径或 URL，返回自动识别的 `kind`、`display_name`、`real_path`、`git_remote_url`、`git_identity` 与授权预判；**不落库**，供 UI 先看后存（FR-004 的"不要求手填名称"）。
 - `POST /api/repositories`、`PUT /api/projects/:id/repositories`（整体设置 primary + references）
 - `GET /api/skills`、`GET /api/skills/:id/revisions/:version`、`POST /api/skills/:id/revisions`、`POST /api/skills/:id/{activate,disable}`
@@ -186,8 +198,8 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 
 | 验收项 | 测试层级 | 计划文件 / 场景 | 关键断言 |
 |---|---|---|---|
-| `AC-001` | integration | `server/tests/integration/migration-space.test.ts` | v10 fixture 升级后 `issues.space_id` 全部非空、`project_id` 语义可空、原 Project / Issue ID 逐一守恒；重复升级只有一个 `is_default=1`；`PRAGMA foreign_key_check` 零行；四条新索引存在 |
-| `AC-001` | integration | `server/tests/integration/space-first-run.test.ts` | 清洁库首次创建 Space 后可创建游离任务（`project_id` 为空） |
+| `AC-001` | integration | `server/tests/integration/migration-space.test.ts` | v10 fixture 升级后 `issues.space_id` 与 `projects.space_id` 全部非空、`issues.project_id` 语义可空、原 Project / Issue ID 逐一守恒；重复升级只有一个 `is_default=1` 与一个 `is_selected=1`；`PRAGMA foreign_key_check` 零行；五条新索引存在 |
+| `AC-001` | integration | `server/tests/integration/space-first-run.test.ts` | 清洁库首次创建 Space 后可创建游离任务（`project_id` 为空）；`select` 后重启服务，当前 Space 仍是选中的那个；默认 Space 归档被拒绝（`SPACE_ARCHIVE_BLOCKED`）；按 ID 深链读取其它 Space 的 Project 不 404 |
 | `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
 | `AC-003` | unit + contract | `web/src/f013-project-skills.test.tsx` | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册 |
 | `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
