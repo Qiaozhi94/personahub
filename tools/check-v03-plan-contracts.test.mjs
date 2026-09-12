@@ -432,6 +432,35 @@ test('F010-DOC-R2-021: consumption identity preserves every run in a dispatch', 
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R1-MEDIUM-LOW: reviewed artifact details remain executable', () => {
+  const documents = [
+    read('docs/features/0.3/F010-artifact-foundation-provenance/design.md'),
+    read('docs/features/0.3/F010-artifact-foundation-provenance/spec.md'),
+    read('docs/features/0.3/F010-artifact-foundation-provenance/tasks.md'),
+    read('docs/personahub-system-design.md'),
+  ];
+  const phrases = [
+    '“建议形状”的冻结实现契约',
+    'Artifact 以 `issue_id` 为唯一归属',
+    '不持久化 draft revision',
+    '`PERSONAHUB_ARTIFACT_ORPHAN_GRACE_MS` 默认 `3600000`',
+    '`PERSONAHUB_ARTIFACT_SWEEP_LEASE_MS` 默认 `30000`',
+    '避免 Win32 对正在读取目标执行覆盖 rename 时的 `EPERM` / `EBUSY`',
+    '按 Windows 大小写不敏感语义比较',
+    '仓库没有 down migration',
+    '不是操作系统级只读隔离',
+    '发布时与 resolver 每次读取时都对原始字节计算 SHA-256',
+    '| 验收项 | 测试层级 | 计划文件 / 场景 | 关键断言 |',
+    '| 决策 / 风险 | 结论或缓解 | 理由 | 替代方案 / 后续 |',
+    '`loading`、`empty`、`ready`、`missing`、`invalid`、`hash_mismatch`',
+    '`PERSONAHUB_ARTIFACT_MAX_BYTES=10485760`',
+    '> Owner: unassigned | Spec: `spec.md` | Tasks: `tasks.md`',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
