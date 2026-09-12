@@ -123,13 +123,12 @@ export type RunArtifactRead =
 /** Evidence ref 反查关联 Artifact（GET /api/evidence/artifacts?ref=...）。 */
 export type EvidenceArtifactRead =
   | { status: "empty" }
-  | { status: "ready"; items: Array<{ artifact: Artifact; revision: number }> };
+  | { status: "ready"; items: Array<{ artifact: Artifact; revision: number }> }
+  | ({ status: "invalid" } & ArtifactReadFailure);
 
-export interface ArtifactProvenanceRead {
-  status: "ready" | "missing";
-  artifact?: Artifact;
-  provenance?: ArtifactProvenance;
-}
+export type ArtifactProvenanceRead =
+  | { status: "ready"; artifact: Artifact; provenance: ArtifactProvenance }
+  | ({ status: "missing" } & ArtifactReadFailure);
 
 /** inline / file 互斥的 storage payload；create 与 revise 共用。 */
 export type ArtifactStoragePayload =

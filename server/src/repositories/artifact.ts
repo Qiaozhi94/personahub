@@ -193,6 +193,15 @@ export class ArtifactRepository {
     return row ? mapRevision(row) : null;
   }
 
+  /** Stored request fingerprint of a published revision, for idempotency
+   *  replay comparisons. Null when the revision does not exist. */
+  getRevisionFingerprint(artifactId: string, revision: number): string | null {
+    const row = this.db
+      .prepare("SELECT request_fingerprint FROM artifact_revisions WHERE artifact_id = ? AND revision = ?")
+      .get(artifactId, revision) as { request_fingerprint: string } | undefined;
+    return row ? row.request_fingerprint : null;
+  }
+
   listRevisions(artifactId: string): ArtifactRevision[] {
     const rows = this.db
       .prepare("SELECT * FROM artifact_revisions WHERE artifact_id = ? ORDER BY revision ASC")

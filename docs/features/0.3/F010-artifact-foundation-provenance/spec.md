@@ -2,7 +2,7 @@
 kind: feature
 id: F010
 version: "0.3"
-status: draft
+status: in-progress
 gate_version: 1
 related_features: [F003, F004, F006, F009, F011, F012, F014]
 topics: [artifact, revision, provenance, evidence, typed-ref]
