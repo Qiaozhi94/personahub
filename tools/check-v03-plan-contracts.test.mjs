@@ -503,8 +503,11 @@ test('F010-DOC-R3-027: reverse artifact queries have migration-owned indexes', (
   const documents = [read('docs/features/0.3/F010-artifact-foundation-provenance/design.md')];
   const phrases = [
     'CREATE INDEX idx_artifact_consumptions_run',
+    'ON artifact_consumptions(run_id)',
     'CREATE INDEX idx_artifacts_issue',
+    'ON artifacts(issue_id, state)',
     'CREATE INDEX idx_artifact_evidence_links_ref',
+    'ON artifact_evidence_links(evidence_ref)',
     '三条反查索引均存在',
     '不得依赖全表扫描',
   ];
