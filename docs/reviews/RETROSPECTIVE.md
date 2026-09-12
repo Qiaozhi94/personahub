@@ -1107,7 +1107,10 @@ archived ref 的消费限制与 F010 契约一致。
 ## 循环 21：F010 开发前设计检视（3轮）
 
 - **report_type**: doc-review
-- **周期**: 2026-09-12，3轮 · **状态**: 已收敛（最终闭环以 CI run `34674466372` 全绿为准：Verify 3m40s、E2E 2m56s）
+- **周期**: 2026-09-12，6轮（第 3 轮误判闭环，经裁决 #2 重开 3 轮） · **状态**: 已收敛（最终闭环以 CI run `34678394600` 全绿为准）
+- **⚠️ 本条目在第 3 轮曾被错误标记为"已收敛"**：当时按 skill 默认分层把 R3-027（Medium）、
+  R3-028（Low）判为"不阻塞开工"。用户裁决 #2 推翻该判断——本项目的停止条件是**全部 finding
+  清零才能开工**。循环重开为第 4–6 轮，期间又发现并修复了 R5-029。下方表格与教训已按最终结果更正。
 - **背景**: F009 收口次日、F010 开工前对 `docs/features/0.3/F010-artifact-foundation-provenance/` 三件套做开发前检视。
   Round 1 全量扫描基线 `7d1795e`（design.md 仅 53 行，与 F011–F013 同批草稿同一水位）；Round 2 因修复 diff 覆盖
   design.md 53→166 行、超过 30%，按 skill 唯一例外升级为一次 full-scan；Round 3 回到 diff-only。
@@ -1142,15 +1145,18 @@ archived ref 的消费限制与 F010 契约一致。
 | F010-DOC-R2-024 | 18 条 finding 打包成单个 commit，违反"一 finding 一 commit" | Low | 质量 | 根因 | 流程缺口 | fixed | 未重写历史提交（按检视指引）；第 3 轮 7 条 finding 对应 7 个独立提交，作为流程修正的实物证据 | 不适用（证据为本轮 git log） | 2 | 3 | batched-fix-commit |
 | F010-DOC-R2-025 | features README 的 AC `tests:` 唯一格式与门禁实现不一致 | Low | 质量 | 根因 | 原方案 | fixed | `docs/features/README.md` 示例改为门禁实际接受的 ` - tests:` | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R2-025` | 2 | 3 | cross-doc-drift |
 | F010-DOC-R2-026 | 11 条已修 finding 没有回归锁点 | Medium | 测试覆盖 | 根因 | 流程缺口 | fixed | 新增 `F010-DOC-R1-MEDIUM-LOW` 锁点，15 个短语覆盖建议的 4 条外加 R1-008/013/014/015/016/017，语料含 design/spec/tasks/system-design 四份文档 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 2 | 3 | closed-without-lock |
-| F010-DOC-R3-027 | 三条已声明的反查 API 都落在复合主键非最左列，§3 未定义索引 | Medium | 正确性 | 根因 | 原方案 | open | 未修：建议补 `artifact_consumptions(run_id)`、`artifacts(issue_id, state)`、`artifact_evidence_links(evidence_ref)` 三条索引，并在 §8 migration 断言里加"索引存在" | — | 3 | — | unverifiable-invariant |
-| F010-DOC-R3-028 | F010 给 F012 派了事务内校验义务，但 F012 文档无载体 | Low | 正确性 | 根因 | 修复引入 | open | 未修：建议登记到 `docs/features/0.3/README.md` 第 4 节跨 Feature 不变量，不由 F010 代写 F012 任务条目 | — | 3 | — | cross-feature-contract-drift |
+| F010-DOC-R3-027 | 三条已声明的反查 API 都落在复合主键非最左列，§3 未定义索引 | Medium | 正确性 | 根因 | 原方案 | fixed | §3「Schema」后新增「### 索引」小节，给出三条 `CREATE INDEX` 与"主键最左前缀都不是这些查询键，不得依赖全表扫描"的理由；§8 AC-001 的 migration 行断言追加"三条反查索引均存在" | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R3-027` | 3 | 5 | unverifiable-invariant |
+| F010-DOC-R3-028 | F010 给 F012 派了事务内校验义务，但 F012 文档无载体 | Low | 正确性 | 根因 | 修复引入 | fixed | v0.3 README 第 4 节新增第 12 条跨 Feature 不变量，登记 `dispatch_id` 的 soft reference 性质与 F012 的同事务归属校验义务；未改动 F012 三件套 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R3-028` | 3 | 5 | cross-feature-contract-drift |
+| F010-DOC-R5-029 | 三条索引锁点只锁索引名、不锁列定义，改列门禁照样绿 | Medium | 测试覆盖 | 根因 | 修复引入 | fixed | 在 `F010-DOC-R3-027` 短语表追加 `ON artifact_consumptions(run_id)`、`ON artifacts(issue_id, state)`、`ON artifact_evidence_links(evidence_ref)` 三条 ON 子句，与索引名短语并存；未用跨行短语以避开 CRLF 匹配脆性 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R3-027`（保名改列与删 ON 子句两向变异均红） | 5 | 6 | lock-misses-contract-substance |
 
 **问题与实际修复证据**
 
 - Round 1 的 18 条由单个提交 `360072d` 关闭（这本身成为 R2-024）；Round 2 的 8 条由
   `9c2ba31`（R2-019）、`8554936`（R2-020）、`389334c`（R2-021）、`169ceb9`（R2-026）、
   `d46c181`（R2-022）、`d6cf86f`（R2-023）、`00ac24a`（R2-025）逐条关闭。
-- R3-027 / R3-028 为 Medium/Low，经判断不阻塞开工，随本循环收口一并记录，留到 F010 编码期处理。
+- R3-027 / R3-028 在第 5 轮由 `4da755c`、`a27a639` 逐条关闭；R5-029 在第 6 轮由 `32a1288` 关闭。
+  三者都是裁决 #2 推翻"Medium/Low 不阻塞"之后才进入修复队列的——**第 3 轮原本打算把前两条留到
+  编码期处理**。
 - 检视方独立变异验证两次：删除 `F010 不新增持久化 outbox` 与 `不同 Artifact 可并发发布` 后
   `npm run test:docs` 均变红（`missing v0.3 planning contract: …`），还原后恢复全绿。
 
@@ -1182,7 +1188,21 @@ archived ref 的消费限制与 F010 契约一致。
    手工验证则必须删干净或改用唯一短语。这条对以后所有"我自己验一遍门禁"的动作都适用。
 8. **`verifyEachPhraseMutation` 是本循环留下的正向增量**：既有 `verifyMutation` 只变异短语表的
    第一个，新函数逐一变异每个短语，强度提高一档，后续锁点应默认用它。
-9. **R6-029 复发了，它不再是一次性抖动**。本循环收口提交（纯文档追加）让 CI run `34674767932`
+9. **停止条件被用户裁决收紧，这个收紧当场兑现了价值**（裁决 #2）。第 3 轮我按 skill 默认的
+   "Critical/High 阻塞、Medium/Low 只记录"宣布闭环并删了检视文件，用户纠正：**所有问题修复
+   完成后才可以开始开发**。重开的第 4–6 轮不只是把 R3-027/R3-028 修掉——修 R3-027 时新加的
+   门禁锁点本身有缺陷（R5-029：只锁索引名不锁列，改列照样绿），这条**只有在"Medium 也必须
+   清零"的前提下才会被发现**。按原判断收口的话，那条索引契约会带着"有门禁保护"的假象进入
+   编码期。skill 第 0 节写明项目自身的更严格要求优先，这里是一次实证：分层放行在
+   "设计文档必须能照着写代码"的场景下不适用。
+10. **锁短语要锁契约的实质，不是它的标签**。R5-029 的根因是锁了 `CREATE INDEX idx_artifacts_issue`
+   这个名字，却没锁 `ON artifacts(issue_id, state)` 这个真正的约束。写锁点时先问"这条 finding
+   的实质是什么"，再锁那个东西；名字、标题、章节名都属于标签。
+11. **变异验证必须用固定手法：先 `grep -Fc` 确认短语唯一，再整段删除目标文本**。本循环 6 次
+   变异有 2 次无效——第 3 轮选了在 §3/§7 各出现一次的短语只删一处；第 5 轮给索引名加后缀
+   `_DISABLED`，而 `requirePhrases` 是子串匹配，原短语仍在。两次都表现为"绿"：一次让我误判
+   门禁失效，一次差点让我误判门禁有效。改写式变异只有在"原短语完全消失"时才成立。
+12. **R6-029 复发了，它不再是一次性抖动**。本循环收口提交（纯文档追加）让 CI run `34674767932`
    的 E2E 变红，症状与循环 20 的 R6-029 逐字相同：`f009-a11y NFR-002 zero console errors across
    all M1 routes` 捕获到 `Failed to load resource: net::ERR_NO_BUFFER_SPACE`。`--failed` 重跑同一
    commit 即绿（2m38s）。两次都出现在 Windows runner、都由纯文档提交触发、都与产品代码无关——
