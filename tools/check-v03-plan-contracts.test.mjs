@@ -307,6 +307,37 @@ test('V03-PLAN-R1-002: Space has a v0.3 schema, migration, and feature owner', (
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access facts', () => {
+  // Round 1-4 的反复未收敛几乎全部来自"同一事实在 design 与 tasks 各有一份副本，
+  // 只改了其中一份"。注意 requirePhrases 会把传入的文档 join 成一个语料，所以
+  // **必须对每份文档分别断言**——合起来查的话，改一侧另一侧还在，正好漏掉单侧漂移。
+  const design = read('docs/features/0.3/F013-project-skills-foundation/design.md');
+  const tasks = read('docs/features/0.3/F013-project-skills-foundation/tasks.md');
+
+  // 两份文档都必须写到的事实：任一侧改动而不同步另一侧即变红
+  const sharedPhrases = [
+    'trg_skills_current_published',
+    '五个发布态 trigger',
+    'skill_space_state',
+    '`(skill_id, version, runtime_id, cli_provider)`',
+  ];
+  for (const doc of [design, tasks]) {
+    requirePhrases([doc], sharedPhrases);
+    verifyEachPhraseMutation([doc], sharedPhrases);
+  }
+
+  // 只属于 design 的结构性约束
+  const designOnly = [
+    '`current_revision INTEGER NOT NULL`',
+    "`state TEXT NOT NULL CHECK (state IN ('active','disabled'))`",
+    '`projects.default_workspace_id` 指向的那条',
+    "CHECK (role = 'primary' OR access = 'read_only')",
+    '实测不到（探测失败、只读挂载等）一律按敏感处理',
+  ];
+  requirePhrases([design], designOnly);
+  verifyEachPhraseMutation([design], designOnly);
+});
+
 test('V03-PLAN-R1-003: feature dependencies form an acyclic executable order', () => {
   const documents = [
     read('docs/features/0.3/README.md'),

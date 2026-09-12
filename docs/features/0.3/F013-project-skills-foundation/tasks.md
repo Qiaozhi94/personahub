@@ -49,8 +49,9 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 - [ ] T022 (`AC-001`, `AC-004`): 覆盖 legacy 组合迁移的逐 Issue 可解析断言、单一 primary Workspace 选取与旧 ref requirements 逐字不变。 — verify: `npm test`
 - [ ] T023 (`AC-001`, `AC-005`): 按 §4 事件表逐项触发对应动作并核对落账，缺一即失败。 — verify: `npm test --workspace server`
 - [ ] T024 (`AC-001`, `AC-003`): 完成首次设置、项目 / Skill Playwright 旅程。 — verify: `npm run test:e2e`
-- [ ] T025 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 按 `migration-matrix.md` 逐行删除 owner 为 F013 的 8 个 transitional-host（P002、P003、P009、A001、A002、A003、A029、A030）并核对 `delete_when`。 — verify: `npm run test:e2e`
-- [ ] T026 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 运行发布质量门。 — verify: `npm run verify:release`
+- [ ] T025 (`AC-001`, `AC-003`): 保持 design 与 tasks 的事实源一致，由 `tools/check-v03-plan-contracts.test.mjs::F013-DOC-R4-INVARIANTS` 锁定五组不变量措辞，改动任一份文档而不同步另一份即门禁变红。 — verify: `npm run test:docs`
+- [ ] T026 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 按 `migration-matrix.md` 逐行删除 owner 为 F013 的 8 个 transitional-host（P002、P003、P009、A001、A002、A003、A029、A030）并核对 `delete_when`。 — verify: `npm run test:e2e`
+- [ ] T027 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`): 运行发布质量门。 — verify: `npm run verify:release`
 
 ## 4. 依赖与并行关系
 
