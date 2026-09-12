@@ -146,7 +146,15 @@ type Step = { id: string; order: number; title: string; requirements: Requiremen
 `project_skill_refs`：`(project_id, skill_id)` 主键 + `is_default INTEGER NOT NULL DEFAULT 0` + `pinned_version INTEGER NULL`（NULL = 跟随 current）。只存引用，不复制内容（FR-007）。两条完整性约束：
 
 - `UNIQUE INDEX idx_project_default_skill ON project_skill_refs(project_id) WHERE is_default = 1`：spec FR-007 的"默认 Skill ref"是单数，由索引保证唯一，不靠应用逻辑。
-- `FOREIGN KEY (skill_id, pinned_version) REFERENCES skill_revisions(skill_id, version)`：pin 一个不存在的 revision 会被数据库拒绝。`pinned_version` 为 NULL 时跟随 `skills.current_revision`，而后者由 revision 插入事务维护，**不存在指向空 revision 的默认 ref**。
+
+**引用完整性需要四道约束，单靠复合外键不够。** SQLite 的复合外键采用 `MATCH SIMPLE`：**只要任一子列为 NULL 就完全跳过父表检查**。实测 `INSERT INTO project_skill_refs VALUES('p','ghost',NULL)` 成功插入——`skill_id='ghost'` 根本不存在。因此：
+
+1. `FOREIGN KEY (skill_id) REFERENCES skills(id)`（**单列**）：挡住 ghost Skill，与 `pinned_version` 是否为 NULL 无关。
+2. `FOREIGN KEY (skill_id, pinned_version) REFERENCES skill_revisions(skill_id, version)`：pinned 非空时挡住不存在的 revision。
+3. `skills` 增 `FOREIGN KEY (id, current_revision) REFERENCES skill_revisions(skill_id, version) DEFERRABLE INITIALLY DEFERRED`——延迟到事务末检查，因为建 Skill 与插首个 revision 在同一事务内、顺序上 revision 后到。同时加 `CHECK (state = 'disabled' OR current_revision IS NOT NULL)`：**非 disabled 的 Skill 不允许没有 current revision**，堵住"NULL current 让外键失效"这条路。
+4. `BEFORE DELETE ON skill_revisions` trigger：若该 revision 正被任一 `skills.current_revision` 或 `project_skill_refs.pinned_version` 引用，`RAISE(ABORT)`。trigger 原先只禁 UPDATE，删除同样会制造悬空引用。
+
+四道合起来才等价于"默认 ref 永远解析到一个真实 revision"。`pinned_version` 为 NULL 时跟随 `skills.current_revision`，后者由第 3、4 条保证非空且存在。
 
 `skill_legacy_aliases`：`(source_kind, legacy_id)` **复合主键**（`source_kind IN ('workflow_template','validation_policy')`）、`skill_id`、`version`、`raw_payload_json TEXT NOT NULL`。两张旧表各有自己的 ID 空间，单列主键在两表出现相同 ID 时只能保真一条；复合主键消除这个碰撞。原始行整体保存在 `raw_payload_json`，无法无损映射的字段不猜测语义（spec §7 决策）。
 
@@ -323,7 +331,7 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-001` | integration | `server/tests/integration/legacy-skill-migration.test.ts` | 每条历史 Issue 的 `(workflow_template_id, validation_policy_id)` 组合都能经 alias 解析到确定 `skill@version`（逐行断言，不接受"大部分能解析"）；Issue 上的 policy 优先于 workflow 自带；同 workflow 配两个 policy 产生两个 revision；两表同 ID 时复合主键各自保真；自由文本要求不被伪造成 tags |
 | `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
 | `AC-003` | integration | `server/tests/integration/skill-revision-schema.test.ts` | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同 |
-| `AC-003` | integration | `server/tests/integration/skill-default-ref.test.ts` | 一个项目至多一条 `is_default=1`；pin 不存在的 revision 被外键拒绝；默认 ref 永远能解析到一个真实 revision |
+| `AC-003` | integration | `server/tests/integration/skill-default-ref.test.ts` | 一个项目至多一条 `is_default=1`；**四个反例逐一被拒**——① ghost Skill + NULL pinned（复合 FK 的 MATCH SIMPLE 漏洞，必须由单列 FK 拦下）② 非 disabled Skill 的 current_revision 为 NULL ③ 删除正被 current_revision 引用的 revision ④ 删除正被 pinned_version 引用的 revision；正例：默认 ref 永远解析到真实 revision |
 | `AC-005` | integration | `server/tests/integration/skill-conflict.test.ts` | 同名双来源**双方**都进入 `conflict` 且都不生效；`resolve-conflict` 后保留方 `active`、其余 `disabled`；一组只剩一个非 disabled 成员时自动回 `active`（无悬挂 conflict）；同一 `source_identity` 重扫是更新不是新建；非法 steps schema / 保留 ID / 无来源在激活前拒绝；重启后冲突状态可见 |
 | `AC-003` | integration | `server/tests/integration/skill-delivery.test.ts` | 下发状态按 adapter 独立记录，`unsupported` 不阻断激活；`active` 不能推断出 `delivered` |
 
