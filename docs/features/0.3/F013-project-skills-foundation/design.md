@@ -133,7 +133,24 @@ type Scope = {
   - `source_identity` 是**跨扫描稳定的来源身份**（内置为包内路径、用户为创建时分配的 ULID、legacy 为 `workflow:<旧id>`）。冲突消解、重复扫描去重都以它为准；只靠 `display_name` 无法区分"同一个来源被重扫"与"另一个来源同名"。
 - `skill_revisions`：`(skill_id, version)` 复合主键、`title`、`description`、`capability_tags_json`、`steps_json`（可空；非空即编组，FR-005）、`completion_requirements_json`、`source_locator TEXT`、`content_hash TEXT NOT NULL`、`created_at`
   - `content_hash` 是规范化 JSON（键排序、去空白）的 SHA-256，既是 revision 的完整性锚点，也让"同内容重复导入"可判定。
-  - **不可变由数据库保证**，不依赖 repository 自觉：`BEFORE UPDATE` trigger 对内容列的任何 UPDATE 抛 `SQLITE_CONSTRAINT`；**`BEFORE DELETE` trigger 同样拦截**——只禁改不禁删，删掉再以同版本号重插就绕过了不可变；`skill_revision_files` 的 INSERT / UPDATE / DELETE 也一并拦截，否则 revision 行没变而它的文件集变了，`content_hash` 之外的内容照样漂移。三个 trigger 合起来才等于"published revision 冻结"。
+  - `published_at TEXT NULL`：**revision 有构建期和冻结期两个阶段**。上一轮写成"文件表的 INSERT/UPDATE/DELETE 全部拦截"是自相矛盾的——文件永远无法首次写入；SQLite 的一个 trigger 也只能绑定一种事件。
+
+#### 不变量 B：published revision 可先构建后冻结
+
+`published_at IS NULL` 是**构建期**：可以写内容列、可以增删 `skill_revision_files`。激活事务内置上 `published_at` 后进入**冻结期**，此后任何修改都被拒。五个 trigger 各绑一种事件、各带发布态条件，互不重叠：
+
+| trigger                     | 事件与条件                                                                                                                                              | 拦截什么                                      |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `trg_skill_rev_no_update`   | `BEFORE UPDATE ON skill_revisions WHEN OLD.published_at IS NOT NULL`                                                                                    | 改已发布 revision 的内容列                    |
+| `trg_skill_rev_no_delete`   | `BEFORE DELETE ON skill_revisions WHEN OLD.published_at IS NOT NULL`                                                                                    | 删已发布 revision（否则可删后以同版本号重插） |
+| `trg_skill_files_no_insert` | `BEFORE INSERT ON skill_revision_files WHEN (SELECT published_at FROM skill_revisions WHERE skill_id=NEW.skill_id AND version=NEW.version) IS NOT NULL` | 向已发布 revision 追加文件                    |
+| `trg_skill_files_no_update` | `BEFORE UPDATE ON skill_revision_files WHEN (…OLD…) IS NOT NULL`                                                                                        | 改已发布 revision 的文件                      |
+| `trg_skill_files_no_delete` | `BEFORE DELETE ON skill_revision_files WHEN (…OLD…) IS NOT NULL`                                                                                        | 删已发布 revision 的文件                      |
+
+`published_at` 本身的置位由 `BEFORE UPDATE` 的 `WHEN OLD.published_at IS NOT NULL` 条件天然允许一次（NULL → 时间戳），且**只允许这一次**：从非空改回 NULL 属于"改已发布行"，被同一 trigger 拒绝。
+
+`skills.current_revision` 只能指向已发布 revision；`resolveEffectiveRequirements` 与所有读取 API 一律过滤 `published_at IS NOT NULL`，构建期 revision 对外不存在。
+
 - `skill_revision_files`：`(skill_id, version, rel_path)` 主键 + `content BLOB NOT NULL`、`content_hash`、`size_bytes`。
   - **正文在激活时快照进库，不在读取时回源**。`source_locator` 指向的是可变的外部目录：如果详情页每次从那里现读，同一个 revision 今天和明天可以显示不同内容，"revision 不可变"就只是文档里的一句话。快照后 `source_locator` 只用于解释来源与重新导入。
   - 导入时逐文件校验：`rel_path` 必须规范化后仍落在 `source_locator` 根内（用 `path.relative` 判断，不用 `startsWith`），拒绝绝对路径、`..`、符号链接指向根外；单文件与总量各有上限（默认 1 MiB / 10 MiB），超限报 `SKILL_FILES_TOO_LARGE` 并整体拒绝激活。
@@ -192,14 +209,17 @@ type Step = { id: string; order: number; title: string; requirements: Requiremen
 
 - `UNIQUE INDEX idx_project_default_skill ON project_skill_refs(project_id) WHERE is_default = 1`：spec FR-007 的"默认 Skill ref"是单数，由索引保证唯一，不靠应用逻辑。
 
-**引用完整性需要四道约束，单靠复合外键不够。** SQLite 的复合外键采用 `MATCH SIMPLE`：**只要任一子列为 NULL 就完全跳过父表检查**。实测 `INSERT INTO project_skill_refs VALUES('p','ghost',NULL)` 成功插入——`skill_id='ghost'` 根本不存在。因此：
+#### 不变量 A：默认 ref 必可解析
 
-1. `FOREIGN KEY (skill_id) REFERENCES skills(id)`（**单列**）：挡住 ghost Skill，与 `pinned_version` 是否为 NULL 无关。
-2. `FOREIGN KEY (skill_id, pinned_version) REFERENCES skill_revisions(skill_id, version)`：pinned 非空时挡住不存在的 revision。
-3. `skills` 增 `FOREIGN KEY (id, current_revision) REFERENCES skill_revisions(skill_id, version) DEFERRABLE INITIALLY DEFERRED`——延迟到事务末检查，因为建 Skill 与插首个 revision 在同一事务内、顺序上 revision 后到。同时加 `CHECK (state = 'disabled' OR current_revision IS NOT NULL)`：**非 disabled 的 Skill 不允许没有 current revision**，堵住"NULL current 让外键失效"这条路。
-4. `BEFORE DELETE ON skill_revisions` trigger：若该 revision 正被任一 `skills.current_revision` 或 `project_skill_refs.pinned_version` 引用，`RAISE(ABORT)`。trigger 原先只禁 UPDATE，删除同样会制造悬空引用。
+前两轮在这里失败两次，都是因为先立约束、再为特例开口子。这一轮改从不变量出发：**任何 `project_skill_refs` 行，无论 `pinned_version` 是否为空，都必须解析到一条真实且已发布的 revision。** 反推出的结构是：
 
-四道合起来才等价于"默认 ref 永远解析到一个真实 revision"。`pinned_version` 为 NULL 时跟随 `skills.current_revision`，后者由第 3、4 条保证非空且存在。
+- **`skills.current_revision INTEGER NOT NULL`，无条件非空，没有 `disabled` 特例。** 上一轮写的 `CHECK (state='disabled' OR current_revision IS NOT NULL)` 正是漏洞来源——`disabled` + NULL current + NULL pinned 的组合仍可插入且无法解析。Skill **不存在"没有任何 revision"的状态**：创建 Skill 与插入 revision 1 是同一个事务，`disabled` 只改 `state`、不动 `current_revision`。想表达"这个 Skill 不可用"用 `state`，不用清空指针。
+- `skills` 的 `FOREIGN KEY (id, current_revision) REFERENCES skill_revisions(skill_id, version) DEFERRABLE INITIALLY DEFERRED`：延迟到事务末检查，容纳"先插 skills 行再插 revision"的顺序。因为 `current_revision` 非空，复合 FK 的 `MATCH SIMPLE` 跳过条件不再可能触发。
+- `project_skill_refs` 两道 FK 并存：**单列** `FOREIGN KEY (skill_id) REFERENCES skills(id)` 挡 ghost Skill（与 `pinned_version` 无关）；`FOREIGN KEY (skill_id, pinned_version) REFERENCES skill_revisions(skill_id, version)` 在 pinned 非空时挡不存在的 revision。
+- `BEFORE DELETE ON skill_revisions` trigger：被 `skills.current_revision` 或 `project_skill_refs.pinned_version` 引用的 revision 不可删。
+- `skills.current_revision` **只能指向 `published_at IS NOT NULL` 的 revision**（见不变量 B），由激活事务保证；因此"可解析"同时意味着"解析到的是已冻结内容"。
+
+判据：`disabled-empty + NULL pinned` 这个反例在新结构下无法构造——`current_revision` 列本身不接受 NULL。
 
 legacy 迁移需要**两张职责不同的表**，合成一张必然矛盾：一个 workflow 配过两个 policy 会产生两条 revision，而"这个旧对象长什么样"每个旧 ID 只有一行。
 
