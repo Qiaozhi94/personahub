@@ -27,6 +27,7 @@ import { ArtifactRepository } from "../../src/repositories/artifact.js";
 import { EventBus } from "../../src/runtime/event-bus.js";
 import { ThreadEventService } from "../../src/services/thread-event.js";
 import { ArtifactService, type ArtifactPublicationTestHooks } from "../../src/services/artifact/service.js";
+import { ArtifactResolver } from "../../src/services/artifact/resolver.js";
 import { ArtifactArchive } from "../../src/services/artifact/archive.js";
 import { ArtifactOrphanSweeper } from "../../src/services/artifact/sweeper.js";
 import { AppError } from "../../src/api/errors.js";
@@ -134,6 +135,7 @@ interface Session {
   db: ReturnType<typeof openDatabase>;
   artifactRepo: ArtifactRepository;
   service: ArtifactService;
+  resolver: ArtifactResolver;
   received: Array<{ type: ThreadEventType; payload: Record<string, unknown> }>;
 }
 
@@ -158,7 +160,13 @@ function openSession(fixture: Fixture, hooks?: ArtifactPublicationTestHooks, max
     maxBytes,
     testHooks: hooks,
   });
-  return { db, artifactRepo, service, received };
+  return {
+    db,
+    artifactRepo,
+    service,
+    resolver: new ArtifactResolver({ artifactRepo, archive: fixture.archive, threadEventService }),
+    received,
+  };
 }
 
 function sha256(bytes: Buffer | string): string {
@@ -344,8 +352,12 @@ describe("F010 file publication crash matrix", () => {
       expect(() => session.service.createArtifact(fileCreateInput(fixture, "art_crash"))).toThrowError("crash");
       session.db.close();
 
-      // restart on the same dbPath with fresh instances
+      // restart on the same dbPath with fresh instances, then assert through
+      // the resolver — the only consumer-visible read path (design §8)
       const reopened = openSession(fixture);
+      const entity = reopened.resolver.getEntity("art_crash");
+      expect(entity.status).toBe("missing");
+      expect((entity as { code: ErrorCode }).code).toBe(ErrorCode.ARTIFACT_NOT_FOUND);
       expect(reopened.artifactRepo.getArtifact("art_crash")).toBeNull();
       expect(reopened.artifactRepo.getRevision("art_crash", 1)).toBeNull();
 
@@ -377,6 +389,9 @@ describe("F010 file publication crash matrix", () => {
 
     const reopened = openSession(fixture);
     expect(reopened.artifactRepo.getArtifact("art_aftercommit")!.current_revision).toBe(1);
+    // resolver-visible: the committed revision reads back complete
+    const viaResolver = reopened.resolver.getRevisionRead("art_aftercommit", 1);
+    expect(viaResolver.status).toBe("ready");
     const revision = reopened.artifactRepo.getRevision("art_aftercommit", 1)!;
     expect(revision.archive_relative_path).toMatch(/^[0-9a-f]{2}\/[0-9a-f]{64}$/);
     // committed revision must have a complete archive whose bytes hash to the manifest
