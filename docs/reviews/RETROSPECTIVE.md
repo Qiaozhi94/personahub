@@ -1101,3 +1101,84 @@ archived ref 的消费限制与 F010 契约一致。
    socket/缓冲资源瞬时耗尽，被"零 console error"断言如实捕获。重跑同一 commit 即绿。
    这条没有当场修，因为两个候选方案（CI 上配 retries vs. 把传输层失败与应用级 console error
    分开断言）各自都有掩盖真实缺陷的风险，需要一次明确取舍而不是顺手加个重试。
+
+---
+
+## 循环 21：F010 开发前设计检视（3轮）
+
+- **report_type**: doc-review
+- **周期**: 2026-09-12，3轮 · **状态**: 已收敛（最终闭环以 CI run `34674466372` 全绿为准：Verify 3m40s、E2E 2m56s）
+- **背景**: F009 收口次日、F010 开工前对 `docs/features/0.3/F010-artifact-foundation-provenance/` 三件套做开发前检视。
+  Round 1 全量扫描基线 `7d1795e`（design.md 仅 53 行，与 F011–F013 同批草稿同一水位）；Round 2 因修复 diff 覆盖
+  design.md 53→166 行、超过 30%，按 skill 唯一例外升级为一次 full-scan；Round 3 回到 diff-only。
+  三个结构门禁（`check:features` / `check:doc-links` / `check:doc-ownership`）在 Round 1 基线上就是全绿——
+  28 条发现全部在门禁覆盖面之外，这是本循环第一条教训。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F010-DOC-R1-001 | outbox 被 §5/§7 当作发布契约依赖，但 §3 无定义、代码库也不存在 | High | 正确性 | 根因 | 规格漂移 | fixed | 按用户裁决改用 `intake-service.ts:436` 既有事务内 pendingEvents + commit 后广播，显式声明不新增持久化 outbox | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-HIGH` | 1 | 2 | undefined-mechanism-referenced |
+| F010-DOC-R1-002 | 幂等键只在 spec 边界场景出现，design 无字段/作用域/唯一约束 | High | 正确性 | 根因 | 原方案 | fixed | §3 增加 `idempotency_key` + `request_fingerprint` 与 `UNIQUE (artifact_id, idempotency_key)`；同指纹返回既有 revision，异指纹返回 `ARTIFACT_IDEMPOTENCY_CONFLICT` | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-HIGH` | 1 | 2 | unverifiable-invariant |
+| F010-DOC-R1-003 | AC-001 要求逐故障点 crash 断言，但无可注入的结构缝 | High | 测试覆盖 | 根因 | 原方案 | fixed | §8 定义六个命名 hook（`afterTempWrite`…`afterCommit`），沿用 intake-service 注入约定与 `restart-recovery.test.ts` 的同 dbPath reopen 模式，写死"测试不得自行编排发布步骤" | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-HIGH` | 1 | 2 | test-simulates-itself |
+| F010-DOC-R1-004 | 资源/验收读取组件与 F011 T012 重复归属，且无挂载 surface | High | 正确性 | 根因 | 规格漂移 | fixed | F010 只交付 API client、共享类型与只读 hooks，不注册 SurfaceRegistry 槽位、不交付可见组件；资源视图归 F011 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-HIGH` | 1 | 2 | cross-feature-contract-drift |
+| F010-DOC-R1-005 | §2 把"上下文组装器记录消费"写进本 Feature，与 tasks/README 的 F012 owner 矛盾 | High | 正确性 | 根因 | 规格漂移 | fixed | §2 改为只提供 `recordConsumption` 公共契约与消费表，调用点归 F012；§0/§1 重复声明同一边界 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-HIGH` | 1 | 2 | cross-feature-contract-drift |
+| F010-DOC-R1-006 | artifact ref 要落进既有 evidence-ref.ts，但没写返回形状如何带 revision | High | 正确性 | 根因 | 规格漂移 | fixed | §4 新增 Typed ref 子节：`ParsedRef` 加可选 `revision?: number`、解析层不抛异常、`resolveForRead` / `resolveForDispatch` 双模式强制 floating ref 不入 Dispatch snapshot | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-HIGH` | 1 | 2 | cross-feature-contract-drift |
+| F010-DOC-R1-007 | §3 与 system-design §4 建议形状字段漂移，归属列未定 | Medium | 正确性 | 根因 | 规格漂移 | fixed | §3 给出五表完整列与约束并声明为 system-design §4 的冻结实现契约；system-design 同步更新并删除悬空的 `source_attempt_id` / `source_room_id` | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | cross-doc-drift |
+| F010-DOC-R1-008 | spec §5 要求"未发布草稿不能被消费"，design 无状态载体 | Medium | 正确性 | 根因 | 原方案 | fixed | §3 增加 `state` CHECK 与"不持久化 draft revision"边界；spec §5 同步改为"未发布的临时内容" | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | unverifiable-invariant |
+| F010-DOC-R1-009 | orphan sweep 租约无存储载体，宽限期无取值 | Medium | 正确性 | 根因 | 原方案 | fixed | §3 新增 `artifact_maintenance_leases` 表；§7 给出 `ORPHAN_GRACE_MS=3600000` 与 `SWEEP_LEASE_MS=30000` | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | undefined-mechanism-referenced |
+| F010-DOC-R1-010 | §7 兼容面无 Windows，而原子改名与 realpath 正是差异点 | Medium | 正确性 | 根因 | 原方案 | fixed | §5 增加"目标已存在先校验 hash"以规避 Win32 覆盖 rename 的 `EPERM`/`EBUSY`；§7 增加 realpath + 原生 relative + 大小写不敏感比较 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | platform-gap |
+| F010-DOC-R1-011 | §3 的"回滚前兼容检查"引用了仓库不存在的回滚机制 | Medium | 正确性 | 根因 | 规格漂移 | fixed | 改为 forward-only 可执行口径（只追加表/索引、重复升级幂等），明写"仓库没有 down migration" | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | undefined-mechanism-referenced |
+| F010-DOC-R1-012 | "archive path 只读"未区分结构性保证与应用约定 | Medium | 正确性 | 根因 | 原方案 | fixed | 按 SOP 安全边界纪律如实写成"应用约定 + 每次读取 hash 校验，不声称 OS 级只读隔离，同用户外部进程仍可修改" | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | structural-boundary-claim-unverified |
+| F010-DOC-R1-013 | hash 算法与校验时机未定义 | Medium | 正确性 | 根因 | 原方案 | fixed | §3 定义 SHA-256 小写十六进制；§7 规定发布时与 resolver 每次读取都校验，mismatch 返回 `ARTIFACT_HASH_MISMATCH` 且不返回受损正文 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | unverifiable-invariant |
+| F010-DOC-R1-014 | §8/§9 未用 TEMPLATE 的验收映射表与决策表，AC 无计划测试文件 | Low | 质量 | 根因 | 原方案 | fixed | §8 改五行四列验收映射表、§9 改六行四列决策表；spec 三条 AC 回填计划测试路径 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | template-deviation |
+| F010-DOC-R1-015 | §6 漏掉 spec §3 要求的 loading / empty 两态 | Low | 正确性 | 根因 | 规格漂移 | fixed | §6 定义六态 discriminated state，并明确 `empty` 与 `missing` 不得合并 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | cross-doc-drift |
+| F010-DOC-R1-016 | 大文件上限无配置键、默认值和超限错误语义 | Low | 质量 | 根因 | 原方案 | fixed | §9 给出 `PERSONAHUB_ARTIFACT_MAX_BYTES=10485760`；§4 规定建临时 blob/开事务前校验，超限返回 `ARTIFACT_TOO_LARGE` 且无残留 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | unverifiable-invariant |
+| F010-DOC-R1-017 | design frontmatter 缺 TEMPLATE 的四个字段与 Owner 抬头行 | Low | 质量 | 症状补丁 | 原方案 | fixed | 补 `kind`/`id`/`version`/`related_features` 与 `> Owner: … \| Spec: … \| Tasks: …` 抬头行 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 1 | 2 | template-deviation |
+| F010-DOC-R1-018 | evidence-ref.ts 注释把 `artifact:` ref 归给 F009 | Low | 质量 | 根因 | 规格漂移 | fixed | `server/src/evidence-ref.ts:8` 注释改为 F010 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-HIGH` | 1 | 2 | cross-doc-drift |
+| F010-DOC-R2-019 | read 路径的解析拒绝没有 thread 载体，TR-001 在 GET 路径不可实现 | High | 正确性 | 根因 | 修复引入 | fixed | §4 定义三级降级（Dispatch thread → Artifact `thread_id` → 错误码 + 服务日志，且"不得编造 thread id"）；§7 明确 hash mismatch 始终有载体；spec TR-001 同步改为带例外的可判定版本 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R2-019` | 2 | 3 | undefined-mechanism-referenced |
+| F010-DOC-R2-020 | 发布者与 sweeper 争用同一全局租约，把所有 Artifact 发布串行化 | Medium | 正确性 | 根因 | 修复引入 | fixed | 租约收归 sweeper 独占，发布路径不参与；隔离改由宽限期加 manifest 反查保证，显式声明"不同 Artifact 可并发发布" | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R2-020` | 2 | 3 | over-broad-lock |
+| F010-DOC-R2-021 | consumption 主键不含 run_id，同一 Dispatch 换 Run 重试时记录丢失 | Medium | 正确性 | 根因 | 修复引入 | fixed | 主键改为 `(dispatch_id, run_id, artifact_id, revision, purpose)`，写明幂等粒度与"换 Run 续做各记一条"；system-design 补 PK 行 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R2-021` | 2 | 3 | unverifiable-invariant |
+| F010-DOC-R2-022 | `GET /api/evidence/:ref/artifacts` 把含 `:`/`@` 的 ref 放进 path segment | Low | 正确性 | 根因 | 修复引入 | fixed | 改为 `GET /api/evidence/artifacts?ref=<encodeURIComponent(ref)>`，并规定客户端编码一次、Fastify 解码一次、禁止 route/service 重复解码 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R2-022` | 2 | 3 | cross-doc-drift |
+| F010-DOC-R2-023 | consumption 的 dispatch_id 无 FK 而同段 run_id 有，未说明是 soft reference | Low | 质量 | 根因 | 原方案 | fixed | §3 写明 Dispatch 表由 F012 拥有、F010 migration 时尚不存在故为显式 soft reference，并要求 F012 接入时在同一事务内校验归属 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R2-023` | 2 | 3 | cross-feature-contract-drift |
+| F010-DOC-R2-024 | 18 条 finding 打包成单个 commit，违反"一 finding 一 commit" | Low | 质量 | 根因 | 流程缺口 | fixed | 未重写历史提交（按检视指引）；第 3 轮 7 条 finding 对应 7 个独立提交，作为流程修正的实物证据 | 不适用（证据为本轮 git log） | 2 | 3 | batched-fix-commit |
+| F010-DOC-R2-025 | features README 的 AC `tests:` 唯一格式与门禁实现不一致 | Low | 质量 | 根因 | 原方案 | fixed | `docs/features/README.md` 示例改为门禁实际接受的 ` - tests:` | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R2-025` | 2 | 3 | cross-doc-drift |
+| F010-DOC-R2-026 | 11 条已修 finding 没有回归锁点 | Medium | 测试覆盖 | 根因 | 流程缺口 | fixed | 新增 `F010-DOC-R1-MEDIUM-LOW` 锁点，15 个短语覆盖建议的 4 条外加 R1-008/013/014/015/016/017，语料含 design/spec/tasks/system-design 四份文档 | `tools/check-v03-plan-contracts.test.mjs::F010-DOC-R1-MEDIUM-LOW` | 2 | 3 | closed-without-lock |
+| F010-DOC-R3-027 | 三条已声明的反查 API 都落在复合主键非最左列，§3 未定义索引 | Medium | 正确性 | 根因 | 原方案 | open | 未修：建议补 `artifact_consumptions(run_id)`、`artifacts(issue_id, state)`、`artifact_evidence_links(evidence_ref)` 三条索引，并在 §8 migration 断言里加"索引存在" | — | 3 | — | unverifiable-invariant |
+| F010-DOC-R3-028 | F010 给 F012 派了事务内校验义务，但 F012 文档无载体 | Low | 正确性 | 根因 | 修复引入 | open | 未修：建议登记到 `docs/features/0.3/README.md` 第 4 节跨 Feature 不变量，不由 F010 代写 F012 任务条目 | — | 3 | — | cross-feature-contract-drift |
+
+**问题与实际修复证据**
+
+- Round 1 的 18 条由单个提交 `360072d` 关闭（这本身成为 R2-024）；Round 2 的 8 条由
+  `9c2ba31`（R2-019）、`8554936`（R2-020）、`389334c`（R2-021）、`169ceb9`（R2-026）、
+  `d46c181`（R2-022）、`d6cf86f`（R2-023）、`00ac24a`（R2-025）逐条关闭。
+- R3-027 / R3-028 为 Medium/Low，经判断不阻塞开工，随本循环收口一并记录，留到 F010 编码期处理。
+- 检视方独立变异验证两次：删除 `F010 不新增持久化 outbox` 与 `不同 Artifact 可并发发布` 后
+  `npm run test:docs` 均变红（`missing v0.3 planning contract: …`），还原后恢复全绿。
+
+**模式教训**
+
+1. **结构门禁全绿 ≠ 可以开工**。Round 1 基线上 `check:features` / `check:doc-links` /
+   `check:doc-ownership` 三项就是 PASSED，28 条发现全部在其覆盖面之外。门禁校验的是元数据和
+   结构，不校验"这份设计能不能照着写代码"。
+2. **规划稿水位与实施稿水位差一个数量级**。F010 开检时 53 行，与 F011/F012/F013 三份同批草稿
+   一致；F009 开工前经 15 次 docs 提交扩到 228 行，其中一次提交标题就是 `pass development
+   readiness gate`。**F011–F013 开工前必然要走同样的扩写**，这不是 F010 的个案。
+3. **`origin` 分布指向跨文档而非文档内部**：原方案 12、规格漂移 9、修复引入 5、流程缺口 2。
+   规格漂移 9 条全部集中在跨 feature 归属（F011 的资源视图、F012 的组装器与 Dispatch 表、
+   system-design 的建议形状、evidence-ref.ts 的 owner 注释）。v0.3 这批 linked contracts 式
+   Feature 最容易出问题的地方不是单文档内部逻辑，而是文档之间谁拥有什么。
+4. **"最低 2 轮"再次兑现，且自伤率随轮次下降**：5 条 `修复引入` 全部出现在第 2 轮及以后
+   （Round 2 四条、Round 3 一条），第 1 轮物理上不存在——当时那些段落还没写。R2-019 尤其典型：
+   第 1 轮要求"补齐 hash mismatch 的可观察失败"，修复补出的新文字自己撞上了
+   `thread_events.thread_id NOT NULL` 这条既有 schema 约束。
+5. **存活轮数全部为 1**：28 条没有一条跨多轮悬挂，未触发"连续 3 轮修不动"的升级协议。
+6. **建议命中率 ~24/28，其中四处修复方优于检视建议**，值得单独记：
+   `request_fingerprint`（堵住"同幂等键不同内容被静默复用"，检视建议里没有这个洞）；
+   幂等键组成用 `dispatch_id + logical_output_key` 而非检视建议的裸 `dispatch_id`——
+   **检视建议在这一点上是错的**，裸 dispatch_id 会把同一派工的多个成果合并成一个 revision；
+   query 编码额外堵住 route/service 重复解码；补锁从建议的 4 个短语扩到 15 个。
+   全接纳（0 rejected / 0 partial）通常是检视在凑数的信号，但这四处说明是带判断地采纳。
+7. **变异验证要先数短语出现次数**。本循环第一次变异选了在 §3/§7 各出现一次的短语，只删一处
+   门禁没红，一度看起来像锁点失效。`verifyEachPhraseMutation` 内部用 `replaceAll` 所以自检有效，
+   手工验证则必须删干净或改用唯一短语。这条对以后所有"我自己验一遍门禁"的动作都适用。
+8. **`verifyEachPhraseMutation` 是本循环留下的正向增量**：既有 `verifyMutation` 只变异短语表的
+   第一个，新函数逐一变异每个短语，强度提高一档，后续锁点应默认用它。
