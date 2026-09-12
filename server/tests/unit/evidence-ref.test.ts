@@ -59,8 +59,11 @@ describe("Evidence Ref Parser/Resolver (T016)", () => {
     });
 
     it("returns unknown for unrecognized prefix", () => {
-      const parsed = parseEvidenceRef("artifact:art_789");
+      // F010 added `artifact` as a known kind; this case now guards a prefix
+      // that is still unknown so the table can't silently grow.
+      const parsed = parseEvidenceRef("memory:mem_789");
       expect(parsed.kind).toBe("unknown");
+      expect(parsed.id).toBe("mem_789");
     });
 
     it("returns unknown for empty string", () => {
