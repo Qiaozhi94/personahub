@@ -405,6 +405,18 @@ test('F010-DOC-R2-019: resolver rejection events always have a real thread carri
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R2-020: orphan maintenance never serializes artifact publication', () => {
+  const documents = [read('docs/features/0.3/F010-artifact-foundation-provenance/design.md')];
+  const phrases = [
+    '`archive-maintenance` 租约只由 orphan sweeper 以 CAS 获取',
+    '发布路径不参与租约',
+    '不同 Artifact 可并发发布',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),

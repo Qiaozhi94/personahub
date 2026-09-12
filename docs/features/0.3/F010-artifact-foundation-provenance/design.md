@@ -76,7 +76,7 @@ F010 只提供幂等的 `recordConsumption(dispatch_id, run_id, revision_ref)` �
 `artifact_maintenance_leases`
 
 - `name TEXT PRIMARY KEY`、`owner_id TEXT NOT NULL`、`expires_at_ms INTEGER NOT NULL`。
-- 发布者与 orphan sweeper 都以 CAS 获取同一个 `archive-maintenance` 租约；租约过期后才允许新 owner 接管，避免 sweep 与在途 rename / manifest commit 竞争。
+- `archive-maintenance` 租约只由 orphan sweeper 以 CAS 获取，同一时刻最多一个 sweeper 运行；租约过期后才允许新 owner 接管。发布路径不参与租约；发布与 sweep 的隔离由宽限期加 manifest 反查保证，不靠全局互斥，因此不同 Artifact 可并发发布。
 
 ### 状态与兼容
 
@@ -134,7 +134,7 @@ archive locator 固定为 `<sha256前2位>/<sha256>`。目标已存在时先校�
 
 - **hash**：发布时与 resolver 每次读取时都对原始字节计算 SHA-256；inline 使用 UTF-8 编码后的字节。hash mismatch 已定位到 revision，始终使用 `artifacts.thread_id` 写 `artifact.resolve_rejected`，返回 `ARTIFACT_HASH_MISMATCH` 且绝不返回受损正文。sweep 只用 hash 判断候选文件名，不替代读取时校验。
 - **路径边界**：先 `realpath` 授权根目录与 source 文件，再用平台原生 `relative(root, file)` 判断结果不得为绝对路径、`..` 或以 `..${sep}` 开头；这会解析 junction / symlink，并按 Windows 大小写不敏感语义比较。越界返回 `ARTIFACT_SOURCE_OUTSIDE_ROOT`。
-- **恢复与租约**：`PERSONAHUB_ARTIFACT_ORPHAN_GRACE_MS` 默认 `3600000`（1 小时），`PERSONAHUB_ARTIFACT_SWEEP_LEASE_MS` 默认 `30000`（30 秒）。发布者与 sweeper 竞争 `archive-maintenance` DB 租约；重启清理只删除超过安全宽限期且未被任何 manifest 引用的 orphan，并额外要求 hash 文件名合法。临时文件也只在超过宽限期后删除。
+- **恢复与租约**：`PERSONAHUB_ARTIFACT_ORPHAN_GRACE_MS` 默认 `3600000`（1 小时），`PERSONAHUB_ARTIFACT_SWEEP_LEASE_MS` 默认 `30000`（30 秒）。只有 orphan sweeper 获取 `archive-maintenance` DB 租约；发布路径不参与租约。重启清理只删除超过安全宽限期且未被任何 manifest 引用的 orphan，并额外要求 hash 文件名合法；临时文件也只在超过宽限期后删除，因此 sweep 不会删除在途发布内容。
 - **只读边界**：content-addressed 命名和 ArtifactService“不打开既有 archive 做写入”是应用约定，不是操作系统级只读隔离；同用户的外部进程仍可能修改文件。resolver 每次读取 hash 校验是完整性兜底，本 Feature 不声称 chmod / ACL 安全边界。
 - **兼容**：旧 `event:` / `file-change-set:` ref 行为不变；新增 artifact revision 解析测试覆盖 POSIX、Windows 分隔符模拟、junction/symlink 越界和大小写路径。Migration 只前进，不要求不存在的 down/rollback 流程。
 
