@@ -1182,3 +1182,11 @@ archived ref 的消费限制与 F010 契约一致。
    手工验证则必须删干净或改用唯一短语。这条对以后所有"我自己验一遍门禁"的动作都适用。
 8. **`verifyEachPhraseMutation` 是本循环留下的正向增量**：既有 `verifyMutation` 只变异短语表的
    第一个，新函数逐一变异每个短语，强度提高一档，后续锁点应默认用它。
+9. **R6-029 复发了，它不再是一次性抖动**。本循环收口提交（纯文档追加）让 CI run `34674767932`
+   的 E2E 变红，症状与循环 20 的 R6-029 逐字相同：`f009-a11y NFR-002 zero console errors across
+   all M1 routes` 捕获到 `Failed to load resource: net::ERR_NO_BUFFER_SPACE`。`--failed` 重跑同一
+   commit 即绿（2m38s）。两次都出现在 Windows runner、都由纯文档提交触发、都与产品代码无关——
+   **同一现象第二次出现就不该继续挂着**。循环 20 当时留下的两个候选方案（CI 上配 retries
+   vs. 把传输层失败与应用级 console error 分开断言）需要一次明确取舍：建议取后者，因为配 retries
+   会连真实的偶发 console error 一起掩盖，而 `ERR_NO_BUFFER_SPACE` 这类传输层失败本来就不属于
+   "应用是否有 console error" 要回答的问题。留作 F011 开工前的独立小任务。
