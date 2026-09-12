@@ -110,7 +110,7 @@ type Scope = {
   - `source_identity` 是**跨扫描稳定的来源身份**（内置为包内路径、用户为创建时分配的 ULID、legacy 为 `workflow:<旧id>`）。冲突消解、重复扫描去重都以它为准；只靠 `display_name` 无法区分"同一个来源被重扫"与"另一个来源同名"。
 - `skill_revisions`：`(skill_id, version)` 复合主键、`title`、`description`、`capability_tags_json`、`steps_json`（可空；非空即编组，FR-005）、`completion_requirements_json`、`source_locator TEXT`、`content_hash TEXT NOT NULL`、`created_at`
   - `content_hash` 是规范化 JSON（键排序、去空白）的 SHA-256，既是 revision 的完整性锚点，也让"同内容重复导入"可判定。
-  - **不可变由数据库保证**，不依赖 repository 自觉：建 `BEFORE UPDATE` trigger，对内容列的任何 UPDATE 抛 `SQLITE_CONSTRAINT`。AC-004 的"逐字不变"因此有结构性依据，而不是约定。
+  - **不可变由数据库保证**，不依赖 repository 自觉：`BEFORE UPDATE` trigger 对内容列的任何 UPDATE 抛 `SQLITE_CONSTRAINT`；**`BEFORE DELETE` trigger 同样拦截**——只禁改不禁删，删掉再以同版本号重插就绕过了不可变；`skill_revision_files` 的 INSERT / UPDATE / DELETE 也一并拦截，否则 revision 行没变而它的文件集变了，`content_hash` 之外的内容照样漂移。三个 trigger 合起来才等于"published revision 冻结"。
 - `skill_revision_files`：`(skill_id, version, rel_path)` 主键 + `content_hash`、`size_bytes`。承载 FR-008 的"只读文件"清单；文件内容按 `source_locator` + `rel_path` 读取，API 只返回清单与 hash，正文单独取。
 - `skill_delivery_status`：`(skill_id, version, adapter_id)` 主键 + `state TEXT CHECK (state IN ('delivered','unsupported','failed'))`、`native_format TEXT`、`detail TEXT`、`updated_at`。**"下发状态"是"翻译成哪些 adapter 原生格式"的事实，不能由 `skills.state='active'` 推断**（V3.44 语义）。v0.3 由 SkillRegistry 在激活时写入，adapter 不支持即 `unsupported`，不阻断激活。
 
@@ -125,13 +125,26 @@ type Requirement = {
   strength: "hard" | "soft";   // hard 不满足即 ineligible；soft 只降权、不阻断
   tags: string[];              // 结构化，不接受自由文本（ADR 0012：确定性规则引擎无法消费自由文本）
   description?: string;        // 给人读，不参与匹配
+  evidence?: EvidenceSpec;     // kind="completion" 时必填，见下
 };
+
+// ADR 0010：完成要求必须提供 Evidence Adapter 契约，否则验收侧拿不到"这条要求靠什么证明"
+type EvidenceSpec = {
+  evidence_kind: "test_run" | "file_change" | "command_output" | "artifact" | "human_attestation";
+  ref_hint?: string;           // 典型 ref 形状提示，如 "event:" / "artifact:<id>@<rev>"
+  presentation: "inline" | "open_external" | "none";  // 验收面如何呈现
+  freshness: { scope: "per_attempt" | "per_dispatch" | "persistent" };  // 何时过期需重取
+  independence_required: boolean;  // true 时同源验证不得计入（v0.3 不变量 6）
+  status_map: { satisfied: string[]; failed: string[] };  // 证据状态 → 要求状态的映射
+  decomposable: false;         // v0.3 不支持要求再分解；显式写死，避免实现方自行递归
+};
+
 type Step = { id: string; order: number; title: string; requirements: Requirement[] };
 ```
 
 - **未知字段 fail-closed**：解析时遇到 schema 外的键一律拒绝激活并返回 `SKILL_SCHEMA_UNKNOWN_FIELD`，不静默丢弃——静默丢弃会让下一版 schema 的内容在旧版本上"看起来生效了"。
 - `Step.order` 在 revision 内必须连续且唯一；`Requirement.id` 在 revision 内唯一。
-- **合并规则**：effective requirements = Skill 级 requirements ∪ 所有 step 的 requirements，按 `(kind, tags 排序后, strength)` 去重；同 tags 不同 strength 时取 `hard`（只会加严，§5）。输出按 `(kind, id)` 稳定排序，保证同一 ref 的两次解析逐字节相同。
+- **合并规则**：effective requirements = Skill 级 requirements ∪ 所有 step 的 requirements。**去重键是 `(kind, tags 升序join)`，不含 `strength`**——把 strength 放进键会让 hard 与 soft 成为两个不同条目，"取 hard"永远不会发生，这两条规则不可同时成立。同键的多条合并为一条：`strength` 取 `hard`（只会加严，§5）；`evidence` 取 `hard` 那条的；若同键同强度而 `evidence` 不同，激活时报 `SKILL_EVIDENCE_CONFLICT` 拒绝，不静默挑一个。`description` 拼接去重。合并后条目的 `id` 取参与合并中字典序最小的那个，保证可追溯且稳定。输出按 `(kind, id)` 稳定排序，保证同一 ref 的两次解析逐字节相同。
 
 #### 冲突消解闭环
 
