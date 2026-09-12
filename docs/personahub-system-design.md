@@ -137,7 +137,7 @@ claim_evidence_links
   claim_id, argument_id, evidence_ref, relation, independence
 ```
 
-F010 冻结约束：Artifact 以 `issue_id` 为唯一归属，Project / Workspace 由 Issue 推导；现有 `runs` 行即 Attempt，因此 revision 只保存 `source_run_id`，不创建悬空的 `source_attempt_id`。文件 revision 分存可变 source locator 与 content-addressed archive locator；`(artifact_id, idempotency_key)` 唯一，消费主键固定到确定 revision。完整字段约束、发布协议与错误语义以 F010 `design.md` 为准。
+F010 冻结约束：Artifact 以 `issue_id` 为唯一归属，Project / Workspace 由 Issue 推导；现有 `runs` 行即 Attempt，因此 revision 只保存 `source_run_id`，不创建悬空的 `source_attempt_id`。文件 revision 分存可变 source locator 与 content-addressed archive locator；`(artifact_id, idempotency_key)` 唯一，消费主键固定到确定 revision。`artifact_consumptions.dispatch_id` 在 F010 是 soft reference，F012 接入时以事务内归属校验保证一致性。完整字段约束、发布协议与错误语义以 F010 `design.md` 为准。
 
 不变量：revision 发布后不可变；进入 Dispatch 的 ref 必须带 revision；不存在 / 越权 / hash 不符不得解析成“当前内容”。Claim 状态是证据投影，不是百分比。
 

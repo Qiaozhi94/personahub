@@ -67,6 +67,7 @@ F010 只提供幂等的 `recordConsumption(dispatch_id, run_id, revision_ref)` �
 
 - `artifact_id` + `revision` 外键指向确定 revision；另存 `dispatch_id TEXT NOT NULL`、`run_id TEXT NOT NULL REFERENCES runs(id)`、`purpose TEXT NOT NULL`、`consumed_at TEXT NOT NULL`。
 - `PRIMARY KEY (dispatch_id, run_id, artifact_id, revision, purpose)`；幂等粒度是 `(dispatch, run, revision, purpose)`，同一 Run 重放 `recordConsumption` 返回原记录，不产生第二条消费。同一 Dispatch 换 Run 续做时各记一条，保证 Run → Artifact 反查不漏。
+- `dispatch_id` 不建外键：Dispatch 表由 F012 拥有，F010 migration 执行时尚不存在，因此本列是显式 soft reference。F012 接入 `recordConsumption` 时必须在同一事务内校验 Dispatch 存在且与 `run_id` 归属一致；v0.3 不为补 FK 重建本表。
 
 `artifact_evidence_links`
 

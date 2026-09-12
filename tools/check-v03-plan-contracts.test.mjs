@@ -473,6 +473,22 @@ test('F010-DOC-R2-022: evidence refs use one encoded query boundary', () => {
   verifyEachPhraseMutation(documents, phrases);
 });
 
+test('F010-DOC-R2-023: pre-F012 dispatch links are explicit soft references', () => {
+  const documents = [
+    read('docs/features/0.3/F010-artifact-foundation-provenance/design.md'),
+    read('docs/personahub-system-design.md'),
+  ];
+  const phrases = [
+    '`dispatch_id` 不建外键',
+    '本列是显式 soft reference',
+    '同一事务内校验 Dispatch 存在且与 `run_id` 归属一致',
+    '`artifact_consumptions.dispatch_id` 在 F010 是 soft reference',
+  ];
+
+  requirePhrases(documents, phrases);
+  verifyEachPhraseMutation(documents, phrases);
+});
+
 test('V03-PLAN-R1-005: adapter capability probes are owned readiness work', () => {
   const documents = [
     read('docs/features/0.3/F012-session-dispatch-intervention/spec.md'),
