@@ -88,11 +88,47 @@ updated: 2026-09-12
 > `skill_visibility(skill_id, space_id, access)` 表达**可见范围**，`space_id` 语义自然从"归属"变为
 > "所有者"，是纯追加 migration，不需要重建 `skills` 表。反方向（多对多退回一对多）才需要压数据删表。
 
-- `skills`：`id TEXT PRIMARY KEY`、`space_id TEXT REFERENCES spaces(id)`（NULL 表示内置 / 全局）、`display_name TEXT NOT NULL`、`source TEXT NOT NULL CHECK (source IN ('builtin','user','legacy-workflow'))`、`current_revision INTEGER`、`state TEXT NOT NULL CHECK (state IN ('active','disabled','conflict'))`
-- `skill_revisions`：`(skill_id, version)` 复合主键、`title`、`description`、`capability_tags_json`、`steps_json`（可空；非空即编组，FR-005）、`completion_requirements_json`、`created_at`；**发布后禁止 UPDATE 内容列**
-- 同名冲突**不用唯一约束表达**——唯一约束会让第二个来源直接插入失败、无法进入可见的 `conflict` 状态。冲突由 `SkillRegistry` 在激活前检测并把**双方**置为 `conflict`（spec US-002 场景 1：两者都不生效），检测键为 `(space_id, lower(display_name))`。一对多归属使这个键唯一确定，`state` 因而能留在 `skills` 行上。
+- `skills`：`id TEXT PRIMARY KEY`、`space_id TEXT REFERENCES spaces(id)`（NULL 表示内置 / 全局）、`display_name TEXT NOT NULL`、`source_kind TEXT NOT NULL CHECK (source_kind IN ('builtin','user','legacy-workflow'))`、`source_identity TEXT NOT NULL`、`current_revision INTEGER`、`state TEXT NOT NULL CHECK (state IN ('active','disabled','conflict'))`
+  - `source_identity` 是**跨扫描稳定的来源身份**（内置为包内路径、用户为创建时分配的 ULID、legacy 为 `workflow:<旧id>`）。冲突消解、重复扫描去重都以它为准；只靠 `display_name` 无法区分"同一个来源被重扫"与"另一个来源同名"。
+- `skill_revisions`：`(skill_id, version)` 复合主键、`title`、`description`、`capability_tags_json`、`steps_json`（可空；非空即编组，FR-005）、`completion_requirements_json`、`source_locator TEXT`、`content_hash TEXT NOT NULL`、`created_at`
+  - `content_hash` 是规范化 JSON（键排序、去空白）的 SHA-256，既是 revision 的完整性锚点，也让"同内容重复导入"可判定。
+  - **不可变由数据库保证**，不依赖 repository 自觉：建 `BEFORE UPDATE` trigger，对内容列的任何 UPDATE 抛 `SQLITE_CONSTRAINT`。AC-004 的"逐字不变"因此有结构性依据，而不是约定。
+- `skill_revision_files`：`(skill_id, version, rel_path)` 主键 + `content_hash`、`size_bytes`。承载 FR-008 的"只读文件"清单；文件内容按 `source_locator` + `rel_path` 读取，API 只返回清单与 hash，正文单独取。
+- `skill_delivery_status`：`(skill_id, version, adapter_id)` 主键 + `state TEXT CHECK (state IN ('delivered','unsupported','failed'))`、`native_format TEXT`、`detail TEXT`、`updated_at`。**"下发状态"是"翻译成哪些 adapter 原生格式"的事实，不能由 `skills.state='active'` 推断**（V3.44 语义）。v0.3 由 SkillRegistry 在激活时写入，adapter 不支持即 `unsupported`，不阻断激活。
 
-`project_skill_refs`：`(project_id, skill_id)` 主键 + `pinned_version INTEGER NULL`（NULL = 跟随 current）。只存引用，不复制内容（FR-007）。
+#### canonical revision schema
+
+`steps_json` 与 `completion_requirements_json` 的形状是 F012 的消费契约，必须冻结：
+
+```ts
+type Requirement = {
+  id: string;              // revision 内唯一，kebab-case，保留前缀 "sys-" 不可用
+  kind: "capability" | "completion";
+  strength: "hard" | "soft";   // hard 不满足即 ineligible；soft 只降权、不阻断
+  tags: string[];              // 结构化，不接受自由文本（ADR 0012：确定性规则引擎无法消费自由文本）
+  description?: string;        // 给人读，不参与匹配
+};
+type Step = { id: string; order: number; title: string; requirements: Requirement[] };
+```
+
+- **未知字段 fail-closed**：解析时遇到 schema 外的键一律拒绝激活并返回 `SKILL_SCHEMA_UNKNOWN_FIELD`，不静默丢弃——静默丢弃会让下一版 schema 的内容在旧版本上"看起来生效了"。
+- `Step.order` 在 revision 内必须连续且唯一；`Requirement.id` 在 revision 内唯一。
+- **合并规则**：effective requirements = Skill 级 requirements ∪ 所有 step 的 requirements，按 `(kind, tags 排序后, strength)` 去重；同 tags 不同 strength 时取 `hard`（只会加严，§5）。输出按 `(kind, id)` 稳定排序，保证同一 ref 的两次解析逐字节相同。
+
+#### 冲突消解闭环
+
+冲突不是终态，必须有出口（spec US-002 场景 1）：
+
+1. **扫描入口** `POST /api/skills:scan` 重新枚举 builtin 与 user 来源，按 `source_identity` 对齐已有行——同一来源重扫是更新，不是新建。
+2. **检测**：同一 `(space_id, lower(display_name))` 下出现多个不同 `source_identity` 的 active 候选 → 在同一事务内把**全部**涉及行置 `conflict`，并写 `skill.conflict_detected`。
+3. **消解**：`POST /api/skills/:id/resolve-conflict`，用户选定保留哪一个 → 事务内把选中行置 `active`、其余同组行置 `disabled`（不是删除，来源仍在）。
+4. **恢复**：当一组冲突只剩一个非 disabled 成员时（例如另一方被禁用或其来源消失），扫描或消解动作把它自动置回 `active`；**不会有"冲突已消失但仍卡在 conflict"的悬挂状态**。
+5. UI 的 `conflict` 状态必须给出可执行下一步，对应的就是第 3 步这个 API。
+
+`project_skill_refs`：`(project_id, skill_id)` 主键 + `is_default INTEGER NOT NULL DEFAULT 0` + `pinned_version INTEGER NULL`（NULL = 跟随 current）。只存引用，不复制内容（FR-007）。两条完整性约束：
+
+- `UNIQUE INDEX idx_project_default_skill ON project_skill_refs(project_id) WHERE is_default = 1`：spec FR-007 的"默认 Skill ref"是单数，由索引保证唯一，不靠应用逻辑。
+- `FOREIGN KEY (skill_id, pinned_version) REFERENCES skill_revisions(skill_id, version)`：pin 一个不存在的 revision 会被数据库拒绝。`pinned_version` 为 NULL 时跟随 `skills.current_revision`，而后者由 revision 插入事务维护，**不存在指向空 revision 的默认 ref**。
 
 `skill_legacy_aliases`：`legacy_id TEXT PRIMARY KEY`、`skill_id`、`version`、`raw_payload_json TEXT NOT NULL`。旧 `workflow_templates` / `validation_policies` 的原始行整体保存在 `raw_payload_json`，无法无损映射的字段不猜测语义（spec §7 决策）。
 
@@ -164,6 +200,8 @@ try {
 - `POST /api/repositories:resolve`：输入本地路径或 URL，返回自动识别的 `kind`、`display_name`、`real_path`、`git_remote_url`、`git_identity` 与授权预判；**不落库**，供 UI 先看后存（FR-004 的"不要求手填名称"）。
 - `POST /api/repositories`、`PUT /api/projects/:id/repositories`（整体设置 primary + references）
 - `GET /api/skills`、`GET /api/skills/:id/revisions/:version`、`POST /api/skills/:id/revisions`、`POST /api/skills/:id/{activate,disable}`
+- `POST /api/skills:scan`（重新枚举来源，按 `source_identity` 对齐）、`POST /api/skills/:id/resolve-conflict`（选定保留方，其余置 disabled）
+- `GET /api/skills/:id/revisions/:version/files`（只读文件清单 + hash）、`GET /api/skills/:id/revisions/:version/delivery`（按 adapter 的下发事实）
 - `PUT /api/projects/:id/default-skill`
 - `GET /api/skills/:id/effective-requirements?version=<n>`：返回能力要求与完成要求的并集，**按 revision ref 确定**；version 走 query 而非 path segment，避免 `@` 在 path 中的编码歧义。
 
@@ -229,7 +267,10 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
 | `AC-003` | unit + contract | `web/src/f013-project-skills.test.tsx` | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册 |
 | `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
-| `AC-005` | integration | `server/tests/integration/skill-conflict.test.ts` | 同名双来源**双方**都进入 `conflict` 且都不生效；非法 steps schema / 保留 ID / 无来源在激活前拒绝；重启后冲突状态可见 |
+| `AC-003` | integration | `server/tests/integration/skill-revision-schema.test.ts` | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同 |
+| `AC-003` | integration | `server/tests/integration/skill-default-ref.test.ts` | 一个项目至多一条 `is_default=1`；pin 不存在的 revision 被外键拒绝；默认 ref 永远能解析到一个真实 revision |
+| `AC-005` | integration | `server/tests/integration/skill-conflict.test.ts` | 同名双来源**双方**都进入 `conflict` 且都不生效；`resolve-conflict` 后保留方 `active`、其余 `disabled`；一组只剩一个非 disabled 成员时自动回 `active`（无悬挂 conflict）；同一 `source_identity` 重扫是更新不是新建；非法 steps schema / 保留 ID / 无来源在激活前拒绝；重启后冲突状态可见 |
+| `AC-003` | integration | `server/tests/integration/skill-delivery.test.ts` | 下发状态按 adapter 独立记录，`unsupported` 不阻断激活；`active` 不能推断出 `delivered` |
 
 批量场景（`review-convergence` 第 5 条）：migration 测试的 fixture 必须同时含**多个** Project、多个 Issue（含无 workspace 的历史行）与多个 legacy workflow，不能只测单条记录——`issues` 重建与 Space 回填正是典型的"单条通过、批量错位"场景。
 
