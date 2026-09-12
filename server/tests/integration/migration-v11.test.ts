@@ -30,10 +30,24 @@ function seedValidatorRun(
   ).run(id, round, attempt, now, now);
 }
 
-/** Applies every migration except the last one, so v11 can be tested as an upgrade. */
+/** Applies every migration except v11, so v11 can be tested as an upgrade.
+ *  Later migrations (v12+) must be undone too — otherwise schema_version would
+ *  sit past 11 and the v11 block would never re-run. */
 function applyThroughV10(db: Database.Database): void {
   applyMigrations(db);
-  // Fresh installs already ran v11; simulate a v10 database by undoing it.
+  // Fresh installs already ran v12; undo it (forward-only chain: tables only).
+  db.exec(`
+    DROP INDEX IF EXISTS idx_artifact_consumptions_run;
+    DROP INDEX IF EXISTS idx_artifacts_issue;
+    DROP INDEX IF EXISTS idx_artifact_evidence_links_ref;
+    DROP TABLE IF EXISTS artifact_consumptions;
+    DROP TABLE IF EXISTS artifact_evidence_links;
+    DROP TABLE IF EXISTS artifact_revisions;
+    DROP TABLE IF EXISTS artifacts;
+    DROP TABLE IF EXISTS artifact_maintenance_leases;
+  `);
+  db.prepare("DELETE FROM schema_version WHERE version = 12").run();
+  // Simulate a v10 database by undoing v11.
   // Drop the index before the column: SQLite refuses to drop an indexed column.
   db.exec("DROP INDEX IF EXISTS idx_runs_validator_per_round_attempt");
   db.exec("ALTER TABLE runs DROP COLUMN validation_attempt");
@@ -59,7 +73,8 @@ describe("BUG-003 schema v11 migration", () => {
 
   it("fresh install reaches the head version", () => {
     applyMigrations(db);
-    expect(CURRENT_SCHEMA_VERSION).toBe(11);
+    // forward-compatible: later migrations (v12+) may raise the head version
+    expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(11);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
     expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
   });
