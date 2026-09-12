@@ -27,7 +27,7 @@ updated: 2026-09-12
 
 - **前端**：注册 `/projects/:projectId/:tab`（文件 / Skills / 设置）与「能力」槽位的 Skills 列表 + 详情；首次设置 Space 流程；删除 F009 的 8 个 transitional-host。
 - **后端 / API**：SpaceService、RepositoryRegistry、ProjectService、SkillRegistry、EffectiveRequirementsResolver；IssueService 创建签名改为要求 `space_id`、允许 `project_id` 为空。
-- **存储 / Migration**：新增 `spaces`、`repositories`、`repository_machine_paths`、`project_repository_refs`、`skills`、`skill_revisions`、`project_skill_refs`、`skill_legacy_aliases`；**重建 `issues` 表**（唯一一处修改既有列，见 §3）。
+- **存储 / Migration**：新增 `spaces`、`repositories`、`repository_machine_paths`、`project_repository_refs`、`skills`、`skill_revisions`、`project_skill_refs`、`skill_legacy_aliases`；**重建 `projects` 与 `issues` 两张表**（唯一两处修改既有列，见 §3）。新增表还包括 `skill_revision_files`、`skill_delivery_status`、`skill_legacy_combo_map`。
 - **Runtime**：派工前的路径授权复核点，由 F012 在组装上下文时调用本 Feature 的只读 contract。
 - **Event / Evidence**：Space 创建 / 选择、路径授权变更、项目引用变更、Skill revision 激活 / 冲突写审计事件；无会话上下文的配置类事件按 §4 规则处理。
 - **文档 / 配置**：`docs/personahub-system-design.md` §3 回写；`docs/features/0.3/README.md` 第 4 节不变量 11 由本 Feature 兑现。
@@ -38,7 +38,7 @@ updated: 2026-09-12
 
 `IssueService` 保持 Issue 写入口不变，仅调整入参契约：`space_id` 必填、`project_id` 可空。F013 不改 Issue 状态机。
 
-依赖方向固定为：API → Service → Repository；`EffectiveRequirementsResolver` 与 `RepositoryRegistry.getAuthorization()` 是 F012 唯一可见的两个只读入口，**F013 不感知 Dispatch、不调用 F012**。Skill revision 的不可变 ID / version 契约由本 Feature 自持，不依赖 F010 Artifact 实现。
+依赖方向固定为：API → Service → Repository；`EffectiveRequirementsResolver` 与 `RepositoryRegistry.verifyAuthorization()` 是 F012 唯一可见的两个只读入口，**F013 不感知 Dispatch、不调用 F012**。Skill revision 的不可变 ID / version 契约由本 Feature 自持，不依赖 F010 Artifact 实现。
 
 ## 3. 数据模型与 Migration
 
@@ -88,8 +88,8 @@ updated: 2026-09-12
 
 ```ts
 type Scope = {
-  read:  string[];   // 相对仓库根的 POSIX 风格前缀，"" 表示整仓
-  write: string[];   // 必须是 read 的子集；read_only 仓库恒为 []
+  read: string[]; // 相对仓库根的 POSIX 风格前缀，"" 表示整仓
+  write: string[]; // 必须是 read 的子集；read_only 仓库恒为 []
 };
 ```
 
@@ -149,23 +149,23 @@ type Scope = {
 
 ```ts
 type Requirement = {
-  id: string;              // revision 内唯一，kebab-case，保留前缀 "sys-" 不可用
+  id: string; // revision 内唯一，kebab-case，保留前缀 "sys-" 不可用
   kind: "capability" | "completion";
-  strength: "hard" | "soft";   // hard 不满足即 ineligible；soft 只降权、不阻断
-  tags: string[];              // 结构化，不接受自由文本（ADR 0012：确定性规则引擎无法消费自由文本）
-  description?: string;        // 给人读，不参与匹配
-  evidence?: EvidenceSpec;     // kind="completion" 时必填，见下
+  strength: "hard" | "soft"; // hard 不满足即 ineligible；soft 只降权、不阻断
+  tags: string[]; // 结构化，不接受自由文本（ADR 0012：确定性规则引擎无法消费自由文本）
+  description?: string; // 给人读，不参与匹配
+  evidence?: EvidenceSpec; // kind="completion" 时必填，见下
 };
 
 // ADR 0010：完成要求必须提供 Evidence Adapter 契约，否则验收侧拿不到"这条要求靠什么证明"
 type EvidenceSpec = {
   evidence_kind: "test_run" | "file_change" | "command_output" | "artifact" | "human_attestation";
-  ref_hint?: string;           // 典型 ref 形状提示，如 "event:" / "artifact:<id>@<rev>"
-  presentation: "inline" | "open_external" | "none";  // 验收面如何呈现
-  freshness: { scope: "per_attempt" | "per_dispatch" | "persistent" };  // 何时过期需重取
-  independence_required: boolean;  // true 时同源验证不得计入（v0.3 不变量 6）
-  status_map: { satisfied: string[]; failed: string[] };  // 证据状态 → 要求状态的映射
-  decomposable: false;         // v0.3 不支持要求再分解；显式写死，避免实现方自行递归
+  ref_hint?: string; // 典型 ref 形状提示，如 "event:" / "artifact:<id>@<rev>"
+  presentation: "inline" | "open_external" | "none"; // 验收面如何呈现
+  freshness: { scope: "per_attempt" | "per_dispatch" | "persistent" }; // 何时过期需重取
+  independence_required: boolean; // true 时同源验证不得计入（v0.3 不变量 6）
+  status_map: { satisfied: string[]; failed: string[] }; // 证据状态 → 要求状态的映射
+  decomposable: false; // v0.3 不支持要求再分解；显式写死，避免实现方自行递归
 };
 
 type Step = { id: string; order: number; title: string; requirements: Requirement[] };
@@ -250,12 +250,12 @@ CREATE INDEX idx_projects_space          ON projects(space_id);
 
 ADR 0012 第 7 条要求两者**一起**收敛进 Skill——只迁 workflow 会丢掉完成标准，而完成标准正是 Skill revision 要承载的东西。映射矩阵：
 
-| 旧字段 | 去向 | 规则 |
-|---|---|---|
-| `workflow_templates.steps_json` | `skill_revisions.steps_json` | 逐步转 `Step`，`order` 按原数组下标；无 id 的步骤生成 `legacy-step-<n>` |
-| `workflow_templates.evidence_requirements_json` | step / Skill 级 `completion` Requirement | 能映射成 tags 的转为结构化 Requirement；纯自由文本转 `description` 且 `strength='soft'`，**不伪造 tags** |
-| `validation_policies` 的判定条件 | Skill 级 `completion` Requirement，`strength='hard'` | 验证要求默认是硬要求 |
-| 两表其余字段 | `skill_legacy_aliases.raw_payload_json` | 原样保留，不猜测语义；该表只做来源追溯，不承担组合解析 |
+| 旧字段                                          | 去向                                                 | 规则                                                                                                     |
+| ----------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `workflow_templates.steps_json`                 | `skill_revisions.steps_json`                         | 逐步转 `Step`，`order` 按原数组下标；无 id 的步骤生成 `legacy-step-<n>`                                  |
+| `workflow_templates.evidence_requirements_json` | step / Skill 级 `completion` Requirement             | 能映射成 tags 的转为结构化 Requirement；纯自由文本转 `description` 且 `strength='soft'`，**不伪造 tags** |
+| `validation_policies` 的判定条件                | Skill 级 `completion` Requirement，`strength='hard'` | 验证要求默认是硬要求                                                                                     |
+| 两表其余字段                                    | `skill_legacy_aliases.raw_payload_json`              | 原样保留，不猜测语义；该表只做来源追溯，不承担组合解析                                                   |
 
 **取哪个 policy**：`workflow_templates.validation_policy_id` 与 `issues.validation_policy_id` 都存在且不同时，**以 Issue 上的为准**——它是这条历史任务实际执行时生效的那份，workflow 上的只是创建时的默认值。为此迁移按 `(workflow_template_id, validation_policy_id)` **组合**生成 Skill revision：同一 workflow 配过两个 policy，就产生两个 revision，各自 alias 指回来源组合。没有任何 Issue 引用的 workflow 用其自带 policy 生成一条 revision。
 
@@ -338,13 +338,13 @@ F012 负责把结果冻结进 Dispatch snapshot；F013 不感知 snapshot 是否
 
 事件类型覆盖**每一个改变归属、授权或生效状态的动作**，缺一则该状态变化不可回放：
 
-| 分组 | 事件 |
-|---|---|
-| Space | `space.created`、`space.selected`、`space.archived`、`space.restored` |
-| Project | `project.refs_changed`、`project.default_skill_changed`、`project.archived`、`project.restored`、`project.deleted` |
-| 授权 | `repository.authorized`、`repository.revoked`、`repository.scope_changed`、`repository.verify_failed`（带 reason code） |
-| Skill | `skill.revision_activated`、`skill.disabled`、`skill.conflict_detected`、`skill.conflict_resolved`、`skill.scanned` |
-| 下发 | `skill.delivery_succeeded`、`skill.delivery_failed`（带 adapter_id 与 detail） |
+| 分组    | 事件                                                                                                                    |
+| ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Space   | `space.created`、`space.selected`、`space.archived`、`space.restored`                                                   |
+| Project | `project.refs_changed`、`project.default_skill_changed`、`project.archived`、`project.restored`、`project.deleted`      |
+| 授权    | `repository.authorized`、`repository.revoked`、`repository.scope_changed`、`repository.verify_failed`（带 reason code） |
+| Skill   | `skill.revision_activated`、`skill.disabled`、`skill.conflict_detected`、`skill.conflict_resolved`、`skill.scanned`     |
+| 下发    | `skill.delivery_succeeded`、`skill.delivery_failed`（带 adapter_id 与 detail）                                          |
 
 `repository.verify_failed` 与 `skill.delivery_failed` 是失败事件但同样必须落账——它们正是事后排查"为什么这次派工没跑起来"的唯一线索。
 
@@ -384,28 +384,28 @@ F009 的 8 个 transitional-host 在本 Feature 验收时按 `migration-matrix.m
 
 Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 原始 fixture 起步，执行 v10 → current head 真实升级链，而不是在空库上建表——`issues` 重建的风险全部在"有历史数据"这一侧。
 
-| 验收项 | 测试层级 | 计划文件 / 场景 | 关键断言 |
-|---|---|---|---|
-| `AC-001` | integration | `server/tests/integration/migration-space.test.ts` | v10 fixture 升级后 `issues.space_id` 与 `projects.space_id` 全部非空、`issues.project_id` 语义可空、原 Project / Issue ID 逐一守恒；重复升级只有一个 `is_default=1` 与一个 `is_selected=1`；`PRAGMA foreign_key_check` 零行；五条新索引存在 |
-| `AC-001` | integration | `server/tests/integration/issue-space-consistency.test.ts` | 直接插入 `space_id` 与其 Project 不一致的 Issue 被 trigger 拒绝（`ISSUE_SPACE_MISMATCH`），INSERT 与 UPDATE 两条路径都覆盖；`POST /api/issues` 缺 `space_id` 时拒绝而非取当前选中 Space；省略 `project_id` 时创建成功且三个 legacy 列为空 |
-| `AC-001` | integration | `server/tests/integration/space-first-run.test.ts` | 清洁库首次创建 Space 后可创建游离任务（`project_id` 为空）；`select` 后重启服务，当前 Space 仍是选中的那个；默认 Space 归档被拒绝（`SPACE_ARCHIVE_BLOCKED`）；按 ID 深链读取其它 Space 的 Project 不 404 |
-| `AC-001` | integration | `server/tests/integration/migration-runner-fk.test.ts` | migration 前后 `PRAGMA foreign_keys` 均为 ON；注入异常的失败路径提交后仍恢复 ON；失败时 `schema_version` 未推进且表结构未改（无"表已改、版本没记"中间态） |
-| `AC-001` | integration | `server/tests/integration/legacy-compat-projection.test.ts` | 升级后经 `IssueService` 创建带 Project 的任务，三列仍按兼容投影写入且 v0.2 执行链路可跑通；**F013 之后新建的 Project 绑定 primary 仓库时自动 upsert legacy workspace 行**，其任务同样可进入执行链；改绑 primary 后投影指向新行；reference 角色的 `legacy_workspace_id` 恒为 NULL；游离任务三列为空且不进入该链路 |
-| `AC-001` | integration | `server/tests/integration/migration-space.test.ts`（同上文件，批量断言） | fixture 含多 Project / 多 Issue / 多 legacy workflow；空态由未绑定 workspace 的 Project 覆盖，**fixture 内不存在无 workspace 的 Issue**（v10 该列 NOT NULL） |
-| `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内、`src/ab` 不在 `src/a` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path` |
-| `AC-002` | unit | `server/tests/unit/scope-validation.test.ts` | 六类非法前缀逐一被拒并返回 `SCOPE_INVALID_PREFIX`——绝对路径、`C:\x` 盘符、`\\server\share` UNC、`../..` 逃逸、含 NUL / 控制字符、含反斜杠；`.` 与 `/` 归一成 `""`；同值与被包含前缀去重保留较短者；大小写按平台语义比较且不在入库时小写化；`write` 不在 `read` 内时返回 `SCOPE_WRITE_NOT_IN_READ` |
-| `AC-002` | integration | `server/tests/integration/authorization-recheck.test.ts` | 授权后把 symlink 换靶 → `REPO_IDENTITY_CHANGED`；删除目录再同名重建 → 同样拒绝；路径失联 → `REPO_UNRESOLVED`；三层 scope 交集（含"某层 write 为空则结果 write 为空"与缺省继承）逐例断言；成功复核更新 `last_verified_at` |
-| `AC-002` | integration | `server/tests/integration/project-lifecycle.test.ts` | archive 后默认列表不含该项目、按 ID 深链仍可读、历史任务证据可读；归档态下新建 Issue / 改绑仓库 / 改默认 Skill 均返回 `PROJECT_ARCHIVED`；restore 后恢复；有 Issue / 仓库引用 / Skill 引用时 DELETE 返回 `PROJECT_HAS_REFERENCES` 并列出阻塞类别；全部清空后可删 |
-| `AC-002` | unit | `server/tests/unit/git-identity.test.ts` | identity 实时从 `git config` 读取并带 `read_at`，`repositories` 表无 `git_identity` 列 |
-| `AC-003` | unit + contract | `web/src/f013-project-skills.test.tsx` | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册 |
-| `AC-001` | integration | `server/tests/integration/legacy-skill-migration.test.ts` | 每条历史 Issue 的组合都能经 `skill_legacy_combo_map` 解析到确定 `skill@version`（逐行断言 + 反查零缺失，不接受"大部分能解析"）；**同一 workflow 配两个 policy 时两条组合各自解析到不同 revision**（这是 alias 单行表达不了的场景）；无 policy 的旧行用哨兵 `'-'` 命中；Issue 上的 policy 优先于 workflow 自带；两旧表同 ID 时 alias 复合主键各自保真；自由文本要求不被伪造成 tags |
-| `AC-004` | integration | `server/tests/integration/effective-requirements.test.ts` | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常 |
-| `AC-003` | integration | `server/tests/integration/skill-revision-schema.test.ts` | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同 |
-| `AC-003` | integration | `server/tests/integration/skill-default-ref.test.ts` | 一个项目至多一条 `is_default=1`；**四个反例逐一被拒**——① ghost Skill + NULL pinned（复合 FK 的 MATCH SIMPLE 漏洞，必须由单列 FK 拦下）② 非 disabled Skill 的 current_revision 为 NULL ③ 删除正被 current_revision 引用的 revision ④ 删除正被 pinned_version 引用的 revision；正例：默认 ref 永远解析到真实 revision |
-| `AC-005` | integration | `server/tests/integration/skill-space-boundary.test.ts` | 引用另一 Space 的 Skill 被 trigger 拒绝（`SKILL_SPACE_MISMATCH`），INSERT 与 UPDATE 都覆盖；引用全局 Skill 允许；**全局 Skill 与 Space 内同名 Skill 会被分到同一组并双双置 `conflict`**（不是各自生效）；全局 Skill 在任一 Space 冲突即整体 `conflict` |
-| `AC-005` | integration | `server/tests/integration/skill-conflict.test.ts` | 同名双来源**双方**都进入 `conflict` 且都不生效；`resolve-conflict` 后保留方 `active`、其余 `disabled`；一组只剩一个非 disabled 成员时自动回 `active`（无悬挂 conflict）；同一 `source_identity` 重扫是更新不是新建；非法 steps schema / 保留 ID / 无来源在激活前拒绝；重启后冲突状态可见 |
-| `AC-003` | integration | `server/tests/integration/skill-files-snapshot.test.ts` | 正文在激活时快照入库；激活后改动或删除源目录，详情页内容逐字节不变；`rel_path` 越界（绝对路径 / `..` / 软链出根）与超限被拒绝；快照 hash 不符时报 `SKILL_FILE_HASH_MISMATCH` 而非返回正文 |
-| `AC-003` | integration | `server/tests/integration/skill-delivery.test.ts` | 下发状态按 adapter 独立记录且 `adapter_id` 来自 `agent_configs`；单个 adapter `failed` 不回滚激活、不影响其他 adapter；重试按行幂等重放；`active` 不能推断出 `delivered`；`failed` 在读取契约里可见可重试 |
+| 验收项   | 测试层级           | 计划文件 / 场景                                                                                     | 关键断言                                                                                                                                                                                                                                                                                                                                                                          |
+| -------- | ------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AC-001` | integration        | `server/tests/integration/migration-space.test.ts`                                                  | v10 fixture 升级后 `issues.space_id` 与 `projects.space_id` 全部非空、`issues.project_id` 语义可空、原 Project / Issue ID 逐一守恒；重复升级只有一个 `is_default=1` 与一个 `is_selected=1`；`PRAGMA foreign_key_check` 零行；五条新索引存在                                                                                                                                       |
+| `AC-001` | integration        | `server/tests/integration/issue-space-consistency.test.ts`                                          | 直接插入 `space_id` 与其 Project 不一致的 Issue 被 trigger 拒绝（`ISSUE_SPACE_MISMATCH`），INSERT 与 UPDATE 两条路径都覆盖；`POST /api/issues` 缺 `space_id` 时拒绝而非取当前选中 Space；省略 `project_id` 时创建成功且三个 legacy 列为空                                                                                                                                         |
+| `AC-001` | integration        | `server/tests/integration/space-first-run.test.ts`                                                  | 清洁库首次创建 Space 后可创建游离任务（`project_id` 为空）；`select` 后重启服务，当前 Space 仍是选中的那个；默认 Space 归档被拒绝（`SPACE_ARCHIVE_BLOCKED`）；按 ID 深链读取其它 Space 的 Project 不 404                                                                                                                                                                          |
+| `AC-001` | integration        | `server/tests/integration/migration-runner-fk.test.ts`                                              | migration 前后 `PRAGMA foreign_keys` 均为 ON；注入异常的失败路径提交后仍恢复 ON；失败时 `schema_version` 未推进且表结构未改（无"表已改、版本没记"中间态）                                                                                                                                                                                                                         |
+| `AC-001` | integration        | `server/tests/integration/legacy-compat-projection.test.ts`                                         | 升级后经 `IssueService` 创建带 Project 的任务，三列仍按兼容投影写入且 v0.2 执行链路可跑通；**F013 之后新建的 Project 绑定 primary 仓库时自动 upsert legacy workspace 行**，其任务同样可进入执行链；改绑 primary 后投影指向新行；reference 角色的 `legacy_workspace_id` 恒为 NULL；游离任务三列为空且不进入该链路                                                                  |
+| `AC-001` | integration        | `server/tests/integration/migration-space.test.ts`（同上文件，批量断言）                            | fixture 含多 Project / 多 Issue / 多 legacy workflow；空态由未绑定 workspace 的 Project 覆盖，**fixture 内不存在无 workspace 的 Issue**（v10 该列 NOT NULL）                                                                                                                                                                                                                      |
+| `AC-002` | unit + integration | `server/tests/unit/repository-path.test.ts`、`server/tests/integration/repository-registry.test.ts` | symlink / junction 越界拒绝、大小写路径、`path.relative` 边界（`/a/bc` 不在 `/a/b` 内、`src/ab` 不在 `src/a` 内）、参考仓库 `read_write` 硬拒绝、项目范围只能收紧、旧 workspace 迁移不产生已授权 `real_path`                                                                                                                                                                      |
+| `AC-002` | unit               | `server/tests/unit/scope-validation.test.ts`                                                        | 六类非法前缀逐一被拒并返回 `SCOPE_INVALID_PREFIX`——绝对路径、`C:\x` 盘符、`\\server\share` UNC、`../..` 逃逸、含 NUL / 控制字符、含反斜杠；`.` 与 `/` 归一成 `""`；同值与被包含前缀去重保留较短者；大小写按平台语义比较且不在入库时小写化；`write` 不在 `read` 内时返回 `SCOPE_WRITE_NOT_IN_READ`                                                                                 |
+| `AC-002` | integration        | `server/tests/integration/authorization-recheck.test.ts`                                            | 授权后把 symlink 换靶 → `REPO_IDENTITY_CHANGED`；删除目录再同名重建 → 同样拒绝；路径失联 → `REPO_PATH_UNRESOLVED`；三层 scope 交集（含"某层 write 为空则结果 write 为空"与缺省继承）逐例断言；成功复核更新 `last_verified_at`                                                                                                                                                     |
+| `AC-002` | integration        | `server/tests/integration/project-lifecycle.test.ts`                                                | archive 后默认列表不含该项目、按 ID 深链仍可读、历史任务证据可读；归档态下新建 Issue / 改绑仓库 / 改默认 Skill 均返回 `PROJECT_ARCHIVED`；restore 后恢复；有 Issue / 仓库引用 / Skill 引用时 DELETE 返回 `PROJECT_HAS_REFERENCES` 并列出阻塞类别；全部清空后可删                                                                                                                  |
+| `AC-002` | unit               | `server/tests/unit/git-identity.test.ts`                                                            | identity 实时从 `git config` 读取并带 `read_at`，`repositories` 表无 `git_identity` 列                                                                                                                                                                                                                                                                                            |
+| `AC-003` | unit + contract    | `web/src/f013-project-skills.test.tsx`                                                              | 普通 Skill 与编组共用列表 / 详情；项目只存 ref（修改 Skill 不产生项目侧副本）；"项目记忆" tab 未注册                                                                                                                                                                                                                                                                              |
+| `AC-001` | integration        | `server/tests/integration/legacy-skill-migration.test.ts`                                           | 每条历史 Issue 的组合都能经 `skill_legacy_combo_map` 解析到确定 `skill@version`（逐行断言 + 反查零缺失，不接受"大部分能解析"）；**同一 workflow 配两个 policy 时两条组合各自解析到不同 revision**（这是 alias 单行表达不了的场景）；无 policy 的旧行用哨兵 `'-'` 命中；Issue 上的 policy 优先于 workflow 自带；两旧表同 ID 时 alias 复合主键各自保真；自由文本要求不被伪造成 tags |
+| `AC-004` | integration        | `server/tests/integration/effective-requirements.test.ts`                                           | 同一 `skill@version` ref 在 Skill 升级、禁用、冲突后解析结果逐字不变；未知 ref 返回 not-found 而非抛异常                                                                                                                                                                                                                                                                          |
+| `AC-003` | integration        | `server/tests/integration/skill-revision-schema.test.ts`                                            | 未知字段拒绝激活（`SKILL_SCHEMA_UNKNOWN_FIELD`）；`sys-` 保留前缀、重复 Requirement id、不连续 order 均拒绝；trigger 使内容列 UPDATE 抛 `SQLITE_CONSTRAINT`；同 tags 的 hard/soft 合并取 hard；两次解析输出逐字节相同                                                                                                                                                             |
+| `AC-003` | integration        | `server/tests/integration/skill-default-ref.test.ts`                                                | 一个项目至多一条 `is_default=1`；**四个反例逐一被拒**——① ghost Skill + NULL pinned（复合 FK 的 MATCH SIMPLE 漏洞，必须由单列 FK 拦下）② 非 disabled Skill 的 current_revision 为 NULL ③ 删除正被 current_revision 引用的 revision ④ 删除正被 pinned_version 引用的 revision；正例：默认 ref 永远解析到真实 revision                                                               |
+| `AC-005` | integration        | `server/tests/integration/skill-space-boundary.test.ts`                                             | 引用另一 Space 的 Skill 被 trigger 拒绝（`SKILL_SPACE_MISMATCH`），INSERT 与 UPDATE 都覆盖；引用全局 Skill 允许；**全局 Skill 与 Space 内同名 Skill 会被分到同一组并双双置 `conflict`**（不是各自生效）；全局 Skill 在任一 Space 冲突即整体 `conflict`                                                                                                                            |
+| `AC-005` | integration        | `server/tests/integration/skill-conflict.test.ts`                                                   | 同名双来源**双方**都进入 `conflict` 且都不生效；`resolve-conflict` 后保留方 `active`、其余 `disabled`；一组只剩一个非 disabled 成员时自动回 `active`（无悬挂 conflict）；同一 `source_identity` 重扫是更新不是新建；非法 steps schema / 保留 ID / 无来源在激活前拒绝；重启后冲突状态可见                                                                                          |
+| `AC-003` | integration        | `server/tests/integration/skill-files-snapshot.test.ts`                                             | 正文在激活时快照入库；激活后改动或删除源目录，详情页内容逐字节不变；`rel_path` 越界（绝对路径 / `..` / 软链出根）与超限被拒绝；快照 hash 不符时报 `SKILL_FILE_HASH_MISMATCH` 而非返回正文                                                                                                                                                                                         |
+| `AC-003` | integration        | `server/tests/integration/skill-delivery.test.ts`                                                   | 下发状态按 adapter 独立记录且 `adapter_id` 来自 `agent_configs`；单个 adapter `failed` 不回滚激活、不影响其他 adapter；重试按行幂等重放；`active` 不能推断出 `delivered`；`failed` 在读取契约里可见可重试                                                                                                                                                                         |
 
 批量场景（`review-convergence` 第 5 条）：migration 测试的 fixture 必须同时含**多个** Project、多个 Issue 与多个 legacy workflow，不能只测单条记录——`issues` 重建与 Space 回填正是典型的"单条通过、批量错位"场景。
 
@@ -415,25 +415,25 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 
 ## 9. 已确认决策与残余风险
 
-| 决策 / 风险 | 结论或缓解 | 理由 | 替代方案 / 后续 |
-|---|---|---|---|
-| `projects` / `issues` 表重建 | 同一 migration 内先后 rebuild，放宽 issues 四列，保留三个退役列不删 | SQLite 无法 ALTER COLUMN，且 `ADD COLUMN NOT NULL` 要常量默认值而默认 Space id 是运行时 ULID；删列会破坏 v0.1–v0.2 历史 refs（不变量 8） | 若未来确认无历史引用，由独立清理 Feature 删除 |
-| migration runner 改造 | 本版本用专用分支：事务外开关 FK、事务内 `foreign_key_check` 与 schema_version 原子提交、`finally` 恢复 FK | 现有 runner 把 migration 包进事务，而事务内切换 `PRAGMA foreign_keys` 是静默 no-op——照抄会得到"看起来成功"的错误迁移 | 若后续还有 rebuild 需求，把该分支提炼成 runner 能力 |
-| legacy 写入口的退场时机 | F013 只放宽 schema，不停止写三列；兼容投影由 F012 / F011 按 migration-matrix A003/A005/A007/A009 删除 | 依赖顺序是 F013 → F012 → F011，读取方尚未换；提前切断会在 F012 接管前破坏创建与执行旅程 | — |
-| Skill 归属形状 | `skills.space_id` 一对多，取代规划期的 `space_skills` 关联表（用户裁决 2026-09-12） | 多对多会把 `conflict` 变成 per-space 状态、连带重定义激活 / 禁用写入口与 UI 状态显示，而 v0.3 只有一个 Space，这些复杂度零消费者；spec §3「范围外」明确排除跨 Space 共享（PRD §15） | 未来共享叠加 `skill_visibility` 表，纯追加 migration；见 §3 与 DQ-001 |
-| 同名冲突的表达 | 不用唯一约束，由 SkillRegistry 事务内检测并把双方置 `conflict` | 唯一约束会让第二来源插入失败，无法满足"两者都不生效且状态可见" | — |
-| 默认 Space 唯一性 | 部分唯一索引 `WHERE is_default = 1` | 把幂等性交给数据库而不是升级器的判断顺序 | — |
-| 配置类事件的载体 | 写 `admin_audit_events`，不写 `thread_events` | `thread_events.thread_id` 非空，配置界面没有会话上下文，编造 thread id 会污染会话流 | 若 v0.4 引入全局事件流再迁移 |
-| 路径授权的安全等级 | 应用层过滤，如实声明不是 OS 级隔离 | 同用户 agent 进程仍可用绝对路径绕过；按 SOP 纪律不得把前者写成后者 | 容器 / 受限账户在 v0.7 评估 |
-| Migration 版本号 | 不预占，先合入者取号，后者 rebase 重编号 | F010 与 F013 并行，任何一方写死版本号都会在合入时撞车 | — |
-| legacy workflow 映射 | 按 `(workflow, policy)` 组合生成 revision，Issue 上的 policy 优先；alias 用 `(source_kind, legacy_id)` 复合主键；保留 raw payload，不猜测语义 | ADR 0012 要求两者一起收敛，只迁 workflow 会丢完成标准；Issue 上的 policy 才是历史任务实际生效的那份；两张旧表 ID 空间独立，单列主键会碰撞 | 未迁移字段数量由 F014 统计 |
+| 决策 / 风险                  | 结论或缓解                                                                                                                                    | 理由                                                                                                                                                                                | 替代方案 / 后续                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `projects` / `issues` 表重建 | 同一 migration 内先后 rebuild，放宽 issues 四列，保留三个退役列不删                                                                           | SQLite 无法 ALTER COLUMN，且 `ADD COLUMN NOT NULL` 要常量默认值而默认 Space id 是运行时 ULID；删列会破坏 v0.1–v0.2 历史 refs（不变量 8）                                            | 若未来确认无历史引用，由独立清理 Feature 删除                         |
+| migration runner 改造        | 本版本用专用分支：事务外开关 FK、事务内 `foreign_key_check` 与 schema_version 原子提交、`finally` 恢复 FK                                     | 现有 runner 把 migration 包进事务，而事务内切换 `PRAGMA foreign_keys` 是静默 no-op——照抄会得到"看起来成功"的错误迁移                                                                | 若后续还有 rebuild 需求，把该分支提炼成 runner 能力                   |
+| legacy 写入口的退场时机      | F013 只放宽 schema，不停止写三列；兼容投影由 F012 / F011 按 migration-matrix A003/A005/A007/A009 删除                                         | 依赖顺序是 F013 → F012 → F011，读取方尚未换；提前切断会在 F012 接管前破坏创建与执行旅程                                                                                             | —                                                                     |
+| Skill 归属形状               | `skills.space_id` 一对多，取代规划期的 `space_skills` 关联表（用户裁决 2026-09-12）                                                           | 多对多会把 `conflict` 变成 per-space 状态、连带重定义激活 / 禁用写入口与 UI 状态显示，而 v0.3 只有一个 Space，这些复杂度零消费者；spec §3「范围外」明确排除跨 Space 共享（PRD §15） | 未来共享叠加 `skill_visibility` 表，纯追加 migration；见 §3 与 DQ-001 |
+| 同名冲突的表达               | 不用唯一约束，由 SkillRegistry 事务内检测并把双方置 `conflict`                                                                                | 唯一约束会让第二来源插入失败，无法满足"两者都不生效且状态可见"                                                                                                                      | —                                                                     |
+| 默认 Space 唯一性            | 部分唯一索引 `WHERE is_default = 1`                                                                                                           | 把幂等性交给数据库而不是升级器的判断顺序                                                                                                                                            | —                                                                     |
+| 配置类事件的载体             | 写 `admin_audit_events`，不写 `thread_events`                                                                                                 | `thread_events.thread_id` 非空，配置界面没有会话上下文，编造 thread id 会污染会话流                                                                                                 | 若 v0.4 引入全局事件流再迁移                                          |
+| 路径授权的安全等级           | 应用层过滤，如实声明不是 OS 级隔离                                                                                                            | 同用户 agent 进程仍可用绝对路径绕过；按 SOP 纪律不得把前者写成后者                                                                                                                  | 容器 / 受限账户在 v0.7 评估                                           |
+| Migration 版本号             | 不预占，先合入者取号，后者 rebase 重编号                                                                                                      | F010 与 F013 并行，任何一方写死版本号都会在合入时撞车                                                                                                                               | —                                                                     |
+| legacy workflow 映射         | 按 `(workflow, policy)` 组合生成 revision，Issue 上的 policy 优先；alias 用 `(source_kind, legacy_id)` 复合主键；保留 raw payload，不猜测语义 | ADR 0012 要求两者一起收敛，只迁 workflow 会丢完成标准；Issue 上的 policy 才是历史任务实际生效的那份；两张旧表 ID 空间独立，单列主键会碰撞                                           | 未迁移字段数量由 F014 统计                                            |
 
 ## 10. 待确认设计问题
 
 - [x] DQ-001: Skill 与 Space 的归属是一对多（`skills.space_id`）还是多对多（`space_skills` 关联表）？
-  — 决策：**一对多**（用户裁决 2026-09-12），后续可扩展为多对多。规划期固化的多对多形状不再采用，
-  `space_skills` 不建；`tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-002` 的锁点短语已同步
-  更新为 `` `spaces` 与 `skills.space_id` ``。决定性理由是 `conflict` 状态的归属：多对多下同一 Skill
-  在不同 Space 的冲突结论不同，`state` 必须从 `skills` 搬到关联行，整套激活 / 禁用写入口要按 Space
-  上下文重定义，而 v0.3 只有一个 Space。扩展路径见 §3——叠加 `skill_visibility` 可见性表，
-  `skills.space_id` 语义从"归属"变为"所有者"，不重构已有归属。
+      — 决策：**一对多**（用户裁决 2026-09-12），后续可扩展为多对多。规划期固化的多对多形状不再采用，
+      `space_skills` 不建；`tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-002` 的锁点短语已同步
+      更新为 `` `spaces` 与 `skills.space_id` ``。决定性理由是 `conflict` 状态的归属：多对多下同一 Skill
+      在不同 Space 的冲突结论不同，`state` 必须从 `skills` 搬到关联行，整套激活 / 禁用写入口要按 Space
+      上下文重定义，而 v0.3 只有一个 Space。扩展路径见 §3——叠加 `skill_visibility` 可见性表，
+      `skills.space_id` 语义从"归属"变为"所有者"，不重构已有归属。
