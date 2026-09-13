@@ -434,6 +434,61 @@ test('F010-DOC-R2-021: consumption identity preserves every run in a dispatch', 
   verifyEachPhraseMutation(documents, phrases);
 });
 
+/**
+ * F010 code review R3-018: the implementation grew a new outward-facing error
+ * code (ARTIFACT_ARCHIVE_WRITE_FAILED, added while fixing R1-004) that never
+ * reached design.md, and three more (NOT_FOUND / RETIRED / REVISION_NOT_FOUND)
+ * had been missing since the first implementation. Phrase locks can't catch
+ * that class of drift — only a set comparison can, because the failure mode is
+ * an *addition* nobody wrote down.
+ */
+function artifactErrorCodesFromShared(source) {
+  return new Set([...source.matchAll(/^\s{2}(ARTIFACT_[A-Z_]+) =/gm)].map((m) => m[1]));
+}
+
+function artifactErrorCodesFromDesign(design) {
+  const table = /### 错误码契约[\s\S]*?(?=\n## )/.exec(design);
+  assert.ok(table, 'design.md must keep a "### 错误码契约" section');
+  return new Set(
+    [...table[0].matchAll(/`(ARTIFACT_[A-Z_]+)`/g)]
+      .map((m) => m[1])
+      // PERSONAHUB_ARTIFACT_* env knobs are config, not error codes.
+      .filter((code) => !table[0].includes('PERSONAHUB_' + code)),
+  );
+}
+
+test('F010-CODE-R3-018: the shared ARTIFACT_* error code set matches the design contract', () => {
+  const design = read('docs/features/0.3/F010-artifact-foundation-provenance/design.md');
+  const shared = read('shared/src/errors/index.ts');
+
+  const implemented = artifactErrorCodesFromShared(shared);
+  const documented = artifactErrorCodesFromDesign(design);
+
+  assert.ok(implemented.size >= 11, `expected the implementation to define ARTIFACT_* codes, got ${implemented.size}`);
+  assert.deepEqual(
+    [...implemented].sort(),
+    [...documented].sort(),
+    'every ARTIFACT_* error code must appear in design.md §4 "错误码契约" and vice versa',
+  );
+
+  // Mutation: an undocumented new code must turn this gate red, and so must a
+  // documented code that the implementation dropped.
+  assert.throws(
+    () =>
+      assert.deepEqual(
+        [...implemented, 'ARTIFACT_UNDOCUMENTED_NEWCOMER'].sort(),
+        [...documented].sort(),
+      ),
+    assert.AssertionError,
+    'adding an undocumented error code must fail this gate',
+  );
+  assert.throws(
+    () => assert.deepEqual([...implemented].sort(), [...documented].slice(1).sort()),
+    assert.AssertionError,
+    'dropping a documented error code must fail this gate',
+  );
+});
+
 test('F010-DOC-R1-MEDIUM-LOW: reviewed artifact details remain executable', () => {
   const documents = [
     read('docs/features/0.3/F010-artifact-foundation-provenance/design.md'),

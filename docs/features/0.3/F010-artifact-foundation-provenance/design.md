@@ -112,6 +112,26 @@ Artifact 只在 `active → retired` 间单向流转；retired 禁止新 revisio
 
 大小在创建临时 blob 或开启事务前校验：inline 按 UTF-8 字节数，file 同时做预读 `stat` 与流式硬上限；超限返回 `ARTIFACT_TOO_LARGE`，且不产生 Artifact、revision 或临时文件。
 
+### 错误码契约
+
+本 Feature 对外暴露的稳定错误码是下面这一组，`shared/src/errors/index.ts` 的 `ARTIFACT_*` 集合必须与本表逐项一致——新增一个不回写本表即视为契约漂移（门禁 `F010-CODE-R3-018`）：
+
+| 错误码 | HTTP | 触发条件 |
+|---|---|---|
+| `ARTIFACT_NOT_FOUND` | 404 | Artifact 实体不存在（读取、修订、消费、retire 共用） |
+| `ARTIFACT_REVISION_NOT_FOUND` | 404 | 实体存在但该 revision 无 manifest，或 archive 对象缺失 |
+| `ARTIFACT_RETIRED` | 409 | 对已 retired 的 Artifact 发起新 revision；历史解析不受影响 |
+| `ARTIFACT_REVISION_CONFLICT` | 409 | `expected_current_revision` CAS 失败 |
+| `ARTIFACT_IDEMPOTENCY_CONFLICT` | 409 | 同一 `(artifact_id, idempotency_key)` 命中但请求指纹不同 |
+| `ARTIFACT_REF_INVALID` | 400 | ref 语法非法、未知 kind，或 dispatch / consumption 模式收到 floating ref |
+| `ARTIFACT_TOO_LARGE` | 413 | inline 字节数或 file 大小超过 `PERSONAHUB_ARTIFACT_MAX_BYTES` |
+| `ARTIFACT_SOURCE_OUTSIDE_ROOT` | 400 | source 路径规范化后越出授权根目录（含 junction / symlink） |
+| `ARTIFACT_ARCHIVE_COLLISION` | 409 | content address 上已存在字节不同的对象 |
+| `ARTIFACT_ARCHIVE_WRITE_FAILED` | 500 | rename 因非竞态原因失败，或目标始终未落地；保留原始 cause，不退化成裸 ENOENT |
+| `ARTIFACT_HASH_MISMATCH` | 409 | 读取时重算 SHA-256 与 manifest 不符（inline 与 file 同协议），绝不返回受损正文 |
+
+畸形 archive locator 属于不变量破损而非上述任何一种业务失败，返回 `INTERNAL_ERROR` 并由 resolver 转成 `invalid` 读态；archive 对象存在但读取失败（EACCES / EIO / EISDIR）同样回 `invalid`，但文案与日志必须如实说明是读失败而不是 locator 畸形。
+
 ### Typed ref
 
 公共线格式为 `artifact:<artifact_id>@<revision>`；交互读取 current 可使用 `artifact:<artifact_id>`。`server/src/evidence-ref.ts` 扩展 `EvidenceRefKind` 的 `artifact`，并让 `ParsedRef` 增加可选 `revision?: number`；`@revision` 的切分、正整数校验和 builder 均在该模块完成，既有 `event` / `file_change_set` kind 及返回语义不变。
