@@ -172,10 +172,10 @@ describe("artifact read-model states", () => {
     await waitFor(() => expect(invalid.result.current.state).toBe("invalid"));
   });
 
-  it("returns loading (never fires) when the key is null", () => {
+  it("returns empty (never fires) when the key is null", () => {
     vi.mocked(apiClient.artifacts.get).mockImplementation(() => new Promise(() => {}));
     const { result } = renderHook(() => useArtifact(null), { wrapper: createWrapper() });
-    expect(result.current.state).toBe("loading");
+    expect(result.current.state).toBe("empty");
     expect(apiClient.artifacts.get).not.toHaveBeenCalled();
   });
 
