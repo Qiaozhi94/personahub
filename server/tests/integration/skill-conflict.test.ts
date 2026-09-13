@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import Database from "better-sqlite3";
 import { createTestServices, createTempDir, cleanupTempDir, disposeTestServices, type TestServices } from "../helpers.js";
 import { initGitRepo } from "../helpers.js";
 import fs from "node:fs";
@@ -51,9 +52,12 @@ describe("F013 AC-005: conflict closure essentials", () => {
 
   it("conflict states survive a full service restart (server-side truth)", () => {
     const tempDir = createTempDir();
+    // Windows 下打开的 SQLite 句柄会锁住临时目录：清理前必须全部显式关闭。
+    const openDbs: Database.Database[] = [];
     try {
       const dbPath = path.join(tempDir, "conflict.sqlite");
       const db = openDatabase(dbPath);
+      openDbs.push(db);
       const first = createTestServices(db);
       const spaceA = first.spaceService.create("A");
       first.skillRegistry.createSkill({ display_name: "Deploy", space_id: null, draft: { capability_tags: [] } });
@@ -62,6 +66,7 @@ describe("F013 AC-005: conflict closure essentials", () => {
 
       // 重启：同一 DB 重新装配服务。
       const db2 = openDatabase(dbPath);
+      openDbs.push(db2);
       const second = createTestServices(db2);
       try {
         const inA = second.skillRegistry.listForSpace(spaceA.id).filter((s) => s.display_name === "Deploy");
@@ -70,6 +75,10 @@ describe("F013 AC-005: conflict closure essentials", () => {
         disposeTestServices(second);
       }
     } finally {
+      // disposeTestServices 已关闭句柄；这里兜底防御失败路径（db.open 守卫避免二次 close 抛错）。
+      for (const handle of openDbs) {
+        if (handle.open) handle.close();
+      }
       cleanupTempDir(tempDir);
     }
   });

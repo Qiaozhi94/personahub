@@ -70,7 +70,9 @@ export function createTempDir(): string {
 }
 
 export function cleanupTempDir(dir: string): void {
-  rmSync(dir, { recursive: true, force: true });
+  // Windows 在 close 之后异步释放文件锁，rmSync 可能撞上瞬态 EPERM/EBUSY：
+  // 带重试清除，而不是让清理竞态打红整个测试文件。
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }
 
 /**
