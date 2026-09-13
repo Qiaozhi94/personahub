@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ErrorCode, type Artifact } from "@personahub/shared";
+import { ErrorCode, type Artifact, type CreateArtifactInput } from "@personahub/shared";
 import {
   useArtifact,
   useArtifactRevision,
@@ -86,6 +86,49 @@ describe("apiClient.artifacts", () => {
       expect(vi.mocked(global.fetch).mock.calls[1]?.[0]).toBe(
         `/api/artifacts?issue_id=${encodeURIComponent("iss a&b")}`,
       );
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("carries replayed on both the first write and the replay response", async () => {
+    const real = await vi.importActual<typeof import("@/lib/api-client")>("@/lib/api-client");
+    const revision = {
+      artifact_id: "art_1",
+      revision: 1,
+      storage_kind: "inline_markdown",
+      inline_content: "# body",
+      source_relative_path: null,
+      archive_relative_path: null,
+      content_hash: "a".repeat(64),
+      source_run_id: null,
+      created_by: "tester",
+      created_at: "2026-09-12T00:00:00Z",
+    } as const;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ artifact: artifactFixture, revision, replayed: false }), { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ artifact: artifactFixture, revision, replayed: true }), { status: 200 }),
+      );
+    global.fetch = fetchMock;
+    const input = {
+      artifact_id: "art_1",
+      issue_id: "iss_1",
+      thread_id: "thr_1",
+      type: "report",
+      title: "Report",
+      storage: { storage_kind: "inline_markdown", inline_content: "# body" },
+      created_by: "tester",
+      idempotency_key: "key-1",
+    } as CreateArtifactInput;
+    try {
+      const first = await real.apiClient.artifacts.create(input);
+      const replay = await real.apiClient.artifacts.create(input);
+      expect(first.replayed).toBe(false);
+      expect(replay.replayed).toBe(true);
     } finally {
       vi.restoreAllMocks();
     }

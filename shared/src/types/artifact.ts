@@ -157,4 +157,7 @@ export interface ReviseArtifactInput {
 export interface ArtifactRevisionWriteResult {
   artifact: Artifact;
   revision: ArtifactRevision;
+  /** True when an idempotency key replayed an existing revision (HTTP 200),
+   *  false for a first-time write (HTTP 201). The route always returns it. */
+  replayed: boolean;
 }
