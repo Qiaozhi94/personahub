@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHash } from "node:crypto";
 import {
   mkdirSync,
@@ -508,6 +508,14 @@ describe("F010 file publication crash matrix", () => {
       expect((error as AppError).code).toBe(ErrorCode.ARTIFACT_ARCHIVE_WRITE_FAILED);
       expect((error as AppError).details?.cause).toBeDefined();
     }
+  });
+
+  it("fsyncs the archive directory entry after a successful rename", () => {
+    const staged = fixture.archive.stageInline("durable", "art-durable");
+    const spy = vi.spyOn(fixture.archive, "fsyncDirectory");
+    const rel = fixture.archive.publishStaged(staged);
+    expect(spy).toHaveBeenCalledWith(join(fixture.archive.rootDir, rel.slice(0, 2)));
+    spy.mockRestore();
   });
 });
 

@@ -148,6 +148,28 @@ export class ArtifactArchive {
     }
   }
 
+  /** Durability of the rename itself: fsync the 2-hex parent directory so the
+   *  new dirent is on disk, not only the blob. Directory fsync is unsupported
+   *  on Windows (EPERM/EISDIR/EACCES) — those are ignored so publication stays
+   *  best-effort there while the blob fsync above still ran (design §5/§7). */
+  fsyncDirectory(dirAbsolutePath: string): void {
+    let fd: number | null = null;
+    try {
+      fd = openSync(dirAbsolutePath, "r");
+      fsyncSync(fd);
+    } catch {
+      // unsupported on this platform/filesystem — not a publication failure
+    } finally {
+      if (fd !== null) {
+        try {
+          closeSync(fd);
+        } catch {
+          // already closed
+        }
+      }
+    }
+  }
+
   removeStaged(tempPath: string): void {
     try {
       unlinkSync(tempPath);
@@ -172,6 +194,7 @@ export class ArtifactArchive {
       try {
         renameSync(staged.tempPath, target);
         renamed = true;
+        this.fsyncDirectory(dirname(target));
       } catch (error) {
         // Only a genuine cross-process race (target appeared between the check
         // and the rename) falls through to byte verification. Every other
