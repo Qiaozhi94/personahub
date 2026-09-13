@@ -3,7 +3,6 @@ import {
   ActorType,
   ThreadEventType,
   type Artifact,
-  type ArtifactConsumption,
   type ArtifactEntityRead,
   type ArtifactListRead,
   type ArtifactProvenanceRead,
@@ -141,10 +140,6 @@ export class ArtifactResolver {
       }
     }
     return items.length === 0 ? { status: "empty" } : { status: "ready", items };
-  }
-
-  listConsumptionsForRunEntities(runId: string): ArtifactConsumption[] {
-    return this.deps.artifactRepo.listConsumptionsByRun(runId);
   }
 
   // ------------------------------------------------------------------ helpers
