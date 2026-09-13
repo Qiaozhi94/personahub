@@ -67,13 +67,13 @@ export class ArtifactOrphanSweeper {
       for (const candidate of this.opts.archive.listArchiveFiles()) {
         if (referenced.has(candidate)) continue;
         if (!isWellFormedArchivePath(candidate)) continue;
-        if (!this.olderThan(this.opts.archive.rootDir, candidate, cutoff)) continue;
+        if (!this.olderThan(this.opts.archive.archiveAbsolutePath(candidate), cutoff)) continue;
         this.opts.archive.removeArchiveFile(candidate);
         deletedArchives.push(candidate);
       }
       const deletedTemps: string[] = [];
       for (const tempPath of this.opts.archive.listTempFiles()) {
-        if (!this.olderThanAbsolute(tempPath, cutoff)) continue;
+        if (!this.olderThan(tempPath, cutoff)) continue;
         this.opts.archive.removeTempFile(tempPath);
         deletedTemps.push(tempPath);
       }
@@ -90,12 +90,7 @@ export class ArtifactOrphanSweeper {
     }
   }
 
-  private olderThan(rootDir: string, archiveRelative: string, cutoffMs: number): boolean {
-    const [dir, file] = archiveRelative.split("/");
-    return this.olderThanAbsolute(`${rootDir}/${dir}/${file}`, cutoffMs);
-  }
-
-  private olderThanAbsolute(path: string, cutoffMs: number): boolean {
+  private olderThan(path: string, cutoffMs: number): boolean {
     try {
       return statSync(path).mtimeMs <= cutoffMs;
     } catch {
