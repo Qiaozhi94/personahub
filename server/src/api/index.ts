@@ -11,6 +11,7 @@ import graphRoutes from "./routes/graph.js";
 import intakeRoutes from "./routes/intake.js";
 import { workflowTemplateRoutes } from "./routes/workflow-templates.js";
 import { spaceRoutes } from "./routes/spaces.js";
+import { skillRoutes } from "./routes/skills.js";
 import { repositoryRoutes } from "./routes/repositories.js";
 import { runtimeHealthRoutes } from "./routes/runtime-health.js";
 import type { WorkflowTemplateAdminService } from "../services/workflow-template-admin.js";
@@ -22,6 +23,9 @@ import type { WorkspaceRepository } from "../repositories/workspace.js";
 import type { ThreadRepository } from "../repositories/thread.js";
 import type { ProjectService } from "../services/project.js";
 import type { SpaceService } from "../services/space.js";
+import type { SkillRegistry } from "../services/skill-registry.js";
+import type { EffectiveRequirementsResolver } from "../services/effective-requirements.js";
+import type { SkillDeliveryService } from "../services/skill-delivery.js";
 import type { RepositoryRegistry } from "../services/repository-registry.js";
 import type { WorkspaceService } from "../services/workspace.js";
 import type { IssueService } from "../services/issue.js";
@@ -50,6 +54,9 @@ import type Database from "better-sqlite3";
 
 export interface Services {
   spaceService: SpaceService;
+  skillRegistry: SkillRegistry;
+  resolver: EffectiveRequirementsResolver;
+  skillDelivery: SkillDeliveryService;
   repositoryRegistry: RepositoryRegistry;
   projectService: ProjectService;
   workspaceService: WorkspaceService;
@@ -88,6 +95,13 @@ export interface Services {
 export function registerRoutes(app: FastifyInstance, services: Services): void {
   app.register(spaceRoutes, { spaceService: services.spaceService });
   app.register(repositoryRoutes, { repositoryRegistry: services.repositoryRegistry });
+  app.register(skillRoutes, {
+    skillRegistry: services.skillRegistry,
+    resolver: services.resolver,
+    delivery: services.skillDelivery,
+    spaceService: services.spaceService,
+    projectService: services.projectService,
+  });
   app.register(projectRoutes, {
     projectService: services.projectService,
     repositoryRegistry: services.repositoryRegistry,

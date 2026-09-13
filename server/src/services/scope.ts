@@ -50,13 +50,13 @@ export function normalizeScopePrefix(raw: string): string | null {
     throw new ScopeValidationError("SCOPE_INVALID_PREFIX", "UNC prefixes are not allowed", raw);
   }
 
-  const normalized = path.posix.normalize(raw);
+  let normalized = path.posix.normalize(raw);
+  // 其余归一：去掉尾部 /（path.posix.normalize 会保留它）。
+  normalized = normalized.replace(/\/+$/, "");
   if (normalized === ".." || normalized.startsWith("../")) {
     throw new ScopeValidationError("SCOPE_INVALID_PREFIX", "Scope prefix escapes the repository root", raw);
   }
-  // 其余归一：去掉尾部 /、折叠重复 /、移除 . 段（path.posix.normalize 已完成后三者，
-  // 尾部斜杠单独处理；normalize("src/") === "src"）。
-  return normalized === "." ? null : normalized;
+  return normalized === "" ? null : normalized === "." ? null : normalized;
 }
 
 /** containment 用规范化后的 path.relative 判断，不用 startsWith（`src/ab` 不在 `src/a` 内）。 */

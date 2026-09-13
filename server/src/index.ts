@@ -61,6 +61,9 @@ import { AdminAuditEventRepository } from "./repositories/admin-audit-event.js";
 import { SpaceRepository } from "./repositories/space.js";
 import { RepositoryRegistry } from "./services/repository-registry.js";
 import { SpaceService } from "./services/space.js";
+import { SkillRegistry } from "./services/skill-registry.js";
+import { EffectiveRequirementsResolver } from "./services/effective-requirements.js";
+import { SkillDeliveryService } from "./services/skill-delivery.js";
 import { AuditService } from "./services/audit.js";
 import { RuntimeHealthService } from "./services/runtime-health.js";
 
@@ -103,6 +106,13 @@ async function main() {
   const spaceRepo = new SpaceRepository(db);
   const auditService = new AuditService(new AdminAuditEventRepository(db));
   const spaceService = new SpaceService(spaceRepo, auditService, db);
+  const skillRegistry = new SkillRegistry(db, auditService);
+  const resolver = new EffectiveRequirementsResolver(db);
+  const skillDelivery = new SkillDeliveryService(
+    db,
+    auditService,
+    process.env.PERSONAHUB_SKILL_DELIVERY_ROOT ?? path.join(path.dirname(DB_PATH), "skill-delivery"),
+  );
   const projectService = new ProjectService(projectRepo, workspaceRepo, spaceRepo, auditService, db);
   const workspaceService = new WorkspaceService(workspaceRepo, projectRepo, db);
   const issueService = new IssueService(
@@ -413,6 +423,9 @@ async function main() {
 
   registerRoutes(app, {
     spaceService,
+    skillRegistry,
+    resolver,
+    skillDelivery,
     repositoryRegistry: new RepositoryRegistry(db, auditService),
     projectService,
     workspaceService,

@@ -172,10 +172,10 @@ function parseEvidenceSpec(value: unknown): EvidenceSpec {
     );
   }
 
-  if (!isPlainObject(value.freshness) || !isPlainObject((value.freshness as Record<string, unknown>).scope)) {
+  if (!isPlainObject(value.freshness) || typeof (value.freshness as Record<string, unknown>).scope !== "string") {
     throw new SkillSchemaError("freshness.scope is required", "SKILL_SCHEMA_INVALID");
   }
-  const scope = (value.freshness as Record<string, unknown>).scope as unknown;
+  const scope = (value.freshness as Record<string, unknown>).scope as string;
   if (scope !== "per_attempt" && scope !== "per_dispatch" && scope !== "persistent") {
     throw new SkillSchemaError("freshness.scope must be per_attempt | per_dispatch | persistent", "SKILL_SCHEMA_INVALID");
   }
@@ -204,7 +204,11 @@ function parseEvidenceSpec(value: unknown): EvidenceSpec {
   };
 }
 
-export function parseRequirement(value: unknown, where: string): Requirement {
+export function parseRequirement(
+  value: unknown,
+  where: string,
+  requireEvidence: boolean = true,
+): Requirement {
   if (!isPlainObject(value)) {
     throw new SkillSchemaError(`${where} must be an object`, "SKILL_SCHEMA_INVALID");
   }
@@ -236,18 +240,28 @@ export function parseRequirement(value: unknown, where: string): Requirement {
   if (value.description !== undefined) {
     requirement.description = value.description;
   }
+  let requirement_evidence: EvidenceSpec | undefined;
   if (value.kind === "completion") {
     if (value.evidence === undefined) {
-      throw new SkillSchemaError(`${where}.evidence is required for completion requirements (ADR 0010)`, "SKILL_SCHEMA_INVALID");
+      if (requireEvidence) {
+        throw new SkillSchemaError(
+          `${where}.evidence is required for completion requirements (ADR 0010)`,
+          "SKILL_SCHEMA_INVALID",
+        );
+      }
+    } else {
+      requirement_evidence = parseEvidenceSpec(value.evidence);
     }
-    requirement.evidence = parseEvidenceSpec(value.evidence);
   } else if (value.evidence !== undefined) {
     throw new SkillSchemaError(`${where}.evidence is only valid on completion requirements`, "SKILL_SCHEMA_INVALID");
+  }
+  if (requirement_evidence) {
+    requirement.evidence = requirement_evidence;
   }
   return requirement;
 }
 
-export function parseStep(value: unknown, where: string): Step {
+export function parseStep(value: unknown, where: string, requireEvidence: boolean = true): Step {
   if (!isPlainObject(value)) {
     throw new SkillSchemaError(`${where} must be an object`, "SKILL_SCHEMA_INVALID");
   }
@@ -269,7 +283,9 @@ export function parseStep(value: unknown, where: string): Step {
     id: value.id,
     order: value.order,
     title: value.title,
-    requirements: value.requirements.map((req, index) => parseRequirement(req, `${where}.requirements[${index}]`)),
+    requirements: value.requirements.map((req, index) =>
+      parseRequirement(req, `${where}.requirements[${index}]`, requireEvidence),
+    ),
   };
 }
 
@@ -280,16 +296,24 @@ export interface ParsedRevisionContent {
 }
 
 /**
- * 解析 revision 的三个内容列并执行全部激活期校验：
+ * 解析 revision 的三个内容列并执行激活期校验：
  * - 未知字段 / 非法 id / 不连续 order / 保留前缀 → SKILL_SCHEMA_*；
  * - evidence 契约校验（status_map 闭集、完整覆盖、owner 认领）；
  * - Requirement.id 在 revision 内唯一（跨 steps 与 Skill 级）。
+ *
+ * requireCompletionEvidence：canonical（新 API）路径默认 true——completion 要求
+ * 必须携带 EvidenceSpec（ADR 0010）。legacy 迁移产生的 revision 无法无损补造
+ * adapter 契约（不猜测语义），解析端以宽松模式读取，缺失 evidence 原样保留。
  */
-export function parseRevisionContent(input: {
-  steps_json: string | null;
-  capability_tags_json: string | null;
-  completion_requirements_json: string | null;
-}): ParsedRevisionContent {
+export function parseRevisionContent(
+  input: {
+    steps_json: string | null;
+    capability_tags_json: string | null;
+    completion_requirements_json: string | null;
+  },
+  options: { requireCompletionEvidence?: boolean } = {},
+): ParsedRevisionContent {
+  const requireEvidence = options.requireCompletionEvidence ?? true;
   const capabilityTags = input.capability_tags_json
     ? (JSON.parse(input.capability_tags_json) as unknown)
     : [];
@@ -300,7 +324,7 @@ export function parseRevisionContent(input: {
     if (!Array.isArray(raw)) {
       throw new SkillSchemaError("steps_json must be an array", "SKILL_SCHEMA_INVALID");
     }
-    steps = raw.map((step, index) => parseStep(step, `steps[${index}]`));
+    steps = raw.map((step, index) => parseStep(step, `steps[${index}]`, requireEvidence));
     // order 在 revision 内必须连续且唯一（0..N-1，任意出现顺序）。
     const orders = steps.map((step) => step.order).sort((a, b) => a - b);
     orders.forEach((order, index) => {
@@ -323,7 +347,9 @@ export function parseRevisionContent(input: {
     if (!Array.isArray(raw)) {
       throw new SkillSchemaError("completion_requirements_json must be an array", "SKILL_SCHEMA_INVALID");
     }
-    completionRequirements = raw.map((req, index) => parseRequirement(req, `completion_requirements[${index}]`));
+    completionRequirements = raw.map((req, index) =>
+      parseRequirement(req, `completion_requirements[${index}]`, requireEvidence),
+    );
   }
 
   const ids = new Set<string>();

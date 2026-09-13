@@ -277,6 +277,7 @@ export class RepositoryRegistry {
       throw new AppError(ErrorCode.WORKSPACE_PATH_NOT_READABLE, "Path exists but cannot be stat-ed.");
     }
     const caseInsensitive = probeCaseInsensitive(resolved.real_path);
+    const previousScope = this.getMachinePath(repository.id, runtimeId)?.scope_json ?? null;
     const scope =
       input.scope === undefined
         ? null
@@ -316,7 +317,15 @@ export class RepositoryRegistry {
       real_path: resolved.real_path,
       access: input.access,
     });
+    // 授权范围变化（含首次显式设定）落账，便于回放"授权如何收紧/放宽"。
     const machinePath = this.getMachinePath(repository.id, runtimeId)!;
+    if (machinePath.scope_json !== previousScope) {
+      this.audit.record("repository.scope_changed", "repository", repository.id, {
+        runtime_id: runtimeId,
+        previous: previousScope ? (JSON.parse(previousScope) as unknown) : null,
+        current: machinePath.scope_json ? (JSON.parse(machinePath.scope_json) as unknown) : null,
+      });
+    }
     return { repository, machine_path: machinePath };
   }
 
@@ -468,6 +477,10 @@ export class RepositoryRegistry {
         const access = input.primary.access ?? "read_write";
         const scopeJson = input.primary.scope === undefined ? null : JSON.stringify(validateScope(input.primary.scope));
         const machine = this.getMachinePath(repository.id, LOCAL_RUNTIME_ID);
+        const legacyWorkspaceId =
+          machine?.raw_path && machine.runtime_id === LOCAL_RUNTIME_ID
+            ? this.upsertLegacyWorkspace(projectId, machine.raw_path, now)
+            : null;
         this.db
           .prepare(
             `INSERT INTO project_repository_refs
@@ -476,15 +489,17 @@ export class RepositoryRegistry {
              ON CONFLICT (project_id, repository_id) DO UPDATE SET
                role = 'primary', access = excluded.access, scope_json = excluded.scope_json, updated_at = excluded.updated_at`,
           )
-          .run(
+          .run(projectId, repository.id, access, scopeJson, legacyWorkspaceId, now, now);
+
+        // 同一事务内回填 projects.default_workspace_id——没有这一步，F013 之后
+        // 新建的 Project 拿不到 workspace_id，进不了 v0.2 执行链（design §3）。
+        if (legacyWorkspaceId) {
+          this.db.prepare("UPDATE projects SET default_workspace_id = ?, updated_at = ? WHERE id = ?").run(
+            legacyWorkspaceId,
+            now,
             projectId,
-            repository.id,
-            access,
-            scopeJson,
-            machine?.raw_path ? this.upsertLegacyWorkspace(projectId, machine.raw_path, now) : null,
-            now,
-            now,
           );
+        }
       }
 
       for (const reference of input.references ?? []) {

@@ -29,6 +29,9 @@ import { AdapterAvailabilityProbeCoordinator } from "../src/services/adapter-pro
 import { ProjectService } from "../src/services/project.js";
 import { SpaceService } from "../src/services/space.js";
 import { RepositoryRegistry } from "../src/services/repository-registry.js";
+import { SkillRegistry } from "../src/services/skill-registry.js";
+import { EffectiveRequirementsResolver } from "../src/services/effective-requirements.js";
+import { SkillDeliveryService } from "../src/services/skill-delivery.js";
 import { SpaceRepository } from "../src/repositories/space.js";
 import { AuditService } from "../src/services/audit.js";
 import { AdminAuditEventRepository } from "../src/repositories/admin-audit-event.js";
@@ -86,6 +89,10 @@ export function initGitRepo(dir: string): void {
 
 export interface TestServices {
   db: Database.Database;
+  skillRegistry: SkillRegistry;
+  resolver: EffectiveRequirementsResolver;
+  skillDelivery: SkillDeliveryService;
+  auditService: AuditService;
   spaceRepo: SpaceRepository;
   spaceService: SpaceService;
   repositoryRegistry: RepositoryRegistry;
@@ -157,6 +164,9 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
   const auditService = new AuditService(new AdminAuditEventRepository(db));
   const spaceService = new SpaceService(spaceRepo, auditService, db);
   const repositoryRegistry = new RepositoryRegistry(db, auditService);
+  const skillRegistry = new SkillRegistry(db, auditService);
+  const resolver = new EffectiveRequirementsResolver(db);
+  const skillDelivery = new SkillDeliveryService(db, auditService, join(tmpdir(), "f013-delivery-" + Date.now() + "-" + Math.random().toString(36).slice(2)));
 
 
   const eventBus = new EventBus();
@@ -349,6 +359,10 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
 
   return {
     db,
+    skillRegistry,
+    resolver,
+    skillDelivery,
+    auditService,
     spaceRepo,
     spaceService,
     repositoryRegistry,
