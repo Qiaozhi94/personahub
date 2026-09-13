@@ -315,7 +315,16 @@ test("F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access
   // 两份文档都必须写到的事实：任一侧改动而不同步另一侧即变红
   // 锁不变量，不锁实现细节——前七轮反复出现"锁了 trigger 名、实现一改就红，
   // 或名字还在但约束已被别的写入路径绕过"，说明具体 DDL 形态不适合当契约锚点。
-  const sharedPhrases = ["只改 `skill_id`", "skill_space_state", "`(skill_id, version, runtime_id, cli_provider)`"];
+  // Evidence 契约在 design 的说明段 / 代码块 / AC 表与 tasks 的 T010 各有一份副本，
+  // R8-027 正是"只改了其中两份"。共有判据措辞一并锁住。
+  const sharedPhrases = [
+    "只改 `skill_id`",
+    "skill_space_state",
+    "`(skill_id, version, runtime_id, cli_provider)`",
+    "EvidenceRefKind",
+    "SKILL_EVIDENCE_KIND_UNAVAILABLE",
+    "SKILL_EVIDENCE_STATUS_UNMAPPED",
+  ];
   for (const doc of [design, tasks]) {
     requirePhrases([doc], sharedPhrases);
     verifyEachPhraseMutation([doc], sharedPhrases);
@@ -330,6 +339,11 @@ test("F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access
   // 禁止任何文档再以"只有一个 Space"为前提——设计已支持 create/select 多 Space
   forbidPhrases([design, tasks, spec], ["v0.3 只有一个 Space，"]);
   verifyForbiddenMutation([design, tasks, spec], "v0.3 只有一个 Space，");
+  // F013 不得再快照上游 kind 枚举，也不得保留"未映射按 failed 放行"的旧规则
+  for (const bad of ["type EvidenceKind =", "按 `failed` 放行"]) {
+    forbidPhrases([design, tasks, spec], [bad]);
+    verifyForbiddenMutation([design, tasks, spec], bad);
+  }
 
   const designOnly = [
     "**不变量 A（总）**",
