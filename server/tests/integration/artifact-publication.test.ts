@@ -139,7 +139,12 @@ interface Session {
   received: Array<{ type: ThreadEventType; payload: Record<string, unknown> }>;
 }
 
-function openSession(fixture: Fixture, hooks?: ArtifactPublicationTestHooks, maxBytes = MAX_BYTES): Session {
+function openSession(
+  fixture: Fixture,
+  hooks?: ArtifactPublicationTestHooks,
+  maxBytes = MAX_BYTES,
+  log?: (info: Record<string, unknown>) => void,
+): Session {
   const db = openDatabase(fixture.dbPath);
   const artifactRepo = new ArtifactRepository(db);
   const eventBus = new EventBus();
@@ -159,12 +164,13 @@ function openSession(fixture: Fixture, hooks?: ArtifactPublicationTestHooks, max
     archive: fixture.archive,
     maxBytes,
     testHooks: hooks,
+    log,
   });
   return {
     db,
     artifactRepo,
     service,
-    resolver: new ArtifactResolver({ artifactRepo, archive: fixture.archive, threadEventService }),
+    resolver: new ArtifactResolver({ artifactRepo, archive: fixture.archive, threadEventService, log }),
     received,
   };
 }
@@ -327,6 +333,38 @@ describe("F010 inline publication", () => {
     } catch (error) {
       expect((error as AppError).code).toBe(ErrorCode.ARTIFACT_RETIRED);
     }
+    session.db.close();
+  });
+});
+
+describe("F010 operation observability", () => {
+  it("logs revision and duration on success and a stable reason code on failure, never body content", () => {
+    const logs: Array<Record<string, unknown>> = [];
+    const session = openSession(fixture, undefined, MAX_BYTES, (info) => logs.push(info));
+
+    session.service.createArtifact(inlineCreateInput(fixture, "art_logged", "# logged body"));
+    try {
+      session.service.createArtifact({ ...inlineCreateInput(fixture, "art_logged_fail"), issue_id: "iss_missing" });
+      expect.unreachable("missing issue must be rejected");
+    } catch (error) {
+      expect((error as AppError).code).toBe(ErrorCode.ISSUE_NOT_FOUND);
+    }
+
+    const success = logs.find((entry) => entry.event === "artifact.create" && entry.reason_code === undefined);
+    expect(success).toMatchObject({ artifact_id: "art_logged", revision: 1 });
+    expect(typeof success?.duration_ms).toBe("number");
+
+    const failure = logs.find(
+      (entry) => entry.event === "artifact.create" && entry.reason_code === ErrorCode.ISSUE_NOT_FOUND,
+    );
+    expect(failure).toMatchObject({ artifact_id: "art_logged_fail", revision: null });
+
+    session.resolver.resolveForReadRef("artifact:art_logged@1");
+    const read = logs.find((entry) => entry.event === "artifact.resolve");
+    expect(read).toMatchObject({ artifact_id: "art_logged", revision: 1 });
+    expect(typeof read?.duration_ms).toBe("number");
+
+    expect(JSON.stringify(logs)).not.toContain("logged body");
     session.db.close();
   });
 });

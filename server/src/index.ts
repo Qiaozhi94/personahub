@@ -341,8 +341,14 @@ async function main() {
     threadEventService,
     archive: artifactArchive,
     maxBytes: resolveArtifactMaxBytes(process.env),
+    log: (info) => app.log.info(info),
   });
-  const artifactResolver = new ArtifactResolver({ artifactRepo, archive: artifactArchive, threadEventService });
+  const artifactResolver = new ArtifactResolver({
+    artifactRepo,
+    archive: artifactArchive,
+    threadEventService,
+    log: (info) => app.log.info(info),
+  });
   const artifactSweeper = new ArtifactOrphanSweeper({
     artifactRepo,
     archive: artifactArchive,

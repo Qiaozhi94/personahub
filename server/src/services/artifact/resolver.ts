@@ -35,6 +35,9 @@ export interface ArtifactResolverDeps {
   artifactRepo: ArtifactRepository;
   archive: ArtifactArchive;
   threadEventService: ThreadEventService;
+  /** Design §6 observability: op + artifact id + revision + duration, plus the
+   *  stable reason code on failure; never body content. */
+  log?: (info: Record<string, unknown>) => void;
 }
 
 function failure<S extends "missing" | "invalid" | "hash_mismatch">(
@@ -147,6 +150,20 @@ export class ArtifactResolver {
   // ------------------------------------------------------------------ helpers
 
   private readRevisionContent(artifact: Artifact, revision: number, ref: string | null): ArtifactRevisionRead {
+    const started = Date.now();
+    const result = this.readRevisionContentInner(artifact, revision, ref);
+    this.deps.log?.({
+      event: "artifact.resolve",
+      artifact_id: artifact.id,
+      revision,
+      ref,
+      duration_ms: Date.now() - started,
+      ...(result.status === "ready" ? {} : { reason_code: result.code }),
+    });
+    return result;
+  }
+
+  private readRevisionContentInner(artifact: Artifact, revision: number, ref: string | null): ArtifactRevisionRead {
     const manifest: ArtifactRevision | null = this.deps.artifactRepo.getRevision(artifact.id, revision);
     if (!manifest) {
       return failure(
