@@ -157,11 +157,23 @@ export class ArtifactResolver {
       );
     }
     if (manifest.storage_kind === "inline_markdown") {
+      const text = manifest.inline_content ?? "";
+      // Inline storage is verified on every read too: the hash is over the
+      // UTF-8 encoded bytes (design §7). A mutated body must fail exactly like
+      // a mutated archive, never return the damaged text.
+      if (sha256Hex(Buffer.from(text, "utf8")) !== manifest.content_hash) {
+        return this.rejectHashMismatch(
+          artifact,
+          revision,
+          ref,
+          `Inline bytes of ${artifact.id}@${revision} do not match manifest hash.`,
+        );
+      }
       return {
         status: "ready",
         artifact,
         revision: manifest,
-        content: { storage_kind: "inline_markdown", text: manifest.inline_content! },
+        content: { storage_kind: "inline_markdown", text },
       };
     }
     const bytes = this.deps.archive.readArchive(manifest.archive_relative_path!);
@@ -175,19 +187,9 @@ export class ArtifactResolver {
     }
     const actualHash = sha256Hex(bytes);
     if (actualHash !== manifest.content_hash) {
-      // Integrity failure is always persisted on the artifact's thread and
-      // never returns the damaged body (design §7).
-      const event = this.deps.threadEventService.write(
-        artifact.thread_id,
-        ThreadEventType.ArtifactResolveRejected,
-        ActorType.System,
-        null,
-        { ref, caller_mode: "resolve_read", reason_code: ErrorCode.ARTIFACT_HASH_MISMATCH },
-      );
-      this.deps.threadEventService.broadcast(event);
-      return failure(
-        "hash_mismatch",
-        ErrorCode.ARTIFACT_HASH_MISMATCH,
+      return this.rejectHashMismatch(
+        artifact,
+        revision,
         ref,
         `Archive bytes of ${artifact.id}@${revision} do not match manifest hash.`,
       );
@@ -198,5 +200,24 @@ export class ArtifactResolver {
       revision: manifest,
       content: { storage_kind: "workspace_file", content_base64: bytes.toString("base64"), size_bytes: bytes.length },
     };
+  }
+
+  /** Integrity failure is always persisted on the artifact's thread and never
+   *  returns the damaged body (design §7) — shared by both storage kinds. */
+  private rejectHashMismatch(
+    artifact: Artifact,
+    revision: number,
+    ref: string | null,
+    message: string,
+  ): ArtifactRevisionRead {
+    const event = this.deps.threadEventService.write(
+      artifact.thread_id,
+      ThreadEventType.ArtifactResolveRejected,
+      ActorType.System,
+      null,
+      { ref, caller_mode: "resolve_read", reason_code: ErrorCode.ARTIFACT_HASH_MISMATCH },
+    );
+    this.deps.threadEventService.broadcast(event);
+    return failure("hash_mismatch", ErrorCode.ARTIFACT_HASH_MISMATCH, ref, message);
   }
 }

@@ -144,6 +144,29 @@ describe("F010 resolver read states", () => {
     session.db.close();
   });
 
+  it("fails hash mismatch for inline bodies too, with the same reject protocol", () => {
+    const session = openArtifactSession(fixture);
+    createInlineArtifact(session, "art_inline_tamper", "# original");
+    // mutate the persisted inline body while keeping the manifest hash
+    session.db
+      .prepare("UPDATE artifact_revisions SET inline_content = ? WHERE artifact_id = ? AND revision = 1")
+      .run("# TAMPERED", "art_inline_tamper");
+
+    const read = session.resolver.resolveForReadRef("artifact:art_inline_tamper@1");
+    expect(read.status).toBe("hash_mismatch");
+    expect((read as { code: string }).code).toBe(ErrorCode.ARTIFACT_HASH_MISMATCH);
+    expect(JSON.stringify(read)).not.toContain("TAMPERED");
+
+    const rejectEvents = session.events.filter((e) => e.type === ThreadEventType.ArtifactResolveRejected);
+    expect(rejectEvents).toHaveLength(1);
+    expect(rejectEvents[0].payload).toMatchObject({
+      ref: "artifact:art_inline_tamper@1",
+      caller_mode: "resolve_read",
+      reason_code: ErrorCode.ARTIFACT_HASH_MISMATCH,
+    });
+    session.db.close();
+  });
+
   it("reports missing when the archive object is gone, and is immune to source-file changes", () => {
     const session = openArtifactSession(fixture);
     const created = createFileArtifact(session, "art_archive");
