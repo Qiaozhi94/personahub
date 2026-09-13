@@ -31,7 +31,7 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 
 ### Phase 2：Skills 与项目 UI
 
-- [ ] T010 (`FR-005`, `FR-006`): 定义 canonical revision schema——`Requirement` / `Step` / `EvidenceSpec` DTO、未知字段 fail-closed、id 与 order 规则、按 `(kind, tags)` 的合并去重与稳定排序。 — verify: `npm run typecheck`
+- [ ] T010 (`FR-005`, `FR-006`): 定义 canonical revision schema——`Requirement` / `Step` / `EvidenceSpec` DTO、未知字段 fail-closed、id 与 order 规则、按 `(kind, tags)` 的合并去重与稳定排序。**`EvidenceSpec.evidence_kind` 直接引用 `server/src/evidence-ref.ts` 的 `EvidenceRefKind` 类型（不在 F013 侧另列清单，加一条断言：该类型新增成员时本处编译即跟随）**；`status_map` 断言 `resolved` / `missing` / `truncated` 各恰好出现在一个键下，缺任一即 `SKILL_EVIDENCE_STATUS_UNMAPPED` 拒绝激活；未认领归一化 owner 的 kind 报 `SKILL_EVIDENCE_KIND_UNAVAILABLE`。 — verify: `npm test --workspace server`
 - [ ] T011 (`FR-005`, `NFR-001`): 实现 `skills` / `skill_revisions` 存储与发布态冻结（revision 的 UPDATE / DELETE 与 `skill_revision_files` 的三类写入各自拦截），并**用穷举测试证明不变量 A 的完备性**：对 `project_skill_refs` 与 `skills` 覆盖 INSERT、UPDATE（逐列，含**只改 `skill_id`** 与只改 `pinned_version`）、`INSERT OR REPLACE`、UPSERT 四类写入路径，断言任何路径结束后每条引用都解析到 `published_at IS NOT NULL` 的 revision；用几个 trigger、是否改用不带 `OF` 的 `BEFORE UPDATE` 由实现决定，**判据是该测试全绿**。 — verify: `npm test --workspace server`
 - [ ] T012 (`FR-005`, `FR-008`): 实现 Skill 文件快照——激活时入库、`rel_path` containment 与大小上限、读取时 hash 核验。 — verify: `npm test --workspace server`
 - [ ] T013 (`FR-005`): 实现扫描、按 `source_identity` 对齐、按 Space 可见集分组的冲突检测；`skill_space_state` 的物化（Space 创建、global Skill 激活为所有 Space、private Skill 激活为自己 Space，三条路径均用 UPSERT 保证重复激活幂等并重算状态）、**读取与 eligibility 的两层与运算**（`skills.state='active'` AND `skill_space_state.state='active'`）、带 `space_id` 的 `resolve-conflict` 与 per-Space 自动恢复。 — verify: `npm test --workspace server`
