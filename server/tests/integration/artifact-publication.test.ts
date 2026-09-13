@@ -497,6 +497,18 @@ describe("F010 file publication crash matrix", () => {
     writeFileSync(join(squatDir, staged.hash), "squat me");
     expect(fixture.archive.publishStaged(staged)).toBe(`${staged.hash.slice(0, 2)}/${staged.hash}`);
   });
+
+  it("keeps a stable error code when a rename fails for a non-race reason", () => {
+    const staged = fixture.archive.stageInline("rename me", "art-rename-fail");
+    fixture.archive.removeStaged(staged.tempPath); // staged source vanished -> rename ENOENT
+    try {
+      fixture.archive.publishStaged(staged);
+      expect.unreachable("a missing staged source must not be misread as a race");
+    } catch (error) {
+      expect((error as AppError).code).toBe(ErrorCode.ARTIFACT_ARCHIVE_WRITE_FAILED);
+      expect((error as AppError).details?.cause).toBeDefined();
+    }
+  });
 });
 
 describe("F010 path boundary", () => {

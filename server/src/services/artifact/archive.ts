@@ -47,6 +47,17 @@ export function isWellFormedArchivePath(archiveRelative: string): boolean {
   return ARCHIVE_NAME_PATTERN.test(archiveRelative);
 }
 
+/** Errno values a rename can lose a cross-process race with. Anything else is
+ *  a real write failure and must not be reinterpreted as "target exists". */
+function isRenameRace(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException | null)?.code;
+  return code === "EEXIST" || code === "EPERM" || code === "EBUSY" || code === "EACCES";
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export interface StagedBlob {
   tempPath: string;
   hash: string;
@@ -161,12 +172,30 @@ export class ArtifactArchive {
       try {
         renameSync(staged.tempPath, target);
         renamed = true;
-      } catch {
-        // lost a race: the target appeared between the check and the rename;
-        // fall through to byte verification against whatever is there now.
+      } catch (error) {
+        // Only a genuine cross-process race (target appeared between the check
+        // and the rename) falls through to byte verification. Every other
+        // failure is a real write error: surface a stable code and keep the
+        // cause, instead of degrading into a bare ENOENT further down.
+        if (!isRenameRace(error) && !existsSync(target)) {
+          this.removeStaged(staged.tempPath);
+          throw new AppError(
+            ErrorCode.ARTIFACT_ARCHIVE_WRITE_FAILED,
+            `Archive rename failed for ${archiveRelative}: ${describeError(error)}`,
+            undefined,
+            { cause: describeError(error) },
+          );
+        }
       }
     }
     if (!renamed) {
+      if (!existsSync(target)) {
+        this.removeStaged(staged.tempPath);
+        throw new AppError(
+          ErrorCode.ARTIFACT_ARCHIVE_WRITE_FAILED,
+          `Archive target never materialized: ${archiveRelative}`,
+        );
+      }
       const existingHash = sha256Hex(readFileSync(target));
       if (existingHash !== staged.hash) {
         this.removeStaged(staged.tempPath);
