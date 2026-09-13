@@ -315,20 +315,111 @@ test("F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access
   // 两份文档都必须写到的事实：任一侧改动而不同步另一侧即变红
   // 锁不变量，不锁实现细节——前七轮反复出现"锁了 trigger 名、实现一改就红，
   // 或名字还在但约束已被别的写入路径绕过"，说明具体 DDL 形态不适合当契约锚点。
-  // Evidence 契约在 design 的说明段 / 代码块 / AC 表与 tasks 的 T010 各有一份副本，
-  // R8-027 正是"只改了其中两份"。共有判据措辞一并锁住。
-  const sharedPhrases = [
-    "只改 `skill_id`",
-    "skill_space_state",
-    "`(skill_id, version, runtime_id, cli_provider)`",
-    "EvidenceRefKind",
-    "SKILL_EVIDENCE_KIND_UNAVAILABLE",
-    "SKILL_EVIDENCE_STATUS_UNMAPPED",
-  ];
+  const sharedPhrases = ["只改 `skill_id`", "skill_space_state", "`(skill_id, version, runtime_id, cli_provider)`"];
   for (const doc of [design, tasks]) {
     requirePhrases([doc], sharedPhrases);
     verifyEachPhraseMutation([doc], sharedPhrases);
   }
+
+  // Evidence 契约在 design 的说明段 / canonical schema / AC 表与 tasks 的 T010
+  // 各有一份副本。必须逐段断言；按整份 design 查找时，正确说明段会遮蔽 stale AC。
+  const sliceBetween = (document, startMarker, endMarker, label) => {
+    const start = document.indexOf(startMarker);
+    const end = document.indexOf(endMarker, start + startMarker.length);
+    assert.ok(start >= 0 && end > start, `cannot locate F013 Evidence contract section: ${label}`);
+    return document.slice(start, end);
+  };
+  const lineContaining = (document, marker, label) => {
+    const line = document.split(/\r?\n/).find((candidate) => candidate.includes(marker));
+    assert.ok(line, `cannot locate F013 Evidence contract line: ${label}`);
+    return line;
+  };
+  const evidenceNarrative = sliceBetween(
+    design,
+    "**Evidence adapter registry（按 kind 固定，不可由要求覆写）**",
+    "#### canonical revision schema",
+    "design narrative",
+  );
+  const evidenceSchema = sliceBetween(
+    design,
+    "#### canonical revision schema",
+    "#### 冲突消解闭环",
+    "canonical schema",
+  );
+  const evidenceAcceptance = lineContaining(design, "server/tests/unit/evidence-spec.test.ts", "AC-004 evidence-spec");
+  const evidenceTask = lineContaining(tasks, "T010 (`FR-005`, `FR-006`)", "tasks T010");
+
+  const evidenceCopies = [
+    {
+      label: "design narrative",
+      text: evidenceNarrative,
+      required: [
+        "EvidenceRefKind",
+        "SKILL_EVIDENCE_KIND_UNAVAILABLE",
+        "SKILL_EVIDENCE_STATUS_UNMAPPED",
+        "拒绝激活",
+        "归一化 owner",
+      ],
+      forbidden: ["按 `failed` 判定", 'evidence_kind: "artifact"` 一律'],
+    },
+    {
+      label: "canonical schema",
+      text: evidenceSchema,
+      required: ["evidence_kind: EvidenceRefKind", "不在此处枚举 kind"],
+      forbidden: ["type EvidenceKind ="],
+    },
+    {
+      label: "AC-004 evidence-spec",
+      text: evidenceAcceptance,
+      required: [
+        "EvidenceRefKind",
+        "SKILL_EVIDENCE_KIND_UNAVAILABLE",
+        "SKILL_EVIDENCE_STATUS_UNMAPPED",
+        "拒绝激活",
+        "未认领归一化 owner",
+      ],
+      forbidden: ["按 `failed` 判定", 'evidence_kind: "artifact"` 一律'],
+    },
+    {
+      label: "tasks T010",
+      text: evidenceTask,
+      required: [
+        "EvidenceRefKind",
+        "SKILL_EVIDENCE_KIND_UNAVAILABLE",
+        "SKILL_EVIDENCE_STATUS_UNMAPPED",
+        "拒绝激活",
+        "未认领归一化 owner",
+      ],
+      forbidden: ["按 `failed` 判定", 'evidence_kind: "artifact"` 一律'],
+    },
+  ];
+  const verifyEvidenceCopy = ({ label, text, required, forbidden }) => {
+    assert.doesNotMatch(
+      text,
+      new RegExp(forbidden.map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")),
+      `${label} retained a stale Evidence contract`,
+    );
+    requirePhrases([text], required);
+    verifyEachPhraseMutation([text], required);
+  };
+  for (const copy of evidenceCopies) verifyEvidenceCopy(copy);
+
+  // Red→green proof for R8-027: restoring the exact stale AC from Round 8 must fail.
+  const staleAcceptance = evidenceAcceptance
+    .replace(
+      "三键齐全互斥且**三个状态各恰好出现一次，未完整覆盖即 `SKILL_EVIDENCE_STATUS_UNMAPPED` 并拒绝激活**（不是告警后按 failed 放行）",
+      "三键齐全互斥；未完整覆盖时发 `SKILL_EVIDENCE_STATUS_UNMAPPED` 且按 `failed` 判定",
+    )
+    .replace(
+      "**未认领归一化 owner 的 kind 报 `SKILL_EVIDENCE_KIND_UNAVAILABLE`**（判据是 owner 是否存在，不是文档里写没写该 kind）",
+      '**`evidence_kind: "artifact"` 一律报 `SKILL_EVIDENCE_KIND_UNAVAILABLE`**',
+    );
+  assert.notEqual(staleAcceptance, evidenceAcceptance, "R8-027 mutation must actually restore the stale AC");
+  assert.throws(
+    () => verifyEvidenceCopy({ ...evidenceCopies[2], text: staleAcceptance }),
+    /stale Evidence contract|missing v0\.3 planning contract/,
+    "restoring the Round 8 stale AC must fail the F013 Evidence contract gate",
+  );
 
   // spec 必须写出同一套两层状态语义——Round 5 的 stale spec 正是因为锁点不覆盖 spec 才能全绿
   const specPhrases = ["某个 Space 内的生效结果是 active / shadowed / conflict"];
@@ -339,12 +430,6 @@ test("F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access
   // 禁止任何文档再以"只有一个 Space"为前提——设计已支持 create/select 多 Space
   forbidPhrases([design, tasks, spec], ["v0.3 只有一个 Space，"]);
   verifyForbiddenMutation([design, tasks, spec], "v0.3 只有一个 Space，");
-  // F013 不得再快照上游 kind 枚举，也不得保留"未映射按 failed 放行"的旧规则
-  for (const bad of ["type EvidenceKind =", "按 `failed` 放行"]) {
-    forbidPhrases([design, tasks, spec], [bad]);
-    verifyForbiddenMutation([design, tasks, spec], bad);
-  }
-
   const designOnly = [
     "**不变量 A（总）**",
     "`current_revision INTEGER NOT NULL`",
