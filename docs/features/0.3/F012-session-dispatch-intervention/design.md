@@ -2,7 +2,7 @@
 topics: [session, dispatch, runtime, intervention]
 doc_kind: design
 created: 2026-08-09
-updated: 2026-09-08
+updated: 2026-09-13
 ---
 
 # F012：Session, Dispatch & Intervention - 设计
@@ -21,11 +21,11 @@ SessionService 管 Room / Thread 归属；DispatchService 是派工唯一写入�
 
 ## 3. 数据模型与 Migration
 
-新增 dispatches 与 dispatch capability / context snapshot；Room 与 Thread 建一对一约束，允许无 task 的独立会话。现有 agent_configs 先迁移为 adapter 接入记录兼容视图；不得丢历史 ID。具体 schema 版本从实施时现值顺延。
+新增 dispatches 与 dispatch capability / context snapshot；Room 与 Thread 建一对一约束，允许无 task 的独立会话。现有 agent_configs 先迁移为 adapter 接入记录兼容视图；不得丢历史 ID。新增持久 `domain_outbox`（enqueue / status / attempts / available_at / poison 诊断）作为公共基础设施，供 Dispatch 广播与 F011 `acceptance.completed` 复用；具体 schema 版本从实施时现值顺延。
 
 ## 4. 接口、Contract 与 Event
 
-API：确认 / 撤销 Dispatch，列 eligibility，pause / resume gate，取消 Attempt，转换独立会话。重复确认以 `(task_id, room_id, client_request_id)` 返回同一 draft。事件 commit 点固定为：确认事务写 drafted，撤销 CAS 写 cancelled，deadline claim 写 starting，启动事务写 dispatched / context_filtered；其余事件记录 requirement_overridden、paused、resumed、attempt_cancelled。广播统一消费 commit 后 outbox。
+API：确认 / 撤销 Dispatch，列 eligibility，pause / resume gate，取消 Attempt，转换独立会话。重复确认以 `(task_id, room_id, client_request_id)` 返回同一 draft。事件 commit 点固定为：确认事务写 drafted，撤销 CAS 写 cancelled，deadline claim 写 starting，启动事务写 dispatched / context_filtered；其余事件记录 requirement_overridden、paused、resumed、attempt_cancelled。广播统一消费 commit 后 outbox。持久 DomainOutbox 提供 `enqueue(tx, event)`、worker 投递、consumer ack、指数退避重试与 poison 保留（FR-009）；enqueue 与产生事件的事务原子提交，poison 不自动跳过，由消费方按自身协议恢复。
 
 ## 5. Runtime、Workflow 与并发
 

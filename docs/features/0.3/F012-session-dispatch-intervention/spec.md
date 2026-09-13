@@ -8,7 +8,7 @@ related_features: [F005, F006, F009, F010, F011, F013, F014]
 topics: [session, dispatch, runtime, context, intervention]
 doc_kind: spec
 created: 2026-08-09
-updated: 2026-09-08
+updated: 2026-09-13
 ---
 
 # F012：Session, Dispatch & Intervention
@@ -85,6 +85,7 @@ updated: 2026-09-08
 - **FR-006**：暂停后续派工只阻止新 Attempt；取消只终止目标 Attempt；所有介入写事件。
 - **FR-007**：独立会话转任务后才允许进入 Artifact / Evidence / Memory 链。
 - **FR-008**：运行时基础提供一台机器上的 adapter 状态、模型 / 深度、session、原生 memory 隔离、工具与额度事实；每项 probe 只允许 supported / unsupported / unverified 三态并附证据时间与 CLI 版本。
+- **FR-009**：提供持久 DomainOutbox 公共 contract：同一事务 enqueue、worker 投递、consumer ack、失败重试与 poison 保留。Dispatch 广播与 F011 的 `acceptance.completed` 跨服务推进复用同一基础设施；enqueue 与产生事件的领域事务原子提交，重复投递幂等，poison 事件保留稳定错误与诊断而不自动跳过。
 
 ### 非功能需求
 
@@ -111,6 +112,7 @@ Dispatch 有三条合法路径：`draft → cancelled`、`draft → starting →
 - [ ] **AC-004** (`FR-006`, `NFR-001`): pause / claim 并发、取消、改派和 restart 恢复正确。
 - [ ] **AC-005** (`FR-001`, `FR-007`, `FR-008`): 独立 / 任务会话和单机运行时基础完成浏览器旅程。
 - [ ] **AC-006** (`FR-003`, `FR-008`, `NFR-003`): Codex / Claude Code / OpenCode 的模型、深度、session 与原生 memory probe 均有版本化证据；unsupported / unverified 的候选、后果和独立性降级可观察且不可旁路。
+- [ ] **AC-007** (`FR-009`, `NFR-001`): Dispatch 广播与 F011 `acceptance.completed` 共用同一持久 outbox；enqueue 与领域事务原子提交，worker 崩溃 / 重启后重投递不丢不重，consumer ack 幂等，poison event 保留稳定错误与诊断。
 
 ## 7. 测试、依赖与决策
 

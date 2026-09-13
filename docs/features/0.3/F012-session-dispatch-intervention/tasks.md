@@ -2,7 +2,7 @@
 topics: [session, dispatch, runtime, implementation]
 doc_kind: tasks
 created: 2026-08-09
-updated: 2026-09-08
+updated: 2026-09-13
 ---
 
 # F012：Session, Dispatch & Intervention - 任务
@@ -28,6 +28,7 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 - [ ] T001 (`FR-001`, `FR-002`): 定义 Session / Dispatch / execution identity / context snapshot 类型。 — verify: `npm run typecheck`
 - [ ] T002 (`FR-002`, `NFR-001`): 新增 migration、兼容映射与历史 fixture。 — verify: `npm test --workspace server`
 - [ ] T003 (`FR-002`, `FR-003`, `FR-008`): 实现 runtime projection 与三档 eligibility evaluator，将 F013 versioned effective requirements 固定到 Dispatch snapshot；本任务覆盖 Skill 升级 / 禁用后的历史不漂移。 — verify: `npm test --workspace server`
+- [ ] T004 (`FR-009`, `NFR-001`): 实现持久 DomainOutbox 公共基础设施（同一事务 enqueue、worker 投递、consumer ack、指数退避重试、poison 保留与诊断），并证明 Dispatch 广播与 F011 `acceptance.completed` 复用同一 contract。 — verify: `npm test --workspace server`
 
 ### Phase 2：派工与介入
 
@@ -46,7 +47,7 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 
 ## 4. 依赖与并行关系
 
-F013 contract 与本 Feature Phase 0 probe 完成后，T001→T002/T003→T010/T011/T012→T014；T013 可在 T002 后并行。T000 的证据缺口只能产生 unverified，不允许以口头假设解锁 T003。F011 在 Dispatch / Session / consumption integration 验收后接入，不形成反向依赖。
+F013 contract 与本 Feature Phase 0 probe 完成后，T001→T002/T003→T004→T010/T011/T012→T014；T013 可在 T002 后并行。T000 的证据缺口只能产生 unverified，不允许以口头假设解锁 T003。F011 在 Dispatch / Session / consumption integration 与 outbox contract 验收后接入，不形成反向依赖。
 
 ## 5. 明确后移
 
