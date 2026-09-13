@@ -32,7 +32,7 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 ### Phase 2：Skills 与项目 UI
 
 - [ ] T010 (`FR-005`, `FR-006`): 定义 canonical revision schema——`Requirement` / `Step` / `EvidenceSpec` DTO、未知字段 fail-closed、id 与 order 规则、按 `(kind, tags)` 的合并去重与稳定排序。 — verify: `npm run typecheck`
-- [ ] T011 (`FR-005`, `NFR-001`): 实现 `skills` / `skill_revisions` 存储，其中 `current_revision` 非空、`state` 只有 active/disabled；**五个发布态 trigger**（revision 的 UPDATE / DELETE 与 `skill_revision_files` 的 INSERT / UPDATE / DELETE，各绑一种事件并带 `published_at IS NOT NULL` 条件），加 `trg_skills_current_published_ins` / `_upd` 与 `trg_pinned_published_ins` / `_upd` **四个**即时校验 trigger（SQLite 不支持单 trigger 绑双事件；外键只管存在性、不管发布态）与两个方向的 DEFERRABLE 外键。 — verify: `npm test --workspace server`
+- [ ] T011 (`FR-005`, `NFR-001`): 实现 `skills` / `skill_revisions` 存储与发布态冻结（revision 的 UPDATE / DELETE 与 `skill_revision_files` 的三类写入各自拦截），并**用穷举测试证明不变量 A 的完备性**：对 `project_skill_refs` 与 `skills` 覆盖 INSERT、UPDATE（逐列，含**只改 `skill_id`** 与只改 `pinned_version`）、`INSERT OR REPLACE`、UPSERT 四类写入路径，断言任何路径结束后每条引用都解析到 `published_at IS NOT NULL` 的 revision；用几个 trigger、是否改用不带 `OF` 的 `BEFORE UPDATE` 由实现决定，**判据是该测试全绿**。 — verify: `npm test --workspace server`
 - [ ] T012 (`FR-005`, `FR-008`): 实现 Skill 文件快照——激活时入库、`rel_path` containment 与大小上限、读取时 hash 核验。 — verify: `npm test --workspace server`
 - [ ] T013 (`FR-005`): 实现扫描、按 `source_identity` 对齐、按 Space 可见集分组的冲突检测；`skill_space_state` 的物化（Space 创建、global Skill 激活为所有 Space、private Skill 激活为自己 Space，三条路径均用 UPSERT 保证重复激活幂等并重算状态）、**读取与 eligibility 的两层与运算**（`skills.state='active'` AND `skill_space_state.state='active'`）、带 `space_id` 的 `resolve-conflict` 与 per-Space 自动恢复。 — verify: `npm test --workspace server`
 - [ ] T014 (`FR-006`, `FR-008`): 实现 `skill_delivery_status`，主键 `(skill_id, version, runtime_id, cli_provider)` 并记录 `target_path`；候选安装由该 runtime 的 `cli_provider` 去重得到（同 provider 多配置只一行），渲染器纯函数，激活先提交后逐安装下发，单个失败不回滚且可幂等重试。 — verify: `npm test --workspace server`
@@ -45,7 +45,7 @@ F009 新壳层的首次设置、项目 / 管理入口可替换。Skill revision 
 ## 3. 验证与验收任务
 
 - [ ] T020 (`AC-001`, `AC-002`): 覆盖默认 Space 与双表 rebuild、migration runner 的 FK 开关与失败恢复、兼容投影、真实路径 / 软链 / identity 变更、scope 校验与交集、参考仓库写拒绝。 — verify: `npm test`
-- [ ] T021 (`AC-003`, `AC-005`): 覆盖 revision schema 拒绝规则、四道引用完整性反例、文件快照不漂移、delivery 失败局部化、冲突分组与消解闭环、跨 Space 引用拒绝。 — verify: `npm test`
+- [ ] T021 (`AC-003`, `AC-005`): 覆盖 revision schema 拒绝规则、引用完整性的**四类写入路径穷举**（含只改 `skill_id` 的绕过反例）、文件快照不漂移、delivery 失败局部化、冲突分组与消解闭环、跨 Space 引用拒绝。 — verify: `npm test`
 - [ ] T022 (`AC-001`, `AC-004`): 覆盖 legacy 组合迁移的逐 Issue 可解析断言、单一 primary Workspace 选取与旧 ref requirements 逐字不变。 — verify: `npm test`
 - [ ] T023 (`AC-001`, `AC-005`): 按 §4 事件表逐项触发对应动作并核对落账，缺一即失败。 — verify: `npm test --workspace server`
 - [ ] T024 (`AC-001`, `AC-003`): 完成首次设置、项目 / Skill Playwright 旅程。 — verify: `npm run test:e2e`
