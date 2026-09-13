@@ -14,7 +14,7 @@ import {
 import { parseEvidenceRef, resolveForRead } from "../../evidence-ref.js";
 import type { ArtifactRepository } from "../../repositories/artifact.js";
 import type { ThreadEventService } from "../thread-event.js";
-import { sha256Hex, type ArtifactArchive } from "./archive.js";
+import { isWellFormedArchivePath, sha256Hex, type ArtifactArchive } from "./archive.js";
 
 /**
  * F010 ArtifactResolver — the only read path for artifact content. It reads
@@ -191,12 +191,33 @@ export class ArtifactResolver {
     let bytes: Buffer | null;
     try {
       bytes = this.deps.archive.readArchive(manifest.archive_relative_path!);
-    } catch {
+    } catch (error) {
+      // Two different causes share this catch. Only a malformed locator is an
+      // invariant breach; a well-formed locator means a real IO failure
+      // (EACCES/EIO/EISDIR) that must not be mislabeled or lose its cause.
+      const locator = manifest.archive_relative_path ?? "";
+      if (!isWellFormedArchivePath(locator)) {
+        return failure(
+          "invalid",
+          ErrorCode.INTERNAL_ERROR,
+          ref,
+          `Archive locator for ${artifact.id}@${revision} is malformed.`,
+        );
+      }
+      const causeCode = (error as NodeJS.ErrnoException | null)?.code;
+      this.deps.log?.({
+        event: "artifact.resolve_unreadable",
+        artifact_id: artifact.id,
+        revision,
+        ref,
+        reason_code: ErrorCode.INTERNAL_ERROR,
+        cause: causeCode ?? (error instanceof Error ? error.message : String(error)),
+      });
       return failure(
         "invalid",
         ErrorCode.INTERNAL_ERROR,
         ref,
-        `Archive locator for ${artifact.id}@${revision} is malformed.`,
+        `Archive object ${locator} of ${artifact.id}@${revision} is unreadable${causeCode ? ` (${causeCode})` : ""}.`,
       );
     }
     if (bytes === null) {

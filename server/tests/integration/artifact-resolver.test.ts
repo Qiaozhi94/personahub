@@ -180,6 +180,23 @@ describe("F010 resolver read states", () => {
     session.db.close();
   });
 
+  it("distinguishes an unreadable archive object from a malformed locator", () => {
+    const session = openArtifactSession(fixture);
+    const created = createFileArtifact(session, "art_unreadable");
+    const [dir, file] = created.revision.archive_relative_path!.split("/");
+    const target = join(fixture.archive.rootDir, dir, file);
+    unlinkSync(target);
+    mkdirSync(target); // a directory squats on the content address: readFileSync -> EISDIR
+
+    const read = session.resolver.resolveForReadRef("artifact:art_unreadable@1");
+    expect(read.status).toBe("invalid");
+    expect((read as { code: string }).code).toBe(ErrorCode.INTERNAL_ERROR);
+    const message = (read as { message: string }).message;
+    expect(message).not.toContain("malformed");
+    expect(message).toContain("unreadable");
+    session.db.close();
+  });
+
   it("reports missing when the archive object is gone, and is immune to source-file changes", () => {
     const session = openArtifactSession(fixture);
     const created = createFileArtifact(session, "art_archive");
