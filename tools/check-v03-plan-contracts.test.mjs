@@ -277,7 +277,7 @@ test('V03-PLAN-R1-001: acceptance writes have canonical owners and integration t
     'IssueService 只接受 AcceptanceService 发出的 `acceptance.completed`',
     '冻结完成要求基线、写入主张 / 论证 / 证据链接、接受剩余风险、生成完成摘要',
     '完成摘要失败不得推进 Issue done',
-    'T004 (`FR-007`, `FR-008`, `NFR-002`)',
+    'T003 (`FR-009`, `FR-010`, `FR-011`, `NFR-002`)',
   ];
 
   requirePhrases(documents, phrases);
@@ -1509,4 +1509,71 @@ test("F009-CODE-R3-018: CI's e2e job runs every E2E suite verify:release require
   const shrunkReleaseScripts = extractVerifyReleaseE2EScripts(releaseWithoutEmptyDb);
   const stillMissing = [...shrunkReleaseScripts].filter((name) => !ciScripts.has(name));
   assert.deepEqual(stillMissing, [], 'CI running a superset of a shrunk verify:release must still pass');
+});
+
+// F011 doc review D011: the docs claimed "14 rows / 14 items" for the
+// migration-matrix rows this feature owns, but the matrix only has 13
+// (P005, P008, A004, A005, A016-A024). An uncounted inventory claim is not
+// self-correcting — nothing derived the number, so it can drift again unless
+// the count is recomputed from the matrix and the two prose copies are locked.
+function countF011OwnerRows(matrix) {
+  return parseMigrationMatrixRows(matrix, 'P')
+    .concat(parseMigrationMatrixRows(matrix, 'A'))
+    .filter((cells) => cells.includes('F011')).length;
+}
+
+test('F011-DOC-R1-D011: the F011 migration-matrix owner inventory is 13 rows, in matrix and prose', () => {
+  const matrix = read('docs/features/0.3/F009-v344-frontend-foundation-migration/migration-matrix.md');
+  const count = countF011OwnerRows(matrix);
+  assert.equal(count, 13, `expected 13 F011-owned migration rows, got ${count}`);
+
+  const design = read('docs/features/0.3/F011-trusted-task-surface/design.md');
+  const tasks = read('docs/features/0.3/F011-trusted-task-surface/tasks.md');
+  assert.match(design, /矩阵 13 行/, 'F011 design AC-007 must state the real 13-row matrix count');
+  assert.match(tasks, /迁移矩阵 13 个 F011 owner 条目/, 'F011 T054 must state the real 13-row matrix count');
+
+  // Mutation: a stale "14" claim must not satisfy the 13-row lock.
+  const staleDesign = design.replace('矩阵 13 行', '矩阵 14 行');
+  assert.notEqual(staleDesign, design, 'mutation must actually change the design count text');
+  assert.throws(
+    () => assert.match(staleDesign, /矩阵 13 行/),
+    /矩阵 13 行/,
+    'a 14-row claim over a 13-row matrix must turn this gate red',
+  );
+});
+
+// F011 doc review D015: the F009 applicability catalog pointed `F011::Txxx`
+// at task ids from an earlier F011 task revision (T010=shared types there is
+// T030=shell now). Every pointer must resolve to a task that exists in
+// F011/tasks.md, and the check must fail if a pointer is ever re-staled.
+function parseF011ApplicabilityPointers(catalog) {
+  const pointers = new Set();
+  for (const match of catalog.matchAll(/F011::(T[\d/]+)/g)) {
+    for (const id of match[1].split('/')) {
+      if (id) pointers.add(id);
+    }
+  }
+  return pointers;
+}
+
+test('F011-DOC-R1-D015: every F011::Txxx applicability pointer resolves to a defined F011 task', () => {
+  const catalog = read('docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md');
+  const tasks = read('docs/features/0.3/F011-trusted-task-surface/tasks.md');
+
+  const pointers = parseF011ApplicabilityPointers(catalog);
+  assert.ok(pointers.size > 0, 'sanity: the applicability catalog must contain F011::Txxx pointers');
+
+  const defined = new Set([...tasks.matchAll(/^- \[[ xX]\] (T\d{3})/gm)].map((m) => m[1]));
+  const dangling = [...pointers].filter((id) => !defined.has(id));
+  assert.deepEqual(
+    dangling.sort(),
+    [],
+    `F011 applicability points at undefined task id(s): ${dangling.join(', ')}`,
+  );
+
+  // Mutation: a re-staled pointer must be caught by the same comparison.
+  const staleCatalog = `${catalog}\n| BC-999 | synthetic | deferred | mutation | F011 | F011::T999 browser |`;
+  const stalePointers = parseF011ApplicabilityPointers(staleCatalog);
+  const staleDangling = [...stalePointers].filter((id) => !defined.has(id));
+  assert.deepEqual(staleDangling.sort(), ['T999'], 'an undefined F011::Txxx pointer must be caught');
 });

@@ -2,7 +2,7 @@
 topics: [frontend, v344, browser-checks, acceptance]
 doc_kind: feature-contract
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-09-13
 ---
 
 # F009 对 V3.44 browser checks 的适用性清单
@@ -31,43 +31,43 @@ deferred 不得进入 F009 production registry，也不得以静态数据、空�
 |---|---|---|---|---|---|
 | BC-001 | 任务舞台占主导、左栏收窄 | adapted | App Shell 的全局布局契约 | F009 | `e2e/tests/f009-shell.spec.ts` |
 | BC-002 | 删除底部面板、状态栏和图标活动栏 | adapted | 旧壳层退出生产路径 | F009 | `e2e/tests/f009-shell.spec.ts` |
-| BC-003 | 任务标识行与视图导航分层 | deferred | M1 尚无任务四视图 | F011 | F011::T010 Playwright |
-| BC-004 | 子文档就地打开并可返回 | deferred | 依赖资源 / 验收视图 | F011 | F011::T012 Playwright |
+| BC-003 | 任务标识行与视图导航分层 | deferred | M1 尚无任务四视图 | F011 | F011::T030 Playwright |
+| BC-004 | 子文档就地打开并可返回 | deferred | 依赖资源 / 验收视图 | F011 | F011::T033/T034 Playwright |
 | BC-005 | 任务左栏按稳定组织维度分类 | adapted | F009 任务列表骨架承担；内容可先来自既有 API | F009 | `e2e/tests/f009-shell.spec.ts` |
 | BC-006 | 标签使用下拉而非横排 chip | adapted | F009 任务列表共享交互 | F009 | `e2e/tests/f009-shell.spec.ts` |
 | BC-007 | 一级竖栏分日常与低频入口 | adapted | 只对 M1 已注册槽位断言相对分组 | F009 | `e2e/tests/f009-shell.spec.ts` |
 | BC-008 | 会话面复用任务消息骨架 | deferred | Session identity 尚未交付 | F012 | F012::T012 browser journey |
-| BC-009 | 成果首屏表达结果与可信度 | deferred | 依赖 Acceptance / Artifact projection | F011 | F011::T011 Playwright |
-| BC-010 | 机器事实与 Agent 主张分信源 | deferred | 依赖 claim / evidence contract | F011 | F011::T002 integration + browser |
-| BC-011 | 主张与证据间显式论证 | deferred | 依赖 AcceptanceService | F011 | F011::T002 integration + browser |
-| BC-012 | 三种状态符号且同源不冒充独立 | deferred | 依赖 claim 独立性 | F011 | F011::T011 Playwright |
-| BC-013 | 证据使用仓库天然标识 | deferred | 依赖 Artifact ref | F010/F011 | F011::T012 browser |
-| BC-014 | 状态卡可筛选主张树 | deferred | 依赖验收视图 | F011 | F011::T011 browser |
-| BC-015 | 基线变更事前阻塞 | deferred | 依赖 AcceptanceService 写链 | F011 | F011::T004 fault tests |
-| BC-016 | 决定形成状态变化而非消息气泡 | deferred | 依赖 TaskProjection / Acceptance event | F011 | F011::T001/T004 |
-| BC-017 | 范围血统默认收起 | deferred | 依赖 Artifact / acceptance scope | F011 | F011::T011 browser |
-| BC-018 | 实现回归与端到端验收分段 | deferred | 依赖验收视图 | F011 | F011::T011 browser |
-| BC-019 | 单例舞台中文件可返回或预览 | deferred | 依赖资源 / 验收文件 surface | F011 | F011::T012 browser |
-| BC-020 | 任务固定四视图与可折叠副栏 | deferred | 四视图由 F011 拥有 | F011 | F011::T010–T013 |
-| BC-021 | 概览副栏显示任务级活动 | deferred | 依赖 TaskProjection | F011 | F011::T010 browser |
-| BC-022 | 验收副栏显示主张大纲 | deferred | 依赖 Acceptance projection | F011 | F011::T011 browser |
-| BC-023 | 资源清单与就地预览 | deferred | 依赖 Artifact / file projection | F011 | F011::T012 browser |
-| BC-024 | tab 数字只计人工介入 | deferred | 依赖 attention count contract | F011 | F011::T001/T010 |
-| BC-025 | 概览与验收零重叠 | deferred | 依赖四视图 projection | F011 | F011::T010/T011 |
-| BC-026 | 一个输入框且切 view 保留草稿 | deferred | F009 提供 draft store，但 view 验收在 F011 | F011 | F011::T010 Playwright |
+| BC-009 | 成果首屏表达结果与可信度 | deferred | 依赖 Acceptance / Artifact projection | F011 | F011::T031/T021 Playwright |
+| BC-010 | 机器事实与 Agent 主张分信源 | deferred | 依赖 claim / evidence contract | F011 | F011::T033/T021 integration + browser |
+| BC-011 | 主张与证据间显式论证 | deferred | 依赖 AcceptanceService | F011 | F011::T033/T013 integration + browser |
+| BC-012 | 三种状态符号且同源不冒充独立 | deferred | 依赖 claim 独立性 | F011 | F011::T014/T033 Playwright |
+| BC-013 | 证据使用仓库天然标识 | deferred | 依赖 Artifact ref | F010/F011 | F011::T023/T021 browser |
+| BC-014 | 状态卡可筛选主张树 | deferred | 依赖验收视图 | F011 | F011::T033 browser |
+| BC-015 | 基线变更事前阻塞 | deferred | 依赖 AcceptanceService 写链 | F011 | F011::T012/T033 fault tests |
+| BC-016 | 决定形成状态变化而非消息气泡 | deferred | 依赖 TaskProjection / Acceptance event | F011 | F011::T021/T020 |
+| BC-017 | 范围血统默认收起 | deferred | 依赖 Artifact / acceptance scope | F011 | F011::T022/T023 browser |
+| BC-018 | 实现回归与端到端验收分段 | deferred | 依赖验收视图 | F011 | F011::T033 browser |
+| BC-019 | 单例舞台中文件可返回或预览 | deferred | 依赖资源 / 验收文件 surface | F011 | F011::T034 browser |
+| BC-020 | 任务固定四视图与可折叠副栏 | deferred | 四视图由 F011 拥有 | F011 | F011::T030 |
+| BC-021 | 概览副栏显示任务级活动 | deferred | 依赖 TaskProjection | F011 | F011::T031 browser |
+| BC-022 | 验收副栏显示主张大纲 | deferred | 依赖 Acceptance projection | F011 | F011::T033 browser |
+| BC-023 | 资源清单与就地预览 | deferred | 依赖 Artifact / file projection | F011 | F011::T034 browser |
+| BC-024 | tab 数字只计人工介入 | deferred | 依赖 attention count contract | F011 | F011::T020/T031 |
+| BC-025 | 概览与验收零重叠 | deferred | 依赖四视图 projection | F011 | F011::T031/T033 |
+| BC-026 | 一个输入框且切 view 保留草稿 | deferred | F009 提供 draft store，但 view 验收在 F011 | F011 | F011::T030 Playwright |
 | BC-027 | 执行组合为模型与深度 | deferred | execution identity 由 F012 定义 | F012 | F012::T001/T010 |
 | BC-028 | 上下文范围选择及独立性提示 | deferred | Dispatch snapshot 由 F012 定义 | F012 | F012::T003/T012 |
 | BC-029 | 会话是视图且 Room 在内切换 | deferred | Session / Room contract 未交付 | F012 | F012::T001/T012 |
 | BC-030 | 命令面板可开关 | adapted | V3.44 全局导航原语 | F009 | `e2e/tests/f009-command-palette.spec.ts` |
-| BC-031 | 七个任务态共享数据骨架 | deferred | 最终为十一态矩阵，归 TaskProjection | F011 | F011::AC-001 fixtures |
-| BC-032 | 任务首屏顺序随状态变化 | deferred | 依赖十一态 projection | F011 | F011::AC-001 fixtures |
-| BC-033 | 非代码任务复用骨架 | deferred | 依赖 TaskProjection / evidence ref | F011 | F011::T001/T011 |
-| BC-034 | 轨迹并入会话且可放大 | deferred | 依赖任务会话视图 | F011 | F011::T013 browser |
-| BC-035 | 轨迹概览按耗时分段 | deferred | 依赖 trace projection | F011 | F011::T013 browser |
-| BC-036 | 轨迹呈现 adapter 详细交互 | deferred | 依赖 trace projection | F011 | F011::T013 browser |
-| BC-037 | 每次调用展示执行组合与血统 | deferred | 组合身份由 F012、展示由 F011 | F012/F011 | F011::T013 after F012 contract |
-| BC-038 | 详情分页随事件类型变化 | deferred | 依赖 trace projection | F011 | F011::T013 browser |
-| BC-039 | 轨迹支持折叠与搜索 | deferred | 依赖 trace view | F011 | F011::T013 browser |
+| BC-031 | 七个任务态共享数据骨架 | deferred | 最终为十一态矩阵，归 TaskProjection | F011 | F011::T001/T050 fixtures |
+| BC-032 | 任务首屏顺序随状态变化 | deferred | 依赖十一态 projection | F011 | F011::T020/T031 fixtures |
+| BC-033 | 非代码任务复用骨架 | deferred | 依赖 TaskProjection / evidence ref | F011 | F011::T001/T020 |
+| BC-034 | 轨迹并入会话且可放大 | deferred | 依赖任务会话视图 | F011 | F011::T032/T022 browser |
+| BC-035 | 轨迹概览按耗时分段 | deferred | 依赖 trace projection | F011 | F011::T022/T032 browser |
+| BC-036 | 轨迹呈现 adapter 详细交互 | deferred | 依赖 trace projection | F011 | F011::T022/T032 browser |
+| BC-037 | 每次调用展示执行组合与血统 | deferred | 组合身份由 F012、展示由 F011 | F012/F011 | F011::T022 after F012 contract |
+| BC-038 | 详情分页随事件类型变化 | deferred | 依赖 trace projection | F011 | F011::T022 browser |
+| BC-039 | 轨迹支持折叠与搜索 | deferred | 依赖 trace view | F011 | F011::T032/T022 browser |
 | BC-040 | 执行组合选择器解释判断依据 | deferred | eligibility 由 F012 定义 | F012 | F012::T003/T012 |
 | BC-041 | Skill 与 step 要求取并集并标来源 | deferred | F013 发布要求，F012 消费 | F013/F012 | F012::T003 integration |
 | BC-042 | 实现与验证不能同源 | deferred | Dispatch eligibility 由 F012 拥有 | F012 | F012::T003 integration |
@@ -87,7 +87,7 @@ deferred 不得进入 F009 production registry，也不得以静态数据、空�
 | BC-056 | 新任务原文守恒、确认前零写、重复幂等 | adapted | 迁移既有 Intake 的现有保证；最终 Dispatch 由 F012 替换 | F009 | `e2e/tests/f009-create-task.spec.ts` |
 | BC-057 | 空目标不推荐也不创建 | adapted | 迁移既有 Intake 边界 | F009 | `e2e/tests/f009-create-task.spec.ts` |
 | BC-058 | 指派具有撤销窗口 | deferred | draft Dispatch 生命周期由 F012 拥有 | F012 | F012::T002/T010 |
-| BC-059 | 成果与资料统一为资源 | deferred | 资源视图由 F011 拥有 | F011 | F011::T012 browser |
+| BC-059 | 成果与资料统一为资源 | deferred | 资源视图由 F011 拥有 | F011 | F011::T034 browser |
 | BC-060 | 项目固定四个 tab | deferred | v0.3 实际只上线文件 / Skills / 设置 | F013 | F013::T012/T021 |
 | BC-061 | 记忆只含待办 / 知识库 / 知识图谱 | deferred | Memory 不在 v0.3 | v0.4 Memory candidate | future feature AC |
 | BC-062 | 知识库三轴与召回禁用态 | deferred | Memory 不在 v0.3 | v0.4 Memory candidate | future feature AC |
@@ -99,7 +99,7 @@ deferred 不得进入 F009 production registry，也不得以静态数据、空�
 | BC-068 | 执行组合是运行时检查结果 | deferred | runtime projection 由 F012 拥有 | F012 | F012 runtime acceptance |
 | BC-069 | 自动化规则 / 触发 / 运行 / 投递分层 | deferred | 自动化不在 v0.3 | v0.4 Automation candidate | future feature AC |
 | BC-070 | 竖栏是唯一一级导航 | adapted | ApplicationShell 核心不变量 | F009 | `e2e/tests/f009-shell.spec.ts` |
-| BC-071 | 四个任务视图宽度与左边界一致 | deferred | 四视图由 F011 拥有 | F011 | F011::T010–T013 browser |
+| BC-071 | 四个任务视图宽度与左边界一致 | deferred | 四视图由 F011 拥有 | F011 | F011::T030 browser |
 | BC-072 | 顶栏没有布局三档 | adapted | 旧 Dock / layout control 退出 | F009 | `e2e/tests/f009-shell.spec.ts` |
 | BC-073 | 项目工具条与目录状态排版 | deferred | 最终项目文件面由 F013 拥有 | F013 | F013::T012 browser |
 | BC-074 | 项目记忆筛选与统一样式 | deferred | 项目记忆不在 v0.3 | v0.4 Memory candidate | future project-memory AC |

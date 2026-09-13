@@ -29,16 +29,16 @@ updated: 2026-09-13
 - [ ] T000 (`FR-002`, `FR-004`, `FR-006`, `FR-010`): 对照 F012 / F013 实际共享类型，冻结 TaskProjection 所需的 Session、Dispatch、Attempt、requirement snapshot、outbox 和 independence facts；差异先回写 `spec.md` / `design.md`。 — verify: `npm run check:features`
 - [ ] T001 (`AC-001`, `AC-002`): 先建立 11 个 active state、archived、legacy_unknown 与独立性负例的纯 fixture；确认 projection / evaluator 尚未实现时测试为红。 — verify: `npm test --workspace server -- task-presentation-state acceptance-verdict`
 - [ ] T002 (`AC-005`, `AC-006`): 先建立真实旧 schema、baseline CAS、summary / outbox crash seam 与 reopen fixture；确认 migration / service 尚未实现时测试为红。 — verify: `npm test --workspace server -- migration-acceptance acceptance-completion acceptance-outbox-recovery`
-- [ ] T004 (`FR-007`, `FR-008`, `NFR-002`): 建立跨服务写链集成夹具，覆盖冻结完成要求基线、写入主张 / 论证 / 证据链接、接受剩余风险、生成完成摘要，并证明完成摘要失败不得推进 Issue done。 — verify: `npm test --workspace server -- acceptance-write-chain`
+- [ ] T003 (`FR-009`, `FR-010`, `FR-011`, `NFR-002`): 建立跨服务写链集成夹具，覆盖冻结完成要求基线、写入主张 / 论证 / 证据链接、接受剩余风险、生成完成摘要，并证明完成摘要失败不得推进 Issue done；夹具只通过公开 port 编排，与 T002 的 crash-seam fixture、T012 的 baseline port、T015 的 complete / outbox 实现各测一层，不重复断言同一 transaction seam。 — verify: `npm test --workspace server -- acceptance-write-chain`
 
 ### Phase 1：共享契约与 Acceptance 写模型
 
 - [ ] T010 (`FR-002`, `FR-005`, `FR-006`, `FR-007`, `DR-003`, `NFR-004`): 在 `shared/` 定义 TaskView、projection envelope / detail、presentation state、attention、action、claim verdict、resource ref 与分页 cursor contract；只引用 F010 / F012 类型，不复制。 — verify: `npm run typecheck`
 - [ ] T011 (`FR-008`, `FR-009`, `DR-001`, `NFR-002`): 从实施时真实 `CURRENT_SCHEMA_VERSION` 顺延 migration，新增 acceptance tables / indexes / immutable triggers 与 repository；覆盖重复 migration、foreign key、trigger 和 query plan。 — verify: `npm test --workspace server -- migration-acceptance`
 - [ ] T012 (`FR-008`, `FR-009`, `AC-005`): 实现 AcceptanceService 的 initial baseline transaction port、baseline preview / confirm、canonical fingerprint、requirement identity 复用和 case-level expected version / idempotency。 — verify: `npm test --workspace server -- acceptance-baseline`
-- [ ] T013 (`FR-005`, `FR-008`, `DR-001`): 实现 claim revision、argument、evidence attach / detach 与 requirement decision append-only commands；actor 由 server context 注入，所有 refs 走公共 parser / resolver。 — verify: `npm test --workspace server -- acceptance-claims`
+- [ ] T013 (`FR-005`, `FR-008`, `DR-001`): 实现 claim 创建 / withdraw、claim revision、argument、evidence attach / detach 与 requirement decision append-only commands；actor 由 server context 注入（模型只能提交 `model_statement` 候选），所有 refs 走公共 parser / resolver。 — verify: `npm test --workspace server -- acceptance-claims`
 - [ ] T014 (`FR-006`, `AC-002`): 实现纯 IndependenceEvaluator 与三态投影，逐项消费 F012 的 identity / context / cold-start / memory isolation evidence 和 F013 status map；未知字段 fail closed。 — verify: `npm test --workspace server -- acceptance-verdict`
-- [ ] T015 (`FR-010`, `FR-011`, `DR-002`, `NFR-002`): 实现 complete gate、deterministic snapshot / Markdown renderer、summary + `acceptance.completed` outbox 同事务，以及 IssueService 幂等 consumer / finalizing 恢复。 — verify: `npm test --workspace server -- acceptance-completion acceptance-outbox-recovery`
+- [ ] T015 (`FR-010`, `FR-011`, `DR-002`, `NFR-002`): 实现 complete gate（按 §4.3 resolution 映射）、deterministic snapshot / Markdown renderer、summary + 消费 F012 FR-009 持久 DomainOutbox 的 `acceptance.completed` 同事务 enqueue，以及 IssueService 幂等 consumer、同 event 重投递与 `completion/void` 带审计恢复。 — verify: `npm test --workspace server -- acceptance-completion acceptance-outbox-recovery`
 - [ ] T016 (`FR-009`, `FR-012`, `AC-005`): 实现 legacy active baseline backfill 与 Done EvidenceSummary 只读 adapter；无可靠 snapshot 写 `legacy_unresolved`，不倒推 normalized claims。 — verify: `npm test --workspace server -- migration-acceptance task-acceptance-projection`
 
 ### Phase 2：TaskProjection 与 API
@@ -49,15 +49,15 @@ updated: 2026-09-13
 - [ ] T023 [P] (`FR-007`, `NFR-003`, `NFR-004`): 实现 resources detail reader，以 F010 revision / consumption / provenance 和 F012 context items 生成 input / output；文件读取走 F013 authorization，六态失败不 fallback。 — verify: `npm test --workspace server -- task-resource-projection`
 - [ ] T024 (`FR-001`, `FR-009`, `AC-005`): 实现 task list、create preview / confirm application API；Issue、首个 Session / Thread 与 initial baseline 原子创建，确认幂等且目标原文保真。 — verify: `npm test --workspace server -- task-create-confirmation`
 - [ ] T025 (`DR-003`, `NFR-001`, `NFR-004`): 实现按 view TaskProjection HTTP API、opaque composite cursor 与 task SSE replay；覆盖 source-key 去重、stale response、invalid cursor full snapshot 和索引计划。 — verify: `npm test --workspace server -- task-projection-replay`
-- [ ] T026 (`FR-008`, `FR-009`, `FR-010`, `FR-011`): 实现 acceptance command routes、`If-Match` / `Idempotency-Key`、稳定 error code 与 API client / hooks。 — verify: `npm test --workspace server && npm test --workspace web -- f011-api-contract`
+- [ ] T026 (`FR-008`, `FR-009`, `FR-010`, `FR-011`): 实现 acceptance command routes（含 claim 创建 / withdraw 与 `completion/void`）、`If-Match` / `Idempotency-Key`、design §4.2 的封闭 error code 表与 API client / hooks；新增一个 `ACCEPTANCE_*` / `EVIDENCE_REF_INVALID` 码必须同时回写 design 表与 `shared/src/errors`，并照 F010 的做法加一条双向漂移门禁（实现落码后补）。 — verify: `npm test --workspace server && npm test --workspace web -- f011-api-contract`
 
 ### Phase 3：四视图生产 UI
 
 - [ ] T030 (`FR-001`, `UX-001`, `UX-002`): 接管 `/tasks` list / create / open；注册 `/tasks/:taskId/{overview,conversation,acceptance,resources}`，base route replace 到 overview；实现 task shell、四 tabs、唯一 composer 与 draft generation 保留。 — verify: `npm test --workspace web -- f011-task-shell`
 - [ ] T031 (`FR-003`, `UX-003`, `UX-004`, `AC-001`): 实现概览与活动副栏，11 个 state 按 priority 重排并显示唯一 action / 影响；跨 view attention 只链接不重复计数。 — verify: `npm test --workspace web -- f011-task-state-matrix`
-- [ ] T032 [P] (`FR-004`, `UX-002`, `AC-003`): 实现会话 + 轨迹副栏、Room 联动、搜索 / 折叠 / 类型分页 / 全宽复盘、execution identity 与 context lineage。 — verify: `npm test --workspace web -- f011-conversation-resources`
+- [ ] T032 [P] (`FR-004`, `UX-002`, `AC-003`): 实现会话 + 轨迹副栏、Room 联动、搜索 / 折叠 / 类型分页 / 全宽复盘、execution identity 与 context lineage。 — verify: `npm test --workspace web -- f011-conversation-trace`
 - [ ] T033 [P] (`FR-005`, `FR-006`, `UX-005`, `AC-002`): 实现验收 + 大纲、三态卡筛选、未支撑项、claim / argument / evidence、精确 reason、实现回归分段、baseline diff / risk / complete dialogs。 — verify: `npm test --workspace web -- f011-acceptance-view`
-- [ ] T034 [P] (`FR-007`, `UX-005`, `NFR-003`, `AC-003`): 实现资源清单 + 同屏预览、input / output 双方向、Artifact 六态、文件变化导航，以及验收长文档的全文 / 返回 anchor。 — verify: `npm test --workspace web -- f011-conversation-resources`
+- [ ] T034 [P] (`FR-007`, `UX-005`, `NFR-003`, `AC-003`): 实现资源清单 + 同屏预览、input / output 双方向、Artifact 六态、文件变化导航，以及验收长文档的全文 / 返回 anchor。 — verify: `npm test --workspace web -- f011-resources-preview`
 - [ ] T035 (`UX-001`, `UX-004`, `UX-005`, `AC-004`): 完成 tabs / dialog / table / focus / keyboard / sanitizer / persistent feedback 的可访问性与安全测试；结构事实全部自动化。 — verify: `npm test --workspace web -- f011-accessibility`
 
 ### Phase 4：兼容入口退出
@@ -65,6 +65,7 @@ updated: 2026-09-13
 - [ ] T040 (`FR-012`, `AC-007`): 按 migration matrix 逐行接管 P005、P008、A004、A005、A016–A024，回填每行新 route / API / browser completion evidence；未满足 `delete_when` 的行不得删除旧宿主。 — verify: `npm test -- tools/check-v03-plan-contracts.test.mjs`
 - [ ] T041 (`FR-012`, `AC-007`): completion evidence 全部通过后，从 production route / registry 删除 `IssueList`、`CreateIssueDialog`、`IssueInspector`、旧 Evidence / validation UI 与 handlers；保留必要 legacy read adapter 和历史 contract tests。 — verify: `npm test && npm run test:e2e`
 - [ ] T042 (`DR-001`, `DR-002`): 按实际 migration / API / transaction 落点同步 `docs/personahub-system-design.md` 与 `docs/personahub-architecture.md`，明确 claims 由 F011 实现、F010 只拥有 Artifact core。 — verify: `npm run check:doc-links && npm run check:doc-ownership`
+- [ ] T043 (`AC-007`): 同步 F009 `v344-browser-check-applicability.md` 中 `F011::Txxx` 指针到本文件当前任务编号，并保证每个指针都指向已定义任务；`tools/check-v03-plan-contracts.test.mjs` 的 F011 指针门禁锁定该映射。 — verify: `npm test -- tools/check-v03-plan-contracts.test.mjs`
 
 ## 3. 验证与验收任务
 
@@ -72,15 +73,15 @@ updated: 2026-09-13
 - [ ] T051 (`AC-002`, `AC-005`, `AC-006`): 跑 claim / independence、baseline CAS、complete gate、summary / outbox crash-reopen 与重复 delivery 全套负例。 — verify: `npm test --workspace server -- acceptance-verdict acceptance-baseline acceptance-completion acceptance-outbox-recovery`
 - [ ] T052 (`AC-003`, `AC-004`): 跑多 Room、trace pagination、input / output provenance、Artifact 六态、授权拒绝、SSE replay、draft / anchor 与 accessibility tests。 — verify: `npm test`
 - [ ] T053 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-007`): 运行真实浏览器四视图旅程，覆盖 BC-003/004、009–026、031–039、046–052、059、071；0 console error，结构 / 行为项不得改为 manual。 — verify: `npm run test:e2e`
-- [ ] T054 (`AC-007`): 逐行核对迁移矩阵 14 个 F011 owner 条目，确认 production route / registry 不可达旧宿主且历史数据仍可读；保存矩阵 completion evidence。 — verify: `npm test -- tools/check-v03-plan-contracts.test.mjs && npm run test:e2e`
+- [ ] T054 (`AC-007`): 逐行核对迁移矩阵 13 个 F011 owner 条目（P005、P008、A004、A005、A016–A024），确认 production route / registry 不可达旧宿主且历史数据仍可读；保存矩阵 completion evidence。 — verify: `npm test -- tools/check-v03-plan-contracts.test.mjs && npm run test:e2e`
 - [ ] T055 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`, `AC-006`, `AC-007`): 运行发布质量门并记录耗时 / 结果；失败先修当前问题，不带红进入 review。 — verify: `npm run verify:release`
 - [ ] T056 (`UX-004`, `UX-005`): 只对布局层级、异常文案是否自然、四视图切换是否易理解做人工浏览器体验复核；元素存在、动作、键盘、路由和状态变化不得放入本项。 — verify: 在 `docs/reviews/dogfooding-notes.md` 记录真实 task ID、浏览器、结论或问题编号
 
 ## 4. 依赖与并行关系
 
-`T000 → T001/T002 → T010 → T011 → T012 → T013/T014 → T015/T016 → T020/T021`。T022 与 T023 只在 T010 的共享 projection contract 冻结后并行；T024 依赖 T012 的 initial baseline transaction port；T025 依赖 T020–T023；T026 依赖 T012–T015。
+`T000 → T001/T002/T003 → T010 → T011 → T012 → T013/T014 → T015/T016 → T020/T021`；T003 的写链夹具先以未实现 port 为红，随 T012 / T015 落绿且不替代 T002 的 crash-seam 断言。T022 与 T023 只在 T010 的共享 projection contract 冻结后并行；T024 依赖 T012 的 initial baseline transaction port；T025 依赖 T020–T023；T026 依赖 T012–T015。
 
-UI 的 T032 / T033 / T034 只在 T030 shell 与对应 server detail reader 通过后并行；T035 汇总三者。T040 必须等新旅程通过，T041 必须等 T040 每行 completion evidence 完整；T042 在实际 schema / API 定型后执行。T050–T056 是收口门，不能用局部 workspace test 替代 `verify:release`。
+UI 的 T032 / T033 / T034 只在 T030 shell 与对应 server detail reader 通过后并行；T035 汇总三者。T040 必须等新旅程通过，T041 必须等 T040 每行 completion evidence 完整；T042 在实际 schema / API 定型后执行；T043 在任务编号冻结后执行并随 T054 的矩阵核对一起复核。T050–T056 是收口门，不能用局部 workspace test 替代 `verify:release`。
 
 F011 文档设计可以与 F010 检视尾声重叠，但代码实现不与未收口的 F012 / F013 contract 并行。F014 只消费 F011 公共 API 与矩阵结果，不替 F011 补首次写链或页面。
 

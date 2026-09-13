@@ -131,8 +131,8 @@ updated: 2026-09-13
 - **FR-007**：资源视图按产出 / 输入展示 Artifact revision、Artifact consumption 与实际文件变化；预览只解析确定 ref，失败保留原 ref 和稳定错误，不回退到最新内容。
 - **FR-008**：AcceptanceService 是完成要求、主张链、风险接受与完成摘要的唯一写入口；所有命令要求 actor、幂等键、请求 fingerprint 和 expected acceptance version。
 - **FR-009**：初始基线与任务创建在同一事务内冻结；基线变更先返回逐项 diff，用户确认后新增 immutable baseline，未变化 requirement 保留身份，变化 / 删除项保留历史且不继承覆盖结论。
-- **FR-010**：只有当前基线的每条必要要求已满足、明确不适用或由用户逐项接受剩余风险，且没有 active Attempt / 未决权限动作时，AcceptanceService 才能在一个事务内生成不可变完成摘要并写 `acceptance.completed` outbox event。
-- **FR-011**：IssueService 只接受 AcceptanceService 发出的 `acceptance.completed`，并幂等核对 summary / acceptance version 后推进 done；重复投递不重复完成，完成摘要失败不得推进 Issue done，consumer 失败不得丢失可重试事实。
+- **FR-010**：只有当前基线的每条必要要求（F013 `Requirement.strength=hard`）已满足、明确不适用或由用户逐项接受剩余风险，且没有 active Attempt / 未决权限动作时，AcceptanceService 才能在一个事务内生成不可变完成摘要并写 `acceptance.completed` outbox event；`strength=soft` 的要求只降权、不阻断完成。
+- **FR-011**：IssueService 只接受 AcceptanceService 发出的 `acceptance.completed`，并幂等核对 summary / acceptance version 后推进 done；跨服务投递使用 F012 提供的持久 DomainOutbox（同事务 enqueue、worker 投递、ack 与重试，见 F012 FR-009），重复投递不重复完成，完成摘要失败不得推进 Issue done，consumer 失败不得丢失可重试事实。
 - **FR-012**：F011 新工作面通过验收后删除迁移矩阵所列 F011 transitional host；旧 validation 记录只做显式 legacy projection，不伪造 normalized claim 或独立性。
 
 ### 数据与追溯需求
@@ -158,7 +158,7 @@ updated: 2026-09-13
 
 ## 5. 生命周期与不变量
 
-TaskProjection 只读，不拥有 Issue、Session、Dispatch、Attempt、Artifact 或 validation 状态。页面主操作携带 `owner`，分别调用 AcceptanceService、IssueService 或 F012 的 canonical service；projection 不提供旁路写入口。
+TaskProjection 只读，不拥有 Issue、Session、Dispatch、Attempt、Artifact 或 validation 状态。页面主操作携带 `owner`，分别调用 AcceptanceService、IssueService 或 F012 的 canonical service；projection 不提供旁路写入口。acceptance case 处于 `finalizing` / `completed` 时，F012 不得在该 Issue 确认新的 Dispatch 或 Attempt；v0.3 不支持在已完成验收上重开执行，需要继续执行只能新建任务。
 
 11 个 active presentation state 是 canonical facts 的有优先级投影，不是新状态机：
 
@@ -178,7 +178,7 @@ TaskProjection 只读，不拥有 Issue、Session、Dispatch、Attempt、Artifac
 
 状态优先级必须确保：归档边界最先裁决；已提交 completion summary 进入“正在完成”子态并锁定验收写入；等待权限高于普通 queued / running 展示；最新有效 Dispatch / Attempt 高于旧终态；没有可靠映射时进入 `legacy_unknown`。`legacy_unknown` 只给诊断 / 返回列表动作，不伪造恢复命令。
 
-Acceptance lifecycle 为：`open → finalizing → completed`。`open` 允许带 expected version 的验收命令；完成事务原子写 immutable summary 与 outbox 后进入 `finalizing` 并锁定写入；IssueService 消费成功后为 `completed`。summary 和 event 必须一同存在或一同不存在。任何 baseline 变更都创建新 baseline；任何 claim 文本变更都创建新 revision；evidence ref 与 risk decision 不原地改写。
+Acceptance lifecycle 为：`open → finalizing → completed`，迁移期为无法解析完成要求快照的 active 旧任务保留 `legacy_unresolved`——它阻止新完成，用户确认一份新的有效基线后转回 `open`，不会永久卡死历史任务。`open` 允许带 expected version 的验收命令；完成事务原子写 immutable summary 与 outbox 后进入 `finalizing` 并锁定写入；IssueService 消费成功后为 `completed`。`finalizing` 若遇永久不可投递的 poison event，可由 user actor 执行带审计的作废并转回 `open`（保留已写 summary，作废后重新完成生成新 summary），不是死端。`必要要求` 指 F013 `strength=hard`，`soft` 只降权、不阻断完成。summary 和 event 必须一同存在或一同不存在。任何 baseline 变更都创建新 baseline；任何 claim 文本变更都创建新 revision；evidence ref 与 risk decision 不原地改写。
 
 ## 6. 成功与验收
 
