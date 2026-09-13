@@ -304,6 +304,20 @@ describe("F010 inline publication", () => {
     session.db.close();
   });
 
+  it("revise returns the persisted artifact row, not a pre-CAS snapshot", async () => {
+    const session = openSession(fixture);
+    session.service.createArtifact(inlineCreateInput(fixture, "art_revise_fresh"));
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const revised = session.service.reviseArtifact("art_revise_fresh", {
+      storage: { storage_kind: "inline_markdown", inline_content: "# v2" },
+      created_by: "tester",
+      idempotency_key: "key-revise-fresh",
+      expected_current_revision: 1,
+    });
+    expect(revised.artifact).toEqual(session.artifactRepo.getArtifact("art_revise_fresh"));
+    session.db.close();
+  });
+
   it("rejects an oversized inline payload before any artifact or revision exists", () => {
     const session = openSession(fixture, undefined, 16);
     try {

@@ -245,7 +245,8 @@ export class ArtifactService {
           ...(input.source_run_id ? { source_run_id: input.source_run_id } : {}),
         }),
       );
-      return { artifact: { ...fresh, current_revision: nextRevision }, revision, replayed: false };
+      const updated = this.deps.artifactRepo.getArtifact(artifactId)!;
+      return { artifact: updated, revision, replayed: false };
     })();
     this.deps.testHooks?.afterCommit?.();
     for (const event of pendingEvents) this.deps.threadEventService.broadcast(event);
