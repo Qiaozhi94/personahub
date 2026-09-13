@@ -1210,3 +1210,53 @@ archived ref 的消费限制与 F010 契约一致。
    vs. 把传输层失败与应用级 console error 分开断言）需要一次明确取舍：建议取后者，因为配 retries
    会连真实的偶发 console error 一起掩盖，而 `ERR_NO_BUFFER_SPACE` 这类传输层失败本来就不属于
    "应用是否有 console error" 要回答的问题。留作 F011 开工前的独立小任务。
+
+## 循环 22：F013 开发前需求与设计文档检视（10轮）
+
+**周期**：2026-09-12 至 2026-09-13。**范围**：F013 spec/design/tasks、v0.3 跨 Feature 契约、
+现有 migration/runtime/evidence 代码事实与文档回归锁点。**结果**：27 条发现中 25 条 fixed，
+2 条按用户裁决 tracked 到可判定实施任务 T010/T011；计入收敛统计的 Critical/High/Medium/Low 均为 0。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F013-R1-001 | Project 缺少 Space 持久归属 | High | correctness | root-cause | spec-drift | fixed | projects/issues 同批 rebuild 并回填 space_id | migration-space.test.ts 计划断言 | 1 | 2 | cross-feature-contract-drift |
+| F013-R1-002 | Space 选择态与默认态无可恢复事实源 | High | correctness | root-cause | spec-drift | fixed | 分离持久化 default/selected 并定义转移 | space-first-run.test.ts 计划断言 | 1 | 2 | lifecycle-contract-missing |
+| F013-R1-003 | skill_id-only 可绕过 pinned 发布态校验 | High | correctness | root-cause | spec-drift | tracked(T011) | 由四类写入路径穷举证明总不变量 | T011 覆盖 INSERT/UPDATE/REPLACE/UPSERT | 1 | — | nullable-foreign-key-gap |
+| F013-R1-004 | 路径授权缺 Project/Task 范围 | High | correctness | root-cause | spec-drift | fixed | 冻结三层 Scope、交集与 F012 入参 | authorization-recheck.test.ts 计划断言 | 1 | 2 | cross-feature-contract-drift |
+| F013-R1-005 | 派工前复核未重解析真实路径 | High | correctness | root-cause | spec-drift | fixed | 每次重做 realpath 与 identity 核对 | authorization-recheck.test.ts 计划断言 | 1 | 2 | authorization-time-of-check-drift |
+| F013-R1-006 | Evidence 契约矛盾且引用过期状态 | High | correctness | root-cause | spec-drift | tracked(T010) | 直接引用 EvidenceRefKind，按 owner 判定可用 | T010 类型跟随与 fail-closed | 1 | — | contract-shape-underdefined |
+| F013-R1-007 | Skill 文件冻结与 adapter 下发不可实现 | High | correctness | root-cause | spec-drift | fixed | 划分构建/冻结期并记录安装级下发 | snapshot/delivery 计划测试 | 1 | 4 | mutable-source-behind-immutable-revision |
+| F013-R1-008 | legacy alias 无法表达 Workflow+Policy | High | correctness | root-cause | spec-drift | fixed | 来源 alias 与组合映射分表 | legacy-skill-migration.test.ts 计划断言 | 1 | 3 | legacy-migration-information-loss |
+| F013-R1-009 | issues rebuild 与 migration 事务包装冲突 | High | correctness | root-cause | spec-drift | fixed | 事务外切 FK、事务内 rebuild/check/version | migration-runner-fk.test.ts 计划断言 | 1 | 2 | migration-runner-contract-drift |
+| F013-R1-010 | 多 Workspace bridge 迁移撞唯一 primary | High | correctness | root-cause | spec-drift | fixed | default workspace 为 primary，其余 reference | 双 Workspace v10 fixture | 1 | 4 | staged-cutover-breaks-compatibility |
+| F013-R1-011 | Skill 冲突缺扫描与消解闭环 | Medium | correctness | root-cause | spec-drift | fixed | 增 scan/source identity/resolve/自动恢复 | skill-conflict.test.ts 计划断言 | 1 | 2 | lifecycle-contract-missing |
+| F013-R1-012 | 无 workspace 的 v10 Issue 非法 | Medium | test-coverage | root-cause | process-gap | fixed | 正式 fixture 合法，损坏库另列 adversarial | migration-space.test.ts fixture 断言 | 1 | 2 | fixture-contradicts-source-schema |
+| F013-R1-013 | Git identity 错存为跨机器事实 | Medium | correctness | root-cause | spec-drift | fixed | 改为带 runtime/read_at 的实时探测 | git-identity.test.ts 计划断言 | 1 | 2 | machine-fact-wrong-owner |
+| F013-R1-014 | spec 四 tab 与 design 三 tab 冲突 | Medium | quality | root-cause | spec-drift | fixed | 统一为本 Feature 的三个 tab | spec §7 与 design §6/§8 对账 | 1 | 2 | acceptance-language-drift |
+| F013-R2-015 | Project 删除保护遗漏既有 FK 引用方 | High | correctness | root-cause | spec-drift | fixed | 枚举六类引用并由 PRAGMA 对账 | project-lifecycle.test.ts 计划断言 | 2 | 4 | lifecycle-contract-missing |
+| F013-R2-016 | Issue/Project Space 一致性与游离接口缺失 | High | correctness | root-cause | spec-drift | fixed | trigger 拒绝跨 Space，游离任务显式 space_id | issue-space-consistency.test.ts 计划断言 | 2 | 3 | ownership-invariant-not-enforced |
+| F013-R2-017 | per-Space 状态遗漏 private/重复激活 | High | correctness | root-cause | spec-drift | fixed | private/global/Space-create 均幂等 UPSERT | skill-space-boundary.test.ts 计划断言 | 2 | 7 | tenant-boundary-gap |
+| F013-R2-018 | Windows Scope 按平台名放宽大小写 | High | correctness | root-cause | spec-drift | fixed | 所有平台实测目录语义，失败按敏感 | F013 锁点 + scope-validation 计划测试 | 2 | 5 | path-scope-validation-gap |
+| F013-R2-019 | tasks 把全部 reference bridge 写成 NULL | High | quality | root-cause | process-gap | fixed | 迁移 reference 保留 legacy id，新建恒 NULL | legacy-workspace-migration 计划测试 | 2 | 6 | implementation-plan-drift |
+| F013-R2-020 | 审计事件不全且无实施任务 | Medium | correctness | root-cause | spec-drift | fixed | 补齐五组事件及 T019/T023 | design §8 审计计划逐项覆盖 | 2 | 4 | audit-contract-incomplete |
+| F013-R2-021 | 决策仍以单 Space 为前提 | Medium | correctness | symptom-patch | process-gap | fixed | 删除旧前提，所有权与生效结果正交 | 禁止性文档锁点变异 | 2 | 7 | document-self-contradiction |
+| F013-R2-022 | 单提交混入多个 finding | Low | quality | symptom-patch | process-gap | fixed | 后续恢复一 finding 一 commit | git log commit 映射 | 2 | 9 | review-protocol-deviation |
+| F013-R2-023 | design 未通过 Prettier | Low | quality | symptom-patch | process-gap | fixed | 格式化 F013 三件套 | prettier --check | 2 | 3 | formatting-gate-regression |
+| F013-R4-024 | reference 仓库只读无落库字段 | High | correctness | root-cause | fix-regression | fixed | 增项目级 access 与数据库 CHECK | F013 锁点 + repository-registry 计划测试 | 4 | 5 | authorization-owner-mismatch |
+| F013-R7-025 | 引用反例计数与任务不同步 | Medium | test-coverage | symptom-patch | fix-regression | fixed | 统一四类写路径并点名 skill_id-only | F013-DOC-R4-INVARIANTS | 7 | 8 | implementation-plan-drift |
+| F013-R7-026 | 新 F013 锁点未通过 Prettier | Low | quality | symptom-patch | fix-regression | fixed | 格式化工具测试 | prettier --check | 7 | 8 | formatting-gate-regression |
+| F013-R8-027 | Evidence 锁点抓不住原始 stale AC | High | test-coverage | symptom-patch | fix-regression | fixed | 四份副本分段断言并内置原始 AC 变异 | 原始变异 EXIT=1，还原后 verify 绿 | 8 | 10 | document-self-contradiction |
+
+**元数据与模式统计**
+
+- 严重度：High 17、Medium 7、Low 3；状态：fixed 25、tracked 2；tracked 均有任务与可判定 AC。
+- 来源：spec-drift 16、process-gap 8、fix-regression 3；根因 20、症状补丁 7。
+- 高频模式是跨文档副本漂移、生命周期/所有权不变量缺口，以及修复后门禁只锁“标签”未锁“实质”。
+
+**模式教训**
+
+1. 同一契约有多份副本时，必须先枚举副本，再逐副本验证；把文档拼接搜索会让正确副本遮蔽错误副本。
+2. 变异样本必须复现原始逃逸文本并确认 `EXIT=1`；另造一个能失败的反例不能证明原问题已被锁住。
+3. 连续多轮仍由新 SQL 路径绕过时，设计应只声明总不变量，把完备性关闭条件下沉到实施测试任务。
+4. 上游类型和 owner 会演进，跨 Feature 契约应引用唯一真相源，禁止在下游文档快照第二份枚举。
+5. 独立 worktree 必须装自己的 workspace 依赖；完整测试涉及子进程时需在允许 `/bin/sh` 的环境运行。
