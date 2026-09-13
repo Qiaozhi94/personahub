@@ -524,15 +524,9 @@ Migration 测试必须从 F009 `v02-fixture-contract.md` 固定的 release v10 �
 | 路径授权的安全等级           | 应用层过滤，如实声明不是 OS 级隔离                                                                                                            | 同用户 agent 进程仍可用绝对路径绕过；按 SOP 纪律不得把前者写成后者                                                                                                                                                                                                                                                                                                                                                         | 容器 / 受限账户在 v0.7 评估                                           |
 | Migration 版本号             | 不预占，先合入者取号，后者 rebase 重编号                                                                                                      | F010 与 F013 并行，任何一方写死版本号都会在合入时撞车                                                                                                                                                                                                                                                                                                                                                                      | —                                                                     |
 | legacy workflow 映射         | 按 `(workflow, policy)` 组合生成 revision，Issue 上的 policy 优先；alias 用 `(source_kind, legacy_id)` 复合主键；保留 raw payload，不猜测语义 | ADR 0012 要求两者一起收敛，只迁 workflow 会丢完成标准；Issue 上的 policy 才是历史任务实际生效的那份；两张旧表 ID 空间独立，单列主键会碰撞                                                                                                                                                                                                                                                                                  | 未迁移字段数量由 F014 统计                                            |
+| **tracked 实现期验证**：Evidence 契约 | **F013-R1-006 → T010**：`EvidenceSpec.evidence_kind` 只引用 `EvidenceRefKind` 唯一真相源；类型新增成员必须随编译跟随，未认领归一化 owner 的 kind 拒绝激活。**T010 完成前不得认为该契约已关闭。** | 设计期无法证明下游 `REF_PREFIX_BY_KIND` 会同步扩展，只有编译跟随 + 激活期拒绝才能兜住；在下游快照第二份枚举会在上游演进后静默过期 | 若 `evidence-ref.ts` 未覆盖所需 kind，先扩 `REF_PREFIX_BY_KIND` 再激活（T010） |
+| **tracked 实现期验证**：引用完整性 | **F013-R1-003 → T011**：`project_skill_refs` / `skills` 的 `skill_id`-only 写入可能绕过 pinned 发布态校验；由 T011 穷举 INSERT / UPDATE（逐列，含只改 `skill_id`）/ `INSERT OR REPLACE` / UPSERT 四类路径的完备性测试关闭。**T011 全绿前不得认为该不变量已关闭。** | 设计期只声明总不变量，具体 trigger 形态留待实现；只锁 trigger 名或单一写入路径会让其它路径绕过 | 若穷举测试存在未覆盖仍不满足不变量的路径，阻塞交付直至补齐（T011） |
 
 ## 10. 待确认设计问题
 
-- [x] DQ-001: Skill 与 Space 的归属是一对多（`skills.space_id`）还是多对多（`space_skills` 关联表）？
-      — 决策：**一对多**（用户裁决 2026-09-12），后续可扩展为多对多。规划期固化的多对多形状不再采用，
-      `space_skills` 不建；`tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-002` 的锁点短语已同步
-      更新为 `` `spaces` 与 `skills.space_id` ``。决定性理由是 `conflict` 状态的归属：多对多下同一 Skill
-      在不同 Space 的冲突结论不同，`state` 必须从 `skills` 搬到关联行，整套激活 / 禁用写入口要按 Space
-      上下文重定义。（裁决当时还提过"v0.3 只有一个 Space"，该前提已随 create / select 多 Space
-      失效；但结论不受影响——所有权与 per-Space 生效结果是两件正交的事，跨 Space 共享仍在范围外。）
-      扩展路径见 §3——叠加 `skill_visibility` 可见性表，
-      `skills.space_id` 语义从"归属"变为"所有者"，不重构已有归属。
+- [x] DQ-001: Skill 与 Space 的归属是一对多（`skills.space_id`）还是多对多（`space_skills` 关联表）？ — 决策：**一对多**（用户裁决 2026-09-12），后续可扩展为多对多。规划期固化的多对多形状不再采用，`space_skills` 不建；`tools/check-v03-plan-contracts.test.mjs::V03-PLAN-R1-002` 的锁点短语已同步更新为 `` `spaces` 与 `skills.space_id` ``。决定性理由是 `conflict` 状态的归属：多对多下同一 Skill 在不同 Space 的冲突结论不同，`state` 必须从 `skills` 搬到关联行，整套激活 / 禁用写入口要按 Space 上下文重定义。（裁决当时还提过"v0.3 只有一个 Space"，该前提已随 create / select 多 Space 失效；但结论不受影响——所有权与 per-Space 生效结果是两件正交的事，跨 Space 共享仍在范围外。）扩展路径见 §3——叠加 `skill_visibility` 可见性表，`skills.space_id` 语义从"归属"变为"所有者"，不重构已有归属。

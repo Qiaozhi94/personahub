@@ -22,7 +22,7 @@ updated: 2026-09-12
 | F010 | 0.3     | Artifact & Provenance Foundation | draft | unassigned | `docs/features/0.3/F010-artifact-foundation-provenance/spec.md` |
 | F011 | 0.3     | Trusted Task Surface | draft | unassigned | `docs/features/0.3/F011-trusted-task-surface/spec.md` |
 | F012 | 0.3     | Session, Dispatch & Intervention | draft | unassigned | `docs/features/0.3/F012-session-dispatch-intervention/spec.md` |
-| F013 | 0.3     | Project & Skills Foundation | draft | unassigned | `docs/features/0.3/F013-project-skills-foundation/spec.md` |
+| F013 | 0.3     | Project & Skills Foundation | ready-for-development | unassigned | `docs/features/0.3/F013-project-skills-foundation/spec.md` |
 | F014 | 0.3     | Trusted Task Journey Closure | draft | unassigned | `docs/features/0.3/F014-trusted-task-journey-closure/spec.md` |
 
 > v0.1、v0.2（F001-F008）已收口，交付摘要见 `docs/features/releases/0.1.md` /
