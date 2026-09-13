@@ -1330,3 +1330,84 @@ fix-regression + 1 条流程），第 3 轮全部关闭且未再引入新问题�
    Feature 的需求/验收/任务里有它。核对方法固定为：去上游 spec 的 FR 列表和 tasks 里搜，搜不到就是无主。
 5. **计数类断言必须由脚本从源头重算。** "矩阵 14 行"没有任何东西推导过它，实际是 13；这类数字只要
    还是手写的就会再漂一次，所以修复必须连门禁一起加（本轮两条计数/映射门禁都做了变异验证）。
+
+## 循环 24：F012 开发前需求与设计文档检视（2轮）
+
+- **report_type**: doc-review
+- **周期**：2026-09-14，2 轮 · **状态**：已收敛（文档门禁全绿；CI 为最终门禁，见末尾）
+
+**范围**：F012 spec/design/tasks 三件套，以及它引用的跨 Feature 契约——ADR 0009/0011/0012/0015/0017
+的落地条款、F009 迁移矩阵 18 行 owner、F010 `recordConsumption` 与 soft reference、F013
+`EffectiveRequirementsResolver` / `verifyAuthorization()`、F011 的 outbox 与独立性依赖、0.3 README
+不变量 1/4/7/8/12/13/14、PRD §5.4/5.5/5.10/7.2/7.3 与 V3.44 §3.1/3.2/3.7/§5。
+**结果**：29 条发现全部 fixed，0 rejected、0 tracked；第 2 轮 diff 复核（因修复覆盖三件套 100%
+显式升级为 full-scan）再抓出 1 条 fix-regression，同轮关闭。design.md 52 → 578 行，spec/tasks 同步重写。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F012-D001 | design.md 52 行、11 节全部停留在 spec 复述层，无表、无 API 形状、无事件 payload | High | correctness | root-cause | original-coding | fixed | 全文重写至 578 行：§3 给 7 张表列与约束、§4 给端点/错误码/commit 点表、§5 给并发与恢复时序 | check-v03-plan-contracts 49/49 + check:features | 1 | 1 | design-doc-restates-spec |
+| F012-D002 | Attempt 未定义为持久对象，且与既有 `runs.validation_attempt` 撞名 | High | correctness | root-cause | original-coding | fixed | 新建 `attempts` 表（Dispatch 1:N Attempt、Attempt 1:1 Run），显式声明与 `validation_attempt` 语义不复用 | —（无专用锁点） | 1 | 1 | undefined-first-class-object |
+| F012-D003 | ADR 0015 四条落地约束（runtime_id / 快照执行位置 / isRunOwnerDead / api_key 单点）零覆盖 | High | correctness | root-cause | spec-drift | fixed | §0 逐条列出，§3.8 加列，§5.6 具名化 `isRunOwnerDead()`，§7.2 写单点纪律 | —（无专用锁点） | 1 | 1 | adr-landing-spec-not-absorbed |
+| F012-D004 | ADR 0012「落地规格并入 F012」的 base_url 八触点与 agent_configs 语义迁移零覆盖 | High | correctness | root-cause | spec-drift | fixed | §3.8 表 + 正文列全八触点；tasks T002/T005 承载 | —（无专用锁点） | 1 | 1 | adr-landing-spec-not-absorbed |
+| F012-D005 | 迁移矩阵 18 行 owner=F012 的 delete_when 未被接收为验收条件 | High | correctness | root-cause | spec-drift | fixed | §7.5 逐行给退场判据；新增 tasks T025 逐行核对 | —（T025 落码后补门禁） | 1 | 1 | cross-feature-contract-drift |
+| F012-D006 | 不变量 14（finalizing/completed 拒绝新 Dispatch）无 FR/AC/任务 | High | correctness | root-cause | spec-drift | fixed | spec 新增 FR-010 + AC-008；design §4.3 两条路径断言；tasks T014/T023 | —（T023 落码后补门禁） | 1 | 1 | cross-feature-contract-drift |
+| F012-D007 | 不变量 12（consumption 同事务校验 Dispatch 与 run_id 归属）未落到设计与任务 | High | correctness | root-cause | spec-drift | fixed | §0 与 §5.3 写入原句，T011 承载 | check-v03-plan-contracts::F010-DOC-R3-028 | 1 | 1 | cross-feature-contract-drift |
+| F012-D008 | 同源模型 eligibility 与 F011 冲突：不可选 vs 可执行但降级 | High | correctness | root-cause | spec-drift | fixed | 裁决为可派工+结论降级，blocked 只留给结构性缺失；spec US-001 拆两条场景、design §4.2 写判据 | —（无专用锁点） | 1 | 1 | cross-feature-contract-drift |
+| F012-D009 | design §6「会话面复用 F011 shell」制造反向依赖 | High | correctness | root-cause | spec-drift | fixed | 改为接 F009 稳定槽位，§6.1 写明依赖序 | check-v03-plan-contracts::V03-PLAN-R1-003 | 1 | 1 | cross-feature-contract-drift |
+| F012-D010 | 独立会话能否派工未定义，幂等键含 task_id 在无任务会话下不成立 | High | correctness | root-cause | original-coding | fixed | 裁决为可派工；幂等键改 `(room_id, client_request_id)`，room 永非空 | —（无专用锁点） | 1 | 1 | nullable-key-unspecified |
+| F012-D011 | 图执行与 Dispatch 关系未定义，design 全文 0 次 graph | High | correctness | root-cause | spec-drift | fixed | 新增 §2.1：节点执行 = 一次 Dispatch，grace window=0，`resolveEligibleAdapter()` 退役 | —（无专用锁点） | 1 | 1 | cross-feature-contract-drift |
+| F012-D012 | 派工前路径授权复核点与任务级范围收紧缺失 | High | correctness | root-cause | spec-drift | fixed | spec 新增 FR-011 + AC-008；design §5.3 写三层交集复核；T011 承载 | —（T023 落码后补门禁） | 1 | 1 | cross-feature-contract-drift |
+| F012-D013 | 撤销窗口时长未定义，AC-002 与 E2E 无法断言 | High | correctness | root-cause | original-coding | fixed | 默认 10s、可配 0–60000ms、提供 start-now；图内节点固定 0 | —（无专用锁点） | 1 | 1 | unbounded-timing-parameter |
+| F012-D014 | AC-007（DomainOutbox）在 design 验收映射与 tasks 验证任务中双双缺席 | Medium | test-coverage | root-cause | original-coding | fixed | design §8 补 AC-007 行；新增 tasks T022 | check:features（AC↔任务映射） | 1 | 1 | ac-without-verification-owner |
+| F012-D015 | ADR 0009 §4 五条强制冷启动条件只覆盖一条 | Medium | correctness | root-cause | spec-drift | fixed | §5.5 给五条 `cold_start_reason` 取值表；spec FR-005 同步扩写 | —（无专用锁点） | 1 | 1 | adr-landing-spec-not-absorbed |
+| F012-D016 | ADR 0009 §5 持久事实清单无字段落点，session ID 敏感处理与遮罩缺失 | Medium | correctness | root-cause | spec-drift | fixed | `attempts` 与 context snapshot 落六类字段；新增 NFR-004 与 §6.3 遮罩规则 | —（无专用锁点） | 1 | 1 | adr-landing-spec-not-absorbed |
+| F012-D017 | 思考深度跨 provider 取值域与归一映射未解决 | Medium | correctness | root-cause | spec-drift | fixed | `depth_raw` + `depth_normalized` 双列，映射由 capability evidence 固化，不可映射不进候选 | —（无专用锁点） | 1 | 1 | adr-landing-spec-not-absorbed |
+| F012-D018 | PRD §5.10 全局「暂停全部派工」闸门无归属 | Medium | correctness | root-cause | spec-drift | fixed | 裁决纳入 v0.3：`dispatch_gates` 三层（runtime/issue/graph）；spec FR-006 与 US-003 场景 2 同步 | —（无专用锁点） | 1 | 1 | prd-surface-without-owner |
+| F012-D019 | 运行时面覆盖不足（锁/队列/后台任务、adapter tab、额度口径） | Medium | correctness | root-cause | spec-drift | fixed | §6.3 给读数表；额度按 ADR 0017 分标 authoritative/estimated，缺失存 NULL | —（无专用锁点） | 1 | 1 | cross-feature-contract-drift |
+| F012-D020 | 会话普通消息写入口缺失，F011 已按「F012 message API」写死 | Medium | correctness | root-cause | spec-drift | fixed | §4.1 补 messages 端点与同输入框分流规则；spec FR-001 同步 | —（无专用锁点） | 1 | 1 | cross-feature-contract-drift |
+| F012-D021 | `/sessions/:sessionId` 路由注册责任未接收 | Medium | correctness | root-cause | spec-drift | fixed | §6.1 明确注册与 deep link 刷新恢复；T015 承载 | check-v03-plan-contracts::F009-DOC-R1-002 | 1 | 1 | cross-feature-contract-drift |
+| F012-D022 | US-003 缺 Given/When/Then 场景 | Medium | correctness | root-cause | original-coding | fixed | 补 4 条场景：三层 pause、全局闸门拒绝、取消只影响目标 Attempt、改派不改写历史 | check:features | 1 | 1 | missing-scenario |
+| F012-D023 | 「legacy 标记」未定义（存哪、谁读、什么后果） | Medium | correctness | symptom-patch | original-coding | fixed | §7.4 给三个具名值与各自下游后果，与 F011 命名对齐 | —（无专用锁点） | 1 | 1 | undefined-state-token |
+| F012-D024 | 「starting 横幅常驻到截止或撤销」与「starting 不再接受撤销」自相矛盾 | Medium | correctness | root-cause | original-coding | fixed | §6.2 改为 draft 期倒计时可撤销、starting 期只留取消 Attempt | check-v03-plan-contracts::V03-PLAN-R1-006 | 1 | 1 | internal-contradiction |
+| F012-D025 | spec 缺 eval_contract，改 ready-for-development 即门禁红 | Medium | correctness | root-cause | process-gap | fixed | 声明 exempt + 具体理由（交付冻结契约，退役条件已由矩阵 delete_when 与 v0.7 登记） | check:features（checkEvalContract） | 1 | 1 | gate-blocks-status-promotion |
+| F012-D026 | T002 一条任务覆盖全部 schema 迁移，无法逐项勾选 | Medium | quality | root-cause | original-coding | fixed | 拆为 T002-T006 五条（runtime_id+base_url / rooms / dispatches+attempts / evidence+gates / outbox） | check:features | 1 | 1 | task-too-coarse |
+| F012-D029 | 会话持久化形态未定：现有 schema 无 rooms 表，仅一句「建一对一约束」 | Medium | correctness | root-cause | original-coding | fixed | §3.1 选新建 `rooms` + `threads.room_id` 唯一索引并回填，理由是历史 ID 不能动（不变量 8） | —（无专用锁点） | 1 | 1 | undefined-first-class-object |
+| F012-D027 | §1 非目标与 §3 范围外语义重复 | Low | quality | root-cause | original-coding | fixed | §1 改写为产品意图层排除，§3 只留本切片边界 | —（无专用锁点） | 1 | 1 | — |
+| F012-D028 | design.md frontmatter 缺 kind/id/version/related_features | Low | quality | root-cause | original-coding | fixed | 对齐 F011/F013 字段集（不含 status） | check:doc-ownership | 1 | 1 | — |
+| F012-R2-001 | 拆细后的 T002 与 T005 都迁移 `agent_configs`，依赖图却把它们标成可并行 | Medium | quality | root-cause | fix-regression | fixed | §4 依赖关系改为 T002→T005 串行并写明理由（争抢同一顺延 schema 版本号） | —（无专用锁点） | 2 | 2 | partial-symmetric-fix |
+
+**元数据与模式统计**
+
+- 严重度：High 13、Medium 15、Low 2；状态：fixed 30，rejected/tracked 均 0；根因 29、症状补丁 1。
+- 来源：spec-drift 17、original-coding 11、process-gap 1、fix-regression 1。**spec-drift 占 57%**，
+  是本项目迄今最高的一次——与 F012 的位置有关：它是 v0.3 唯一被三份 ADR 点名为落地 owner、
+  同时被 F009/F010/F011/F013 四个 Feature 反向依赖的 Feature，漂移面天然最大。
+- 存活轮数：29 条 1 轮内关闭，R2-001 在第 2 轮出现并同轮关闭；无跨轮悬挂。
+- 裁决分布：accepted 30、partial 0、rejected 0；建议命中率约 90%（27/30 的 `fix_summary` 与
+  `suggested_fix` 实质一致），三条偏离都是修复方选了更彻底的方案（D002 直接建表而非投影、
+  D011 用 `graph_node_run_id` 外键而非并列说明、D018 三层 gate 共用一套机制而非只加全局开关）。
+- 高频模式：cross-feature-contract-drift 9、adr-landing-spec-not-absorbed 4、
+  undefined-first-class-object 2。
+
+**模式教训**
+
+1. **「上游 ADR 写了『落地 owner 是 Fxxx』」不等于那个 Feature 接住了。** 本轮 4 条
+   `adr-landing-spec-not-absorbed` 全是这个形状：ADR 0012 有一张 8 行落地表、ADR 0015 有四条编号
+   决策、ADR 0009 有五条冷启动条件和六类持久事实，F012 的 spec §0 把这些 ADR 编号都列上了，
+   design 却一条都没落。**引用 ADR 编号是最廉价的假动作**——核对方法固定为：打开 ADR 的「决策」
+   与「已知实施迁移项」小节逐条编号，去 design 里搜关键标识符（`runtime_id`、`base_url`），
+   搜不到就是没接。本轮 `grep -c` 一次性验证了 8 个关键词全为 0。
+2. **文档体量差三个数量级时，短的那份多半不是「写得精炼」。** F012 design 52 行 vs F013 532 /
+   F011 456 行，且 F012 是两者的上游。判据不是行数本身，而是**下游已经按字段级契约写死了上游**：
+   F011 design 里写着「F012 的 DomainOutbox 与 independence snapshot 尚未实现，最终字段名需在其
+   收口后对照一次」——下游在等字段名，上游文档里没有字段名，这就是硬缺口而非风格差异。
+3. **可空外键不能进唯一约束，这在文档阶段就能判死。** D010 的幂等键 `(task_id, room_id,
+   client_request_id)` 在独立会话下 `task_id IS NULL`，SQLite 的 `NULL != NULL` 让唯一索引失效、
+   重复确认产生多个 draft——直接推翻 FR-004 和 AC-002。设计评审清单里凡出现「可选归属 + 幂等键」
+   组合，必须当场问一句「这个键的每一列都非空吗」。
+4. **两个 Feature 对同一状态各写一句话，就是一次没做的裁决。** D008 的同源模型：F012 写「不可选」、
+   F011 写「可执行但降级」，两份文档各自读都通顺，放一起才发现 F011 的回归夹具在 F012 的规则下
+   永远不可达。跨 Feature 检视必须把下游的**夹具清单**拿来当断言集——夹具比正文更能暴露语义冲突。
+5. **把一条粗任务拆细，要顺手检查拆出来的兄弟任务是否共享同一资源。** R2-001：T002 与 T005 拆开后
+   都改 `agent_configs`，依赖图却按「不同任务可并行」标了并行，两个顺延 migration 会争抢同一个
+   schema 版本号。拆分动作的检查项固定为：拆完逐对看「这两条动的是不是同一张表 / 同一个文件」。
