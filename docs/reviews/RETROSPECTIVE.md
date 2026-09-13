@@ -1260,3 +1260,73 @@ archived ref 的消费限制与 F010 契约一致。
 3. 连续多轮仍由新 SQL 路径绕过时，设计应只声明总不变量，把完备性关闭条件下沉到实施测试任务。
 4. 上游类型和 owner 会演进，跨 Feature 契约应引用唯一真相源，禁止在下游文档快照第二份枚举。
 5. 独立 worktree 必须装自己的 workspace 依赖；完整测试涉及子进程时需在允许 `/bin/sh` 的环境运行。
+
+---
+
+## 循环 23：F011 开发前需求与设计文档检视（3轮）
+
+- **report_type**: doc-review
+- **周期**：2026-09-13，3 轮 · **状态**：已收敛（本地门禁全绿；CI 为最终门禁，见末尾）
+
+**范围**：F011 spec/design/tasks 三件套，以及它引用的跨 Feature 契约——F009 迁移矩阵与
+V3.44 browser-check 适用性表、F010 Artifact 契约、F012 Session/Dispatch/outbox、F013
+Requirement/EvidenceSpec、0.3 README 不变量。**结果**：24 条发现全部 fixed，0 rejected、
+0 tracked；High 4 条全部在第 2 轮关闭，第 2 轮 diff 复核又抓出 6 条修复引入问题（5 条
+fix-regression + 1 条流程），第 3 轮全部关闭且未再引入新问题。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F011-D001 | 五个命令端点用冒号动词，在本仓 Fastify 5 下注册冲突并吞掉任意 URL | High | correctness | root-cause | original-coding | fixed | 全改路径段动词，并在 §4.2 写明禁止回退的理由 | 实测复现：`tasks:preview`+`tasks:confirm` 报 already declared；`acceptance:complete` 匹配到 `acceptance:cancel` | 1 | 2 | unverified-framework-assumption |
+| F011-D002 | 完成门 resolution=satisfied 判据未定义，未消费 F013 `strength` | High | correctness | root-cause | spec-drift | fixed | §4.3 增七行 verdict×domain_status×条件→resolution 映射表；spec FR-010 绑定 hard/soft | —（无专用锁点） | 1 | 2 | cross-feature-contract-drift |
+| F011-D003 | `independence_required=false` 永远停在 evidence_pending，正常完成只能走接受风险 | High | correctness | root-cause | original-coding | fixed | evaluator 第 5 条改为可按映射表收敛为 satisfied | —（无专用锁点） | 1 | 2 | no-convergence-path |
+| F011-D004 | 完成写链依赖的持久 DomainOutbox 在 F012 无 FR/AC/任务，前置条件不可满足 | High | correctness | root-cause | spec-drift | fixed | 归属落 F012：FR-009+AC-007+T004+domain_outbox 表；0.3 README 增不变量 13 | —（无专用锁点） | 1 | 2 | unowned-shared-infrastructure |
+| F011-D005 | 只有 claim revision 端点，缺创建与 withdraw 命令 | Medium | correctness | root-cause | original-coding | fixed | 补两个端点 + `acceptance.claim_withdrawn` 事件 + T013 | —（无专用锁点） | 1 | 2 | schema-without-command |
+| F011-D006 | `legacy_unresolved` 无出口，spec 生命周期只有三态 | Medium | correctness | root-cause | spec-drift | fixed | 唯一出口 `baselines/confirm` 转回 open，spec §5 同步 | —（无专用锁点） | 1 | 2 | lifecycle-dead-end |
+| F011-D007 | poison event 下 case 永久停在 finalizing | Medium | correctness | root-cause | original-coding | fixed | 增 `completion/void` 带审计恢复；去 `UNIQUE(issue_id)` 改 trigger 保证至多一条未作废 summary | —（无专用锁点） | 1 | 2 | lifecycle-dead-end |
+| F011-D008 | 完成/finalizing 后 F012 仍可派工，跨 Feature 无对称约束 | Medium | correctness | root-cause | spec-drift | fixed | design §5.2 + spec §5 + README 不变量 14，由 F012 实现侧断言 | —（无专用锁点） | 1 | 2 | cross-feature-contract-drift |
+| F011-D009 | 错误码集合开放、无 HTTP 映射、命名与既有 shared/src/errors 冲突 | Medium | correctness | root-cause | original-coding | fixed | 改封闭表（码/HTTP/触发条件），统一 `ACCEPTANCE_*` 前缀，复用 `EVIDENCE_REF_INVALID` | —（漂移门禁待 T026 落码补） | 1 | 2 | contract-not-frozen |
+| F011-D010 | evaluator 未消费 EvidenceSpec 的 freshness 与 not_applicable | Medium | correctness | root-cause | spec-drift | fixed | 判定顺序扩为七步，补 freshness 与 not_applicable 分支 | —（无专用锁点） | 1 | 2 | cross-feature-contract-drift |
+| F011-D011 | 迁移矩阵实际 13 行，design §8 与 T054 写 14 行 | Medium | correctness | root-cause | original-coding | fixed | 两处改 13，并新增从矩阵重算行数的门禁 | check-v03-plan-contracts::F011-DOC-R1-D011（真实变异 13→14 转红） | 1 | 2 | uncounted-inventory-claim |
+| F011-D012 | T032/T034 同标 [P] 却共用同一测试文件 | Medium | quality | root-cause | original-coding | fixed | 拆 `f011-conversation-trace` / `f011-resources-preview`，design §8 同步 | —（无专用锁点） | 1 | 2 | parallel-marker-conflict |
+| F011-D013 | T004 引用旧编号 FR-007，范围与 T002/T012/T015 重叠且未进依赖图 | Medium | quality | root-cause | spec-drift | fixed | 重编 T003 + FR-009/010/011 + 分层分工说明 + 进依赖链 | check-v03-plan-contracts::V03-PLAN-R1-001 | 1 | 2 | stale-id-after-renumber |
+| F011-D014 | 0.3 README 依赖表 F011 行缺 F013 | Medium | correctness | root-cause | spec-drift | fixed | 依赖列与叙述段补 F013 | —（无专用锁点） | 1 | 2 | cross-feature-contract-drift |
+| F011-D015 | F009 applicability 里 32 条 `F011::Txxx` 指针在重编号后全部失效 | Medium | correctness | root-cause | spec-drift | fixed | 按新编号逐条重写 + dangling 门禁 + 同步任务 T043 | check-v03-plan-contracts::F011-DOC-R1-D015 | 1 | 2 | stale-id-after-renumber |
+| F011-D016 | Phase 0 编号跳过 T003 | Low | quality | root-cause | original-coding | fixed | 原 T004 重编为 T003，编号连续 | —（无专用锁点） | 1 | 2 | — |
+| F011-D017 | 非 acceptance 表的分页查询计划无归属声明 | Low | correctness | root-cause | original-coding | fixed | §3.4 声明由 F010/F012 索引保证，T022/T023 用 EXPLAIN QUERY PLAN 断言 | —（无专用锁点） | 1 | 2 | — |
+| F011-D018 | `acceptance_events.source_ref` 可空性与生成规则未定义 | Low | correctness | root-cause | original-coding | fixed | 标 NOT NULL 并按事件类型逐条给取值规则 | —（无专用锁点） | 1 | 2 | — |
+| F011-R2-001 | `ACCEPTANCE_LOCKED` 仍写「拒绝所有写命令」，把新加的两条出口自己堵死 | Medium | correctness | root-cause | fix-regression | fixed | 错误码表与 §5.2 同句加两条受控出口例外 | —（无专用锁点） | 2 | 3 | partial-symmetric-fix |
+| F011-R2-002 | `completion/void` 只在正文出现，未进 §4.2 端点清单也无错误码 | Medium | correctness | root-cause | fix-regression | fixed | 补端点行（actor/If-Match/前置条件）与 `ACCEPTANCE_VOID_NOT_ALLOWED` | —（无专用锁点） | 2 | 3 | contract-not-frozen |
+| F011-R2-003 | 封闭错误码表缺 actor 越权与目标不存在两类必然码 | Medium | correctness | root-cause | fix-regression | fixed | 补 `ACCEPTANCE_ACTOR_FORBIDDEN`(403) 与 `ACCEPTANCE_TARGET_NOT_FOUND`(404) | —（无专用锁点） | 2 | 3 | contract-not-frozen |
+| F011-R2-004 | T043 声称门禁锁定 BC→任务映射，实测只校验任务存在 | Medium | test-coverage | root-cause | fix-regression | fixed | 新增 `F011-DOC-R2-004` 锁定 31 行期望映射；顺带修 `T[\d/]+` 只取第一个指针的解析 bug | check-v03-plan-contracts::F011-DOC-R2-004（真实变异三种：旧编号/少一个指针/行集变化，均转红） | 2 | 3 | gate-weaker-than-claim |
+| F011-R2-005 | 修复未留 FIX-log 证据三件套，第 1 轮 CURRENT-doc.md 随 worktree 消失 | Low | quality | root-cause | process-gap | fixed | 补建 append-only `FIX-log.md`（含 Round 1 补记），删除权归还检视人 | —（流程条目） | 2 | 3 | fixer-deleted-review-doc |
+| F011-R2-006 | freshness 越界只说「降级」，未说降到哪个 verdict | Low | correctness | root-cause | fix-regression | fixed | 明确降为 `evidence_pending` + `evidence_out_of_scope`，needs_attention 保留给失败/缺失 | —（无专用锁点） | 2 | 3 | — |
+
+**元数据与模式统计**
+
+- 严重度：High 4、Medium 15、Low 5；状态：fixed 24，rejected/tracked 均 0；根因 24、症状补丁 0。
+- 来源：original-coding 10、spec-drift 8、fix-regression 5、process-gap 1。fix-regression 全部出现在
+  第 2 轮，占该轮 6 条中的 5 条——与「每轮修复自伤率 20-30%」的经验一致，且这 5 条在第 1 轮物理上
+  不存在，只有 diff-only 复核抓得到。
+- 存活轮数：全部为 1 轮（1→2 或 2→3），没有跨轮悬挂条目。
+- 裁决分布：accepted 24 / partial 0 / rejected 0；建议命中率 24/24，其中 D004、R2-004 是我给了二选一、
+  修复方选了更强的一侧（F012 拥有 outbox；锁定完整映射而不是降级措辞）。全接纳本身是需要警惕的信号，
+  这里的解释是发现多为可核对的客观项（实测复现、脚本可重算的计数、上游契约逐字对照），不是判断题。
+- 高频模式：cross-feature-contract-drift 4、contract-not-frozen 3、stale-id-after-renumber 2、
+  lifecycle-dead-end 2。
+
+**模式教训**
+
+1. **框架假设必须在写文档时就实测。** D001 的五个 `:verb` 端点看起来是标准 Google API 风格，
+   15 行 probe 就证明在本仓 `fastify@5`/`find-my-way@9` 下一对同父端点无法共存、单条还会吞掉任意
+   后缀。设计评审里凡是"路由/协议/框架能这样用"的断言，成本低到可以当场跑，就不要留给实现阶段发现。
+2. **加了出口一定要回头改守门人。** 第 2 轮 4 条 Medium 里 3 条同源：新增 `completion/void` 与
+   `legacy_unresolved` 出口后，"锁定后拒绝所有写命令"这句旧描述没跟着改，等于把刚修好的死端又焊上。
+   修复涉及状态机时，检查清单应固定包含"谁在拦它、拦它的那句话改了吗"。
+3. **门禁的覆盖强度只能靠真实文件变异证明。** R2-004：测试里自带的内存变异只证明断言逻辑成立，
+   证明不了它拦得住真实漂移——把 BC-003 指针从 T030 改回同样存在的 T010，47/47 全绿。检视方必须自己
+   动手改文件跑一遍，这也是本轮唯一一条 test-coverage 类发现的来源。
+4. **跨 Feature 基础设施会被踢皮球，判断依据是上游有没有 FR/AC/任务条目，不是正文里提没提这个词。**
+   D004 的持久 outbox 被 F010 → F011 → F012 转了三手，三份 design 都写了 "outbox" 字样，但没有一个
+   Feature 的需求/验收/任务里有它。核对方法固定为：去上游 spec 的 FR 列表和 tasks 里搜，搜不到就是无主。
+5. **计数类断言必须由脚本从源头重算。** "矩阵 14 行"没有任何东西推导过它，实际是 13；这类数字只要
+   还是手写的就会再漂一次，所以修复必须连门禁一起加（本轮两条计数/映射门禁都做了变异验证）。
