@@ -28,11 +28,15 @@ describe("F010 source locator normalization", () => {
 });
 
 describe("F010 path boundary comparison", () => {
-  it("keeps the boundary check case-sensitive by default and foldable on demand", () => {
+  it("folds case on demand; the default deliberately follows platform semantics", () => {
     expect(isPathWithinRoot("/root", "/root/docs/a.md")).toBe(true);
     expect(isPathWithinRoot("/root", "/rooted/a.md")).toBe(false);
-    expect(isPathWithinRoot("/root", "/ROOT/a.md")).toBe(false);
+    // Explicit folding is platform-independent, so it is safe to assert.
     expect(isPathWithinRoot("/root", "/ROOT/a.md", { caseInsensitive: true })).toBe(true);
+    // The *default* is not asserted on purpose: it inherits path.relative's
+    // native semantics — case-sensitive on POSIX, insensitive on Win32 — and
+    // design §7 wants exactly that. An earlier revision of this test asserted
+    // the POSIX answer unconditionally and turned Windows CI red (R5-022).
   });
 
   it("rejects the root itself and any escape", () => {
