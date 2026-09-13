@@ -990,7 +990,11 @@ test('F009 done status is synchronized across roadmap documents', () => {
     'status: done',
     'eval_contract: exempt',
     'F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿',
-    'F010–F014 仍为 `draft`',
+    // F010 entered implementation (79167eb), so the roadmap phrase is now
+    // "F010 已进入 in-progress" + "F011–F014 仍为 draft". Lock both halves so
+    // removing either status from every roadmap document fails this gate.
+    'F010 已进入 `in-progress`',
+    'F011–F014 仍为 `draft`',
   ];
   // A done Feature must also be gone from BACKLOG's active table and must not
   // still describe itself as in review anywhere — check-feature-gates.mjs
@@ -1002,7 +1006,9 @@ test('F009 done status is synchronized across roadmap documents', () => {
 
   requirePhrases(documents, phrases);
   forbidPhrases(documents, forbidden);
-  verifyMutation(documents, phrases);
+  // Every phrase is load-bearing: deleting any one (including either half of
+  // the F010 in-progress / F011–F014 draft split) must turn this gate red.
+  verifyEachPhraseMutation(documents, phrases);
   verifyForbiddenMutation(documents, forbidden[0]);
 });
 
