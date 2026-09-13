@@ -382,11 +382,24 @@ export class ArtifactService {
     if (!this.deps.issueRepo.getById(issueId)) {
       throw new AppError(ErrorCode.ISSUE_NOT_FOUND, `Issue not found: ${issueId}`);
     }
-    if (!this.deps.threadRepo.getById(threadId)) {
+    const thread = this.deps.threadRepo.getById(threadId);
+    if (!thread) {
       throw new AppError(ErrorCode.THREAD_NOT_FOUND, `Thread not found: ${threadId}`);
     }
-    if (sourceRunId && !this.deps.runRepo.getById(sourceRunId)) {
-      throw new AppError(ErrorCode.RUN_NOT_FOUND, `Source run not found: ${sourceRunId}`);
+    // thread_id is the artifact's event-replay home (design §3); a thread from
+    // another Issue would scatter this artifact's events into an unrelated
+    // conversation and break the provenance commitment.
+    if (thread.issue_id !== issueId) {
+      throw new AppError(ErrorCode.THREAD_NOT_FOUND, `Thread ${threadId} does not belong to issue ${issueId}.`);
+    }
+    if (sourceRunId) {
+      const run = this.deps.runRepo.getById(sourceRunId);
+      if (!run) {
+        throw new AppError(ErrorCode.RUN_NOT_FOUND, `Source run not found: ${sourceRunId}`);
+      }
+      if (run.issue_id !== issueId) {
+        throw new AppError(ErrorCode.RUN_NOT_FOUND, `Source run ${sourceRunId} does not belong to issue ${issueId}.`);
+      }
     }
   }
 

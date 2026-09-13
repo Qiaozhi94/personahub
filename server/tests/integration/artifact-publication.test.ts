@@ -337,6 +337,44 @@ describe("F010 inline publication", () => {
   });
 });
 
+describe("F010 entity ownership", () => {
+  it("rejects a thread that belongs to a different issue", () => {
+    const session = openSession(fixture);
+    const issueRepo = new IssueRepository(session.db);
+    const threadRepo = new ThreadRepository(session.db);
+    const first = issueRepo.getById(fixture.graph.issueId)!;
+    const otherIssue = issueRepo.create({
+      project_id: first.project_id,
+      workspace_id: first.workspace_id,
+      issue_type: first.issue_type,
+      workflow_template_id: first.workflow_template_id,
+      validation_policy_id: first.validation_policy_id,
+      title: "Other",
+      goal: "Goal",
+      status: IssueStatus.Running,
+      priority: IssuePriority.Normal,
+      labels: [],
+    });
+    const foreignThread = threadRepo.create({
+      issue_id: otherIssue.id,
+      thread_type: ThreadType.Primary,
+      title: "Foreign",
+    });
+
+    try {
+      session.service.createArtifact({
+        ...inlineCreateInput(fixture, "art_foreign_thread"),
+        thread_id: foreignThread.id,
+      });
+      expect.unreachable("a thread outside the artifact's issue must be rejected");
+    } catch (error) {
+      expect((error as AppError).code).toBe(ErrorCode.THREAD_NOT_FOUND);
+    }
+    expect(session.artifactRepo.getArtifact("art_foreign_thread")).toBeNull();
+    session.db.close();
+  });
+});
+
 describe("F010 operation observability", () => {
   it("logs revision and duration on success and a stable reason code on failure, never body content", () => {
     const logs: Array<Record<string, unknown>> = [];
