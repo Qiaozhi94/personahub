@@ -28,6 +28,8 @@ describe("F010 artifact ref wire format", () => {
         ["artifact:art_1@1.5", "art_1@1.5"],
         ["artifact:art_1@1@2", "art_1@1@2"], // repeated @
         ["artifact:art_1@", "art_1@"],
+        ["artifact:art_1@007", "art_1@007"], // leading zero is not canonical
+        ["artifact:art_1@9007199254740993", "art_1@9007199254740993"], // beyond MAX_SAFE_INTEGER
       ];
       for (const [input, expectedPayload] of cases) {
         const parsed = parseEvidenceRef(input);
@@ -39,6 +41,13 @@ describe("F010 artifact ref wire format", () => {
     it("accepts revision 1 and multi-digit revisions", () => {
       expect(parseEvidenceRef("artifact:a@1")).toEqual({ kind: "artifact", id: "a", revision: 1 });
       expect(parseEvidenceRef("artifact:a@12")).toEqual({ kind: "artifact", id: "a", revision: 12 });
+    });
+
+    it("never aliases a leading-zero revision onto its canonical value", () => {
+      expect(parseEvidenceRef("artifact:x@007").kind).toBe("unknown");
+      expect(parseEvidenceRef("artifact:x@7")).toEqual({ kind: "artifact", id: "x", revision: 7 });
+      expect(resolveForDispatch(parseEvidenceRef("artifact:x@007"))).toEqual({ ok: false, reason: "not_artifact" });
+      expect(parseEvidenceRef("artifact:x@9007199254740993").kind).toBe("unknown");
     });
 
     it("leaves non-artifact kinds untouched, including ids containing @", () => {

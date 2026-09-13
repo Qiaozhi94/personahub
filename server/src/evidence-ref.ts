@@ -71,8 +71,8 @@ export function buildEvidenceRef(kind: EvidenceRefKind, id: string, revision?: n
  * 未知种类必须走可观察的 missing/invalid 路径，不能中断解析流程。unknown 结果
  * 在冒号后保留原始 payload 供诊断。
  *
- * artifact 的 `@revision` 必须是正整数；空 id、重复 `@`、非法 revision 都按
- * unknown 返回（保留冒号后 payload）。
+ * artifact 的 `@revision` 必须是规范的正整数：无前导零、十进制且在安全整数
+ * 范围内；空 id、重复 `@`、非法 revision 都按 unknown 返回（保留冒号后 payload）。
  */
 export function parseEvidenceRef(ref: string): ParsedRef {
   if (typeof ref !== "string" || ref.length === 0) {
@@ -101,11 +101,16 @@ export function parseEvidenceRef(ref: string): ParsedRef {
   }
   const id = payload.substring(0, atIdx);
   const revisionPart = payload.substring(atIdx + 1);
-  // 重复 `@`、空 id 或非法 revision 都不猜意图：按 unknown 返回原始 payload。
-  if (id.length === 0 || revisionPart.includes("@") || !/^\d+$/.test(revisionPart) || Number(revisionPart) < 1) {
+  // 重复 `@`、空 id、非规范正整数（前导零 / 溢出安全整数）都不猜意图：按 unknown
+  // 返回原始 payload。`009` 若被规范化成 9 会让两个不同线格式消费到同一 revision。
+  if (id.length === 0 || revisionPart.includes("@") || !/^[1-9]\d*$/.test(revisionPart)) {
     return { kind: "unknown", id: payload };
   }
-  return { kind, id, revision: Number(revisionPart) };
+  const revision = Number(revisionPart);
+  if (!Number.isSafeInteger(revision)) {
+    return { kind: "unknown", id: payload };
+  }
+  return { kind, id, revision };
 }
 
 /** Artifact ref 的模式化校验结果。`revision: null` 表示读取 current 指针。 */
