@@ -193,7 +193,17 @@ export class ArtifactResolver {
         content: { storage_kind: "inline_markdown", text },
       };
     }
-    const bytes = this.deps.archive.readArchive(manifest.archive_relative_path!);
+    let bytes: Buffer | null;
+    try {
+      bytes = this.deps.archive.readArchive(manifest.archive_relative_path!);
+    } catch {
+      return failure(
+        "invalid",
+        ErrorCode.INTERNAL_ERROR,
+        ref,
+        `Archive locator for ${artifact.id}@${revision} is malformed.`,
+      );
+    }
     if (bytes === null) {
       return failure(
         "missing",

@@ -167,6 +167,19 @@ describe("F010 resolver read states", () => {
     session.db.close();
   });
 
+  it("reports a malformed archive locator as invalid, not a hash mismatch", () => {
+    const session = openArtifactSession(fixture);
+    createFileArtifact(session, "art_badlocator");
+    session.db
+      .prepare("UPDATE artifact_revisions SET archive_relative_path = ? WHERE artifact_id = ? AND revision = 1")
+      .run("../escape", "art_badlocator");
+
+    const read = session.resolver.resolveForReadRef("artifact:art_badlocator@1");
+    expect(read.status).toBe("invalid");
+    expect((read as { code: string }).code).toBe(ErrorCode.INTERNAL_ERROR);
+    session.db.close();
+  });
+
   it("reports missing when the archive object is gone, and is immune to source-file changes", () => {
     const session = openArtifactSession(fixture);
     const created = createFileArtifact(session, "art_archive");

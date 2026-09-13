@@ -72,7 +72,7 @@ export class ArtifactArchive {
 
   archiveAbsolutePath(archiveRelative: string): string {
     if (!isWellFormedArchivePath(archiveRelative)) {
-      throw new AppError(ErrorCode.ARTIFACT_HASH_MISMATCH, `Malformed archive locator: ${archiveRelative}`);
+      throw new AppError(ErrorCode.INTERNAL_ERROR, `Malformed archive locator: ${archiveRelative}`);
     }
     const [dir, file] = archiveRelative.split("/");
     return join(this.rootDir, dir, file);
