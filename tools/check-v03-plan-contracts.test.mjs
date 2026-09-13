@@ -333,6 +333,10 @@ test('F013-DOC-R4-INVARIANTS: design and tasks state the same Skill/scope/access
   verifyEachPhraseMutation([spec], specPhrases);
 
   // 只属于 design 的结构性约束
+  // 禁止任何文档再以"只有一个 Space"为前提——设计已支持 create/select 多 Space
+  forbidPhrases([design, tasks, spec], ['v0.3 只有一个 Space，']);
+  verifyForbiddenMutation([design, tasks, spec], 'v0.3 只有一个 Space，');
+
   const designOnly = [
     '`current_revision INTEGER NOT NULL`',
     "`state TEXT NOT NULL CHECK (state IN ('active','disabled'))`",
