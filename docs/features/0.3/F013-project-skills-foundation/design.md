@@ -185,13 +185,19 @@ type Scope = {
 
 **状态域直接复用既有 resolver 的输出**——`shared/src/types/trace.ts:113` 的 `EvidenceResolution.status` 是 `resolved | missing | truncated`，这是 F004 已经在跑的事实。上一轮为 event / file_change_set 另造 `emitted / present / empty` 是错的：那套值没有任何生产者，也没有转换 owner，F012 拿到 `status_map` 也对不上 resolver 的返回。
 
-| kind              | summary                 | preview                             | open action            | 原生状态域（`status_map` 的合法取值）                                                                                                                                                |
-| ----------------- | ----------------------- | ----------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `event`           | 事件类型 + 时间 + actor | 事件 payload 摘要（截断，不含正文） | 轨迹定位到该事件       | `resolved` / `missing` / `truncated`                                                                                                                                                 |
-| `file_change_set` | 变更文件数 + 增删行数   | 文件清单（不含 diff 正文）          | 变更集视图             | `resolved` / `missing` / `truncated`                                                                                                                                                 |
-| `artifact`        | 类型 + revision + 标题  | F010 六态读取契约的 `ready` 投影    | Artifact revision 详情 | `resolved` / `missing` / `truncated`（F010 的 `invalid` / `hash_mismatch` 由 **F010 侧** 归并为 `missing`，F013 不新增第二套状态；归并规则属 F010 §6 的读取契约，本 Feature 只消费） |
+| kind              | summary                 | preview                             | open action      | 原生状态域（`status_map` 的合法取值） |
+| ----------------- | ----------------------- | ----------------------------------- | ---------------- | ------------------------------------- |
+| `event`           | 事件类型 + 时间 + actor | 事件 payload 摘要（截断，不含正文） | 轨迹定位到该事件 | `resolved` / `missing` / `truncated`  |
+| `file_change_set` | 变更文件数 + 增删行数   | 文件清单（不含 diff 正文）          | 变更集视图       | `resolved` / `missing` / `truncated`  |
 
-校验规则：`status_map` 三个键（`satisfied` / `failed` / `not_applicable`）必须齐全；取值必须落在 `resolved | missing | truncated` 内，越域拒绝激活（`SKILL_EVIDENCE_STATUS_UNKNOWN`）；同一状态不得出现在两个键下（互斥）；**三个状态必须被完整覆盖**——未映射的状态按 `failed` 处理，但激活时会发 `SKILL_EVIDENCE_STATUS_UNMAPPED` 警告，避免"忘了映射"与"有意映射成 failed"无法区分。`artifact` kind 在 F010 契约冻结前不可用于激活，否则报 `SKILL_EVIDENCE_KIND_UNAVAILABLE`。
+**`artifact` kind 不在 v0.3 范围内**，上一轮把它写进 registry 是错的，两处都站不住：
+
+- `EvidenceRefKind` 目前是 `"event" | "file_change_set"`（`server/src/evidence-ref.ts`），没有 `artifact`；该 kind 的加入属于 **F010 的 T003**，F010 仍是 `in-progress`、契约未冻结。
+- 上一轮声称"F010 侧把 `invalid` / `hash_mismatch` 归并为 `missing`"——**F010 文档里没有这条契约，是我替它编的**。而且 F010 §6 的 `loading` / `empty` / `ready` / `missing` / `invalid` / `hash_mismatch` 是**读取 UI 的 discriminated state**，与 `EvidenceResolution.status` 这个 resolver 状态不是同一层，混为一谈是范畴错误；F010 §6 还明写"`empty` 与 `missing` 不得合并"。
+
+**重启条件**：F010 收口、`EvidenceRefKind` 实际含 `artifact`、且由 F010 或 F014 明确给出"Artifact 读取态 → `EvidenceResolution.status`"的归一化 owner 之后，再由一次独立变更把该行加回本表。
+
+校验规则：`status_map` 三个键（`satisfied` / `failed` / `not_applicable`）必须齐全；取值必须落在 `resolved | missing | truncated` 内，越域拒绝激活（`SKILL_EVIDENCE_STATUS_UNKNOWN`）；同一状态不得出现在两个键下（互斥）；**三个状态必须被完整覆盖**——未映射的状态按 `failed` 处理，但激活时会发 `SKILL_EVIDENCE_STATUS_UNMAPPED` 警告，避免"忘了映射"与"有意映射成 failed"无法区分。带 `evidence_kind: "artifact"` 的 requirement 一律报 `SKILL_EVIDENCE_KIND_UNAVAILABLE`。
 
 #### canonical revision schema
 
@@ -210,7 +216,9 @@ type Requirement = {
 // ADR 0010：完成要求必须提供 Evidence Adapter 契约。
 // kind 复用 server/src/evidence-ref.ts 的 EvidenceRefKind 域，adapter 能力由
 // 下表按 kind 固定，不由每条要求自由声明——否则 F012 无法从要求推出适配器输出契约。
-type EvidenceKind = "event" | "file_change_set" | "artifact"; // artifact 待 F010 冻结后启用
+// 与 server/src/evidence-ref.ts 的 EvidenceRefKind 同域。v0.3 不含 artifact——
+// 那要等 F010 收口并给出归一化 owner，见上表后的「重启条件」。
+type EvidenceKind = "event" | "file_change_set";
 
 type EvidenceSpec = {
   evidence_kind: EvidenceKind;
