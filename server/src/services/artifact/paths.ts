@@ -15,7 +15,24 @@ import { ErrorCode } from "@personahub/shared/errors";
  *
  * This is a real-path boundary check, not an OS sandbox: it constrains which
  * files F010 accepts as artifact sources, not what other processes may do.
+ *
+ * The boundary *comparison* uses the platform-native separator (design §7), but
+ * the locator this returns is persisted in `artifact_revisions.source_relative_path`
+ * and served over the API, so it is normalized to POSIX separators. Otherwise the
+ * same workspace file would be recorded as `docs/report.md` on Linux and
+ * `docs\\report.md` on Windows — a provenance field must not depend on which OS
+ * happened to publish the revision (code review R4-020).
  */
+
+/**
+ * Platform-native relative path -> stable POSIX locator. `separator` is
+ * injectable for the same reason `isPathWithinRoot` takes `caseInsensitive`:
+ * Windows semantics must be assertable from any platform, otherwise the only
+ * place this normalization is ever exercised is Windows CI.
+ */
+export function toPosixLocator(relativePath: string, separator: string = sep): string {
+  return relativePath.split(separator).join("/");
+}
 
 export interface PathBoundaryOptions {
   /** Windows semantics (junction targets, case-insensitive filesystem). */
@@ -65,6 +82,6 @@ export function resolveSourceWithinRoot(
   return {
     rootReal,
     fileReal,
-    sourceRelativeNormalized: relative(rootReal, fileReal),
+    sourceRelativeNormalized: toPosixLocator(relative(rootReal, fileReal)),
   };
 }

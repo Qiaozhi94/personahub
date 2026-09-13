@@ -167,7 +167,7 @@ archive locator 固定为 `<sha256前2位>/<sha256>`。目标已存在时先校�
 ## 7. 失败、恢复、安全与兼容
 
 - **hash**：发布时与 resolver 每次读取时都对原始字节计算 SHA-256；inline 使用 UTF-8 编码后的字节。hash mismatch 已定位到 revision，始终使用 `artifacts.thread_id` 写 `artifact.resolve_rejected`，返回 `ARTIFACT_HASH_MISMATCH` 且绝不返回受损正文。sweep 只用 hash 判断候选文件名，不替代读取时校验。
-- **路径边界**：先 `realpath` 授权根目录与 source 文件，再用平台原生 `relative(root, file)` 判断结果不得为绝对路径、`..` 或以 `..${sep}` 开头；这会解析 junction / symlink，并按 Windows 大小写不敏感语义比较。越界返回 `ARTIFACT_SOURCE_OUTSIDE_ROOT`。
+- **路径边界**：先 `realpath` 授权根目录与 source 文件，再用平台原生 `relative(root, file)` 判断结果不得为绝对路径、`..` 或以 `..${sep}` 开头；这会解析 junction / symlink，并按 Windows 大小写不敏感语义比较。越界返回 `ARTIFACT_SOURCE_OUTSIDE_ROOT`。边界**比较**使用平台原生分隔符，但持久化进 `source_relative_path`、经 API 返回的 **locator 一律规范化为 POSIX 分隔符**：同一个 workspace 文件不得因为发布它的操作系统不同而记录成两种字符串（`archive_relative_path` 的 `<2hex>/<hash>` 本来就是这个约定）。
 - **恢复与租约**：`PERSONAHUB_ARTIFACT_ORPHAN_GRACE_MS` 默认 `3600000`（1 小时），`PERSONAHUB_ARTIFACT_SWEEP_LEASE_MS` 默认 `30000`（30 秒）。只有 orphan sweeper 获取 `archive-maintenance` DB 租约；发布路径不参与租约。重启清理只删除超过安全宽限期且未被任何 manifest 引用的 orphan，并额外要求 hash 文件名合法；临时文件也只在超过宽限期后删除，因此 sweep 不会删除在途发布内容。
 - **只读边界**：content-addressed 命名和 ArtifactService“不打开既有 archive 做写入”是应用约定，不是操作系统级只读隔离；同用户的外部进程仍可能修改文件。resolver 每次读取 hash 校验是完整性兜底，本 Feature 不声称 chmod / ACL 安全边界。
 - **兼容**：旧 `event:` / `file-change-set:` ref 行为不变；新增 artifact revision 解析测试覆盖 POSIX、Windows 分隔符模拟、junction/symlink 越界和大小写路径。Migration 只前进，不要求不存在的 down/rollback 流程。

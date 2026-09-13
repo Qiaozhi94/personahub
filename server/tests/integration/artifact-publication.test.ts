@@ -57,6 +57,11 @@ interface Fixture {
   workspaceDir: string;
   archive: ArtifactArchive;
   graph: { issueId: string; threadId: string; runId: string };
+  /** Every DB handle opened for this fixture. Windows refuses to delete a
+   *  file that still has an open handle, and the crash matrix deliberately
+   *  discards service/database instances without closing them, so afterEach
+   *  closes whatever is left before removing the temp tree (R4-021). */
+  openDbs: Array<ReturnType<typeof openDatabase>>;
 }
 
 function seedGraph(db: ReturnType<typeof openDatabase>, workspaceDir: string): Fixture["graph"] {
@@ -128,6 +133,7 @@ function makeFixture(): Fixture {
     workspaceDir,
     archive: new ArtifactArchive(join(tempDir, "archive"), join(tempDir, "archive-temp")),
     graph,
+    openDbs: [],
   };
 }
 
@@ -146,6 +152,7 @@ function openSession(
   log?: (info: Record<string, unknown>) => void,
 ): Session {
   const db = openDatabase(fixture.dbPath);
+  fixture.openDbs.push(db);
   const artifactRepo = new ArtifactRepository(db);
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(new ThreadEventRepository(db), eventBus);
@@ -222,7 +229,17 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  rmSync(fixture.tempDir, { recursive: true, force: true });
+  // Close every handle first: on Windows an open SQLite file makes rmSync fail
+  // with EPERM, and the crash matrix intentionally abandons sessions (R4-021).
+  for (const db of fixture.openDbs) {
+    try {
+      db.close();
+    } catch {
+      // already closed by the test itself
+    }
+  }
+  fixture.openDbs.length = 0;
+  rmSync(fixture.tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 });
 
 describe("F010 inline publication", () => {
@@ -497,6 +514,9 @@ describe("F010 file publication crash matrix", () => {
     const created = session.service.createArtifact(fileCreateInput(fixture, "art_file"));
     expect(created.revision.storage_kind).toBe("workspace_file");
     expect(created.revision.source_relative_path).toBe("docs/report.md");
+    // R4-020: the locator is persisted and served, so it must be POSIX on every
+    // platform — Windows CI recorded `docs\\report.md` before this was fixed.
+    expect(created.revision.source_relative_path).not.toContain("\\");
     expect(created.revision.archive_relative_path).toMatch(/^[0-9a-f]{2}\/[0-9a-f]{64}$/);
     expect(created.revision.archive_relative_path).toBe(
       `${created.revision.content_hash.slice(0, 2)}/${created.revision.content_hash}`,
