@@ -7,6 +7,7 @@ import { TaskDraftStore } from "@/app/task-draft-store";
 import { DraftStoreContext } from "@/app/draft-store-context";
 import { useRouter } from "@/app/router";
 import { canonicalTarget, resolveRoute } from "@/app/route-manifest";
+import { SpaceSwitcher } from "@/components/space/SpaceSwitcher";
 
 // ApplicationShell (design.md §2): owns global navigation, the route outlet
 // frame, canonical URL rewrites, global feedback, and the TaskDraftStore. It
@@ -83,6 +84,7 @@ export function ApplicationShell({ children }: { children: React.ReactNode }) {
             </span>
             <span className="text-sm font-semibold">PersonaHub</span>
           </div>
+          <SpaceSwitcher />
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}

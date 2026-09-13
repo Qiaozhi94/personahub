@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ErrorCode } from "@personahub/shared";
 import { useProject } from "@/hooks/use-projects";
 import { useWorkspace } from "@/hooks/use-workspace";
@@ -7,20 +7,41 @@ import { PageLoading, ErrorState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
 import { WorkspaceBinding } from "@/components/workspace/WorkspaceBinding";
 import { buildUrl, useRouter } from "@/app/router";
-import type { Diagnostics } from "@/app/route-manifest";
+import type { Diagnostics, ProjectTab } from "@/app/route-manifest";
 import { PageFrame, PageHeading, PageSection } from "@/pages/page-frame";
+import { ProjectFilesTab } from "@/pages/project-tabs/ProjectFilesTab";
+import { ProjectSkillsTab } from "@/pages/project-tabs/ProjectSkillsTab";
+import { ProjectSettingsTab } from "@/pages/project-tabs/ProjectSettingsTab";
 
-// /projects/:projectId (A003): compatible project page. projectId strictly
-// equals the existing Project ID; an unknown ID replaces to
-// /projects?not_found=<id>&from=<attempted>. Code-directory binding keeps its
-// canonical API and lives only here while F013 owns the final repository
-// registry.
+// /projects/:projectId（默认）与 /projects/:projectId/:tab（F013 注册的
+// 文件 / skills / 设置三个页签；"项目记忆" tab 无真实数据，不注册）。
+// projectId 严格等于既有 Project ID；未知 ID replace 到 /projects?not_found=<id>。
+// 按 ID 深链不做 Space 过滤（切换 Space 后旧深链不得 404，design §4）。
 
-export function ProjectDetailPage({ projectId, diagnostics }: { projectId: string; diagnostics: Diagnostics }) {
+const TAB_LABELS: Record<ProjectTab, string> = {
+  files: "文件",
+  skills: "Skills",
+  settings: "设置",
+};
+
+export function ProjectDetailPage({
+  projectId,
+  diagnostics,
+  tab,
+}: {
+  projectId: string;
+  diagnostics: Diagnostics;
+  tab?: ProjectTab;
+}) {
   const { navigate } = useRouter();
   const projectQuery = useProject(projectId);
   const workspaceQuery = useWorkspace(projectId);
   const redirectedRef = useRef(false);
+  const [activeTab, setActiveTab] = useState<ProjectTab>(tab ?? "files");
+
+  useEffect(() => {
+    if (tab) setActiveTab(tab);
+  }, [tab]);
 
   const notFound = projectQuery.isError && toApiError(projectQuery.error).code === ErrorCode.PROJECT_NOT_FOUND;
 
@@ -59,29 +80,72 @@ export function ProjectDetailPage({ projectId, diagnostics }: { projectId: strin
 
   const project = projectQuery.data!.project;
 
+  const switchTab = (next: ProjectTab): void => {
+    setActiveTab(next);
+    navigate(buildUrl(`/projects/${encodeURIComponent(projectId)}/${next}`));
+  };
+
   return (
     <PageFrame>
       {diagnostics.routeIssue === "unsupported-tab" ? (
         <StatusBanner tone="info" title="该链接指向的项目页签尚未开放" description="已回到项目页。" />
+      ) : null}
+      {project.state === "archived" ? (
+        <StatusBanner
+          tone="info"
+          title="该项目已归档"
+          description="归档项目的写入被拒绝；历史任务的文件、执行与证据仍可读。"
+        />
       ) : null}
 
       <PageHeading title={project.name} />
 
       {project.description ? <p className="max-w-2xl text-sm text-muted-foreground">{project.description}</p> : null}
 
-      <PageSection title="代码目录（兼容）" description="查看和绑定本地代码目录；后续版本将在此提供完整的仓库管理。">
-        {workspaceQuery.isLoading ? (
-          <PageLoading label="正在加载代码目录" />
-        ) : workspaceQuery.isError ? (
-          <ErrorState
-            title="代码目录加载失败"
-            description={toApiError(workspaceQuery.error).message}
-            action={{ label: "重试", onAction: () => void workspaceQuery.refetch() }}
-          />
-        ) : (
-          <WorkspaceBinding projectId={projectId} workspace={workspaceQuery.data?.workspace ?? null} />
-        )}
-      </PageSection>
+      <nav aria-label="项目页签" className="flex gap-2 border-b border-border pb-2">
+        {(Object.keys(TAB_LABELS) as ProjectTab[]).map((candidate) => (
+          <button
+            key={candidate}
+            type="button"
+            aria-current={activeTab === candidate}
+            onClick={() => switchTab(candidate)}
+            className={activeTab === candidate ? "font-semibold" : "text-muted-foreground"}
+          >
+            {TAB_LABELS[candidate]}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === "files" ? (
+        <>
+          <PageSection title="文件" description="主代码目录与只读参考仓库；真实路径授权以机器为单位管理。">
+            {workspaceQuery.isLoading ? (
+              <PageLoading label="正在加载代码目录" />
+            ) : workspaceQuery.isError ? (
+              <ErrorState
+                title="代码目录加载失败"
+                description={toApiError(workspaceQuery.error).message}
+                action={{ label: "重试", onAction: () => void workspaceQuery.refetch() }}
+              />
+            ) : (
+              <ProjectFilesTab projectId={projectId} />
+            )}
+          </PageSection>
+          {/* 兼容绑定区只在查询成功后渲染：失败态不得回落成"未绑定"的输入框。 */}
+          {!workspaceQuery.isLoading && !workspaceQuery.isError ? (
+            <PageSection
+              title="代码目录（兼容）"
+              description="查看和绑定本地代码目录；后续版本将在此提供完整的仓库管理。"
+            >
+              <WorkspaceBinding projectId={projectId} workspace={workspaceQuery.data?.workspace ?? null} />
+            </PageSection>
+          ) : null}
+        </>
+      ) : null}
+
+      {activeTab === "skills" ? <ProjectSkillsTab projectId={projectId} /> : null}
+
+      {activeTab === "settings" ? <ProjectSettingsTab projectId={projectId} project={project} /> : null}
     </PageFrame>
   );
 }

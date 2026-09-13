@@ -9,6 +9,8 @@ import { RuntimeAdaptersPage } from "@/pages/runtime-adapters-page";
 import { SystemDiagnosticsPage } from "@/pages/system-diagnostics-page";
 import { LegacyWorkflowsPage } from "@/pages/legacy-workflows-page";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { SkillsPage } from "@/pages/SkillsPage";
+import { SkillDetailPage } from "@/pages/SkillDetailPage";
 
 // M1 route outlet: resolves the URL against the route manifest and renders
 // the canonical page for it. Canonicalization rewrites already happened in the
@@ -27,6 +29,12 @@ export function AppRoutes() {
     case "project":
     case "project-unsupported-tab":
       return <ProjectDetailPage projectId={descriptor.projectId} diagnostics={diagnostics} />;
+    case "project-tab":
+      return <ProjectDetailPage projectId={descriptor.projectId} diagnostics={diagnostics} tab={descriptor.tab} />;
+    case "capabilities":
+      return <SkillsPage />;
+    case "skill":
+      return <SkillDetailPage skillId={descriptor.skillId} />;
     case "tasks":
       return <TasksPage projectQuery={descriptor.projectQuery} diagnostics={diagnostics} />;
     case "task":

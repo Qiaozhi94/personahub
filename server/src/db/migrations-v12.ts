@@ -65,6 +65,8 @@ export function applyV12(db: Database.Database): void {
       db.exec(SCHEMA_V12_SPACES_AND_REPOSITORIES);
       db.exec(SCHEMA_V12_SKILLS);
 
+      // FR-002：清洁安装也创建 Space（无条件、幂等）——schema-v1 播种的默认
+      // workflow/policy 总是存在，legacy Skill 迁移必须有其归属 Space。
       const defaultSpaceId = ensureDefaultSpace(db);
       rebuildProjects(db, defaultSpaceId);
       rebuildIssues(db, defaultSpaceId);

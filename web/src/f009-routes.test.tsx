@@ -186,7 +186,7 @@ describe("unsupported sub-paths canonicalize to the base object", () => {
   });
 
   it("replaces /projects/:id/:tab with the project base route and a diagnostic", async () => {
-    renderApp("/projects/prj_a/files");
+    renderApp("/projects/prj_a/memory");
 
     await waitFor(() => {
       expect(window.location.pathname).toBe("/projects/prj_a");
@@ -201,7 +201,6 @@ describe("unknown sub-paths and unregistered surfaces", () => {
     "/sessions/sess_1",
     "/memory",
     "/automation",
-    "/capabilities",
     "/stats",
     "/runtime/nope",
     "/settings/unknown",

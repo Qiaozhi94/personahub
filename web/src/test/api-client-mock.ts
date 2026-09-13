@@ -2,6 +2,48 @@ import { ErrorCode } from "@personahub/shared";
 import { vi } from "vitest";
 
 export const apiClient = {
+  spaces: {
+    list: vi.fn().mockResolvedValue({
+      spaces: [
+        {
+          id: "spc_1",
+          name: "Default Space",
+          state: "active",
+          is_default: true,
+          is_selected: true,
+          created_at: "2026-07-16T00:00:00.000Z",
+          updated_at: "2026-07-16T00:00:00.000Z",
+        },
+      ],
+    }),
+    create: vi.fn(),
+    select: vi.fn(),
+    archive: vi.fn(),
+    restore: vi.fn(),
+  },
+  repositories: {
+    resolve: vi.fn(),
+    create: vi.fn(),
+    authorize: vi.fn(),
+    listByProject: vi.fn().mockResolvedValue({ project_id: "prj_1", references: [] }),
+    setForProject: vi.fn(),
+  },
+  skills: {
+    list: vi.fn().mockResolvedValue({ skills: [] }),
+    get: vi.fn(),
+    revisions: vi.fn().mockResolvedValue({ revisions: [] }),
+    revisionDetail: vi.fn(),
+    files: vi.fn().mockResolvedValue({ files: [] }),
+    delivery: vi.fn().mockResolvedValue({ deliveries: [] }),
+    effectiveRequirements: vi.fn(),
+    scan: vi.fn(),
+    resolveConflict: vi.fn(),
+    activate: vi.fn(),
+    disable: vi.fn(),
+    setProjectDefault: vi.fn(),
+    listProjectRefs: vi.fn().mockResolvedValue({ refs: [] }),
+  },
+
   projects: {
     create: vi.fn(),
     list: vi.fn(),

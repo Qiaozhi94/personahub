@@ -93,9 +93,5 @@ export type AuthorizationVerification =
     }
   | {
       ok: false;
-      reason:
-        | "REPO_PATH_UNRESOLVED"
-        | "REPO_IDENTITY_CHANGED"
-        | "REPO_NOT_AUTHORIZED"
-        | "REPO_SCOPE_EMPTY";
+      reason: "REPO_PATH_UNRESOLVED" | "REPO_IDENTITY_CHANGED" | "REPO_NOT_AUTHORIZED" | "REPO_SCOPE_EMPTY";
     };

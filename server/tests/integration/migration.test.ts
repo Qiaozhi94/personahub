@@ -6,10 +6,14 @@ import { SCHEMA_V2 } from "../../src/db/schema-v2.js";
 import { SCHEMA_V3 } from "../../src/db/schema-v3.js";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
 
-/** F013: projects.space_id / issues.space_id 是 NOT NULL；取默认 Space 的 id。 */
+/** F013: projects.space_id / issues.space_id 是 NOT NULL；确保存在一个默认 Space（首启语义）。 */
 function defaultSpaceId(db: Database.Database): string {
-  const row = db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string };
-  return row.id;
+  const existing = db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string } | undefined;
+  if (existing) return existing.id;
+  db.prepare(
+    "INSERT INTO spaces (id, name, state, is_default, is_selected, created_at, updated_at) VALUES ('spc_default', 'Default Space', 'active', 1, 1, datetime('now'), datetime('now'))",
+  ).run();
+  return "spc_default";
 }
 
 describe("Database Migration", () => {

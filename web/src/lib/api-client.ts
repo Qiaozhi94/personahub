@@ -51,6 +51,23 @@ import {
   type ActivateWorkflowTemplateResponse,
   type DeactivateWorkflowTemplateResponse,
   type RuntimeHealthResponse,
+  type SpaceListResponse,
+  type SpaceCreateResponse,
+  type SpaceActionResponse,
+  type Repository,
+  type RepositoryResolveResponse,
+  type ProjectRepositoryRef,
+  type Skill,
+  type SkillListItem,
+  type SkillListResponse,
+  type SkillRevisionListResponse,
+  type SkillRevisionDetailResponse,
+  type SkillRevisionFilesResponse,
+  type SkillDeliveryListResponse,
+  type EffectiveRequirementsResponse,
+  type SkillScanResponse,
+  type ProjectSkillRef,
+  type Project,
 } from "@personahub/shared";
 
 const API_BASE = "/api";
@@ -88,6 +105,80 @@ export function toApiError(error: unknown): ApiError {
 }
 
 export const apiClient = {
+  spaces: {
+    list: () => apiFetch<SpaceListResponse>("/spaces"),
+    create: (name: string) =>
+      apiFetch<SpaceCreateResponse>("/spaces", { method: "POST", body: JSON.stringify({ name }) }),
+    select: (id: string) =>
+      apiFetch<SpaceActionResponse>(`/spaces/${id}/select`, { method: "POST" }),
+    archive: (id: string) =>
+      apiFetch<SpaceActionResponse>(`/spaces/${id}/archive`, { method: "POST" }),
+    restore: (id: string) =>
+      apiFetch<SpaceActionResponse>(`/spaces/${id}/restore`, { method: "POST" }),
+  },
+  repositories: {
+    resolve: (source: string) =>
+      apiFetch<RepositoryResolveResponse>("/repositories:resolve", {
+        method: "POST",
+        body: JSON.stringify({ source }),
+      }),
+    create: (source: string) =>
+      apiFetch<{ repository: Repository }>("/repositories", {
+        method: "POST",
+        body: JSON.stringify({ source }),
+      }),
+    authorize: (repositoryId: string, rawPath: string, access: "read_write" | "read_only") =>
+      apiFetch<{ machine_path: unknown }>(`/repositories/${repositoryId}/authorize`, {
+        method: "POST",
+        body: JSON.stringify({ raw_path: rawPath, access }),
+      }),
+    listByProject: (projectId: string) =>
+      apiFetch<{ project_id: string; references: ProjectRepositoryRef[] }>(`/projects/${projectId}/repositories`),
+    setForProject: (
+      projectId: string,
+      input: { primary?: { repository_id: string } | null; references?: Array<{ repository_id: string }> },
+    ) =>
+      apiFetch<{ project_id: string; references: ProjectRepositoryRef[] }>(`/projects/${projectId}/repositories`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+  },
+  skills: {
+    list: (spaceId?: string) =>
+      apiFetch<SkillListResponse>(`/skills${spaceId ? `?space_id=${encodeURIComponent(spaceId)}` : ""}`),
+    get: (id: string) => apiFetch<{ skill: Skill }>(`/skills/${id}`),
+    revisions: (id: string) => apiFetch<SkillRevisionListResponse>(`/skills/${id}/revisions`),
+    revisionDetail: (id: string, version: number) =>
+      apiFetch<SkillRevisionDetailResponse>(`/skills/${id}/revisions/${version}`),
+    files: (id: string, version: number) =>
+      apiFetch<SkillRevisionFilesResponse>(`/skills/${id}/revisions/${version}/files`),
+    delivery: (id: string, version: number) =>
+      apiFetch<SkillDeliveryListResponse>(`/skills/${id}/revisions/${version}/delivery`),
+    effectiveRequirements: (id: string, version?: number) =>
+      apiFetch<EffectiveRequirementsResponse>(
+        `/skills/${id}/effective-requirements${version ? `?version=${version}` : ""}`,
+      ),
+    scan: () => apiFetch<SkillScanResponse>("/skills:scan", { method: "POST" }),
+    resolveConflict: (id: string, spaceId: string, keepSkillId: string) =>
+      apiFetch<{ skills: SkillListItem[] }>(`/skills/${id}/resolve-conflict`, {
+        method: "POST",
+        body: JSON.stringify({ space_id: spaceId, keep_skill_id: keepSkillId }),
+      }),
+    activate: (id: string, version?: number) =>
+      apiFetch<{ skill_id: string; version: number }>(`/skills/${id}/activate`, {
+        method: "POST",
+        body: JSON.stringify(version ? { version } : {}),
+      }),
+    disable: (id: string) => apiFetch<{ skill: Skill }>(`/skills/${id}/disable`, { method: "POST" }),
+    setProjectDefault: (projectId: string, skillId: string, pinnedVersion?: number | null) =>
+      apiFetch<{ project_id: string; skill_id: string; pinned_version: number | null }>(
+        `/projects/${projectId}/default-skill`,
+        { method: "PUT", body: JSON.stringify({ skill_id: skillId, pinned_version: pinnedVersion ?? null }) },
+      ),
+    listProjectRefs: (projectId: string) =>
+      apiFetch<{ refs: ProjectSkillRef[] }>(`/projects/${projectId}/skills`),
+  },
+
   projects: {
     create: (name: string, description?: string) =>
       apiFetch<ProjectCreateResponse>("/projects", {
@@ -96,6 +187,18 @@ export const apiClient = {
       }),
     list: () => apiFetch<ProjectListResponse>("/projects"),
     get: (id: string) => apiFetch<ProjectGetResponse>(`/projects/${id}`),
+    listBySpace: (spaceId?: string, includeArchived?: boolean) => {
+      const params = new URLSearchParams();
+      if (spaceId) params.set("space_id", spaceId);
+      if (includeArchived) params.set("include_archived", "1");
+      const query = params.toString();
+      return apiFetch<ProjectListResponse>(`/projects${query ? `?${query}` : ""}`);
+    },
+    archive: (id: string) =>
+      apiFetch<{ project: Project }>(`/projects/${id}/archive`, { method: "POST" }),
+    restore: (id: string) =>
+      apiFetch<{ project: Project }>(`/projects/${id}/restore`, { method: "POST" }),
+    remove: (id: string) => apiFetch<null>(`/projects/${id}`, { method: "DELETE" }),
   },
   workspaces: {
     bind: (projectId: string, localPath: string) =>
