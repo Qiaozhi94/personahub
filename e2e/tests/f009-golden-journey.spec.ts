@@ -45,7 +45,8 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     await expect(page.getByRole("button", { name: new RegExp(BETA) })).toBeVisible();
 
     const nav = page.getByRole("navigation", { name: "工作面" });
-    expect(await nav.locator("button > span").allTextContents()).toEqual(["任务", "项目", "运行时", "设置"]);
+    // F013 首次注册"能力"槽位。
+    expect(await nav.locator("button > span").allTextContents()).toEqual(["任务", "项目", "能力", "运行时", "设置"]);
 
     // R1-008: the E2E server migrated the still-v10 fixture itself at first
     // boot — the settings diagnostics page must report the head schema.
@@ -56,7 +57,7 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     await expect(catalog.getByRole("link", { name: "历史工作流" })).toBeVisible();
 
     await page.getByRole("radio", { name: ALPHA }).click();
-    await expect(page.getByText("schema 11/11 (current)")).toBeVisible();
+    await expect(page.getByText("schema 12/12 (current)")).toBeVisible();
 
     // BC-097 click-through: the catalog is the discoverable path to the
     // legacy evidence page — no URL typing.
@@ -447,7 +448,8 @@ test("S1 — 未选项目、未绑定项目指引、未知 ID 与非法子路径
   await expect(page).toHaveURL(/route_issue=unsupported-view/);
   await expect(page.getByText("该链接指向的任务视图尚未开放")).toBeVisible();
 
-  await page.goto("/projects/prj_v02_alpha/files");
+  // F013 注册了 files / skills / settings 三个页签；memory 仍是被拒绝的子路径。
+  await page.goto("/projects/prj_v02_alpha/memory");
   await expect(page).toHaveURL(/route_issue=unsupported-tab/);
 
   // M1 冻结边界：会话面不可达。
