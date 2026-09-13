@@ -1542,19 +1542,72 @@ test('F011-DOC-R1-D011: the F011 migration-matrix owner inventory is 13 rows, in
   );
 });
 
-// F011 doc review D015: the F009 applicability catalog pointed `F011::Txxx`
-// at task ids from an earlier F011 task revision (T010=shared types there is
-// T030=shell now). Every pointer must resolve to a task that exists in
-// F011/tasks.md, and the check must fail if a pointer is ever re-staled.
+// F011 doc review D015/R2-004: the F009 applicability catalog pointed
+// `F011::Txxx` at task ids from an earlier F011 task revision (T010=shared
+// types there is T030=shell now). Two things must hold, and D015's first fix
+// only proved the weaker one (a pointer must resolve to *some* defined task —
+// so re-pointing BC-003 at the old-but-defined T010 stayed green):
+//   1. every pointer resolves to a defined F011 task;
+//   2. each browser check points at the *expected* task(s), so a semantic
+//      re-stale is caught too, not just a dangling id.
 function parseF011ApplicabilityPointers(catalog) {
   const pointers = new Set();
-  for (const match of catalog.matchAll(/F011::(T[\d/]+)/g)) {
+  for (const match of catalog.matchAll(/F011::(T\d{3}(?:\/T\d{3})*)/g)) {
     for (const id of match[1].split('/')) {
       if (id) pointers.add(id);
     }
   }
   return pointers;
 }
+
+function parseF011ApplicabilityMap(catalog) {
+  const map = new Map();
+  for (const line of catalog.split(/\r?\n/)) {
+    if (!line.startsWith('| BC-')) continue;
+    const cells = line.split('|').slice(1, -1).map((cell) => cell.trim());
+    if (cells.length < 6) continue;
+    const [id, , , , owner, testPath] = cells;
+    if (!owner.includes('F011')) continue;
+    const match = /^F011::(T\d{3}(?:\/T\d{3})*)/.exec(testPath);
+    if (!match) continue;
+    map.set(id, new Set(match[1].split('/')));
+  }
+  return map;
+}
+
+const F011_APPLICABILITY_EXPECTED = {
+  'BC-003': ['T030'],
+  'BC-004': ['T033', 'T034'],
+  'BC-009': ['T031', 'T021'],
+  'BC-010': ['T033', 'T021'],
+  'BC-011': ['T033', 'T013'],
+  'BC-012': ['T014', 'T033'],
+  'BC-013': ['T023', 'T021'],
+  'BC-014': ['T033'],
+  'BC-015': ['T012', 'T033'],
+  'BC-016': ['T021', 'T020'],
+  'BC-017': ['T022', 'T023'],
+  'BC-018': ['T033'],
+  'BC-019': ['T034'],
+  'BC-020': ['T030'],
+  'BC-021': ['T031'],
+  'BC-022': ['T033'],
+  'BC-023': ['T034'],
+  'BC-024': ['T020', 'T031'],
+  'BC-025': ['T031', 'T033'],
+  'BC-026': ['T030'],
+  'BC-031': ['T001', 'T050'],
+  'BC-032': ['T020', 'T031'],
+  'BC-033': ['T001', 'T020'],
+  'BC-034': ['T032', 'T022'],
+  'BC-035': ['T022', 'T032'],
+  'BC-036': ['T022', 'T032'],
+  'BC-037': ['T022'],
+  'BC-038': ['T022'],
+  'BC-039': ['T032', 'T022'],
+  'BC-059': ['T034'],
+  'BC-071': ['T030'],
+};
 
 test('F011-DOC-R1-D015: every F011::Txxx applicability pointer resolves to a defined F011 task', () => {
   const catalog = read('docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md');
@@ -1571,9 +1624,44 @@ test('F011-DOC-R1-D015: every F011::Txxx applicability pointer resolves to a def
     `F011 applicability points at undefined task id(s): ${dangling.join(', ')}`,
   );
 
-  // Mutation: a re-staled pointer must be caught by the same comparison.
+  // Mutation: a re-staled pointer (undefined id) must be caught.
   const staleCatalog = `${catalog}\n| BC-999 | synthetic | deferred | mutation | F011 | F011::T999 browser |`;
   const stalePointers = parseF011ApplicabilityPointers(staleCatalog);
   const staleDangling = [...stalePointers].filter((id) => !defined.has(id));
   assert.deepEqual(staleDangling.sort(), ['T999'], 'an undefined F011::Txxx pointer must be caught');
+});
+
+test('F011-DOC-R2-004: each browser check points at the expected F011 task, not just a defined one', () => {
+  const catalog = read('docs/features/0.3/F009-v344-frontend-foundation-migration/v344-browser-check-applicability.md');
+  const actual = parseF011ApplicabilityMap(catalog);
+
+  assert.deepEqual(
+    [...actual.keys()].sort(),
+    Object.keys(F011_APPLICABILITY_EXPECTED).sort(),
+    'the set of F011-owned applicability rows changed',
+  );
+  for (const [bc, expectedIds] of Object.entries(F011_APPLICABILITY_EXPECTED)) {
+    const actualIds = [...(actual.get(bc) ?? [])].sort();
+    assert.deepEqual(
+      actualIds,
+      [...expectedIds].sort(),
+      `${bc} F011::Txxx pointer drifted from the expected ${expectedIds.join('/')}`,
+    );
+  }
+
+  // Mutation (the one D015's first gate missed): re-point BC-003 at the old,
+  // still-defined T010 — a semantic re-stale, not a dangling id.
+  const semanticallyStale = catalog.replace('| F011 | F011::T030 Playwright |', '| F011 | F011::T010 Playwright |');
+  assert.notEqual(semanticallyStale, catalog, 'mutation must actually re-point BC-003');
+  const mutated = parseF011ApplicabilityMap(semanticallyStale);
+  assert.deepEqual([...mutated.get('BC-003')], ['T010']);
+  assert.throws(
+    () =>
+      assert.deepEqual(
+        [...mutated.get('BC-003')].sort(),
+        [...F011_APPLICABILITY_EXPECTED['BC-003']].sort(),
+      ),
+    /Expected values to be strictly deep-equal/,
+    'an old-but-defined pointer must turn this gate red',
+  );
 });

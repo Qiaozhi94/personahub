@@ -294,6 +294,7 @@ Presentation state 纯函数采用固定优先级：archived → matching comple
 - `POST /api/tasks/:id/acceptance/claims/:claimId/evidence`：追加 attach / detach event；evidence ref 先过公共 parser / resolver。
 - `POST /api/tasks/:id/acceptance/requirements/:requirementId/decisions`：追加 accepted risk / not applicable / revoke；只有 user actor 可接受风险或标记不适用。
 - `POST /api/tasks/:id/acceptance/complete`：验证 gate，写 summary + outbox；成功返回 `finalizing` 或已存在的 completed result。
+- `POST /api/tasks/:id/acceptance/completion/void`：仅 user actor；需 `If-Match` 与 `Idempotency-Key`；仅当 case 处于 `finalizing` 时可用，写 `acceptance.completion_voided` 并把 case 转回 `open`（保留 summary 行）。
 
 路由一律使用路径段动词（`/preview`、`/confirm`、`/complete`），不使用 `:verb` 后缀：本仓 `fastify@5` + `find-my-way@9` 把段内冒号解析为路径参数起点，同父路径下的一对 `:verb` 端点无法同时注册，单独注册的那条还会静默匹配任意后缀（`acceptance:cancel` 会走到完成处理器）。新增路由时不得回退该形式。
 
@@ -302,13 +303,16 @@ Presentation state 纯函数采用固定优先级：archived → matching comple
 | 错误码 | HTTP | 触发条件 |
 |---|---|---|
 | `ACCEPTANCE_VERSION_CONFLICT` | 409 | `If-Match` 与当前 `acceptance_cases.version` 不符 |
-| `ACCEPTANCE_LOCKED` | 409 | case 处于 `finalizing` / `completed` / `legacy_unresolved`，写命令被拒绝 |
+| `ACCEPTANCE_LOCKED` | 409 | case 处于 `finalizing` / `completed` / `legacy_unresolved`，且该写命令不属于两条受控出口（`finalizing` 的 `completion/void`、`legacy_unresolved` 经 `baselines/confirm` 转回 `open`） |
+| `ACCEPTANCE_ACTOR_FORBIDDEN` | 403 | model actor 试图执行仅 user actor 允许的命令（确认基线、接受风险 / 标记不适用、withdraw claim、complete、void） |
+| `ACCEPTANCE_TARGET_NOT_FOUND` | 404 | 引用的 claim / requirement / baseline / summary 不存在 |
 | `ACCEPTANCE_BASELINE_CONFIRMATION_REQUIRED` | 409 | `baselines/confirm` 未携带匹配的 preview base version 或 fingerprint |
 | `ACCEPTANCE_REQUIREMENT_NOT_CURRENT` | 409 | 引用的 requirement 不属于当前 baseline |
 | `EVIDENCE_REF_INVALID` | 400 | evidence ref 解析失败或类型不符（复用 `shared/src/errors` 既有码，不另起 `EVIDENCE_REF_UNRESOLVED`） |
 | `ACCEPTANCE_RISK_REASON_REQUIRED` | 400 | `accepted_risk` / `marked_not_applicable` 缺少 reason |
 | `ACCEPTANCE_REQUIREMENTS_UNRESOLVED` | 409 | complete 时存在未满足的 `hard` 要求 |
 | `ACCEPTANCE_ACTIVE_EXECUTION` | 409 | complete 时存在 draft / starting Dispatch、queued / running Attempt 或未决 permission |
+| `ACCEPTANCE_VOID_NOT_ALLOWED` | 409 | `completion/void` 时 case 不在 `finalizing`，或目标 summary 已被作废 |
 | `ACCEPTANCE_SUMMARY_MISMATCH` | 409 | consumer 核对 payload / summary 不一致 |
 | `ACCEPTANCE_IDEMPOTENCY_CONFLICT` | 409 | 同 `Idempotency-Key` 不同 request fingerprint（原 `IDEMPOTENCY_PAYLOAD_MISMATCH`，统一域前缀） |
 
@@ -326,7 +330,7 @@ type ClaimVerdict =
 1. evidence ref 解析失败、原生状态映射为 `failed`、存在未处置 contradicting evidence → `needs_attention`。
 2. 原生状态映射为 `not_applicable` → 该 evidence 不参与 supports 计算，requirement 的 `domain_status=not_applicable`。
 3. 没有 active supporting evidence → `needs_attention`。
-4. 有 supporting evidence 时先做 freshness 校验：`per_attempt` 只接受来自当前 Attempt 的证据，`per_dispatch` 只接受来自当前 Dispatch 的证据，`persistent` 不限；超出范围的证据降级并返回 `evidence_out_of_scope`，陈旧证据不得当作有效支撑。
+4. 有 supporting evidence 时先做 freshness 校验：`per_attempt` 只接受来自当前 Attempt 的证据，`per_dispatch` 只接受来自当前 Dispatch 的证据，`persistent` 不限；超出范围的证据降为 `evidence_pending` 并返回 `evidence_out_of_scope`（`needs_attention` 保留给失败 / 缺失），陈旧证据不得当作有效支撑。
 5. evidence 满足，但 requirement `independence_required=false` → 用户可见 verdict 仍是 `evidence_pending`（“有证据待验证”），不自动画绿勾；但按下方映射表可收敛为 `satisfied`，不再强制用户走“接受剩余风险”。
 6. 要求 independence 时，只有 F012 snapshot 证明 validation purpose、强制 cold start、允许的 context scope、未包含实现过程自述、原生 memory isolation=supported、执行身份满足 F012 独立性规则，且证据原生状态 satisfied，才为 `independently_verified`。
 7. `context_scope=all`、resume、同源 identity、隔离 unsupported / unverified 或缺少任一 snapshot 字段都降为 `evidence_pending` 并返回具体 reason；未知不能乐观通过。
@@ -365,7 +369,7 @@ AcceptanceService 追加 `acceptance.baseline_frozen`、`acceptance.baseline_cha
 
 ### 5.2 Complete / outbox race
 
-complete 在事务内按 §4.3 映射重新计算当前 baseline 每条 requirement 的 resolution（`hard` 必须 ∈ {`satisfied`, `not_applicable`, `accepted_risk`}，`soft` 不阻断），并查询 F012 是否有 draft / starting Dispatch、queued / running Attempt 或未决 permission。存在未满足 `hard` 要求或 active execution 时分别返回 `ACCEPTANCE_REQUIREMENTS_UNRESOLVED` / `ACCEPTANCE_ACTIVE_EXECUTION`。通过后写 summary 与 outbox，并把 case `open → finalizing`；此时所有 acceptance write command 返回 `ACCEPTANCE_LOCKED`。
+complete 在事务内按 §4.3 映射重新计算当前 baseline 每条 requirement 的 resolution（`hard` 必须 ∈ {`satisfied`, `not_applicable`, `accepted_risk`}，`soft` 不阻断），并查询 F012 是否有 draft / starting Dispatch、queued / running Attempt 或未决 permission。存在未满足 `hard` 要求或 active execution 时分别返回 `ACCEPTANCE_REQUIREMENTS_UNRESOLVED` / `ACCEPTANCE_ACTIVE_EXECUTION`。通过后写 summary 与 outbox，并把 case `open → finalizing`；此后除下方 `completion/void` 外的所有 acceptance write command 返回 `ACCEPTANCE_LOCKED`（`legacy_unresolved` 同理，只放行 `baselines/confirm` 这一条出口）。
 
 worker crash 前后均安全：
 
