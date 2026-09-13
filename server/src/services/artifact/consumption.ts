@@ -77,7 +77,9 @@ export class ArtifactConsumptionLedger {
   private recordInner(input: RecordConsumptionInput): RecordOutcome {
     const check = resolveForDispatch(parseEvidenceRef(input.revisionRef));
     const rejectThread = () =>
-      input.dispatchThreadId ?? this.deps.artifactRepo.getArtifact(check.ok ? check.artifactId : "")?.thread_id ?? null;
+      check.ok
+        ? (input.dispatchThreadId ?? this.deps.artifactRepo.getArtifact(check.artifactId)?.thread_id ?? null)
+        : (input.dispatchThreadId ?? null);
     if (!check.ok) {
       this.rejectResolve(input.revisionRef, "record_consumption", ErrorCode.ARTIFACT_REF_INVALID, rejectThread());
     }
