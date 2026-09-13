@@ -5,6 +5,7 @@ import { ErrorCode } from "@personahub/shared/errors";
 import type { IssueRepository } from "../../repositories/issue.js";
 import type { ValidationTraceService } from "../validation-trace.js";
 import { AppError } from "../../api/errors.js";
+import { requireLegacyWorkspaceId } from "../legacy-issue-fields.js";
 
 const VALIDATION_BLOCK_REASONS = new Set<string>(
   Object.values(ValidationBlockReason),
@@ -53,7 +54,7 @@ export class ValidationRecoveryActionService {
     }
 
     const threadId = issue.primary_thread_id!;
-    const workspaceId = issue.workspace_id;
+    const workspaceId = requireLegacyWorkspaceId(issue);
     const previousBlockReason = issue.blocked_reason_code;
 
     const result = this.db.transaction(() => {
@@ -116,7 +117,7 @@ export class ValidationRecoveryActionService {
     }
 
     const threadId = issue.primary_thread_id!;
-    const workspaceId = issue.workspace_id;
+    const workspaceId = requireLegacyWorkspaceId(issue);
     const previousRoundCount = issue.validation_round_count;
 
     const result = this.db.transaction(() => {

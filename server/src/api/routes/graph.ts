@@ -23,6 +23,7 @@ import type { ThreadEventService } from "../../services/thread-event.js";
 import type { RunDispatchService } from "../../services/run-dispatch.js";
 import { RunRole, RunPurpose, RunStatus, ThreadEventType, ActorType, NodeRunStatus, IssueStatus, GraphRunStatus } from "@personahub/shared/types";
 import { buildEvidenceRef } from "../../evidence-ref.js";
+import { requireLegacyWorkspaceId, requireLegacyProjectId } from "../../services/legacy-issue-fields.js";
 
 interface GraphRouteDeps {
   graphRunRepo: GraphRunRepository;
@@ -148,12 +149,12 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
     const thread = deps.threadRepo.getById(issue.primary_thread_id ?? "");
     if (!thread) throw new AppError(ErrorCode.THREAD_NOT_FOUND, "Primary thread not found.");
 
-    const workspace = deps.workspaceRepo.getById(issue.workspace_id);
+    const workspace = deps.workspaceRepo.getById(requireLegacyWorkspaceId(issue));
     if (!workspace) throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, "Workspace not found.");
 
     const result = await deps.graphRuntimeService.start(
       issueId, thread.id, workspace.id,
-      workspace.local_path, issue.project_id,
+      workspace.local_path, requireLegacyProjectId(issue),
       {
         definitionId: body.definitionId,
         definitionVersion: body.definitionVersion,
@@ -328,7 +329,7 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
       const nodeRun = nodeRunRepo.getByGraphRunAndKey(graphRunId, nodeKey);
       if (!nodeRun) throw new AppError(ErrorCode.NODE_RUN_NOT_FOUND, `Node run for '${nodeKey}' not found.`);
 
-      const eligibility = resolveEligibleAdapter(adapterDeps, issue.project_id, gr.workspace_id, {
+      const eligibility = resolveEligibleAdapter(adapterDeps, requireLegacyProjectId(issue), gr.workspace_id, {
         explicitAdapterId: newAdapterId,
         requiredCapabilities: node.requiredCapabilities,
       });

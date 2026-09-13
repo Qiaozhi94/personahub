@@ -27,6 +27,11 @@ import { GraphNodeInstructionBuilder } from "../src/runtime/graph/instruction-bu
 import { GraphRuntimeService } from "../src/services/graph-runtime.js";
 import { AdapterAvailabilityProbeCoordinator } from "../src/services/adapter-probe-coordinator.js";
 import { ProjectService } from "../src/services/project.js";
+import { SpaceService } from "../src/services/space.js";
+import { RepositoryRegistry } from "../src/services/repository-registry.js";
+import { SpaceRepository } from "../src/repositories/space.js";
+import { AuditService } from "../src/services/audit.js";
+import { AdminAuditEventRepository } from "../src/repositories/admin-audit-event.js";
 import { WorkspaceService } from "../src/services/workspace.js";
 import { IssueService } from "../src/services/issue.js";
 import { ThreadService } from "../src/services/thread.js";
@@ -81,6 +86,9 @@ export function initGitRepo(dir: string): void {
 
 export interface TestServices {
   db: Database.Database;
+  spaceRepo: SpaceRepository;
+  spaceService: SpaceService;
+  repositoryRegistry: RepositoryRegistry;
   projectRepo: ProjectRepository;
   workspaceRepo: WorkspaceRepository;
   issueRepo: IssueRepository;
@@ -144,6 +152,12 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
   const nodeRunRepo = new NodeRunRepository(db);
   const graphRunRepo = new GraphRunRepository(db);
   const adapterProbeCoordinator = new AdapterAvailabilityProbeCoordinator();
+
+  const spaceRepo = new SpaceRepository(db);
+  const auditService = new AuditService(new AdminAuditEventRepository(db));
+  const spaceService = new SpaceService(spaceRepo, auditService, db);
+  const repositoryRegistry = new RepositoryRegistry(db, auditService);
+
 
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
@@ -297,6 +311,7 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
       projectRepo,
       workflowTemplateRepo,
       validationPolicyRepo,
+      spaceRepo,
       db,
     ),
     sequentialDeps: {
@@ -334,6 +349,9 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
 
   return {
     db,
+    spaceRepo,
+    spaceService,
+    repositoryRegistry,
     projectRepo,
     workspaceRepo,
     issueRepo,
@@ -349,7 +367,7 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
     adapterProbeCoordinator,
     nodeRunRepo,
     graphRunRepo,
-    projectService: new ProjectService(projectRepo, workspaceRepo),
+    projectService: new ProjectService(projectRepo, workspaceRepo, spaceRepo, auditService, db),
     workspaceService: new WorkspaceService(workspaceRepo, projectRepo, db),
     issueService: new IssueService(
       issueRepo,
@@ -358,6 +376,7 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
       projectRepo,
       workflowTemplateRepo,
       validationPolicyRepo,
+      spaceRepo,
       db,
     ),
     threadService: new ThreadService(threadRepo, threadEventRepo),

@@ -5,13 +5,20 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
+  /** F013：Project 的归属根（FR-001）。 */
+  space_id: string;
   default_workspace_id: string | null;
   default_coordinator_agent_id: string | null;
   /** F005: Project-level default adapter, resolved when a Run omits adapter_id. */
   default_adapter_config_id: string | null;
+  /** F013：归档态；归档项目不在默认列表，按 ID 深链仍可读（spec §5）。 */
+  state: ProjectState;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export type ProjectState = "active" | "archived";
 
 export interface Workspace {
   id: string;
@@ -28,12 +35,16 @@ export interface Workspace {
 
 export interface Issue {
   id: string;
-  project_id: string;
-  workspace_id: string;
+  /** F013：Issue 必属一个 Space（FR-001）。 */
+  space_id: string;
+  /** F013：可不属 Project（游离任务）。 */
+  project_id: string | null;
+  workspace_id: string | null;
   primary_thread_id: string | null;
   issue_type: IssueType;
-  workflow_template_id: string;
-  validation_policy_id: string;
+  /** 以下三个 legacy 列在 F012 接管前由兼容投影写入；游离任务为空（design §7）。 */
+  workflow_template_id: string | null;
+  validation_policy_id: string | null;
   title: string;
   goal: string | null;
   status: IssueStatus;
@@ -328,3 +339,6 @@ export * from "./adapter.js";
 export * from "./graph.js";
 export * from "./intake.js";
 export * from "./f008.js";
+export * from "./space.js";
+export * from "./repository.js";
+export * from "./skill.js";

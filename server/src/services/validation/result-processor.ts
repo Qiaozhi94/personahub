@@ -34,6 +34,7 @@ import {
 } from "./workflow-queries.js";
 import { ValidationIssueBlocker } from "./issue-blocker.js";
 import { ValidationNonPassProcessor } from "./non-pass-processor.js";
+import { requireLegacyWorkspaceId } from "../legacy-issue-fields.js";
 
 export class ValidationResultProcessor {
   private readonly nonPassProcessor: ValidationNonPassProcessor;
@@ -204,7 +205,7 @@ export class ValidationResultProcessor {
       const passEvent = this.validationTraceService.writePassed({
         issueId: issue.id,
         threadId: validatorRun.thread_id,
-        workspaceId: issue.workspace_id,
+        workspaceId: requireLegacyWorkspaceId(issue),
         validationRound: validatorRun.validation_round!,
         summary: result.summary,
         findingCount: 0,
@@ -238,7 +239,7 @@ export class ValidationResultProcessor {
         this.validationTraceService.writeIssueDone({
           issueId: issue.id,
           threadId: validatorRun.thread_id,
-          workspaceId: issue.workspace_id,
+          workspaceId: requireLegacyWorkspaceId(issue),
           validationRound: validatorRun.validation_round!,
           previousStatus: IssueStatus.Validating,
           evidenceSummaryId: summaryRecord.id,

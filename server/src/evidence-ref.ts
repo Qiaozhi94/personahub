@@ -35,6 +35,14 @@ const REF_KIND_BY_PREFIX = new Map<string, EvidenceRefKind>(
 );
 
 /**
+ * kind 取值域的运行时视图，从 `REF_PREFIX_BY_KIND` 派生（不是第二份清单）。
+ * F013 的 EvidenceSpec 校验用它核对归一化 owner 表与上游域没有漂移。
+ */
+export function listEvidenceRefKinds(): EvidenceRefKind[] {
+  return Object.keys(REF_PREFIX_BY_KIND) as EvidenceRefKind[];
+}
+
+/**
  * 构造一个 typed evidence ref。
  *
  * 调用方拿到的 id 必须已经是对应实体的 id（`event` 对 ThreadEvent.id，

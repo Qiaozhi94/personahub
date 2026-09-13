@@ -14,6 +14,7 @@ import type { ThreadEventRepository } from "../../repositories/thread-event.js";
 import type { ThreadEventService } from "../thread-event.js";
 import type { ValidationTraceService } from "../validation-trace.js";
 import { findRequestedEvent, resultEventExistsForValidatorRun } from "./workflow-queries.js";
+import { requireLegacyWorkspaceId } from "../legacy-issue-fields.js";
 
 export class ValidationNonPassProcessor {
   constructor(
@@ -48,7 +49,7 @@ export class ValidationNonPassProcessor {
         this.validationTraceService.writeFailed({
           issueId: issue.id,
           threadId: validatorRun.thread_id,
-          workspaceId: issue.workspace_id,
+          workspaceId: requireLegacyWorkspaceId(issue),
           validationRound: validatorRun.validation_round!,
           summary: result.summary,
           findingCount: result.findings.length,
@@ -77,7 +78,7 @@ export class ValidationNonPassProcessor {
           this.validationTraceService.writeBlocked({
             issueId: issue.id,
             threadId: validatorRun.thread_id,
-            workspaceId: issue.workspace_id,
+            workspaceId: requireLegacyWorkspaceId(issue),
             validationRound: validatorRun.validation_round!,
             summary: result.summary,
             reasonCode: ValidationBlockReason.RoundLimitReached,
@@ -116,7 +117,7 @@ export class ValidationNonPassProcessor {
         this.validationTraceService.writeBlocked({
           issueId: issue.id,
           threadId: validatorRun.thread_id,
-          workspaceId: issue.workspace_id,
+          workspaceId: requireLegacyWorkspaceId(issue),
           validationRound: validatorRun.validation_round!,
           summary: result.summary,
           reasonCode: ValidationBlockReason.EvidenceMissing,
@@ -144,7 +145,7 @@ export class ValidationNonPassProcessor {
         this.validationTraceService.writeFinding({
           issueId: issue.id,
           threadId: validatorRun.thread_id,
-          workspaceId: issue.workspace_id,
+          workspaceId: requireLegacyWorkspaceId(issue),
           validationRound: validatorRun.validation_round!,
           severity: finding.severity,
           message: finding.message,

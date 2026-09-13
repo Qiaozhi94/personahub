@@ -20,6 +20,7 @@ import type { ValidationPolicyRepository } from "../../repositories/validation-p
 import type { ThreadEventRepository } from "../../repositories/thread-event.js";
 import type { ThreadEvent } from "@personahub/shared/types";
 import { AppError } from "../../api/errors.js";
+import { requireLegacyValidationPolicyId } from "../legacy-issue-fields.js";
 
 const RESULT_EVENT_TYPES = [
   ThreadEventType.ValidationPassed,
@@ -52,7 +53,7 @@ export class ValidationQueryService {
       throw new AppError(ErrorCode.ISSUE_NOT_FOUND, "Issue not found.");
     }
 
-    const policy = this.validationPolicyRepo.getById(issue.validation_policy_id);
+    const policy = this.validationPolicyRepo.getById(requireLegacyValidationPolicyId(issue));
     const maxRounds = policy?.max_validation_rounds ?? 3;
     const threadId = issue.primary_thread_id;
 

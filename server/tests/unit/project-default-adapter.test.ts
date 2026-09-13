@@ -59,12 +59,16 @@ function setupAdapter(
   });
 }
 
+function defaultSpaceId(db: Database.Database): string {
+  return (db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string }).id;
+}
+
 describe("ProjectRepository default adapter (T021)", () => {
   it("setDefaultAdapter sets default_adapter_config_id when the adapter is available and same-project", () => {
     const db = createTestDb();
     const projectRepo = new ProjectRepository(db);
     const agentConfigRepo = new AgentConfigRepository(db);
-    const project = projectRepo.create("P1", null);
+    const project = projectRepo.create("P1", null, defaultSpaceId(db));
     const adapter = setupAdapter(agentConfigRepo, project.id);
 
     const result = projectRepo.setDefaultAdapter(project.id, adapter.id);
@@ -77,7 +81,7 @@ describe("ProjectRepository default adapter (T021)", () => {
     const db = createTestDb();
     const projectRepo = new ProjectRepository(db);
     const agentConfigRepo = new AgentConfigRepository(db);
-    const project = projectRepo.create("P2", null);
+    const project = projectRepo.create("P2", null, defaultSpaceId(db));
     const adapter = setupAdapter(agentConfigRepo, project.id);
     projectRepo.setDefaultAdapter(project.id, adapter.id);
 
@@ -90,8 +94,8 @@ describe("ProjectRepository default adapter (T021)", () => {
     const db = createTestDb();
     const projectRepo = new ProjectRepository(db);
     const agentConfigRepo = new AgentConfigRepository(db);
-    const projectA = projectRepo.create("A", null);
-    const projectB = projectRepo.create("B", null);
+    const projectA = projectRepo.create("A", null, defaultSpaceId(db));
+    const projectB = projectRepo.create("B", null, defaultSpaceId(db));
     const adapterOfB = setupAdapter(agentConfigRepo, projectB.id);
 
     const result = projectRepo.setDefaultAdapter(projectA.id, adapterOfB.id);
@@ -104,7 +108,7 @@ describe("ProjectRepository default adapter (T021)", () => {
     const db = createTestDb();
     const projectRepo = new ProjectRepository(db);
     const agentConfigRepo = new AgentConfigRepository(db);
-    const project = projectRepo.create("P3", null);
+    const project = projectRepo.create("P3", null, defaultSpaceId(db));
     const adapter = setupAdapter(agentConfigRepo, project.id, { status: AdapterStatus.Unavailable });
 
     const result = projectRepo.setDefaultAdapter(project.id, adapter.id);
@@ -116,7 +120,7 @@ describe("ProjectRepository default adapter (T021)", () => {
   it("rejects setting a nonexistent adapter id as default", () => {
     const db = createTestDb();
     const projectRepo = new ProjectRepository(db);
-    const project = projectRepo.create("P4", null);
+    const project = projectRepo.create("P4", null, defaultSpaceId(db));
 
     const result = projectRepo.setDefaultAdapter(project.id, "adp_does_not_exist");
 
@@ -126,7 +130,7 @@ describe("ProjectRepository default adapter (T021)", () => {
   it("clearDefaultAdapter on a Project with no default is a harmless no-op", () => {
     const db = createTestDb();
     const projectRepo = new ProjectRepository(db);
-    const project = projectRepo.create("P5", null);
+    const project = projectRepo.create("P5", null, defaultSpaceId(db));
 
     expect(() => projectRepo.clearDefaultAdapter(project.id)).not.toThrow();
     expect(projectRepo.getById(project.id)?.default_adapter_config_id).toBeNull();

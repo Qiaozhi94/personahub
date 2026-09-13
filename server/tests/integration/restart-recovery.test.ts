@@ -16,6 +16,10 @@ import { WorkspaceLockService } from "../../src/services/workspace-lock.js";
 import { StaleRecoveryService } from "../../src/services/stale-recovery.js";
 import { RunStatus, FailureReason, AdapterStatus, IssueStatus, IssueType, IssuePriority, ThreadType, WorkspaceLockState } from "@personahub/shared/types";
 
+function defaultSpaceId(db: Database.Database): string {
+  return (db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string }).id;
+}
+
 describe("Backend Restart Recovery (T055)", () => {
   let services: TestServices;
   let tempDir: string;
@@ -44,7 +48,7 @@ describe("Backend Restart Recovery (T055)", () => {
     const agentConfigRepo = new AgentConfigRepository(db);
     const runRepo = new RunRepository(db);
 
-    const project = projectRepo.create("Test", "desc");
+    const project = projectRepo.create("Test", "desc", defaultSpaceId(db));
     const workspace = workspaceRepo.create({
       project_id: project.id,
       local_path: tempDir,
@@ -55,6 +59,7 @@ describe("Backend Restart Recovery (T055)", () => {
     projectRepo.updateDefaultWorkspace(project.id, workspace.id, new Date().toISOString());
 
     const issue = issueRepo.create({
+      space_id: project.space_id,
       project_id: project.id,
       workspace_id: workspace.id,
       issue_type: IssueType.Coding,

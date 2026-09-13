@@ -58,6 +58,10 @@ import { RoutingRecommendationService } from "./services/routing-recommendation-
 import { IntakeService } from "./services/intake-service.js";
 import { WorkflowTemplateAdminService } from "./services/workflow-template-admin.js";
 import { AdminAuditEventRepository } from "./repositories/admin-audit-event.js";
+import { SpaceRepository } from "./repositories/space.js";
+import { RepositoryRegistry } from "./services/repository-registry.js";
+import { SpaceService } from "./services/space.js";
+import { AuditService } from "./services/audit.js";
 import { RuntimeHealthService } from "./services/runtime-health.js";
 
 const PORT = Number(process.env.PORT ?? 4321);
@@ -96,7 +100,10 @@ async function main() {
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
 
-  const projectService = new ProjectService(projectRepo, workspaceRepo);
+  const spaceRepo = new SpaceRepository(db);
+  const auditService = new AuditService(new AdminAuditEventRepository(db));
+  const spaceService = new SpaceService(spaceRepo, auditService, db);
+  const projectService = new ProjectService(projectRepo, workspaceRepo, spaceRepo, auditService, db);
   const workspaceService = new WorkspaceService(workspaceRepo, projectRepo, db);
   const issueService = new IssueService(
     issueRepo,
@@ -105,6 +112,7 @@ async function main() {
     projectRepo,
     workflowTemplateRepo,
     validationPolicyRepo,
+    spaceRepo,
     db,
   );
   const threadService = new ThreadService(threadRepo, threadEventRepo);
@@ -404,6 +412,8 @@ async function main() {
   app.get("/api/health", async () => ({ status: "ok" }));
 
   registerRoutes(app, {
+    spaceService,
+    repositoryRegistry: new RepositoryRegistry(db, auditService),
     projectService,
     workspaceService,
     issueService,

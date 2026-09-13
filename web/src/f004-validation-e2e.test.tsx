@@ -39,6 +39,7 @@ function makeEvent(
 
 const baseIssue: IssueWithThread = {
   id: "iss_1",
+  space_id: "spc_1",
   project_id: "prj_1",
   workspace_id: "wsp_1",
   primary_thread_id: "thr_1",

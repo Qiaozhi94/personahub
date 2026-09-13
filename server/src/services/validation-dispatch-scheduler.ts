@@ -1,5 +1,6 @@
 import type { IssueRepository } from "../repositories/issue.js";
 import type { ValidationWorkflowService } from "./validation/workflow-service.js";
+import { requireLegacyWorkspaceId } from "./legacy-issue-fields.js";
 
 const DEFAULT_TICK_MS = 1_000;
 
@@ -56,7 +57,7 @@ export class ValidationDispatchScheduler {
       const claimedWorkspaces = new Set<string>();
       for (const issue of dueIssues) {
         const claimed = this.validationWorkflowService.claimValidatorSlot(issue.id, { mode: "auto" });
-        if (claimed.ok) claimedWorkspaces.add(issue.workspace_id);
+        if (claimed.ok) claimedWorkspaces.add(requireLegacyWorkspaceId(issue));
       }
       for (const workspaceId of claimedWorkspaces) {
         await this.drainWorkspace(workspaceId);

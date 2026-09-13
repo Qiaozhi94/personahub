@@ -16,6 +16,7 @@ import { classifyRunRequest } from "./run-routing-classifier.js";
 import { collectPriorFindings } from "./validation/context-assembler.js";
 import { buildRepairContext } from "./validation/context-builder.js";
 import type { ValidationWorkflowService } from "./validation/workflow-service.js";
+import { requireLegacyWorkspaceId, requireLegacyProjectId } from "./legacy-issue-fields.js";
 
 export interface ManualRoutingDispatchInput {
   issueId: string;
@@ -78,8 +79,8 @@ export class ManualRoutingService {
 
     const resolved = resolveAdapter(
       { agentConfigRepo: this.agentConfigRepo, projectRepo: this.projectRepo, adapterWorkspaceStatusRepo: this.adapterWorkspaceStatusRepo },
-      issue.project_id,
-      issue.workspace_id,
+      requireLegacyProjectId(issue),
+      requireLegacyWorkspaceId(issue),
       input.adapterId,
     );
     if (!resolved.ok) {
@@ -95,7 +96,7 @@ export class ManualRoutingService {
       return this.dispatchValidator(issue.id, adapter.id, trimmedInstructions);
     }
 
-    const workspace = this.workspaceRepo.getById(issue.workspace_id);
+    const workspace = this.workspaceRepo.getById(requireLegacyWorkspaceId(issue));
     if (!workspace) {
       throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, "Workspace not found for issue.");
     }

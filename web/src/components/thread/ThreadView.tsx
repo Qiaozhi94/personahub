@@ -31,7 +31,8 @@ interface ThreadViewProps {
   threadId: string;
   issueId: string;
   issueStatus: IssueStatus;
-  projectId: string;
+  /** F013：游离任务无 project；null 时执行面（v0.2 链）不可用。 */
+  projectId: string | null;
   /** F005 §8.1: non-null while the manual-validator grace window is still open. */
   validationDispatchDueAt?: string | null;
 }
