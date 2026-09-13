@@ -39,6 +39,9 @@ export interface ArtifactGraphFixture {
   workspaceDir: string;
   archive: ArtifactArchive;
   graph: { issueId: string; threadId: string; runIds: string[] };
+  /** Every DB handle opened against this fixture; disposal closes them before
+   *  removing the temp tree — Windows refuses to delete an open file (R4-021). */
+  openDbs: Array<ReturnType<typeof openDatabase>>;
 }
 
 export interface ArtifactSession {
@@ -117,15 +120,25 @@ export function makeArtifactGraphFixture(runs = 2): ArtifactGraphFixture {
     workspaceDir,
     archive: new ArtifactArchive(join(tempDir, "archive"), join(tempDir, "archive-temp")),
     graph: { issueId: issue.id, threadId: thread.id, runIds },
+    openDbs: [],
   };
 }
 
 export function disposeArtifactFixture(fixture: ArtifactGraphFixture): void {
-  rmSync(fixture.tempDir, { recursive: true, force: true });
+  for (const db of fixture.openDbs) {
+    try {
+      db.close();
+    } catch {
+      // already closed by the test itself
+    }
+  }
+  fixture.openDbs.length = 0;
+  rmSync(fixture.tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 }
 
 export function openArtifactSession(fixture: ArtifactGraphFixture): ArtifactSession {
   const db = openDatabase(fixture.dbPath);
+  fixture.openDbs.push(db);
   const artifactRepo = new ArtifactRepository(db);
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(new ThreadEventRepository(db), eventBus);
