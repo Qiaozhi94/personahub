@@ -466,9 +466,57 @@ export class RepositoryRegistry {
 
     this.db.transaction(() => {
       const existingRefs = this.listProjectRefs(projectId);
-      const keepIds = new Set<string>();
+      const referenceInputs = input.references ?? [];
+      const referenceIds = referenceInputs.map((reference) => reference.repository_id);
+      const allIds = [input.primary?.repository_id, ...referenceIds].filter((id): id is string => Boolean(id));
+      if (new Set(allIds).size !== allIds.length) {
+        throw new AppError(
+          ErrorCode.REPOSITORY_CONFLICT,
+          "A repository cannot be both primary and reference or appear twice.",
+        );
+      }
+
+      // Validate every desired row before changing the old collection. This
+      // keeps malformed role swaps and invalid scopes atomic.
+      const primaryRepository = input.primary ? this.getById(input.primary.repository_id) : null;
+      if (primaryRepository && primaryRepository.kind !== "local_dir") {
+        throw new AppError(ErrorCode.REPOSITORY_CONFLICT, "Primary repository must be a local directory.");
+      }
+      const primaryScope = input.primary?.scope === undefined ? null : validateScope(input.primary.scope);
+      const referenceScopes = referenceInputs.map((reference) => {
+        const scope = reference.scope === undefined ? null : validateScope(reference.scope);
+        if (scope && scope.write.length > 0) {
+          throw new AppError(
+            ErrorCode.SCOPE_WRITE_NOT_IN_READ,
+            "Reference repositories are read-only and cannot declare write scope.",
+          );
+        }
+        this.getById(reference.repository_id);
+        return { repository_id: reference.repository_id, scope };
+      });
+
+      const keepIds = new Set<string>(allIds);
       if (input.primary) keepIds.add(input.primary.repository_id);
-      for (const reference of input.references ?? []) keepIds.add(reference.repository_id);
+
+      const existingPrimary = existingRefs.find((ref) => ref.role === "primary");
+      const desiredReferenceIds = new Set(referenceIds);
+
+      // Free the partial unique index before promoting a reference. If the old
+      // primary is retained as a reference, demote it first; otherwise remove
+      // it. Both paths remain inside this transaction.
+      if (existingPrimary && existingPrimary.repository_id !== input.primary?.repository_id) {
+        if (desiredReferenceIds.has(existingPrimary.repository_id)) {
+          this.db
+            .prepare(
+              "UPDATE project_repository_refs SET role = 'reference', access = 'read_only', scope_json = NULL, legacy_workspace_id = NULL, updated_at = ? WHERE project_id = ? AND repository_id = ?",
+            )
+            .run(now, projectId, existingPrimary.repository_id);
+        } else {
+          this.db
+            .prepare("DELETE FROM project_repository_refs WHERE project_id = ? AND repository_id = ?")
+            .run(projectId, existingPrimary.repository_id);
+        }
+      }
 
       // 删除不再被引用的行（保留的更新）。
       for (const ref of existingRefs) {
@@ -479,14 +527,10 @@ export class RepositoryRegistry {
         }
       }
 
-      if (input.primary) {
-        const repository = this.getById(input.primary.repository_id);
-        if (repository.kind !== "local_dir") {
-          throw new AppError(ErrorCode.REPOSITORY_CONFLICT, "Primary repository must be a local directory.");
-        }
+      if (input.primary && primaryRepository) {
         const access = input.primary.access ?? "read_write";
-        const scopeJson = input.primary.scope === undefined ? null : JSON.stringify(validateScope(input.primary.scope));
-        const machine = this.getMachinePath(repository.id, LOCAL_RUNTIME_ID);
+        const scopeJson = primaryScope ? JSON.stringify(primaryScope) : null;
+        const machine = this.getMachinePath(primaryRepository.id, LOCAL_RUNTIME_ID);
         const legacyWorkspaceId =
           machine?.raw_path && machine.runtime_id === LOCAL_RUNTIME_ID
             ? this.upsertLegacyWorkspace(projectId, machine.raw_path, now)
@@ -497,24 +541,30 @@ export class RepositoryRegistry {
                (project_id, repository_id, role, access, scope_json, legacy_workspace_id, created_at, updated_at)
              VALUES (?, ?, 'primary', ?, ?, ?, ?, ?)
              ON CONFLICT (project_id, repository_id) DO UPDATE SET
-               role = 'primary', access = excluded.access, scope_json = excluded.scope_json, updated_at = excluded.updated_at`,
+               role = 'primary', access = excluded.access, scope_json = excluded.scope_json,
+               legacy_workspace_id = excluded.legacy_workspace_id, updated_at = excluded.updated_at`,
           )
-          .run(projectId, repository.id, access, scopeJson, legacyWorkspaceId, now, now);
+          .run(projectId, primaryRepository.id, access, scopeJson, legacyWorkspaceId, now, now);
 
         // 同一事务内回填 projects.default_workspace_id——没有这一步，F013 之后
         // 新建的 Project 拿不到 workspace_id，进不了 v0.2 执行链（design §3）。
         if (legacyWorkspaceId) {
-          this.db.prepare("UPDATE projects SET default_workspace_id = ?, updated_at = ? WHERE id = ?").run(
-            legacyWorkspaceId,
-            now,
-            projectId,
-          );
+          this.db
+            .prepare("UPDATE projects SET default_workspace_id = ?, updated_at = ? WHERE id = ?")
+            .run(legacyWorkspaceId, now, projectId);
+        } else {
+          this.db
+            .prepare("UPDATE projects SET default_workspace_id = NULL, updated_at = ? WHERE id = ?")
+            .run(now, projectId);
         }
+      } else {
+        this.db
+          .prepare("UPDATE projects SET default_workspace_id = NULL, updated_at = ? WHERE id = ?")
+          .run(now, projectId);
       }
 
-      for (const reference of input.references ?? []) {
-        const repository = this.getById(reference.repository_id);
-        const scopeJson = reference.scope === undefined ? null : JSON.stringify(validateScope(reference.scope));
+      for (const reference of referenceScopes) {
+        const scopeJson = reference.scope ? JSON.stringify(reference.scope) : null;
         // access 恒 read_only：CHECK (role = 'primary' OR access = 'read_only') 在数据库层强制。
         this.db
           .prepare(
@@ -524,7 +574,7 @@ export class RepositoryRegistry {
              ON CONFLICT (project_id, repository_id) DO UPDATE SET
                role = 'reference', access = 'read_only', scope_json = excluded.scope_json, updated_at = excluded.updated_at`,
           )
-          .run(projectId, repository.id, scopeJson, now, now);
+          .run(projectId, reference.repository_id, scopeJson, now, now);
       }
 
       this.audit.record("project.refs_changed", "project", projectId, {
@@ -545,7 +595,9 @@ export class RepositoryRegistry {
       .prepare("SELECT id FROM workspaces WHERE project_id = ? AND local_path_normalized = ?")
       .get(projectId, normalized) as { id: string } | undefined;
     if (existing) {
-      this.db.prepare("UPDATE workspaces SET local_path = ?, updated_at = ? WHERE id = ?").run(resolved, now, existing.id);
+      this.db
+        .prepare("UPDATE workspaces SET local_path = ?, updated_at = ? WHERE id = ?")
+        .run(resolved, now, existing.id);
       return existing.id;
     }
     const id = generateWorkspaceId();

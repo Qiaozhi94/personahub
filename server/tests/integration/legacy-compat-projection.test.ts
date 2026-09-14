@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createTestServices, createTempDir, cleanupTempDir, disposeTestServices, type TestServices } from "../helpers.js";
+import {
+  createTestServices,
+  createTempDir,
+  cleanupTempDir,
+  disposeTestServices,
+  type TestServices,
+} from "../helpers.js";
 
 // F013 AC-001 (design §8 legacy-compat-projection)：F013 放宽列但不切断 legacy 写——
 // 升级后经 IssueService 创建带 Project 的任务仍写入三个 legacy 列且可进 v0.2 链；
@@ -101,7 +107,11 @@ describe("F013 AC-001: legacy compat projection", () => {
     const secondDir = createTempDir();
     try {
       const second = services.repositoryRegistry.create({ source: secondDir });
-      services.repositoryRegistry.authorizePath({ repository_id: second.id, raw_path: secondDir, access: "read_write" });
+      services.repositoryRegistry.authorizePath({
+        repository_id: second.id,
+        raw_path: secondDir,
+        access: "read_write",
+      });
       services.repositoryRegistry.setProjectRepositories(project.id, () => {}, {
         primary: { repository_id: second.id, access: "read_write" },
       });
@@ -111,6 +121,51 @@ describe("F013 AC-001: legacy compat projection", () => {
     } finally {
       cleanupTempDir(secondDir);
     }
+  });
+
+  it("atomically swaps a primary and retains the old primary as a reference", () => {
+    const project = services.projectService.create("Swap");
+    const firstDir = createTempDir();
+    const secondDir = createTempDir();
+    try {
+      const first = services.repositoryRegistry.create({ source: firstDir });
+      const second = services.repositoryRegistry.create({ source: secondDir });
+      services.repositoryRegistry.authorizePath({ repository_id: first.id, raw_path: firstDir, access: "read_write" });
+      services.repositoryRegistry.authorizePath({
+        repository_id: second.id,
+        raw_path: secondDir,
+        access: "read_write",
+      });
+      services.repositoryRegistry.setProjectRepositories(project.id, () => {}, {
+        primary: { repository_id: first.id, access: "read_write" },
+      });
+      services.repositoryRegistry.setProjectRepositories(project.id, () => {}, {
+        primary: { repository_id: second.id, access: "read_write" },
+        references: [{ repository_id: first.id }],
+      });
+
+      expect(services.repositoryRegistry.getProjectRef(project.id, first.id)?.role).toBe("reference");
+      expect(services.repositoryRegistry.getProjectRef(project.id, second.id)?.role).toBe("primary");
+    } finally {
+      cleanupTempDir(firstDir);
+      cleanupTempDir(secondDir);
+    }
+  });
+
+  it("clearing the primary also clears the legacy default workspace pointer", () => {
+    const project = services.projectService.create("Clear primary");
+    const repository = services.repositoryRegistry.create({ source: tempDir });
+    services.repositoryRegistry.authorizePath({
+      repository_id: repository.id,
+      raw_path: tempDir,
+      access: "read_write",
+    });
+    services.repositoryRegistry.setProjectRepositories(project.id, () => {}, {
+      primary: { repository_id: repository.id, access: "read_write" },
+    });
+    expect(services.projectService.getById(project.id)?.default_workspace_id).not.toBeNull();
+    services.repositoryRegistry.setProjectRepositories(project.id, () => {}, { primary: null, references: [] });
+    expect(services.projectService.getById(project.id)?.default_workspace_id).toBeNull();
   });
 
   it("free-floating issues stay out of the v0.2 chain via the narrowing guard", async () => {
