@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ProjectPicker } from "@/pages/project-picker";
 import { PageFrame, PageHeading, PageSection } from "@/pages/page-frame";
 import { RuntimeHealthPanel } from "@/components/runtime-health/RuntimeHealthPanel";
+import { RuntimeMachineSection } from "@/components/runtime/RuntimeMachineSection";
 import { buildUrl, useRouter } from "@/app/router";
 
 // /runtime (A025/A028 runtime half): inventory of dispatchable execution
@@ -15,6 +16,7 @@ export function RuntimePage() {
   return (
     <PageFrame>
       <PageHeading title="运行时" />
+      <RuntimeMachineSection />
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} label="按项目查看执行资源" />
 
       {projectId !== null ? (

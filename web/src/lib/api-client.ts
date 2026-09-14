@@ -79,6 +79,21 @@ import {
   type SkillScanResponse,
   type ProjectSkillRef,
   type Project,
+  type Room,
+  type RuntimeMachineProjection,
+  type RoomResponse,
+  type SessionMessageResponse,
+  type ConvertToTaskResponse,
+  type RoomCreateInput,
+  type EligibilityResponse,
+  type DispatchConfirmResponse,
+  type DispatchGetResponse,
+  type DispatchStartNowResponse,
+  type AttemptCancelResponse,
+  type GateUpdateInput,
+  type GateResponse,
+  type DispatchConfirmInput,
+  type AdapterFactsResponse,
 } from "@personahub/shared";
 
 const API_BASE = "/api";
@@ -116,6 +131,49 @@ export function toApiError(error: unknown): ApiError {
 }
 
 export const apiClient = {
+  f012: {
+    createRoom: (input: RoomCreateInput) =>
+      apiFetch<{ room: Room }>("/rooms", { method: "POST", body: JSON.stringify(input) }),
+    getRoom: (roomId: string, before?: number) =>
+      apiFetch<RoomResponse>(`/rooms/${roomId}${before ? `?before=${before}` : ""}`),
+    sendMessage: (roomId: string, body: string, idempotencyKey: string | null) =>
+      apiFetch<SessionMessageResponse>(`/rooms/${roomId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ body }),
+        headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+      }),
+    endRoom: (roomId: string) => apiFetch<{ room: Room }>(`/rooms/${roomId}/end`, { method: "POST" }),
+    convertToTask: (roomId: string, input: { project_id?: string | null; goal: string }) =>
+      apiFetch<ConvertToTaskResponse>(`/rooms/${roomId}/convert-to-task`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    eligibility: (roomId: string, purpose: string, contextScope: string, skillRefs: string[]) => {
+      const params = new URLSearchParams({ purpose, context_scope: contextScope });
+      for (const ref of skillRefs) params.append("skill_refs", ref);
+      return apiFetch<EligibilityResponse>(`/rooms/${roomId}/eligibility?${params.toString()}`);
+    },
+    confirmDispatch: (roomId: string, input: DispatchConfirmInput, idempotencyKey: string) =>
+      apiFetch<DispatchConfirmResponse>(`/rooms/${roomId}/dispatches`, {
+        method: "POST",
+        body: JSON.stringify(input),
+        headers: { "Idempotency-Key": idempotencyKey },
+      }),
+    cancelDispatch: (dispatchId: string) =>
+      apiFetch<DispatchConfirmResponse>(`/dispatches/${dispatchId}/cancel`, { method: "POST" }),
+    startNow: (dispatchId: string) =>
+      apiFetch<DispatchStartNowResponse>(`/dispatches/${dispatchId}/start-now`, { method: "POST" }),
+    getDispatch: (dispatchId: string) => apiFetch<DispatchGetResponse>(`/dispatches/${dispatchId}`),
+    cancelAttempt: (attemptId: string) =>
+      apiFetch<AttemptCancelResponse>(`/attempts/${attemptId}/cancel`, { method: "POST" }),
+    setGate: (scopeType: string, scopeId: string, input: GateUpdateInput) =>
+      apiFetch<GateResponse>(`/gates/${scopeType}/${scopeId}`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    runtimeMachine: (machineId: string) => apiFetch<RuntimeMachineProjection>(`/runtime/machines/${machineId}`),
+    adapterFacts: (adapterConfigId: string) => apiFetch<AdapterFactsResponse>(`/runtime/adapters/${adapterConfigId}`),
+  },
   spaces: {
     list: () => apiFetch<SpaceListResponse>("/spaces"),
     create: (name: string) =>

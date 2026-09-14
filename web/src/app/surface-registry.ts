@@ -27,7 +27,10 @@ export interface SurfaceDefinition {
 /** Order and states mirror the frozen M1 SurfaceRegistry manifest 1:1. */
 export const SURFACE_REGISTRY: readonly SurfaceDefinition[] = [
   { id: "tasks", label: "任务", group: "daily", state: "enabled", route: "/tasks" },
-  { id: "sessions", label: "会话", group: "daily", state: "not-registered", route: null },
+  // F012 publishes the session surface (design §6.1): /sessions/:sessionId is
+  // deep-linkable and refresh-recoverable. visible-disabled = registered in
+  // the manifest but not in the rail — sessions open from the task face.
+  { id: "sessions", label: "会话", group: "daily", state: "visible-disabled", route: "/sessions" },
   { id: "projects", label: "项目", group: "daily", state: "enabled", route: "/projects" },
   { id: "automation", label: "自动化", group: "daily", state: "not-registered", route: null },
   { id: "memory", label: "记忆", group: "low-frequency", state: "not-registered", route: null },

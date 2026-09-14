@@ -21,6 +21,7 @@ export type RouteDescriptor =
   | { kind: "tasks"; projectQuery: string | null }
   | { kind: "task"; taskId: string }
   | { kind: "task-unsupported-view"; taskId: string; view: string }
+  | { kind: "session"; sessionId: string }
   | { kind: "runtime" }
   | { kind: "runtime-adapters" }
   | { kind: "settings-diagnostics" }
@@ -87,6 +88,13 @@ export function resolveRoute(pathname: string, search: string): RouteDescriptor 
   if (first === "capabilities") {
     if (segments.length === 1) return { kind: "capabilities" };
     if (segments.length === 2) return { kind: "skill", skillId: decodeSegment(second!) };
+    return { kind: "not-found", attemptedPath: pathname };
+  }
+
+  // F012 publishes /sessions/:sessionId — `sessionId` equals rooms.id; the
+  // reservation from F009 (FR-004 "M1 不发布 /sessions/:sessionId") lands here.
+  if (first === "sessions") {
+    if (segments.length === 2) return { kind: "session", sessionId: decodeSegment(second!) };
     return { kind: "not-found", attemptedPath: pathname };
   }
 

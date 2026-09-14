@@ -197,21 +197,18 @@ describe("unsupported sub-paths canonicalize to the base object", () => {
 });
 
 describe("unknown sub-paths and unregistered surfaces", () => {
-  it.each([
-    "/sessions/sess_1",
-    "/memory",
-    "/automation",
-    "/stats",
-    "/runtime/nope",
-    "/settings/unknown",
-    "/somewhere/else",
-  ])("lands %p on not-found with one recovery action", async (path) => {
-    renderApp(path);
+  // F012 publishes /sessions/:sessionId (deep-linkable session surface), so
+  // that path no longer lands on not-found — covered by f012-sessions.test.
+  it.each(["/memory", "/automation", "/stats", "/runtime/nope", "/settings/unknown", "/somewhere/else"])(
+    "lands %p on not-found with one recovery action",
+    async (path) => {
+      renderApp(path);
 
-    expect(await screen.findByText("页面不存在")).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "回到项目列表" })).toBeInTheDocument();
-  });
+      expect(await screen.findByText("页面不存在")).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "回到项目列表" })).toBeInTheDocument();
+    },
+  );
 
   it("returns to a resumable list from not-found", async () => {
     const user = userEvent.setup();

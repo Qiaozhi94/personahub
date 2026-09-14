@@ -65,8 +65,11 @@ describe("M1 SurfaceRegistry manifest", () => {
     }
   });
 
-  it("declares no visible-disabled slot in M1", () => {
-    expect(SURFACE_REGISTRY.some((surface) => surface.state === "visible-disabled")).toBe(false);
+  it("keeps F012's sessions the only visible-disabled slot (registered, rail comes later)", () => {
+    const visibleDisabled = SURFACE_REGISTRY.filter((surface) => surface.state === "visible-disabled");
+    // F012 owns /sessions/:sessionId: registered + deep-linkable, but the
+    // sessions surface opens from the task face, not the rail (design §6.1).
+    expect(visibleDisabled.map((surface) => surface.id)).toEqual(["sessions"]);
   });
 
   it("splits daily entries from low-frequency entries", () => {

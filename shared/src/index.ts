@@ -204,3 +204,40 @@ export {
   type RunListResponse,
   type RunCancelResponse,
 } from "./errors/index.js";
+
+// F012: session / dispatch / intervention types
+export {
+  RoomState,
+  DispatchState,
+  DispatchPurpose,
+  ContextScope,
+  DepthNormalized,
+  AttemptState,
+  StartMode,
+  GateState,
+  GateScopeType,
+  OutboxStatus,
+} from "./types/f012.js";
+export type {
+  Room,
+  Attempt,
+  Dispatch,
+  DispatchGate,
+  EligibilityCandidate,
+  RuntimeMachineProjection,
+} from "./types/f012.js";
+export type {
+  RoomCreateInput,
+  RoomResponse,
+  SessionMessageResponse,
+  ConvertToTaskResponse,
+  EligibilityResponse,
+  DispatchConfirmResponse,
+  DispatchGetResponse,
+  DispatchStartNowResponse,
+  AttemptCancelResponse,
+  GateUpdateInput,
+  GateResponse,
+  DispatchConfirmInput,
+  AdapterFactsResponse,
+} from "./errors/index.js";

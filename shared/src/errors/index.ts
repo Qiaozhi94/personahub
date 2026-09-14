@@ -12,6 +12,11 @@ import type {
   CliProvider,
   AdapterAuthType,
   AgentCapability,
+  Room,
+  Attempt,
+  Dispatch,
+  DispatchGate,
+  EligibilityCandidate,
 } from "../types/index.js";
 
 export {
@@ -230,6 +235,102 @@ export interface ThreadGetResponse {
 
 export interface ThreadEventListResponse {
   events: ThreadEvent[];
+}
+
+// F012: session / dispatch / intervention API shapes
+export interface AdapterFactsResponse {
+  adapter: {
+    id: string;
+    name: string;
+    cli_provider: string;
+    runtime_id: string;
+    status: string;
+    last_checked_at: string | null;
+    auth_status_message: string | null;
+    default_model: string | null;
+  };
+  capability_evidence: Array<{
+    capability_key: string;
+    verdict: string;
+    cli_version: string;
+    probed_at: string;
+    missing_reason: string | null;
+  }>;
+  models: string[];
+  quota: Array<never>;
+}
+
+export interface RoomResponse {
+  room: Room;
+  messages: ThreadEvent[];
+  next_cursor: number | null;
+}
+
+export interface SessionMessageResponse {
+  event: ThreadEvent;
+}
+
+export interface ConvertToTaskResponse {
+  issue_id: string;
+  room: Room;
+}
+
+export interface RoomCreateInput {
+  space_id: string;
+  issue_id?: string | null;
+  title: string;
+}
+
+export interface EligibilityResponse {
+  candidates: EligibilityCandidate[];
+  requirements: { ref: string; hash: string; items: unknown[] };
+}
+
+export interface DispatchConfirmResponse {
+  dispatch: Dispatch;
+}
+
+export interface DispatchGetResponse {
+  dispatch: Dispatch;
+  attempts: Attempt[];
+  context_snapshot: unknown;
+}
+
+export interface DispatchStartNowResponse {
+  dispatch: Dispatch;
+  attempt_id: string | null;
+  run_id: string | null;
+  start_mode: string | null;
+}
+
+export interface AttemptCancelResponse {
+  attempt: Attempt;
+}
+
+export interface GateUpdateInput {
+  state: "open" | "paused";
+  reason?: string | null;
+}
+
+export interface GateResponse {
+  gate: DispatchGate;
+}
+
+export interface DispatchConfirmInput {
+  room_id: string;
+  purpose: "execute" | "validate" | "design_cases";
+  adapter_config_id: string;
+  model: string;
+  depth_raw: string;
+  depth_normalized: "high" | "medium" | "low";
+  context_scope: "all" | "result_only" | "goal_only";
+  skill_revision_refs?: string[];
+  effective_requirements_json?: string;
+  effective_requirements_hash?: string;
+  handoff_refs?: string[];
+  task_scope?: Record<string, string[]> | null;
+  requirement_override?: { requirementId: string; strength: string; reason: string } | null;
+  user_requested_restart?: boolean;
 }
 
 export interface AdapterConfigCreateInput {

@@ -11,6 +11,7 @@ import { LegacyWorkflowsPage } from "@/pages/legacy-workflows-page";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { SkillsPage } from "@/pages/SkillsPage";
 import { SkillDetailPage } from "@/pages/SkillDetailPage";
+import { SessionsPage } from "@/pages/SessionsPage";
 
 // M1 route outlet: resolves the URL against the route manifest and renders
 // the canonical page for it. Canonicalization rewrites already happened in the
@@ -40,6 +41,8 @@ export function AppRoutes() {
     case "task":
     case "task-unsupported-view":
       return <TaskDetailPage taskId={descriptor.taskId} diagnostics={diagnostics} />;
+    case "session":
+      return <SessionsPage sessionId={descriptor.sessionId} />;
     case "runtime":
       return <RuntimePage />;
     case "runtime-adapters":

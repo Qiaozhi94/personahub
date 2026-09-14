@@ -2,6 +2,34 @@ import { ErrorCode } from "@personahub/shared";
 import { vi } from "vitest";
 
 export const apiClient = {
+  f012: {
+    createRoom: vi.fn(),
+    getRoom: vi.fn().mockResolvedValue({
+      room: {
+        id: "room_1",
+        space_id: "spc_1",
+        issue_id: null,
+        title: "独立讨论",
+        state: "active",
+        created_at: "2026-09-14T00:00:00Z",
+        ended_at: null,
+      },
+      messages: [],
+      next_cursor: null,
+    }),
+    sendMessage: vi.fn(),
+    endRoom: vi.fn(),
+    convertToTask: vi.fn(),
+    eligibility: vi.fn().mockResolvedValue({ candidates: [], requirements: { ref: "", hash: "", items: [] } }),
+    confirmDispatch: vi.fn(),
+    cancelDispatch: vi.fn(),
+    startNow: vi.fn(),
+    getDispatch: vi.fn(),
+    cancelAttempt: vi.fn(),
+    setGate: vi.fn(),
+    runtimeMachine: vi.fn(),
+    adapterFacts: vi.fn(),
+  },
   spaces: {
     list: vi.fn().mockResolvedValue({
       spaces: [
