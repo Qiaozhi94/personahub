@@ -2,7 +2,14 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { symlink } from "node:fs/promises";
-import { createTestServices, createTempDir, cleanupTempDir, disposeTestServices, type TestServices } from "../helpers.js";
+import {
+  createTestServices,
+  createTempDir,
+  cleanupTempDir,
+  disposeTestServices,
+  type TestServices,
+} from "../helpers.js";
+import { probeCaseInsensitive } from "../../src/services/repository-registry.js";
 
 // F013 AC-002 (design §8 authorization-recheck)：verifyAuthorization 每次当场
 // 重做 realpath + identity 比对 + 三层 scope 交集——授权后被换靶的 symlink、
@@ -50,7 +57,10 @@ describe("F013 AC-002: authorization recheck", () => {
 
   it("authorizes and verifies a symlinked path, returning the real path", () => {
     const { repositoryId, projectId } = authorizeAndBind();
-    const result = services.repositoryRegistry.verifyAuthorization({ repository_id: repositoryId, project_id: projectId });
+    const result = services.repositoryRegistry.verifyAuthorization({
+      repository_id: repositoryId,
+      project_id: projectId,
+    });
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.real_path).toBe(fs.realpathSync(realDir));
@@ -68,7 +78,10 @@ describe("F013 AC-002: authorization recheck", () => {
     fs.rmSync(repoRoot);
     fs.symlinkSync(other, repoRoot, "dir");
 
-    const result = services.repositoryRegistry.verifyAuthorization({ repository_id: repositoryId, project_id: projectId });
+    const result = services.repositoryRegistry.verifyAuthorization({
+      repository_id: repositoryId,
+      project_id: projectId,
+    });
     expect(result).toEqual({ ok: false, reason: "REPO_IDENTITY_CHANGED" });
   });
 
@@ -82,7 +95,10 @@ describe("F013 AC-002: authorization recheck", () => {
     fs.rmSync(repoRoot);
     fs.symlinkSync(rebuilt, repoRoot, "dir");
 
-    const result = services.repositoryRegistry.verifyAuthorization({ repository_id: repositoryId, project_id: projectId });
+    const result = services.repositoryRegistry.verifyAuthorization({
+      repository_id: repositoryId,
+      project_id: projectId,
+    });
     expect(result).toEqual({ ok: false, reason: "REPO_IDENTITY_CHANGED" });
   });
 
@@ -91,16 +107,26 @@ describe("F013 AC-002: authorization recheck", () => {
     fs.rmSync(repoRoot, { recursive: true, force: true });
     fs.rmSync(realDir, { recursive: true, force: true });
 
-    const result = services.repositoryRegistry.verifyAuthorization({ repository_id: repositoryId, project_id: projectId });
+    const result = services.repositoryRegistry.verifyAuthorization({
+      repository_id: repositoryId,
+      project_id: projectId,
+    });
     expect(result).toEqual({ ok: false, reason: "REPO_PATH_UNRESOLVED" });
   });
 
   it("rejects with REPO_NOT_AUTHORIZED when no project reference exists", () => {
     const project = services.projectService.create("No ref");
     const repository = services.repositoryRegistry.create({ source: repoRoot });
-    services.repositoryRegistry.authorizePath({ repository_id: repository.id, raw_path: repoRoot, access: "read_write" });
+    services.repositoryRegistry.authorizePath({
+      repository_id: repository.id,
+      raw_path: repoRoot,
+      access: "read_write",
+    });
 
-    const result = services.repositoryRegistry.verifyAuthorization({ repository_id: repository.id, project_id: project.id });
+    const result = services.repositoryRegistry.verifyAuthorization({
+      repository_id: repository.id,
+      project_id: project.id,
+    });
     expect(result).toEqual({ ok: false, reason: "REPO_NOT_AUTHORIZED" });
   });
 
@@ -140,5 +166,28 @@ describe("F013 AC-002: authorization recheck", () => {
     const after = services.repositoryRegistry.getMachinePath(repositoryId, "local")?.last_verified_at;
     expect(after).not.toBeNull();
     expect(after).not.toBe(before);
+  });
+
+  it("never overwrites a pre-existing user file used by the case probe", () => {
+    const probePath = path.join(realDir, ".__personahub_case_probe");
+    fs.writeFileSync(probePath, "user data");
+    probeCaseInsensitive(realDir);
+    expect(fs.readFileSync(probePath, "utf8")).toBe("user data");
+  });
+
+  it("forces effective write scope empty for a read-only project reference", () => {
+    const { repositoryId, projectId } = authorizeAndBind();
+    services.db
+      .prepare(
+        "UPDATE project_repository_refs SET access = 'read_only', scope_json = ? WHERE project_id = ? AND repository_id = ?",
+      )
+      .run(JSON.stringify({ read: [""], write: [""] }), projectId, repositoryId);
+
+    const result = services.repositoryRegistry.verifyAuthorization({
+      repository_id: repositoryId,
+      project_id: projectId,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.effective_scope.write).toEqual([]);
   });
 });

@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import type Database from "better-sqlite3";
 import { ErrorCode } from "@personahub/shared/errors";
 import type {
@@ -92,17 +93,20 @@ function git(args: string[], cwd: string): string | null {
  * 敏感（design §3）。探测失败一律返回 null，比较时按敏感处理。
  */
 export function probeCaseInsensitive(dir: string): boolean | null {
-  const probeName = ".__personahub_case_probe";
+  const probeName = `.__personahub_case_probe_${randomUUID()}`;
   const probePath = path.join(dir, probeName);
   const variant = path.join(dir, probeName.toUpperCase());
+  let created = false;
   try {
-    fs.writeFileSync(probePath, "probe");
+    fs.writeFileSync(probePath, "probe", { flag: "wx" });
+    created = true;
     try {
       return fs.existsSync(variant);
     } finally {
-      fs.rmSync(probePath, { force: true });
+      if (created) fs.rmSync(probePath, { force: true });
     }
   } catch {
+    if (created) fs.rmSync(probePath, { force: true });
     return null;
   }
 }
@@ -408,14 +412,20 @@ export class RepositoryRegistry {
       machine.access === "read_write" && ref.access === "read_write" ? "read_write" : "read_only";
 
     const caseInsensitive = machine.case_insensitive === null ? false : machine.case_insensitive === 1;
-    const machineScope = machine.scope_json ? (JSON.parse(machine.scope_json) as Scope) : defaultMachineScope(machine.access);
+    const machineScope = machine.scope_json
+      ? (JSON.parse(machine.scope_json) as Scope)
+      : defaultMachineScope(machine.access);
     const projectScope = ref.scope_json ? (JSON.parse(ref.scope_json) as Scope) : null;
-    const { scope } = computeEffectiveScope({
+    const computed = computeEffectiveScope({
       machine: machineScope,
       project: projectScope,
       task: input.task_scope ?? null,
       caseInsensitive,
     });
+    // Access is an independent upper bound. A read-only project reference
+    // must never return a write scope merely because a malformed/legacy scope
+    // row still contains write prefixes.
+    const scope: Scope = access === "read_only" ? { ...computed.scope, write: [] } : computed.scope;
 
     if (scope.read.length === 0) {
       this.recordVerifyFailed(input.repository_id, runtimeId, "REPO_SCOPE_EMPTY");
