@@ -318,11 +318,7 @@ function RepositoryRefRow({
   legacyWorkspacePath: string | null | undefined;
   busy: boolean;
   onRemove: ((ref: ProjectRepositoryRef) => Promise<void>) | null;
-  onSaveMachineScope: (
-    ref: ProjectRepositoryRef,
-    detail: RepoDetail | undefined,
-    scope: Scope,
-  ) => Promise<void>;
+  onSaveMachineScope: (ref: ProjectRepositoryRef, detail: RepoDetail | undefined, scope: Scope) => Promise<void>;
   onSaveProjectScope: (repositoryId: string, scope: Scope) => Promise<void>;
   setMessage: (message: string | null) => void;
 }) {
@@ -340,8 +336,7 @@ function RepositoryRefRow({
 
   const machineReadValue = machineRead ?? prefixesText(machine?.scope_json?.read, [""]);
   const machineWriteValue =
-    machineWrite ??
-    prefixesText(machine?.scope_json?.write, machine?.access === "read_write" ? [""] : []);
+    machineWrite ?? prefixesText(machine?.scope_json?.write, machine?.access === "read_write" ? [""] : []);
   const projectReadValue = projectRead ?? prefixesText(ref_.scope_json?.read, [""]);
   const projectWriteValue = projectWrite ?? prefixesText(ref_.scope_json?.write, []);
   const path = repositoryPath(detail, legacyWorkspacePath);
@@ -374,8 +369,7 @@ function RepositoryRefRow({
     <li className="mt-3" data-testid={`repo-ref-${ref_.repository_id}`}>
       <div>
         {isPrimary ? "主目录" : "参考仓库"} · {repositoryLabel(detail, ref_.repository_id)}
-        {path ? ` · ${path}` : ""} ·{" "}
-        {isPrimary && ref_.access === "read_write" ? "可写" : "只读"}
+        {path ? ` · ${path}` : ""} · {isPrimary && ref_.access === "read_write" ? "可写" : "只读"}
       </div>
 
       <div className="mt-2 grid gap-2">

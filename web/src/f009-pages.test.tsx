@@ -135,11 +135,7 @@ describe("ProjectsPage (A001/A002)", () => {
 
 describe("ProjectDetailPage (A003/F013)", () => {
   const REF_TS = TIMESTAMP;
-  function repoRef(
-    repositoryId: string,
-    role: "primary" | "reference",
-    overrides: Record<string, unknown> = {},
-  ) {
+  function repoRef(repositoryId: string, role: "primary" | "reference", overrides: Record<string, unknown> = {}) {
     return {
       project_id: "prj_a",
       repository_id: repositoryId,
@@ -471,9 +467,7 @@ describe("ProjectDetailPage (A003/F013)", () => {
     await waitFor(() => {
       expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
         primary: { repository_id: "repo_primary", access: "read_write", scope: undefined },
-        references: [
-          { repository_id: "repo_ref_a", scope: { read: ["lib"], write: [] } },
-        ],
+        references: [{ repository_id: "repo_ref_a", scope: { read: ["lib"], write: [] } }],
       });
     });
   });
