@@ -2,7 +2,7 @@
 kind: feature
 id: F013
 version: "0.3"
-status: review
+status: done
 gate_version: 1
 eval_contract: exempt
 eval_contract_exempt_reason: "本 Feature 改变用户旅程（首次设置、项目三 tab、能力面），但交付的是归属根与冻结契约（Space schema、路径授权、Skill revision），不提出需用效用数据决定保留或退役的不确定主张；退役条件已由 migration-matrix 的 delete_when 与 F012 / F011 接管显式登记"

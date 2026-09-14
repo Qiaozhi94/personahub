@@ -12,25 +12,24 @@ updated: 2026-09-14
 > `npm run verify:release` plus Windows CI are green, so it is `done` and has left the active table;
 > F010 shipped on 2026-09-14 — implementation review cycle 25 converged in 5 rounds and
 > `npm run verify:release` plus Windows CI are green — and it has left the active table;
-> F012 moved to `ready-for-development` on 2026-09-14 after its pre-development review (cycle 24, 2 rounds); F011, F013 and F014 remain in their own review and development stages. The former Room/Squad plan has been replaced by the trusted task workbench
+> F013 shipped on 2026-09-14 — implementation review converged, `npm run verify:release` and Windows CI are green, so it is `done` and has left the active table; F012 moved to `ready-for-development` on 2026-09-14 after its pre-development review (cycle 24, 2 rounds); F011 and F014 remain in their own review and development stages. The former Room/Squad plan has been replaced by the trusted task workbench
 > sequence in [`docs/features/0.3/README.md`](docs/features/0.3/README.md).
 
 > **Rules**: Only active Features (idea/spec/ready-for-development/in-progress/review). Move to done after completion.
 > `ready-for-development` = spec 与 design 均已定稿、`design.md` 的待确认问题全部关闭（`docs/features/README.md` 的硬性约束），可以开始写代码。
 > Details live in `docs/features/{version}/Fxxx-feature-name/`（`spec.md`、`design.md`、`tasks.md`），按大版本（0.1、0.2…）分层，见 `docs/features/README.md`。
 
-| ID   | Version | Name                             | Status | Owner | Link                                                            |
-| ---- | ------- | -------------------------------- | ------ | ----- | --------------------------------------------------------------- |
-| F011 | 0.3     | Trusted Task Surface | draft | unassigned | `docs/features/0.3/F011-trusted-task-surface/spec.md` |
+| ID   | Version | Name                             | Status                | Owner      | Link                                                           |
+| ---- | ------- | -------------------------------- | --------------------- | ---------- | -------------------------------------------------------------- |
+| F011 | 0.3     | Trusted Task Surface             | draft                 | unassigned | `docs/features/0.3/F011-trusted-task-surface/spec.md`          |
 | F012 | 0.3     | Session, Dispatch & Intervention | ready-for-development | unassigned | `docs/features/0.3/F012-session-dispatch-intervention/spec.md` |
-| F013 | 0.3     | Project & Skills Foundation | review | unassigned | `docs/features/0.3/F013-project-skills-foundation/spec.md` |
-| F014 | 0.3     | Trusted Task Journey Closure | draft | unassigned | `docs/features/0.3/F014-trusted-task-journey-closure/spec.md` |
+| F014 | 0.3     | Trusted Task Journey Closure     | draft                 | unassigned | `docs/features/0.3/F014-trusted-task-journey-closure/spec.md`  |
 
 > v0.1、v0.2（F001-F008）已收口，交付摘要见 `docs/features/releases/0.1.md` /
 > `0.2.md`；均不再出现在上方活跃表。v0.2 期间多轮独立检视的完整逐条记录见
 > `docs/reviews/RETROSPECTIVE.md`（循环 3-4），不在本文件重复。
 >
-> v0.3 的 F009-F014 已按“前端迁移先行”路线重排 `spec.md` / `design.md` / `tasks.md`；F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿，逐条 finding 见 `docs/reviews/RETROSPECTIVE.md` 循环 20），F010 已于 2026-09-14 收口为 `done`（实现代码检视循环 25 五轮收敛，`npm run verify:release` 与 Windows CI 全绿，逐条 finding 见 `docs/reviews/RETROSPECTIVE.md` 循环 25），F013 已进入 `review`（实现代码已完成，等待本轮独立复核），F012 已于 2026-09-14 完成开发前需求与设计文档检视（循环 24 两轮收敛）并推进为 `ready-for-development`，F011、F014 仍为 `draft` 并处于影响面与开发前审查阶段。F014 是唯一端到端交付 owner。版本范围、顺序与验收旅程
+> v0.3 的 F009-F014 已按“前端迁移先行”路线重排 `spec.md` / `design.md` / `tasks.md`；F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿，逐条 finding 见 `docs/reviews/RETROSPECTIVE.md` 循环 20），F010 已于 2026-09-14 收口为 `done`（实现代码检视循环 25 五轮收敛，`npm run verify:release` 与 Windows CI 全绿，逐条 finding 见 `docs/reviews/RETROSPECTIVE.md` 循环 25），F013 已于 2026-09-14 收口为 `done`（实现代码检视已收敛，`npm run verify:release` 与 Windows CI 全绿，逐条证据见 `docs/reviews/RETROSPECTIVE.md` 循环 26），F012 已于 2026-09-14 完成开发前需求与设计文档检视（循环 24 两轮收敛）并推进为 `ready-for-development`，F011、F014 仍为 `draft` 并处于影响面与开发前审查阶段。F014 是唯一端到端交付 owner。版本范围、顺序与验收旅程
 > 见 `docs/features/0.3/README.md`。
 
 ## v0.2 拆分说明（历史背景，供理解 v0.3 延续的拆分惯例参考）

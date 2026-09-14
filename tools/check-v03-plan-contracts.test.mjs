@@ -1008,12 +1008,13 @@ test("F009-DOC-R2-008: entry and task-list routes never guess an active project"
   verifyForbiddenMutation(documents, forbidden[0]);
 });
 
-test("F009 done status is synchronized across roadmap documents", () => {
+test("v0.3 feature status is synchronized across roadmap documents", () => {
   const documents = [
     read("CLAUDE.md"),
     read("BACKLOG.md"),
     read("docs/features/0.3/README.md"),
     read("docs/features/0.3/F009-v344-frontend-foundation-migration/spec.md"),
+    read("docs/features/0.3/F013-project-skills-foundation/spec.md"),
   ];
   const phrases = [
     'status: done',
@@ -1021,11 +1022,11 @@ test("F009 done status is synchronized across roadmap documents", () => {
     'F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿',
     // F010 closed on 2026-09-14 (cycle 25 converged) and F012 advanced to
     // ready-for-development after its pre-development review (cycle 24, 2
-    // rounds); F013 is now in implementation review and F011/F014 stay draft.
+    // rounds); F013 is now done and F011/F014 stay draft.
     // Lock all of them so dropping any status from every roadmap document
     // fails this gate.
     'F010 已于 2026-09-14 收口为 `done`（实现代码检视循环 25 五轮收敛',
-    'F013 已进入 `review`',
+    'F013 已于 2026-09-14 收口为 `done`（实现代码检视已收敛，`npm run verify:release` 与 Windows CI 全绿',
     'F012 已于 2026-09-14 完成开发前需求与设计文档检视（循环 24 两轮收敛）并推进为 `ready-for-development`',
     'F011、F014 仍为 `draft`',
   ];
@@ -1040,12 +1041,13 @@ test("F009 done status is synchronized across roadmap documents", () => {
     "F010 已进入 `in-progress`",
     "| F012 | 0.3     | Session, Dispatch & Intervention | draft |",
     "F011、F012、F014 仍为 `draft`",
+    "F013 已进入 `review`",
   ];
 
   requirePhrases(documents, phrases);
   forbidPhrases(documents, forbidden);
   // Every phrase is load-bearing: deleting any one (including the F010 done
-  // wording, the F013 review marker, the F012 ready-for-development phrase or
+  // wording, the F013 done marker, the F012 ready-for-development phrase or
   // the remaining-draft statuses) must turn this gate red.
   verifyEachPhraseMutation(documents, phrases);
   verifyForbiddenMutation(documents, forbidden[0]);
