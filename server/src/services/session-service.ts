@@ -124,12 +124,12 @@ export class SessionService {
         .prepare(
           "SELECT * FROM thread_events WHERE thread_id = ? AND type = ? ORDER BY event_sequence DESC LIMIT 20",
         )
-        .all(threadId, ThreadEventType.SessionMessage) as Array<{ payload_json: string; id: string } | ThreadEvent>[];
+        .all(threadId, ThreadEventType.SessionMessage) as Array<{ id: string; payload_json: string }>;
       const replay = recent.find((event) => {
-        const payload = typeof event.payload_json === "string" ? (JSON.parse(event.payload_json) as Record<string, unknown>) : event.payload_json;
+        const payload = JSON.parse(event.payload_json) as Record<string, unknown>;
         return payload?.client_request_id === idempotencyKey;
       });
-      if (replay) return replay as ThreadEvent;
+      if (replay) return this.db.prepare("SELECT * FROM thread_events WHERE id = ?").get(replay.id) as ThreadEvent;
     }
 
     const event = this.threadEventService.write(threadId, ThreadEventType.SessionMessage, ActorType.User, null, {

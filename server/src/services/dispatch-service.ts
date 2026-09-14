@@ -112,6 +112,12 @@ export class DispatchService {
       .all(roomId) as Dispatch[];
   }
 
+  getContextSnapshot(dispatchId: string): unknown {
+    return (
+      this.db.prepare("SELECT * FROM dispatch_context_snapshots WHERE dispatch_id = ?").get(dispatchId) ?? null
+    );
+  }
+
   listAttempts(dispatchId: string): Attempt[] {
     return this.db
       .prepare("SELECT * FROM attempts WHERE dispatch_id = ? ORDER BY seq ASC")
