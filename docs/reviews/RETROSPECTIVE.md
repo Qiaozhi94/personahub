@@ -1554,4 +1554,42 @@ R1-010（删 enabled 短路）、R2-015（locator 判断改成恒真）、R3-018
   的 fail-closed 写入与主目录权限升格旅程已由提交 `64881eb`、`03acebc`、`a4034ff` 固化。
 - **门禁证据**：本地 `npm run verify` 通过；`npm run verify:release` 完整重跑通过（43/43 E2E）；
   Windows CI run `34827741664` 的 Verify 与 E2E 均成功。`004ec75` 仅为 Windows fixture worker 的
-  超时容错测试修正，不改变 F013 业务行为。
+  超时容错测试修正，不改变 F013 业务行为。收口提交 `ecadeda` 的 CI run `34834984601` 的
+  Verify 与 E2E 同样全绿。
+
+**逐条 finding（22 项）**
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F013-CODE-R1-001 | 三层 Scope 交集会让下层重新放大上层写权限 | Critical | correctness | 根因 | original-coding | fixed | 三层 write 改为逐层与上一层 effective write 相交，并受 effective read 约束 | `server/tests/unit/scope-validation.test.ts` | 1 | 2 | authorization-scope-widening |
+| F013-CODE-R1-002 | 大小写探针会覆盖并删除仓库内同名用户文件 | Critical | correctness | 根因 | original-coding | fixed | case probe 使用 randomUUID 与 `wx` 独占创建，只清理本次成功创建的探针 | `server/tests/integration/authorization-recheck.test.ts` | 1 | 2 | destructive-fixed-probe-path |
+| F013-CODE-R1-003 | read_only 授权结果仍可携带整仓 write scope | High | correctness | 根因 | original-coding | fixed | effective access 为 read_only 时强制 write scope 为空 | `server/tests/integration/authorization-recheck.test.ts` | 1 | 2 | contradictory-authorization-contract |
+| F013-CODE-R1-004 | Space 技能列表泄露其他 Space 的私有 Skill | High | correctness | 根因 | original-coding | fixed | `listForSpace` 只返回 global 与当前 Space 私有 Skill，并投影 current revision | `server/tests/integration/skill-space-boundary.test.ts` | 1 | 2 | tenant-boundary-gap |
+| F013-CODE-R1-005 | Space 外的 Skill 可被当作当前冲突组保留方 | High | correctness | 根因 | original-coding | fixed | `resolveConflict` 写入前校验 keepSkillId 属于当前 Space 同名候选组 | `server/tests/integration/skill-space-boundary.test.ts` | 1 | 2 | missing-membership-check |
+| F013-CODE-R1-006 | 重新扫描会撤销用户已完成的 Skill 冲突消解 | High | correctness | 根因 | original-coding | fixed | 新增 `skill_conflict_resolutions` 持久化 winner，扫描时合并仍有效的决策 | `server/tests/integration/skill-conflict.test.ts` | 1 | 2 | lifecycle-transition-not-persistent |
+| F013-CODE-R1-007 | 项目默认 Skill 无法从已有项切换到另一项 | High | correctness | 根因 | original-coding | fixed | 同一事务先撤销旧 default 再 upsert 新值；服务端增加 clear 语义 | `server/tests/integration/skill-space-boundary.test.ts` | 1 | 2 | partial-unique-upsert-order |
+| F013-CODE-R1-008 | 文件页添加参考仓库的批量保留修复缺少原反例回归 | High | test-coverage | 证据缺口 | fix-regression | fixed | 发送完整 primary/reference 集合不再 append 覆盖，并补 primary+reference-A 后新增 B 的批量反例 | `web/src/f009-pages.test.tsx::keeps the full reference set when adding a reference (R1-008 batch regression)` | 1 | 3 | whole-set-api-called-as-append |
+| F013-CODE-R1-009 | 共享机器 read_write 授权防降级分支没有回归覆盖 | High | test-coverage | 证据缺口 | fix-regression | fixed | 添加 reference 前读取既有机器授权、不降级；补已有 read_write 时不调用只读授权用例 | `web/src/f009-pages.test.tsx::does not downgrade an existing machine read_write authorization (R1-009)` | 1 | 3 | authorization-owner-mismatch |
+| F013-CODE-R1-010 | 主仓替换协议可报唯一索引错误或落成零主仓 | High | correctness | 根因 | original-coding | fixed | 预校验集合互斥，事务内先释放旧 primary 再切换并同步 legacy workspace pointer | `server/tests/integration/legacy-compat-projection.test.ts` | 1 | 2 | invalid-whole-set-transition-order |
+| F013-CODE-R1-011 | draft 文件可注入已发布 revision，且文件表允许孤儿 | High | correctness | 根因 | original-coding | fixed | 增加复合外键，UPDATE trigger 同时检查 OLD/NEW 发布态 | `server/tests/integration/skill-files-snapshot.test.ts` | 1 | 2 | mutable-source-behind-immutable-revision |
+| F013-CODE-R1-012 | CLI 下发文件格式仍会丢失语义且可生成无效 YAML | High | correctness | 根因 | fix-regression | fixed | 改用 provider 原生 skills 目录与 `SKILL.md` 格式、YAML 安全序列化、完整 step 结构往返，并写后读回校验 | `server/tests/integration/skill-delivery.test.ts`（+ `skill-revision-schema.test.ts` 附带修复 description 丢弃） | 1 | 3 | test-simulates-itself |
+| F013-CODE-R1-013 | Files 页移除旧入口后仍没有主仓、scope 与完整引用管理能力 | High | correctness | 根因 | spec-drift | fixed | Files tab 成为唯一生产文件入口：绑定/改绑 primary、机器与项目 scope、删除 reference、remote URL，并补真实旅程 | `web/src/f009-pages.test.tsx` + `e2e/tests/f013-space-skills.spec.ts` | 1 | 3 | marked-done-not-implemented |
+| F013-CODE-R1-014 | Skill 详情永远选择最早发布版本而不是 current revision | High | correctness | 根因 | original-coding | fixed | 读取 `skills.current_revision` 并使用受控版本选择器 | `web/src/f013-project-skills.test.tsx` | 1 | 2 | stale-version-projection |
+| F013-CODE-R1-015 | 激活旧版本后无法再创建新 revision | Medium | correctness | 根因 | original-coding | fixed | next version 改取 `MAX(version)+1` | `server/tests/integration/skill-space-boundary.test.ts` | 1 | 2 | version-derived-from-pointer |
+| F013-CODE-R1-016 | Skill ref/version API 接受非 canonical 版本别名 | Medium | correctness | 根因 | original-coding | fixed | 路由与服务统一复用 canonical positive safe integer parser | `server/tests/integration/effective-requirements.test.ts` | 1 | 2 | noncanonical-version-alias |
+| F013-CODE-R1-017 | 能力面详情来源与真实默认切换仍缺精确测试 | Medium | test-coverage | 证据缺口 | fix-regression | fixed | 列表展示 source kind、编组标记与 step count；补详情来源、精确 current version 与真实 A→B 切换用例 | `web/src/f013-project-skills.test.tsx::switches the project default skill through a real A→B reference change (R1-017)` | 1 | 3 | acceptance-asserts-placeholder |
+| F013-CODE-R1-018 | Feature 任务与迁移矩阵仍领先于实际实现 | Medium | quality | 症状 | process-gap | fixed | 按实现证据回写 spec / tasks / BACKLOG / README / CLAUDE / migration matrix | `npm run test:docs`（锁点 50/50） | 1 | 3 | ledger-code-state-drift |
+| F013-CODE-R2-019 | 服务端新增清空默认 Skill，但 Web 无法触发且选择器可能显示陈旧值 | Medium | correctness | 根因 | fix-regression | fixed | mutation 支持 null、选择器改受控 value、异步 refs 返回后同步真实默认值 | `web/src/f013-project-skills.test.tsx::clears the project default skill from the selector (R2-019)`、`::shows the real default once the refs query resolves after mount (R2-019)` | 2 | 3 | unreachable-server-capability |
+| F013-CODE-R2-020 | 全部修复仍堆叠在未提交工作区，缺少逐 finding 可追溯证据 | Medium | quality | 症状 | process-gap | fixed | 拆为 12 个语义提交建立逐 finding 血缘，FIX-log 记录 commit / 回归 / gate | 12 个语义提交（`d53ab9d`–`bbcc8c6`）+ `verify:release` EXIT=0 | 2 | 3 | uncommitted-fix-batch |
+| F013-CODE-R4-001 | 引用清单竞态下整体写入误删绑定 | High | correctness | — | — | fixed | 整体替换类操作在列表未就绪/刷新中时禁用按钮，handler 入口 `assertRefsReady()` 再次 fail-closed（双防线） | `web/src/f009-pages.test.tsx`（延迟 / 失败 / 刷新中三态） | 3 | 4 | — |
+| F013-CODE-R4-002 | 只读机器授权改绑主目录仍显示可写 | High | correctness | — | — | fixed | 状态按项目级 access 与机器级 access 的交集展示；只读时不静默扩权；升级/首次授权均为显式按钮并保留既有机器 scope | `web/src/f009-pages.test.tsx`（2 例）+ `e2e/tests/f013-space-skills.spec.ts` | 3 | 4 | — |
+
+**元数据与模式统计**
+
+- 严重度：Critical 2、High 14、Medium 6；状态：22 项全部 `fixed`（无 tracked / rejected）。
+- 来源：original-coding 12、fix-regression 5、process-gap 2、spec-drift 1、未标注 2（R4 两项）。
+- 轮次：检视 3 轮（首轮 18 项、复检轮 2 项、Codex 复检 2 项）；修复响应 4 轮（`fix_round: 4`）；
+  22 项清零后运行 `verify:release` 与发布 CI 收口。
+- 编号口径：R4-001 / R4-002 来自第三轮检视（Codex 复检会话，其报告未落盘、经用户转达），
+  编号沿用修复日志原文；其余字段均取自 `FIX-log.md` / `CURRENT-code.md`。本表是这两个
+  临时文件删除后的逐条证据落点。
