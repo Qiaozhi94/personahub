@@ -99,6 +99,8 @@ export interface Attempt {
   ended_at: string | null;
 }
 
+/** Flat mirror of the dispatches row (§3.2). The API layer composes an
+ *  ExecutionIdentity view from the frozen flat columns for display. */
 export interface Dispatch {
   id: string;
   room_id: string;
@@ -108,7 +110,12 @@ export interface Dispatch {
   client_request_id: string;
   state: DispatchState;
   purpose: DispatchPurpose;
-  identity: ExecutionIdentity;
+  runtime_id: string;
+  adapter_config_id: string;
+  access_ref: string | null;
+  model: string;
+  depth_raw: string;
+  depth_normalized: "high" | "medium" | "low";
   /** AdapterIdentitySnapshot + runtime_id, frozen at confirm time. */
   identity_snapshot_json: string;
   context_scope: ContextScope;

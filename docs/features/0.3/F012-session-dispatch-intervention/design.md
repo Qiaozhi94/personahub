@@ -574,6 +574,7 @@ Room 不拥有执行状态，Thread 不露出；Dispatch 与 Run 分离，Attemp
 | 路径授权是应用层过滤 | 已如实声明（§7.2），容器 / 受限账户在 v0.7 评估 |
 | `run_usage`（ADR 0017 §5）在 v0.4 才建表 | 本 Feature 保证 `attempts` / `dispatches` 的 ID 与维度字段满足其引用形状，避免 v0.4 回填 |
 | F011 / F013 尚未实现，字段名可能微调 | §4.5 / §4.6 的契约形状冻结，字段名调整不得改变原子 enqueue、未知不独立、poison 不跳过三个不变量 |
+| **独立会话执行的工作区归属未定义**（开工时发现：`runs.issue_id` / `runs.workspace_id` 均为 NOT NULL，schema-v2；FR-007 的「独立会话可执行」需要这两列可空或引入会话工作区概念，而 §3 已冻结不改已发布表） | v0.3 实现按「确认闸」落地：无 Issue 的 Room 允许创建 draft / 撤销 / eligibility 预览，但启动事务解析不到工作区时写 `start_failed`（`RUNTIME_CONTEXT_UNAVAILABLE`）并给出替代路径「转成任务后派工」；转任务后同一 Dispatch 语义已具备（§4.1 转换保留事实）。彻底方案（runs 两列 NULL 化 + 会话工作区）留待 F014 前与用户复核 |
 
 ## 10. 待确认设计问题
 
