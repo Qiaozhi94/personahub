@@ -95,7 +95,7 @@ export function ProjectFilesTab({
     try {
       const resolved = await apiClient.repositories.resolve(source);
       if (resolved.kind !== "local_dir" || !resolved.authorizable || !resolved.real_path) {
-        setMessage("主目录必须是本机可访问的本地目录；远程地址只能作为参考仓库。");
+        setMessage("主目录必须是这台执行机器上可访问的本地目录；远程地址只能作为参考仓库。");
         return;
       }
       const created = await apiClient.repositories.create(source);
@@ -137,7 +137,7 @@ export function ProjectFilesTab({
           ...collection,
           references: [...collection.references, { repository_id: created.repository.id }],
         });
-        setMessage(`已添加远程参考仓库：${resolved.display_name}（需在本机克隆并授权路径后才能用于执行）`);
+        setMessage(`已添加远程参考仓库：${resolved.display_name}（需克隆到执行机器并授权路径后才能用于执行）`);
       } else if (!resolved.authorizable || !resolved.real_path) {
         setMessage(`无法添加：${resolved.unauthorized_reason ?? "路径不可用"}`);
         return;
@@ -202,7 +202,7 @@ export function ProjectFilesTab({
   ): Promise<void> => {
     const machine = detail?.machine_path;
     if (!machine) {
-      setMessage("该仓库尚未在本机授权，无法编辑机器范围。");
+      setMessage("该仓库尚未在这台执行机器上授权，无法编辑机器范围。");
       return;
     }
     setBusy(true);
@@ -343,7 +343,7 @@ function RepositoryRefRow({
 
   const saveMachine = async (): Promise<void> => {
     if (!machine) {
-      setMessage("该仓库尚未在本机授权，无法编辑机器范围。");
+      setMessage("该仓库尚未在这台执行机器上授权，无法编辑机器范围。");
       return;
     }
     await onSaveMachineScope(ref_, detail, {
