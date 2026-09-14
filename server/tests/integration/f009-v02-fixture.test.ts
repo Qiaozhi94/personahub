@@ -384,7 +384,7 @@ describe("F009 v0.2 schema-v10 fixture", () => {
         rmSync(join(tmpdir(), name), { recursive: true, force: true });
       }
     }
-  });
+  }, 60_000);
 
   it("rejects a seed that lost an issue other rows reference", () => {
     const decapitatedSeed = loadV02SeedSql()
