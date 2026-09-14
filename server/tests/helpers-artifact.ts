@@ -67,7 +67,8 @@ export function makeArtifactGraphFixture(runs = 2): ArtifactGraphFixture {
   const agentConfigRepo = new AgentConfigRepository(db);
   const runRepo = new RunRepository(db);
 
-  const project = projectRepo.create("Artifact Provenance", null);
+  const defaultSpace = db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string };
+  const project = projectRepo.create("Artifact Provenance", null, defaultSpace.id);
   const workspace = workspaceRepo.create({
     project_id: project.id,
     local_path: workspaceDir,
@@ -77,6 +78,7 @@ export function makeArtifactGraphFixture(runs = 2): ArtifactGraphFixture {
   });
   projectRepo.updateDefaultWorkspace(project.id, workspace.id, now);
   const issue = issueRepo.create({
+    space_id: project.space_id,
     project_id: project.id,
     workspace_id: workspace.id,
     issue_type: IssueType.Coding,

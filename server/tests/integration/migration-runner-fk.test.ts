@@ -68,9 +68,9 @@ describe("F013 migration orchestration (FK switch / failure recovery / atomic ve
       // 失败路径也必须恢复 ON。
       expect(db.pragma("foreign_keys", { simple: true })).toBe(1);
       // 无"表已改、版本没记"的中间态：v11 已在自身事务提交（v12 在自己的事务里失败），
-      // 停在 CURRENT-1；spaces 表不存在（v12 整体回滚）。
+      // 停在 v11；v13（F010 artifacts）因 v12 未完成而未执行；spaces 表不存在（v12 整体回滚）。
       const version = db.prepare("SELECT MAX(version) AS v FROM schema_version").get() as { v: number };
-      expect(version.v).toBe(CURRENT_SCHEMA_VERSION - 1);
+      expect(version.v).toBe(11);
       const hasOldProjects = db
         .prepare("SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table' AND name='projects'")
         .get() as { c: number };

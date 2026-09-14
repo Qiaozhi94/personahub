@@ -81,6 +81,9 @@ export type Step = {
 const EVIDENCE_NORMALIZATION_OWNER: Record<EvidenceRefKind, string | null> = {
   event: "F004 EvidenceService.resolve（EvidenceResolution.status）",
   file_change_set: "F004 EvidenceService.resolve（EvidenceResolution.status）",
+  // F010 已把 artifact 带入 EvidenceRefKind，但归一化 owner 尚未认领
+  // （design §3 启用条件：F010 或 F014 明确归一化契约后才可用）。
+  artifact: null,
 };
 
 /** @internal 供测试核对认领表与上游域无漂移（编译跟随的运行时断言面）。 */

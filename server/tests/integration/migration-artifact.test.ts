@@ -113,7 +113,8 @@ function buildGraph(db: Database.Database, tempDir: string): { issueId: string; 
   const runRepo = new RunRepository(db);
   const now = new Date().toISOString();
 
-  const project = projectRepo.create("Artifact Graph", null);
+  const defaultSpace = db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string };
+  const project = projectRepo.create("Artifact Graph", null, defaultSpace.id);
   const workspace = workspaceRepo.create({
     project_id: project.id,
     local_path: tempDir,
@@ -123,6 +124,7 @@ function buildGraph(db: Database.Database, tempDir: string): { issueId: string; 
   });
   projectRepo.updateDefaultWorkspace(project.id, workspace.id, now);
   const issue = issueRepo.create({
+    space_id: project.space_id,
     project_id: project.id,
     workspace_id: workspace.id,
     issue_type: IssueType.Coding,

@@ -75,7 +75,8 @@ function seedGraph(db: ReturnType<typeof openDatabase>, workspaceDir: string): F
   const runRepo = new RunRepository(db);
   const now = new Date().toISOString();
 
-  const project = projectRepo.create("Artifact Publication", null);
+  const defaultSpace = db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string };
+  const project = projectRepo.create("Artifact Publication", null, defaultSpace.id);
   const workspace = workspaceRepo.create({
     project_id: project.id,
     local_path: workspaceDir,
@@ -85,6 +86,7 @@ function seedGraph(db: ReturnType<typeof openDatabase>, workspaceDir: string): F
   });
   projectRepo.updateDefaultWorkspace(project.id, workspace.id, now);
   const issue = issueRepo.create({
+    space_id: project.space_id,
     project_id: project.id,
     workspace_id: workspace.id,
     issue_type: IssueType.Coding,
@@ -375,6 +377,7 @@ describe("F010 entity ownership", () => {
     const threadRepo = new ThreadRepository(session.db);
     const first = issueRepo.getById(fixture.graph.issueId)!;
     const otherIssue = issueRepo.create({
+      space_id: first.space_id,
       project_id: first.project_id,
       workspace_id: first.workspace_id,
       issue_type: first.issue_type,

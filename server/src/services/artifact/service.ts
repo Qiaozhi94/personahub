@@ -18,6 +18,7 @@ import type { IssueRepository } from "../../repositories/issue.js";
 import type { ThreadRepository } from "../../repositories/thread.js";
 import type { RunRepository } from "../../repositories/run.js";
 import type { WorkspaceRepository } from "../../repositories/workspace.js";
+import { requireLegacyWorkspaceId } from "../legacy-issue-fields.js";
 import type { ThreadEventService } from "../thread-event.js";
 import type { ArtifactArchive } from "./archive.js";
 import { ArtifactConsumptionLedger, type RecordConsumptionInput } from "./consumption.js";
@@ -415,8 +416,9 @@ export class ArtifactService {
   private workspaceRoot(issueId: string): string {
     const issue = this.deps.issueRepo.getById(issueId);
     if (!issue) throw new AppError(ErrorCode.ISSUE_NOT_FOUND, `Issue not found: ${issueId}`);
-    const workspace = this.deps.workspaceRepo.getById(issue.workspace_id);
-    if (!workspace) throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, `Workspace not found: ${issue.workspace_id}`);
+    const workspaceId = requireLegacyWorkspaceId(issue);
+    const workspace = this.deps.workspaceRepo.getById(workspaceId);
+    if (!workspace) throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, `Workspace not found: ${workspaceId}`);
     return workspace.local_path;
   }
 }
