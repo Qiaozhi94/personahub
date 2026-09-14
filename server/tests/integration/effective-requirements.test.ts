@@ -63,6 +63,9 @@ describe("F013 AC-004: versioned effective requirements", () => {
   it("returns not_found (not throw) for unknown refs", () => {
     expect(services.resolver.resolveEffectiveRequirements("skl_missing@1")).toEqual({ not_found: true });
     expect(services.resolver.resolveEffectiveRequirements("garbage")).toEqual({ not_found: true });
+    expect(services.resolver.resolveEffectiveRequirements("skl_missing@01")).toEqual({ not_found: true });
+    expect(services.resolver.resolveEffectiveRequirements("skl_missing@1e2")).toEqual({ not_found: true });
+    expect(services.resolver.resolveEffectiveRequirements("skl_missing@9007199254740992")).toEqual({ not_found: true });
   });
 
   it("upgrade / disable / conflict do not change the old ref's resolution (NFR-001)", () => {

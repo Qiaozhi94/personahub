@@ -56,6 +56,12 @@ interface RevisionRow {
   created_at: string;
 }
 
+export function assertCanonicalVersion(version: number): void {
+  if (!Number.isSafeInteger(version) || version <= 0) {
+    throw new AppError(ErrorCode.SKILL_REVISION_NOT_FOUND, "Skill revision version must be a positive safe integer.");
+  }
+}
+
 function mapRevision(row: RevisionRow): SkillRevision {
   let steps: unknown = null;
   if (row.steps_json) {
@@ -171,7 +177,11 @@ export class SkillRegistry {
     };
   }
 
-  getRevisionFiles(skillId: string, version: number): Array<{ rel_path: string; content_hash: string; size_bytes: number }> {
+  getRevisionFiles(
+    skillId: string,
+    version: number,
+  ): Array<{ rel_path: string; content_hash: string; size_bytes: number }> {
+    assertCanonicalVersion(version);
     this.assertRevisionPublished(skillId, version);
     return this.db
       .prepare(
@@ -185,10 +195,17 @@ export class SkillRegistry {
    * SKILL_FILE_HASH_MISMATCH，不返回可疑正文（design §3）。
    * 源目录事后失联不影响可读性——正文在激活时已入库。
    */
-  readRevisionFile(skillId: string, version: number, relPath: string): { rel_path: string; content: Buffer; content_hash: string } {
+  readRevisionFile(
+    skillId: string,
+    version: number,
+    relPath: string,
+  ): { rel_path: string; content: Buffer; content_hash: string } {
+    assertCanonicalVersion(version);
     this.assertRevisionPublished(skillId, version);
     const row = this.db
-      .prepare("SELECT rel_path, content, content_hash FROM skill_revision_files WHERE skill_id = ? AND version = ? AND rel_path = ?")
+      .prepare(
+        "SELECT rel_path, content, content_hash FROM skill_revision_files WHERE skill_id = ? AND version = ? AND rel_path = ?",
+      )
       .get(skillId, version, relPath) as { rel_path: string; content: Buffer; content_hash: string } | undefined;
     if (!row) {
       throw new AppError(ErrorCode.SKILL_REVISION_NOT_FOUND, "Skill revision file not found.");
@@ -296,6 +313,7 @@ export class SkillRegistry {
   }
 
   activate(skillId: string, version: number): void {
+    assertCanonicalVersion(version);
     this.db.transaction(() => {
       const row = this.db
         .prepare("SELECT published_at FROM skill_revisions WHERE skill_id = ? AND version = ?")

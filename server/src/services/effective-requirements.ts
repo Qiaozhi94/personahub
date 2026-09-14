@@ -16,12 +16,19 @@ export interface EffectiveRequirements {
 
 export type EffectiveRequirementsResult = EffectiveRequirements | { not_found: true };
 
+export function parseCanonicalVersion(value: unknown): number | null {
+  const text = typeof value === "number" ? String(value) : value;
+  if (typeof text !== "string" || !/^[1-9]\d*$/.test(text)) return null;
+  const version = Number(text);
+  return Number.isSafeInteger(version) ? version : null;
+}
+
 export function parseSkillRef(ref: string): { skill_id: string; version: number } | null {
   const atIndex = ref.lastIndexOf("@");
   if (atIndex <= 0 || atIndex === ref.length - 1) return null;
   const skillId = ref.slice(0, atIndex);
-  const version = Number(ref.slice(atIndex + 1));
-  if (!Number.isInteger(version) || version <= 0) return null;
+  const version = parseCanonicalVersion(ref.slice(atIndex + 1));
+  if (version === null) return null;
   return { skill_id: skillId, version };
 }
 
@@ -38,9 +45,7 @@ export class EffectiveRequirementsResolver {
     if (!parsed) return { not_found: true };
 
     const row = this.db
-      .prepare(
-        "SELECT * FROM skill_revisions WHERE skill_id = ? AND version = ? AND published_at IS NOT NULL",
-      )
+      .prepare("SELECT * FROM skill_revisions WHERE skill_id = ? AND version = ? AND published_at IS NOT NULL")
       .get(parsed.skill_id, parsed.version) as
       | { steps_json: string | null; capability_tags_json: string; completion_requirements_json: string | null }
       | undefined;
@@ -57,10 +62,7 @@ export class EffectiveRequirementsResolver {
       { requireCompletionEvidence: false },
     );
 
-    const all = [
-      ...(content.steps ?? []).flatMap((step) => step.requirements),
-      ...content.completionRequirements,
-    ];
+    const all = [...(content.steps ?? []).flatMap((step) => step.requirements), ...content.completionRequirements];
     const merged = mergeRequirements(all);
 
     return {

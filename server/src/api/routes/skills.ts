@@ -7,6 +7,7 @@ import type { EffectiveRequirementsResolver } from "../../services/effective-req
 import type { SkillDeliveryService } from "../../services/skill-delivery.js";
 import type { SpaceService } from "../../services/space.js";
 import type { ProjectService } from "../../services/project.js";
+import { parseCanonicalVersion } from "../../services/effective-requirements.js";
 
 export interface SkillRoutesOptions {
   skillRegistry: SkillRegistry;
@@ -61,7 +62,10 @@ export const skillRoutes: FastifyPluginAsync<SkillRoutesOptions> = async (app, o
 
   app.get("/api/skills/:skill_id/revisions/:version", async (request) => {
     const { skill_id, version } = request.params as { skill_id: string; version: string };
-    const parsed = skillRegistry.getRevision(skill_id, Number(version));
+    const canonicalVersion = parseCanonicalVersion(version);
+    if (canonicalVersion === null)
+      throw new AppError(ErrorCode.REQUEST_BODY_INVALID, "Version must be a canonical positive integer.");
+    const parsed = skillRegistry.getRevision(skill_id, canonicalVersion);
     return {
       revision: parsed.revision,
       steps: parsed.content.steps ?? [],
@@ -72,20 +76,31 @@ export const skillRoutes: FastifyPluginAsync<SkillRoutesOptions> = async (app, o
   // 只读文件清单 + hash（FR-008 详情下钻）。
   app.get("/api/skills/:skill_id/revisions/:version/files", async (request) => {
     const { skill_id, version } = request.params as { skill_id: string; version: string };
-    return { files: skillRegistry.getRevisionFiles(skill_id, Number(version)) };
+    const canonicalVersion = parseCanonicalVersion(version);
+    if (canonicalVersion === null)
+      throw new AppError(ErrorCode.REQUEST_BODY_INVALID, "Version must be a canonical positive integer.");
+    return { files: skillRegistry.getRevisionFiles(skill_id, canonicalVersion) };
   });
 
   // 按 adapter 的下发事实（FR-008）：pending / failed 都必须可见。
   app.get("/api/skills/:skill_id/revisions/:version/delivery", async (request) => {
     const { skill_id, version } = request.params as { skill_id: string; version: string };
-    return { deliveries: delivery.list(skill_id, Number(version)) };
+    const canonicalVersion = parseCanonicalVersion(version);
+    if (canonicalVersion === null)
+      throw new AppError(ErrorCode.REQUEST_BODY_INVALID, "Version must be a canonical positive integer.");
+    return { deliveries: delivery.list(skill_id, canonicalVersion) };
   });
 
   // version 走 query 而非 path segment，避免 `@` 在 path 中的编码歧义。
   app.get("/api/skills/:skill_id/effective-requirements", async (request) => {
     const { skill_id } = request.params as { skill_id: string };
     const query = request.query as { version?: string };
-    const version = Number(query.version ?? skillRegistry.getSkillRow(skill_id).current_revision);
+    const version =
+      query.version === undefined
+        ? skillRegistry.getSkillRow(skill_id).current_revision
+        : parseCanonicalVersion(query.version);
+    if (version === null)
+      throw new AppError(ErrorCode.REQUEST_BODY_INVALID, "Version must be a canonical positive integer.");
     const result = resolver.resolveEffectiveRequirements(`${skill_id}@${version}`);
     if ("not_found" in result) {
       return { not_found: true };
