@@ -10,7 +10,10 @@ type Room = { id: string; title: string };
 
 test("F012: a migrated room deep-links to a working session surface and survives refresh", async ({ page }) => {
   await page.goto("/tasks");
-  const rooms = await page.evaluate(async () => (await fetch("/api/rooms")).json() as { rooms: Room[] });
+  const rooms = await page.evaluate(async (): Promise<{ rooms: Room[] }> => {
+    const body = (await fetch("/api/rooms")).json() as unknown as { rooms: Room[] };
+    return body;
+  });
   expect(rooms.rooms.length).toBeGreaterThan(0);
 
   const room = rooms.rooms[0]!;
