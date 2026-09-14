@@ -60,6 +60,17 @@ export function ProjectFilesTab({
   const refs = refsQuery.data?.references ?? [];
   const primary = refs.find((ref) => ref.role === "primary") ?? null;
   const references = refs.filter((ref) => ref.role === "reference");
+  // 整体替换（PUT projects/:id/repositories）只有在引用列表成功加载且不在刷新中时
+  // 才允许执行：否则空数组快照会把服务端既有引用整体删掉。
+  const refsReady = refsQuery.isSuccess && !refsQuery.isFetching;
+
+  const assertRefsReady = (): boolean => {
+    if (!refsReady) {
+      setMessage("仓库引用尚未加载成功，请稍后重试。");
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     if (!primaryEdited.current && !primary && legacyWorkspacePath) {
@@ -90,6 +101,7 @@ export function ProjectFilesTab({
   const bindPrimary = async (): Promise<void> => {
     const source = primarySource.trim();
     if (source === "") return;
+    if (!assertRefsReady()) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -126,6 +138,7 @@ export function ProjectFilesTab({
   const addReference = async (): Promise<void> => {
     const source = referenceSource.trim();
     if (source === "") return;
+    if (!assertRefsReady()) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -164,6 +177,7 @@ export function ProjectFilesTab({
   };
 
   const removeReference = async (ref: ProjectRepositoryRef): Promise<void> => {
+    if (!assertRefsReady()) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -182,6 +196,7 @@ export function ProjectFilesTab({
   };
 
   const saveProjectScope = async (repositoryId: string, scope: Scope): Promise<void> => {
+    if (!assertRefsReady()) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -228,6 +243,7 @@ export function ProjectFilesTab({
               ref_={primary}
               legacyWorkspacePath={legacyWorkspacePath}
               busy={busy}
+              refsReady={refsReady}
               onRemove={null}
               onSaveMachineScope={saveMachineScope}
               onSaveProjectScope={saveProjectScope}
@@ -251,7 +267,7 @@ export function ProjectFilesTab({
             type="button"
             aria-label={primary ? "改绑主目录" : "绑定主目录"}
             onClick={() => void bindPrimary()}
-            disabled={busy || primarySource.trim() === ""}
+            disabled={busy || !refsReady || primarySource.trim() === ""}
           >
             {primary ? "改绑主目录" : "绑定主目录"}
           </button>
@@ -268,6 +284,7 @@ export function ProjectFilesTab({
                 ref_={ref}
                 legacyWorkspacePath={null}
                 busy={busy}
+                refsReady={refsReady}
                 onRemove={removeReference}
                 onSaveMachineScope={saveMachineScope}
                 onSaveProjectScope={saveProjectScope}
@@ -289,7 +306,7 @@ export function ProjectFilesTab({
             type="button"
             aria-label="添加参考仓库"
             onClick={() => void addReference()}
-            disabled={busy || referenceSource.trim() === ""}
+            disabled={busy || !refsReady || referenceSource.trim() === ""}
           >
             {busy ? "识别中…" : "添加参考仓库"}
           </button>
@@ -309,6 +326,7 @@ function RepositoryRefRow({
   ref_,
   legacyWorkspacePath,
   busy,
+  refsReady,
   onRemove,
   onSaveMachineScope,
   onSaveProjectScope,
@@ -317,6 +335,7 @@ function RepositoryRefRow({
   ref_: ProjectRepositoryRef;
   legacyWorkspacePath: string | null | undefined;
   busy: boolean;
+  refsReady: boolean;
   onRemove: ((ref: ProjectRepositoryRef) => Promise<void>) | null;
   onSaveMachineScope: (ref: ProjectRepositoryRef, detail: RepoDetail | undefined, scope: Scope) => Promise<void>;
   onSaveProjectScope: (repositoryId: string, scope: Scope) => Promise<void>;
@@ -430,7 +449,7 @@ function RepositoryRefRow({
           type="button"
           aria-label={`保存项目范围 ${ref_.repository_id}`}
           onClick={() => void saveProject()}
-          disabled={busy}
+          disabled={busy || !refsReady}
         >
           保存项目范围
         </button>
@@ -440,7 +459,7 @@ function RepositoryRefRow({
             type="button"
             aria-label={`删除参考仓库 ${ref_.repository_id}`}
             onClick={() => void onRemove(ref_)}
-            disabled={busy}
+            disabled={busy || !refsReady}
           >
             删除参考仓库
           </button>

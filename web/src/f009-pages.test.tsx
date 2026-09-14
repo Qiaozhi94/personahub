@@ -312,6 +312,80 @@ describe("ProjectDetailPage (A003/F013)", () => {
     expect(apiClient.repositories.authorize).not.toHaveBeenCalled();
   });
 
+  it("blocks whole-set writes while the refs list is still loading (R4-001 delayed query)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockImplementation(() => new Promise<never>(() => {}));
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByText("尚未绑定主目录。");
+    await user.type(screen.getByLabelText("主目录路径"), "/repo/held");
+    await user.type(screen.getByLabelText("添加代码仓"), "/repo/held");
+    const bindButton = screen.getByRole("button", { name: "绑定主目录" });
+    const addButton = screen.getByRole("button", { name: "添加参考仓库" });
+    expect(bindButton).toBeDisabled();
+    expect(addButton).toBeDisabled();
+
+    fireEvent.click(bindButton);
+    fireEvent.click(addButton);
+    expect(apiClient.repositories.setForProject).not.toHaveBeenCalled();
+    expect(apiClient.repositories.resolve).not.toHaveBeenCalled();
+  });
+
+  it("blocks whole-set writes when the refs query failed (R4-001 failed query)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockRejectedValue({ code: "INTERNAL_ERROR", message: "boom" });
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByText("尚未添加参考仓库。");
+    await user.type(screen.getByLabelText("添加代码仓"), "/repo/held");
+    const addButton = screen.getByRole("button", { name: "添加参考仓库" });
+    expect(addButton).toBeDisabled();
+    fireEvent.click(addButton);
+    expect(apiClient.repositories.setForProject).not.toHaveBeenCalled();
+  });
+
+  it("disables whole-set writes while the refs list is refetching (R4-001 refreshing)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject)
+      .mockResolvedValueOnce({
+        project_id: "prj_a",
+        references: [repoRef("repo_primary", "primary", { legacy_workspace_id: "ws_a" })],
+      } as never)
+      .mockImplementation(() => new Promise<never>(() => {}));
+    vi.mocked(apiClient.repositories.get).mockImplementation(async (repositoryId: string) => ({
+      repository: repository(repositoryId, repositoryId),
+      machine_path: null,
+    }));
+    vi.mocked(apiClient.repositories.resolve).mockResolvedValue({
+      kind: "local_dir",
+      display_name: "参考 B",
+      real_path: "/repo/reference-b",
+      git_remote_url: null,
+      git_identity: null,
+      authorizable: true,
+    });
+    vi.mocked(apiClient.repositories.create).mockResolvedValue({ repository: repository("repo_ref_b", "参考 B") });
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByTestId("repo-ref-repo_primary");
+    expect(screen.getByRole("button", { name: "保存项目范围 repo_primary" })).toBeEnabled();
+
+    await user.type(screen.getByLabelText("添加代码仓"), "/repo/reference-b");
+    await user.click(screen.getByRole("button", { name: "添加参考仓库" }));
+
+    await waitFor(() => expect(apiClient.repositories.setForProject).toHaveBeenCalled());
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "保存项目范围 repo_primary" })).toBeDisabled();
+    });
+    expect(screen.getByRole("button", { name: "添加参考仓库" })).toBeDisabled();
+  });
+
   it("binds a primary directory for a project that has none (R1-013)", async () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.projects.get).mockResolvedValue({
