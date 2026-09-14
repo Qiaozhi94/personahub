@@ -44,11 +44,11 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 
 ## 3. 验证与验收任务
 
-- [ ] T020 (`AC-001`, `AC-003`, `AC-006`): 复跑 adapter evidence fixture、真实 CLI resume / 冷启动与原生 memory 隔离验证，并核对 unsupported / unverified eligibility 后果与遮罩。 — verify: `npm test`
-- [ ] T021 (`AC-002`, `AC-004`): 完成 cancel / claim、三层 pause / claim 并发，过期 starting lease、kill/restart 与恢复集成测试。 — verify: `npm test --workspace server`
-- [ ] T022 (`AC-007`): 完成 outbox 原子 enqueue、worker 崩溃重投、consumer ack 幂等与 poison 诊断的集成与重启测试。 — verify: `npm test --workspace server`
-- [ ] T023 (`AC-008`): 完成验收锁与路径授权复核的集成测试，覆盖两条启动路径与任务级范围只能收紧。 — verify: `npm test --workspace server`
-- [ ] T024 (`AC-005`): 完成 Playwright 派工、撤销、独立会话、会话消息、介入和运行时旅程。 — verify: `npm run test:e2e`
+- [x] T020 (`AC-001`, `AC-003`, `AC-006`): 复跑 adapter evidence fixture、真实 CLI resume / 冷启动与原生 memory 隔离验证，并核对 unsupported / unverified eligibility 后果与遮罩。 — verify: `npm test`
+- [x] T021 (`AC-002`, `AC-004`): 完成 cancel / claim、三层 pause / claim 并发，过期 starting lease、kill/restart 与恢复集成测试。 — verify: `npm test --workspace server`
+- [x] T022 (`AC-007`): 完成 outbox 原子 enqueue、worker 崩溃重投、consumer ack 幂等与 poison 诊断的集成与重启测试。 — verify: `npm test --workspace server`
+- [x] T023 (`AC-008`): 完成验收锁与路径授权复核的集成测试，覆盖两条启动路径与任务级范围只能收紧。 — verify: `npm test --workspace server`
+- [x] T024 (`AC-005`): 完成 Playwright 派工、撤销、独立会话、会话消息、介入和运行时旅程。 — verify: `npm run test:e2e`
 - [ ] T025 (`AC-001`, `AC-004`, `AC-005`): 逐行核对 `migration-matrix.md` 中 owner 为 F012 的 18 行（P004、P006、P007、P010、A006-A015、A025-A028）的 `delete_when`，确认旧写入口不可达后更新矩阵的 `implementation_status` 与证据。 — verify: `npm run test:docs`
 - [ ] T026 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`, `AC-006`, `AC-007`, `AC-008`): 运行发布质量门。 — verify: `npm run verify:release`
 

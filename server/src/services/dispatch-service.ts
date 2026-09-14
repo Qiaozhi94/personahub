@@ -35,7 +35,7 @@ import type { DispatchGateService } from "./dispatch-gate-service.js";
 import type { ContextAssembler, AssembledContext } from "./context-assembler.js";
 import type { AgentConfigRepository } from "../repositories/agent-config.js";
 import type { RunRepository } from "../repositories/run.js";
-import { decideStartMode } from "./context-assembler.js";
+import { decideStartMode, DispatchContextError } from "./context-assembler.js";
 
 export interface DispatchConfirmInput {
   roomId: string;
@@ -326,6 +326,9 @@ export class DispatchService {
       });
       this.createQueuedRun(dispatch, runId);
     } catch (error) {
+      if (error instanceof DispatchContextError) {
+        return this.recordStartFailed(dispatch, error.reasonCode, error.message);
+      }
       if (error instanceof AppError) {
         return this.recordStartFailed(dispatch, error.code, error.message);
       }

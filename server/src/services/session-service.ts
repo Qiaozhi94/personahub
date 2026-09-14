@@ -110,7 +110,18 @@ export class SessionService {
           )
           .all(threadId, cap) as ThreadEvent[]);
     const oldest = rows.length > 0 ? rows[rows.length - 1].event_sequence : null;
-    return { room, messages: rows.reverse(), nextCursor: oldest !== null && oldest > 1 ? oldest : null };
+    // Normalize the raw rows' payload_json string into an object so clients
+    // can read message bodies without each consumer re-parsing.
+    const messages: ThreadEvent[] = rows.reverse().map((row) => {
+      let payload: Record<string, unknown>;
+      try {
+        payload = JSON.parse(String(row.payload_json)) as Record<string, unknown>;
+      } catch {
+        payload = {};
+      }
+      return { ...row, payload_json: payload };
+    });
+    return { room, messages, nextCursor: oldest !== null && oldest > 1 ? oldest : null };
   }
 
   appendMessage(roomId: string, body: string, idempotencyKey: string | null): ThreadEvent {

@@ -80,6 +80,11 @@ export const f012Routes: FastifyPluginAsync<F012RoutesOptions> = async (app, opt
     return { room };
   });
 
+  app.get("/api/rooms", async (request) => {
+    const query = parseRequestBody(z.object({ issue_id: z.string().optional() }), request.query ?? {});
+    return { rooms: sessionService.listRooms(query.issue_id ?? null) };
+  });
+
   app.get("/api/rooms/:roomId", async (request) => {
     const { roomId } = request.params as { roomId: string };
     const query = parseRequestBody(z.object({ before: z.coerce.number().optional() }), request.query ?? {});
