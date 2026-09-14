@@ -83,6 +83,38 @@ test("project tabs: files tab binds a primary directory, manages reference scope
   }
 });
 
+test("project tabs: read-only reference promoted to primary shows effective access and upgrades explicitly", async ({
+  page,
+}) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ph-e2e-promote-"));
+  const base = path.basename(dir);
+  try {
+    await page.goto("/projects");
+    await page.getByRole("button", { name: "新建项目" }).click();
+    await page.getByLabel("Name").fill("E2E Promotion Project");
+    await page.getByRole("button", { name: /^create$/i }).click();
+    await expect(page.getByRole("heading", { name: "E2E Promotion Project" })).toBeVisible();
+
+    // 先作为只读参考仓库授权（机器级 read_only）。
+    await page.getByLabel("添加代码仓").fill(dir);
+    await page.getByRole("button", { name: "添加参考仓库" }).click();
+    await expect(page.getByText(new RegExp(`参考仓库 · .*${base}`))).toBeVisible();
+
+    // 改绑为主目录：不得静默扩权，状态按有效权限显示为只读。
+    await page.getByLabel("主目录路径").fill(dir);
+    await page.getByRole("button", { name: "绑定主目录" }).click();
+    await expect(page.getByText(/只读（机器授权为只读）/)).toBeVisible();
+    await expect(page.getByText(/主目录 · .*只读/)).toBeVisible();
+
+    // 显式升级后才变为可写。
+    await page.getByRole("button", { name: /^升级机器授权为可写/ }).click();
+    await expect(page.getByText(/已升级机器授权为可写/)).toBeVisible();
+    await expect(page.getByText(/主目录 · .*可写/)).toBeVisible();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("project tabs: skills tab keeps a default-skill reference, no copied content", async ({ page }) => {
   await page.goto("/projects/prj_v02_alpha/skills");
   await expect(page.getByText(/尚未选择默认 Skill|默认 Skill：/)).toBeVisible();
