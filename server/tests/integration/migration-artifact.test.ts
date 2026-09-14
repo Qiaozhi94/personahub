@@ -20,14 +20,14 @@ import {
   RunStatus,
 } from "@personahub/shared/types";
 
-// F010 T002 (AC-001): schema v12 adds the artifact tables. Covers reaching the
-// head version, idempotent re-application, the real v11 -> v12 upgrade path
+// F010 T002 (AC-001): schema v13 adds the artifact tables. Covers reaching the
+// head version, idempotent re-application, the real v12 -> v13 upgrade path
 // with pre-existing rows staying readable, the three reverse-lookup indexes,
 // and the DB-layer invariants the design freezes: (artifact_id, idempotency_key)
 // uniqueness, inline/file locator mutual exclusion, consumption PK granularity
 // with its composite FK, and the maintenance-lease CAS.
 
-const V12_TABLES = [
+const V13_TABLES = [
   "artifacts",
   "artifact_revisions",
   "artifact_consumptions",
@@ -35,19 +35,19 @@ const V12_TABLES = [
   "artifact_maintenance_leases",
 ];
 
-const V12_INDEXES = ["idx_artifact_consumptions_run", "idx_artifacts_issue", "idx_artifact_evidence_links_ref"];
+const V13_INDEXES = ["idx_artifact_consumptions_run", "idx_artifacts_issue", "idx_artifact_evidence_links_ref"];
 
-function undoV12(db: Database.Database): void {
-  for (const index of V12_INDEXES) {
+function undoV13(db: Database.Database): void {
+  for (const index of V13_INDEXES) {
     db.exec(`DROP INDEX IF EXISTS ${index}`);
   }
-  for (const table of V12_TABLES) {
+  for (const table of V13_TABLES) {
     db.exec(`DROP TABLE IF EXISTS ${table}`);
   }
-  db.prepare("DELETE FROM schema_version WHERE version = 12").run();
+  db.prepare("DELETE FROM schema_version WHERE version = 13").run();
 }
 
-describe("F010 schema v12 migration", () => {
+describe("F010 schema v13 migration", () => {
   let db: Database.Database;
 
   beforeEach(() => {
@@ -61,10 +61,10 @@ describe("F010 schema v12 migration", () => {
 
   it("fresh install reaches the head version", () => {
     applyMigrations(db);
-    expect(CURRENT_SCHEMA_VERSION).toBe(12);
+    expect(CURRENT_SCHEMA_VERSION).toBe(13);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
     expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
-    for (const table of V12_TABLES) {
+    for (const table of V13_TABLES) {
       expect(db.prepare(`SELECT name FROM sqlite_master WHERE name = ?`).get(table)).toBeTruthy();
     }
   });
@@ -72,30 +72,29 @@ describe("F010 schema v12 migration", () => {
   it("is idempotent — running twice stays at the head version", () => {
     applyMigrations(db);
     applyMigrations(db);
-    const row = db.prepare("SELECT COUNT(*) AS c FROM schema_version WHERE version = 12").get() as { c: number };
+    const row = db.prepare("SELECT COUNT(*) AS c FROM schema_version WHERE version = 13").get() as { c: number };
     expect(row.c).toBe(1);
   });
 
-  it("upgrades a real v11 database forward-only and keeps existing rows readable", () => {
+  it("upgrades a real v12 database forward-only and keeps existing rows readable", () => {
     applyMigrations(db);
-    undoV12(db);
+    undoV13(db);
 
-    // A row that predates v12: it must survive the upgrade unchanged and readable.
-    db.prepare("INSERT INTO projects (id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)").run(
-      "prj_legacy",
-      "Legacy",
-      null,
-      "2026-01-01T00:00:00Z",
-      "2026-01-01T00:00:00Z",
-    );
+    // A row that predates v13 (written against the v12 schema, where F013
+    // already made projects.space_id NOT NULL): it must survive the upgrade
+    // unchanged and readable.
+    const defaultSpace = db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string };
+    db.prepare(
+      "INSERT INTO projects (id, name, description, space_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("prj_legacy", "Legacy", null, defaultSpace.id, "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z");
 
     applyMigrations(db);
 
     const legacy = db.prepare("SELECT name FROM projects WHERE id = 'prj_legacy'").get() as { name: string };
     expect(legacy.name).toBe("Legacy");
     const version = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number };
-    expect(version.v).toBe(12);
-    for (const index of V12_INDEXES) {
+    expect(version.v).toBe(13);
+    for (const index of V13_INDEXES) {
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = ?").get(index)).toBeTruthy();
     }
   });

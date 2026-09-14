@@ -9,6 +9,7 @@ import type { RunDispatchService } from "../../services/run-dispatch.js";
 import { IssueStatus, RunStatus } from "@personahub/shared/types";
 import { AppError } from "../errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
+import { requireLegacyWorkspaceId } from "../../services/legacy-issue-fields.js";
 
 export interface ValidationRoutesOptions {
   validationQueryService: ValidationQueryService;
@@ -87,7 +88,7 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
     const existingValidator = runRepo.getValidatorRunByRound(issue_id, currentRound);
     if (existingValidator) {
       if (existingValidator.status === RunStatus.Queued) {
-        await runDispatchService.drainWorkspace(issue.workspace_id);
+        await runDispatchService.drainWorkspace(requireLegacyWorkspaceId(issue));
         return { run: runRepo.getById(existingValidator.id)! };
       }
       if (existingValidator.status === RunStatus.Completed ||
@@ -120,7 +121,7 @@ export const validationRoutes: FastifyPluginAsync<ValidationRoutesOptions> = asy
         "Could not create validator run.",
       );
     }
-    await runDispatchService.drainWorkspace(issue.workspace_id);
+    await runDispatchService.drainWorkspace(requireLegacyWorkspaceId(issue));
     return { run: claimed.run };
   });
 };

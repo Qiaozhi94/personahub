@@ -27,6 +27,7 @@ const TIMESTAMP = "2026-07-16T00:00:00.000Z";
 function issueWithThread(id: string, title: string, status: IssueStatus) {
   return {
     id,
+    space_id: "spc_1",
     project_id: "prj_a",
     workspace_id: "ws_a",
     primary_thread_id: `thr_${id}`,
@@ -66,6 +67,9 @@ function project(id: string, name: string) {
     default_workspace_id: null,
     default_coordinator_agent_id: null,
     default_adapter_config_id: null,
+    space_id: "spc_1",
+    state: "active" as const,
+    archived_at: null,
     created_at: TIMESTAMP,
     updated_at: TIMESTAMP,
   };

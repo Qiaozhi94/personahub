@@ -29,13 +29,15 @@ test("BC-070/BC-007: the rail is the only primary navigation, grouped daily abov
   await expect(nav).toBeVisible();
 
   const labels = await nav.locator("button > span").allTextContents();
-  expect(labels).toEqual(["任务", "项目", "运行时", "设置"]);
+  // F013 首次注册"能力"槽位。
+  expect(labels).toEqual(["任务", "项目", "能力", "运行时", "设置"]);
   // Daily entries (任务, 项目) come before low-frequency ones (运行时, 设置).
   expect(labels.indexOf("任务")).toBeLessThan(labels.indexOf("运行时"));
   expect(labels.indexOf("项目")).toBeLessThan(labels.indexOf("设置"));
 
   // No other landmark duplicates primary navigation.
-  for (const name of ["会话", "自动化", "记忆", "能力", "统计"]) {
+  for (const name of ["会话", "自动化", "记忆", "统计"]) {
+    // 能力 已由 F013 注册
     await expect(page.getByRole("button", { name: new RegExp(`^${name}$`) })).toHaveCount(0);
   }
 });

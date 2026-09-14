@@ -17,8 +17,8 @@ import { useLocation } from "@/app/router";
 // surfaces have no control, and the rail groups daily entries above
 // low-frequency entries (BC-007/BC-070).
 
-const ENABLED_LABELS = ["任务", "项目", "运行时", "设置"];
-const NOT_REGISTERED_LABELS = ["会话", "自动化", "记忆", "能力", "统计"];
+const ENABLED_LABELS = ["任务", "项目", "能力", "运行时", "设置"];
+const NOT_REGISTERED_LABELS = ["会话", "自动化", "记忆", "统计"];
 
 function renderShell(path = "/projects"): ReturnType<typeof render> {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -49,12 +49,14 @@ describe("M1 SurfaceRegistry manifest", () => {
     ]);
   });
 
-  it("enables exactly tasks, projects, runtime and settings with real routes", () => {
+  it("enables exactly tasks, projects, runtime, settings and capabilities (F013) with real routes", () => {
     const enabled = SURFACE_REGISTRY.filter((surface) => surface.state === "enabled");
-    expect(enabled.map((surface) => surface.id)).toEqual(["tasks", "projects", "runtime", "settings"]);
+    // F013 首次注册"能力"槽位（design §6）；其余保持 M1 状态。
+    expect(enabled.map((surface) => surface.id)).toEqual(["tasks", "projects", "capabilities", "runtime", "settings"]);
     expect(enabled.map((surface) => surface.route)).toEqual([
       "/tasks",
       "/projects",
+      "/capabilities",
       "/runtime",
       "/settings/system-diagnostics",
     ]);
@@ -98,7 +100,7 @@ describe("ApplicationShell rail", () => {
     renderShell("/tasks");
     const nav = screen.getByRole("navigation", { name: "工作面" });
     const labels = Array.from(nav.querySelectorAll("button > span")).map((span) => span.textContent);
-    expect(labels).toEqual(["任务", "项目", "运行时", "设置"]);
+    expect(labels).toEqual(["任务", "项目", "能力", "运行时", "设置"]);
   });
 
   it("highlights the active surface for the current URL", () => {
@@ -129,6 +131,9 @@ describe("Command palette (BC-030)", () => {
           default_workspace_id: null,
           default_coordinator_agent_id: null,
           default_adapter_config_id: null,
+          space_id: "spc_1",
+          state: "active" as const,
+          archived_at: null,
           created_at: "2026-07-01T08:00:00.000Z",
           updated_at: "2026-07-01T08:00:00.000Z",
         },

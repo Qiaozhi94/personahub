@@ -6,7 +6,7 @@ import { AdapterStatus, AdapterAuthType, AgentCapability } from "@personahub/sha
 
 function insertProject(db: Database.Database, id: string): void {
   const now = new Date().toISOString();
-  db.prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)").run(id, id, now, now);
+  db.prepare("INSERT INTO projects (id, name, space_id, created_at, updated_at) VALUES (?, ?, (SELECT id FROM spaces WHERE is_default = 1), ?, ?)").run(id, id, now, now);
 }
 
 // T017: AgentConfigRepository's internal record (AgentConfigRecord) carries

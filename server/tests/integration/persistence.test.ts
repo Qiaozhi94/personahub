@@ -17,6 +17,9 @@ import { WorkspaceService } from "../../src/services/workspace.js";
 import { IssueService } from "../../src/services/issue.js";
 import { ThreadService } from "../../src/services/thread.js";
 import { mkdirSync } from "node:fs";
+import { SpaceRepository } from "../../src/repositories/space.js";
+import { AuditService } from "../../src/services/audit.js";
+import { AdminAuditEventRepository } from "../../src/repositories/admin-audit-event.js";
 
 describe("Persistence / Restart Recovery", () => {
   let dbPath: string;
@@ -38,6 +41,8 @@ describe("Persistence / Restart Recovery", () => {
 
   function createServices(db: Database.Database) {
     const projectRepo = new ProjectRepository(db);
+    const spaceRepo = new SpaceRepository(db);
+    const auditService = new AuditService(new AdminAuditEventRepository(db));
     const workspaceRepo = new WorkspaceRepository(db);
     const issueRepo = new IssueRepository(db);
     const threadRepo = new ThreadRepository(db);
@@ -54,9 +59,9 @@ describe("Persistence / Restart Recovery", () => {
       threadEventRepo,
       workflowTemplateRepo,
       validationPolicyRepo,
-      projectService: new ProjectService(projectRepo, workspaceRepo),
+      projectService: new ProjectService(projectRepo, workspaceRepo, spaceRepo, auditService, db),
       workspaceService: new WorkspaceService(workspaceRepo, projectRepo, db),
-      issueService: new IssueService(issueRepo, threadRepo, threadEventRepo, projectRepo, workflowTemplateRepo, validationPolicyRepo, db),
+      issueService: new IssueService(issueRepo, threadRepo, threadEventRepo, projectRepo, workflowTemplateRepo, validationPolicyRepo, spaceRepo, db),
       threadService: new ThreadService(threadRepo, threadEventRepo),
     };
   }

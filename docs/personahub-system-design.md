@@ -42,7 +42,17 @@ updated: 2026-09-08
 | `graph_runs` / `node_runs` | F006 可恢复执行图、节点与 Attempt 归属 | v8 |
 | `intake_confirmations` | F007 签名推荐的一认领 | v9 |
 | `app_secrets` | 与数据库同生命周期的 HMAC secret | v9 |
-| `admin_audit_events` | Workflow 管理的全局审计 | v10 |
+| `admin_audit_events` | Workflow 管理与配置类动作的全局审计 | v10 |
+| `spaces` | Space 归属根；`is_default`（升级归属根）与 `is_selected`（当前焦点）双事实 | v12 |
+| `repositories` | 仓库事实（kind / display_name / git_remote_url），跨项目共享；不存 git identity | v12 |
+| `repository_machine_paths` | 每台机器的真实路径授权（raw/real path、identity、access、scope、大小写实测） | v12 |
+| `project_repository_refs` | 项目对仓库的引用；reference 恒只读（CHECK）；`legacy_workspace_id` 兼容桥 | v12 |
+| `skills` / `skill_revisions` | Skill 归属（`space_id` 一对多）与不可变版本；发布态冻结 | v12 |
+| `skill_revision_files` | 激活时快照入库的只读文件 | v12 |
+| `skill_space_state` | Skill 在某 Space 的生效结果（active / shadowed / conflict） | v12 |
+| `skill_delivery_status` | 按 (runtime_id, cli_provider) 的下发事实 | v12 |
+| `skill_legacy_aliases` / `skill_legacy_combo_map` | 旧 Workflow/Policy 的来源追溯与 (workflow, policy) 组合解析 | v12 |
+| `project_skill_refs` | 项目默认 Skill 引用（只存引用，不复制内容） | v12 |
 
 ### 2.2 当前关键关系
 
@@ -75,7 +85,7 @@ NodeRun  1 ── N Run (Attempt)
 
 ## 3. v0.3 目标对象模型
 
-F009 不新增目标对象或业务字段，只把当前 schema 的 Project / Issue / Thread / Run / Trace / Evidence 通过受控兼容投影接入 V3.44 壳层。下列新对象从 F010 开始引入。
+F009 不新增目标对象或业务字段，只把当前 schema 的 Project / Issue / Thread / Run / Trace / Evidence 通过受控兼容投影接入 V3.44 壳层。F013（schema v12）已落地 Space 归属根、仓库 / 路径授权、Skill 与 Skill revision：`issues.space_id` 非空、`issues.project_id` 可空（游离任务），`projects.space_id` / `state` 必有；Issue 与其 Project 的 Space 一致性由数据库 trigger 强制。Artifact（F010）与 Dispatch / Session（F012）仍待引入。
 
 V3.44 与 ADR 0012 取消了 AI 成员、Primary / Project Thread、独立 Validation Policy 和独立 Squad 类型。目标关系如下：
 

@@ -27,6 +27,11 @@ import {
   type ClaimValidatorSlotResult,
   type ValidatorClaimAdapter,
 } from "./validator-slot-claimer.js";
+import {
+  requireLegacyWorkspaceId,
+  requireLegacyWorkflowTemplateId,
+  requireLegacyValidationPolicyId,
+} from "../legacy-issue-fields.js";
 
 export type { ClaimValidatorSlotResult, ValidatorClaimAdapter } from "./validator-slot-claimer.js";
 
@@ -111,7 +116,7 @@ export class ValidationWorkflowService {
         );
         return null;
       }
-      const wf = this.workflowTemplateRepo.getById(issue.workflow_template_id);
+      const wf = this.workflowTemplateRepo.getById(requireLegacyWorkflowTemplateId(issue));
       if (!wf) {
         this.blocker.blockIssueInTx(
           issue,
@@ -121,7 +126,7 @@ export class ValidationWorkflowService {
         );
         return null;
       }
-      const policy = this.validationPolicyRepo.getById(issue.validation_policy_id);
+      const policy = this.validationPolicyRepo.getById(requireLegacyValidationPolicyId(issue));
       if (!policy) {
         this.blocker.blockIssueInTx(
           issue,
@@ -166,7 +171,7 @@ export class ValidationWorkflowService {
           {
             issue_id: issueId,
             thread_id: issue.primary_thread_id!,
-            workspace_id: issue.workspace_id,
+            workspace_id: requireLegacyWorkspaceId(issue),
             validation_round: round,
             implementation_run_id: implementationRunId,
             policy_id: policy.id,

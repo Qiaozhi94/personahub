@@ -1,8 +1,11 @@
 import { buildUrl } from "./router";
 
-// M1 route manifest (design.md §4). Published canonical routes only —
-// `/sessions/:sessionId`, `/tasks/:taskId/:view` and `/projects/:projectId/:tab`
-// are NOT registered in M1 and get deterministic canonicalization instead.
+// F013 registers `/projects/:projectId/:tab`（文件 / skills / 设置）与能力面
+// `/capabilities`（Skills 列表）+ `/capabilities/:skillId`（整页详情）。
+
+/** F013 注册的三个项目页签；"项目记忆" tab 在 v0.3 无真实数据，不注册。 */
+export const PROJECT_TABS = ["files", "skills", "settings"] as const;
+export type ProjectTab = (typeof PROJECT_TABS)[number];
 // `taskId` strictly equals the existing Issue ID and `projectId` the existing
 // Project ID; no historical URL aliases are invented.
 
@@ -10,6 +13,10 @@ export type RouteDescriptor =
   | { kind: "root" }
   | { kind: "projects" }
   | { kind: "project"; projectId: string }
+  | { kind: "project-tab"; projectId: string; tab: ProjectTab }
+  | { kind: "project-unsupported-tab"; projectId: string; tab: string }
+  | { kind: "capabilities" }
+  | { kind: "skill"; skillId: string }
   | { kind: "project-unsupported-tab"; projectId: string; tab: string }
   | { kind: "tasks"; projectQuery: string | null }
   | { kind: "task"; taskId: string }
@@ -70,8 +77,16 @@ export function resolveRoute(pathname: string, search: string): RouteDescriptor 
     if (segments.length === 1) return { kind: "projects" };
     if (segments.length === 2) return { kind: "project", projectId: decodeSegment(second!) };
     if (segments.length === 3) {
-      return { kind: "project-unsupported-tab", projectId: decodeSegment(second!), tab: decodeSegment(third!) };
+      const tab = decodeSegment(third!);
+      if (isProjectTab(tab)) return { kind: "project-tab", projectId: decodeSegment(second!), tab };
+      return { kind: "project-unsupported-tab", projectId: decodeSegment(second!), tab };
     }
+    return { kind: "not-found", attemptedPath: pathname };
+  }
+
+  if (first === "capabilities") {
+    if (segments.length === 1) return { kind: "capabilities" };
+    if (segments.length === 2) return { kind: "skill", skillId: decodeSegment(second!) };
     return { kind: "not-found", attemptedPath: pathname };
   }
 
@@ -88,6 +103,10 @@ export function resolveRoute(pathname: string, search: string): RouteDescriptor 
   }
 
   return { kind: "not-found", attemptedPath: pathname };
+}
+
+function isProjectTab(tab: string): tab is ProjectTab {
+  return (PROJECT_TABS as readonly string[]).includes(tab);
 }
 
 function decodeSegment(segment: string): string {

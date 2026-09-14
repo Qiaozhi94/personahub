@@ -32,6 +32,11 @@ import type { ThreadEventService } from "../thread-event.js";
 import { assembleValidatorContext } from "./context-assembler.js";
 import { ValidationIssueBlocker } from "./issue-blocker.js";
 import { selectValidator } from "./validator-selector.js";
+import {
+  requireLegacyWorkspaceId,
+  requireLegacyProjectId,
+  requireLegacyWorkflowTemplateId,
+} from "../legacy-issue-fields.js";
 
 export type ValidatorClaimAdapter =
   { mode: "auto" } | { mode: "explicit"; adapterConfigId: string; userInstructions?: string | null };
@@ -136,7 +141,7 @@ export class ValidatorSlotClaimer {
       let dispatchSource: RunDispatchSource;
       const userInstructions = adapter.mode === "explicit" ? adapter.userInstructions : null;
       if (adapter.mode === "auto") {
-        const wf = this.workflowTemplateRepo.getById(issue.workflow_template_id);
+        const wf = this.workflowTemplateRepo.getById(requireLegacyWorkflowTemplateId(issue));
         if (!wf) {
           this.blocker.blockIssueInTx(
             issue,
@@ -151,8 +156,8 @@ export class ValidatorSlotClaimer {
         // Available override still qualifies even if globally Unknown/
         // Unavailable; listAvailableByCapabilityForWorkspace() then applies
         // this Issue's own workspace overrides before the status filter.
-        const allCandidates = this.agentConfigRepo.listByProject(issue.project_id);
-        const overrides = this.adapterWorkspaceStatusRepo.listForWorkspace(issue.workspace_id);
+        const allCandidates = this.agentConfigRepo.listByProject(requireLegacyProjectId(issue));
+        const overrides = this.adapterWorkspaceStatusRepo.listForWorkspace(requireLegacyWorkspaceId(issue));
         const availableValidators = listAvailableByCapabilityForWorkspace(
           allCandidates,
           overrides,
@@ -172,10 +177,10 @@ export class ValidatorSlotClaimer {
         dispatchSource = RunDispatchSource.System;
       } else {
         const record = this.agentConfigRepo.getById(adapter.adapterConfigId);
-        if (!record || record.project_id !== issue.project_id) {
+        if (!record || record.project_id !== requireLegacyProjectId(issue)) {
           return { ok: false, reason: "adapter_invalid", message: "Adapter config not found for this project." };
         }
-        const override = this.adapterWorkspaceStatusRepo.get(record.id, issue.workspace_id);
+        const override = this.adapterWorkspaceStatusRepo.get(record.id, requireLegacyWorkspaceId(issue));
         if (effectiveAdapterStatus(record, override) !== AdapterStatus.Available) {
           return { ok: false, reason: "adapter_invalid", message: "Adapter is not available." };
         }
@@ -230,7 +235,7 @@ export class ValidatorSlotClaimer {
         id: validatorRunId,
         issue_id: issueId,
         thread_id: issue.primary_thread_id!,
-        workspace_id: issue.workspace_id,
+        workspace_id: requireLegacyWorkspaceId(issue),
         adapter_config_id: selected.id,
         instructions: contextMarkdown,
         status: RunStatus.Queued,
@@ -256,7 +261,7 @@ export class ValidatorSlotClaimer {
           {
             issue_id: issueId,
             thread_id: issue.primary_thread_id!,
-            workspace_id: issue.workspace_id,
+            workspace_id: requireLegacyWorkspaceId(issue),
             validation_round: round,
             validation_attempt: attempt,
             target: "implementation_result",
@@ -276,7 +281,7 @@ export class ValidatorSlotClaimer {
           run_id: validatorRun.id,
           issue_id: issueId,
           thread_id: issue.primary_thread_id!,
-          workspace_id: issue.workspace_id,
+          workspace_id: requireLegacyWorkspaceId(issue),
           status: RunStatus.Queued,
           role: RunRole.Validator,
           validation_round: round,

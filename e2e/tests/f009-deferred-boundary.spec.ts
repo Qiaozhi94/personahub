@@ -87,17 +87,20 @@ test("BC-108/109: adapter configuration has no dedicated four-block detail page"
   }
 });
 
-test("BC-102/107/112: a project's workspace binding has no remote-repo recognition, Skills reference, or primary/reference repo distinction", async ({
+test("BC-102/107/112 (F013 supersede): files/skills tabs now carry repo refs and the primary/reference distinction", async ({
   page,
 }) => {
-  await page.goto("/projects/prj_v02_alpha");
+  // F013 registers the files/skills/settings tabs and the repository registry;
+  // the Skills reference (BC-107) and the primary-vs-reference distinction
+  // (BC-112) are no longer deferred. Per-machine authorization detail
+  // (BC-102's machine affordance) stays out of the project page.
+  await page.goto("/projects/prj_v02_alpha/files");
   await expect(page.getByRole("heading", { name: "Alpha Platform" })).toBeVisible();
 
-  // BC-102: no remote/machine-authorization affordance — just a raw local path.
-  await expect(page.getByText(/remote repository|远端仓库/i)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Skills" })).toBeVisible();
+  await expect(page.getByText(/主目录 ·/).first()).toBeVisible();
+  await expect(page.getByText(/参考仓库 ·/).first()).toBeVisible();
+
+  // BC-102: per-machine authorization labeling stays out of the project page.
   await expect(page.getByLabel(/machine|机器授权/i)).toHaveCount(0);
-  // BC-107: no direct Skills reference on the project page.
-  await expect(page.getByText(/skills|技能/i)).toHaveCount(0);
-  // BC-112: no primary-vs-reference repository distinction.
-  await expect(page.getByText(/primary repo|reference repo|主仓|参考仓/i)).toHaveCount(0);
 });

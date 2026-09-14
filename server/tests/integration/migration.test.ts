@@ -6,6 +6,16 @@ import { SCHEMA_V2 } from "../../src/db/schema-v2.js";
 import { SCHEMA_V3 } from "../../src/db/schema-v3.js";
 import { createTestServices, disposeTestServices, createTempDir, type TestServices } from "../helpers.js";
 
+/** F013: projects.space_id / issues.space_id 是 NOT NULL；确保存在一个默认 Space（首启语义）。 */
+function defaultSpaceId(db: Database.Database): string {
+  const existing = db.prepare("SELECT id FROM spaces WHERE is_default = 1").get() as { id: string } | undefined;
+  if (existing) return existing.id;
+  db.prepare(
+    "INSERT INTO spaces (id, name, state, is_default, is_selected, created_at, updated_at) VALUES ('spc_default', 'Default Space', 'active', 1, 1, datetime('now'), datetime('now'))",
+  ).run();
+  return "spc_default";
+}
+
 describe("Database Migration", () => {
   let db: Database.Database;
 
@@ -129,9 +139,10 @@ describe("Database Migration", () => {
   it("enforces primary thread uniqueness per issue", () => {
     applyMigrations(db);
     const now = new Date().toISOString();
-    db.prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)").run(
+    db.prepare("INSERT INTO projects (id, name, space_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)").run(
       "prj_test",
       "Test",
+      defaultSpaceId(db),
       now,
       now,
     );
@@ -139,9 +150,10 @@ describe("Database Migration", () => {
       "INSERT INTO workspaces (id, project_id, local_path, local_path_normalized, lock_state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
     ).run("wsp_test", "prj_test", "/tmp", "/tmp", "idle", now, now);
     db.prepare(
-      "INSERT INTO issues (id, project_id, workspace_id, issue_type, workflow_template_id, validation_policy_id, title, status, priority, labels, validation_round_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO issues (id, space_id, project_id, workspace_id, issue_type, workflow_template_id, validation_policy_id, title, status, priority, labels, validation_round_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ).run(
       "iss_test",
+      defaultSpaceId(db),
       "prj_test",
       "wsp_test",
       "coding",
@@ -440,9 +452,10 @@ describe("Database Migration", () => {
   it("v4 active validator unique index prevents duplicate queued validators", () => {
     const now = "2026-01-01T00:00:00Z";
     applyMigrations(db);
-    db.prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)").run(
+    db.prepare("INSERT INTO projects (id, name, space_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)").run(
       "prj_u",
       "U",
+      defaultSpaceId(db),
       now,
       now,
     );
@@ -453,9 +466,10 @@ describe("Database Migration", () => {
       "INSERT INTO agent_configs (id, project_id, name, role, cli_provider, command, args, capability_tags, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ).run("agc_u", "prj_u", "Fake", "implementation", "fake", "fake", "[]", "[]", "available", now, now);
     db.prepare(
-      "INSERT INTO issues (id, project_id, workspace_id, issue_type, workflow_template_id, validation_policy_id, title, status, priority, labels, validation_round_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO issues (id, space_id, project_id, workspace_id, issue_type, workflow_template_id, validation_policy_id, title, status, priority, labels, validation_round_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ).run(
       "iss_u",
+      defaultSpaceId(db),
       "prj_u",
       "wsp_u",
       "coding",

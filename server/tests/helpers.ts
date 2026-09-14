@@ -27,6 +27,14 @@ import { GraphNodeInstructionBuilder } from "../src/runtime/graph/instruction-bu
 import { GraphRuntimeService } from "../src/services/graph-runtime.js";
 import { AdapterAvailabilityProbeCoordinator } from "../src/services/adapter-probe-coordinator.js";
 import { ProjectService } from "../src/services/project.js";
+import { SpaceService } from "../src/services/space.js";
+import { RepositoryRegistry } from "../src/services/repository-registry.js";
+import { SkillRegistry } from "../src/services/skill-registry.js";
+import { EffectiveRequirementsResolver } from "../src/services/effective-requirements.js";
+import { SkillDeliveryService } from "../src/services/skill-delivery.js";
+import { SpaceRepository } from "../src/repositories/space.js";
+import { AuditService } from "../src/services/audit.js";
+import { AdminAuditEventRepository } from "../src/repositories/admin-audit-event.js";
 import { WorkspaceService } from "../src/services/workspace.js";
 import { IssueService } from "../src/services/issue.js";
 import { ThreadService } from "../src/services/thread.js";
@@ -62,7 +70,9 @@ export function createTempDir(): string {
 }
 
 export function cleanupTempDir(dir: string): void {
-  rmSync(dir, { recursive: true, force: true });
+  // Windows 在 close 之后异步释放文件锁，rmSync 可能撞上瞬态 EPERM/EBUSY：
+  // 带重试清除，而不是让清理竞态打红整个测试文件。
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }
 
 /**
@@ -81,6 +91,13 @@ export function initGitRepo(dir: string): void {
 
 export interface TestServices {
   db: Database.Database;
+  skillRegistry: SkillRegistry;
+  resolver: EffectiveRequirementsResolver;
+  skillDelivery: SkillDeliveryService;
+  auditService: AuditService;
+  spaceRepo: SpaceRepository;
+  spaceService: SpaceService;
+  repositoryRegistry: RepositoryRegistry;
   projectRepo: ProjectRepository;
   workspaceRepo: WorkspaceRepository;
   issueRepo: IssueRepository;
@@ -144,6 +161,15 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
   const nodeRunRepo = new NodeRunRepository(db);
   const graphRunRepo = new GraphRunRepository(db);
   const adapterProbeCoordinator = new AdapterAvailabilityProbeCoordinator();
+
+  const spaceRepo = new SpaceRepository(db);
+  const auditService = new AuditService(new AdminAuditEventRepository(db));
+  const spaceService = new SpaceService(spaceRepo, auditService, db);
+  const repositoryRegistry = new RepositoryRegistry(db, auditService);
+  const skillRegistry = new SkillRegistry(db, auditService);
+  const resolver = new EffectiveRequirementsResolver(db);
+  const skillDelivery = new SkillDeliveryService(db, auditService, join(tmpdir(), "f013-delivery-" + Date.now() + "-" + Math.random().toString(36).slice(2)));
+
 
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
@@ -297,6 +323,7 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
       projectRepo,
       workflowTemplateRepo,
       validationPolicyRepo,
+      spaceRepo,
       db,
     ),
     sequentialDeps: {
@@ -334,6 +361,13 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
 
   return {
     db,
+    skillRegistry,
+    resolver,
+    skillDelivery,
+    auditService,
+    spaceRepo,
+    spaceService,
+    repositoryRegistry,
     projectRepo,
     workspaceRepo,
     issueRepo,
@@ -349,7 +383,7 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
     adapterProbeCoordinator,
     nodeRunRepo,
     graphRunRepo,
-    projectService: new ProjectService(projectRepo, workspaceRepo),
+    projectService: new ProjectService(projectRepo, workspaceRepo, spaceRepo, auditService, db),
     workspaceService: new WorkspaceService(workspaceRepo, projectRepo, db),
     issueService: new IssueService(
       issueRepo,
@@ -358,6 +392,7 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
       projectRepo,
       workflowTemplateRepo,
       validationPolicyRepo,
+      spaceRepo,
       db,
     ),
     threadService: new ThreadService(threadRepo, threadEventRepo),

@@ -2,12 +2,12 @@
 topics: [v0.3, trusted-task-workbench, planning]
 doc_kind: plan
 created: 2026-08-09
-updated: 2026-09-08
+updated: 2026-09-13
 ---
 
 # v0.3 Trusted Task Workbench
 
-> V3.44 交互设计已于 2026-09-08 完成最终检视，产品体验重置的设计冻结解除。F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿）；F010 已进入 `in-progress` 实现（Artifact core / resolver / `recordConsumption` 契约落地，schema v12），F011–F014 仍为 `draft`，必须逐个完成影响面核对和三件套评审后才能推进。
+> V3.44 交互设计已于 2026-09-08 完成最终检视，产品体验重置的设计冻结解除。F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿）；F010 已进入 `in-progress` 实现（Artifact core / resolver / `recordConsumption` 契约落地，schema v13）；F013 已于 2026-09-13 完成开发前需求与设计文档检视（循环 22 十轮收敛）并推进为 `ready-for-development`；F011、F012、F014 仍为 `draft`，必须逐个完成影响面核对和三件套评审后才能推进。
 
 ## 1. 版本判断
 
@@ -25,10 +25,10 @@ v0.3 的第一步是把 v0.1–v0.2 已交付能力迁入 V3.44 生产前端，�
 | [F010](F010-artifact-foundation-provenance/spec.md) | Artifact & Provenance Foundation | 建立不可漂移的阶段成果和统一引用 | F003、F004、F006、F009 |
 | [F013](F013-project-skills-foundation/spec.md) | Space, Project & Skills Foundation | 建立归属根并统一项目文件边界与 Skill / 编组 | F009 |
 | [F012](F012-session-dispatch-intervention/spec.md) | Session, Dispatch & Intervention | 将会话、执行选择、上下文与控制拆成可追溯对象 | F005、F006、F009、F010、F013 |
-| [F011](F011-trusted-task-surface/spec.md) | Trusted Task Surface | 用四视图表达决策、会话、验收和资源 | F009、F010、F012 |
+| [F011](F011-trusted-task-surface/spec.md) | Trusted Task Surface | 用四视图表达决策、会话、验收和资源 | F009、F010、F012、F013 |
 | [F014](F014-trusted-task-journey-closure/spec.md) | Trusted Task Journey Closure | 对整条旅程、迁移和发布验收负责 | F009–F013 |
 
-F009 先完成生产前端换壳和既有能力迁移。F010 与 F013 互不依赖：F010 只拥有 Artifact core 与 `recordConsumption` 公共契约，不等待上下文组装器；F013 只验收 versioned effective-requirements 输出与路径授权 contract，不读取 Dispatch。F012 是上下文组装调用 `recordConsumption` 的最终集成 owner，并消费 F013 contract 冻结 Dispatch snapshot；F012 最终验收 Skill 升级 / 禁用不改已提交 Dispatch。F011 随后在已提交的 Dispatch / 会话契约上建立任务投影和验收写链。F009–F013 是 linked contracts，只有 F014 可以声明 v0.3 整体旅程完成。任何局部 Feature 完成不能替代端到端证据。
+F009 先完成生产前端换壳和既有能力迁移。F010 与 F013 互不依赖：F010 只拥有 Artifact core 与 `recordConsumption` 公共契约，不等待上下文组装器；F013 只验收 versioned effective-requirements 输出与路径授权 contract，不读取 Dispatch。F012 是上下文组装调用 `recordConsumption` 的最终集成 owner，并消费 F013 contract 冻结 Dispatch snapshot；F012 最终验收 Skill 升级 / 禁用不改已提交 Dispatch。F011 随后在已提交的 Dispatch / 会话契约上建立任务投影和验收写链，并消费 F013 冻结的 effective completion requirements 与 EvidenceSpec。F009–F013 是 linked contracts，只有 F014 可以声明 v0.3 整体旅程完成。任何局部 Feature 完成不能替代端到端证据。
 
 ## 3. 范围边界
 
@@ -68,6 +68,8 @@ F009 先完成生产前端换壳和既有能力迁移。F010 与 F013 互不依�
 10. AcceptanceService 唯一写完成要求、主张链、风险接受与完成摘要；IssueService 只消费 `acceptance.completed` 推进 done，F014 只调用公开 API。
 11. F013 是 Space schema、默认数据迁移与首次设置的唯一 owner；`issues.space_id` 非空，`issues.project_id` 可空，游离任务仍有明确归属根。
 12. `artifact_consumptions.dispatch_id` 在 F010 是 soft reference；F012 接入 `recordConsumption` 时必须在同一事务内校验 Dispatch 存在且与 `run_id` 归属一致，v0.3 不为补 FK 重建该表。
+13. F012 是持久 `DomainOutbox` 的唯一 owner（同一事务 enqueue、worker 投递、consumer ack、失败重试与 poison 保留）；F011 的 `acceptance.completed` 跨服务推进复用该基础设施，不得新建第二套 outbox 或退回内存广播。
+14. Acceptance case 处于 `finalizing` / `completed` 时，F012 必须拒绝创建或确认新的 Dispatch / Attempt；v0.3 不支持重开已完成验收，需要继续执行只能新建任务。
 
 ## 5. 版本验收旅程
 

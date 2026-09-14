@@ -24,6 +24,7 @@ import { RoutingRecommendationService } from "../../src/services/routing-recomme
 import { IntakeService } from "../../src/services/intake-service.js";
 import { GraphNodeInstructionBuilder } from "../../src/runtime/graph/instruction-builder.js";
 import type { ConfirmationToken, ChosenPlan } from "@personahub/shared/types";
+import { SpaceRepository } from "../../src/repositories/space.js";
 
 function waitFor(path: string, timeoutMs: number): Promise<void> {
   const start = Date.now();
@@ -72,6 +73,7 @@ async function main(): Promise<void> {
     projectRepo,
     workflowTemplateRepo,
     validationPolicyRepo,
+    new SpaceRepository(db),
     db,
   );
   const tokenService = new ConfirmationTokenService(loadOrCreateHmacSecret(new AppSecretRepository(db)));

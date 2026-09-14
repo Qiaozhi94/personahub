@@ -100,7 +100,7 @@ Artifact 实体可 active / retired；revision 一经发布不可变。retired �
 
 ### 验收清单
 
-- [x] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 两类存储均可创建、修订、重启后读取，历史 revision 不变；文件发布每个故障点 crash 后 resolver 都只能返回完整 published revision 或 not-found。—— 实现：schema v12 五表 + ArtifactService 六 hook 故障矩阵，逐点 crash 后同 dbPath 重开并以 resolver 断言；migration 顺延 / 幂等 / 反查索引。 - tests: `server/tests/integration/artifact-publication.test.ts` `server/tests/integration/migration-artifact.test.ts`
+- [x] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 两类存储均可创建、修订、重启后读取，历史 revision 不变；文件发布每个故障点 crash 后 resolver 都只能返回完整 published revision 或 not-found。—— 实现：schema v13 五表 + ArtifactService 六 hook 故障矩阵，逐点 crash 后同 dbPath 重开并以 resolver 断言；migration 顺延 / 幂等 / 反查索引。 - tests: `server/tests/integration/artifact-publication.test.ts` `server/tests/integration/migration-artifact.test.ts`
 - [x] **AC-002** (`FR-003`, `NFR-002`): 缺失、越权、hash mismatch、未知类型均在消费前可观察失败。—— 实现：evidence-ref 扩展 artifact kind（floating / pinned / 非法 revision），resolver 显式 missing / invalid / hash_mismatch 状态（hash mismatch 落 reject 事件且不返回正文），realpath 边界与 symlink 越界。 - tests: `server/tests/unit/artifact-ref.test.ts` `server/tests/integration/artifact-resolver.test.ts`
 - [x] **AC-003** (`FR-004`, `FR-005`, `TR-001`): Run / Artifact / Evidence 双向追溯与事件回放一致。—— 实现：recordConsumption 按 `(dispatch, run, revision, purpose)` 幂等，多实体双向映射不串行；事件与领域写入同事务、commit 后广播、重放零重复；web 侧六态 read model，无可见组件。 - tests: `server/tests/integration/artifact-provenance.test.ts` `web/src/f010-artifact-read-model.test.ts`
 

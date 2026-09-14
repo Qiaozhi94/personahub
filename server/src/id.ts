@@ -44,3 +44,16 @@ export function generateWorkflowTemplateId(): string {
 export function generateAdminAuditEventId(): string {
   return `aev_${ulid()}`;
 }
+
+// F013: Space / repository / skill
+export function generateSpaceId(): string {
+  return `spc_${ulid()}`;
+}
+
+export function generateRepositoryId(): string {
+  return `rep_${ulid()}`;
+}
+
+export function generateSkillId(): string {
+  return `skl_${ulid()}`;
+}

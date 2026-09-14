@@ -2,13 +2,15 @@
 kind: feature
 id: F013
 version: "0.3"
-status: draft
+status: ready-for-development
 gate_version: 1
+eval_contract: exempt
+eval_contract_exempt_reason: "本 Feature 改变用户旅程（首次设置、项目三 tab、能力面），但交付的是归属根与冻结契约（Space schema、路径授权、Skill revision），不提出需用效用数据决定保留或退役的不确定主张；退役条件已由 migration-matrix 的 delete_when 与 F012 / F011 接管显式登记"
 related_features: [F009, F010, F012, F014]
 topics: [space, project, repository, skill, composition, capability]
 doc_kind: spec
 created: 2026-08-09
-updated: 2026-09-08
+updated: 2026-09-13
 ---
 
 # F013：Space, Project & Skills Foundation
@@ -97,7 +99,7 @@ updated: 2026-09-08
 
 ## 5. 生命周期与不变量
 
-Space 可 active / archived，v0.3 不支持物理删除；项目归档可恢复，删除受引用保护。`issues.space_id` 非空，`issues.project_id` 可空。Skill revision 不可变，active / disabled / conflict 是当前生效状态；禁用不改历史。编组表现只从 Run 现算，不保存评分字段。
+Space 可 active / archived，v0.3 不支持物理删除；项目归档可恢复，删除受引用保护。`issues.space_id` 非空，`issues.project_id` 可空。Skill revision 不可变。生效状态分两层：Skill 的全局意图是 active / disabled，某个 Space 内的生效结果是 active / shadowed / conflict；两层同时为 active 才可用。禁用不改历史。编组表现只从 Run 现算，不保存评分字段。
 
 ## 6. 成功与验收
 
@@ -130,4 +132,4 @@ Space / 路径边界、Skill schema 与 versioned effective requirements 单测�
 
 ## 8. 待确认问题
 
-无。
+无

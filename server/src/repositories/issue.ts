@@ -8,11 +8,14 @@ export interface IssueUpdateStatusInput {
 }
 
 export interface IssueCreateInput {
-  project_id: string;
-  workspace_id: string;
+  space_id: string;
+  /** 可空：游离任务只属于 Space（FR-001）。 */
+  project_id: string | null;
+  workspace_id: string | null;
   issue_type: IssueType;
-  workflow_template_id: string;
-  validation_policy_id: string;
+  /** legacy 三列：F012 接管前由兼容投影写入；游离任务为空（design §7）。 */
+  workflow_template_id: string | null;
+  validation_policy_id: string | null;
   title: string;
   goal: string | null;
   status: IssueStatus;
@@ -34,12 +37,13 @@ export interface IssueCompareAndSetResult {
 
 interface IssueRow {
   id: string;
-  project_id: string;
-  workspace_id: string;
+  space_id: string;
+  project_id: string | null;
+  workspace_id: string | null;
   primary_thread_id: string | null;
   issue_type: string;
-  workflow_template_id: string;
-  validation_policy_id: string;
+  workflow_template_id: string | null;
+  validation_policy_id: string | null;
   title: string;
   goal: string | null;
   status: string;
@@ -58,6 +62,7 @@ interface IssueRow {
 function mapRow(row: IssueRow): Issue {
   return {
     id: row.id,
+    space_id: row.space_id,
     project_id: row.project_id,
     workspace_id: row.workspace_id,
     primary_thread_id: row.primary_thread_id,
@@ -86,24 +91,44 @@ export class IssueRepository {
   create(input: IssueCreateInput): Issue {
     const id = generateIssueId();
     const now = new Date().toISOString();
-    this.db.prepare(
-      `INSERT INTO issues (id, project_id, workspace_id, primary_thread_id, issue_type, workflow_template_id, validation_policy_id, title, goal, status, owner_agent_id, coordinator_agent_id, priority, labels, validation_round_count, created_at, updated_at)
-       VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, 0, ?, ?)`
-    ).run(
-      id, input.project_id, input.workspace_id, input.issue_type,
-      input.workflow_template_id, input.validation_policy_id,
-      input.title, input.goal, input.status, input.priority,
-      JSON.stringify(input.labels), now, now
-    );
+    this.db
+      .prepare(
+        `INSERT INTO issues (id, space_id, project_id, workspace_id, primary_thread_id, issue_type, workflow_template_id, validation_policy_id, title, goal, status, owner_agent_id, coordinator_agent_id, priority, labels, validation_round_count, created_at, updated_at)
+         VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, 0, ?, ?)`,
+      )
+      .run(
+        id,
+        input.space_id,
+        input.project_id,
+        input.workspace_id,
+        input.issue_type,
+        input.workflow_template_id,
+        input.validation_policy_id,
+        input.title,
+        input.goal,
+        input.status,
+        input.priority,
+        JSON.stringify(input.labels),
+        now,
+        now,
+      );
 
     const row = this.db.prepare("SELECT * FROM issues WHERE id = ?").get(id) as IssueRow;
     return mapRow(row);
   }
 
   list(projectId: string): Issue[] {
-    const rows = this.db.prepare(
-      "SELECT * FROM issues WHERE project_id = ? ORDER BY created_at DESC"
-    ).all(projectId) as IssueRow[];
+    const rows = this.db.prepare("SELECT * FROM issues WHERE project_id = ? ORDER BY created_at DESC").all(
+      projectId,
+    ) as IssueRow[];
+    return rows.map(mapRow);
+  }
+
+  /** GET /api/issues 的 Space 作用域读取（design §4）。 */
+  listBySpace(spaceId: string): Issue[] {
+    const rows = this.db.prepare("SELECT * FROM issues WHERE space_id = ? ORDER BY created_at DESC").all(
+      spaceId,
+    ) as IssueRow[];
     return rows.map(mapRow);
   }
 

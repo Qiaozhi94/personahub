@@ -40,6 +40,9 @@ describe("App — published legacy entry `/`", () => {
           default_workspace_id: null,
           default_coordinator_agent_id: null,
           default_adapter_config_id: null,
+          space_id: "spc_1",
+          state: "active" as const,
+          archived_at: null,
           created_at: "2026-07-13T00:00:00.000Z",
           updated_at: "2026-07-13T00:00:00.000Z",
         },
@@ -78,10 +81,11 @@ describe("App — surface navigation", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "项目" })).toBeInTheDocument();
     });
-    for (const label of ["任务", "项目", "运行时", "设置"]) {
+    // F013 首次注册"能力"槽位。
+    for (const label of ["任务", "项目", "能力", "运行时", "设置"]) {
       expect(screen.getByRole("button", { name: new RegExp(`^${label}$`) })).toBeInTheDocument();
     }
-    for (const label of ["会话", "自动化", "记忆", "能力", "统计"]) {
+    for (const label of ["会话", "自动化", "记忆", "统计"]) {
       expect(screen.queryByRole("button", { name: new RegExp(`^${label}$`) })).not.toBeInTheDocument();
     }
   });
@@ -97,6 +101,9 @@ describe("App — surface navigation", () => {
           default_workspace_id: null,
           default_coordinator_agent_id: null,
           default_adapter_config_id: null,
+          space_id: "spc_1",
+          state: "active" as const,
+          archived_at: null,
           created_at: "2026-07-13T00:00:00.000Z",
           updated_at: "2026-07-13T00:00:00.000Z",
         },

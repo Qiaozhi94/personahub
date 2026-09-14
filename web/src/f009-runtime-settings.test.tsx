@@ -26,6 +26,9 @@ function project(id: string, name: string) {
     default_workspace_id: null,
     default_coordinator_agent_id: null,
     default_adapter_config_id: null,
+    space_id: "spc_1",
+    state: "active" as const,
+    archived_at: null,
     created_at: TIMESTAMP,
     updated_at: TIMESTAMP,
   };

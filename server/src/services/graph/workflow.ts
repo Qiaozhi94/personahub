@@ -18,6 +18,7 @@ import { resolveEligibleAdapter } from "../adapter-eligibility.js";
 import { mapGraphConstraint } from "../../db/sqlite-errors.js";
 import type Database from "better-sqlite3";
 import { buildEvidenceRef } from "../../evidence-ref.js";
+import { requireLegacyProjectId } from "../legacy-issue-fields.js";
 
 export interface GraphWorkflowDeps {
   graphRunRepo: GraphRunRepository;
@@ -66,7 +67,7 @@ export function evaluateJoinAndTrigger(
         // Pre-validation: check eligibility and read predecessor results FIRST
         const issue = deps.issueRepo.getById(graphRun.issue_id);
         if (!issue) return;
-        const eligibility = resolveEligibleAdapter(deps.adapterDeps, issue.project_id, graphRun.workspace_id, {
+        const eligibility = resolveEligibleAdapter(deps.adapterDeps, requireLegacyProjectId(issue), graphRun.workspace_id, {
           explicitAdapterId: synthesisNodeRun.assigned_adapter_config_id,
           requiredCapabilities: synthesisNode.requiredCapabilities,
         });
