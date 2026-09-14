@@ -43,6 +43,15 @@ import { EventBus } from "./runtime/event-bus.js";
 import { AgentRunner } from "./runtime/agent-runner.js";
 import { buildProductionAdapterRegistry } from "./runtime/register-adapters.js";
 import { registerRoutes } from "./api/index.js";
+import { DomainOutbox } from "./services/domain-outbox.js";
+import { DispatchGateService } from "./services/dispatch-gate-service.js";
+import { SessionService } from "./services/session-service.js";
+import { EligibilityEvaluator } from "./services/eligibility-evaluator.js";
+import { RuntimeProjectionService } from "./services/runtime-projection.js";
+import { ArtifactConsumptionLedger } from "./services/artifact/consumption.js";
+import { ScopedContextAssembler } from "./services/context-assembler.js";
+import { DispatchService } from "./services/dispatch-service.js";
+import { DispatchRecoveryService } from "./services/dispatch-recovery.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "./api/errors.js";
 import { GraphConstraintError } from "./db/sqlite-errors.js";
 import fs from "node:fs";
@@ -371,6 +380,62 @@ async function main() {
     log: (info) => app.log.info(info),
   });
 
+  // F012 session / dispatch / intervention stack: outbox, gates, eligibility,
+  // projection, the single dispatch write path, and the §5.6 recovery scan.
+  const domainOutbox = new DomainOutbox(db);
+  const dispatchGateService = new DispatchGateService(db);
+  const sessionService = new SessionService(db, threadEventService);
+  const eligibilityEvaluator = new EligibilityEvaluator(db, agentConfigRepo, resolver, {});
+  const runtimeProjectionService = new RuntimeProjectionService(db, {
+    agentConfigRepo,
+    pendingAvailabilityProbes: () => adapterConfigService.healthSnapshot().pendingProbeCount,
+    pendingReprobes: () => runDispatchService.healthSnapshot().pendingReprobeCount,
+  });
+  const artifactConsumptionLedger = new ArtifactConsumptionLedger({
+    db,
+    artifactRepo,
+    runRepo,
+    threadEventService,
+    log: (info) => app.log.info(info),
+  });
+  const contextAssembler = new ScopedContextAssembler(
+    db,
+    new RepositoryRegistry(db, auditService),
+    artifactConsumptionLedger,
+    async () => ({ items: [], consumptionRefs: [] }),
+    () => null,
+  );
+  const dispatchService = new DispatchService(
+    db,
+    domainOutbox,
+    dispatchGateService,
+    contextAssembler,
+    agentConfigRepo,
+    runRepo,
+    {
+      graceWindowMs: () => Number(process.env.DISPATCH_GRACE_WINDOW_MS ?? 10_000),
+      spawnRun: async (runId) => {
+        const run = runRepo.getById(runId);
+        if (!run) return;
+        await runDispatchService.drainWorkspace(run.workspace_id);
+      },
+      cancelRunningRun: async (runId) => {
+        await runDispatchService.cancel(runId);
+      },
+    },
+  );
+  const dispatchRecoveryService = new DispatchRecoveryService(db, domainOutbox, staleRecoveryService, dispatchService, {
+    spawnRun: async (runId) => {
+      const run = runRepo.getById(runId);
+      if (!run) return;
+      await runDispatchService.drainWorkspace(run.workspace_id);
+    },
+  });
+  await dispatchRecoveryService.recoverAll("startup");
+  const outboxWorkerTimer = setInterval(() => {
+    void domainOutbox.tick("outbox-worker", 30_000);
+  }, 1_000);
+
   const graphRecoveryService = new GraphRecoveryService({
     graphRunRepo,
     nodeRunRepo,
@@ -511,10 +576,16 @@ async function main() {
     runtimeHealthService,
     artifactService,
     artifactResolver,
+    sessionService,
+    dispatchService,
+    dispatchGateService,
+    eligibilityEvaluator,
+    runtimeProjectionService,
     db,
   });
 
   app.addHook("onClose", async () => {
+    clearInterval(outboxWorkerTimer);
     validationDispatchScheduler.stop();
     await agentRunner.shutdown();
     await Promise.all([runDispatchService.shutdown(), adapterConfigService.shutdown()]);

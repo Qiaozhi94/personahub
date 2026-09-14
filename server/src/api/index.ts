@@ -10,6 +10,7 @@ import { validationRoutes } from "./routes/validation.js";
 import graphRoutes from "./routes/graph.js";
 import intakeRoutes from "./routes/intake.js";
 import { artifactRoutes } from "./routes/artifacts.js";
+import { f012Routes } from "./routes/f012.js";
 import { workflowTemplateRoutes } from "./routes/workflow-templates.js";
 import { spaceRoutes } from "./routes/spaces.js";
 import { skillRoutes } from "./routes/skills.js";
@@ -53,6 +54,11 @@ import type { ProjectRepository } from "../repositories/project.js";
 import type { AdapterWorkspaceStatusRepository } from "../repositories/adapter-workspace-status.js";
 import type { RoutingRecommendationService } from "../services/routing-recommendation-service.js";
 import type { IntakeService } from "../services/intake-service.js";
+import type { SessionService } from "../services/session-service.js";
+import type { DispatchService } from "../services/dispatch-service.js";
+import type { DispatchGateService } from "../services/dispatch-gate-service.js";
+import type { EligibilityEvaluator } from "../services/eligibility-evaluator.js";
+import type { RuntimeProjectionService } from "../services/runtime-projection.js";
 import type Database from "better-sqlite3";
 
 export interface Services {
@@ -94,6 +100,11 @@ export interface Services {
   runtimeHealthService: RuntimeHealthService;
   artifactService: ArtifactService;
   artifactResolver: ArtifactResolver;
+  sessionService: SessionService;
+  dispatchService: DispatchService;
+  dispatchGateService: DispatchGateService;
+  eligibilityEvaluator: EligibilityEvaluator;
+  runtimeProjectionService: RuntimeProjectionService;
   db: Database.Database;
 }
 
@@ -166,5 +177,12 @@ export function registerRoutes(app: FastifyInstance, services: Services): void {
   app.register(artifactRoutes, {
     artifactService: services.artifactService,
     artifactResolver: services.artifactResolver,
+  });
+  app.register(f012Routes, {
+    sessionService: services.sessionService,
+    dispatchService: services.dispatchService,
+    gateService: services.dispatchGateService,
+    eligibilityEvaluator: services.eligibilityEvaluator,
+    runtimeProjection: services.runtimeProjectionService,
   });
 }

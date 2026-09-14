@@ -220,14 +220,47 @@ function backfillRooms(db: Database.Database): void {
   }
 }
 
+// T013: independent rooms need an internal 1:1 thread for their event
+// stream, but `threads.issue_id` is NOT NULL since schema-v1 (FR-001 vs
+// schema tension recorded in design §9.3). Rebuild `threads` with the column
+// nullable — the SQLite 12-step recipe inside the migration transaction;
+// conversion backfills the column when the room becomes a task (§4.1).
+// Historical rows keep every value and ID (不变量 8).
+const T013_THREADS_REBUILD = `
+CREATE TABLE threads_f012 (
+  id TEXT PRIMARY KEY,
+  issue_id TEXT REFERENCES issues(id),
+  room_id TEXT,
+  thread_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+INSERT INTO threads_f012 (id, issue_id, room_id, thread_type, title, created_at, updated_at)
+  SELECT id, issue_id, room_id, thread_type, title, created_at, updated_at FROM threads;
+DROP TABLE threads;
+ALTER TABLE threads_f012 RENAME TO threads;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_threads_primary_unique
+  ON threads(issue_id) WHERE thread_type = 'primary' AND issue_id IS NOT NULL;
+`;
+
 export function applyV15(db: Database.Database): void {
-  db.transaction(() => {
-    db.exec(T002_SQL);
-    db.exec(T003_SQL);
-    db.exec(T004_SQL);
-    db.exec(T005_SQL);
-    db.exec(T006_SQL);
-    backfillRooms(db);
-    db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (15, ?)").run(new Date().toISOString());
-  })();
+  const fkWasOn = db.pragma("foreign_keys", { simple: true }) === 1;
+  db.pragma("foreign_keys = OFF");
+  try {
+    db.transaction(() => {
+      db.exec(T002_SQL);
+      db.exec(T003_SQL);
+      db.exec(T004_SQL);
+      db.exec(T005_SQL);
+      db.exec(T006_SQL);
+      backfillRooms(db);
+      db.exec(T013_THREADS_REBUILD);
+      const violations = db.pragma("foreign_key_check") as unknown[];
+      if (violations.length > 0) throw new Error(`v15 migration foreign_key_check failed: ${JSON.stringify(violations)}`);
+      db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (15, ?)").run(new Date().toISOString());
+    })();
+  } finally {
+    db.pragma(`foreign_keys = ${fkWasOn ? "ON" : "OFF"}`);
+  }
 }

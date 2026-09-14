@@ -186,6 +186,10 @@ export enum ThreadEventType {
   ArtifactRevised = "artifact.revised",
   ArtifactConsumed = "artifact.consumed",
   ArtifactResolveRejected = "artifact.resolve_rejected",
+  // F012: session surface — user messages on the room event stream and the
+  // convert-to-task marker (§4.1/§4.4).
+  SessionMessage = "session.message",
+  SessionConverted = "session.converted",
 }
 
 export enum ActorType {
