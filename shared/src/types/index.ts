@@ -178,6 +178,14 @@ export enum ThreadEventType {
   GraphTerminal = "graph.terminal",
   // F007: coordinator routing recommendation applied on confirm.
   CoordinatorRecommendationApplied = "coordinator.recommendation_applied",
+  // F010: artifact lifecycle & provenance. All are written in the same
+  // transaction as their domain writes and broadcast only after commit;
+  // resolve rejections land on the Artifact's thread (or the caller-provided
+  // thread) and never carry body content.
+  ArtifactCreated = "artifact.created",
+  ArtifactRevised = "artifact.revised",
+  ArtifactConsumed = "artifact.consumed",
+  ArtifactResolveRejected = "artifact.resolve_rejected",
 }
 
 export enum ActorType {
@@ -339,6 +347,7 @@ export * from "./adapter.js";
 export * from "./graph.js";
 export * from "./intake.js";
 export * from "./f008.js";
+export * from "./artifact.js";
 export * from "./space.js";
 export * from "./repository.js";
 export * from "./skill.js";

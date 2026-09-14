@@ -57,7 +57,10 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     await expect(catalog.getByRole("link", { name: "历史工作流" })).toBeVisible();
 
     await page.getByRole("radio", { name: ALPHA }).click();
-    await expect(page.getByText("schema 12/12 (current)")).toBeVisible();
+    // The schema head advances with every migration (v13 landed with F010),
+    // so the journey asserts "actual == expected, current" instead of pinning
+    // a version literal.
+    await expect(page.getByText(/schema \d+\/\d+ \(current\)/)).toHaveText(/schema (\d+)\/\1 \(current\)/);
 
     // BC-097 click-through: the catalog is the discoverable path to the
     // legacy evidence page — no URL typing.

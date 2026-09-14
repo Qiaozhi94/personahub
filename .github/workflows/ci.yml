@@ -5,6 +5,15 @@ on:
     branches: [main]
   pull_request:
 
+# 同一分支/PR 的突发推送只保留最新一轮，取消仍在跑的旧任务，避免排队浪费。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# 供应链加固：本工作流只读仓库。
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Verify (lint, typecheck, test, docs, build)

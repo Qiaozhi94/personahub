@@ -9,6 +9,7 @@ import { traceRoutes } from "./routes/traces.js";
 import { validationRoutes } from "./routes/validation.js";
 import graphRoutes from "./routes/graph.js";
 import intakeRoutes from "./routes/intake.js";
+import { artifactRoutes } from "./routes/artifacts.js";
 import { workflowTemplateRoutes } from "./routes/workflow-templates.js";
 import { spaceRoutes } from "./routes/spaces.js";
 import { skillRoutes } from "./routes/skills.js";
@@ -16,6 +17,8 @@ import { repositoryRoutes } from "./routes/repositories.js";
 import { runtimeHealthRoutes } from "./routes/runtime-health.js";
 import type { WorkflowTemplateAdminService } from "../services/workflow-template-admin.js";
 import type { RuntimeHealthService } from "../services/runtime-health.js";
+import type { ArtifactService } from "../services/artifact/service.js";
+import type { ArtifactResolver } from "../services/artifact/resolver.js";
 import type { GraphRuntimeService } from "../services/graph-runtime.js";
 import type { GraphRunRepository } from "../repositories/graph-run.js";
 import type { NodeRunRepository } from "../repositories/node-run.js";
@@ -89,6 +92,8 @@ export interface Services {
   intakeConfirmationRepo: IntakeConfirmationRepository;
   workflowTemplateAdminService: WorkflowTemplateAdminService;
   runtimeHealthService: RuntimeHealthService;
+  artifactService: ArtifactService;
+  artifactResolver: ArtifactResolver;
   db: Database.Database;
 }
 
@@ -157,5 +162,9 @@ export function registerRoutes(app: FastifyInstance, services: Services): void {
   app.register(runtimeHealthRoutes, {
     runtimeHealthService: services.runtimeHealthService,
     projectRepo: services.projectRepo,
+  });
+  app.register(artifactRoutes, {
+    artifactService: services.artifactService,
+    artifactResolver: services.artifactResolver,
   });
 }

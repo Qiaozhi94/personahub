@@ -11,11 +11,12 @@ import { SCHEMA_V9 } from "./schema-v9.js";
 import { SCHEMA_V10 } from "./schema-v10.js";
 import { SCHEMA_V11 } from "./schema-v11.js";
 import { applyV12 } from "./migrations-v12.js";
+import { SCHEMA_V13 } from "./schema-v13.js";
 
 /** Single source of truth for the current schema version — consumers (e.g.
  *  RuntimeHealthService's expected_version) must reference this instead of
  *  re-declaring the literal. */
-export const CURRENT_SCHEMA_VERSION = 12;
+export const CURRENT_SCHEMA_VERSION = 13;
 
 export function applyMigrations(db: Database.Database): void {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_version (
@@ -93,7 +94,19 @@ export function applyMigrations(db: Database.Database): void {
   // in-transaction foreign_key_check + atomic schema_version, restore in
   // finally) — the generic wrapper below cannot express it (design §3
   // "Migration orchestration").
-  if (currentVersion < CURRENT_SCHEMA_VERSION) {
+  if (currentVersion < 12) {
     applyV12(db);
+  }
+
+  // F010 artifacts (renumbered v12 -> v13 per design "顺延 migration":
+  // both branches claimed v12; F013 landed there first on main).
+  if (currentVersion < 13) {
+    db.transaction(() => {
+      db.exec(SCHEMA_V13);
+      db.prepare("INSERT INTO schema_version (version, applied_at) VALUES (?, ?)").run(
+        13,
+        new Date().toISOString(),
+      );
+    })();
   }
 }

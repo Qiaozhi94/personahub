@@ -66,6 +66,16 @@ import { EffectiveRequirementsResolver } from "./services/effective-requirements
 import { SkillDeliveryService } from "./services/skill-delivery.js";
 import { AuditService } from "./services/audit.js";
 import { RuntimeHealthService } from "./services/runtime-health.js";
+import { ArtifactRepository } from "./repositories/artifact.js";
+import { ArtifactArchive } from "./services/artifact/archive.js";
+import { ArtifactService } from "./services/artifact/service.js";
+import { ArtifactResolver } from "./services/artifact/resolver.js";
+import {
+  ArtifactOrphanSweeper,
+  resolveArtifactMaxBytes,
+  resolveOrphanGraceMs,
+  resolveSweepLeaseMs,
+} from "./services/artifact/sweeper.js";
 
 const PORT = Number(process.env.PORT ?? 4321);
 const HOST = process.env.HOST ?? "127.0.0.1";
@@ -73,6 +83,10 @@ const HOST = process.env.HOST ?? "127.0.0.1";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultDbPath = path.resolve(__dirname, "..", "..", ".local", "db", "personahub.db");
 const DB_PATH = process.env.DB_PATH ?? defaultDbPath;
+// F010: content-addressed archive root; `.staging` inside it holds in-flight
+// temp blobs (the sweeper knows both locations).
+const defaultArchiveRoot = path.resolve(__dirname, "..", "..", ".local", "artifact-archive");
+const ARTIFACT_ARCHIVE_ROOT = process.env.PERSONAHUB_ARTIFACT_ARCHIVE_DIR ?? defaultArchiveRoot;
 const defaultLogFile = path.resolve(__dirname, "..", "..", ".local", "logs", "server.log");
 const LOG_FILE = process.env.LOG_FILE ?? defaultLogFile;
 const CORS_ORIGINS = process.env.CORS_ORIGIN?.split(",") ?? ["http://127.0.0.1:5173", "http://localhost:5173"];
@@ -329,6 +343,38 @@ async function main() {
 
   await staleRecoveryService.runAll();
 
+  // F010 artifact stack: archive-first publication, resolver-only reads, and
+  // a startup orphan sweep under the maintenance lease (design §5/§7).
+  const artifactArchiveRoot = path.resolve(ARTIFACT_ARCHIVE_ROOT);
+  fs.mkdirSync(artifactArchiveRoot, { recursive: true });
+  const artifactArchive = new ArtifactArchive(artifactArchiveRoot, path.join(artifactArchiveRoot, ".staging"));
+  const artifactRepo = new ArtifactRepository(db);
+  const artifactService = new ArtifactService({
+    db,
+    artifactRepo,
+    issueRepo,
+    threadRepo,
+    runRepo,
+    workspaceRepo,
+    threadEventService,
+    archive: artifactArchive,
+    maxBytes: resolveArtifactMaxBytes(process.env),
+    log: (info) => app.log.info(info),
+  });
+  const artifactResolver = new ArtifactResolver({
+    artifactRepo,
+    archive: artifactArchive,
+    threadEventService,
+    log: (info) => app.log.info(info),
+  });
+  const artifactSweeper = new ArtifactOrphanSweeper({
+    artifactRepo,
+    archive: artifactArchive,
+    graceMs: resolveOrphanGraceMs(process.env),
+    leaseMs: resolveSweepLeaseMs(process.env),
+    log: (info) => app.log.info(info),
+  });
+
   const graphRecoveryService = new GraphRecoveryService({
     graphRunRepo,
     nodeRunRepo,
@@ -380,6 +426,9 @@ async function main() {
   });
 
   await app.register(cors, { origin: CORS_ORIGINS });
+
+  // Startup orphan cleanup — after the logger exists, before accepting traffic.
+  artifactSweeper.sweep();
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {
@@ -464,6 +513,8 @@ async function main() {
     intakeConfirmationRepo: new IntakeConfirmationRepository(db),
     workflowTemplateAdminService,
     runtimeHealthService,
+    artifactService,
+    artifactResolver,
     db,
   });
 

@@ -7,7 +7,7 @@ updated: 2026-09-13
 
 # v0.3 Trusted Task Workbench
 
-> V3.44 交互设计已于 2026-09-08 完成最终检视，产品体验重置的设计冻结解除。F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿）；F013 已于 2026-09-13 完成开发前需求与设计文档检视（循环 22 十轮收敛）并推进为 `ready-for-development`；F010、F011、F012、F014 仍为 `draft`，必须逐个完成影响面核对和三件套评审后才能推进。
+> V3.44 交互设计已于 2026-09-08 完成最终检视，产品体验重置的设计冻结解除。F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿）；F010 已进入 `in-progress` 实现（Artifact core / resolver / `recordConsumption` 契约落地，schema v13）；F013 已于 2026-09-13 完成开发前需求与设计文档检视（循环 22 十轮收敛）并推进为 `ready-for-development`；F011、F012、F014 仍为 `draft`，必须逐个完成影响面核对和三件套评审后才能推进。
 
 ## 1. 版本判断
 

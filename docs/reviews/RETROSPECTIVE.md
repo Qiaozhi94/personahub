@@ -1411,3 +1411,135 @@ fix-regression + 1 条流程），第 3 轮全部关闭且未再引入新问题�
 5. **把一条粗任务拆细，要顺手检查拆出来的兄弟任务是否共享同一资源。** R2-001：T002 与 T005 拆开后
    都改 `agent_configs`，依赖图却按「不同任务可并行」标了并行，两个顺延 migration 会争抢同一个
    schema 版本号。拆分动作的检查项固定为：拆完逐对看「这两条动的是不是同一张表 / 同一个文件」。
+
+## 循环 25：F010 实现代码检视（5轮）
+
+> 本节完成于 2026-09-13 的 `f010-artifact-foundation` 分支（PR #2）；序号按 main 既有循环 22–24 之后顺延。
+
+- **report_type**: code-review
+- **周期**: 2026-09-13，5轮 · **状态**: 已收敛（最终闭环以 CI run `34758847194` 全绿为准）
+- **背景**: F010 实现落地后（`79167eb`，43 文件 / +4614 行）的实现代码检视。Round 1 全量扫描，
+  Round 2–5 均为 diff-only（每轮 diff 占目标代码 16% 以下，未触发 30% 升级阈值）。
+  **Round 5 完全由 CI 驱动**：Round 4 判定收敛候选后推分支开 PR，Windows CI 立刻报出 2 条本地
+  Linux 跑不出来的失败；修完再跑，又暴露 1 条修复自身引入的问题。在这之前本地 `npm run verify`
+  已经连续绿过 5 次（详见教训 8）。
+  值得记的是第一条发现：`npm run verify` 在检视基线上**就是红的**——把 F010 状态改成 `in-progress`
+  的那次文档提交打破了一条 v0.3 计划契约锁点，而 `tasks.md` 的 T022（"运行全量质量门"）和
+  `spec.md` 三条 AC 都已勾 `[x]`。检视的第一个动作是跑门禁，不是读代码，这一条因此才被抓到。
+- **角色说明**: Round 3 的两条 finding 由检视人在用户裁决后代为修复（用户指示"去掉文案重复，
+  ci.yml 也一并提交"）。按 SOP 显式切换视角：先以修复方身份提交并写 `FIX-log.md` Round 3 声明，
+  再切回检视人身份独立做变异验证与门禁复跑，不把"刚写完"当成"已复核"。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R1-001 | `npm run verify` 在检视基线上是红的：v0.3 计划契约锁点未随 F010 状态同步 | High | 正确性 | 根因 | 流程缺陷 | fixed | 锁点短语由失效的 `F010–F014 仍为 draft` 拆成 `F010 已进入 in-progress` + `F011–F014 仍为 draft` 两条，并把 `verifyMutation` 换成 `verifyEachPhraseMutation`（删任一短语即变红） | `tools/check-v03-plan-contracts.test.mjs::F009 done status is synchronized across roadmap documents` | 1 | 2 | marked-done-not-implemented |
+| R1-002 | resolver 读取 inline revision 时不校验 SHA-256，篡改正文原样返回 | Medium | 正确性 | 根因 | 规格漂移 | fixed | `readRevisionContent` 拆出 Inner，inline 分支对 UTF-8 字节重算 SHA-256；抽出 `rejectHashMismatch`，inline / file 走完全相同的 `artifact.resolve_rejected` + `hash_mismatch` 协议 | `server/tests/integration/artifact-resolver.test.ts::fails hash mismatch for inline bodies too, with the same reject protocol` | 1 | 2 | partial-symmetric-fix |
+| R1-003 | 生产装配没有注入 log，design §6 的操作日志在真实运行中零输出 | Medium | 正确性 | 根因 | 原方案 | fixed | `index.ts` 给 ArtifactService 与 ArtifactResolver 都补 `log: app.log.info`；resolver deps 增可选 log，读路径记 `artifact.resolve`（id / revision / ref / duration，失败加 reason_code，不含正文） | `server/tests/integration/artifact-publication.test.ts::logs revision and duration on success and a stable reason code on failure, never body content` | 1 | 2 | contract-not-wired |
+| R1-004 | `publishStaged` 吞掉 rename 的全部异常，非竞态失败退化成裸 ENOENT | Medium | 正确性 | 根因 | 原方案 | fixed | 只把竞态 errno（EEXIST/EPERM/EBUSY/EACCES）或目标确已存在当竞态；其余保留 cause 抛新错误码 `ARTIFACT_ARCHIVE_WRITE_FAILED`（500），并在 `!renamed` 分支补 target 未落地的兜底 | `server/tests/integration/artifact-publication.test.ts::keeps a stable error code when a rename fails for a non-race reason` | 1 | 2 | catch-all-swallows-cause |
+| R1-005 | ref revision 解析无上界与前导零规范化，parse 与 build 两侧校验不对称 | Low | 正确性 | 根因 | 原方案 | fixed | artifact revision 改用 `^[1-9]\d*$` + `Number.isSafeInteger`，`007` 与超安全整数一律 unknown，与 build 侧 isSafeInteger 对齐 | `server/tests/unit/artifact-ref.test.ts::never aliases a leading-zero revision onto its canonical value` | 1 | 2 | partial-symmetric-fix |
+| R1-006 | 创建/修订不校验 thread 归属 Issue，事件可落到无关 Issue 的会话 | Medium | 正确性 | 根因 | 原方案 | fixed | `assertEntitiesExist` 增加 `thread.issue_id === issueId` 与 `run.issue_id === issueId` 校验，跨 Issue 的会话 / 来源 Run 分别返回 `THREAD_NOT_FOUND` / `RUN_NOT_FOUND` | `server/tests/integration/artifact-publication.test.ts::rejects a thread that belongs to a different issue` | 1 | 2 | missing-ownership-check |
+| R1-007 | 畸形 archive locator 抛 `ARTIFACT_HASH_MISMATCH`，错误码语义错配且绕过读模型 | Low | 正确性 | 根因 | 原方案 | fixed | `archiveAbsolutePath` 对畸形 locator 改抛 `INTERNAL_ERROR`；resolver 捕获后返回 `{ status: "invalid" }`，不再让异常穿透成 409 | `server/tests/integration/artifact-resolver.test.ts::reports a malformed archive locator as invalid, not a hash mismatch` | 1 | 2 | — |
+| R1-008 | revise 返回的 `artifact.updated_at` 是 CAS 前的旧值 | Low | 正确性 | 根因 | 原方案 | fixed | revise 事务内 CAS 成功后 `getArtifact` 重读，返回真实持久行而非 pre-CAS 快照 | `server/tests/integration/artifact-publication.test.ts::revise returns the persisted artifact row, not a pre-CAS snapshot` | 1 | 2 | — |
+| R1-009 | fsync 只覆盖临时文件，未 fsync archive 目录项 | Low | 正确性 | 根因 | 原方案 | fixed | 新增 `ArtifactArchive.fsyncDirectory`，rename 成功后对 `<root>/<2hex>` 目录 fsync；Windows 不支持则忽略（blob fsync 仍在），注释写明 best-effort 边界 | `server/tests/integration/artifact-publication.test.ts::fsyncs the archive directory entry after a successful rename` | 1 | 2 | — |
+| R1-010 | id 为 null 时 hooks 返回 loading，且被测试锁成契约 | Low | 正确性 | 根因 | 原方案 | fixed | `useArtifactReadModel` 增加 `enabled` 参数，null key 直接返回 `{ state: "empty" }`，六个 hook 各自传入；改写原先把 loading 锁死的断言 | `web/src/f010-artifact-read-model.test.ts::returns empty (never fires) when the key is null` | 1 | 2 | test-locks-wrong-behavior |
+| R1-011 | `ArtifactRevisionWriteResult` 缺 `replayed`，client 返回类型与实际响应不符 | Low | 正确性 | 根因 | 规格漂移 | fixed | shared 类型增加 `replayed: boolean`（route 一直返回它），注释写明 200 重放 / 201 首写的对应关系 | `web/src/f010-artifact-read-model.test.ts::carries replayed on both the first write and the replay response` | 1 | 2 | cross-feature-contract-drift |
+| R1-012 | `listConsumptionsForRunEntities` 是零调用者的重复读方法 | Low | 质量 | 根因 | 原方案 | fixed | 删除该方法及其变为未用的 import | —（既有 artifact-resolver / artifact-provenance suite 复跑锁定） | 1 | 2 | dead-parallel-api |
+| R1-013 | sweeper 手拼路径分隔符，绕开 `archiveAbsolutePath` | Low | 质量 | 根因 | 原方案 | fixed | `olderThan` 改收绝对路径，候选经 `isWellFormedArchivePath` 后由 `archiveAbsolutePath` 解析；删掉手拼分隔符的私有方法，两个调用点合并 | —（F010 orphan sweep 两用例复跑锁定） | 1 | 2 | — |
+| R1-014 | `rejectThread` 用空字符串查询做占位，发起一次无意义 DB 查询 | Low | 质量 | 根因 | 原方案 | fixed | 改为按 `check.ok` 分支取 thread，ref 非法时不再以空串查库 | —（recordConsumption reject 三用例复跑锁定） | 1 | 2 | — |
+| R2-015 | resolver 的 `readArchive` catch 把真实 IO 失败也报成 locator 畸形 | Low | 正确性 | 根因 | 修改引入 | fixed | catch 内先判 `isWellFormedArchivePath`：不合法才回 malformed；合法则按真实 IO 失败返回 `Archive object … is unreadable (ERRNO).`，并以 `artifact.resolve_unreadable` 日志事件保留 cause | `server/tests/integration/artifact-resolver.test.ts::distinguishes an unreadable archive object from a malformed locator` | 2 | 3 | catch-all-swallows-cause |
+| R2-016 | `rejectThread` 的 `check.ok` 分支是死代码 | Low | 质量 | 根因 | 修改引入 | fixed | 删除死分支闭包，`if (!check.ok)` 内直接传 `input.dispatchThreadId ?? null` | —（recordConsumption reject 三用例复跑锁定） | 2 | 3 | dead-parallel-api |
+| R3-017 | `verify:release` 红：BC-047 因 UI 文案重复触发 strict mode violation | Medium | 正确性 | 根因 | 原方案 | fixed | 抽出 `blockedExplanationFor()`，blocker banner 只渲染三种 escalation 专属解释；删掉 `FAILURE_REASON_LABELS` fallback 与 `error_message` 复述——两者都已由 Latest Run 的 "Failure" 行与 error 块逐字给出，且两处读同一个 `latestRun`，信息零丢失 | `e2e/tests/f009-page-states.spec.ts::BC-047: terminal run states keep their own status, never relabelled` | 3 | 4 | marked-done-not-implemented |
+| R3-018 | design 的错误码清单与实现不同步，缺 4 个对外可见错误码 | Low | 正确性 | 根因 | 规格漂移 | fixed | `design.md` §4 新增「错误码契约」表（11 项：码 / HTTP / 触发条件）；门禁改用**集合比对**而非短语锁——shared `ErrorCode` 的 `ARTIFACT_*` 集合必须与 design 表逐项相等，两个方向的变异断言内联在测试里 | `tools/check-v03-plan-contracts.test.mjs::F010-CODE-R3-018: the shared ARTIFACT_* error code set matches the design contract` | 3 | 4 | cross-feature-contract-drift |
+| R3-019 | BC-047 第二个断言疑似被掩盖的既有失败 | Medium | 正确性 | 症状 | 流程缺陷 | rejected(见裁决记录#1) | —（检视方自撤） | — | 3 | 4 | reviewer-misdiagnosis |
+| R4-020 | `source_relative_path` 存的是平台原生分隔符，同一文件在 Windows 与 Linux 记录成两种字符串 | Medium | 正确性 | 根因 | 原方案 | fixed | 抽出 `toPosixLocator(relativePath, separator = sep)` 用于返回的 locator；边界比较仍用平台原生 `relative()`（design §7 需要它解析 junction）。`separator` 可注入，理由与 `isPathWithinRoot` 的 `caseInsensitive` 相同——否则这段规范化只有 Windows CI 会执行到 | `server/tests/unit/artifact-paths.test.ts::rewrites Windows separators into a stable POSIX locator`；集成侧补 `not.toContain("\\")` | 4 | 5 | cross-platform-assumption |
+| R4-021 | Windows 上 fixture 临时目录清理 EPERM：crash matrix 故意丢弃的 DB 句柄没人关 | Medium | 测试覆盖 | 根因 | 原方案 | fixed | 两个 fixture 都记录发出的每个 DB 句柄，teardown 时先逐个 close（二次 close 被吞）再 `rmSync`，并加 `maxRetries` / `retryDelay` 兜住句柄释放延迟 | —（Windows 特有，只能由 CI 验证；本地 Linux 无法构造 EPERM，如实标注） | 4 | 5 | cross-platform-assumption |
+| R5-022 | R4-020 的新测试把平台相关的默认值当成契约，自己把 Windows CI 弄红 | Low | 测试覆盖 | 根因 | 修改引入 | fixed | 删掉对默认大小写行为的断言（它继承 `path.relative` 的平台语义，design §7 正是要这个），只保留平台无关的显式 `caseInsensitive` 断言，并把原因写进注释 | `server/tests/unit/artifact-paths.test.ts::folds case on demand; the default deliberately follows platform semantics` | 5 | 5 | test-locks-wrong-behavior |
+
+### 裁决记录
+
+**#1 · R3-019 · rejected · 检视方自撤 · Round 4**
+
+Round 3 我单独跑 `f009-page-states.spec.ts` 时，BC-047 在修掉第 40 行的 strict mode violation 后第 46 行仍失败，
+据此断定存在「第二个被掩盖的既有缺陷」，并准备交用户做产品裁决。**这个推断是错的。**
+该断言按设计依赖套件执行顺序——测试注释原文 `per journey order`：`golden-journey`（套件第 23 个）先跑，
+才会把 graph retry attempt 推进到 queued/cancelled，配置里 `fullyParallel: false, workers: 1` 保证了这个顺序。
+我单独跑一个 spec 文件时前置条件不成立，失败是必然的。完整套件跑 **37/37 全绿**，BC-047 ✓ 1.5s。
+
+### 模式性教训
+
+**1. 检视的第一个动作应该是跑门禁，不是读代码。** R1-001（唯一的 High）不是读出来的，是
+`npm run verify` 报出来的——基线 `79167eb` 的 commit message 写着 "close ACs and tasks"，
+`tasks.md` 的 T022 勾着 `[x]`，而门禁实际是红的。如果先读 4600 行代码再跑门禁，这条会被埋在
+十几条代码 finding 后面，甚至可能因为"代码看起来没问题"而被跳过。
+
+**2. `marked-done-not-implemented` 在一个循环内出现两次**（R1-001、R3-017），都是同一形状：
+**声明完成的门禁没有真跑，或跑了但把红判成了别的东西**。R3-017 尤其典型——修复方把
+`verify:release` 的 4 条 E2E 失败**整体**归因为 CPU 饥饿（机器负载确实是真的，load 3.78/7.97/8.41、
+5 个 opencode 进程约占 320% CPU），检视人单独复跑后发现其中 3 条确为环境抖动、第 4 条
+（`strict mode violation: resolved to 2 elements`）是确定性缺陷。**归因对了大部分，不等于结论成立；
+批量归因必须逐条分诊。**
+
+**3. `catch-all-swallows-cause` 出现两次，第二次是修第一次时长出来的**（R1-004 → R2-015）。
+R1-004 的教训正是"不要用 catch-all 把真实写失败误判成竞态"，而修它的同一批提交里，
+R1-007 的修复在 resolver 层新写了一个 `catch {}`，把 `readArchive` 的所有异常都报成
+"locator is malformed"。**修完一类问题后，要检查这轮修复本身有没有引入同一类问题**——
+这正是 skill 要求"第 2 轮必须做 diff-only 复核"的原因，自伤率在本循环是 2/16 ≈ 12%。
+
+**4. 检视方也会误判，而且误判方式和修复方同源。** R3-019（`reviewer-misdiagnosis`）是我用
+缩小后的执行范围（单独跑一个 spec 而非完整套件）做对照实验，把跟着一起消失的前置条件当成了
+"与修复无关的既有缺陷"。**对照实验要么在完整环境下做，要么先确认被测对象没有跨用例的前置依赖。**
+这和教训 2 是同一个毛病的两面：都是在不完整的观测条件下下确定性结论。
+
+**5. 短语锁抓不住"多出来的东西"。** R3-018 的失败模式是实现新增了一个对外可见错误码
+（`ARTIFACT_ARCHIVE_WRITE_FAILED`，还是修 R1-004 时加的）而 design 没跟上。所有既有的文档门禁
+都是 `requirePhrases` 形状——它们只能证明"该写的写了"，证明不了"没写的不存在"。
+这类漂移只能用**集合比对**：把实现侧的枚举集合与文档侧的清单集合做 `deepEqual`，
+两个方向（多一个、少一个）都变红。新增门禁 `F010-CODE-R3-018` 就是这个形状。
+
+**6. 分布与命中率。** 22 条 finding：严重度 High 1 / Medium 8 / Low 13；
+`origin` 分布 original-coding 14 / spec-drift 3 / fix-regression 3 / process-gap 2——
+**首次实现带进来的占 64%，修改引入的占 14%**，说明这批实现的主干设计是稳的，
+问题集中在边界校验、可观测性收尾与跨平台假设，与 Round 1 的定性结论一致。
+存活轮数全部为 1（每条都在发现的下一轮关闭，R5-022 当轮发现当轮关闭），
+没有出现跨多轮反复修不动的条目，未触发升级协议。
+裁决分布 accepted 21 / rejected 1（且这唯一一条是检视方自撤，不是修复方拒绝）/ partial 0；
+`suggested_fix` 与 `fix_summary` 实质一致率 21/21——**全接纳通常是"检视在凑数"的信号，
+但本循环 9 条做过独立变异验证（把修复改回原样确认目标测试变红），建议本身是可证伪的**，
+这是与"凑数式全接纳"的区别。
+
+**8. 本地全绿不等于可以收口——这次是 CI 把这条教训钉死的。** 本循环在触发 CI 之前，
+`npm run verify` 已经连续绿过 5 次，E2E 独立全量跑也 37/37 绿。CI 第一次运行就报出 2 条
+本地根本跑不出来的失败（`cross-platform-assumption` ×2）：`source_relative_path` 在 Windows 上
+存成 `docs\\report.md`、fixture teardown 因未关闭的 SQLite 句柄 EPERM。
+**根因是开发环境（WSL Linux）与 CI 环境（Windows-first）的平台差异**，而 F010 恰恰是本仓库
+文件系统操作最密集的 Feature——临时文件、原子 rename、realpath 边界、目录 fsync、orphan 清理
+全都踩在平台差异上。教训有两层：
+（a）**这类 Feature 的收敛候选判定必须包含 CI，不能用本地 verify 代替**，skill 第 7 条把 CI 列为
+最终门禁而不是"可选补充"，在这里得到了实测支持；
+（b）**跨平台行为要设计成本地可断言的**——R4-020 的修复把 `separator` 做成可注入参数（沿用
+`isPathWithinRoot` 的 `caseInsensitive` 先例），让 Windows 语义在 Linux 上也能被测试覆盖，
+而不是继续依赖"推一次 CI 看看"。R4-021 做不到这一点（无法在 Linux 上构造 EPERM），
+就如实在 `regression_test` 栏标注"只能由 CI 验证"，不假装有锁点。
+
+**9. 修跨平台问题时，最容易引入的就是新的平台假设。** R5-022 是我给 R4-020 写的新测试
+自己把 Windows CI 弄红的：断言 `isPathWithinRoot` 默认大小写敏感——那是 POSIX 的答案，
+不是契约，而 design §7 明确要求默认跟随平台原生语义。
+**判据很简单：一条断言如果在另一个平台上答案会变，它就不该被无条件写死。**
+要么显式参数化后再断言（可注入的 `caseInsensitive` / `separator`），要么只把原因写进注释、
+不断言默认值。
+
+**7. 变异验证的成本远低于它的价值。** 本循环对 8 条修复做了独立变异：R1-002（删 inline hash 校验）、
+R1-004（把 non-race 失败改回吞掉）、R1-005（正则改回 `^\d+$`）、R1-006（删归属校验）、
+R1-010（删 enabled 短路）、R2-015（locator 判断改成恒真）、R3-018（双向：偷加未文档化错误码 / 从 design 删一行）。
+每条耗时不到一分钟，全部按预期变红。没有这一步，"已配回归测试"只是一句声明。
+
+### 门禁与闭环证据
+
+- 本地 `npm run verify`：EXIT 0（server 1771 passed / 29 skipped、web 281 passed、文档门禁 141 tests fail 0）。
+- 本地 E2E 独立全量跑：37 passed / 0 failed。`npm run verify:release` 在本机未能取得稳定绿——
+  两次尝试的失败集合零重叠、每条都能在独立跑里通过，机器 `load average` 4–8、多个 CLI 进程满负载，
+  按 `docs/SOP.md`「红了先分诊」判为环境抖动并如实记录，**不写成通过**；确定性结论以 CI 为准。
+- CI（PR #2，Windows-first）：
+  - run `34753621840` ✗ — Verify job 报 R4-020、R4-021（本地 Linux 跑不出来）；E2E job 绿。
+  - run `34754214505` ✗ — 前两条已修复且不再出现，新报 R5-022（R4-020 的修复自身引入）。
+  - run `34758847194` ✓ — **Verify 与 E2E 两个 job 全绿，本循环以此闭环。**

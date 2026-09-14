@@ -13,7 +13,7 @@ import {
 // 与上游域无漂移；status_map 闭集 + 完整覆盖；未认领 owner 的 kind 拒绝激活。
 
 /** 编译跟随断言：EvidenceRefKind 增删成员时本行编译失败，强制实现方显式处理。 */
-const _EXHAUSTIVENESS: Record<EvidenceRefKind, true> = { event: true, file_change_set: true };
+const _EXHAUSTIVENESS: Record<EvidenceRefKind, true> = { event: true, file_change_set: true, artifact: true };
 
 function evidenceSpec(overrides: Partial<Record<string, unknown>> = {}, kind: EvidenceRefKind = "event") {
   return {
@@ -27,10 +27,11 @@ function evidenceSpec(overrides: Partial<Record<string, unknown>> = {}, kind: Ev
 }
 
 describe("F013 AC-004: EvidenceSpec contract", () => {
-  it("claims a normalization owner for every kind in the upstream domain (compile-following)", () => {
+  it("tracks which kinds still lack a normalization owner (compile-following)", () => {
     // 认领表 key 必须恰好覆盖 EvidenceRefKind 域（运行时面：与 REF_PREFIX_BY_KIND 派生值比对）。
-    expect(evidenceKindsWithoutNormalizationOwner()).toEqual([]);
-    expect(listEvidenceRefKinds().sort()).toEqual(["event", "file_change_set"]);
+    // artifact 已在上游域中，但归一化 owner 未认领，因此它是当前唯一的 owner-less kind。
+    expect(evidenceKindsWithoutNormalizationOwner()).toEqual(["artifact"]);
+    expect(listEvidenceRefKinds().sort()).toEqual(["artifact", "event", "file_change_set"]);
   });
 
   it("accepts a well-formed completion requirement with evidence", () => {
@@ -155,8 +156,9 @@ describe("F013 AC-004: EvidenceSpec contract", () => {
     }
   });
 
-  it("rejects kinds outside the EvidenceRefKind domain as owner-less (negative example: artifact)", () => {
-    // artifact 是 F010 计划中的 kind：在上游类型认领归一化 owner 之前必须拒绝。
+  it("rejects owner-less kinds at activation (artifact until its normalization owner lands)", () => {
+    // artifact 已在 EvidenceRefKind 中，但归一化 owner 未认领（design §3 启用条件），
+    // 因此带它的 requirement 在激活时必须以 SKILL_EVIDENCE_KIND_UNAVAILABLE 拒绝。
     const forged = evidenceSpec({}, "artifact" as EvidenceRefKind);
     try {
       parseRevisionContent(

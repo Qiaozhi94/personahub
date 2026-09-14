@@ -51,6 +51,15 @@ import {
   type ActivateWorkflowTemplateResponse,
   type DeactivateWorkflowTemplateResponse,
   type RuntimeHealthResponse,
+  type CreateArtifactInput,
+  type ReviseArtifactInput,
+  type ArtifactRevisionWriteResult,
+  type ArtifactListRead,
+  type ArtifactEntityRead,
+  type ArtifactRevisionRead,
+  type ArtifactProvenanceRead,
+  type RunArtifactRead,
+  type EvidenceArtifactRead,
   type SpaceListResponse,
   type SpaceCreateResponse,
   type SpaceActionResponse,
@@ -384,5 +393,29 @@ export const apiClient = {
       apiFetch<RuntimeHealthResponse>(
         `/projects/${projectId}/health/runtime${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ""}`,
       ),
+  },
+  // F010 read surface. Typed refs travel only in the query string and are
+  // encoded exactly once here; the server handles the decoded raw ref.
+  artifacts: {
+    create: (input: CreateArtifactInput) =>
+      apiFetch<ArtifactRevisionWriteResult>("/artifacts", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    revise: (artifactId: string, input: ReviseArtifactInput) =>
+      apiFetch<ArtifactRevisionWriteResult>(`/artifacts/${encodeURIComponent(artifactId)}/revisions`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    listByIssue: (issueId: string) =>
+      apiFetch<ArtifactListRead>(`/artifacts?issue_id=${encodeURIComponent(issueId)}`),
+    get: (artifactId: string) => apiFetch<ArtifactEntityRead>(`/artifacts/${encodeURIComponent(artifactId)}`),
+    getRevision: (artifactId: string, revision: number) =>
+      apiFetch<ArtifactRevisionRead>(`/artifacts/${encodeURIComponent(artifactId)}/revisions/${revision}`),
+    getProvenance: (artifactId: string) =>
+      apiFetch<ArtifactProvenanceRead>(`/artifacts/${encodeURIComponent(artifactId)}/provenance`),
+    listByRun: (runId: string) => apiFetch<RunArtifactRead>(`/runs/${encodeURIComponent(runId)}/artifacts`),
+    listByEvidenceRef: (ref: string) =>
+      apiFetch<EvidenceArtifactRead>(`/evidence/artifacts?ref=${encodeURIComponent(ref)}`),
   },
 };

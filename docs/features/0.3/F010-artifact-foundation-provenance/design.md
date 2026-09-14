@@ -112,6 +112,26 @@ Artifact 只在 `active → retired` 间单向流转；retired 禁止新 revisio
 
 大小在创建临时 blob 或开启事务前校验：inline 按 UTF-8 字节数，file 同时做预读 `stat` 与流式硬上限；超限返回 `ARTIFACT_TOO_LARGE`，且不产生 Artifact、revision 或临时文件。
 
+### 错误码契约
+
+本 Feature 对外暴露的稳定错误码是下面这一组，`shared/src/errors/index.ts` 的 `ARTIFACT_*` 集合必须与本表逐项一致——新增一个不回写本表即视为契约漂移（门禁 `F010-CODE-R3-018`）：
+
+| 错误码 | HTTP | 触发条件 |
+|---|---|---|
+| `ARTIFACT_NOT_FOUND` | 404 | Artifact 实体不存在（读取、修订、消费、retire 共用） |
+| `ARTIFACT_REVISION_NOT_FOUND` | 404 | 实体存在但该 revision 无 manifest，或 archive 对象缺失 |
+| `ARTIFACT_RETIRED` | 409 | 对已 retired 的 Artifact 发起新 revision；历史解析不受影响 |
+| `ARTIFACT_REVISION_CONFLICT` | 409 | `expected_current_revision` CAS 失败 |
+| `ARTIFACT_IDEMPOTENCY_CONFLICT` | 409 | 同一 `(artifact_id, idempotency_key)` 命中但请求指纹不同 |
+| `ARTIFACT_REF_INVALID` | 400 | ref 语法非法、未知 kind，或 dispatch / consumption 模式收到 floating ref |
+| `ARTIFACT_TOO_LARGE` | 413 | inline 字节数或 file 大小超过 `PERSONAHUB_ARTIFACT_MAX_BYTES` |
+| `ARTIFACT_SOURCE_OUTSIDE_ROOT` | 400 | source 路径规范化后越出授权根目录（含 junction / symlink） |
+| `ARTIFACT_ARCHIVE_COLLISION` | 409 | content address 上已存在字节不同的对象 |
+| `ARTIFACT_ARCHIVE_WRITE_FAILED` | 500 | rename 因非竞态原因失败，或目标始终未落地；保留原始 cause，不退化成裸 ENOENT |
+| `ARTIFACT_HASH_MISMATCH` | 409 | 读取时重算 SHA-256 与 manifest 不符（inline 与 file 同协议），绝不返回受损正文 |
+
+畸形 archive locator 属于不变量破损而非上述任何一种业务失败，返回 `INTERNAL_ERROR` 并由 resolver 转成 `invalid` 读态；archive 对象存在但读取失败（EACCES / EIO / EISDIR）同样回 `invalid`，但文案与日志必须如实说明是读失败而不是 locator 畸形。
+
 ### Typed ref
 
 公共线格式为 `artifact:<artifact_id>@<revision>`；交互读取 current 可使用 `artifact:<artifact_id>`。`server/src/evidence-ref.ts` 扩展 `EvidenceRefKind` 的 `artifact`，并让 `ParsedRef` 增加可选 `revision?: number`；`@revision` 的切分、正整数校验和 builder 均在该模块完成，既有 `event` / `file_change_set` kind 及返回语义不变。
@@ -147,7 +167,7 @@ archive locator 固定为 `<sha256前2位>/<sha256>`。目标已存在时先校�
 ## 7. 失败、恢复、安全与兼容
 
 - **hash**：发布时与 resolver 每次读取时都对原始字节计算 SHA-256；inline 使用 UTF-8 编码后的字节。hash mismatch 已定位到 revision，始终使用 `artifacts.thread_id` 写 `artifact.resolve_rejected`，返回 `ARTIFACT_HASH_MISMATCH` 且绝不返回受损正文。sweep 只用 hash 判断候选文件名，不替代读取时校验。
-- **路径边界**：先 `realpath` 授权根目录与 source 文件，再用平台原生 `relative(root, file)` 判断结果不得为绝对路径、`..` 或以 `..${sep}` 开头；这会解析 junction / symlink，并按 Windows 大小写不敏感语义比较。越界返回 `ARTIFACT_SOURCE_OUTSIDE_ROOT`。
+- **路径边界**：先 `realpath` 授权根目录与 source 文件，再用平台原生 `relative(root, file)` 判断结果不得为绝对路径、`..` 或以 `..${sep}` 开头；这会解析 junction / symlink，并按 Windows 大小写不敏感语义比较。越界返回 `ARTIFACT_SOURCE_OUTSIDE_ROOT`。边界**比较**使用平台原生分隔符，但持久化进 `source_relative_path`、经 API 返回的 **locator 一律规范化为 POSIX 分隔符**：同一个 workspace 文件不得因为发布它的操作系统不同而记录成两种字符串（`archive_relative_path` 的 `<2hex>/<hash>` 本来就是这个约定）。
 - **恢复与租约**：`PERSONAHUB_ARTIFACT_ORPHAN_GRACE_MS` 默认 `3600000`（1 小时），`PERSONAHUB_ARTIFACT_SWEEP_LEASE_MS` 默认 `30000`（30 秒）。只有 orphan sweeper 获取 `archive-maintenance` DB 租约；发布路径不参与租约。重启清理只删除超过安全宽限期且未被任何 manifest 引用的 orphan，并额外要求 hash 文件名合法；临时文件也只在超过宽限期后删除，因此 sweep 不会删除在途发布内容。
 - **只读边界**：content-addressed 命名和 ArtifactService“不打开既有 archive 做写入”是应用约定，不是操作系统级只读隔离；同用户的外部进程仍可能修改文件。resolver 每次读取 hash 校验是完整性兜底，本 Feature 不声称 chmod / ACL 安全边界。
 - **兼容**：旧 `event:` / `file-change-set:` ref 行为不变；新增 artifact revision 解析测试覆盖 POSIX、Windows 分隔符模拟、junction/symlink 越界和大小写路径。Migration 只前进，不要求不存在的 down/rollback 流程。
@@ -179,4 +199,4 @@ ArtifactService 的发布路径接受生产默认 `undefined` 的 `testHooks`：
 
 ## 10. 待确认设计问题
 
-无。
+无

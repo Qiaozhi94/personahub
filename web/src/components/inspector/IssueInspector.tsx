@@ -57,6 +57,26 @@ const BLOCKED_BY_EXPLANATIONS: Record<string, string> = {
   post_hoc_detection: "Push detected after execution — this is post-hoc detection, not pre-execution blocking",
 };
 
+/**
+ * Only the three escalation shapes carry a blocker-specific explanation. Any
+ * other failure_reason (and the raw error_message) is already stated verbatim
+ * by the Latest Run section's "Failure" row and its error block — repeating it
+ * inside the blocker banner rendered the same string twice in one page, which
+ * is both noise and a strict-mode locator hazard (F010 code review R3-017).
+ */
+function blockedExplanationFor(failureReason: FailureReason | null | undefined): string | null {
+  if (!failureReason) return null;
+  const key =
+    failureReason === FailureReason.CredentialIsolationBlocked
+      ? "credential_isolation"
+      : failureReason === FailureReason.PreExecutionApprovalRejected
+        ? "pre_execution_approval"
+        : failureReason === FailureReason.PostHocEscalation
+          ? "post_hoc_detection"
+          : null;
+  return key ? (BLOCKED_BY_EXPLANATIONS[key] ?? null) : null;
+}
+
 const GRAPH_RUN_STATUS_VARIANT: Record<GraphRunStatus, "secondary" | "brand" | "success" | "destructive" | "warning"> =
   {
     [GraphRunStatus.Running]: "brand",
@@ -326,21 +346,8 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
                   blocked
                 </Badge>
               </div>
-              {latestRun?.failure_reason ? (
-                <p className="text-xs text-destructive/80">
-                  {BLOCKED_BY_EXPLANATIONS[
-                    latestRun.failure_reason === FailureReason.CredentialIsolationBlocked
-                      ? "credential_isolation"
-                      : latestRun.failure_reason === FailureReason.PreExecutionApprovalRejected
-                        ? "pre_execution_approval"
-                        : latestRun.failure_reason === FailureReason.PostHocEscalation
-                          ? "post_hoc_detection"
-                          : ""
-                  ] ?? FAILURE_REASON_LABELS[latestRun.failure_reason]}
-                </p>
-              ) : null}
-              {latestRun?.error_message ? (
-                <p className="text-xs text-muted-foreground">{latestRun.error_message}</p>
+              {blockedExplanationFor(latestRun?.failure_reason) ? (
+                <p className="text-xs text-destructive/80">{blockedExplanationFor(latestRun?.failure_reason)}</p>
               ) : null}
             </div>
           </div>

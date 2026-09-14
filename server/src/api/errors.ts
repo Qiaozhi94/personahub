@@ -103,6 +103,19 @@ const ERROR_STATUS_MAP: Record<ErrorCode, number> = {
   [ErrorCode.TEMPLATE_FIELD_NOT_EDITABLE]: 400,
   [ErrorCode.TEMPLATE_VERSION_CONFLICT]: 409,
   [ErrorCode.LAST_ACTIVE_TEMPLATE]: 409,
+  // F010: artifact & provenance errors. ARTIFACT_TOO_LARGE is 413: the request
+  // is well-formed but the payload exceeds the configured hard cap.
+  [ErrorCode.ARTIFACT_NOT_FOUND]: 404,
+  [ErrorCode.ARTIFACT_REVISION_NOT_FOUND]: 404,
+  [ErrorCode.ARTIFACT_RETIRED]: 409,
+  [ErrorCode.ARTIFACT_REVISION_CONFLICT]: 409,
+  [ErrorCode.ARTIFACT_IDEMPOTENCY_CONFLICT]: 409,
+  [ErrorCode.ARTIFACT_REF_INVALID]: 400,
+  [ErrorCode.ARTIFACT_TOO_LARGE]: 413,
+  [ErrorCode.ARTIFACT_SOURCE_OUTSIDE_ROOT]: 400,
+  [ErrorCode.ARTIFACT_ARCHIVE_COLLISION]: 409,
+  [ErrorCode.ARTIFACT_ARCHIVE_WRITE_FAILED]: 500,
+  [ErrorCode.ARTIFACT_HASH_MISMATCH]: 409,
   // F013: Space / repository / skill errors
   [ErrorCode.SPACE_NAME_REQUIRED]: 400,
   [ErrorCode.SPACE_NOT_FOUND]: 404,
