@@ -160,6 +160,66 @@ describe("F013 AC-003: capabilities surface (web)", () => {
     expect(apiClient.projects.create).not.toHaveBeenCalled();
   });
 
+  it("clears the project default skill from the selector (R2-019)", async () => {
+    const refA: ProjectSkillRef = {
+      project_id: "prj_1",
+      skill_id: "skl_a",
+      is_default: true,
+      pinned_version: null,
+      created_at: "2026-09-01T00:00:00Z",
+      updated_at: "2026-09-01T00:00:00Z",
+    };
+    vi.mocked(apiClient.skills.listProjectRefs)
+      .mockResolvedValueOnce({ refs: [refA] })
+      .mockResolvedValue({ refs: [] });
+    vi.mocked(apiClient.skills.list).mockResolvedValue({
+      skills: [skillItem({ id: "skl_a", display_name: "API Migration" })],
+    } as SkillListResponse);
+    vi.mocked(apiClient.skills.setProjectDefault).mockResolvedValue({
+      project_id: "prj_1",
+      skill_id: null,
+      pinned_version: null,
+    });
+
+    renderWithQuery(<ProjectSkillsTab projectId="prj_1" />);
+
+    expect(await screen.findByText(/默认 Skill：skl_a/)).toBeInTheDocument();
+    await userEvent.setup().selectOptions(screen.getByLabelText("选择默认 Skill"), "");
+    await waitFor(() => {
+      expect(apiClient.skills.setProjectDefault).toHaveBeenCalledWith("prj_1", null, null);
+    });
+    expect(await screen.findByText("尚未选择默认 Skill。")).toBeInTheDocument();
+  });
+
+  it("shows the real default once the refs query resolves after mount (R2-019)", async () => {
+    const refA: ProjectSkillRef = {
+      project_id: "prj_1",
+      skill_id: "skl_a",
+      is_default: true,
+      pinned_version: null,
+      created_at: "2026-09-01T00:00:00Z",
+      updated_at: "2026-09-01T00:00:00Z",
+    };
+    let resolveRefs: (value: { refs: ProjectSkillRef[] }) => void = () => undefined;
+    vi.mocked(apiClient.skills.listProjectRefs).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRefs = resolve;
+      }),
+    );
+    vi.mocked(apiClient.skills.list).mockResolvedValue({
+      skills: [skillItem({ id: "skl_a", display_name: "API Migration" })],
+    } as SkillListResponse);
+
+    renderWithQuery(<ProjectSkillsTab projectId="prj_1" />);
+
+    const select = screen.getByLabelText("选择默认 Skill") as HTMLSelectElement;
+    expect(select.value).toBe("");
+    resolveRefs({ refs: [refA] });
+    await waitFor(() => {
+      expect(select.value).toBe("skl_a");
+    });
+  });
+
   it("opens the skill's current revision and lets the user choose another published revision", async () => {
     const revision = (version: number): SkillRevision => ({
       skill_id: "skl_1",

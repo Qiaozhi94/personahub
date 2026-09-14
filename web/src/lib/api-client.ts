@@ -186,8 +186,8 @@ export const apiClient = {
         body: JSON.stringify(version ? { version } : {}),
       }),
     disable: (id: string) => apiFetch<{ skill: Skill }>(`/skills/${id}/disable`, { method: "POST" }),
-    setProjectDefault: (projectId: string, skillId: string, pinnedVersion?: number | null) =>
-      apiFetch<{ project_id: string; skill_id: string; pinned_version: number | null }>(
+    setProjectDefault: (projectId: string, skillId: string | null, pinnedVersion?: number | null) =>
+      apiFetch<{ project_id: string; skill_id: string | null; pinned_version: number | null }>(
         `/projects/${projectId}/default-skill`,
         { method: "PUT", body: JSON.stringify({ skill_id: skillId, pinned_version: pinnedVersion ?? null }) },
       ),

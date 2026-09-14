@@ -110,7 +110,7 @@ export function useProjectSkillRefs(projectId: string) {
 export function useSetProjectDefaultSkill(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { skillId: string; pinnedVersion?: number | null }) => {
+    mutationFn: async (input: { skillId: string | null; pinnedVersion?: number | null }) => {
       try {
         return await apiClient.skills.setProjectDefault(projectId, input.skillId, input.pinnedVersion ?? null);
       } catch (error) {

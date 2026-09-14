@@ -30,12 +30,11 @@ export function ProjectSkillsTab({ projectId }: { projectId: string }) {
       <select
         id="f013-default-skill"
         aria-label="选择默认 Skill"
+        value={defaultRef?.skill_id ?? ""}
         onChange={(event) => {
-          if (event.target.value) {
-            setDefault.mutate({ skillId: event.target.value });
-          }
+          const value = event.target.value;
+          setDefault.mutate({ skillId: value === "" ? null : value });
         }}
-        defaultValue={defaultRef?.skill_id ?? ""}
       >
         <option value="">—</option>
         {allSkills
