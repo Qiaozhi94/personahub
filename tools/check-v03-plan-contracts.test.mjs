@@ -1019,12 +1019,11 @@ test("F009 done status is synchronized across roadmap documents", () => {
     'status: done',
     'eval_contract: exempt',
     'F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿',
-    // F010 entered implementation (79167eb, schema v13 after the main-side
-    // renumber) and F013 advanced to ready-for-development (cycle 22), so the
-    // roadmap phrases are now "F010 已进入 in-progress", "F013 已于
-    // 2026-09-13" and "F011、F012、F014 仍为 draft". Lock all three so
-    // dropping any status from every roadmap document fails this gate.
-    'F010 已进入 `in-progress`',
+    // F010 closed on 2026-09-14 (cycle 25 converged), so the roadmap phrase
+    // moved to the done wording; F013 stays ready-for-development (cycle 22)
+    // and F011/F012/F014 stay draft. Lock all of them so dropping any status
+    // from every roadmap document fails this gate.
+    'F010 已于 2026-09-14 收口为 `done`（实现代码检视循环 25 五轮收敛',
     'F013 已于 2026-09-13',
     'F011、F012、F014 仍为 `draft`',
   ];
@@ -1034,15 +1033,18 @@ test("F009 done status is synchronized across roadmap documents", () => {
   const forbidden = [
     "| F009 | 0.3     | V3.44 Frontend Foundation & Migration | review |",
     "F009 开发与自检已完成并进入 `review`",
+    "| F010 | 0.3     | Artifact & Provenance Foundation | in-progress |",
+    "F010 已进入 `in-progress`",
   ];
 
   requirePhrases(documents, phrases);
   forbidPhrases(documents, forbidden);
-  // Every phrase is load-bearing: deleting any one (including any of the F010
-  // in-progress / F013 ready-for-development / remaining-draft statuses) must
-  // turn this gate red.
+  // Every phrase is load-bearing: deleting any one (including the F010 done
+  // wording, the F013 ready-for-development marker or the remaining-draft
+  // statuses) must turn this gate red.
   verifyEachPhraseMutation(documents, phrases);
   verifyForbiddenMutation(documents, forbidden[0]);
+  verifyForbiddenMutation(documents, forbidden[2]);
 });
 
 test("V03-PLAN-R1-008: URL migration is based on published routes, not invented history", () => {

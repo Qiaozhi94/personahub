@@ -2,7 +2,7 @@
 kind: feature
 id: F010
 version: "0.3"
-status: in-progress
+status: done
 gate_version: 1
 eval_contract: exempt
 eval_contract_exempt_reason: "本 Feature 是 Artifact 存储与来源追溯的基础契约（存储、resolver、consumption），不提出需用效用数据决定保留或退役的不确定主张；消费侧效用归 F011/F012 评审"
@@ -10,7 +10,7 @@ related_features: [F003, F004, F006, F009, F011, F012, F014]
 topics: [artifact, revision, provenance, evidence, typed-ref]
 doc_kind: spec
 created: 2026-08-09
-updated: 2026-09-12
+updated: 2026-09-14
 ---
 
 # F010：Artifact & Provenance Foundation
