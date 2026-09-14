@@ -72,6 +72,8 @@ export interface DispatchServiceOptions {
   acceptanceLock?: (issueId: string) => { locked: boolean; reason?: string };
   /** Post-commit spawn hook — MUST NOT run any earlier (不变量 7). */
   spawnRun?: (runId: string) => Promise<void>;
+  /** Wired to the existing RunDispatchService.cancel for running Runs. */
+  cancelRunningRun?: (runId: string) => Promise<void>;
   nativeMemoryIsolation?: (provider: string) => "supported" | "unsupported" | "unverified";
 }
 
@@ -388,6 +390,56 @@ export class DispatchService {
       startMode: mode.startMode,
       spawn: true,
     };
+  }
+
+  /** §5.6 lease continuation: re-run the start transaction for a starting
+   *  dispatch whose lease expired BEFORE its attempt existed. The seq=1
+   *  uniqueness guarantees at most one attempt per dispatch no matter how
+   *  many owners take over. */
+  async resumeStart(dispatchId: string, _worker: string): Promise<StartOutcome> {
+    const dispatch = this.get(dispatchId);
+    if (dispatch.state !== DispatchState.Starting) {
+      return { dispatch, attemptId: null, runId: null, startMode: null, spawn: false };
+    }
+    return this.start(dispatch, _worker);
+  }
+
+  /** Cancel exactly one Attempt and its Run (§5.4): a cancelled Attempt does
+   *  not rewrite the dispatch's dispatched fact, sibling attempts, or any
+   *  historical dispatch. Running Runs are cancelled through the injected
+   *  hook (wired to the existing RunDispatchService at composition). */
+  async cancelAttempt(attemptId: string, actor: string): Promise<Attempt> {
+    const attempt = this.db.prepare("SELECT * FROM attempts WHERE id = ?").get(attemptId) as Attempt | undefined;
+    if (!attempt) throw new AppError(ErrorCode.ATTEMPT_NOT_FOUND, `Attempt not found: ${attemptId}`);
+    if (attempt.state !== "queued" && attempt.state !== "running") {
+      throw new AppError(ErrorCode.ATTEMPT_NOT_ACTIVE, `Attempt is already ${attempt.state}.`);
+    }
+    const run = this.runRepo.getById(attempt.run_id);
+    if (run && (run.status === RunStatus.Queued || run.status === RunStatus.Running)) {
+      if (run.status === RunStatus.Running && this.options.cancelRunningRun) {
+        await this.options.cancelRunningRun(run.id);
+      } else if (run.status === RunStatus.Queued) {
+        this.runRepo.transitionStatus(run.id, RunStatus.Queued, RunStatus.Cancelled, { completed_at: this.now() });
+      }
+    }
+    const cancelled = this.db.transaction(() => {
+      this.db
+        .prepare("UPDATE attempts SET state = 'cancelled', ended_at = ? WHERE id = ? AND state IN ('queued','running')")
+        .run(this.now(), attemptId);
+      this.outbox.enqueue(this.db, {
+        topic: "attempt.cancelled",
+        dedupeKey: `attempt:${attemptId}:cancelled`,
+        payload: {
+          attempt_id: attemptId,
+          dispatch_id: attempt.dispatch_id,
+          actor,
+          preserved: "已产出的事实保留（输出、文件变化、轨迹）",
+          voided: "该 Attempt 的执行被终止，不产生新证据主张",
+        },
+      });
+      return this.db.prepare("SELECT * FROM attempts WHERE id = ?").get(attemptId) as Attempt;
+    })();
+    return cancelled;
   }
 
   recordStartFailed(dispatch: Dispatch, reasonCode: string, diagnostics: string): StartOutcome {
