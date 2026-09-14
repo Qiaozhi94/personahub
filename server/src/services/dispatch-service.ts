@@ -54,6 +54,8 @@ export interface DispatchConfirmInput {
   requirementOverride: { requirementId: string; strength: string; reason: string } | null;
   graceWindowMs: number;
   actor: string;
+  /** ADR 0009 §4 cold-start condition #1 — user explicitly restarts. */
+  userRequestedRestart?: boolean;
 }
 
 export interface StartOutcome {
@@ -143,6 +145,7 @@ export class DispatchService {
 
     const now = this.now();
     const id = generateDispatchId();
+    if (input.userRequestedRestart) this.restartFlags.set(id, true);
     const insert = this.db.transaction(() => {
       this.db
         .prepare(
@@ -330,13 +333,13 @@ export class DispatchService {
       throw error; // transient: leave the lease to expire for another owner
     }
     const attemptId = generateAttemptId();
-    const previous = this.previousAttempt(dispatch.id);
+    const previous = this.findResumableAttempt(dispatch);
     const provider = this.agentConfigRepo.getById(dispatch.adapter_config_id)?.cli_provider ?? "";
     const nativeMemory = this.options.nativeMemoryIsolation?.(provider) ?? "unverified";
     const mode = decideStartMode({
       purpose: dispatch.purpose,
       previousAttempt: previous,
-      userRequestedRestart: false,
+      userRequestedRestart: this.consumeRestartFlag(dispatch.id),
       previousTerminatedOnPoisonedInput: false,
       sessionUnusable: false,
       nativeMemoryIsolation: nativeMemory,
@@ -493,9 +496,45 @@ export class DispatchService {
     return run;
   }
 
-  private previousAttempt(dispatchId: string) {
-    const rows = this.listAttempts(dispatchId);
-    return rows.length > 0 ? rows[rows.length - 1] : null;
+  /** Resume key (ADR 0009 §2): 执行组合 + Issue + Room + 上下文范围 all equal,
+   *  and the previous attempt actually captured a provider session — only
+   *  then may the new attempt resume. Same-dispatch retries are covered by
+   *  seq; this looks one dispatch back across the room's history. */
+  private findResumableAttempt(dispatch: Dispatch): Attempt | null {
+    return (
+      (this.db
+        .prepare(
+          `SELECT a.* FROM attempts a JOIN dispatches d ON d.id = a.dispatch_id
+           WHERE d.room_id = ? AND d.issue_id IS ? AND d.adapter_config_id = ? AND d.model = ?
+             AND d.depth_raw = ? AND d.runtime_id = ? AND d.context_scope = ?
+             AND a.provider_session_id IS NOT NULL
+             AND a.state IN ('succeeded','failed','cancelled','interrupted')
+           ORDER BY a.created_at DESC LIMIT 1`,
+        )
+        .get(
+          dispatch.room_id, dispatch.issue_id, dispatch.adapter_config_id, dispatch.model,
+          dispatch.depth_raw, dispatch.runtime_id, dispatch.context_scope,
+        ) as Attempt | undefined) ?? null
+    );
+  }
+
+  /** The restart flag is captured at confirm (per dispatch) and consumed once
+   *  at start. ADR 0009 §4 cold-start condition #1. */
+  private restartFlags = new Map<string, boolean>();
+  private captureRestartFlag(dispatchId: string, restart: boolean): void {
+    if (restart) this.restartFlags.set(dispatchId, true);
+  }
+
+  private consumeRestartFlag(dispatchId: string): boolean {
+    const flag = this.restartFlags.get(dispatchId) ?? false;
+    this.restartFlags.delete(dispatchId);
+    return flag;
+  }
+
+  /** Run-terminal hook: persist the adapter-reported provider session id so
+   *  later dispatches can evaluate resume feasibility (ADR 0009 §5). */
+  recordProviderSessionId(attemptId: string, providerSessionId: string): void {
+    this.db.prepare("UPDATE attempts SET provider_session_id = ? WHERE id = ?").run(providerSessionId, attemptId);
   }
 
   private dispatchThreadId(dispatch: Dispatch): string | null {

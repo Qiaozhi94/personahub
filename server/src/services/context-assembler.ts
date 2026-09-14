@@ -150,11 +150,7 @@ export class ScopedContextAssembler implements ContextAssembler {
       throw new DispatchContextError("CONTEXT_FILTER_UNDISCLOSED", "Filtered context items require a disclosure reason.");
     }
 
-    const hashInput = [...items]
-      .sort((a, b) => (a.source_ref < b.source_ref ? -1 : a.source_ref > b.source_ref ? 1 : 0))
-      .map((item) => `${item.source_ref}|${item.decision}|${item.reason ?? ""}`)
-      .join("\n");
-    const contentHash = createContentHash(hashInput);
+    const contentHash = hashContextItems(items);
 
     return {
       scope: dispatch.context_scope,
@@ -167,11 +163,22 @@ export class ScopedContextAssembler implements ContextAssembler {
     };
   }
 
-  /** Same-transaction F010 consumption recording (不变量 12): the ledger
-   *  validates the revision ref; this wrapper validates that the consuming
-   *  run belongs to THIS dispatch before delegating. */
+  /** Same-transaction F010 consumption recording (不变量 12): the wrapper
+   *  validates INSIDE the caller's transaction that the dispatch exists and
+   *  the consuming run is the one this dispatch's start created (the seq=1
+   *  attempt binds them); the ledger then validates the revision ref. */
   recordConsumptions(input: AssembleInput, assembled: AssembledContext, dispatchThreadId: string | null): void {
     if (!this.consumptionLedger) return;
+    if (assembled.consumptionRefs.length === 0) return;
+    const bound = this.db
+      .prepare("SELECT 1 FROM attempts WHERE dispatch_id = ? AND run_id = ?")
+      .get(input.dispatch.id, input.runId);
+    if (!bound) {
+      throw new DispatchContextError(
+        "CONSUMPTION_OWNERSHIP_INVALID",
+        `Run ${input.runId} is not owned by dispatch ${input.dispatch.id} — consumption rejected (不变量 12).`,
+      );
+    }
     for (const consumption of assembled.consumptionRefs) {
       this.consumptionLedger.record({
         dispatchId: input.dispatch.id,
@@ -186,4 +193,15 @@ export class ScopedContextAssembler implements ContextAssembler {
 
 export function createContentHash(input: string): string {
   return `sha256:${createHash("sha256").update(input).digest("hex")}`;
+}
+
+/** The AC-003 rebuild rule: sort by source_ref, then hash the
+ *  (ref, decision, reason) triples — the same refs always rebuild to the
+ *  same content_hash no matter the collection order. */
+export function hashContextItems(items: ContextSnapshotItem[]): string {
+  const canonical = [...items]
+    .sort((a, b) => (a.source_ref < b.source_ref ? -1 : a.source_ref > b.source_ref ? 1 : 0))
+    .map((item) => `${item.source_ref}|${item.decision}|${item.reason ?? ""}`)
+    .join("\n");
+  return createContentHash(canonical);
 }
