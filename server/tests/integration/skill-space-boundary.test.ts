@@ -86,6 +86,17 @@ describe("F013 AC-005: skill space boundary & conflict lifecycle", () => {
     expect(listed.find((s) => s.id === skill.id)?.space_state).toBe("active");
   });
 
+  it("does not list another space's private skills", () => {
+    const spaceA = services.spaceService.create("Private A");
+    const spaceB = services.spaceService.create("Private B");
+    const privateA = services.skillRegistry.createSkill({
+      display_name: "Only A",
+      space_id: spaceA.id,
+      draft: { capability_tags: [] },
+    }).skill;
+    expect(services.skillRegistry.listForSpace(spaceB.id).some((skill) => skill.id === privateA.id)).toBe(false);
+  });
+
   it("global disabled skill stays unusable in a new space (two-layer AND)", () => {
     const { skill } = services.skillRegistry.createSkill({
       display_name: "Will disable",
@@ -170,9 +181,7 @@ describe("F013 AC-005: skill space boundary & conflict lifecycle", () => {
       space_id: space.id,
       draft: { capability_tags: [] },
     }).skill;
-    expect(
-      services.skillRegistry.listForSpace(space.id).find((s) => s.id === first.id)?.space_state,
-    ).toBe("conflict");
+    expect(services.skillRegistry.listForSpace(space.id).find((s) => s.id === first.id)?.space_state).toBe("conflict");
 
     services.skillRegistry.disable(second.id);
     services.skillRegistry.scan(); // 扫描或消解动作触发恢复
@@ -198,9 +207,30 @@ describe("F013 AC-005: skill space boundary & conflict lifecycle", () => {
     // global 重新激活（正常操作）：按当前分组重算状态——两个 active 同名不同来源
     // 重新构成 conflict，而不是保留上一次的 shadowed。
     services.skillRegistry.activate(global.id, 1);
-    expect(
-      services.skillRegistry.listForSpace(spaceA.id).find((s) => s.id === global.id)?.space_state,
-    ).toBe("conflict");
+    expect(services.skillRegistry.listForSpace(spaceA.id).find((s) => s.id === global.id)?.space_state).toBe(
+      "conflict",
+    );
+  });
+
+  it("switching the project default demotes the previous default", () => {
+    const space = defaultSpaceId();
+    const project = projectIdIn(space);
+    const first = services.skillRegistry.createSkill({ display_name: "First", space_id: space, draft: {} }).skill;
+    const second = services.skillRegistry.createSkill({ display_name: "Second", space_id: space, draft: {} }).skill;
+    const now = new Date().toISOString();
+    services.skillRegistry.setDefaultSkillRef(project, first.id, null, now);
+    services.skillRegistry.setDefaultSkillRef(project, second.id, null, new Date().toISOString());
+
+    const refs = services.skillRegistry.listProjectSkillRefs(project);
+    expect(refs.find((ref) => ref.skill_id === first.id)?.is_default).toBe(false);
+    expect(refs.find((ref) => ref.skill_id === second.id)?.is_default).toBe(true);
+  });
+
+  it("can add a new revision after activating an older revision", () => {
+    const skill = services.skillRegistry.createSkill({ display_name: "Revisions", draft: {} }).skill;
+    expect(services.skillRegistry.addRevision(skill.id, {}).version).toBe(2);
+    services.skillRegistry.activate(skill.id, 1);
+    expect(services.skillRegistry.addRevision(skill.id, {}).version).toBe(3);
   });
 
   it("project references a global skill across spaces (allowed)", () => {

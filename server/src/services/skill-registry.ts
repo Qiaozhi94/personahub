@@ -112,31 +112,54 @@ export class SkillRegistry {
   listForSpace(spaceId: string): SkillListItem[] {
     const rows = this.db
       .prepare(
-        `SELECT s.*, t.state AS space_state FROM skills s
+        `SELECT s.id, s.space_id, s.display_name, s.source_kind, s.source_identity,
+                s.current_revision, s.state, s.created_at, s.updated_at,
+                t.state AS space_state,
+                r.title, r.description, r.capability_tags_json, r.steps_json,
+                r.completion_requirements_json, r.source_locator, r.content_hash,
+                r.published_at, r.created_at AS revision_created_at, r.version,
+                r.skill_id
+         FROM skills s
          LEFT JOIN skill_space_state t ON t.skill_id = s.id AND t.space_id = ?
+         JOIN skill_revisions r ON r.skill_id = s.id AND r.version = s.current_revision
+           AND r.published_at IS NOT NULL
+         WHERE s.space_id IS NULL OR s.space_id = ?
          ORDER BY s.display_name COLLATE NOCASE ASC, s.id ASC`,
       )
-      .all(spaceId) as Array<Skill & { space_state: string | null }>;
-    return rows.map((row) => ({
-      ...row,
-      space_state: (row.space_state ?? null) as SkillListItem["space_state"],
-    }));
+      .all(spaceId, spaceId) as Array<
+      Skill & RevisionRow & { space_state: string | null; revision_created_at: string }
+    >;
+    return rows.map((row) => {
+      const revision = mapRevision({ ...row, created_at: row.revision_created_at });
+      return {
+        id: row.id,
+        space_id: row.space_id,
+        display_name: row.display_name,
+        source_kind: row.source_kind,
+        source_identity: row.source_identity,
+        current_revision: row.current_revision,
+        state: row.state,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        space_state: (row.space_state ?? null) as SkillListItem["space_state"],
+        has_steps: revision.has_steps,
+        step_count: revision.step_count,
+        requirement_count: revision.requirement_count,
+      };
+    });
   }
 
   listRevisions(skillId: string): SkillRevision[] {
     const rows = this.db
-      .prepare(
-        "SELECT * FROM skill_revisions WHERE skill_id = ? AND published_at IS NOT NULL ORDER BY version ASC",
-      )
+      .prepare("SELECT * FROM skill_revisions WHERE skill_id = ? AND published_at IS NOT NULL ORDER BY version ASC")
       .all(skillId) as RevisionRow[];
     return rows.map(mapRevision);
   }
 
   getRevision(skillId: string, version: number): { revision: SkillRevision; content: ParsedRevisionContent } {
+    assertCanonicalVersion(version);
     const row = this.db
-      .prepare(
-        "SELECT * FROM skill_revisions WHERE skill_id = ? AND version = ? AND published_at IS NOT NULL",
-      )
+      .prepare("SELECT * FROM skill_revisions WHERE skill_id = ? AND version = ? AND published_at IS NOT NULL")
       .get(skillId, version) as RevisionRow | undefined;
     if (!row) {
       throw new AppError(ErrorCode.SKILL_REVISION_NOT_FOUND, "Skill revision not found.");
@@ -250,7 +273,10 @@ export class SkillRegistry {
   addRevision(skillId: string, draft: RevisionDraftInput): { version: number } {
     return this.db.transaction(() => {
       const skill = this.getSkillRow(skillId);
-      const nextVersion = skill.current_revision + 1;
+      const row = this.db
+        .prepare("SELECT COALESCE(MAX(version), 0) AS max_version FROM skill_revisions WHERE skill_id = ?")
+        .get(skillId) as { max_version: number };
+      const nextVersion = row.max_version + 1;
       const now = new Date().toISOString();
 
       const stored = this.validateDraft(draft);
@@ -300,18 +326,31 @@ export class SkillRegistry {
    * 索引保证）。跨 Space 引用由 trigger 在数据库层拒绝（SKILL_SPACE_MISMATCH）。
    */
   setDefaultSkillRef(projectId: string, skillId: string, pinnedVersion: number | null, now: string): void {
-    this.db
-      .prepare(
-        `INSERT INTO project_skill_refs (project_id, skill_id, is_default, pinned_version, created_at, updated_at)
-         VALUES (?, ?, 1, ?, ?, ?)
-         ON CONFLICT (project_id, skill_id) DO UPDATE SET
-           is_default = 1, pinned_version = excluded.pinned_version, updated_at = excluded.updated_at`,
-      )
-      .run(projectId, skillId, pinnedVersion, now, now);
+    if (pinnedVersion !== null) assertCanonicalVersion(pinnedVersion);
+    this.db.transaction(() => {
+      this.db
+        .prepare("UPDATE project_skill_refs SET is_default = 0, updated_at = ? WHERE project_id = ? AND is_default = 1")
+        .run(now, projectId);
+      this.db
+        .prepare(
+          `INSERT INTO project_skill_refs (project_id, skill_id, is_default, pinned_version, created_at, updated_at)
+           VALUES (?, ?, 1, ?, ?, ?)
+           ON CONFLICT (project_id, skill_id) DO UPDATE SET
+             is_default = 1, pinned_version = excluded.pinned_version, updated_at = excluded.updated_at`,
+        )
+        .run(projectId, skillId, pinnedVersion, now, now);
+    })();
     this.audit.record("project.default_skill_changed", "project", projectId, {
       skill_id: skillId,
       pinned_version: pinnedVersion,
     });
+  }
+
+  clearDefaultSkillRef(projectId: string, now: string): void {
+    this.db
+      .prepare("UPDATE project_skill_refs SET is_default = 0, updated_at = ? WHERE project_id = ? AND is_default = 1")
+      .run(now, projectId);
+    this.audit.record("project.default_skill_changed", "project", projectId, { skill_id: null, pinned_version: null });
   }
 
   listProjectSkillRefs(projectId: string): Array<{
@@ -368,7 +407,7 @@ export class SkillRegistry {
     this.db.transaction(() => {
       const keep = this.getSkillRow(keepSkillId);
       const groupMembers = this.listGroupMembers(spaceId, keep.display_name);
-      if (groupMembers.length <= 1) {
+      if (groupMembers.length <= 1 || !groupMembers.some((member) => member.id === keepSkillId)) {
         throw new AppError(ErrorCode.SKILL_CONFLICT_UNRESOLVED, "No conflict group for this skill in the space.");
       }
       const now = new Date().toISOString();

@@ -159,18 +159,23 @@ export const skillRoutes: FastifyPluginAsync<SkillRoutesOptions> = async (app, o
   // 项目默认 Skill 引用：只存引用，不复制内容（FR-007）。
   app.put("/api/projects/:project_id/default-skill", async (request) => {
     const { project_id } = request.params as { project_id: string };
-    const body = (request.body ?? {}) as { skill_id?: string; pinned_version?: number | null };
-    if (!body.skill_id) {
-      return { project_id, skill_id: null };
-    }
+    const body = (request.body ?? {}) as { skill_id?: string | null; pinned_version?: number | null };
     const current = projectService.getById(project_id);
     if (!current) {
       projectService.get(project_id);
     }
     projectService.assertNotArchived(current!);
     const now = new Date().toISOString();
-    skillRegistry.setDefaultSkillRef(project_id, body.skill_id, body.pinned_version ?? null, now);
-    return { project_id, skill_id: body.skill_id, pinned_version: body.pinned_version ?? null };
+    if (!body.skill_id) {
+      skillRegistry.clearDefaultSkillRef(project_id, now);
+      return { project_id, skill_id: null, pinned_version: null };
+    }
+    const pinnedVersion = body.pinned_version ?? null;
+    if (pinnedVersion !== null && (!Number.isSafeInteger(pinnedVersion) || pinnedVersion <= 0)) {
+      throw new AppError(ErrorCode.REQUEST_BODY_INVALID, "pinned_version must be a positive safe integer.");
+    }
+    skillRegistry.setDefaultSkillRef(project_id, body.skill_id, pinnedVersion, now);
+    return { project_id, skill_id: body.skill_id, pinned_version: pinnedVersion };
   });
 
   app.get("/api/projects/:project_id/skills", async (request) => {
