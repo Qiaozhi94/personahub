@@ -64,8 +64,10 @@ import {
   type SpaceCreateResponse,
   type SpaceActionResponse,
   type Repository,
+  type RepositoryMachinePath,
   type RepositoryResolveResponse,
   type ProjectRepositoryRef,
+  type Scope,
   type Skill,
   type SkillListItem,
   type SkillListResponse,
@@ -118,12 +120,9 @@ export const apiClient = {
     list: () => apiFetch<SpaceListResponse>("/spaces"),
     create: (name: string) =>
       apiFetch<SpaceCreateResponse>("/spaces", { method: "POST", body: JSON.stringify({ name }) }),
-    select: (id: string) =>
-      apiFetch<SpaceActionResponse>(`/spaces/${id}/select`, { method: "POST" }),
-    archive: (id: string) =>
-      apiFetch<SpaceActionResponse>(`/spaces/${id}/archive`, { method: "POST" }),
-    restore: (id: string) =>
-      apiFetch<SpaceActionResponse>(`/spaces/${id}/restore`, { method: "POST" }),
+    select: (id: string) => apiFetch<SpaceActionResponse>(`/spaces/${id}/select`, { method: "POST" }),
+    archive: (id: string) => apiFetch<SpaceActionResponse>(`/spaces/${id}/archive`, { method: "POST" }),
+    restore: (id: string) => apiFetch<SpaceActionResponse>(`/spaces/${id}/restore`, { method: "POST" }),
   },
   repositories: {
     resolve: (source: string) =>
@@ -136,16 +135,24 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ source }),
       }),
-    authorize: (repositoryId: string, rawPath: string, access: "read_write" | "read_only") =>
+    get: (repositoryId: string) =>
+      apiFetch<{
+        repository: Repository;
+        machine_path: Omit<RepositoryMachinePath, "repository_id"> | null;
+      }>(`/repositories/${repositoryId}`),
+    authorize: (repositoryId: string, rawPath: string, access: "read_write" | "read_only", scope?: Scope) =>
       apiFetch<{ machine_path: unknown }>(`/repositories/${repositoryId}/authorize`, {
         method: "POST",
-        body: JSON.stringify({ raw_path: rawPath, access }),
+        body: JSON.stringify(scope === undefined ? { raw_path: rawPath, access } : { raw_path: rawPath, access, scope }),
       }),
     listByProject: (projectId: string) =>
       apiFetch<{ project_id: string; references: ProjectRepositoryRef[] }>(`/projects/${projectId}/repositories`),
     setForProject: (
       projectId: string,
-      input: { primary?: { repository_id: string } | null; references?: Array<{ repository_id: string }> },
+      input: {
+        primary?: { repository_id: string; access?: "read_write" | "read_only"; scope?: Scope } | null;
+        references?: Array<{ repository_id: string; scope?: Scope }>;
+      },
     ) =>
       apiFetch<{ project_id: string; references: ProjectRepositoryRef[] }>(`/projects/${projectId}/repositories`, {
         method: "PUT",
@@ -184,8 +191,7 @@ export const apiClient = {
         `/projects/${projectId}/default-skill`,
         { method: "PUT", body: JSON.stringify({ skill_id: skillId, pinned_version: pinnedVersion ?? null }) },
       ),
-    listProjectRefs: (projectId: string) =>
-      apiFetch<{ refs: ProjectSkillRef[] }>(`/projects/${projectId}/skills`),
+    listProjectRefs: (projectId: string) => apiFetch<{ refs: ProjectSkillRef[] }>(`/projects/${projectId}/skills`),
   },
 
   projects: {
@@ -203,10 +209,8 @@ export const apiClient = {
       const query = params.toString();
       return apiFetch<ProjectListResponse>(`/projects${query ? `?${query}` : ""}`);
     },
-    archive: (id: string) =>
-      apiFetch<{ project: Project }>(`/projects/${id}/archive`, { method: "POST" }),
-    restore: (id: string) =>
-      apiFetch<{ project: Project }>(`/projects/${id}/restore`, { method: "POST" }),
+    archive: (id: string) => apiFetch<{ project: Project }>(`/projects/${id}/archive`, { method: "POST" }),
+    restore: (id: string) => apiFetch<{ project: Project }>(`/projects/${id}/restore`, { method: "POST" }),
     remove: (id: string) => apiFetch<null>(`/projects/${id}`, { method: "DELETE" }),
   },
   workspaces: {
@@ -407,8 +411,7 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    listByIssue: (issueId: string) =>
-      apiFetch<ArtifactListRead>(`/artifacts?issue_id=${encodeURIComponent(issueId)}`),
+    listByIssue: (issueId: string) => apiFetch<ArtifactListRead>(`/artifacts?issue_id=${encodeURIComponent(issueId)}`),
     get: (artifactId: string) => apiFetch<ArtifactEntityRead>(`/artifacts/${encodeURIComponent(artifactId)}`),
     getRevision: (artifactId: string, revision: number) =>
       apiFetch<ArtifactRevisionRead>(`/artifacts/${encodeURIComponent(artifactId)}/revisions/${revision}`),

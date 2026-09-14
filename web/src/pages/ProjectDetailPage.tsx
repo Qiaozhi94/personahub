@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ErrorCode } from "@personahub/shared";
 import { useProject } from "@/hooks/use-projects";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { toApiError } from "@/lib/api-client";
 import { PageLoading, ErrorState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
-import { WorkspaceBinding } from "@/components/workspace/WorkspaceBinding";
 import { buildUrl, useRouter } from "@/app/router";
 import type { Diagnostics, ProjectTab } from "@/app/route-manifest";
 import { PageFrame, PageHeading, PageSection } from "@/pages/page-frame";
@@ -35,7 +33,6 @@ export function ProjectDetailPage({
 }) {
   const { navigate } = useRouter();
   const projectQuery = useProject(projectId);
-  const workspaceQuery = useWorkspace(projectId);
   const redirectedRef = useRef(false);
   const [activeTab, setActiveTab] = useState<ProjectTab>(tab ?? "files");
 
@@ -117,30 +114,9 @@ export function ProjectDetailPage({
       </nav>
 
       {activeTab === "files" ? (
-        <>
-          <PageSection title="文件" description="主代码目录与只读参考仓库；真实路径授权以机器为单位管理。">
-            {workspaceQuery.isLoading ? (
-              <PageLoading label="正在加载代码目录" />
-            ) : workspaceQuery.isError ? (
-              <ErrorState
-                title="代码目录加载失败"
-                description={toApiError(workspaceQuery.error).message}
-                action={{ label: "重试", onAction: () => void workspaceQuery.refetch() }}
-              />
-            ) : (
-              <ProjectFilesTab projectId={projectId} />
-            )}
-          </PageSection>
-          {/* 兼容绑定区只在查询成功后渲染：失败态不得回落成"未绑定"的输入框。 */}
-          {!workspaceQuery.isLoading && !workspaceQuery.isError ? (
-            <PageSection
-              title="代码目录（兼容）"
-              description="查看和绑定本地代码目录；后续版本将在此提供完整的仓库管理。"
-            >
-              <WorkspaceBinding projectId={projectId} workspace={workspaceQuery.data?.workspace ?? null} />
-            </PageSection>
-          ) : null}
-        </>
+        <PageSection title="文件" description="主代码目录与只读参考仓库；真实路径授权以机器为单位管理。">
+          <ProjectFilesTab projectId={projectId} legacyWorkspacePath={project.default_workspace?.local_path ?? null} />
+        </PageSection>
       ) : null}
 
       {activeTab === "skills" ? <ProjectSkillsTab projectId={projectId} /> : null}

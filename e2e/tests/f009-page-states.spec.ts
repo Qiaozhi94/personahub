@@ -39,11 +39,13 @@ test("BC-047: terminal run states keep their own status, never relabelled", asyn
   const facts = page.locator("section", { has: page.getByText("任务详情（兼容）") });
   await expect(facts.getByText("Failed to parse adapter output")).toBeVisible();
 
-  // The graph retry attempt stays queued or cancelled (per journey order) —
-  // never silently shown as failed or completed.
+  // The graph retry attempt's latest Run stays queued or cancelled (per
+  // journey order) — never silently shown as failed or completed. The
+  // canonical status projection lives in the task facts section, not in the
+  // event timeline's run.queued payload.
   await page.goto("/tasks/iss_v02_graph_blocked");
-  const graphTask = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
-  await expect(graphTask.getByText(/^(queued|cancelled)$/).first()).toBeVisible();
+  const factsAfterGraph = page.locator("section", { has: page.getByText("任务详情（兼容）") });
+  await expect(factsAfterGraph.getByText(/^(queued|cancelled)$/).first()).toBeVisible();
 });
 
 test("BC-046: legacy workflow page keeps read-only facts with a partial-state explanation", async ({ page }) => {

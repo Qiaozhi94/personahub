@@ -6,20 +6,16 @@ import {
   type IssueWithThread,
 } from "@personahub/shared";
 import { CreateProjectDialog } from "@/components/project/CreateProjectDialog";
-import { WorkspaceBinding } from "@/components/workspace/WorkspaceBinding";
 import { CreateIssueDialog } from "@/components/issue/CreateIssueDialog";
 import { IssueInspector } from "@/components/inspector/IssueInspector";
 import {
   createIssue,
-  createWorkspace,
   renderWithQuery,
 } from "@/test/ui-flow-helpers";
 
 vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
 
 import { apiClient } from "@/lib/api-client";
-
-const workspace = (id: string, path: string) => createWorkspace({ id, local_path: path });
 
 const issue: IssueWithThread = createIssue({ labels: ["foundation"] });
 
@@ -60,35 +56,6 @@ describe("F001 UI flows", () => {
     await waitFor(() => {
       expect(apiClient.projects.create).toHaveBeenCalledWith("PersonaHub", "Agent workspace");
       expect(onCreated).toHaveBeenCalledWith("prj_1");
-    });
-  });
-
-  it("binds a Workspace and supports replacing the displayed default path", async () => {
-    vi.mocked(apiClient.workspaces.bind)
-      .mockResolvedValueOnce({ workspace: workspace("wsp_1", "D:\\repo-one") })
-      .mockResolvedValueOnce({ workspace: workspace("wsp_2", "D:\\repo-two") });
-    const view = renderWithQuery(
-      <WorkspaceBinding projectId="prj_1" workspace={null} />,
-    );
-    const input = screen.getByPlaceholderText(/path.*workspace/i);
-
-    fireEvent.change(input, { target: { value: "D:\\repo-one" } });
-    fireEvent.click(screen.getByRole("button", { name: "Bind workspace" }));
-    await waitFor(() => {
-      expect(apiClient.workspaces.bind).toHaveBeenCalledWith("prj_1", "D:\\repo-one");
-    });
-
-    view.rerenderWithQuery(
-      <WorkspaceBinding projectId="prj_1" workspace={workspace("wsp_1", "D:\\repo-one")} />,
-    );
-    expect(screen.getByText("D:\\repo-one (main)")).toBeInTheDocument();
-
-    fireEvent.change(screen.getByPlaceholderText(/path.*workspace/i), {
-      target: { value: "D:\\repo-two" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Bind workspace" }));
-    await waitFor(() => {
-      expect(apiClient.workspaces.bind).toHaveBeenLastCalledWith("prj_1", "D:\\repo-two");
     });
   });
 

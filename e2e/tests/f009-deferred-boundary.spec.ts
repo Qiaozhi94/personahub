@@ -92,8 +92,9 @@ test("BC-102/107/112 (F013 supersede): files/skills tabs now carry repo refs and
 }) => {
   // F013 registers the files/skills/settings tabs and the repository registry;
   // the Skills reference (BC-107) and the primary-vs-reference distinction
-  // (BC-112) are no longer deferred. Per-machine authorization detail
-  // (BC-102's machine affordance) stays out of the project page.
+  // (BC-112) are no longer deferred. BC-102's deferred machine affordance is
+  // superseded by F013's files-tab machine-scope editors (R1-013) — the old
+  // bind-workspace dialog stays out of the project page.
   await page.goto("/projects/prj_v02_alpha/files");
   await expect(page.getByRole("heading", { name: "Alpha Platform" })).toBeVisible();
 
@@ -101,6 +102,7 @@ test("BC-102/107/112 (F013 supersede): files/skills tabs now carry repo refs and
   await expect(page.getByText(/主目录 ·/).first()).toBeVisible();
   await expect(page.getByText(/参考仓库 ·/).first()).toBeVisible();
 
-  // BC-102: per-machine authorization labeling stays out of the project page.
-  await expect(page.getByLabel(/machine|机器授权/i)).toHaveCount(0);
+  // BC-102: machine scope is editable inline; the old bind-workspace affordance is gone.
+  await expect(page.getByLabel(/机器范围 read/).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /bind workspace/i })).toHaveCount(0);
 });

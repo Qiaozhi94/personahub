@@ -24,6 +24,7 @@ export const apiClient = {
   repositories: {
     resolve: vi.fn(),
     create: vi.fn(),
+    get: vi.fn().mockResolvedValue({ machine_path: null }),
     authorize: vi.fn(),
     listByProject: vi.fn().mockResolvedValue({ project_id: "prj_1", references: [] }),
     setForProject: vi.fn(),

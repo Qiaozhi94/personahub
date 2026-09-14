@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 // F013 T008/T024（design §8 测试策略）：首次设置 Space 旅程、项目三 tab
@@ -35,6 +38,49 @@ test("project tabs: files tab carries primary/reference repo distinction", async
   await expect(page.getByText(/主目录 ·/)).toBeVisible();
   // prj_v02_alpha 迁移出一条只读 reference（ws_v02_graphok）。
   await expect(page.getByText(/参考仓库 ·/).first()).toBeVisible();
+});
+
+test("project tabs: files tab binds a primary directory, manages reference scope, and removes the reference", async ({
+  page,
+}) => {
+  const primaryDir = fs.mkdtempSync(path.join(os.tmpdir(), "ph-e2e-primary-"));
+  const referenceDir = fs.mkdtempSync(path.join(os.tmpdir(), "ph-e2e-reference-"));
+  const primaryBase = path.basename(primaryDir);
+  const referenceBase = path.basename(referenceDir);
+  try {
+    await page.goto("/projects");
+    await page.getByRole("button", { name: "新建项目" }).click();
+    await page.getByLabel("Name").fill("E2E Files Project");
+    await page.getByRole("button", { name: /^create$/i }).click();
+    await expect(page.getByRole("heading", { name: "E2E Files Project" })).toBeVisible();
+
+    // 新项目没有主目录：从 Files tab 绑定真实本地目录。
+    await expect(page.getByText("尚未绑定主目录。")).toBeVisible();
+    await page.getByLabel("主目录路径").fill(primaryDir);
+    await page.getByRole("button", { name: "绑定主目录" }).click();
+    await expect(page.getByText(/已绑定主目录/)).toBeVisible();
+    await expect(page.getByText(new RegExp(`主目录 · ${primaryBase}`))).toBeVisible();
+    await expect(page.getByText(/主目录 · .*可写/)).toBeVisible();
+
+    // 添加参考仓库（只读），并编辑项目范围。
+    await page.getByLabel("添加代码仓").fill(referenceDir);
+    await page.getByRole("button", { name: "添加参考仓库" }).click();
+    await expect(page.getByText(new RegExp(`参考仓库 · .*${referenceBase}`))).toBeVisible();
+    const referenceRow = page.getByTestId(/^repo-ref-/).filter({ hasText: referenceBase });
+    await referenceRow.getByLabel(/项目范围 read/).fill("docs");
+    await referenceRow.getByRole("button", { name: /^保存项目范围/ }).click();
+    await expect(page.getByText(/已更新项目范围/)).toBeVisible();
+
+    // 删除参考仓库后列表不再包含它。
+    await referenceRow.getByRole("button", { name: /^删除参考仓库/ }).click();
+    await expect(page.getByText(/已移除参考仓库/)).toBeVisible();
+    await expect(page.getByText(new RegExp(`参考仓库 · .*${referenceBase}`))).toHaveCount(0);
+    // 主目录不受影响。
+    await expect(page.getByText(/主目录 · /)).toBeVisible();
+  } finally {
+    fs.rmSync(primaryDir, { recursive: true, force: true });
+    fs.rmSync(referenceDir, { recursive: true, force: true });
+  }
 });
 
 test("project tabs: skills tab keeps a default-skill reference, no copied content", async ({ page }) => {

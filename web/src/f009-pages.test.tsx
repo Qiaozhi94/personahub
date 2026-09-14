@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "@/App";
@@ -133,55 +133,395 @@ describe("ProjectsPage (A001/A002)", () => {
   });
 });
 
-describe("ProjectDetailPage (A003)", () => {
-  it("binds a code directory through the canonical workspace API", async () => {
-    const user = userEvent.setup();
+describe("ProjectDetailPage (A003/F013)", () => {
+  const REF_TS = TIMESTAMP;
+  function repoRef(
+    repositoryId: string,
+    role: "primary" | "reference",
+    overrides: Record<string, unknown> = {},
+  ) {
+    return {
+      project_id: "prj_a",
+      repository_id: repositoryId,
+      role,
+      access: role === "primary" ? ("read_write" as const) : ("read_only" as const),
+      scope_json: null,
+      legacy_workspace_id: null,
+      created_at: REF_TS,
+      updated_at: REF_TS,
+      ...overrides,
+    };
+  }
+  function repository(id: string, displayName: string) {
+    return {
+      id,
+      kind: "local_dir" as const,
+      display_name: displayName,
+      git_remote_url: null,
+      created_at: REF_TS,
+      updated_at: REF_TS,
+    };
+  }
+  function machinePath(rawPath: string, access: "read_write" | "read_only") {
+    return {
+      runtime_id: "local",
+      raw_path: rawPath,
+      real_path: rawPath,
+      authorized_identity: "1:1",
+      access,
+      scope_json: null,
+      case_insensitive: null,
+      authorized_at: REF_TS,
+      last_verified_at: null,
+    };
+  }
+  function mockProjectWithLegacyPath(): void {
     vi.mocked(apiClient.projects.get).mockResolvedValue({
-      project: { ...project("prj_a", "项目甲", false), default_workspace: null },
-    });
-    vi.mocked(apiClient.workspaces.getByProject).mockResolvedValue({ workspace: null });
-    vi.mocked(apiClient.workspaces.bind).mockResolvedValue({
-      workspace: {
-        id: "ws_a",
-        project_id: "prj_a",
-        local_path: "/repo/alpha",
-        git_branch: "main",
-        lock_state: WorkspaceLockState.Idle,
-        locked_by_run_id: null,
-        locked_at: null,
-        push_credentials_enabled: false,
-        created_at: TIMESTAMP,
-        updated_at: TIMESTAMP,
+      project: {
+        ...project("prj_a", "项目甲", false),
+        default_workspace: {
+          id: "ws_a",
+          local_path: "/repo/project-a",
+          git_branch: null,
+          lock_state: WorkspaceLockState.Idle,
+        },
       },
     });
+  }
+
+  it("adds a read-only reference without replacing the primary repository", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [repoRef("repo_primary", "primary", { legacy_workspace_id: "ws_a" })],
+    } as never);
+    vi.mocked(apiClient.repositories.resolve).mockResolvedValue({
+      kind: "local_dir",
+      display_name: "参考仓库",
+      real_path: "/repo/reference",
+      git_remote_url: null,
+      git_identity: null,
+      authorizable: true,
+    });
+    vi.mocked(apiClient.repositories.create).mockResolvedValue({
+      repository: repository("repo_reference", "参考仓库"),
+    });
+    vi.mocked(apiClient.repositories.get).mockImplementation(async (repositoryId: string) =>
+      repositoryId === "repo_reference"
+        ? { repository: repository("repo_reference", "参考仓库"), machine_path: null }
+        : { repository: repository(repositoryId, repositoryId), machine_path: null },
+    );
 
     renderApp("/projects/prj_a");
 
     await screen.findByRole("heading", { name: "项目甲" });
-    await user.type(screen.getByLabelText("代码目录路径"), "/repo/alpha");
-    await user.click(screen.getByRole("button", { name: /bind workspace/i }));
+    await screen.findByText(/\/repo\/project-a/);
+    await user.type(screen.getByLabelText("添加代码仓"), "/repo/reference");
+    await user.click(screen.getByRole("button", { name: "添加参考仓库" }));
 
     await waitFor(() => {
-      expect(apiClient.workspaces.bind).toHaveBeenCalledWith("prj_a", "/repo/alpha");
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
+        primary: { repository_id: "repo_primary", access: "read_write", scope: undefined },
+        references: [{ repository_id: "repo_reference", scope: undefined }],
+      });
+    });
+    expect(apiClient.repositories.authorize).toHaveBeenCalledWith("repo_reference", "/repo/reference", "read_only");
+  });
+
+  it("keeps the full reference set when adding a reference (R1-008 batch regression)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    const initialRefs = [
+      repoRef("repo_primary", "primary", { legacy_workspace_id: "ws_a" }),
+      repoRef("repo_ref_a", "reference", { scope_json: { read: ["lib"], write: [] } }),
+    ];
+    const afterAdd = [...initialRefs, repoRef("repo_ref_b", "reference")].map((ref) =>
+      ref.repository_id === "repo_ref_a" ? { ...ref, scope_json: { read: ["lib"], write: [] } } : ref,
+    );
+    vi.mocked(apiClient.repositories.listByProject)
+      .mockResolvedValueOnce({ project_id: "prj_a", references: initialRefs } as never)
+      .mockResolvedValue({ project_id: "prj_a", references: afterAdd } as never);
+    vi.mocked(apiClient.repositories.resolve).mockResolvedValue({
+      kind: "local_dir",
+      display_name: "参考 B",
+      real_path: "/repo/reference-b",
+      git_remote_url: null,
+      git_identity: null,
+      authorizable: true,
+    });
+    vi.mocked(apiClient.repositories.create).mockResolvedValue({ repository: repository("repo_ref_b", "参考 B") });
+    vi.mocked(apiClient.repositories.get).mockImplementation(async (repositoryId: string) => ({
+      repository: repository(repositoryId, repositoryId),
+      machine_path: null,
+    }));
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByTestId("repo-ref-repo_ref_a");
+    await user.type(screen.getByLabelText("添加代码仓"), "/repo/reference-b");
+    await user.click(screen.getByRole("button", { name: "添加参考仓库" }));
+
+    await waitFor(() => {
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
+        primary: { repository_id: "repo_primary", access: "read_write", scope: undefined },
+        references: [
+          { repository_id: "repo_ref_a", scope: { read: ["lib"], write: [] } },
+          { repository_id: "repo_ref_b", scope: undefined },
+        ],
+      });
+    });
+    // 写入后的读取仍保留 A 与 B。
+    expect(await screen.findByTestId("repo-ref-repo_ref_b")).toBeInTheDocument();
+    expect(screen.getByTestId("repo-ref-repo_ref_a")).toBeInTheDocument();
+  });
+
+  it("does not downgrade an existing machine read_write authorization (R1-009)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [repoRef("repo_primary", "primary", { legacy_workspace_id: "ws_a" })],
+    } as never);
+    vi.mocked(apiClient.repositories.resolve).mockResolvedValue({
+      kind: "local_dir",
+      display_name: "共享仓库",
+      real_path: "/repo/shared",
+      git_remote_url: null,
+      git_identity: null,
+      authorizable: true,
+    });
+    vi.mocked(apiClient.repositories.create).mockResolvedValue({ repository: repository("repo_shared", "共享仓库") });
+    vi.mocked(apiClient.repositories.get).mockImplementation(async (repositoryId: string) =>
+      repositoryId === "repo_shared"
+        ? { repository: repository("repo_shared", "共享仓库"), machine_path: machinePath("/repo/shared", "read_write") }
+        : { repository: repository(repositoryId, repositoryId), machine_path: null },
+    );
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByTestId("repo-ref-repo_primary");
+    await user.type(screen.getByLabelText("添加代码仓"), "/repo/shared");
+    await user.click(screen.getByRole("button", { name: "添加参考仓库" }));
+
+    await waitFor(() => {
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith(
+        "prj_a",
+        expect.objectContaining({
+          references: [{ repository_id: "repo_shared", scope: undefined }],
+        }),
+      );
+    });
+    // 已有机器授权（read_write）时不得再调用 authorize 覆写为 read_only。
+    expect(apiClient.repositories.authorize).not.toHaveBeenCalled();
+  });
+
+  it("binds a primary directory for a project that has none (R1-013)", async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.projects.get).mockResolvedValue({
+      project: { ...project("prj_a", "项目甲", false), default_workspace: null },
+    });
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [],
+    } as never);
+    vi.mocked(apiClient.repositories.resolve).mockResolvedValue({
+      kind: "local_dir",
+      display_name: "新主目录",
+      real_path: "/repo/new",
+      git_remote_url: null,
+      git_identity: null,
+      authorizable: true,
+    });
+    vi.mocked(apiClient.repositories.create).mockResolvedValue({ repository: repository("repo_new", "新主目录") });
+    vi.mocked(apiClient.repositories.get).mockResolvedValue({
+      repository: repository("repo_new", "新主目录"),
+      machine_path: null,
+    });
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByText("尚未绑定主目录。");
+    await user.type(screen.getByLabelText("主目录路径"), "/repo/new");
+    await user.click(screen.getByRole("button", { name: "绑定主目录" }));
+
+    await waitFor(() => {
+      expect(apiClient.repositories.authorize).toHaveBeenCalledWith("repo_new", "/repo/new", "read_write");
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
+        primary: { repository_id: "repo_new", access: "read_write" },
+        references: [],
+      });
     });
   });
 
-  it("distinguishes a workspace query failure from a real not-bound state and retries for real (review R2-CODE-R1-007)", async () => {
+  it("rebinds the primary and does not keep the old primary as reference (R1-013)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [repoRef("repo_old", "primary", { legacy_workspace_id: "ws_a" })],
+    } as never);
+    vi.mocked(apiClient.repositories.resolve).mockResolvedValue({
+      kind: "local_dir",
+      display_name: "新主目录",
+      real_path: "/repo/new-home",
+      git_remote_url: null,
+      git_identity: null,
+      authorizable: true,
+    });
+    vi.mocked(apiClient.repositories.create).mockResolvedValue({
+      repository: repository("repo_new_home", "新主目录"),
+    });
+    vi.mocked(apiClient.repositories.get).mockResolvedValue({
+      repository: repository("repo_new_home", "新主目录"),
+      machine_path: null,
+    });
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByTestId("repo-ref-repo_old");
+    await user.type(screen.getByLabelText("主目录路径"), "/repo/new-home");
+    await user.click(screen.getByRole("button", { name: "改绑主目录" }));
+
+    await waitFor(() => {
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
+        primary: { repository_id: "repo_new_home", access: "read_write" },
+        references: [],
+      });
+    });
+  });
+
+  it("removes one reference without touching the primary or the other reference (R1-013)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [
+        repoRef("repo_primary", "primary", { legacy_workspace_id: "ws_a" }),
+        repoRef("repo_ref_a", "reference"),
+        repoRef("repo_ref_b", "reference"),
+      ],
+    } as never);
+    vi.mocked(apiClient.repositories.get).mockImplementation(async (repositoryId: string) => ({
+      repository: repository(repositoryId, repositoryId),
+      machine_path: null,
+    }));
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByTestId("repo-ref-repo_ref_a");
+    await user.click(screen.getByRole("button", { name: "删除参考仓库 repo_ref_a" }));
+
+    await waitFor(() => {
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
+        primary: { repository_id: "repo_primary", access: "read_write", scope: undefined },
+        references: [{ repository_id: "repo_ref_b", scope: undefined }],
+      });
+    });
+  });
+
+  it("edits the machine scope of the primary with read and write prefixes (R1-013)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [repoRef("repo_primary", "primary", { legacy_workspace_id: "ws_a" })],
+    } as never);
+    vi.mocked(apiClient.repositories.get).mockResolvedValue({
+      repository: repository("repo_primary", "主目录"),
+      machine_path: machinePath("/repo/project-a", "read_write"),
+    });
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByLabelText("机器范围 read repo_primary");
+    fireEvent.change(screen.getByLabelText("机器范围 read repo_primary"), { target: { value: "src\ntests" } });
+    fireEvent.change(screen.getByLabelText("机器范围 write repo_primary"), { target: { value: "src" } });
+    await user.click(screen.getByRole("button", { name: "保存机器范围 repo_primary" }));
+
+    await waitFor(() => {
+      expect(apiClient.repositories.authorize).toHaveBeenCalledWith("repo_primary", "/repo/project-a", "read_write", {
+        read: ["src", "tests"],
+        write: ["src"],
+      });
+    });
+  });
+
+  it("edits a reference's project scope as read-only (R1-013)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [
+        repoRef("repo_primary", "primary", { legacy_workspace_id: "ws_a" }),
+        repoRef("repo_ref_a", "reference"),
+      ],
+    } as never);
+    vi.mocked(apiClient.repositories.get).mockImplementation(async (repositoryId: string) => ({
+      repository: repository(repositoryId, repositoryId),
+      machine_path: null,
+    }));
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByLabelText("项目范围 read repo_ref_a");
+    fireEvent.change(screen.getByLabelText("项目范围 read repo_ref_a"), { target: { value: "lib" } });
+    await user.click(screen.getByRole("button", { name: "保存项目范围 repo_ref_a" }));
+
+    await waitFor(() => {
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
+        primary: { repository_id: "repo_primary", access: "read_write", scope: undefined },
+        references: [
+          { repository_id: "repo_ref_a", scope: { read: ["lib"], write: [] } },
+        ],
+      });
+    });
+  });
+
+  it("accepts a remote URL as a reference without machine authorization (R1-013)", async () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.projects.get).mockResolvedValue({
       project: { ...project("prj_a", "项目甲", false), default_workspace: null },
     });
-    vi.mocked(apiClient.workspaces.getByProject).mockRejectedValueOnce({ code: "X", message: "boom" });
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [],
+    } as never);
+    vi.mocked(apiClient.repositories.resolve).mockResolvedValue({
+      kind: "remote_url",
+      display_name: "remote-repo",
+      real_path: null,
+      git_remote_url: "https://example.com/remote-repo.git",
+      git_identity: null,
+      authorizable: false,
+      unauthorized_reason: "REMOTE_URL_NOT_LOCAL",
+    });
+    vi.mocked(apiClient.repositories.create).mockResolvedValue({
+      repository: {
+        ...repository("repo_remote", "remote-repo"),
+        kind: "remote_url",
+        git_remote_url: "https://example.com/remote-repo.git",
+      },
+    });
+    vi.mocked(apiClient.repositories.get).mockResolvedValue({
+      repository: repository("repo_remote", "remote-repo"),
+      machine_path: null,
+    });
 
     renderApp("/projects/prj_a");
 
-    await screen.findByRole("heading", { name: "项目甲" });
-    expect(await screen.findByText("代码目录加载失败")).toBeInTheDocument();
-    expect(screen.queryByLabelText("代码目录路径")).not.toBeInTheDocument();
+    await screen.findByText("尚未绑定主目录。");
+    await user.type(screen.getByLabelText("添加代码仓"), "https://example.com/remote-repo.git");
+    await user.click(screen.getByRole("button", { name: "添加参考仓库" }));
 
-    vi.mocked(apiClient.workspaces.getByProject).mockResolvedValue({ workspace: null });
-    await user.click(screen.getByRole("button", { name: "重试" }));
-    expect(await screen.findByLabelText("代码目录路径")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
+        primary: null,
+        references: [{ repository_id: "repo_remote" }],
+      });
+    });
+    expect(apiClient.repositories.authorize).not.toHaveBeenCalled();
+    expect(await screen.findByText(/远程参考仓库/)).toBeInTheDocument();
   });
 
   it("replaces an unknown project id with a diagnostic project list", async () => {
