@@ -53,10 +53,13 @@ test("BC-054/082/087/088/090/101/116: /runtime has no pause-all, quota, machine-
   await page.getByRole("radio", { name: "Alpha Platform" }).click();
   await page.getByTestId("runtime-health-panel").waitFor({ state: "visible" });
 
-  // BC-054: no "pause all dispatch" control.
-  await expect(page.getByRole("button", { name: /pause all|暂停全部/i })).toHaveCount(0);
-  // BC-082: no quota configuration.
-  await expect(page.getByText(/quota|额度/i)).toHaveCount(0);
+  // BC-054: F012 (design §6.3 / §9.1.4) now OWNS the pause-all runtime gate —
+  // the F009 deferral is released; the control exists and carries a recovery
+  // entry when engaged. What must still NOT exist is a quota CONFIGURATION
+  // control (facts display is F012's; aggregation stays v0.4, ADR 0017).
+  await expect(page.getByRole("button", { name: /暂停全部派工|恢复派工/ })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /quota config|配置额度/i })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: /quota|额度/i })).toHaveCount(0);
   // BC-087: no dedicated machine left-rail or adapter-tabs-with-overview layout.
   await expect(page.getByRole("navigation", { name: /machine|机器/i })).toHaveCount(0);
   await expect(page.getByRole("tab")).toHaveCount(0);

@@ -455,7 +455,12 @@ test("S1 — 未选项目、未绑定项目指引、未知 ID 与非法子路径
   await page.goto("/projects/prj_v02_alpha/memory");
   await expect(page).toHaveURL(/route_issue=unsupported-tab/);
 
-  // M1 冻结边界：会话面不可达。
+  // F012 注册了 /sessions/:sessionId：未知房间不再是全局 not-found，而是
+  // 会话面的可恢复错误态（F009 的 M1 冻结边界由 F012 解除）。
   await page.goto("/sessions/sess_1");
+  await expect(page.getByText("会话不存在或无法加载")).toBeVisible();
+
+  // 仍未注册的面保持全局 not-found。
+  await page.goto("/memory");
   await expect(page.getByText("页面不存在", { exact: true })).toBeVisible();
 });
