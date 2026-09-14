@@ -1019,32 +1019,38 @@ test("F009 done status is synchronized across roadmap documents", () => {
     'status: done',
     'eval_contract: exempt',
     'F009 已于 2026-09-12 收口为 `done`（实现代码检视循环 20 六轮收敛，`npm run verify:release` 与 Windows CI 全绿',
-    // F010 closed on 2026-09-14 (cycle 25 converged), so the roadmap phrase
-    // moved to the done wording; F013 is now in implementation review and
-    // F011/F012/F014 stay draft. Lock all of them so dropping any status
-    // from every roadmap document fails this gate.
+    // F010 closed on 2026-09-14 (cycle 25 converged) and F012 advanced to
+    // ready-for-development after its pre-development review (cycle 24, 2
+    // rounds); F013 is now in implementation review and F011/F014 stay draft.
+    // Lock all of them so dropping any status from every roadmap document
+    // fails this gate.
     'F010 已于 2026-09-14 收口为 `done`（实现代码检视循环 25 五轮收敛',
     'F013 已进入 `review`',
-    'F011、F012、F014 仍为 `draft`',
+    'F012 已于 2026-09-14 完成开发前需求与设计文档检视（循环 24 两轮收敛）并推进为 `ready-for-development`',
+    'F011、F014 仍为 `draft`',
   ];
-  // A done Feature must also be gone from BACKLOG's active table and must not
-  // still describe itself as in review anywhere — check-feature-gates.mjs
-  // enforces the table row, this keeps the prose from drifting behind it.
+  // A Feature that advances must also leave its previous stage behind: done
+  // Features are gone from BACKLOG's active table, and F012's pre-promotion
+  // draft phrasing must not reappear — check-feature-gates.mjs enforces the
+  // table row, this keeps the prose from drifting behind it.
   const forbidden = [
     "| F009 | 0.3     | V3.44 Frontend Foundation & Migration | review |",
     "F009 开发与自检已完成并进入 `review`",
     "| F010 | 0.3     | Artifact & Provenance Foundation | in-progress |",
     "F010 已进入 `in-progress`",
+    "| F012 | 0.3     | Session, Dispatch & Intervention | draft |",
+    "F011、F012、F014 仍为 `draft`",
   ];
 
   requirePhrases(documents, phrases);
   forbidPhrases(documents, forbidden);
   // Every phrase is load-bearing: deleting any one (including the F010 done
-  // wording, the F013 review marker or the remaining-draft
-  // statuses) must turn this gate red.
+  // wording, the F013 review marker, the F012 ready-for-development phrase or
+  // the remaining-draft statuses) must turn this gate red.
   verifyEachPhraseMutation(documents, phrases);
   verifyForbiddenMutation(documents, forbidden[0]);
   verifyForbiddenMutation(documents, forbidden[2]);
+  verifyForbiddenMutation(documents, forbidden[4]);
 });
 
 test("V03-PLAN-R1-008: URL migration is based on published routes, not invented history", () => {

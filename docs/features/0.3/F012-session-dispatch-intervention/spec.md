@@ -2,7 +2,7 @@
 kind: feature
 id: F012
 version: "0.3"
-status: draft
+status: ready-for-development
 gate_version: 1
 eval_contract: exempt
 eval_contract_exempt_reason: "本 Feature 改变用户旅程（派工选择、撤销窗口、会话与介入），但交付的是执行语义与可追溯契约（Dispatch / Attempt / DomainOutbox / capability evidence），不提出需用效用数据决定保留或退役的不确定主张；退役条件已由 migration-matrix 的 18 行 delete_when 与 v0.7 多机运行时接管显式登记"
@@ -144,4 +144,4 @@ Eligibility 与上下文组装单测；dispatch/pause barrier/restart 集成测�
 
 ## 8. 待确认问题
 
-无。
+无
