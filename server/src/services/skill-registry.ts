@@ -410,7 +410,7 @@ export class SkillRegistry {
       const scanned = (this.db.prepare("SELECT COUNT(*) AS n FROM skills").get() as { n: number }).n;
       let conflicts = 0;
       for (const spaceId of listAllSpaceIds(this.db)) {
-        conflicts += this.recomputeSpaceStates(spaceId);
+        conflicts += this.recomputeSpaceStates(spaceId, true);
       }
       this.audit.record("skill.scanned", "skill", "*", { scanned, conflicts_detected: conflicts });
       return { scanned, conflicts_detected: conflicts };
@@ -429,6 +429,22 @@ export class SkillRegistry {
         throw new AppError(ErrorCode.SKILL_CONFLICT_UNRESOLVED, "No conflict group for this skill in the space.");
       }
       const now = new Date().toISOString();
+      this.db
+        .prepare(
+          `INSERT INTO skill_conflict_resolutions (space_id, display_name_key, keep_skill_id, candidate_ids_json, resolved_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT (space_id, display_name_key) DO UPDATE SET
+             keep_skill_id = excluded.keep_skill_id,
+             candidate_ids_json = excluded.candidate_ids_json,
+             resolved_at = excluded.resolved_at`,
+        )
+        .run(
+          spaceId,
+          keep.display_name.toLowerCase(),
+          keepSkillId,
+          JSON.stringify(groupMembers.map((member) => member.id).sort()),
+          now,
+        );
       for (const member of groupMembers) {
         const state = member.id === keepSkillId ? "active" : "shadowed";
         upsertSpaceStates(this.db, [{ skillId: member.id, spaceId, state }], now);
@@ -449,9 +465,59 @@ export class SkillRegistry {
   }
 
   /** 按 Space 分组重算：多来源同名 → conflict；组内只剩一个候选 → 自动回 active。 */
-  private recomputeSpaceStates(spaceId: string): number {
+  private recomputeSpaceStates(spaceId: string, preserveResolutions = false): number {
     const candidates = listCandidatesForSpace(this.db, spaceId);
     const states = computeGroupStates(candidates);
+    if (preserveResolutions) {
+      const groups = new Map<string, SkillGroupCandidate[]>();
+      for (const candidate of candidates) {
+        const key = candidate.display_name.toLowerCase();
+        const group = groups.get(key);
+        if (group) group.push(candidate);
+        else groups.set(key, [candidate]);
+      }
+      for (const [name, group] of groups) {
+        const activeMembers = group.filter((candidate) => candidate.state === "active");
+        const conflicts =
+          activeMembers.length > 1 && new Set(activeMembers.map((candidate) => candidate.source_identity)).size > 1;
+        const resolution = this.db
+          .prepare(
+            "SELECT keep_skill_id, candidate_ids_json FROM skill_conflict_resolutions WHERE space_id = ? AND display_name_key = ?",
+          )
+          .get(spaceId, name) as { keep_skill_id: string; candidate_ids_json: string } | undefined;
+        if (!conflicts) {
+          if (resolution) {
+            this.db
+              .prepare("DELETE FROM skill_conflict_resolutions WHERE space_id = ? AND display_name_key = ?")
+              .run(spaceId, name);
+          }
+          continue;
+        }
+        let resolvedCandidateIds: string[] = [];
+        try {
+          resolvedCandidateIds = JSON.parse(resolution?.candidate_ids_json ?? "[]") as string[];
+        } catch {
+          resolvedCandidateIds = [];
+        }
+        const sameCandidates =
+          resolution &&
+          JSON.stringify([...resolvedCandidateIds].sort()) ===
+            JSON.stringify(group.map((candidate) => candidate.id).sort()) &&
+          activeMembers.some((candidate) => candidate.id === resolution.keep_skill_id);
+        if (sameCandidates) {
+          for (const candidate of group) {
+            states.set(
+              candidate.id,
+              candidate.state === "active" && candidate.id !== resolution.keep_skill_id ? "shadowed" : "active",
+            );
+          }
+        } else if (resolution) {
+          this.db
+            .prepare("DELETE FROM skill_conflict_resolutions WHERE space_id = ? AND display_name_key = ?")
+            .run(spaceId, name);
+        }
+      }
+    }
     upsertSpaceStates(
       this.db,
       [...states.entries()].map(([skillId, state]) => ({ skillId, spaceId, state })),

@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
-import { createTestServices, createTempDir, cleanupTempDir, disposeTestServices, type TestServices } from "../helpers.js";
+import {
+  createTestServices,
+  createTempDir,
+  cleanupTempDir,
+  disposeTestServices,
+  type TestServices,
+} from "../helpers.js";
 import { initGitRepo } from "../helpers.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -35,6 +41,26 @@ describe("F013 AC-005: conflict closure essentials", () => {
     expect(rows.n).toBe(1); // 同一来源重扫是更新，不是新建
   });
 
+  it("keeps an explicit per-space conflict winner after a scan", () => {
+    const space = services.spaceService.create("Conflict space");
+    const global = services.skillRegistry.createSkill({
+      display_name: "Same name",
+      space_id: null,
+      draft: { capability_tags: [] },
+    }).skill;
+    const privateSkill = services.skillRegistry.createSkill({
+      display_name: "Same name",
+      space_id: space.id,
+      draft: { capability_tags: [] },
+    }).skill;
+
+    services.skillRegistry.resolveConflict(space.id, privateSkill.id);
+    services.skillRegistry.scan();
+    const rows = services.skillRegistry.listForSpace(space.id).filter((row) => row.display_name === "Same name");
+    expect(rows.find((row) => row.id === privateSkill.id)?.space_state).toBe("active");
+    expect(rows.find((row) => row.id === global.id)?.space_state).toBe("shadowed");
+  });
+
   it("rejects illegal steps schema / no source before activation", () => {
     expect(() =>
       services.skillRegistry.createSkill({
@@ -45,9 +71,7 @@ describe("F013 AC-005: conflict closure essentials", () => {
       }),
     ).toThrow();
 
-    expect(() =>
-      services.skillRegistry.createSkill({ display_name: "", draft: { capability_tags: [] } }),
-    ).toThrow();
+    expect(() => services.skillRegistry.createSkill({ display_name: "", draft: { capability_tags: [] } })).toThrow();
   });
 
   it("conflict states survive a full service restart (server-side truth)", () => {

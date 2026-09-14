@@ -44,7 +44,9 @@ function undoV13(db: Database.Database): void {
   for (const table of V13_TABLES) {
     db.exec(`DROP TABLE IF EXISTS ${table}`);
   }
-  db.prepare("DELETE FROM schema_version WHERE version = 13").run();
+  // v14 is the current head and depends on v13; remove both markers so this
+  // test really exercises the forward v12 -> v13 -> v14 path.
+  db.prepare("DELETE FROM schema_version WHERE version >= 13").run();
 }
 
 describe("F010 schema v13 migration", () => {
@@ -61,7 +63,7 @@ describe("F010 schema v13 migration", () => {
 
   it("fresh install reaches the head version", () => {
     applyMigrations(db);
-    expect(CURRENT_SCHEMA_VERSION).toBe(13);
+    expect(CURRENT_SCHEMA_VERSION).toBe(14);
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
     expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
     for (const table of V13_TABLES) {
@@ -93,7 +95,7 @@ describe("F010 schema v13 migration", () => {
     const legacy = db.prepare("SELECT name FROM projects WHERE id = 'prj_legacy'").get() as { name: string };
     expect(legacy.name).toBe("Legacy");
     const version = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number };
-    expect(version.v).toBe(13);
+    expect(version.v).toBe(CURRENT_SCHEMA_VERSION);
     for (const index of V13_INDEXES) {
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = ?").get(index)).toBeTruthy();
     }

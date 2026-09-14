@@ -69,7 +69,9 @@ describe("F013 AC-003: skill file snapshot", () => {
     ).toThrow(/SKILL_REVISION_FROZEN/);
     expect(() =>
       services.db
-        .prepare("UPDATE skill_revision_files SET content = x'43' WHERE skill_id = ? AND version = 1 AND rel_path = 'a.md'")
+        .prepare(
+          "UPDATE skill_revision_files SET content = x'43' WHERE skill_id = ? AND version = 1 AND rel_path = 'a.md'",
+        )
         .run(skill.id),
     ).toThrow(/SKILL_REVISION_FROZEN/);
     expect(() =>
@@ -113,6 +115,38 @@ describe("F013 AC-003: skill file snapshot", () => {
         )
         .run(skill.id),
     ).toThrow(/SKILL_REVISION_FROZEN/);
+  });
+
+  it("keeps file rows attached to a real revision and blocks key moves onto published rows", () => {
+    const { skill } = services.skillRegistry.createSkill({ display_name: "FK", draft: {} });
+    const now = new Date().toISOString();
+    services.db.transaction(() => {
+      services.db
+        .prepare(
+          "INSERT INTO skill_revisions (skill_id, version, title, capability_tags_json, content_hash, published_at, created_at) VALUES (?, 2, 'draft', '[]', 'h', NULL, ?)",
+        )
+        .run(skill.id, now);
+      services.db
+        .prepare(
+          "INSERT INTO skill_revision_files (skill_id, version, rel_path, content, content_hash, size_bytes) VALUES (?, 2, 'draft.md', x'44', 'h', 1)",
+        )
+        .run(skill.id);
+    })();
+
+    expect(() =>
+      services.db
+        .prepare(
+          "UPDATE skill_revision_files SET version = 1 WHERE skill_id = ? AND version = 2 AND rel_path = 'draft.md'",
+        )
+        .run(skill.id),
+    ).toThrow(/SKILL_REVISION_FROZEN/);
+    expect(() =>
+      services.db
+        .prepare(
+          "INSERT INTO skill_revision_files (skill_id, version, rel_path, content, content_hash, size_bytes) VALUES ('missing', 1, 'x', x'78', 'h', 1)",
+        )
+        .run(),
+    ).toThrow(/FOREIGN KEY/);
   });
 
   it("read API verifies content_hash and refuses suspicious bodies", () => {

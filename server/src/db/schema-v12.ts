@@ -133,7 +133,8 @@ CREATE TABLE IF NOT EXISTS skill_revision_files (
   content BLOB NOT NULL,
   content_hash TEXT NOT NULL,
   size_bytes INTEGER NOT NULL,
-  PRIMARY KEY (skill_id, version, rel_path)
+  PRIMARY KEY (skill_id, version, rel_path),
+  FOREIGN KEY (skill_id, version) REFERENCES skill_revisions(skill_id, version)
 );
 
 -- per-Space 生效结果：全局 Skill 在每个 Space 各一行，Space 私有 Skill 只有自己那行。
@@ -160,6 +161,18 @@ CREATE TABLE IF NOT EXISTS skill_delivery_status (
   attempted_at TEXT,
   updated_at TEXT NOT NULL,
   PRIMARY KEY (skill_id, version, runtime_id, cli_provider)
+);
+
+-- A resolution belongs to one Space/name group and is only reusable while the
+-- candidate set is unchanged. The candidate snapshot lets a later scan turn a
+-- newly introduced same-name source back into an explicit conflict.
+CREATE TABLE IF NOT EXISTS skill_conflict_resolutions (
+  space_id TEXT NOT NULL REFERENCES spaces(id),
+  display_name_key TEXT NOT NULL,
+  keep_skill_id TEXT NOT NULL REFERENCES skills(id),
+  candidate_ids_json TEXT NOT NULL,
+  resolved_at TEXT NOT NULL,
+  PRIMARY KEY (space_id, display_name_key)
 );
 
 -- legacy 迁移的两张职责不同的桥：alias 管来源追溯（一行一个旧对象，不指向 revision），
@@ -321,6 +334,8 @@ CREATE TRIGGER IF NOT EXISTS trg_skill_files_no_update
   FOR EACH ROW
   WHEN (SELECT published_at FROM skill_revisions
         WHERE skill_id = OLD.skill_id AND version = OLD.version) IS NOT NULL
+     OR (SELECT published_at FROM skill_revisions
+        WHERE skill_id = NEW.skill_id AND version = NEW.version) IS NOT NULL
 BEGIN
   SELECT RAISE(ABORT, 'SKILL_REVISION_FROZEN');
 END;
