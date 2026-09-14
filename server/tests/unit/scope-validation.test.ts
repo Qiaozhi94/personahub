@@ -124,6 +124,23 @@ describe("F013 AC-002: three-layer scope intersection", () => {
     expect(result.scope.read).toEqual(["src"]);
   });
 
+  it("never lets a lower write layer widen an upper layer", () => {
+    const narrowedByMachine = computeEffectiveScope({
+      machine: { read: [""], write: ["src"] },
+      project: { read: [""], write: ["docs"] },
+      caseInsensitive: false,
+    });
+    expect(narrowedByMachine.scope.write).toEqual([]);
+
+    const narrowedByProject = computeEffectiveScope({
+      machine: { read: [""], write: [""] },
+      project: { read: [""], write: [] },
+      task: { read: ["src"], write: ["src"] },
+      caseInsensitive: false,
+    });
+    expect(narrowedByProject.scope.write).toEqual([]);
+  });
+
   it("treats a missing project/task layer as inherit and an explicit empty read as deny-all", () => {
     const inherited = computeEffectiveScope({
       machine: { read: ["src"], write: ["src"] },

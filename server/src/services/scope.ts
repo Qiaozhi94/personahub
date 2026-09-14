@@ -91,6 +91,21 @@ function dedupePrefixes(prefixes: string[], caseInsensitive: boolean): string[] 
   return kept;
 }
 
+/** Return the non-empty intersection of two prefix sets. */
+function intersectPrefixes(left: string[], right: string[], caseInsensitive: boolean): string[] {
+  const intersection: string[] = [];
+  for (const leftPrefix of left) {
+    for (const rightPrefix of right) {
+      if (scopePrefixContained(leftPrefix, rightPrefix, caseInsensitive)) {
+        intersection.push(leftPrefix);
+      } else if (scopePrefixContained(rightPrefix, leftPrefix, caseInsensitive)) {
+        intersection.push(rightPrefix);
+      }
+    }
+  }
+  return dedupePrefixes(intersection, caseInsensitive);
+}
+
 function parsePrefixList(value: unknown, field: "read" | "write"): string[] {
   if (!Array.isArray(value)) {
     throw new ScopeValidationError("SCOPE_INVALID_PREFIX", `scope.${field} must be an array`);
@@ -186,15 +201,14 @@ export function computeEffectiveScope(input: {
     }
     read = dedupePrefixes(nextRead, caseInsensitive);
 
-    // 下层 write 必须是下层 read 的子集（入库校验已保证）；这里再对上层收窄。
-    const nextWrite: string[] = [];
+    // Write is an intersection too. Checking only containment in the new read
+    // set lets a lower layer re-expand a write scope that an upper layer had
+    // already narrowed (for example machine=src, project=docs).
+    const nextWrite = intersectPrefixes(write, layer.scope.write, caseInsensitive).filter((prefix) =>
+      read.some((allowed) => scopePrefixContained(prefix, allowed, caseInsensitive)),
+    );
     for (const prefix of layer.scope.write) {
-      if (
-        read.some((upper) => scopePrefixContained(prefix, upper, caseInsensitive)) &&
-        layer.scope.read.some((lowerRead) => scopePrefixContained(prefix, lowerRead, caseInsensitive))
-      ) {
-        nextWrite.push(prefix);
-      } else {
+      if (!nextWrite.some((kept) => scopePrefixContained(kept, prefix, caseInsensitive))) {
         narrowed.push({ layer: layer.name, scope: "write", prefix });
       }
     }
