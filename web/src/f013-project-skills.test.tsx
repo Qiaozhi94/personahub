@@ -8,10 +8,11 @@ vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
 
 import { apiClient } from "@/lib/api-client";
 import { SkillsPage } from "@/pages/SkillsPage";
+import { SkillDetailPage } from "@/pages/SkillDetailPage";
 import { ProjectSkillsTab } from "@/pages/project-tabs/ProjectSkillsTab";
 import { SURFACE_REGISTRY } from "@/app/surface-registry";
 import { resolveRoute } from "@/app/route-manifest";
-import type { SkillListItem, SkillListResponse, ProjectSkillRef } from "@personahub/shared";
+import type { SkillListItem, SkillListResponse, ProjectSkillRef, SkillRevision } from "@personahub/shared";
 import type { ReactNode } from "react";
 
 // F013 AC-003（design §8 web）：普通 Skill 与编组共用一张列表/详情结构；
@@ -29,6 +30,9 @@ function skillItem(overrides: Partial<SkillListItem> = {}): SkillListItem {
     created_at: "2026-09-01T00:00:00Z",
     updated_at: "2026-09-01T00:00:00Z",
     space_state: "active",
+    has_steps: false,
+    step_count: 0,
+    requirement_count: 0,
     ...overrides,
   };
 }
@@ -67,7 +71,8 @@ describe("F013 AC-003: capabilities surface (web)", () => {
         id: "skl_group",
         display_name: "Grouped skill",
         current_revision: 1,
-        // 编组行由 has_steps 语义驱动（revision 视图）；列表共用同一张表。
+        has_steps: true,
+        step_count: 2,
       }),
     ];
     vi.mocked(apiClient.skills.list).mockResolvedValue({ skills } as SkillListResponse);
@@ -77,6 +82,7 @@ describe("F013 AC-003: capabilities surface (web)", () => {
     expect(await screen.findByRole("table", { name: "Skills 列表" })).toBeInTheDocument();
     expect(screen.getByText("Plain skill")).toBeInTheDocument();
     expect(screen.getByText("Grouped skill")).toBeInTheDocument();
+    expect(screen.getByText("编组（2 步）")).toBeInTheDocument();
     // 只有一张表：普通与编组同列渲染，没有第二套入口。
     expect(screen.getAllByRole("table")).toHaveLength(1);
     expect(apiClient.skills.list).toHaveBeenCalledWith("spc_1");
@@ -144,5 +150,36 @@ describe("F013 AC-003: capabilities surface (web)", () => {
       expect(apiClient.skills.setProjectDefault).toHaveBeenCalledWith("prj_1", "skl_1", null);
     });
     expect(apiClient.projects.create).not.toHaveBeenCalled();
+  });
+
+  it("opens the skill's current revision and lets the user choose another published revision", async () => {
+    const revision = (version: number): SkillRevision => ({
+      skill_id: "skl_1",
+      version,
+      title: `Revision ${version}`,
+      description: null,
+      capability_tags: [],
+      has_steps: false,
+      step_count: 0,
+      requirement_count: 0,
+      source_locator: null,
+      content_hash: `hash-${version}`,
+      published_at: "2026-09-01T00:00:00Z",
+      created_at: "2026-09-01T00:00:00Z",
+    });
+    vi.mocked(apiClient.skills.get).mockResolvedValue({ skill: skillItem({ current_revision: 2 }) });
+    vi.mocked(apiClient.skills.revisions).mockResolvedValue({ revisions: [revision(1), revision(2)] });
+    vi.mocked(apiClient.skills.revisionDetail).mockImplementation(async (_id, version) => ({
+      revision: revision(version),
+      steps: [],
+      completion_requirements: [],
+    }));
+
+    renderWithQuery(<SkillDetailPage skillId="skl_1" />);
+
+    expect(await screen.findByText("版本 v2 · 内容指纹 hash-2…")).toBeInTheDocument();
+    expect(apiClient.skills.revisionDetail).toHaveBeenCalledWith("skl_1", 2);
+    await userEvent.setup().selectOptions(screen.getByLabelText("选择 Skill 版本"), "1");
+    await waitFor(() => expect(apiClient.skills.revisionDetail).toHaveBeenCalledWith("skl_1", 1));
   });
 });

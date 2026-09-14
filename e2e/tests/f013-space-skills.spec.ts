@@ -52,7 +52,7 @@ test("capabilities page lists migrated legacy skills; detail shows version and r
   // 详情：版本与要求可读（来源追溯）。
   await page.getByText("Coding Workflow").first().click();
   await expect(page.getByRole("heading", { name: /Coding Workflow|Skill/ })).toBeVisible();
-  await expect(page.getByText(/版本 v1|版本 v2/)).toBeVisible();
+  await expect(page.getByText(/^版本 v1 ·/)).toBeVisible();
 });
 
 async function waitForSpaceSelected(page: import("@playwright/test").Page, name: string): Promise<void> {

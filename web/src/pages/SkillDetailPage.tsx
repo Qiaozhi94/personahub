@@ -1,20 +1,36 @@
-import { useSkillDetail, useSkillDelivery, useSkillFiles, useSkillRevisions } from "@/hooks/use-skills";
+import { useEffect, useState } from "react";
+import { useSkill, useSkillDetail, useSkillDelivery, useSkillFiles, useSkillRevisions } from "@/hooks/use-skills";
 
 // F013 T018：Skill 整页详情（只读下钻）：来源、版本、要求、下发状态与只读文件。
 // 构建期 revision 对外不存在（读取 API 过滤 published）；版本切换只读已发布行。
 
 export function SkillDetailPage({ skillId }: { skillId: string }) {
+  const skillQuery = useSkill(skillId);
   const revisionsQuery = useSkillRevisions(skillId);
-  const revisions = revisionsQuery.data?.revisions ?? [];
-  const current = revisions.find((revision) => revision.published_at !== null);
-  const detail = useSkillDetail(skillId, current?.version ?? null);
-  const files = useSkillFiles(skillId, current?.version ?? null);
-  const delivery = useSkillDelivery(skillId, current?.version ?? null);
+  const revisions = revisionsQuery.data?.revisions;
+  const currentVersion = skillQuery.data?.skill.current_revision ?? revisions?.[revisions.length - 1]?.version ?? null;
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (currentVersion !== null && !(revisions?.some((revision) => revision.version === selectedVersion) ?? false)) {
+      setSelectedVersion(currentVersion);
+    }
+  }, [currentVersion, revisions, selectedVersion]);
+
+  const version = selectedVersion ?? currentVersion;
+  const detail = useSkillDetail(skillId, version);
+  const files = useSkillFiles(skillId, version);
+  const delivery = useSkillDelivery(skillId, version);
 
   return (
     <main aria-label="Skill 详情">
       <div className="px-6 pt-6">
         <h1 className="text-xl font-semibold">{detail.data?.revision.title ?? "Skill"}</h1>
+        {skillQuery.data ? (
+          <p className="text-sm text-muted-foreground">
+            来源：{skillQuery.data.skill.source_kind} · {skillQuery.data.skill.source_identity}
+          </p>
+        ) : null}
         {detail.data && (
           <p className="text-sm text-muted-foreground">
             版本 v{detail.data.revision.version} · 内容指纹 {detail.data.revision.content_hash.slice(0, 12)}…
@@ -24,14 +40,21 @@ export function SkillDetailPage({ skillId }: { skillId: string }) {
 
       <section className="px-6 pt-4" aria-label="版本历史">
         <h2 className="text-sm font-medium">版本</h2>
-        <ul>
-          {revisions.map((revision) => (
-            <li key={revision.version}>
-              v{revision.version}
-              {revision.published_at ? "" : "（构建期，未发布）"}
-            </li>
-          ))}
-        </ul>
+        {revisions && revisions.length > 0 ? (
+          <select
+            aria-label="选择 Skill 版本"
+            value={version ?? ""}
+            onChange={(event) => setSelectedVersion(Number(event.target.value))}
+          >
+            {revisions.map((revision) => (
+              <option key={revision.version} value={revision.version}>
+                v{revision.version}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p role="status">加载中…</p>
+        )}
       </section>
 
       <section className="px-6 pt-4" aria-label="要求">

@@ -12,6 +12,14 @@ export function useSkills(spaceId: string | null) {
   });
 }
 
+export function useSkill(skillId: string | null) {
+  return useQuery({
+    queryKey: ["skills", skillId],
+    queryFn: () => apiClient.skills.get(skillId!),
+    enabled: skillId !== null,
+  });
+}
+
 export function useSkillRevisions(skillId: string | null) {
   return useQuery({
     queryKey: ["skills", skillId, "revisions"],
