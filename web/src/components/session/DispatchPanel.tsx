@@ -35,7 +35,7 @@ export function DispatchPanel({ sessionId, purpose, onDispatched }: DispatchPane
   const eligibility = useEligibility(sessionId, purpose, contextScope, true);
   const confirmDispatch = useConfirmDispatch(sessionId);
 
-  const candidates = eligibility.data?.candidates ?? [];
+  const candidates = useMemo(() => eligibility.data?.candidates ?? [], [eligibility.data]);
   const selectableCandidates = useMemo(
     () => candidates.filter((c) => c.tier !== "blocked" && c.identity.depth_normalized === depth),
     [candidates, depth],

@@ -38,9 +38,9 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 - [x] T010 (`FR-004`, `NFR-001`): 实现确认即建 draft、draft 撤销、立即开始、deadline CAS / starting lease，以及 context + consumption + Attempt / Run + dispatched 单事务提交；逐点故障注入并断言 commit 前零 spawn。 — verify: `npm test --workspace server`
 - [x] T011 (`FR-005`, `FR-011`, `NFR-002`): 实现 context assembler、过滤事件、resume key 与五条强制冷启动，调用 F013 `verifyAuthorization()` 复核三层路径交集，并通过 F010 公共 API 幂等记录 Artifact consumption（同事务校验 Dispatch 与 `run_id` 归属一致）；本任务是该集成的最终 owner。 — verify: `npm test --workspace server`
 - [x] T012 (`FR-006`, `NFR-001`): 实现任务 / 图 / 运行时三层 pause 与 claim barrier、cancel / reassign、restart recovery，并把「旧进程已死」推断提成具名函数 `isRunOwnerDead()`。 — verify: `npm test --workspace server`
-- [ ] T013 [P] (`FR-001`, `FR-007`): 实现独立会话、会话消息与转任务。 — verify: `npm test`
+- [x] T013 [P] (`FR-001`, `FR-007`): 实现独立会话、会话消息与转任务。 — verify: `npm test`
 - [x] T014 (`FR-010`): 在确认与超时启动两条路径实现验收锁断言，拒绝在 finalizing / completed 上创建或确认 Dispatch 并返回替代路径。 — verify: `npm test --workspace server`
-- [ ] T015 (`FR-003`, `FR-004`, `FR-006`, `FR-008`, `NFR-004`): 接入选择器、撤销倒计时与立即开始横幅、`/sessions/:sessionId` 路由、会话面、运行时面与全局闸门，密钥与 session 标识默认遮罩。 — verify: `npm test --workspace web`
+- [x] T015 (`FR-003`, `FR-004`, `FR-006`, `FR-008`, `NFR-004`): 接入选择器、撤销倒计时与立即开始横幅、`/sessions/:sessionId` 路由、会话面、运行时面与全局闸门，密钥与 session 标识默认遮罩。 — verify: `npm test --workspace web`
 
 ## 3. 验证与验收任务
 
