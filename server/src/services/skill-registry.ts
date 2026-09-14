@@ -536,16 +536,16 @@ export class SkillRegistry {
     const now = new Date().toISOString();
     // 冲突检测影响的是"该组在该 Space 的那些行"：物化写入受影响 Space 的
     // 全部候选状态，而不是只写新 Skill 自己的行。
-    const affectedSpaces =
-      skill.space_id === null ? listAllSpaceIds(this.db) : [skill.space_id];
+    const affectedSpaces = skill.space_id === null ? listAllSpaceIds(this.db) : [skill.space_id];
     for (const spaceId of affectedSpaces) {
       const candidates = listCandidatesForSpace(this.db, spaceId);
       const states = computeGroupStates(candidates);
       const previous = new Map(
         (
-          this.db
-            .prepare("SELECT skill_id, state FROM skill_space_state WHERE space_id = ?")
-            .all(spaceId) as Array<{ skill_id: string; state: string }>
+          this.db.prepare("SELECT skill_id, state FROM skill_space_state WHERE space_id = ?").all(spaceId) as Array<{
+            skill_id: string;
+            state: string;
+          }>
         ).map((row) => [row.skill_id, row.state]),
       );
       upsertSpaceStates(
@@ -681,4 +681,3 @@ export class SkillRegistry {
     }
   }
 }
-

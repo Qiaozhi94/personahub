@@ -116,9 +116,9 @@ describe("F013 T011: invariant A — every default ref resolves to a published r
   it("rejects moving current_revision to a draft (skills UPDATE path)", () => {
     createSkillWithPublishedRevision("skl_mv");
     createDraftRevision("skl_mv", 2);
-    expect(() =>
-      services.db.prepare("UPDATE skills SET current_revision = 2 WHERE id = 'skl_mv'").run(),
-    ).toThrow(/SKILL_CURRENT_REVISION_NOT_PUBLISHED/);
+    expect(() => services.db.prepare("UPDATE skills SET current_revision = 2 WHERE id = 'skl_mv'").run()).toThrow(
+      /SKILL_CURRENT_REVISION_NOT_PUBLISHED/,
+    );
   });
 
   it("rejects UPDATE that re-points a ref to a ghost skill (only skill_id changed)", () => {
@@ -183,12 +183,12 @@ describe("F013 T011: invariant A — every default ref resolves to a published r
       )
       .run(project);
 
-    expect(() => services.db.prepare("DELETE FROM skill_revisions WHERE skill_id = 'skl_del' AND version = 1").run()).toThrow(
-      /SKILL_REVISION_FROZEN/,
-    );
-    expect(() => services.db.prepare("DELETE FROM skill_revisions WHERE skill_id = 'skl_del2' AND version = 2").run()).toThrow(
-      /SKILL_REVISION_FROZEN/,
-    );
+    expect(() =>
+      services.db.prepare("DELETE FROM skill_revisions WHERE skill_id = 'skl_del' AND version = 1").run(),
+    ).toThrow(/SKILL_REVISION_FROZEN/);
+    expect(() =>
+      services.db.prepare("DELETE FROM skill_revisions WHERE skill_id = 'skl_del2' AND version = 2").run(),
+    ).toThrow(/SKILL_REVISION_FROZEN/);
   });
 
   it("disabled skill keeps a resolvable published default ref (positive case)", () => {

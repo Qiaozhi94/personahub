@@ -64,7 +64,12 @@ function display_nameOfAnyPlatform(p: string): string {
 }
 
 function isRemoteUrl(source: string): boolean {
-  return /^https?:\/\//i.test(source) || /^ssh:\/\//i.test(source) || /^git@/.test(source) || (/\.git$/i.test(source) && !fs.existsSync(source));
+  return (
+    /^https?:\/\//i.test(source) ||
+    /^ssh:\/\//i.test(source) ||
+    /^git@/.test(source) ||
+    (/\.git$/i.test(source) && !fs.existsSync(source))
+  );
 }
 
 function remoteDisplayName(source: string): string {
@@ -178,7 +183,10 @@ export class RepositoryRegistry {
   probeGitIdentity(repositoryId: string, runtimeId: string = LOCAL_RUNTIME_ID): GitIdentity {
     const row = this.getMachinePath(repositoryId, runtimeId);
     if (!row) {
-      throw new AppError(ErrorCode.REPOSITORY_NOT_AUTHORIZED, "Repository has no machine path authorization on this runtime.");
+      throw new AppError(
+        ErrorCode.REPOSITORY_NOT_AUTHORIZED,
+        "Repository has no machine path authorization on this runtime.",
+      );
     }
     return this.probeGitIdentityForPath(row.real_path);
   }
@@ -272,7 +280,9 @@ export class RepositoryRegistry {
     if (!resolved.real_path || !resolved.authorizable) {
       throw new AppError(ErrorCode.WORKSPACE_PATH_NOT_FOUND, `Local path could not be resolved: ${input.raw_path}`);
     }
-    const repository = input.repository_id ? this.getById(input.repository_id) : this.create({ source: input.raw_path, runtime_id: runtimeId });
+    const repository = input.repository_id
+      ? this.getById(input.repository_id)
+      : this.create({ source: input.raw_path, runtime_id: runtimeId });
 
     let identity: string;
     try {
@@ -283,9 +293,7 @@ export class RepositoryRegistry {
     const caseInsensitive = probeCaseInsensitive(resolved.real_path);
     const previousScope = this.getMachinePath(repository.id, runtimeId)?.scope_json ?? null;
     const scope =
-      input.scope === undefined
-        ? null
-        : JSON.stringify(validateScope(input.scope, caseInsensitive ?? false));
+      input.scope === undefined ? null : JSON.stringify(validateScope(input.scope, caseInsensitive ?? false));
 
     const now = new Date().toISOString();
     this.db
@@ -336,10 +344,9 @@ export class RepositoryRegistry {
   revoke(repositoryId: string, runtimeId: string = LOCAL_RUNTIME_ID): void {
     const row = this.getMachinePath(repositoryId, runtimeId);
     if (!row) return;
-    this.db.prepare("DELETE FROM repository_machine_paths WHERE repository_id = ? AND runtime_id = ?").run(
-      repositoryId,
-      runtimeId,
-    );
+    this.db
+      .prepare("DELETE FROM repository_machine_paths WHERE repository_id = ? AND runtime_id = ?")
+      .run(repositoryId, runtimeId);
     this.audit.record("repository.revoked", "repository", repositoryId, { runtime_id: runtimeId });
   }
 

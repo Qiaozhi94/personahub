@@ -23,9 +23,7 @@ const createSkillSchema = z.object({
   capability_tags: z.array(z.string()).optional(),
   steps: z.array(z.unknown()).nullable().optional(),
   completion_requirements: z.array(z.unknown()).nullable().optional(),
-  files: z
-    .array(z.object({ rel_path: z.string(), content: z.string() }))
-    .optional(),
+  files: z.array(z.object({ rel_path: z.string(), content: z.string() })).optional(),
 });
 
 const addRevisionSchema = createSkillSchema.omit({ display_name: true, space_id: true });
