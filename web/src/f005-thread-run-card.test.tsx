@@ -29,7 +29,7 @@ describe("T095/T096: Thread Run card rendering", () => {
     const run: Run = createRun({
       id: "run_1", role: RunRole.Implementation, purpose: RunPurpose.WorkflowBound,
       dispatch_source: RunDispatchSource.UserExplicit,
-      adapter_identity: { adapter_config_id: "agt_1", name: "Codex", cli_provider: "codex", default_model: "gpt-5" },
+      adapter_identity: { adapter_config_id: "agt_1", name: "Codex", cli_provider: "codex", default_model: "gpt-5", runtime_id: "local" },
     });
     render(<ThreadEvent event={queuedEvent("run_1")} runs={[run]} />);
     expect(screen.getByText("Implementation workflow")).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe("T095/T096: Thread Run card rendering", () => {
   it("shows a neutral consult badge and 'does not change workflow' text for a consult Run", () => {
     const run: Run = createRun({
       id: "run_2", role: RunRole.Consult, purpose: RunPurpose.AdHocConsult,
-      adapter_identity: { adapter_config_id: "agt_1", name: "Codex", cli_provider: "codex", default_model: "gpt-5" },
+      adapter_identity: { adapter_config_id: "agt_1", name: "Codex", cli_provider: "codex", default_model: "gpt-5", runtime_id: "local" },
     });
     render(<ThreadEvent event={queuedEvent("run_2")} runs={[run]} />);
     expect(screen.getByText("Consult · does not change workflow")).toBeInTheDocument();

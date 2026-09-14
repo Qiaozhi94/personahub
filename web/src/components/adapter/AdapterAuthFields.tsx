@@ -38,6 +38,8 @@ export interface AdapterAuthFieldsValue {
   apiKeyInput: string;
   apiKeyAction: ApiKeyAction;
   capabilityTags: AgentCapability[];
+  /** F012/ADR 0012: custom endpoint; only offered in the API-key branch. */
+  baseUrl: string;
 }
 
 export interface AdapterAuthFieldsProps {
@@ -193,6 +195,23 @@ export function AdapterAuthFields({ value, onChange, providers, providerLocked, 
           />
         </div>
       )}
+
+      {value.authType === AdapterAuthType.ApiKey ? (
+        <div className="grid gap-1.5">
+          <Label htmlFor="adapter-base-url">Base URL (optional)</Label>
+          <Input
+            id="adapter-base-url"
+            type="url"
+            value={value.baseUrl}
+            onChange={(e) => set({ baseUrl: e.target.value })}
+            placeholder="https://api.example.com/v1（官方端点请留空）"
+            autoComplete="off"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            非官方端点时填写；https:// 或本机 http://（localhost / 127.x / ::1）。可达性由"验证登录"检查。
+          </p>
+        </div>
+      ) : null}
 
       {value.authType === AdapterAuthType.ApiKey ? (
         <div className="grid gap-1.5">

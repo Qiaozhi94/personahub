@@ -18,6 +18,7 @@ import {
   type AdapterConfigCreateServiceInput,
   type AdapterConfigUpdateServiceInput,
   validateAuthState,
+  validateBaseUrl,
   validateCommand,
 } from "./adapter-config-contract.js";
 import { updateAdapterConfig } from "./adapter-config-updater.js";
@@ -150,6 +151,7 @@ export class AdapterConfigService {
       args: input.args ?? [],
       capability_tags: capabilityTags,
       default_model: defaultModel,
+      base_url: validateBaseUrl(input.base_url),
       status,
       auth_type: authType,
       model_provider: modelProvider,

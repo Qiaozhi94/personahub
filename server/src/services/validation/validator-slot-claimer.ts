@@ -196,6 +196,7 @@ export class ValidatorSlotClaimer {
         name: selected.name,
         cli_provider: selected.cli_provider,
         default_model: selected.default_model,
+        runtime_id: selected.runtime_id,
       };
       // Pre-generate the id so the context (which must cite the validator
       // Run's own id) can be fully built BEFORE any row is persisted — a

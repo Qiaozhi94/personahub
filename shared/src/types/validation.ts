@@ -68,6 +68,14 @@ export interface AdapterIdentitySnapshot {
   name: string;
   cli_provider: string;
   default_model: string | null;
+  /**
+   * F012/ADR 0015 §2: execution machine actually used, frozen at dispatch
+   * time (never re-read from current config). Absent on pre-F012 rows —
+   * readers normalize a missing value to 'local' and flag
+   * `legacy_identity_inferred` (F012 design §3.8/§7.4). base_url is
+   * deliberately NOT snapshotted (ADR 0012 item 8).
+   */
+  runtime_id: string;
 }
 
 export interface ValidationEvidenceRequirements {

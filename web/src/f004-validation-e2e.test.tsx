@@ -162,8 +162,8 @@ describe("F004 Validation E2E UI flows", () => {
         evidence_refs: [],
         summary_markdown: "# Summary",
         same_origin_validation: true,
-        implementation_identity: { adapter_config_id: "a", name: "Imp", cli_provider: "codex", default_model: "gpt-5" },
-        validator_identity: { adapter_config_id: "a", name: "Val", cli_provider: "codex", default_model: "gpt-5" },
+        implementation_identity: { adapter_config_id: "a", name: "Imp", cli_provider: "codex", default_model: "gpt-5", runtime_id: "local" },
+        validator_identity: { adapter_config_id: "a", name: "Val", cli_provider: "codex", default_model: "gpt-5", runtime_id: "local" },
         policy_id: "vpl_default",
         policy_version: 1,
         policy_snapshot: {

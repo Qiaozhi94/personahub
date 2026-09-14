@@ -33,6 +33,7 @@ const createAdapterSchema = z.object({
   api_key: z.string().optional(),
   capability_tags: z.array(z.nativeEnum(AgentCapability)).optional(),
   make_default: z.boolean().optional(),
+  base_url: z.string().optional(),
 });
 
 const updateAdapterSchema = z.object({
@@ -45,6 +46,7 @@ const updateAdapterSchema = z.object({
   model_provider: z.string().nullable().optional(),
   api_key: z.string().nullable().optional(),
   capability_tags: z.array(z.nativeEnum(AgentCapability)).optional(),
+  base_url: z.string().nullable().optional(),
 });
 
 const setDefaultAdapterSchema = z.object({
@@ -80,6 +82,7 @@ export const adapterRoutes: FastifyPluginAsync<AdapterRoutesOptions> = async (ap
       api_key: body.api_key,
       capability_tags: body.capability_tags,
       make_default: body.make_default,
+      base_url: body.base_url,
     });
     reply.code(201);
     return { adapter };
@@ -111,6 +114,7 @@ export const adapterRoutes: FastifyPluginAsync<AdapterRoutesOptions> = async (ap
       model_provider: body.model_provider,
       api_key: body.api_key,
       capability_tags: body.capability_tags,
+      base_url: body.base_url,
     });
     return { adapter };
   });

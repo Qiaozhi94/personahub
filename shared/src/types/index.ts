@@ -290,6 +290,13 @@ export interface AdapterConfig {
   args: string[];
   capability_tags: AgentCapability[];
   default_model: string | null;
+  /** F012/ADR 0015 §1: explicit execution-machine binding. v0.3 is always
+   *  'local'; the column is NOT NULL with no "unbound" third state. */
+  runtime_id: string;
+  /** F012/ADR 0012 落地表: optional custom endpoint. Non-empty must be
+   *  https:// (http:// loopback-only); official endpoints omit it entirely.
+   *  Deliberately NOT part of AdapterIdentitySnapshot (ADR 0012 item 8). */
+  base_url: string | null;
   /** Project-global baseline status (schema v7 `agent_configs.status`) — unaffected by any workspace override, even when this response is workspace-scoped (see `effective_status` below). */
   status: AdapterStatus;
   last_checked_at: string | null;
@@ -351,3 +358,4 @@ export * from "./artifact.js";
 export * from "./space.js";
 export * from "./repository.js";
 export * from "./skill.js";
+export * from "./f012.js";

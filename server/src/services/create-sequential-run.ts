@@ -81,6 +81,7 @@ export function createSequentialRun(
       name: adapter.name,
       cli_provider: adapter.cli_provider,
       default_model: adapter.default_model,
+      runtime_id: adapter.runtime_id,
     },
     context_source_run_id: null,
   });

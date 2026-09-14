@@ -1,0 +1,120 @@
+{
+  "schema": "f012.capability-evidence/1",
+  "generated_at": "2026-09-14T16:30:24.621Z",
+  "adapters": {
+    "codex": {
+      "cli_version": "codex-cli 0.154.0",
+      "cli_version_raw": "codex-cli 0.154.0",
+      "probes": {
+        "model_enumeration": {
+          "capability_key": "model_enumeration",
+          "verdict": "supported",
+          "probe_command": "codex app-server --listen stdio:// → initialize → model/list",
+          "probe_result": "{\"ok\":true,\"models\":[{\"id\":\"gpt-6-astra\",\"displayName\":\"GPT-6-Astra\",\"supportedReasoningEfforts\":[\"low\",\"medium\",\"high\",\"xhigh\",\"max\",\"ultra\"]},{\"id\":\"gpt-5.6-sol\",\"displayName\":\"GPT-5.6-Sol\",\"supportedReasoningEfforts\":[\"low\",\"medium\",\"high\",\"xhigh\",\"max\",\"ultra\"]},{\"id\":\"gpt-5.6-terra\",\"displayName\":\"GPT-5.6-Terra\",\"supportedReasoningEfforts\":[\"low\",\"medium\",\"high\",\"xhigh\",\"max\",\"ultra\"]},{\"id\":\"gpt-5.6-luna\",\"displayName\":\"GPT-5.6-Luna\",\"supportedReasoningEfforts\":[\"low\",\"medium\",\"high\",\"xhigh\",\"max\"]},{\"id\":\"gpt-5.5\",\"displayName\":\"GPT-5.5\",\"supportedReasoningEfforts\":[\"low\",\"medium\",\"high\",\"xhigh\"]}]}",
+          "probed_at": "2026-09-14T15:47:29.506Z",
+          "missing_reason": null
+        },
+        "depth": {
+          "capability_key": "depth",
+          "verdict": "supported",
+          "probe_command": "codex exec -c model_reasoning_effort=__bogus_level__ … (API 400 enumerates valid values)",
+          "probe_result": "{\"ok\":true,\"native_levels\":[\"none\",\"minimal\",\"low\",\"medium\",\"high\",\"xhigh\",\"max\"],\"excerpt\":\"    \\\"message\\\": \\\"[ReasoningEffortParam] [reasoning.effort] [invalid_enum_value] Invalid value: '__bogus_level__'. Supported values are: 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', and 'max'.\\\",\\n    \\\"message\\\": \\\"[ReasoningEffortParam] [reasoning.effort] [invalid_enum_value] Invalid value: '__bogus_level__'. Supported values are: 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', and 'max'.\\\"\"}",
+          "probed_at": "2026-09-14T15:47:29.507Z",
+          "missing_reason": null
+        },
+        "session_resume": {
+          "capability_key": "session_resume",
+          "verdict": "supported",
+          "probe_command": "codex exec … ; codex exec resume <session-id> …",
+          "probe_result": "{\"ok\":true,\"session_id_shape\":\"01a0a099-9e77-7901-b891-4f9e406f93ac\",\"recall_excerpt\":\"PONG-CODEX-ed9dc80e\"}",
+          "probed_at": "2026-09-14T15:47:29.507Z",
+          "missing_reason": null
+        },
+        "native_memory_isolation": {
+          "capability_key": "native_memory_isolation",
+          "verdict": "supported",
+          "probe_command": "codex features list + CODEX_HOME inspection",
+          "probe_result": "{\"ok\":true,\"memory_feature_lines\":[\"external_agent_memory_import             under development  false\"],\"global_agents_md_present\":true,\"excerpt\":\"no auto-memory feature enabled; ~/.codex/AGENTS.md (if present) is user-authored config, not model-written memory. Private CODEX_HOME isolation would drop auth.json (documented residual).\"}",
+          "probed_at": "2026-09-14T15:47:29.507Z",
+          "missing_reason": null
+        }
+      }
+    },
+    "claude-code": {
+      "cli_version": "2.1.268 (Claude Code)",
+      "cli_version_raw": "2.1.268 (Claude Code)",
+      "probes": {
+        "model_enumeration": {
+          "capability_key": "model_enumeration",
+          "verdict": "unverified",
+          "probe_command": "claude --help (command inventory)",
+          "probe_result": "{\"ok\":false,\"excerpt\":\"no model enumeration subcommand in --help (full command list captured); per-model availability only verifiable via a real --model run\"}",
+          "probed_at": "2026-09-14T15:48:12.857Z",
+          "missing_reason": "no model-list subcommand in claude 2.x CLI; rerun `claude --help` after upgrades to check for a models command, or verify individual models with `claude -p --model <id>`"
+        },
+        "depth": {
+          "capability_key": "depth",
+          "verdict": "supported",
+          "probe_command": "claude -p --effort __bogus_level__ … (warning enumerates valid values)",
+          "probe_result": "{\"ok\":true,\"native_levels\":[\"low\",\"medium\",\"high\",\"xhigh\",\"max\"],\"hazard\":\"invalid --effort is WARNED and IGNORED (falls back to default), not rejected — adapter must pre-validate\",\"excerpt\":\"Warning: Unknown --effort value '__bogus_level__' — ignoring it and using the default effort. Valid values: low, medium, high, xhigh, max.\"}",
+          "probed_at": "2026-09-14T15:48:12.858Z",
+          "missing_reason": null
+        },
+        "session_resume": {
+          "capability_key": "session_resume",
+          "verdict": "supported",
+          "probe_command": "claude -p --output-format json … ; claude -p --resume <session_id> …",
+          "probe_result": "{\"ok\":true,\"session_id_shape\":\"c46c3e0e-fcd7-449d-96f7-1da1b88caf59\",\"recall_excerpt\":\"PONG-CLAUDE-1da90ea9\"}",
+          "probed_at": "2026-09-14T15:48:12.858Z",
+          "missing_reason": null
+        },
+        "native_memory_isolation": {
+          "capability_key": "native_memory_isolation",
+          "verdict": "unverified",
+          "probe_command": "CLAUDE_CONFIG_DIR=<tmp> claude -p …",
+          "probe_result": "{\"ok\":false,\"not_logged_in_with_private_config_dir\":true,\"excerpt\":\"auto-memory is on by default (--bare documents skipping it); --bare also forces API-key-only auth (OAuth never read); private CLAUDE_CONFIG_DIR isolates memory but drops OAuth login. No per-feature disable switch exists in this CLI version — verdict unverified until credential-seeded private-dir isolation is demonstrated.\"}",
+          "probed_at": "2026-09-14T15:48:12.858Z",
+          "missing_reason": "auto-memory cannot be disabled per-run without dropping OAuth auth (--bare forces API-key; private CLAUDE_CONFIG_DIR requires re-login). Rerun after demonstrating credential-seeded private-dir isolation on the installed CLI version."
+        }
+      }
+    },
+    "opencode": {
+      "cli_version": "1.18.30",
+      "cli_version_raw": "1.18.30",
+      "probes": {
+        "model_enumeration": {
+          "capability_key": "model_enumeration",
+          "verdict": "supported",
+          "probe_command": "opencode models",
+          "probe_result": "{\"ok\":true,\"model_count\":49,\"exit_code\":null,\"excerpt\":\"opencode models returned 49 provider/model ids (models.dev-backed catalog)\"}",
+          "probed_at": "2026-09-14T16:30:24.619Z",
+          "missing_reason": null
+        },
+        "depth": {
+          "capability_key": "depth",
+          "verdict": "unverified",
+          "probe_command": "opencode run --variant __bogus_level__ …",
+          "probe_result": "{\"ok\":false,\"silently_accepted\":true,\"exit_code\":0,\"stderr_excerpt\":\"\\u001b[0m\\n> Sisyphus - ultraworker · deepseek-flash\\n\\u001b[0m\\n\",\"excerpt\":\"--variant accepts arbitrary strings without validation (run completed with __bogus_level__ rejected nowhere); per-model valid variants are provider-specific and not enumerable via CLI — verdict unverified\",\"first_failure_excerpt\":\"{\\\"ok\\\":false,\\\"silently_accepted\\\":true,\\\"exit_code\\\":0,\\\"stderr_excerpt\\\":\\\"\\\\u001b[0m\\\\n> Sisyphus - ultraworker · deepseek-flash\\\\n\\\\u001b[0m\\\\n\\\",\\\"excerpt\\\":\\\"--variant accepts arbitrary strings without validation (run completed with __bogus_level__ rejected nowhere); per-model valid variants are provider-speci\"}",
+          "probed_at": "2026-09-14T16:30:24.621Z",
+          "missing_reason": "valid --variant values are provider/model-specific and not enumerable; rerun with `opencode models --verbose` per provider after CLI upgrade to check for variant metadata"
+        },
+        "session_resume": {
+          "capability_key": "session_resume",
+          "verdict": "supported",
+          "probe_command": "opencode run --format json … ; opencode run --session <id> …",
+          "probe_result": "{\"ok\":true,\"session_id_shape\":\"ses_f5f3f2a22ffeRdHnk8WgLzsPy0\",\"recall_excerpt\":\"PONG-OPENCODE-2758c7f6\"}",
+          "probed_at": "2026-09-14T16:30:24.621Z",
+          "missing_reason": null
+        },
+        "native_memory_isolation": {
+          "capability_key": "native_memory_isolation",
+          "verdict": "supported",
+          "probe_command": "XDG_CONFIG_HOME=<tmp> opencode run …",
+          "probe_result": "{\"ok\":true,\"run_succeeded\":true,\"exit_code\":0,\"stderr_excerpt\":\"\",\"excerpt\":\"with private XDG_CONFIG_HOME the run succeeds (auth lives in the data dir) and the global ~/.config/opencode/AGENTS.md guidance channel is structurally out of the config path\"}",
+          "probed_at": "2026-09-14T16:30:24.621Z",
+          "missing_reason": null
+        }
+      }
+    }
+  }
+}

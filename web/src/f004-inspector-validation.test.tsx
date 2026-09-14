@@ -164,8 +164,8 @@ describe("ValidationInspectorSection", () => {
         evidence_refs: [],
         summary_markdown: "## Evidence Summary\n\nAll good",
         same_origin_validation: true,
-        implementation_identity: { adapter_config_id: "a", name: "Impl", cli_provider: "codex", default_model: "gpt-5" },
-        validator_identity: { adapter_config_id: "a", name: "Val", cli_provider: "codex", default_model: "gpt-5" },
+        implementation_identity: { adapter_config_id: "a", name: "Impl", cli_provider: "codex", default_model: "gpt-5", runtime_id: "local" },
+        validator_identity: { adapter_config_id: "a", name: "Val", cli_provider: "codex", default_model: "gpt-5", runtime_id: "local" },
         policy_id: "vpl_1",
         policy_version: 1,
         policy_snapshot: {

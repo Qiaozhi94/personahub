@@ -102,6 +102,8 @@ CREATE INDEX idx_rooms_issue ON rooms(issue_id);
 
 **选新建 `rooms` 而不是把 `threads` 升格**：`threads` 已被 v0.1–v0.2 的 `thread_events`、Run、Trace、Evidence 按 ID 引用（不变量 8），升格要同时改语义和外键含义；新建表 + 一对一索引可以把历史 thread 原样保留，只补一个 room 行。回填规则：每个现存 thread 生成一个 room（`issue_id` 取 `threads.issue_id`，`space_id` 取该 Issue 的 space，`title` 取 Issue 标题，`state='active'`），并写回 `threads.room_id`；**不改任何 thread ID**。Room 永不物理删除，结束只写 `state='ended'`（ADR 0012 §2）。
 
+> 实现备注（开工时核对 schema 发现）：`threads.room_id` 列在 schema-v1 就已存在（无外键、历史行全 NULL），上面的 `ALTER TABLE ... ADD COLUMN` 不再执行；迁移只做回填 + 一对一唯一索引。给既有列补外键需整表重建（`runs` / `thread_events` / Evidence 均按 ID 引用 threads），v0.3 不做——引用完整性由迁移内回填 + `SessionService` 唯一写入口保证。
+
 ### 3.2 派工：`dispatches`
 
 ```sql

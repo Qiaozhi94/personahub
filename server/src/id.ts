@@ -57,3 +57,24 @@ export function generateRepositoryId(): string {
 export function generateSkillId(): string {
   return `skl_${ulid()}`;
 }
+
+// F012: session / dispatch / intervention
+export function generateRoomId(): string {
+  return `room_${ulid()}`;
+}
+
+export function generateDispatchId(): string {
+  return `dsp_${ulid()}`;
+}
+
+export function generateAttemptId(): string {
+  return `atm_${ulid()}`;
+}
+
+export function generateCapabilityEvidenceId(): string {
+  return `cap_${ulid()}`;
+}
+
+export function generateOutboxEventId(): string {
+  return `obx_${ulid()}`;
+}

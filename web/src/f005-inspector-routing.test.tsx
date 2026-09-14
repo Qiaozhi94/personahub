@@ -18,7 +18,7 @@ describe("T097/T098: Inspector routing section", () => {
     const run = createRun({
       role: RunRole.Implementation, purpose: RunPurpose.WorkflowBound,
       dispatch_source: RunDispatchSource.UserDefault,
-      adapter_identity: { adapter_config_id: "agt_1", name: "Codex CLI", cli_provider: "codex", default_model: "gpt-5" },
+      adapter_identity: { adapter_config_id: "agt_1", name: "Codex CLI", cli_provider: "codex", default_model: "gpt-5", runtime_id: "local" },
     });
     vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [run] });
     renderWithQuery(<IssueInspector issue={createIssue()} workspacePath={null} />);
@@ -58,7 +58,7 @@ describe("T097/T098: Inspector routing section", () => {
 
   it("never renders any auth material (api_key) — adapter_identity carries none by design", async () => {
     const run = createRun({
-      adapter_identity: { adapter_config_id: "agt_1", name: "OpenCode", cli_provider: "opencode", default_model: "gpt-5" },
+      adapter_identity: { adapter_config_id: "agt_1", name: "OpenCode", cli_provider: "opencode", default_model: "gpt-5", runtime_id: "local" },
     });
     vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [run] });
     const { container } = renderWithQuery(<IssueInspector issue={createIssue()} workspacePath={null} />);

@@ -39,6 +39,10 @@ export interface AgentConfigRecord {
   args: string[];
   capability_tags: AgentCapability[];
   default_model: string | null;
+  /** F012/ADR 0015 §1: explicit execution-machine binding (v0.3: 'local'). */
+  runtime_id: string;
+  /** F012/ADR 0012: nullable custom endpoint; validation lives in the contract layer. */
+  base_url: string | null;
   status: AdapterStatus;
   last_checked_at: string | null;
   created_at: string;
@@ -59,6 +63,8 @@ export interface AdapterConfigCreateInput {
   capability_tags: string[];
   default_model: string | null;
   status: AdapterStatus;
+  runtime_id?: string;
+  base_url?: string | null;
   auth_type?: AdapterAuthType;
   model_provider?: string | null;
   api_key?: string | null;
@@ -73,6 +79,7 @@ export interface AdapterConfigUpdateInput {
   capability_tags?: AgentCapability[];
   default_model?: string | null;
   status?: AdapterStatus;
+  base_url?: string | null;
   last_checked_at?: string | null;
   auth_type?: AdapterAuthType;
   model_provider?: string | null;
@@ -92,6 +99,8 @@ interface AdapterConfigRow {
   args: string;
   capability_tags: string;
   default_model: string | null;
+  runtime_id: string;
+  base_url: string | null;
   status: string;
   last_checked_at: string | null;
   created_at: string;
@@ -133,6 +142,8 @@ function mapRow(row: AdapterConfigRow): AgentConfigRecord {
     args: JSON.parse(row.args ?? "[]") as string[],
     capability_tags: tags,
     default_model: row.default_model,
+    runtime_id: row.runtime_id,
+    base_url: row.base_url,
     status: parseFailed ? AS.Unavailable : (row.status as AdapterStatus),
     last_checked_at: row.last_checked_at,
     created_at: row.created_at,
@@ -151,12 +162,13 @@ export class AgentConfigRepository {
     const id = generateAdapterConfigId();
     const now = new Date().toISOString();
     this.db.prepare(
-      `INSERT INTO agent_configs (id, project_id, name, role, cli_provider, command, args, capability_tags, default_model, status, last_checked_at, created_at, updated_at, auth_type, model_provider, api_key, auth_status_message)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO agent_configs (id, project_id, name, role, cli_provider, command, args, capability_tags, default_model, runtime_id, base_url, status, last_checked_at, created_at, updated_at, auth_type, model_provider, api_key, auth_status_message)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`
     ).run(
       id, input.project_id, input.name, input.role, input.cli_provider,
       input.command, JSON.stringify(input.args), JSON.stringify(input.capability_tags),
-      input.default_model, input.status, now, now,
+      input.default_model, input.runtime_id ?? 'local', input.base_url ?? null,
+      input.status, now, now,
       input.auth_type ?? AdapterAuthType.OAuth, input.model_provider ?? null,
       input.api_key ?? null, input.auth_status_message ?? null,
     );
@@ -201,6 +213,7 @@ export class AgentConfigRepository {
     if (input.args !== undefined) { sets.push("args = ?"); values.push(JSON.stringify(input.args)); }
     if (input.capability_tags !== undefined) { sets.push("capability_tags = ?"); values.push(JSON.stringify(input.capability_tags)); }
     if (input.default_model !== undefined) { sets.push("default_model = ?"); values.push(input.default_model); }
+    if (input.base_url !== undefined) { sets.push("base_url = ?"); values.push(input.base_url); }
     if (input.status !== undefined) { sets.push("status = ?"); values.push(input.status); }
     if (input.last_checked_at !== undefined) { sets.push("last_checked_at = ?"); values.push(input.last_checked_at); }
     if (input.auth_type !== undefined) { sets.push("auth_type = ?"); values.push(input.auth_type); }

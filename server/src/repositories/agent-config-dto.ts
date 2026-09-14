@@ -22,6 +22,8 @@ export function toPublicAdapter(record: AgentConfigRecord, defaultAdapterConfigI
     args: record.args,
     capability_tags: record.capability_tags,
     default_model: record.default_model,
+    runtime_id: record.runtime_id,
+    base_url: record.base_url,
     status: record.status,
     last_checked_at: record.last_checked_at,
     created_at: record.created_at,

@@ -110,6 +110,7 @@ export class ManualRoutingService {
       name: adapter.name,
       cli_provider: adapter.cli_provider,
       default_model: adapter.default_model,
+      runtime_id: adapter.runtime_id,
     };
 
     // Repair context: an implementation retry after a failed validation round

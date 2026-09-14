@@ -13,11 +13,12 @@ import { SCHEMA_V11 } from "./schema-v11.js";
 import { applyV12 } from "./migrations-v12.js";
 import { SCHEMA_V13 } from "./schema-v13.js";
 import { applyV14 } from "./migrations-v14.js";
+import { applyV15 } from "./migrations-v15.js";
 
 /** Single source of truth for the current schema version — consumers (e.g.
  *  RuntimeHealthService's expected_version) must reference this instead of
  *  re-declaring the literal. */
-export const CURRENT_SCHEMA_VERSION = 14;
+export const CURRENT_SCHEMA_VERSION = 15;
 
 export function applyMigrations(db: Database.Database): void {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_version (
@@ -110,5 +111,11 @@ export function applyMigrations(db: Database.Database): void {
 
   if (currentVersion < 14) {
     applyV14(db);
+  }
+
+  // F012 session/dispatch/intervention tables + agent_configs binding columns
+  // + rooms backfill (design §3: all new tables in ONE migration).
+  if (currentVersion < 15) {
+    applyV15(db);
   }
 }

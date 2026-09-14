@@ -9,7 +9,12 @@ import type { ProjectRepository } from "../repositories/project.js";
 import type { AdapterWorkspaceStatusRepository } from "../repositories/adapter-workspace-status.js";
 import { AppError } from "../api/errors.js";
 import { AdapterAvailabilityProbeCoordinator } from "./adapter-probe-coordinator.js";
-import { type AdapterConfigUpdateServiceInput, validateAuthState, validateCommand } from "./adapter-config-contract.js";
+import {
+  type AdapterConfigUpdateServiceInput,
+  validateAuthState,
+  validateBaseUrl,
+  validateCommand,
+} from "./adapter-config-contract.js";
 
 interface AdapterConfigUpdaterDependencies {
   db: Database.Database;
@@ -48,6 +53,7 @@ export function updateAdapterConfig(
     auth_type?: AdapterAuthType;
     model_provider?: string | null;
     api_key?: string | null;
+    base_url?: string | null;
     updated_at: string;
   } = { updated_at: new Date().toISOString() };
 
@@ -81,6 +87,10 @@ export function updateAdapterConfig(
       effectiveApiKey = trimmed;
     }
     updates.api_key = effectiveApiKey;
+  }
+
+  if (input.base_url !== undefined) {
+    updates.base_url = validateBaseUrl(input.base_url);
   }
 
   const effectiveAuthType = input.auth_type ?? existing.auth_type;

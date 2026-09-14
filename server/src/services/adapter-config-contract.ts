@@ -20,6 +20,8 @@ export interface AdapterConfigCreateServiceInput {
   api_key?: string;
   capability_tags?: AgentCapability[];
   make_default?: boolean;
+  /** F012/ADR 0012: optional custom endpoint (official endpoints omit it). */
+  base_url?: string;
 }
 
 export interface AdapterConfigUpdateServiceInput {
@@ -32,6 +34,43 @@ export interface AdapterConfigUpdateServiceInput {
   /** omitted preserves; null clears; non-empty string replaces; trimmed-empty is rejected. */
   api_key?: string | null;
   capability_tags?: AgentCapability[];
+  /** omitted preserves; null clears; non-empty string replaces. */
+  base_url?: string | null;
+}
+
+/**
+ * F012/ADR 0012 落地表 shape rule: a non-empty base_url must be a valid
+ * http(s) URL; https:// is always allowed, http:// only for loopback hosts
+ * (localhost, 127.0.0.0/8, [::1], 0.0.0.0). Reachability is deliberately NOT
+ * validated here — the availability probe owns that.
+ */
+export function validateBaseUrl(raw: string | null | undefined): string | null {
+  if (raw === undefined || raw === null) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    throw new AppError(ErrorCode.ADAPTER_BASE_URL_INVALID, `base_url is not a valid URL: ${trimmed}`, "base_url");
+  }
+  if (url.protocol === "https:") return trimmed;
+  if (url.protocol === "http:") {
+    const hostname = url.hostname.toLowerCase();
+    const loopback =
+      hostname === "localhost" ||
+      hostname === "0.0.0.0" ||
+      hostname === "[::1]" ||
+      hostname === "::1" ||
+      /^127\.\d+\.\d+\.\d+$/.test(hostname);
+    if (loopback) return trimmed;
+    throw new AppError(
+      ErrorCode.ADAPTER_BASE_URL_INVALID,
+      "http:// base_url is only allowed for loopback hosts — use https:// for remote endpoints.",
+      "base_url",
+    );
+  }
+  throw new AppError(ErrorCode.ADAPTER_BASE_URL_INVALID, `base_url must be http(s): ${trimmed}`, "base_url");
 }
 
 export function validateCommand(command: string): { available: boolean; errorMessage: string | null } {

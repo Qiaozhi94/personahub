@@ -133,6 +133,28 @@ export enum ErrorCode {
   SKILL_CONFLICT_UNRESOLVED = "SKILL_CONFLICT_UNRESOLVED",
   SKILL_SPACE_MISMATCH = "SKILL_SPACE_MISMATCH",
   SKILL_DELIVERY_FAILED = "SKILL_DELIVERY_FAILED",
+  // F012: session / dispatch / intervention errors
+  ADAPTER_BASE_URL_INVALID = "ADAPTER_BASE_URL_INVALID",
+  ROOM_NOT_FOUND = "ROOM_NOT_FOUND",
+  ROOM_ENDED = "ROOM_ENDED",
+  ROOM_ALREADY_TASK_BOUND = "ROOM_ALREADY_TASK_BOUND",
+  SPACE_CONTEXT_REQUIRED = "SPACE_CONTEXT_REQUIRED",
+  DISPATCH_NOT_FOUND = "DISPATCH_NOT_FOUND",
+  DISPATCH_NOT_CANCELLABLE = "DISPATCH_NOT_CANCELLABLE",
+  DISPATCH_GATE_PAUSED = "DISPATCH_GATE_PAUSED",
+  DISPATCH_ACCEPTANCE_LOCKED = "DISPATCH_ACCEPTANCE_LOCKED",
+  DISPATCH_IDEMPOTENCY_CONFLICT = "DISPATCH_IDEMPOTENCY_CONFLICT",
+  DISPATCH_GRACE_WINDOW_INVALID = "DISPATCH_GRACE_WINDOW_INVALID",
+  ELIGIBILITY_STRUCTURAL_BLOCK = "ELIGIBILITY_STRUCTURAL_BLOCK",
+  ELIGIBILITY_BLOCK_OVERRIDE_REJECTED = "ELIGIBILITY_BLOCK_OVERRIDE_REJECTED",
+  ATTEMPT_NOT_FOUND = "ATTEMPT_NOT_FOUND",
+  ATTEMPT_NOT_ACTIVE = "ATTEMPT_NOT_ACTIVE",
+  GATE_SCOPE_UNKNOWN = "GATE_SCOPE_UNKNOWN",
+  RUNTIME_CONTEXT_UNAVAILABLE = "RUNTIME_CONTEXT_UNAVAILABLE",
+  START_LEASE_CONFLICT = "START_LEASE_CONFLICT",
+  OUTBOX_TX_REQUIRED = "OUTBOX_TX_REQUIRED",
+  OUTBOX_EVENT_NOT_FOUND = "OUTBOX_EVENT_NOT_FOUND",
+  OUTBOX_NOT_CLAIMED = "OUTBOX_NOT_CLAIMED",
   INTERNAL_ERROR = "INTERNAL_ERROR",
 }
 
@@ -224,6 +246,8 @@ export interface AdapterConfigCreateInput {
   api_key?: string;
   capability_tags: AgentCapability[];
   make_default?: boolean;
+  /** F012/ADR 0012: optional custom endpoint; https:// or http:// loopback only. */
+  base_url?: string;
 }
 
 export interface AdapterConfigCreateResponse {
@@ -247,6 +271,8 @@ export interface AdapterConfigUpdateInput {
   /** omitted preserves; null clears; non-empty string replaces. */
   api_key?: string | null;
   capability_tags?: AgentCapability[];
+  /** omitted preserves; null clears; non-empty string replaces. */
+  base_url?: string | null;
 }
 
 export interface AdapterConfigUpdateResponse {

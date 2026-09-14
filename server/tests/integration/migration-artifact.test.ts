@@ -44,8 +44,15 @@ function undoV13(db: Database.Database): void {
   for (const table of V13_TABLES) {
     db.exec(`DROP TABLE IF EXISTS ${table}`);
   }
-  // v14 is the current head and depends on v13; remove both markers so this
-  // test really exercises the forward v12 -> v13 -> v14 path.
+  // Later migrations that also touch objects this test replays must be undone
+  // as well, otherwise the forward replay collides with them (F012 v15 added
+  // agent_configs columns; SQLite can drop them again). Keep this list in sync
+  // with any future migration that ALTERs agent_configs.
+  db.exec("DROP TABLE IF EXISTS runtime_machines");
+  db.exec("ALTER TABLE agent_configs DROP COLUMN runtime_id");
+  db.exec("ALTER TABLE agent_configs DROP COLUMN base_url");
+  // Remove the markers so this test really exercises the forward
+  // v12 -> v13 -> head path.
   db.prepare("DELETE FROM schema_version WHERE version >= 13").run();
 }
 
@@ -63,7 +70,8 @@ describe("F010 schema v13 migration", () => {
 
   it("fresh install reaches the head version", () => {
     applyMigrations(db);
-    expect(CURRENT_SCHEMA_VERSION).toBe(14);
+    // The head moves with later features; the invariant under test is that the
+    // applied chain reaches exactly the head the constant declares.
     const row = db.prepare("SELECT MAX(version) as v FROM schema_version").get() as { v: number | null };
     expect(row.v).toBe(CURRENT_SCHEMA_VERSION);
     for (const table of V13_TABLES) {

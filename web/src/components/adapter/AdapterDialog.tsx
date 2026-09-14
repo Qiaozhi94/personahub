@@ -32,6 +32,7 @@ function initialAuthFieldsValue(editingAdapter: AdapterConfig | null): AdapterAu
     apiKeyInput: "",
     apiKeyAction: "keep",
     capabilityTags: editingAdapter?.capability_tags ?? [AgentCapability.Implementation],
+    baseUrl: editingAdapter?.base_url ?? "",
   };
 }
 
@@ -93,6 +94,7 @@ export function AdapterDialog({ open, onOpenChange, projectId, editingAdapter, r
         auth_type: authFields.authType,
         model_provider: authFields.modelProvider.trim() || null,
         capability_tags: authFields.capabilityTags,
+        base_url: authFields.baseUrl.trim() || null,
         ...apiKeyPatch,
       };
       updateAdapter.mutate({ adapterId: editingAdapter.id, input }, { onSuccess: handleOpenChange });
@@ -109,6 +111,7 @@ export function AdapterDialog({ open, onOpenChange, projectId, editingAdapter, r
       model_provider: authFields.modelProvider.trim() || undefined,
       api_key: authFields.authType === AdapterAuthType.ApiKey ? authFields.apiKeyInput || undefined : undefined,
       capability_tags: authFields.capabilityTags,
+      base_url: authFields.authType === AdapterAuthType.ApiKey ? authFields.baseUrl.trim() || undefined : undefined,
     };
     createAdapter.mutate(input, { onSuccess: handleOpenChange });
   }

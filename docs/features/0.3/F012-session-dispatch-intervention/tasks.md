@@ -19,18 +19,18 @@ F009 新壳层与相关兼容入口已可替换；F010 ref / `recordConsumption`
 
 ### Phase 0：Adapter capability readiness
 
-- [ ] T000 (`FR-003`, `FR-008`, `NFR-003`): 对 Codex / Claude Code / OpenCode 的模型枚举、深度（原生档位原文与三档映射）、session resume / 冷启动和原生 memory 关闭效果运行真实 CLI probe；将 CLI 版本、时间、命令、脱敏结果与 supported / unsupported / unverified 裁决写入 `adapter-capability-evidence.md` 和机器可读 fixture，并用缺字段 / 过期版本变异证明 eligibility 保守失败。 — verify: `npm test`
+- [x] T000 (`FR-003`, `FR-008`, `NFR-003`): 对 Codex / Claude Code / OpenCode 的模型枚举、深度（原生档位原文与三档映射）、session resume / 冷启动和原生 memory 关闭效果运行真实 CLI probe；将 CLI 版本、时间、命令、脱敏结果与 supported / unsupported / unverified 裁决写入 `adapter-capability-evidence.md` 和机器可读 fixture，并用缺字段 / 过期版本变异证明 eligibility 保守失败。 — verify: `npm test`
 
 Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执行的 probe 必须标 unverified、记录缺失项和重跑命令；不得把缺失 probe 当作 supported，也不得因此静默跳过独立性要求。
 
 ### Phase 1：模型、迁移与 eligibility
 
-- [ ] T001 (`FR-001`, `FR-002`): 定义 Session / Dispatch / Attempt / execution identity / context snapshot / eligibility / outbox 类型。 — verify: `npm run typecheck`
-- [ ] T002 (`FR-002`, `NFR-001`): 新增 `runtime_machines` 单机根、`agent_configs.runtime_id`，并按 ADR 0012 落地表实现 `base_url` 的全部八个触点（migration、`AdapterConfig` 类型、repository 四处、DTO、契约形状校验、updater / route 透传、API Key 分支 UI；快照不加该列）。 — verify: `npm test --workspace server`
-- [ ] T003 (`FR-001`, `NFR-001`): 新增 `rooms` 表与 `threads.room_id` 一对一索引，为全部历史 thread 回填 room 且不改任何历史 ID；补历史 fixture。 — verify: `npm test --workspace server`
-- [ ] T004 (`FR-002`, `FR-004`): 新增 `dispatches`（幂等键 `(room_id, client_request_id)`）、`attempts`、context / capability 两张快照表及索引。 — verify: `npm test --workspace server`
-- [ ] T005 (`FR-006`, `FR-008`): 新增 `adapter_capability_evidence` 与三层 `dispatch_gates` 表，并把 `agent_configs` 的 AI 成员语义迁移为 adapter 接入事实（`name` 改执行组合可读名、`role` 只读保留、`capability_tags` 停用）。 — verify: `npm test --workspace server`
-- [ ] T006 (`FR-009`, `NFR-001`): 实现持久 DomainOutbox 公共基础设施（同一事务 enqueue、worker 投递、consumer ack、指数退避重试、poison 保留与诊断），并证明 Dispatch 广播与 F011 `acceptance.completed` 复用同一 contract。 — verify: `npm test --workspace server`
+- [x] T001 (`FR-001`, `FR-002`): 定义 Session / Dispatch / Attempt / execution identity / context snapshot / eligibility / outbox 类型。 — verify: `npm run typecheck`
+- [x] T002 (`FR-002`, `NFR-001`): 新增 `runtime_machines` 单机根、`agent_configs.runtime_id`，并按 ADR 0012 落地表实现 `base_url` 的全部八个触点（migration、`AdapterConfig` 类型、repository 四处、DTO、契约形状校验、updater / route 透传、API Key 分支 UI；快照不加该列）。 — verify: `npm test --workspace server`
+- [x] T003 (`FR-001`, `NFR-001`): 新增 `rooms` 表与 `threads.room_id` 一对一索引，为全部历史 thread 回填 room 且不改任何历史 ID；补历史 fixture。 — verify: `npm test --workspace server`
+- [x] T004 (`FR-002`, `FR-004`): 新增 `dispatches`（幂等键 `(room_id, client_request_id)`）、`attempts`、context / capability 两张快照表及索引。 — verify: `npm test --workspace server`
+- [x] T005 (`FR-006`, `FR-008`): 新增 `adapter_capability_evidence` 与三层 `dispatch_gates` 表，并把 `agent_configs` 的 AI 成员语义迁移为 adapter 接入事实（`name` 改执行组合可读名、`role` 只读保留、`capability_tags` 停用）。 — verify: `npm test --workspace server`
+- [x] T006 (`FR-009`, `NFR-001`): 实现持久 DomainOutbox 公共基础设施（同一事务 enqueue、worker 投递、consumer ack、指数退避重试、poison 保留与诊断），并证明 Dispatch 广播与 F011 `acceptance.completed` 复用同一 contract。 — verify: `npm test --workspace server`
 - [ ] T007 (`FR-002`, `FR-003`, `FR-008`): 实现单机 runtime projection（adapter / 锁 / 队列 / 后台任务 / 额度事实）与三档 eligibility evaluator，将 F013 versioned effective requirements 固定到 Dispatch snapshot；本任务覆盖同源可选降级、结构性缺失不可选，以及 Skill 升级 / 禁用后的历史不漂移。 — verify: `npm test --workspace server`
 
 ### Phase 2：派工与介入

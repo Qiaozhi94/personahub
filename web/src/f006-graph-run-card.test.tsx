@@ -50,6 +50,8 @@ function adapter(overrides: Partial<AdapterConfig> = {}): AdapterConfig {
     args: [],
     capability_tags: [AgentCapability.Implementation],
     default_model: "gpt-5",
+    runtime_id: "local",
+    base_url: null,
     status: AdapterStatus.Available,
     last_checked_at: TIMESTAMP,
     created_at: TIMESTAMP,
