@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSkills, useSkillScan } from "@/hooks/use-skills";
+import { useResolveConflict, useSkills, useSkillScan } from "@/hooks/use-skills";
 import { useSelectedSpace } from "@/hooks/use-spaces";
 import { buildUrl, useRouter } from "@/app/router";
 import type { SkillListItem } from "@personahub/shared";
@@ -14,6 +14,36 @@ function capabilityStateLabel(skill: SkillListItem): { label: string; tone: "ok"
   if (skill.space_state === "shadowed") return { label: "被同名项遮蔽", tone: "muted" };
   if (skill.space_state === null) return { label: "未生效", tone: "muted" };
   return { label: "生效中", tone: "ok" };
+}
+
+function SkillRow({ skill, spaceId, onOpen }: { skill: SkillListItem; spaceId: string; onOpen: () => void }) {
+  const resolve = useResolveConflict(skill.id);
+  const state = capabilityStateLabel(skill);
+  return (
+    <tr key={skill.id} className="cursor-pointer" onClick={onOpen}>
+      <td>{skill.display_name}</td>
+      <td>{skill.source_kind}</td>
+      <td>v{skill.current_revision}</td>
+      <td>{skill.has_steps ? `编组（${skill.step_count} 步）` : "单一 Skill"}</td>
+      <td>
+        <span data-tone={state?.tone}>{state?.label}</span>
+        {skill.space_state === "conflict" ? (
+          <button
+            type="button"
+            className="ml-2"
+            aria-label={`保留 ${skill.display_name}`}
+            disabled={resolve.isPending}
+            onClick={(event) => {
+              event.stopPropagation();
+              resolve.mutate({ spaceId, keepSkillId: skill.id });
+            }}
+          >
+            {resolve.isPending ? "处理中…" : "保留此 Skill"}
+          </button>
+        ) : null}
+      </td>
+    </tr>
+  );
 }
 
 export function SkillsPage() {
@@ -69,21 +99,13 @@ export function SkillsPage() {
             </thead>
             <tbody>
               {visible.map((skill) => {
-                const state = capabilityStateLabel(skill);
                 return (
-                  <tr
+                  <SkillRow
                     key={skill.id}
-                    className="cursor-pointer"
-                    onClick={() => router.navigate(buildUrl(`/capabilities/${encodeURIComponent(skill.id)}`))}
-                  >
-                    <td>{skill.display_name}</td>
-                    <td>{skill.source_kind}</td>
-                    <td>v{skill.current_revision}</td>
-                    <td>{skill.space_state === "conflict" ? "—" : null}</td>
-                    <td>
-                      <span data-tone={state?.tone}>{state?.label}</span>
-                    </td>
-                  </tr>
+                    skill={skill}
+                    spaceId={selected.data!.id}
+                    onOpen={() => router.navigate(buildUrl(`/capabilities/${encodeURIComponent(skill.id)}`))}
+                  />
                 );
               })}
             </tbody>

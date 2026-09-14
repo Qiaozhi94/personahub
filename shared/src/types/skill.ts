@@ -81,6 +81,10 @@ export interface SkillListResponse {
 export interface SkillListItem extends Skill {
   /** 请求 Space 内的生效状态；全局 Skill 无行时为 null（保守处理为不可用）。 */
   space_state: SkillSpaceEffectiveState | null;
+  /** Current published revision projection used by the capability table. */
+  has_steps: boolean;
+  step_count: number;
+  requirement_count: number;
 }
 
 export interface SkillRevisionListResponse {

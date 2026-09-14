@@ -119,36 +119,44 @@ describe("F013 AC-003: capabilities surface (web)", () => {
     expect(memory.kind).toBe("project-unsupported-tab");
   });
 
-  it("project Skills tab only stores a reference; changing the skill creates no project-side copy", async () => {
-    const refs: ProjectSkillRef[] = [
-      {
-        project_id: "prj_1",
-        skill_id: "skl_1",
-        is_default: true,
-        pinned_version: null,
-        created_at: "2026-09-01T00:00:00Z",
-        updated_at: "2026-09-01T00:00:00Z",
-      },
-    ];
-    vi.mocked(apiClient.skills.listProjectRefs).mockResolvedValue({ refs });
-    vi.mocked(apiClient.skills.list).mockResolvedValue({ skills: [skillItem()] } as SkillListResponse);
+  it("switches the project default skill through a real A→B reference change (R1-017)", async () => {
+    const refA: ProjectSkillRef = {
+      project_id: "prj_1",
+      skill_id: "skl_a",
+      is_default: true,
+      pinned_version: null,
+      created_at: "2026-09-01T00:00:00Z",
+      updated_at: "2026-09-01T00:00:00Z",
+    };
+    const refB: ProjectSkillRef = { ...refA, skill_id: "skl_b" };
+    vi.mocked(apiClient.skills.listProjectRefs)
+      .mockResolvedValueOnce({ refs: [refA] })
+      .mockResolvedValue({ refs: [refB] });
+    vi.mocked(apiClient.skills.list).mockResolvedValue({
+      skills: [
+        skillItem({ id: "skl_a", display_name: "API Migration", current_revision: 2 }),
+        skillItem({ id: "skl_b", display_name: "Release Ops", current_revision: 3 }),
+      ],
+    } as SkillListResponse);
     vi.mocked(apiClient.skills.setProjectDefault).mockResolvedValue({
       project_id: "prj_1",
-      skill_id: "skl_1",
+      skill_id: "skl_b",
       pinned_version: null,
     });
 
     renderWithQuery(<ProjectSkillsTab projectId="prj_1" />);
 
-    expect(await screen.findByText(/默认 Skill：skl_1（跟随最新版本）/)).toBeInTheDocument();
-
-    // 选择另一个 Skill → PUT default-skill（引用），绝不复制内容。
+    expect(await screen.findByText(/默认 Skill：skl_a（跟随最新版本）/)).toBeInTheDocument();
     await screen.findByRole("option", { name: /API Migration/ });
+    expect(screen.getByRole("option", { name: /Release Ops/ })).toBeInTheDocument();
+
+    // 选择另一个 Skill → PUT default-skill（引用），UI 切到 B 且绝不复制内容。
     const user = userEvent.setup();
-    await user.selectOptions(screen.getByLabelText("选择默认 Skill"), "skl_1");
+    await user.selectOptions(screen.getByLabelText("选择默认 Skill"), "skl_b");
     await waitFor(() => {
-      expect(apiClient.skills.setProjectDefault).toHaveBeenCalledWith("prj_1", "skl_1", null);
+      expect(apiClient.skills.setProjectDefault).toHaveBeenCalledWith("prj_1", "skl_b", null);
     });
+    expect(await screen.findByText(/默认 Skill：skl_b（跟随最新版本）/)).toBeInTheDocument();
     expect(apiClient.projects.create).not.toHaveBeenCalled();
   });
 
@@ -177,9 +185,11 @@ describe("F013 AC-003: capabilities surface (web)", () => {
 
     renderWithQuery(<SkillDetailPage skillId="skl_1" />);
 
+    expect(await screen.findByText("来源：legacy-workflow · workflow:wft_1")).toBeInTheDocument();
     expect(await screen.findByText("版本 v2 · 内容指纹 hash-2…")).toBeInTheDocument();
     expect(apiClient.skills.revisionDetail).toHaveBeenCalledWith("skl_1", 2);
     await userEvent.setup().selectOptions(screen.getByLabelText("选择 Skill 版本"), "1");
     await waitFor(() => expect(apiClient.skills.revisionDetail).toHaveBeenCalledWith("skl_1", 1));
+    expect(await screen.findByText("版本 v1 · 内容指纹 hash-1…")).toBeInTheDocument();
   });
 });
