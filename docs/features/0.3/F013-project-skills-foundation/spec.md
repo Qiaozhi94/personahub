@@ -2,7 +2,7 @@
 kind: feature
 id: F013
 version: "0.3"
-status: ready-for-development
+status: review
 gate_version: 1
 eval_contract: exempt
 eval_contract_exempt_reason: "本 Feature 改变用户旅程（首次设置、项目三 tab、能力面），但交付的是归属根与冻结契约（Space schema、路径授权、Skill revision），不提出需用效用数据决定保留或退役的不确定主张；退役条件已由 migration-matrix 的 delete_when 与 F012 / F011 接管显式登记"
@@ -10,7 +10,7 @@ related_features: [F009, F010, F012, F014]
 topics: [space, project, repository, skill, composition, capability]
 doc_kind: spec
 created: 2026-08-09
-updated: 2026-09-13
+updated: 2026-09-14
 ---
 
 # F013：Space, Project & Skills Foundation
@@ -110,11 +110,11 @@ Space 可 active / archived，v0.3 不支持物理删除；项目归档可恢复
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 清洁首次设置与 v0.2 升级均产生正确 Space 归属；重复升级幂等，Project / Issue 原 ID 和可空 Project 语义守恒。
-- [ ] **AC-002** (`FR-003`, `FR-004`, `NFR-002`): 主目录 / 参考仓库、自动识别、真实路径和读写边界正确。
-- [ ] **AC-003** (`FR-005`, `FR-007`, `FR-008`): 普通 Skill / 编组共用列表与详情，项目只存引用。
-- [ ] **AC-004** (`FR-006`, `NFR-001`): effective requirements 以 Skill revision ref 输出；升级 / 禁用不改旧 ref 的解析结果。跨 Feature Dispatch 快照集成只由 F012 验收。
-- [ ] **AC-005** (`FR-005`, `NFR-001`): 同名冲突与非法来源在激活前被拒绝且状态可见。
+- [x] **AC-001** (`FR-001`, `FR-002`, `NFR-001`): 清洁首次设置与 v0.2 升级均产生正确 Space 归属；重复升级幂等，Project / Issue 原 ID 和可空 Project 语义守恒。 - tests: `server/tests/integration/migration.test.ts` `server/tests/integration/migration-space.test.ts` `e2e/tests/f013-space-skills.spec.ts`
+- [x] **AC-002** (`FR-003`, `FR-004`, `NFR-002`): 主目录 / 参考仓库、自动识别、真实路径和读写边界正确。 - tests: `server/tests/integration/authorization-recheck.test.ts` `server/tests/integration/legacy-compat-projection.test.ts` `server/tests/unit/scope-validation.test.ts` `web/src/f009-pages.test.tsx` `e2e/tests/f013-space-skills.spec.ts`
+- [x] **AC-003** (`FR-005`, `FR-007`, `FR-008`): 普通 Skill / 编组共用列表与详情，项目只存引用。 - tests: `server/tests/integration/skill-files-snapshot.test.ts` `server/tests/integration/skill-default-ref.test.ts` `web/src/f013-project-skills.test.tsx` `e2e/tests/f013-space-skills.spec.ts`
+- [x] **AC-004** (`FR-006`, `NFR-001`): effective requirements 以 Skill revision ref 输出；升级 / 禁用不改旧 ref 的解析结果。跨 Feature Dispatch 快照集成只由 F012 验收。 - tests: `server/tests/integration/effective-requirements.test.ts` `server/tests/integration/skill-revision-schema.test.ts`
+- [x] **AC-005** (`FR-005`, `NFR-001`): 同名冲突与非法来源在激活前被拒绝且状态可见。 - tests: `server/tests/integration/skill-conflict.test.ts` `server/tests/integration/skill-space-boundary.test.ts` `web/src/f013-project-skills.test.tsx`
 
 ## 7. 测试、依赖与决策
 
