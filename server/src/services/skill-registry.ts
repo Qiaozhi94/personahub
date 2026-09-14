@@ -100,6 +100,7 @@ function mapRevision(row: RevisionRow): SkillRevision {
 /** 经验内容哈希：规范化 JSON 的 SHA-256（不含 files，文件各自有 hash）。 */
 export function revisionContentHash(content: {
   title: string | null;
+  description: string | null;
   steps: unknown;
   capability_tags: string[];
   completion_requirements: unknown;
@@ -562,6 +563,7 @@ export class SkillRegistry {
   }
 
   private validateDraft(draft: RevisionDraftInput): {
+    description: string | null;
     capabilityTags: string[];
     stepsJson: string | null;
     requirementsJson: string | null;
@@ -593,19 +595,26 @@ export class SkillRegistry {
       }
       throw error;
     }
-    return { capabilityTags, stepsJson, requirementsJson, parsed };
+    const description = draft.description?.trim() ? draft.description.trim() : null;
+    return { description, capabilityTags, stepsJson, requirementsJson, parsed };
   }
 
   private insertRevisionRow(
     skillId: string,
     version: number,
     title: string,
-    stored: { capabilityTags: string[]; stepsJson: string | null; requirementsJson: string | null },
+    stored: {
+      description: string | null;
+      capabilityTags: string[];
+      stepsJson: string | null;
+      requirementsJson: string | null;
+    },
     sourceLocator: string | null,
     now: string,
   ): void {
     const contentHash = revisionContentHash({
       title,
+      description: stored.description,
       steps: stored.stepsJson ? JSON.parse(stored.stepsJson) : null,
       capability_tags: stored.capabilityTags,
       completion_requirements: stored.requirementsJson ? JSON.parse(stored.requirementsJson) : [],
@@ -619,7 +628,7 @@ export class SkillRegistry {
         skillId,
         version,
         title,
-        null,
+        stored.description,
         JSON.stringify(stored.capabilityTags),
         stored.stepsJson,
         stored.requirementsJson,

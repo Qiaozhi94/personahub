@@ -134,3 +134,36 @@ describe("F013 AC-003: revision schema & merge rules", () => {
     expect(first).toBe(second);
   });
 });
+
+describe("F013 R1-012: revision description persistence", () => {
+  let services: TestServices;
+
+  beforeEach(() => {
+    services = createTestServices();
+  });
+
+  afterEach(() => {
+    disposeTestServices(services);
+  });
+
+  it("persists draft.description and feeds it into the content hash", () => {
+    const first = services.skillRegistry.createSkill({
+      display_name: "Described",
+      draft: { description: "Release: production", capability_tags: [] },
+    });
+    const second = services.skillRegistry.createSkill({
+      display_name: "Described",
+      draft: { description: "Release: staging", capability_tags: [] },
+    });
+    const readHash = (skillId: string): { description: string | null; content_hash: string } =>
+      services.db
+        .prepare("SELECT description, content_hash FROM skill_revisions WHERE skill_id = ? AND version = 1")
+        .get(skillId) as { description: string | null; content_hash: string };
+
+    const firstRow = readHash(first.skill.id);
+    const secondRow = readHash(second.skill.id);
+    expect(firstRow.description).toBe("Release: production");
+    expect(secondRow.description).toBe("Release: staging");
+    expect(firstRow.content_hash).not.toBe(secondRow.content_hash);
+  });
+});

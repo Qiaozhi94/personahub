@@ -122,11 +122,7 @@ async function main() {
   const spaceService = new SpaceService(spaceRepo, auditService, db);
   const skillRegistry = new SkillRegistry(db, auditService);
   const resolver = new EffectiveRequirementsResolver(db);
-  const skillDelivery = new SkillDeliveryService(
-    db,
-    auditService,
-    process.env.PERSONAHUB_SKILL_DELIVERY_ROOT ?? path.join(path.dirname(DB_PATH), "skill-delivery"),
-  );
+  const skillDelivery = new SkillDeliveryService(db, auditService);
   const projectService = new ProjectService(projectRepo, workspaceRepo, spaceRepo, auditService, db);
   const workspaceService = new WorkspaceService(workspaceRepo, projectRepo, db);
   const issueService = new IssueService(
