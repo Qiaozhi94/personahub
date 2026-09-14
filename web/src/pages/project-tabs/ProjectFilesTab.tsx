@@ -123,7 +123,7 @@ export function ProjectFilesTab({
       });
       setMessage(
         machine && machine.access !== "read_write"
-          ? `已绑定主目录：${resolved.display_name}（机器授权为只读，实际访问按只读）`
+          ? `已绑定主目录：${resolved.display_name}（机器授权为只读，可在下方升级为可写）`
           : `已绑定主目录：${resolved.display_name}（可写）`,
       );
       setPrimarySource("");
@@ -233,6 +233,44 @@ export function ProjectFilesTab({
     }
   };
 
+  const upgradeMachineAccess = async (ref: ProjectRepositoryRef, detail: RepoDetail | undefined): Promise<void> => {
+    const machine = detail?.machine_path;
+    if (!machine) {
+      setMessage("该仓库尚未在这台执行机器上授权，无法升级。");
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    try {
+      await apiClient.repositories.authorize(
+        ref.repository_id,
+        machine.raw_path,
+        "read_write",
+        machine.scope_json ?? undefined,
+      );
+      setMessage(`已升级机器授权为可写：${repositoryLabel(detail, ref.repository_id)}`);
+      refresh();
+    } catch (error) {
+      setMessage(toApiError(error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const authorizePrimary = async (ref: ProjectRepositoryRef, rawPath: string): Promise<void> => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await apiClient.repositories.authorize(ref.repository_id, rawPath, "read_write");
+      setMessage(`已授权主目录：${rawPath}`);
+      refresh();
+    } catch (error) {
+      setMessage(toApiError(error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div>
       <section aria-label="主目录">
@@ -247,6 +285,8 @@ export function ProjectFilesTab({
               onRemove={null}
               onSaveMachineScope={saveMachineScope}
               onSaveProjectScope={saveProjectScope}
+              onUpgradeMachineAccess={upgradeMachineAccess}
+              onAuthorizePrimary={authorizePrimary}
               setMessage={setMessage}
             />
           </ul>
@@ -288,6 +328,8 @@ export function ProjectFilesTab({
                 onRemove={removeReference}
                 onSaveMachineScope={saveMachineScope}
                 onSaveProjectScope={saveProjectScope}
+                onUpgradeMachineAccess={upgradeMachineAccess}
+                onAuthorizePrimary={authorizePrimary}
                 setMessage={setMessage}
               />
             ))}
@@ -330,6 +372,8 @@ function RepositoryRefRow({
   onRemove,
   onSaveMachineScope,
   onSaveProjectScope,
+  onUpgradeMachineAccess,
+  onAuthorizePrimary,
   setMessage,
 }: {
   ref_: ProjectRepositoryRef;
@@ -339,6 +383,8 @@ function RepositoryRefRow({
   onRemove: ((ref: ProjectRepositoryRef) => Promise<void>) | null;
   onSaveMachineScope: (ref: ProjectRepositoryRef, detail: RepoDetail | undefined, scope: Scope) => Promise<void>;
   onSaveProjectScope: (repositoryId: string, scope: Scope) => Promise<void>;
+  onUpgradeMachineAccess: (ref: ProjectRepositoryRef, detail: RepoDetail | undefined) => Promise<void>;
+  onAuthorizePrimary: (ref: ProjectRepositoryRef, rawPath: string) => Promise<void>;
   setMessage: (message: string | null) => void;
 }) {
   const detailQuery = useQuery({
@@ -359,6 +405,15 @@ function RepositoryRefRow({
   const projectReadValue = projectRead ?? prefixesText(ref_.scope_json?.read, [""]);
   const projectWriteValue = projectWrite ?? prefixesText(ref_.scope_json?.write, []);
   const path = repositoryPath(detail, legacyWorkspacePath);
+  const effectiveAccessLabel = !isPrimary
+    ? "只读"
+    : machine === null
+      ? "未授权"
+      : machine.access !== "read_write"
+        ? "只读（机器授权为只读）"
+        : ref_.access === "read_write"
+          ? "可写"
+          : "只读";
 
   const saveMachine = async (): Promise<void> => {
     if (!machine) {
@@ -388,8 +443,31 @@ function RepositoryRefRow({
     <li className="mt-3" data-testid={`repo-ref-${ref_.repository_id}`}>
       <div>
         {isPrimary ? "主目录" : "参考仓库"} · {repositoryLabel(detail, ref_.repository_id)}
-        {path ? ` · ${path}` : ""} · {isPrimary && ref_.access === "read_write" ? "可写" : "只读"}
+        {path ? ` · ${path}` : ""} · {effectiveAccessLabel}
       </div>
+
+      {isPrimary && machine?.access === "read_only" ? (
+        <button
+          type="button"
+          className="mt-2"
+          aria-label={`升级机器授权为可写 ${ref_.repository_id}`}
+          onClick={() => void onUpgradeMachineAccess(ref_, detail)}
+          disabled={busy}
+        >
+          升级机器授权为可写
+        </button>
+      ) : null}
+      {isPrimary && !machine && path ? (
+        <button
+          type="button"
+          className="mt-2"
+          aria-label={`授权主目录 ${ref_.repository_id}`}
+          onClick={() => void onAuthorizePrimary(ref_, path)}
+          disabled={busy}
+        >
+          授权主目录（可写）
+        </button>
+      ) : null}
 
       <div className="mt-2 grid gap-2">
         <label className="text-sm">

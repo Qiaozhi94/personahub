@@ -386,6 +386,83 @@ describe("ProjectDetailPage (A003/F013)", () => {
     expect(screen.getByRole("button", { name: "添加参考仓库" })).toBeDisabled();
   });
 
+  it("keeps effective access truthful when a read_only reference is rebound as primary (R4-002)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject)
+      .mockResolvedValueOnce({
+        project_id: "prj_a",
+        references: [repoRef("repo_shared", "reference")],
+      } as never)
+      .mockResolvedValue({
+        project_id: "prj_a",
+        references: [repoRef("repo_shared", "primary")],
+      } as never);
+    vi.mocked(apiClient.repositories.resolve).mockResolvedValue({
+      kind: "local_dir",
+      display_name: "共享目录",
+      real_path: "/repo/shared",
+      git_remote_url: null,
+      git_identity: null,
+      authorizable: true,
+    });
+    vi.mocked(apiClient.repositories.create).mockResolvedValue({ repository: repository("repo_shared", "共享目录") });
+    vi.mocked(apiClient.repositories.get).mockImplementation(async (repositoryId: string) =>
+      repositoryId === "repo_shared"
+        ? { repository: repository("repo_shared", "共享目录"), machine_path: machinePath("/repo/shared", "read_only") }
+        : { repository: repository(repositoryId, repositoryId), machine_path: null },
+    );
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByTestId("repo-ref-repo_shared");
+    await user.type(screen.getByLabelText("主目录路径"), "/repo/shared");
+    await user.click(screen.getByRole("button", { name: "绑定主目录" }));
+
+    await waitFor(() => {
+      expect(apiClient.repositories.setForProject).toHaveBeenCalledWith("prj_a", {
+        primary: { repository_id: "repo_shared", access: "read_write" },
+        references: [],
+      });
+    });
+    // 机器授权为只读时不得静默扩权，也不得显示“可写”。
+    expect(apiClient.repositories.authorize).not.toHaveBeenCalled();
+    expect(await screen.findByText(/只读（机器授权为只读）/)).toBeInTheDocument();
+
+    // 显式升级流程：只有用户点击后才把机器授权升为 read_write。
+    await user.click(screen.getByRole("button", { name: "升级机器授权为可写 repo_shared" }));
+    await waitFor(() => {
+      expect(apiClient.repositories.authorize).toHaveBeenCalledWith(
+        "repo_shared",
+        "/repo/shared",
+        "read_write",
+        undefined,
+      );
+    });
+  });
+
+  it("offers an explicit authorization for a primary without machine authorization (R4-002)", async () => {
+    const user = userEvent.setup();
+    mockProjectWithLegacyPath();
+    vi.mocked(apiClient.repositories.listByProject).mockResolvedValue({
+      project_id: "prj_a",
+      references: [repoRef("repo_primary", "primary", { legacy_workspace_id: "ws_a" })],
+    } as never);
+    vi.mocked(apiClient.repositories.get).mockImplementation(async (repositoryId: string) => ({
+      repository: repository(repositoryId, repositoryId),
+      machine_path: null,
+    }));
+
+    renderApp("/projects/prj_a");
+
+    await screen.findByTestId("repo-ref-repo_primary");
+    expect(await screen.findByText(/未授权$/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "授权主目录 repo_primary" }));
+    await waitFor(() => {
+      expect(apiClient.repositories.authorize).toHaveBeenCalledWith("repo_primary", "/repo/project-a", "read_write");
+    });
+  });
+
   it("binds a primary directory for a project that has none (R1-013)", async () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.projects.get).mockResolvedValue({
