@@ -3,7 +3,7 @@ related_features: [F006, F009, F010, F012, F013, F014]
 topics: [task-surface, projection, claims, evidence, acceptance, resources, trace]
 doc_kind: design
 created: 2026-08-09
-updated: 2026-09-13
+updated: 2026-09-15
 ---
 
 # F011：Trusted Task Surface - 设计
@@ -19,7 +19,7 @@ updated: 2026-09-13
 - ADR 0009 / 0011：上下文范围、冷启动和 adapter 原生 memory 隔离决定独立性上限。
 - ADR 0010：固定骨架是“完成要求 → 主张 → 论证 → 证据”，未支撑主张必须显式在场，证据使用天然标识。
 
-实现时读取 `CURRENT_SCHEMA_VERSION` 并顺延 migration，不预占版本号。F010 当前分支已到 schema v12，但 F013 / F012 按执行顺序可能先增加 migration；F011 只追加当时下一个版本。
+实现时读取 `CURRENT_SCHEMA_VERSION` 并顺延 migration，不预占版本号。上游 F010 / F013 / F012 按合入顺序取得后续版本号（文档与 tasks 不写死具体版本号），F011 只追加实施时的下一个版本。
 
 ## 1. 技术概要与影响面
 
