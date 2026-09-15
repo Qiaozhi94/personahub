@@ -50,16 +50,6 @@ const DIALOG_INSTANCES: DialogInstance[] = [
     },
   },
   {
-    name: "intake",
-    dialogTitle: "Intake",
-    open: async (page) => {
-      await page.goto("/tasks?project=prj_v02_alpha");
-      const trigger = page.getByRole("button", { name: "推荐创建" });
-      await trigger.click();
-      return trigger;
-    },
-  },
-  {
     name: "command palette",
     dialogTitle: "跳转",
     open: async (page) => {
@@ -84,18 +74,10 @@ const DIALOG_INSTANCES: DialogInstance[] = [
       await createDialog.getByLabel(/goal/i).fill("dialog inventory");
       await createDialog.getByRole("button", { name: /^Create$/i }).click();
       await page.waitForURL(/\/tasks\/iss_/);
+      // F012/T016: the graph surface lives on the session face.
+      await page.getByRole("button", { name: "打开会话" }).click();
+      await page.waitForURL(/\/sessions\//);
       const trigger = page.getByRole("button", { name: "Start Graph" });
-      await trigger.click();
-      return trigger;
-    },
-  },
-  {
-    name: "cancel run",
-    dialogTitle: "Cancel Run",
-    open: async (page) => {
-      await page.goto("/tasks/iss_v02_graph_blocked");
-      await expect(page.getByText("queued", { exact: true }).first()).toBeVisible();
-      const trigger = page.getByRole("button", { name: "Cancel Run" }).first();
       await trigger.click();
       return trigger;
     },

@@ -18,13 +18,14 @@ import { FileChangeRepository } from "../src/repositories/file-change.js";
 import { AdapterWorkspaceStatusRepository } from "../src/repositories/adapter-workspace-status.js";
 import { NodeRunRepository } from "../src/repositories/node-run.js";
 import { GraphRunRepository } from "../src/repositories/graph-run.js";
-import { AppSecretRepository } from "../src/repositories/app-secret.js";
-import { IntakeConfirmationRepository } from "../src/repositories/intake-confirmation.js";
-import { ConfirmationTokenService, loadOrCreateHmacSecret } from "../src/services/confirmation-token.js";
-import { RoutingRecommendationService } from "../src/services/routing-recommendation-service.js";
-import { IntakeService } from "../src/services/intake-service.js";
 import { GraphNodeInstructionBuilder } from "../src/runtime/graph/instruction-builder.js";
 import { GraphRuntimeService } from "../src/services/graph-runtime.js";
+import { SessionService } from "../src/services/session-service.js";
+import { EligibilityEvaluator } from "../src/services/eligibility-evaluator.js";
+import { DispatchService } from "../src/services/dispatch-service.js";
+import { DispatchGateService } from "../src/services/dispatch-gate-service.js";
+import { DomainOutbox } from "../src/services/domain-outbox.js";
+import type { ContextAssembler, AssembleInput, AssembledContext } from "../src/services/context-assembler.js";
 import { AdapterAvailabilityProbeCoordinator } from "../src/services/adapter-probe-coordinator.js";
 import { ProjectService } from "../src/services/project.js";
 import { SpaceService } from "../src/services/space.js";
@@ -137,11 +138,11 @@ export interface TestServices {
   validationWorkflowService: ValidationWorkflowService;
   validationDispatchScheduler: ValidationDispatchScheduler;
   eventBus: EventBusType;
-  tokenService: ConfirmationTokenService;
-  recommendationService: RoutingRecommendationService;
-  intakeService: IntakeService;
-  intakeConfirmationRepo: IntakeConfirmationRepository;
   graphRuntimeService: GraphRuntimeService;
+  sessionService: SessionService;
+  eligibilityEvaluator: EligibilityEvaluator;
+  dispatchService: DispatchService;
+  dispatchGates: DispatchGateService;
 }
 
 export function createTestServices(dbInput?: Database.Database): TestServices {
@@ -168,8 +169,11 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
   const repositoryRegistry = new RepositoryRegistry(db, auditService);
   const skillRegistry = new SkillRegistry(db, auditService);
   const resolver = new EffectiveRequirementsResolver(db);
-  const skillDelivery = new SkillDeliveryService(db, auditService, join(tmpdir(), "f013-delivery-" + Date.now() + "-" + Math.random().toString(36).slice(2)));
-
+  const skillDelivery = new SkillDeliveryService(
+    db,
+    auditService,
+    join(tmpdir(), "f013-delivery-" + Date.now() + "-" + Math.random().toString(36).slice(2)),
+  );
 
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
@@ -303,48 +307,47 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
   );
   const validationRecoveryActionService = new ValidationRecoveryActionService(issueRepo, validationTraceService, db);
 
-  const tokenService = new ConfirmationTokenService(loadOrCreateHmacSecret(new AppSecretRepository(db)));
-  const recommendationService = new RoutingRecommendationService({
-    deps: { projectRepo, agentConfigRepo, adapterWorkspaceStatusRepo, workflowTemplateRepo },
-    tokenService,
+  const dispatchGates = new DispatchGateService(db);
+  const dispatchOutbox = new DomainOutbox(db);
+  const sessionService = new SessionService(db, threadEventService);
+  const eligibilityEvaluator = new EligibilityEvaluator(db, agentConfigRepo, resolver, {
+    currentCliVersion: (provider) => TEST_CLI_VERSIONS[provider] ?? "0.0.0",
   });
-  const intakeService = new IntakeService({
+  const stubAssembler: ContextAssembler = {
+    async assemble(input: AssembleInput): Promise<AssembledContext> {
+      return {
+        scope: input.dispatch.context_scope,
+        items: [],
+        contentHash: "sha256:stub",
+        consumptionRefs: [],
+        startMode: "cold",
+        coldStartReason: null,
+        resumedFromAttemptId: null,
+      };
+    },
+    recordConsumptions() {},
+  };
+  const dispatchService = new DispatchService(
     db,
-    tokenService,
-    recommendationService,
-    confirmationRepo: new IntakeConfirmationRepository(db),
-    projectRepo,
-    workspaceRepo,
-    threadEventService,
-    issueService: new IssueService(
-      issueRepo,
-      threadRepo,
-      threadEventRepo,
-      projectRepo,
-      workflowTemplateRepo,
-      validationPolicyRepo,
-      spaceRepo,
-      db,
-    ),
-    sequentialDeps: {
-      runRepo,
-      issueRepo,
-      agentConfigRepo,
-      threadEventService,
-      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
+    dispatchOutbox,
+    dispatchGates,
+    stubAssembler,
+    agentConfigRepo,
+    runRepo,
+    nodeRunRepo,
+    graphRunRepo,
+    {
+      graceWindowMs: () => 0,
+      spawnRun: async (runId) => {
+        const run = runRepo.getById(runId);
+        if (run) await runDispatchService.drainWorkspace(run.workspace_id);
+      },
+      cancelRunningRun: async (runId) => {
+        await runDispatchService.cancel(runId);
+      },
     },
-    graphDeps: {
-      graphRunRepo,
-      nodeRunRepo,
-      runRepo,
-      issueRepo,
-      threadEventService,
-      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
-      instructionBuilder: new GraphNodeInstructionBuilder(),
-      drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
-    },
-    drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
-  });
+  );
+
   const graphRuntimeService = new GraphRuntimeService(
     {
       graphRunRepo,
@@ -355,6 +358,9 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
       adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
       instructionBuilder: new GraphNodeInstructionBuilder(),
       drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
+      sessionService,
+      eligibilityEvaluator,
+      dispatchService,
     },
     db,
   );
@@ -425,11 +431,11 @@ export function createTestServices(dbInput?: Database.Database): TestServices {
     validationWorkflowService,
     validationDispatchScheduler,
     eventBus,
-    tokenService,
-    recommendationService,
-    intakeService,
-    intakeConfirmationRepo: new IntakeConfirmationRepository(db),
     graphRuntimeService,
+    sessionService,
+    eligibilityEvaluator,
+    dispatchService,
+    dispatchGates,
   };
 }
 
@@ -451,4 +457,84 @@ export async function disposeTestServices(services: TestServices): Promise<void>
   await services.runDispatchService.shutdown();
   await services.adapterConfigService.shutdown();
   services.db.close();
+}
+
+/** CLI versions the test-side EligibilityEvaluator treats as "running" — paired
+ *  with ``seedCapabilityEvidence`` so evidence rows are version-matched. */
+export const TEST_CLI_VERSIONS: Record<string, string> = {
+  codex: "1.0.0",
+  "claude-code": "1.0.0",
+  opencode: "1.0.0",
+  fake: "1.0.0",
+};
+
+export function seedCapabilityEvidence(
+  db: Database.Database,
+  input: {
+    provider: string;
+    capabilityKey: string;
+    verdict: "supported" | "unsupported" | "unverified";
+    probeResult: string;
+    cliVersion?: string;
+    probedAt?: string;
+    missingReason?: string | null;
+  },
+): void {
+  db.prepare(
+    "INSERT OR REPLACE INTO adapter_capability_evidence (id, cli_provider, cli_version, capability_key, verdict, probe_command, probe_result, probed_at, missing_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run(
+    `ace_${input.provider}_${input.capabilityKey}`,
+    input.provider,
+    input.cliVersion ?? TEST_CLI_VERSIONS[input.provider] ?? "1.0.0",
+    input.capabilityKey,
+    input.verdict,
+    "probe",
+    input.probeResult,
+    input.probedAt ?? new Date().toISOString(),
+    input.missingReason ?? null,
+  );
+}
+
+/** Seeds the capability set a dispatchable adapter needs: enumerated models,
+ *  mappable depth tiers, session resume and native-memory isolation. */
+export function seedDispatchableAdapter(
+  db: Database.Database,
+  provider: string,
+  options: {
+    cliVersion?: string;
+    models?: string[];
+    nativeMemoryVerdict?: "supported" | "unsupported" | "unverified";
+  } = {},
+): void {
+  const cliVersion = options.cliVersion ?? TEST_CLI_VERSIONS[provider] ?? "1.0.0";
+  const models = options.models ?? ["gpt-5"];
+  seedCapabilityEvidence(db, {
+    provider,
+    capabilityKey: "model_enumeration",
+    verdict: "supported",
+    probeResult: JSON.stringify({ ok: true, models: models.map((id) => ({ id })) }),
+    cliVersion,
+  });
+  seedCapabilityEvidence(db, {
+    provider,
+    capabilityKey: "depth",
+    verdict: "supported",
+    probeResult: JSON.stringify({ ok: true, native_levels: ["low", "medium", "high"] }),
+    cliVersion,
+  });
+  seedCapabilityEvidence(db, {
+    provider,
+    capabilityKey: "session_resume",
+    verdict: "supported",
+    probeResult: JSON.stringify({ ok: true }),
+    cliVersion,
+  });
+  const nativeMemoryVerdict = options.nativeMemoryVerdict ?? "supported";
+  seedCapabilityEvidence(db, {
+    provider,
+    capabilityKey: "native_memory_isolation",
+    verdict: nativeMemoryVerdict,
+    probeResult: JSON.stringify(nativeMemoryVerdict === "supported" ? { ok: true } : { ok: false }),
+    cliVersion,
+  });
 }

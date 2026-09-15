@@ -111,8 +111,6 @@ export class RunDispatchService {
     try {
       startedRun = this.prepareAndStart(run);
     } catch (error) {
-      // prepareAndStart can throw (e.g. workspace/adapter deleted after create);
-      // never leave the just-acquired lock held.
       this.workspaceLockService.releaseByRunId(run.id);
       throw error;
     }

@@ -1,11 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
-import { createTestServices, createTempDir, disposeTestServices, type TestServices } from "../helpers.js";
+import {
+  createTestServices,
+  createTempDir,
+  disposeTestServices,
+  seedDispatchableAdapter,
+  type TestServices,
+} from "../helpers.js";
 import graphRoutes from "../../src/api/routes/graph.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
 import {
-  AdapterStatus, GraphRunStatus, NodeRunStatus, RunStatus, IssueStatus, RunRole, RunPurpose,
+  AdapterStatus,
+  GraphRunStatus,
+  NodeRunStatus,
+  RunStatus,
+  IssueStatus,
+  RunRole,
+  RunPurpose,
 } from "@personahub/shared/types";
 import { FakeAgentAdapter } from "../../src/runtime/adapters/fake-adapter.js";
 import { GraphRuntimeService } from "../../src/services/graph-runtime.js";
@@ -42,9 +54,16 @@ function buildApp(services: TestServices) {
       runRepo: services.runRepo,
       issueRepo: services.issueRepo,
       threadEventService: services.threadEventService,
-      adapterDeps: { agentConfigRepo: services.agentConfigRepo, projectRepo: services.projectRepo, adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo },
+      adapterDeps: {
+        agentConfigRepo: services.agentConfigRepo,
+        projectRepo: services.projectRepo,
+        adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
+      },
       instructionBuilder: new GraphNodeInstructionBuilder(),
       drainWorkspace: (wsId: string) => services.runDispatchService.drainWorkspace(wsId),
+      sessionService: services.sessionService,
+      eligibilityEvaluator: services.eligibilityEvaluator,
+      dispatchService: services.dispatchService,
     },
     services.db,
   );
@@ -59,6 +78,9 @@ function buildApp(services: TestServices) {
     threadEventService: services.threadEventService,
     runDispatchService: services.runDispatchService,
     graphRuntimeService,
+    sessionService: services.sessionService,
+    eligibilityEvaluator: services.eligibilityEvaluator,
+    dispatchService: services.dispatchService,
     agentConfigRepo: services.agentConfigRepo,
     projectRepo: services.projectRepo,
     adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
@@ -74,14 +96,25 @@ function setupIssue(services: TestServices, tempDir: string) {
   return { project, workspace, issue };
 }
 
-function createFakeAdapter(services: TestServices, projectId: string, opts: ConstructorParameters<typeof FakeAgentAdapter>[0] = {}) {
-  services.adapterRegistry.register(new FakeAgentAdapter(opts));
+function createFakeAdapter(
+  services: TestServices,
+  projectId: string,
+  opts: ConstructorParameters<typeof FakeAgentAdapter>[0] = {},
+) {
+  // F012 (T016): node dispatch resolves its execution identity through
+  // EligibilityEvaluator, which needs probe-backed depth evidence — the depth
+  // tier map is provider-keyed, so the fake adapter runs under the codex
+  // provider (same trick secret-canary-scan uses for opencode).
+  const adapter = new FakeAgentAdapter(opts);
+  Object.defineProperty(adapter, "provider", { value: "codex", writable: false });
+  services.adapterRegistry.register(adapter);
+  seedDispatchableAdapter(services.db, "codex");
   return services.agentConfigRepo.create({
     project_id: projectId,
     name: "Fake Adapter",
     role: "implementation",
-    cli_provider: "fake",
-    command: "fake",
+    cli_provider: "codex",
+    command: "codex",
     args: [],
     capability_tags: ["implementation"],
     default_model: null,
@@ -104,22 +137,44 @@ describe("F006 graph mutation endpoint regressions", () => {
 
   it("retry: unblocks the Issue (not just the GraphRun) and the new Attempt actually starts — regression for the IssueStatus/GraphRunStatus enum-case CAS bug", async () => {
     const { issue, workspace } = setupIssue(services, tempDir);
-    const adapter = createFakeAdapter(services, issue.project_id, { delayMs: 20, outputDelayMs: 5, finalMessage: JSON.stringify({ node_key: "review_concurrency", findings: [], not_reviewed: [] }) });
+    const adapter = createFakeAdapter(services, issue.project_id, {
+      delayMs: 20,
+      outputDelayMs: 5,
+      finalMessage: JSON.stringify({ node_key: "review_concurrency", findings: [], not_reviewed: [] }),
+    });
 
     const graphRun = services.graphRunRepo.create({
-      issue_id: issue.id, thread_id: issue.primary_thread_id!, workspace_id: workspace.id,
-      definition_id: "wgd_coding_dual_review", definition_version: 1,
+      issue_id: issue.id,
+      thread_id: issue.primary_thread_id!,
+      workspace_id: workspace.id,
+      definition_id: "wgd_coding_dual_review",
+      definition_version: 1,
       status: GraphRunStatus.Blocked,
-      target_files: ["src/test.ts"], target_files_hash: "h1",
+      target_files: ["src/test.ts"],
+      target_files_hash: "h1",
     });
     services.graphRunRepo.compareAndSetStatus(graphRun.id, GraphRunStatus.Blocked, GraphRunStatus.Blocked, {
-      blocked_reason_code: "node_run_failed" as never, blocked_node_keys: ["review_concurrency"],
+      blocked_reason_code: "node_run_failed" as never,
+      blocked_node_keys: ["review_concurrency"],
     });
     const n1 = services.nodeRunRepo.create({
-      graph_run_id: graphRun.id, node_key: "review_concurrency", status: NodeRunStatus.Failed, assigned_adapter_config_id: adapter.id,
+      graph_run_id: graphRun.id,
+      node_key: "review_concurrency",
+      status: NodeRunStatus.Failed,
+      assigned_adapter_config_id: adapter.id,
     });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_contract", status: NodeRunStatus.Completed, assigned_adapter_config_id: adapter.id });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "synthesize_findings", status: NodeRunStatus.Pending, assigned_adapter_config_id: adapter.id });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_contract",
+      status: NodeRunStatus.Completed,
+      assigned_adapter_config_id: adapter.id,
+    });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "synthesize_findings",
+      status: NodeRunStatus.Pending,
+      assigned_adapter_config_id: adapter.id,
+    });
     services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Inbox, IssueStatus.Running);
     services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Blocked);
 
@@ -160,30 +215,64 @@ describe("F006 graph mutation endpoint regressions", () => {
     const adapter = createFakeAdapter(services, issue.project_id, { delayMs: 5_000, outputDelayMs: 1_000 });
 
     const graphRun = services.graphRunRepo.create({
-      issue_id: issue.id, thread_id: issue.primary_thread_id!, workspace_id: workspace.id,
-      definition_id: "wgd_coding_dual_review", definition_version: 1,
+      issue_id: issue.id,
+      thread_id: issue.primary_thread_id!,
+      workspace_id: workspace.id,
+      definition_id: "wgd_coding_dual_review",
+      definition_version: 1,
       status: GraphRunStatus.Running,
-      target_files: ["src/test.ts"], target_files_hash: "h1",
+      target_files: ["src/test.ts"],
+      target_files_hash: "h1",
     });
-    const n1 = services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_concurrency", status: NodeRunStatus.Running, assigned_adapter_config_id: adapter.id });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_contract", status: NodeRunStatus.Ready, assigned_adapter_config_id: adapter.id });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "synthesize_findings", status: NodeRunStatus.Pending, assigned_adapter_config_id: adapter.id });
+    const n1 = services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_concurrency",
+      status: NodeRunStatus.Running,
+      assigned_adapter_config_id: adapter.id,
+    });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_contract",
+      status: NodeRunStatus.Ready,
+      assigned_adapter_config_id: adapter.id,
+    });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "synthesize_findings",
+      status: NodeRunStatus.Pending,
+      assigned_adapter_config_id: adapter.id,
+    });
     services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Inbox, IssueStatus.Running);
 
     const runningRun = services.runRepo.create({
-      issue_id: issue.id, thread_id: issue.primary_thread_id!, workspace_id: workspace.id,
-      adapter_config_id: adapter.id, instructions: "test", status: RunStatus.Queued,
-      role: RunRole.GraphNode, node_run_id: n1.id, purpose: RunPurpose.WorkflowBound,
+      issue_id: issue.id,
+      thread_id: issue.primary_thread_id!,
+      workspace_id: workspace.id,
+      adapter_config_id: adapter.id,
+      instructions: "test",
+      status: RunStatus.Queued,
+      role: RunRole.GraphNode,
+      node_run_id: n1.id,
+      purpose: RunPurpose.WorkflowBound,
     });
     const acquired = services.workspaceLockService.acquire(workspace.id, runningRun.id);
     expect(acquired).toBe(true);
-    services.runRepo.transitionStatus(runningRun.id, RunStatus.Queued, RunStatus.Running, { started_at: new Date().toISOString() });
+    services.runRepo.transitionStatus(runningRun.id, RunStatus.Queued, RunStatus.Running, {
+      started_at: new Date().toISOString(),
+    });
     await services.agentRunner.startRun({
       run: services.runRepo.getById(runningRun.id)!,
       adapter: services.adapterRegistry.getForConfig(adapter),
       workspace,
       context: "test",
-      adapterConfig: { command: adapter.command, args: adapter.args, model_provider: null, default_model: adapter.default_model, auth_type: adapter.auth_type, api_key: null },
+      adapterConfig: {
+        command: adapter.command,
+        args: adapter.args,
+        model_provider: null,
+        default_model: adapter.default_model,
+        auth_type: adapter.auth_type,
+        api_key: null,
+      },
       onTerminal: (runId, workspaceId) => services.runDispatchService.onRunTerminal(runId, workspaceId),
       onEscalation: (params) => services.runDispatchService.onEscalation(params),
     });
@@ -216,14 +305,33 @@ describe("F006 graph mutation endpoint regressions", () => {
     const adapter = createFakeAdapter(services, issue.project_id);
 
     const graphRun = services.graphRunRepo.create({
-      issue_id: issue.id, thread_id: issue.primary_thread_id!, workspace_id: workspace.id,
-      definition_id: "wgd_coding_dual_review", definition_version: 1,
+      issue_id: issue.id,
+      thread_id: issue.primary_thread_id!,
+      workspace_id: workspace.id,
+      definition_id: "wgd_coding_dual_review",
+      definition_version: 1,
       status: GraphRunStatus.Running,
-      target_files: ["src/test.ts"], target_files_hash: "h1",
+      target_files: ["src/test.ts"],
+      target_files_hash: "h1",
     });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_concurrency", status: NodeRunStatus.Ready, assigned_adapter_config_id: adapter.id });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_contract", status: NodeRunStatus.Ready, assigned_adapter_config_id: adapter.id });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "synthesize_findings", status: NodeRunStatus.Pending, assigned_adapter_config_id: adapter.id });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_concurrency",
+      status: NodeRunStatus.Ready,
+      assigned_adapter_config_id: adapter.id,
+    });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_contract",
+      status: NodeRunStatus.Ready,
+      assigned_adapter_config_id: adapter.id,
+    });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "synthesize_findings",
+      status: NodeRunStatus.Pending,
+      assigned_adapter_config_id: adapter.id,
+    });
     services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Inbox, IssueStatus.Running);
 
     const app = buildApp(services);
@@ -242,29 +350,72 @@ describe("F006 graph mutation endpoint regressions", () => {
     const { issue, workspace } = setupIssue(services, tempDir);
     const badAdapter = createFakeAdapter(services, issue.project_id);
     const goodAdapter = services.agentConfigRepo.create({
-      project_id: issue.project_id, name: "Good Adapter", role: "implementation", cli_provider: "fake",
-      command: "fake", args: [], capability_tags: ["implementation"], default_model: null, status: AdapterStatus.Available,
+      project_id: issue.project_id,
+      name: "Good Adapter",
+      role: "implementation",
+      cli_provider: "codex",
+      command: "codex",
+      args: [],
+      capability_tags: ["implementation"],
+      default_model: null,
+      status: AdapterStatus.Available,
     });
 
     const graphRun = services.graphRunRepo.create({
-      issue_id: issue.id, thread_id: issue.primary_thread_id!, workspace_id: workspace.id,
-      definition_id: "wgd_coding_dual_review", definition_version: 1,
+      issue_id: issue.id,
+      thread_id: issue.primary_thread_id!,
+      workspace_id: workspace.id,
+      definition_id: "wgd_coding_dual_review",
+      definition_version: 1,
       status: GraphRunStatus.Blocked,
-      target_files: ["src/test.ts"], target_files_hash: "h1",
+      target_files: ["src/test.ts"],
+      target_files_hash: "h1",
     });
     services.graphRunRepo.compareAndSetStatus(graphRun.id, GraphRunStatus.Blocked, GraphRunStatus.Blocked, {
-      blocked_reason_code: "no_capable_adapter" as never, blocked_node_keys: ["synthesize_findings"],
+      blocked_reason_code: "no_capable_adapter" as never,
+      blocked_node_keys: ["synthesize_findings"],
     });
-    const n1 = services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_concurrency", status: NodeRunStatus.Completed, assigned_adapter_config_id: badAdapter.id });
-    const n2 = services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_contract", status: NodeRunStatus.Completed, assigned_adapter_config_id: badAdapter.id });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "synthesize_findings", status: NodeRunStatus.Pending, assigned_adapter_config_id: badAdapter.id });
+    const n1 = services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_concurrency",
+      status: NodeRunStatus.Completed,
+      assigned_adapter_config_id: badAdapter.id,
+    });
+    const n2 = services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_contract",
+      status: NodeRunStatus.Completed,
+      assigned_adapter_config_id: badAdapter.id,
+    });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "synthesize_findings",
+      status: NodeRunStatus.Pending,
+      assigned_adapter_config_id: badAdapter.id,
+    });
     services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Inbox, IssueStatus.Running);
     services.issueRepo.compareAndSetStatus(issue.id, IssueStatus.Running, IssueStatus.Blocked);
 
-    const r1 = services.threadEventService.write(issue.primary_thread_id!, "graph.node_result" as never, "system" as never, null, { node_key: "review_concurrency", findings: [], not_reviewed: [] });
-    const r2 = services.threadEventService.write(issue.primary_thread_id!, "graph.node_result" as never, "system" as never, null, { node_key: "review_contract", findings: [], not_reviewed: [] });
-    services.nodeRunRepo.compareAndSetStatus(n1.id, NodeRunStatus.Completed, NodeRunStatus.Completed, { result_event_id: r1.id });
-    services.nodeRunRepo.compareAndSetStatus(n2.id, NodeRunStatus.Completed, NodeRunStatus.Completed, { result_event_id: r2.id });
+    const r1 = services.threadEventService.write(
+      issue.primary_thread_id!,
+      "graph.node_result" as never,
+      "system" as never,
+      null,
+      { node_key: "review_concurrency", findings: [], not_reviewed: [] },
+    );
+    const r2 = services.threadEventService.write(
+      issue.primary_thread_id!,
+      "graph.node_result" as never,
+      "system" as never,
+      null,
+      { node_key: "review_contract", findings: [], not_reviewed: [] },
+    );
+    services.nodeRunRepo.compareAndSetStatus(n1.id, NodeRunStatus.Completed, NodeRunStatus.Completed, {
+      result_event_id: r1.id,
+    });
+    services.nodeRunRepo.compareAndSetStatus(n2.id, NodeRunStatus.Completed, NodeRunStatus.Completed, {
+      result_event_id: r2.id,
+    });
 
     const app = buildApp(services);
     const response = await app.inject({
@@ -303,22 +454,49 @@ describe("F006 graph mutation endpoint regressions", () => {
     const { issue, workspace } = setupIssue(services, tempDir);
     const badAdapter = createFakeAdapter(services, issue.project_id);
     const stillIncapable = services.agentConfigRepo.create({
-      project_id: issue.project_id, name: "Still Bad", role: "validator", cli_provider: "fake",
-      command: "fake", args: [], capability_tags: ["validator"], default_model: null, status: AdapterStatus.Available,
+      project_id: issue.project_id,
+      name: "Still Bad",
+      role: "validator",
+      cli_provider: "fake",
+      command: "fake",
+      args: [],
+      capability_tags: ["validator"],
+      default_model: null,
+      status: AdapterStatus.Available,
     });
 
     const graphRun = services.graphRunRepo.create({
-      issue_id: issue.id, thread_id: issue.primary_thread_id!, workspace_id: workspace.id,
-      definition_id: "wgd_coding_dual_review", definition_version: 1,
+      issue_id: issue.id,
+      thread_id: issue.primary_thread_id!,
+      workspace_id: workspace.id,
+      definition_id: "wgd_coding_dual_review",
+      definition_version: 1,
       status: GraphRunStatus.Blocked,
-      target_files: ["src/test.ts"], target_files_hash: "h1",
+      target_files: ["src/test.ts"],
+      target_files_hash: "h1",
     });
     services.graphRunRepo.compareAndSetStatus(graphRun.id, GraphRunStatus.Blocked, GraphRunStatus.Blocked, {
-      blocked_reason_code: "no_capable_adapter" as never, blocked_node_keys: ["synthesize_findings"],
+      blocked_reason_code: "no_capable_adapter" as never,
+      blocked_node_keys: ["synthesize_findings"],
     });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_concurrency", status: NodeRunStatus.Completed, assigned_adapter_config_id: badAdapter.id });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "review_contract", status: NodeRunStatus.Completed, assigned_adapter_config_id: badAdapter.id });
-    services.nodeRunRepo.create({ graph_run_id: graphRun.id, node_key: "synthesize_findings", status: NodeRunStatus.Pending, assigned_adapter_config_id: badAdapter.id });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_concurrency",
+      status: NodeRunStatus.Completed,
+      assigned_adapter_config_id: badAdapter.id,
+    });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "review_contract",
+      status: NodeRunStatus.Completed,
+      assigned_adapter_config_id: badAdapter.id,
+    });
+    services.nodeRunRepo.create({
+      graph_run_id: graphRun.id,
+      node_key: "synthesize_findings",
+      status: NodeRunStatus.Pending,
+      assigned_adapter_config_id: badAdapter.id,
+    });
 
     const app = buildApp(services);
     const response = await app.inject({

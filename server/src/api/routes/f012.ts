@@ -114,6 +114,12 @@ export const f012Routes: FastifyPluginAsync<F012RoutesOptions> = async (app, opt
     return sessionService.convertToTask(roomId, body);
   });
 
+  app.post("/api/issues/:issueId/session", async (request) => {
+    const { issueId } = request.params as { issueId: string };
+    const room = sessionService.ensureRoomForIssue(issueId);
+    return { session_id: room.id, room };
+  });
+
   // ----------------------------------------------------------- eligibility
   app.get("/api/rooms/:roomId/eligibility", async (request) => {
     const { roomId } = request.params as { roomId: string };

@@ -4,7 +4,6 @@ import { useIssues } from "@/hooks/use-issues";
 import { useProjects } from "@/hooks/use-projects";
 import { toApiError } from "@/lib/api-client";
 import { CreateIssueDialog } from "@/components/issue/CreateIssueDialog";
-import { IntakeDialog } from "@/components/intake/IntakeDialog";
 import { IssueList } from "@/components/issue/IssueList";
 import { PageLoading, EmptyState, ErrorState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
@@ -112,8 +111,6 @@ function TaskProjectBoard({
   const projectsQuery = useProjects();
   const issuesQuery = useIssues(projectId);
   const [createOpen, setCreateOpen] = useState(false);
-  const [intakeOpen, setIntakeOpen] = useState(false);
-  const intakeTriggerRef = useRef<HTMLButtonElement | null>(null);
   // Two separate buttons (header action, empty-state recovery action) open
   // this dialog, so capture whatever had focus at click time rather than a
   // single fixed ref (review R1-006/BC-049).
@@ -169,23 +166,13 @@ function TaskProjectBoard({
           // has content; an empty list's single recovery action lives in the
           // EmptyState (review R1-007: exactly one executable recovery path).
           issues.length > 0 ? (
-            <div className="flex gap-2">
-              <button
-                ref={intakeTriggerRef}
-                type="button"
-                onClick={() => setIntakeOpen(true)}
-                className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
-              >
-                推荐创建
-              </button>
-              <button
-                type="button"
-                onClick={openCreateIssueDialog}
-                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                新建任务
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={openCreateIssueDialog}
+              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              新建任务
+            </button>
           ) : null
         }
       />
@@ -200,7 +187,7 @@ function TaskProjectBoard({
         ) : issues.length === 0 ? (
           <EmptyState
             title="该项目还没有任务"
-            description="直接创建任务，或稍后通过推荐流程创建。"
+            description="输入目标创建任务，随后在会话面选择执行组合。"
             action={{ label: "新建任务", onAction: openCreateIssueDialog }}
           />
         ) : (
@@ -247,14 +234,6 @@ function TaskProjectBoard({
         onOpenChange={setCreateOpen}
         onCreated={(issueId) => navigate(buildUrl(`/tasks/${encodeURIComponent(issueId)}`))}
         restoreFocusRef={createIssueTriggerRef}
-      />
-
-      <IntakeDialog
-        projectId={projectId}
-        open={intakeOpen}
-        onOpenChange={setIntakeOpen}
-        onCreated={(issueId) => navigate(buildUrl(`/tasks/${encodeURIComponent(issueId)}`))}
-        restoreFocusRef={intakeTriggerRef}
       />
     </PageFrame>
   );

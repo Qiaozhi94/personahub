@@ -98,7 +98,7 @@ function buildScene(spawn?: (runId: string) => Promise<void>, assembler?: Contex
   const outbox = new DomainOutbox(services.db);
   const gates = new DispatchGateService(services.db);
   const spawnedRunIds: string[] = [];
-  const service = new DispatchService(services.db, outbox, gates, assembler ?? stubAssembler(), services.agentConfigRepo, services.runRepo, {
+  const service = new DispatchService(services.db, outbox, gates, assembler ?? stubAssembler(), services.agentConfigRepo, services.runRepo, services.nodeRunRepo, services.graphRunRepo, {
     graceWindowMs: () => 10_000,
     spawnRun: spawn ?? (async (runId) => spawnedRunIds.push(runId)),
   });
@@ -326,6 +326,8 @@ describe("F012 acceptance lock on both start paths (T014, AC-008)", () => {
       stubAssembler(),
       lockedServices.agentConfigRepo,
       lockedServices.runRepo,
+      lockedServices.nodeRunRepo,
+      lockedServices.graphRunRepo,
       {
         graceWindowMs: () => 0,
         acceptanceLock: () => ({ locked: true, reason: "Acceptance case completed — create a new task." }),
@@ -350,6 +352,8 @@ describe("F012 acceptance lock on both start paths (T014, AC-008)", () => {
       }),
       lockedServices.agentConfigRepo,
       lockedServices.runRepo,
+      lockedServices.nodeRunRepo,
+      lockedServices.graphRunRepo,
       {
         graceWindowMs: () => 0,
         acceptanceLock: () => ({ locked: true }),

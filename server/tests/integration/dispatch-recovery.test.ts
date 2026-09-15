@@ -93,7 +93,7 @@ beforeEach(() => {
   const gates = new DispatchGateService(services.db);
   const spawnedRunIds: string[] = [];
   const cancelledRunIds: string[] = [];
-  const service = new DispatchService(services.db, outbox, gates, stubAssembler(), services.agentConfigRepo, services.runRepo, {
+  const service = new DispatchService(services.db, outbox, gates, stubAssembler(), services.agentConfigRepo, services.runRepo, services.nodeRunRepo, services.graphRunRepo, {
     graceWindowMs: () => 0,
     spawnRun: async (runId) => {
       spawnedRunIds.push(runId);

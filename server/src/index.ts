@@ -60,11 +60,6 @@ import { fileURLToPath } from "node:url";
 import { GraphRuntimeService } from "./services/graph-runtime.js";
 import { GraphRecoveryService } from "./services/graph-recovery.js";
 import { GraphNodeInstructionBuilder } from "./runtime/graph/instruction-builder.js";
-import { AppSecretRepository } from "./repositories/app-secret.js";
-import { IntakeConfirmationRepository } from "./repositories/intake-confirmation.js";
-import { ConfirmationTokenService, loadOrCreateHmacSecret } from "./services/confirmation-token.js";
-import { RoutingRecommendationService } from "./services/routing-recommendation-service.js";
-import { IntakeService } from "./services/intake-service.js";
 import { WorkflowTemplateAdminService } from "./services/workflow-template-admin.js";
 import { AdminAuditEventRepository } from "./repositories/admin-audit-event.js";
 import { SpaceRepository } from "./repositories/space.js";
@@ -119,9 +114,6 @@ async function main() {
   const nodeRunRepo = new NodeRunRepository(db);
   const graphRunRepo = new GraphRunRepository(db);
   const adapterProbeCoordinator = new AdapterAvailabilityProbeCoordinator();
-
-  const hmacSecret = loadOrCreateHmacSecret(new AppSecretRepository(db));
-  const tokenService = new ConfirmationTokenService(hmacSecret);
 
   const eventBus = new EventBus();
   const threadEventService = new ThreadEventService(threadEventRepo, eventBus);
@@ -267,59 +259,6 @@ async function main() {
     adapterProbeCoordinator,
   );
 
-  const graphRuntimeService = new GraphRuntimeService(
-    {
-      graphRunRepo,
-      nodeRunRepo,
-      runRepo,
-      issueRepo,
-      threadEventService,
-      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
-      instructionBuilder: new GraphNodeInstructionBuilder(),
-      drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
-    },
-    db,
-  );
-
-  const recommendationService = new RoutingRecommendationService({
-    deps: {
-      projectRepo,
-      agentConfigRepo,
-      adapterWorkspaceStatusRepo,
-      workflowTemplateRepo,
-    },
-    tokenService,
-  });
-
-  const intakeService = new IntakeService({
-    db,
-    tokenService,
-    recommendationService,
-    confirmationRepo: new IntakeConfirmationRepository(db),
-    projectRepo,
-    workspaceRepo,
-    threadEventService,
-    issueService,
-    sequentialDeps: {
-      runRepo,
-      issueRepo,
-      agentConfigRepo,
-      threadEventService,
-      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
-    },
-    graphDeps: {
-      graphRunRepo,
-      nodeRunRepo,
-      runRepo,
-      issueRepo,
-      threadEventService,
-      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
-      instructionBuilder: new GraphNodeInstructionBuilder(),
-      drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
-    },
-    drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
-  });
-
   const workflowTemplateAdminService = new WorkflowTemplateAdminService(
     workflowTemplateRepo,
     new AdminAuditEventRepository(db),
@@ -412,6 +351,8 @@ async function main() {
     contextAssembler,
     agentConfigRepo,
     runRepo,
+    nodeRunRepo,
+    graphRunRepo,
     {
       graceWindowMs: () => Number(process.env.DISPATCH_GRACE_WINDOW_MS ?? 10_000),
       spawnRun: async (runId) => {
@@ -423,6 +364,23 @@ async function main() {
         await runDispatchService.cancel(runId);
       },
     },
+  );
+
+  const graphRuntimeService = new GraphRuntimeService(
+    {
+      graphRunRepo,
+      nodeRunRepo,
+      runRepo,
+      issueRepo,
+      threadEventService,
+      adapterDeps: { agentConfigRepo, projectRepo, adapterWorkspaceStatusRepo },
+      instructionBuilder: new GraphNodeInstructionBuilder(),
+      drainWorkspace: (wsId: string) => runDispatchService.drainWorkspace(wsId),
+      sessionService,
+      eligibilityEvaluator,
+      dispatchService,
+    },
+    db,
   );
   const dispatchRecoveryService = new DispatchRecoveryService(db, domainOutbox, staleRecoveryService, dispatchService, {
     spawnRun: async (runId) => {
@@ -569,9 +527,6 @@ async function main() {
     agentConfigRepo,
     projectRepo,
     adapterWorkspaceStatusRepo,
-    recommendationService,
-    intakeService,
-    intakeConfirmationRepo: new IntakeConfirmationRepository(db),
     workflowTemplateAdminService,
     runtimeHealthService,
     artifactService,

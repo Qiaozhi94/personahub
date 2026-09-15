@@ -1199,17 +1199,23 @@ const F009_WRITE_API_HOSTS = new Map([
   ["projects.create", ["web/src/hooks/use-projects.ts"]],
   ["workspaces.bind", ["web/src/hooks/use-workspace.ts"]],
   ["issues.create", ["web/src/hooks/use-issues.ts"]],
-  ["issues.startGraph", ["web/src/components/thread/ThreadView.tsx"]],
-  ["graphRuns.cancel", ["web/src/components/thread/ThreadView.tsx"]],
-  ["graphRuns.retryNode", ["web/src/components/thread/ThreadView.tsx"]],
-  ["graphRuns.resolveExecutors", ["web/src/components/thread/ThreadView.tsx"]],
-  ["runs.create", ["web/src/hooks/use-runs.ts"]],
-  ["runs.cancel", ["web/src/hooks/use-runs.ts"]],
+  // F012/T016: the graph surface moved from the task page's compat host to the
+  // session face, where every node execution is a Dispatch.
+  ["issues.startGraph", ["web/src/components/graph/GraphRunPanel.tsx"]],
+  ["graphRuns.cancel", ["web/src/components/graph/GraphRunPanel.tsx"]],
+  ["graphRuns.retryNode", ["web/src/components/graph/GraphRunPanel.tsx"]],
+  ["graphRuns.resolveExecutors", ["web/src/components/graph/GraphRunPanel.tsx"]],
+  // F012/T016: retired — dispatch confirm + attempt cancel replaced the
+  // composer write entry and the inspector's run cancel.
+  ["runs.create", []],
+  ["runs.cancel", []],
   ["validation.triggerValidation", ["web/src/hooks/use-validation.ts"]],
   ["validation.unblock", ["web/src/hooks/use-validation.ts"]],
   ["validation.resetRounds", ["web/src/hooks/use-validation.ts"]],
-  ["intake.recommend", ["web/src/components/intake/IntakeDialog.tsx"]],
-  ["intake.confirm", ["web/src/components/intake/IntakeDialog.tsx"]],
+  // F012/A006+A007: retired — the goal-only task create + dispatch confirm
+  // replaced the intake recommend/confirm write path (routes and host removed).
+  ["intake.recommend", []],
+  ["intake.confirm", []],
   ["adapters.create", ["web/src/hooks/use-adapters.ts"]],
   ["adapters.update", ["web/src/hooks/use-adapters.ts"]],
   ["adapters.delete", ["web/src/hooks/use-adapters.ts"]],

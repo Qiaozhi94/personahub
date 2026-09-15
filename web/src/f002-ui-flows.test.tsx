@@ -12,7 +12,6 @@ import {
   type Run,
 } from "@personahub/shared";
 import { AdapterSettings } from "@/components/adapter/AdapterSettings";
-import { ThreadView } from "@/components/thread/ThreadView";
 import { IssueInspector } from "@/components/inspector/IssueInspector";
 import {
   createAdapter,
@@ -93,54 +92,7 @@ describe("F002 UI flows", () => {
     });
   });
 
-  it("submits Thread instructions with the explicitly selected adapter", async () => {
-    vi.mocked(apiClient.threads.getEvents).mockResolvedValue({ events: [] });
-    vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [] });
-    vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({ adapters: [adapter] });
-    vi.mocked(apiClient.runs.create).mockResolvedValue({ run: runningRun });
-
-    renderWithQuery(
-      <ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Inbox} projectId="prj_1" />,
-    );
-    fireEvent.change(await screen.findByLabelText("Agent"), { target: { value: "agt_1" } });
-    const input = screen.getByPlaceholderText("Enter agent instructions…");
-    fireEvent.change(input, { target: { value: "  Implement the API  " } });
-    fireEvent.submit(input.closest("form")!);
-
-    await waitFor(() => {
-      expect(apiClient.runs.create).toHaveBeenCalledWith("iss_1", {
-        instructions: "Implement the API",
-        adapter_id: "agt_1",
-        purpose: undefined,
-      });
-    });
-  });
-
-  it("omitting the adapter selection lets the server resolve the Project default", async () => {
-    vi.mocked(apiClient.threads.getEvents).mockResolvedValue({ events: [] });
-    vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [] });
-    vi.mocked(apiClient.adapters.listByProject).mockResolvedValue({
-      adapters: [{ ...adapter, is_default: true }],
-    });
-    vi.mocked(apiClient.runs.create).mockResolvedValue({ run: runningRun });
-
-    renderWithQuery(
-      <ThreadView threadId="thr_1" issueId="iss_1" issueStatus={IssueStatus.Inbox} projectId="prj_1" />,
-    );
-    const input = await screen.findByPlaceholderText("Enter agent instructions…");
-    fireEvent.change(input, { target: { value: "Implement the API" } });
-    fireEvent.submit(input.closest("form")!);
-
-    await waitFor(() => {
-      expect(apiClient.runs.create).toHaveBeenCalledWith("iss_1", {
-        instructions: "Implement the API",
-        adapter_id: undefined,
-        purpose: undefined,
-      });
-    });
-  });
-
-  it("shows Run status and logs, then cancels a running Run", async () => {
+  it("shows Run status and logs without offering a cancel write", async () => {
     vi.mocked(apiClient.runs.listByIssue).mockResolvedValue({ runs: [runningRun] });
     vi.mocked(apiClient.threads.getEvents).mockResolvedValue({
       events: [{
@@ -150,19 +102,12 @@ describe("F002 UI flows", () => {
         evidence_refs: [], created_at: "2026-07-16T00:01:01.000Z",
       }],
     });
-    vi.mocked(apiClient.runs.cancel).mockResolvedValue({
-      run: { ...runningRun, status: RunStatus.Cancelled, completed_at: "2026-07-16T00:02:00.000Z" },
-    });
 
     renderWithQuery(<IssueInspector issue={baseIssue} workspacePath={"D:\\repo"} />);
     expect(await screen.findByText("Working...")).toBeInTheDocument();
     expect(screen.getByText("running")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Cancel Run" }));
-    fireEvent.click(screen.getByRole("button", { name: "Yes, cancel run" }));
-
-    await waitFor(() => {
-      expect(apiClient.runs.cancel).toHaveBeenCalledWith("run_1");
-    });
+    // A011: cancellation lives on the intervention surface, not the inspector.
+    expect(screen.queryByRole("button", { name: "Cancel Run" })).toBeNull();
   });
 
   it("shows the escalation blocker and its capability boundary", async () => {

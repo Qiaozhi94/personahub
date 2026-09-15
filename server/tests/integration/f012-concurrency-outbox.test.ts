@@ -19,7 +19,12 @@ import { DispatchService, type DispatchConfirmInput } from "../../src/services/d
 import { DispatchContextError, type ContextAssembler } from "../../src/services/context-assembler.js";
 import type { AgentConfigRepository } from "../../src/repositories/agent-config.js";
 import type { RunRepository } from "../../src/repositories/run.js";
+import type { NodeRunRepository } from "../../src/repositories/node-run.js";
+import type { GraphRunRepository } from "../../src/repositories/graph-run.js";
 import type { Dispatch } from "@personahub/shared/types";
+
+const stubNodeRunRepo = {} as unknown as NodeRunRepository;
+const stubGraphRunRepo = {} as unknown as GraphRunRepository;
 
 const SPACES: Array<{ id: string; name: string }> = [{ id: "spc_def", name: "Default" }];
 
@@ -98,7 +103,7 @@ function makeService(db: Database.Database, graph: Graph, spawns: string[]): Dis
       return { success: r.changes > 0 };
     },
   } as unknown as RunRepository;
-  return new DispatchService(db, outbox, gates, stubAssembler(), agentConfigRepo, runRepo, {
+  return new DispatchService(db, outbox, gates, stubAssembler(), agentConfigRepo, runRepo, stubNodeRunRepo, stubGraphRunRepo, {
     graceWindowMs: () => 0,
     spawnRun: async (runId) => {
       spawns.push(runId);
@@ -263,7 +268,7 @@ describe("F012 T021/T022/T023 integration", () => {
     } as unknown as RunRepository;
 
     const spawns: string[] = [];
-    const service = new DispatchService(db, outbox, gates, assembler, agentConfigRepo, runRepo, {
+    const service = new DispatchService(db, outbox, gates, assembler, agentConfigRepo, runRepo, stubNodeRunRepo, stubGraphRunRepo, {
       graceWindowMs: () => 0,
       spawnRun: async (runId) => spawns.push(runId),
     });
@@ -286,7 +291,7 @@ describe("F012 T021/T022/T023 integration", () => {
       },
       recordConsumptions() {},
     };
-    const serviceFail = new DispatchService(db, outbox, gates, failingAssembler, agentConfigRepo, runRepo, {
+    const serviceFail = new DispatchService(db, outbox, gates, failingAssembler, agentConfigRepo, runRepo, stubNodeRunRepo, stubGraphRunRepo, {
       graceWindowMs: () => 0,
       spawnRun: async (runId) => spawns.push(runId),
     });

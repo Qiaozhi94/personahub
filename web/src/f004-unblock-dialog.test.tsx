@@ -97,7 +97,6 @@ describe("UnblockDialog", () => {
 
   it("does not automatically trigger a new Run or validation after unblock", async () => {
     vi.mocked(apiClient.validation.unblock).mockResolvedValue({} as never);
-    vi.mocked(apiClient.runs.create).mockResolvedValue({} as never);
     vi.mocked(apiClient.validation.triggerValidation).mockResolvedValue({} as never);
 
     render(
@@ -112,6 +111,5 @@ describe("UnblockDialog", () => {
     await waitFor(() => {
       expect(apiClient.validation.unblock).toHaveBeenCalled();
     });
-    expect(apiClient.runs.create).not.toHaveBeenCalled();
   });
 });

@@ -21,9 +21,6 @@ import {
   type ProjectCreateResponse,
   type ProjectGetResponse,
   type ProjectListResponse,
-  type RunCancelResponse,
-  type RunCreateInput,
-  type RunCreateResponse,
   type RunEvidenceResponse,
   type RunGetResponse,
   type RunListResponse,
@@ -39,10 +36,6 @@ import {
   type GraphNodeRetryResponse,
   type GraphResolveExecutorsResponse,
   type GraphStartResponse,
-  type RecommendResponse,
-  type ConfirmResponse,
-  type ConfirmationToken,
-  type ChosenPlan,
   type WorkflowTemplateListResponse,
   type WorkflowTemplateDetailResponse,
   type CreateWorkflowTemplateVersionInput,
@@ -288,6 +281,8 @@ export const apiClient = {
       }),
     listByProject: (projectId: string) => apiFetch<IssueListResponse>(`/projects/${projectId}/issues`),
     get: (id: string) => apiFetch<IssueGetResponse>(`/issues/${id}`),
+    ensureSession: (issueId: string) =>
+      apiFetch<{ session_id: string }>(`/issues/${issueId}/session`, { method: "POST" }),
     getGraph: (id: string) => apiFetch<IssueGraphResponse>(`/issues/${id}/graph`),
     startGraph: (
       issueId: string,
@@ -352,14 +347,8 @@ export const apiClient = {
       }),
   },
   runs: {
-    create: (issueId: string, input: RunCreateInput) =>
-      apiFetch<RunCreateResponse>(`/issues/${issueId}/runs`, {
-        method: "POST",
-        body: JSON.stringify(input),
-      }),
     get: (runId: string) => apiFetch<RunGetResponse>(`/runs/${runId}`),
     listByIssue: (issueId: string) => apiFetch<RunListResponse>(`/issues/${issueId}/runs`),
-    cancel: (runId: string) => apiFetch<RunCancelResponse>(`/runs/${runId}/cancel`, { method: "POST" }),
   },
   traces: {
     getIssueTrace: (issueId: string, afterEventId?: string, limit?: number) => {
@@ -415,18 +404,6 @@ export const apiClient = {
     triggerValidation: (issueId: string) =>
       apiFetch<TriggerValidationResponse>(`/issues/${issueId}/validation`, {
         method: "POST",
-      }),
-  },
-  intake: {
-    recommend: (projectId: string, goal: string) =>
-      apiFetch<RecommendResponse>(`/projects/${projectId}/intake/recommend`, {
-        method: "POST",
-        body: JSON.stringify({ goal }),
-      }),
-    confirm: (projectId: string, token: ConfirmationToken, chosen: ChosenPlan) =>
-      apiFetch<ConfirmResponse>(`/projects/${projectId}/intake/confirm`, {
-        method: "POST",
-        body: JSON.stringify({ token, chosen }),
       }),
   },
   workflowTemplates: {

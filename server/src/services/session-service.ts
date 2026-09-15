@@ -77,6 +77,37 @@ export class SessionService {
     return this.getRoom(id);
   }
 
+  /** Idempotent session surface for a task: the issue's primary thread gets a
+   *  Room (the §3.1 backfill rule applied lazily to threads created after the
+   *  v15 migration). Task creation itself stays write-free — the Room only
+   *  comes into existence when the session surface is opened. */
+  ensureRoomForIssue(issueId: string): Room {
+    const issue = this.db
+      .prepare("SELECT id, space_id, title, primary_thread_id FROM issues WHERE id = ?")
+      .get(issueId) as { id: string; space_id: string; title: string; primary_thread_id: string | null } | undefined;
+    if (!issue) throw new AppError(ErrorCode.ISSUE_NOT_FOUND, "Issue not found.");
+
+    const existing = this.db
+      .prepare("SELECT * FROM rooms WHERE issue_id = ? ORDER BY created_at ASC LIMIT 1")
+      .get(issueId) as Room | undefined;
+    if (existing) return existing;
+
+    const id = generateRoomId();
+    const now = new Date().toISOString();
+    const tx = this.db.transaction(() => {
+      this.db
+        .prepare(
+          "INSERT INTO rooms (id, space_id, issue_id, title, state, created_at, ended_at) VALUES (?, ?, ?, ?, 'active', ?, NULL)",
+        )
+        .run(id, issue.space_id, issue.id, issue.title?.trim() || "Task", now);
+      if (issue.primary_thread_id) {
+        this.db.prepare("UPDATE threads SET room_id = ? WHERE id = ? AND room_id IS NULL").run(id, issue.primary_thread_id);
+      }
+    });
+    tx();
+    return this.getRoom(id);
+  }
+
   getRoom(roomId: string): Room {
     const room = this.db.prepare("SELECT * FROM rooms WHERE id = ?").get(roomId) as Room | undefined;
     if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, `Room not found: ${roomId}`);

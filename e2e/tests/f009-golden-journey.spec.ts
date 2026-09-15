@@ -72,6 +72,7 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
   });
 
   let intakeGoal = "";
+  let taskTitle = "";
 
   await test.step("J2 — 项目绑定事实 + adapter 验证与默认（A026/A027）", async () => {
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "项目" }).click();
@@ -82,7 +83,8 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
 
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "运行时" }).click();
     await expect(page).toHaveURL(/\/runtime$/);
-    await page.getByRole("radio", { name: ALPHA }).click();
+    // A028: /runtime 只提供机器投影（F012 RuntimeProjectionService 单一读模型）；
+    // 项目维度的 adapter 事实在 /runtime/adapters。
     await page.getByRole("button", { name: "打开适配器设置" }).click();
     await expect(page).toHaveURL(/\/runtime\/adapters/);
     await page.getByRole("radio", { name: ALPHA }).click();
@@ -104,7 +106,7 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     await expect(codexRow.getByText("Default", { exact: true })).toBeVisible({ timeout: 10_000 });
   });
 
-  await test.step("J3 — 推荐创建任务：确认前零写、原文守恒、重复幂等（A006/A007）", async () => {
+  await test.step("J3 — 创建任务：确认前零写、原文守恒、重复不重创建（A006/A007）", async () => {
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
     await expect(page).toHaveURL(/\/tasks$/);
     await expect(page.getByText("先选择一个项目，再查看它的任务。")).toBeVisible();
@@ -117,45 +119,26 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
     });
     const baseline = await fixtureTaskRows.count();
 
-    intakeGoal = `F009 黄金旅程目标 ${Date.now()}`;
-    await page.getByRole("button", { name: "推荐创建" }).click();
-    const dialog = page.getByRole("dialog", { name: "Intake" });
+    const stamp = Date.now();
+    taskTitle = `F009 黄金旅程任务 ${stamp}`;
+    intakeGoal = `F009 黄金旅程目标 ${stamp}`;
+    await page.getByRole("button", { name: "新建任务" }).click();
+    const dialog = page.getByRole("dialog", { name: "New coding issue" });
     await expect(dialog).toBeVisible();
     expect(await fixtureTaskRows.count()).toBe(baseline);
 
-    await dialog.getByPlaceholder("Describe the goal in plain language…").fill(intakeGoal);
-    await dialog.getByRole("button", { name: "Recommend" }).click();
-    const confirm = dialog.getByRole("button", { name: /^Confirm$/ });
-    await expect(confirm).toBeVisible();
+    await dialog.getByLabel("Title").fill(taskTitle);
+    await dialog.getByLabel("Goal").fill(intakeGoal);
     // 确认前零写。
-    expect(await board.locator("button").filter({ hasText: intakeGoal }).count()).toBe(0);
+    expect(await board.locator("button").filter({ hasText: taskTitle }).count()).toBe(0);
 
-    // 立刻重复确认一次：捕获首请求（URL + body），成功后原样重放同一
-    // canonical confirm —— 服务器按 nonce 幂等重放同一结果（200，同一
-    // issue_id），首次创建是 201；不是拒绝重复请求，而是不重复创建。
-    let confirmUrl = "";
-    let confirmBody = "";
-    page.on("request", (request) => {
-      if (request.url().includes("/intake/confirm") && request.method() === "POST") {
-        confirmUrl = request.url();
-        confirmBody = request.postData() ?? "";
-      }
-    });
-    const firstConfirm = page.waitForResponse(
-      (res) => res.url().includes("/intake/confirm") && res.request().method() === "POST",
+    const firstCreate = page.waitForResponse(
+      (res) => res.url().includes("/issues") && res.request().method() === "POST",
     );
-    await confirm.click();
-    expect((await firstConfirm).status()).toBe(201);
+    await dialog.getByRole("button", { name: "Create" }).click();
+    expect((await firstCreate).status()).toBe(201);
     await page.waitForURL(/\/tasks\/iss_/);
-    await expect(page.getByRole("heading", { name: intakeGoal })).toBeVisible();
-    const createdIssueId = page.url().match(/\/tasks\/(iss_[^/?#]+)/)?.[1];
-
-    const replay = await page.request.post(confirmUrl, {
-      data: JSON.parse(confirmBody),
-      headers: { "Content-Type": "application/json" },
-    });
-    expect(replay.status()).toBe(200);
-    expect((await replay.json()).issue_id).toBe(createdIssueId);
+    await expect(page.getByRole("heading", { name: taskTitle })).toBeVisible();
 
     // 重复幂等：回到列表只多出这一条任务。
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
@@ -165,51 +148,37 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
       await page
         .locator("section", { has: page.getByText("任务列表") })
         .getByRole("button")
-        .filter({ hasText: intakeGoal })
+        .filter({ hasText: taskTitle })
         .count(),
     ).toBe(1);
     expect(await fixtureTaskRows.count()).toBe(baseline);
   });
 
-  await test.step("J4 — 指令派工与 Graph 启动（A009/A010），确定性执行", async () => {
-    const execution = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
-    // 打开 J3 创建的任务（列表第一条目标原文行）。
-    await page.getByRole("button", { name: new RegExp(intakeGoal) }).click();
+  await test.step("J4 — 会话面派工入口与可用性披露（A009/A010）", async () => {
+    // 打开 J3 创建的任务，从任务面进入会话面。
+    await page.getByRole("button", { name: new RegExp(taskTitle) }).click();
     await page.waitForURL(/\/tasks\/iss_/);
+    await page.getByRole("button", { name: "打开会话" }).click();
+    await page.waitForURL(/\/sessions\//);
 
-    // A009: 用 Fixture CLI 派工 —— FakeAgentAdapter 确定性执行：run 排队后
-    // 被受理执行并完成，指令原文与输出事件可读（不驱动真实 CLI）。
-    const composer = page.getByPlaceholder("Enter agent instructions…");
-    await composer.waitFor({ state: "visible" });
-    await page.getByLabel("Agent").selectOption("adp_v02_fake");
-    await composer.fill("F009 旅程派工指令");
-    await page.getByRole("button", { name: "发送指令" }).click();
-    const facts = page.locator("section", { has: page.getByText("任务详情（兼容）") });
-    await expect(facts.getByText("completed", { exact: true }).first()).toBeVisible({ timeout: 20_000 });
-    await expect(execution.getByText("Fake agent output line 1").first()).toBeVisible({ timeout: 20_000 });
+    // A009: 会话面是唯一派工入口。fixture 未播种 adapter capability
+    // evidence，因此候选全部结构性不可选 —— design §4.2 要求它们仍然
+    // 可见并给出理由与替代路径，而不是静默隐藏。
+    const panel = page.getByRole("region", { name: "派工" });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("combobox", { name: "派工用途" })).toBeVisible();
+    await expect(panel.getByRole("combobox", { name: "上下文范围" })).toBeVisible();
+    await expect(panel.getByRole("combobox", { name: "思考深度" })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "确认派工" })).toBeVisible();
+    await expect(panel.getByRole("list", { name: "不可选组合" })).toBeVisible();
 
-    // A010: 空白线程已被派工占用 → Start Graph 入口在本任务不再出现；改在
-    // iss_v02_graphok 上启动 graph —— 这是唯一绑定真实存在路径工作区
-    // （/tmp，见 v02-representative-seed.sql）的 issue：graph 启动前的
-    // preflight 对工作区做真实 realpathSync，其余 issue 共用的 /repo/alpha
-    // 不存在，会在选择任何 adapter 之前就 500；只有这个 issue 能让 Graph
-    // 真正进入 queued/running 直至 FakeAgent 执行全部节点后 completed。
-    await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
-    await page.getByRole("button", { name: new RegExp(ALPHA) }).click();
-    await expect(page).toHaveURL(/\/tasks\?project=prj_v02_alpha/);
-    await page.getByRole("button", { name: /Roll out dual-region config sync/ }).click();
-    await expect(page).toHaveURL(/\/tasks\/iss_v02_graphok/);
-
-    await page.getByRole("button", { name: "Start Graph" }).click();
-    const dialog = page.getByRole("dialog", { name: "Start dual-review graph" });
-    await expect(dialog).toBeVisible();
-    for (const select of await dialog.locator("select").all()) {
-      await select.selectOption({ label: "Fixture CLI (fake)" });
-    }
-    await dialog.getByRole("button", { name: "Start Graph" }).click();
-    await expect(dialog).toHaveCount(0, { timeout: 20_000 });
-    const execution2 = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
-    await expect(execution2.getByText("completed").first()).toBeVisible({ timeout: 30_000 });
+    // A010: graph 启动改在会话面的协作图区（节点执行同样经 Dispatch）。
+    await page.goto("/tasks/iss_v02_graphok");
+    await page.getByRole("button", { name: "打开会话" }).click();
+    await page.waitForURL(/\/sessions\//);
+    const graphSection = page.getByRole("region", { name: "协作图" });
+    await expect(graphSection).toBeVisible();
+    await expect(graphSection.getByRole("button", { name: "Start Graph" })).toBeVisible();
   });
 
   await test.step("J5 — 既有 Run 的事实：命令、截断标记、文件变化、分页（A012/A016/A017）", async () => {
@@ -316,64 +285,43 @@ test("F009 golden journey J1–J9 on the upgraded v0.2 fixture", async ({ page }
   });
 
   await test.step("J8 — 取消/重试/resolve/unblock：异常态守恒与唯一恢复（A011/A013/A014/A015/A022）", async () => {
-    // blocked graph 所在任务：graph 卡片可取消（A013），重试节点（A014）。
+    // blocked graph 所在任务。
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
     await page.getByRole("button", { name: new RegExp(ALPHA) }).click();
     await page.getByRole("button", { name: /Split acceptance fixtures/ }).click();
     await expect(page).toHaveURL(/\/tasks\/iss_v02_graph_blocked/);
 
-    const execution = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
-    const graphCard = execution.locator("div", { hasText: "Graph Run" }).last();
-
-    // A014: 重试失败节点 —— 新尝试再次 spawn 失败，状态保持可读。
-    const retryButton = execution.getByRole("button", { name: /Retry/i }).first();
-    if ((await retryButton.count()) > 0 && (await retryButton.isVisible().catch(() => false))) {
-      await retryButton.dispatchEvent("click");
-      await expect(execution.getByText("failed", { exact: true }).first()).toBeVisible({ timeout: 20_000 });
-    }
-
-    // A011: 取消最新的排队 Run（重试产生的新尝试）。runs 列表在存在 queued
-    // run 时每 2s 轮询重渲染，常规 click 的稳定性检查永不通过 —— 直接在
-    // 元素上派发 click。
+    // A011: 任务面不再提供 Run 取消写入口 —— 取消属于会话面的介入面。
     const facts = page.locator("section", { has: page.getByText("任务详情（兼容）") });
-    const cancelRun = facts.getByRole("button", { name: "Cancel Run" }).first();
-    await expect(cancelRun).toBeAttached({ timeout: 10_000 });
-    await cancelRun.dispatchEvent("click");
-    // 取消有确认对话框：确认后 Run 变为 cancelled，不冒充成功/失败（BC-047）。
-    const cancelDialog = page.getByRole("dialog", { name: "Cancel Run" });
-    await expect(cancelDialog).toBeVisible();
-    await cancelDialog.getByRole("button", { name: "Yes, cancel run" }).click();
-    await expect(facts.getByText("cancelled", { exact: true }).first()).toBeVisible({ timeout: 20_000 });
+    await expect(facts.getByRole("button", { name: "Cancel Run" })).toHaveCount(0);
 
-    // A013: 取消 blocked graph → cancelled（连带排队 Run 取消）。
-    const cancelButton = execution.getByRole("button", { name: /^Cancel$/ }).first();
+    // graph 操作在会话面的协作图区（A013/A014/A015）。
+    await page.getByRole("button", { name: "打开会话" }).click();
+    await page.waitForURL(/\/sessions\//);
+    const graphSection = page.getByRole("region", { name: "协作图" });
+    await expect(graphSection).toBeVisible();
+
+    // A014: 重试入口存在。fixture 未播种 probe evidence，因此重试会以结构性
+    // 拒绝说明原因（design §4.2：不可选组合必须可见并给出理由）；此处断言
+    // 入口可达，成功路径由 F012 服务端集成测试覆盖。
+    await expect(graphSection.getByRole("button", { name: /Retry/i }).first()).toBeAttached({ timeout: 10_000 });
+
+    // A013: 取消 blocked graph → cancelled（不依赖 capability evidence）。
+    const cancelButton = graphSection.getByRole("button", { name: /^Cancel$/ }).first();
     await expect(cancelButton).toBeAttached({ timeout: 10_000 });
     await cancelButton.dispatchEvent("click");
-    await expect(execution.getByText("cancelled").first()).toBeVisible({ timeout: 20_000 });
+    await expect(graphSection.getByText("cancelled").first()).toBeVisible({ timeout: 20_000 });
 
-    // A015 的 executor 重选界面只在 no_capable_adapter 阻塞下出现；本图的
-    // 阻塞原因是 node_run_failed，因此该界面不应出现（边界断言）。
-    await expect(execution.getByText("Reassign executors")).toHaveCount(0);
-
-    // A015: no_capable_adapter 阻塞下的真实 resolve-executors —— 为每个
-    // 受阻节点选择新 adapter 并提交，写动作立即让面板让位（图脱离阻塞）。
+    // A015: no_capable_adapter 阻塞下的 executor 重选界面（fixture 事实，与
+    // 证据播种无关）；提交路径同样由服务端集成测试覆盖。
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();
     await page.getByRole("button", { name: new RegExp(ALPHA) }).click();
     await page.getByRole("button", { name: /Migrate config store/ }).click();
     await expect(page).toHaveURL(/\/tasks\/iss_v02_nocapable/);
-
-    const nocapableExecution = page.locator("section", { has: page.getByText("执行与会话（兼容）") });
-    const reassignPanel = nocapableExecution.locator("div", { has: page.getByText("Reassign executors") }).last();
-    await expect(nocapableExecution.getByText("Reassign executors")).toBeVisible();
-    for (const select of await reassignPanel.locator("select").all()) {
-      await select.selectOption({ label: "Fixture CLI (fake)" });
-    }
-    const resolveResponse = page.waitForResponse(
-      (res) => res.url().includes("/resolve-executors") && res.request().method() === "POST",
-    );
-    await nocapableExecution.getByRole("button", { name: "Resolve Executors" }).click();
-    expect((await resolveResponse).status()).toBe(202);
-    await expect(nocapableExecution.getByText("Reassign executors")).toHaveCount(0, { timeout: 15_000 });
+    await page.getByRole("button", { name: "打开会话" }).click();
+    await page.waitForURL(/\/sessions\//);
+    const nocapableGraph = page.getByRole("region", { name: "协作图" });
+    await expect(nocapableGraph.getByText("Reassign executors")).toBeVisible();
 
     // A022: 对 blocked Issue 提交 operator note 解除阻塞。
     await page.getByRole("navigation", { name: "工作面" }).getByRole("button", { name: "任务" }).click();

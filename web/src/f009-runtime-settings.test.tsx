@@ -9,7 +9,7 @@ import { App } from "@/App";
 vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));
 
 import { apiClient } from "@/lib/api-client";
-import { AdapterStatus } from "@personahub/shared";
+import { AdapterStatus, GateState, type RuntimeMachineProjection } from "@personahub/shared";
 
 // T013 (A025–A029, A030): runtime and settings transitional hosts. Facts are
 // split per surface — execution resources only on /runtime, schema only in
@@ -128,29 +128,47 @@ beforeEach(() => {
 });
 
 describe("/runtime (A025/A028 runtime half)", () => {
-  it("renders execution resources for an explicitly selected project", async () => {
-    const user = userEvent.setup();
+  function machineProjection(): RuntimeMachineProjection {
+    return {
+      machine: { id: "local", label: "本机", kind: "local" },
+      adapters: [
+        {
+          id: "agt_1",
+          name: "Codex",
+          cli_provider: "codex",
+          runtime_id: "local",
+          status: AdapterStatus.Available,
+          last_checked_at: TIMESTAMP,
+          auth_status_message: null,
+          default_model: "gpt-5",
+        },
+      ],
+      workspace_locks: [{ workspace_id: "ws_a", project_id: "prj_a", locked_by_run_id: "run_1", locked_at: TIMESTAMP }],
+      queue: { queued_count: 2, running_run_ids: ["run_1"] },
+      background: { pending_probe_count: 2, pending_reprobe_count: 1, outbox: { pending: 0, poison: 0 } },
+      runtime_gate: { state: GateState.Open, revision: 3, reason: null, updated_at: TIMESTAMP },
+      quota: [],
+    };
+  }
+
+  it("renders the single machine projection as the runtime read model", async () => {
+    vi.mocked(apiClient.f012.runtimeMachine).mockResolvedValue(machineProjection());
     renderApp("/runtime");
 
+    const section = await screen.findByRole("region", { name: "机器概览" });
+    expect(section).toHaveTextContent("1 adapter");
+    expect(section).toHaveTextContent("队列 2");
+    expect(section).toHaveTextContent("锁 1");
+    // A028: the legacy project-scoped health panel is gone — one read model only.
     expect(screen.queryByTestId("runtime-health-panel")).not.toBeInTheDocument();
-    await user.click(await screen.findByRole("radio", { name: "项目甲" }));
-
-    const panel = await screen.findByTestId("runtime-health-panel");
-    expect(panel).toBeInTheDocument();
-    expect(await screen.findByText(/Codex: available/)).toBeInTheDocument();
-    expect(panel).toHaveTextContent("queued: 2");
-    expect(panel).toHaveTextContent("run_1");
-    expect(panel).toHaveTextContent("probe: 2");
   });
 
   it("keeps schema facts out of the runtime surface", async () => {
-    const user = userEvent.setup();
+    vi.mocked(apiClient.f012.runtimeMachine).mockResolvedValue(machineProjection());
     vi.mocked(apiClient.runtimeHealth.get).mockResolvedValue(healthResponse({ schemaStatus: "behind" }));
     renderApp("/runtime");
 
-    await user.click(await screen.findByRole("radio", { name: "项目甲" }));
-    await screen.findByTestId("runtime-health-panel");
-
+    await screen.findByRole("region", { name: "机器概览" });
     expect(screen.queryByText(/schema 10\/10/)).not.toBeInTheDocument();
     expect(screen.queryByText("Database schema is behind.")).not.toBeInTheDocument();
   });
@@ -292,18 +310,5 @@ describe("review R1-004/R1-006/R1-007 regressions", () => {
     vi.mocked(apiClient.runtimeHealth.get).mockResolvedValue(healthResponse());
     await user.click(screen.getByRole("button", { name: "重试" }));
     expect(await screen.findByText(/schema 10\/10/)).toBeInTheDocument();
-  });
-
-  it("retries a failed runtime health panel load for real (review R2-CODE-R1-007)", async () => {
-    const user = userEvent.setup();
-    vi.mocked(apiClient.runtimeHealth.get).mockRejectedValueOnce({ code: "X", message: "boom" });
-    renderApp("/runtime");
-
-    await user.click(await screen.findByRole("radio", { name: "项目甲" }));
-    expect(await screen.findByText("运行时读取失败")).toBeInTheDocument();
-
-    vi.mocked(apiClient.runtimeHealth.get).mockResolvedValue(healthResponse());
-    await user.click(screen.getByRole("button", { name: "重试" }));
-    expect(await screen.findByTestId("runtime-health-panel")).toBeInTheDocument();
   });
 });

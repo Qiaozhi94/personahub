@@ -1,13 +1,14 @@
 import { useEffect, useRef } from "react";
 import { ErrorCode } from "@personahub/shared";
-import { useIssue } from "@/hooks/use-issues";
+import { useIssue, useEnsureIssueSession } from "@/hooks/use-issues";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { toApiError } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PageLoading, ErrorState } from "@/components/primitives/page-state";
 import { StatusBanner } from "@/components/primitives/feedback";
-import { ThreadView } from "@/components/thread/ThreadView";
 import { IssueInspector } from "@/components/inspector/IssueInspector";
+import { ThreadView } from "@/components/thread/ThreadView";
 import { useDraftStore } from "@/app/draft-store-context";
 import { taskComposerKey } from "@/app/task-draft-store";
 import { buildUrl, useRouter } from "@/app/router";
@@ -16,13 +17,15 @@ import { PageFrame, PageSection } from "@/pages/page-frame";
 
 // /tasks/:taskId (FR-004): taskId strictly equals the existing Issue ID. An
 // unknown ID replaces to /tasks?not_found=<id>&from=<attempted> — it never
-// falls through to another object. The execution and fact sections are the
-// transitional hosts owned by the migration matrix (A006–A024).
+// falls through to another object. Execution now lives on the session
+// surface (/sessions/:sessionId); this page keeps the F011-owned compat
+// detail area (migration matrix P008, M4).
 
 export function TaskDetailPage({ taskId, diagnostics }: { taskId: string; diagnostics: Diagnostics }) {
   const { navigate } = useRouter();
   const issueQuery = useIssue(taskId);
   const workspaceQuery = useWorkspace(issueQuery.data?.issue.project_id ?? null);
+  const ensureSession = useEnsureIssueSession();
   const draftStore = useDraftStore();
   const redirectedRef = useRef(false);
 
@@ -64,6 +67,13 @@ export function TaskDetailPage({ taskId, diagnostics }: { taskId: string; diagno
   }
 
   const issue = issueQuery.data!.issue;
+  const sessionError = ensureSession.isError ? toApiError(ensureSession.error).message : null;
+
+  function openSession() {
+    ensureSession.mutate(taskId, {
+      onSuccess: (res) => navigate(buildUrl(`/sessions/${encodeURIComponent(res.session_id)}`)),
+    });
+  }
 
   return (
     <PageFrame>
@@ -77,19 +87,26 @@ export function TaskDetailPage({ taskId, diagnostics }: { taskId: string; diagno
           <Badge variant="outline" className="text-[11px]">
             {issue.status}
           </Badge>
-          {issue.primary_thread ? null : <span className="text-xs text-muted-foreground">没有关联的执行会话</span>}
         </div>
       </div>
 
       {issue.goal ? <p className="max-w-2xl text-sm text-muted-foreground">{issue.goal}</p> : null}
 
-      <PageSection title="执行与会话（兼容）" description="查看执行事件、发送指令、启动或恢复执行。">
+      <PageSection title="会话与执行" description="派工、执行与介入动作都在会话面完成。">
+        <div className="grid gap-2">
+          <Button type="button" onClick={openSession} disabled={ensureSession.isPending} className="w-fit">
+            {ensureSession.isPending ? "正在打开…" : "打开会话"}
+          </Button>
+          {sessionError ? <p className="text-xs text-destructive">{sessionError}</p> : null}
+        </div>
+      </PageSection>
+
+      <PageSection title="执行与会话（兼容）" description="只读的线程事件与验证横幅；派工与介入在会话面。">
         {issue.primary_thread ? (
           <ThreadView
             threadId={issue.primary_thread.id}
             issueId={issue.id}
             issueStatus={issue.status}
-            projectId={issue.project_id}
             validationDispatchDueAt={issue.validation_dispatch_due_at}
           />
         ) : (

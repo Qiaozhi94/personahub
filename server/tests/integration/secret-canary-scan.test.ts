@@ -61,9 +61,6 @@ function buildApp(services: TestServices) {
     agentConfigRepo: services.agentConfigRepo,
     projectRepo: services.projectRepo,
     adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
-    recommendationService: services.recommendationService,
-    intakeService: services.intakeService,
-    intakeConfirmationRepo: services.intakeConfirmationRepo,
     db: services.db,
   });
   return app;
@@ -138,13 +135,7 @@ describe("T081: canary secret scan across API/events/errors/export", () => {
     expect(errorRes.statusCode).toBe(400);
     assertNoCanary(errorRes, "adapter create error response");
 
-    const runRes = await app.inject({
-      method: "POST",
-      url: `/api/issues/${issue.id}/runs`,
-      payload: { instructions: "please check this", adapter_id: adapter.id },
-    });
-    assertNoCanary(runRes, "run create response");
-    const run = JSON.parse(runRes.body).run;
+    const run = await services.runDispatchService.dispatch(issue.id, adapter.id, "please check this");
 
     await wait(150); // let the fake adapter actually run to completion
 

@@ -41,6 +41,9 @@ function buildApp(services: TestServices) {
       },
       instructionBuilder: new GraphNodeInstructionBuilder(),
       drainWorkspace: (wsId: string) => services.runDispatchService.drainWorkspace(wsId),
+      sessionService: services.sessionService,
+      eligibilityEvaluator: services.eligibilityEvaluator,
+      dispatchService: services.dispatchService,
     },
     services.db,
   );

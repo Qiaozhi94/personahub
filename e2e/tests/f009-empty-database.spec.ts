@@ -54,10 +54,15 @@ test("clean database: /tasks guides to the projects page instead of an empty lis
   await expect(page).toHaveURL(/\/projects$/);
 });
 
-test("clean database: /runtime's project picker guides to the projects page (shared by /runtime, /runtime/adapters, /settings/system-diagnostics)", async ({
+test("clean database: /runtime shows the machine projection; the project picker guidance lives on /runtime/adapters", async ({
   page,
 }) => {
+  // A028/F012: /runtime renders the single machine-scoped projection — the
+  // project picker was removed from it (it lives one level deeper).
   await page.goto("/runtime");
+  await expect(page.getByRole("region", { name: "机器概览" })).toBeVisible();
+
+  await page.goto("/runtime/adapters");
   await expect(page.getByText("还没有项目")).toBeVisible();
   await expect(page.getByText("先创建项目，这里才会出现可执行资源。")).toBeVisible();
   const action = page.getByRole("button", { name: "前往项目页" });

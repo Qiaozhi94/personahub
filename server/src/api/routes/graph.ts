@@ -14,14 +14,25 @@ import { AppError, parseRequestBody } from "../errors.js";
 import { z } from "zod";
 import { ErrorCode } from "@personahub/shared/errors";
 import type { GraphRuntimeService } from "../../services/graph-runtime.js";
+import type { SessionService } from "../../services/session-service.js";
+import type { EligibilityEvaluator } from "../../services/eligibility-evaluator.js";
+import type { DispatchService } from "../../services/dispatch-service.js";
 import { getDefinition } from "../../runtime/graph/definitions.js";
-import { resolveEligibleAdapter } from "../../services/adapter-eligibility.js";
-import { GraphNodeInstructionBuilder } from "../../runtime/graph/instruction-builder.js";
 
 import type { ThreadEvent } from "@personahub/shared/types";
 import type { ThreadEventService } from "../../services/thread-event.js";
 import type { RunDispatchService } from "../../services/run-dispatch.js";
-import { RunRole, RunPurpose, RunStatus, ThreadEventType, ActorType, NodeRunStatus, IssueStatus, GraphRunStatus } from "@personahub/shared/types";
+import {
+  RunStatus,
+  ThreadEventType,
+  ActorType,
+  NodeRunStatus,
+  IssueStatus,
+  GraphRunStatus,
+  DispatchPurpose,
+  ContextScope,
+  type ExecutionIdentity,
+} from "@personahub/shared/types";
 import { buildEvidenceRef } from "../../evidence-ref.js";
 import { requireLegacyWorkspaceId, requireLegacyProjectId } from "../../services/legacy-issue-fields.js";
 
@@ -36,6 +47,9 @@ interface GraphRouteDeps {
   threadEventService: ThreadEventService;
   runDispatchService: RunDispatchService;
   graphRuntimeService: GraphRuntimeService;
+  sessionService: SessionService;
+  eligibilityEvaluator: EligibilityEvaluator;
+  dispatchService: DispatchService;
   agentConfigRepo: AgentConfigRepository;
   projectRepo: ProjectRepository;
   adapterWorkspaceStatusRepo: AdapterWorkspaceStatusRepository;
@@ -45,7 +59,9 @@ interface GraphRouteDeps {
 /** Latest `graph.edge_traversed` event per (from,to) pair — a retried
  *  precursor could in principle produce a second traversal, so this
  *  always keeps the most recent one (events arrive in ascending order). */
-function indexEdgeEvents(events: ReturnType<ThreadEventRepository["listByThreadAndTypes"]>): Map<string, (typeof events)[number]> {
+function indexEdgeEvents(
+  events: ReturnType<ThreadEventRepository["listByThreadAndTypes"]>,
+): Map<string, (typeof events)[number]> {
   const byEdge = new Map<string, (typeof events)[number]>();
   for (const event of events) {
     const payload = event.payload_json as { from_node_key?: string; to_node_key?: string };
@@ -53,6 +69,57 @@ function indexEdgeEvents(events: ReturnType<ThreadEventRepository["listByThreadA
     byEdge.set(`${payload.from_node_key}->${payload.to_node_key}`, event);
   }
   return byEdge;
+}
+
+/** design §2.1: one node execution is one Dispatch. The scheduler never
+ *  creates a Run itself — it asks DispatchService for one, with the node's
+ *  execution identity resolved by EligibilityEvaluator. */
+async function dispatchGraphNode(
+  deps: GraphRouteDeps,
+  graphRunId: string,
+  nodeRunId: string,
+  adapterId: string,
+  issueId: string,
+  attemptIndex: number,
+  actor: string,
+): Promise<string | null> {
+  const roomId = deps.sessionService.ensureRoomForIssue(issueId).id;
+  const eligibility = deps.eligibilityEvaluator.evaluate({
+    roomId,
+    purpose: DispatchPurpose.Execute,
+    skillRefs: [],
+    contextScope: ContextScope.All,
+  });
+  const candidate = eligibility.candidates.find(
+    (entry) => entry.identity.adapter_config_id === adapterId && entry.tier !== "blocked",
+  );
+  if (!candidate) {
+    throw new AppError(ErrorCode.NO_CAPABLE_ADAPTER, `Adapter '${adapterId}' has no eligible identity for this node.`);
+  }
+  const identity: ExecutionIdentity = candidate.identity;
+  const outcome = await deps.dispatchService.confirmGraphNode(
+    {
+      roomId,
+      clientRequestId: `graph:${graphRunId}:${nodeRunId}:${attemptIndex}`,
+      purpose: DispatchPurpose.Execute,
+      identity,
+      identitySnapshotJson: JSON.stringify({
+        adapter_config_id: identity.adapter_config_id,
+        runtime_id: identity.runtime_id,
+      }),
+      contextScope: ContextScope.All,
+      skillRevisionRefs: [],
+      effectiveRequirementsJson: JSON.stringify(eligibility.requirements.items),
+      effectiveRequirementsHash: eligibility.requirements.hash,
+      handoffRefs: [],
+      taskScopeJson: null,
+      requirementOverride: null,
+      actor,
+      graphNodeRunId: nodeRunId,
+    },
+    actor,
+  );
+  return outcome.runId;
 }
 
 function projectGraphRun(
@@ -63,33 +130,46 @@ function projectGraphRun(
 ) {
   const definition = getDefinition(gr.definition_id, gr.definition_version);
   const edgeEventByPair = indexEdgeEvents(edgeEvents);
-  const edges = definition?.edges.map((e) => {
-    const event = edgeEventByPair.get(`${e.from}->${e.to}`);
-    const payload = event?.payload_json as { outcome?: string; decided_by?: string } | undefined;
-    return {
-      from: e.from, to: e.to,
-      traversed_at: event?.created_at ?? null,
-      outcome: payload?.outcome ?? null,
-      decided_by: payload?.decided_by ?? null,
-      input_refs: event?.evidence_refs ?? ([] as string[]),
-    };
-  }) ?? [];
+  const edges =
+    definition?.edges.map((e) => {
+      const event = edgeEventByPair.get(`${e.from}->${e.to}`);
+      const payload = event?.payload_json as { outcome?: string; decided_by?: string } | undefined;
+      return {
+        from: e.from,
+        to: e.to,
+        traversed_at: event?.created_at ?? null,
+        outcome: payload?.outcome ?? null,
+        decided_by: payload?.decided_by ?? null,
+        input_refs: event?.evidence_refs ?? ([] as string[]),
+      };
+    }) ?? [];
 
   return {
     graph_run: {
-      id: gr.id, status: gr.status,
+      id: gr.id,
+      status: gr.status,
       blocked_reason_code: gr.blocked_reason_code,
       blocked_node_keys: gr.blocked_node_keys,
-      definition_id: gr.definition_id, definition_version: gr.definition_version,
-      created_at: gr.created_at, updated_at: gr.updated_at,
+      definition_id: gr.definition_id,
+      definition_version: gr.definition_version,
+      created_at: gr.created_at,
+      updated_at: gr.updated_at,
     },
     nodes: nodeRuns.map((nr) => ({
-      node_key: nr.node_key, title: nr.node_key, responsibility: nr.node_key,
-      status: nr.status, join_satisfied_at: nr.join_satisfied_at, result_event_id: nr.result_event_id,
+      node_key: nr.node_key,
+      title: nr.node_key,
+      responsibility: nr.node_key,
+      status: nr.status,
+      join_satisfied_at: nr.join_satisfied_at,
+      result_event_id: nr.result_event_id,
       attempts: (runsByNode.get(nr.id) ?? []).map((r) => ({
-        run_id: r.id, status: r.status, adapter_config_id: r.adapter_config_id,
-        adapter_identity: r.adapter_identity, failure_reason: r.failure_reason,
-        started_at: r.started_at, completed_at: r.completed_at,
+        run_id: r.id,
+        status: r.status,
+        adapter_config_id: r.adapter_config_id,
+        adapter_identity: r.adapter_identity,
+        failure_reason: r.failure_reason,
+        started_at: r.started_at,
+        completed_at: r.completed_at,
       })),
     })),
     edges,
@@ -112,7 +192,13 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
     if (current) {
       const allRuns = runRepo.listByIssue(issueId);
       const runsByNode = new Map<string, typeof allRuns>();
-      for (const r of allRuns) { if (r.node_run_id) { const arr = runsByNode.get(r.node_run_id) ?? []; arr.push(r); runsByNode.set(r.node_run_id, arr); } }
+      for (const r of allRuns) {
+        if (r.node_run_id) {
+          const arr = runsByNode.get(r.node_run_id) ?? [];
+          arr.push(r);
+          runsByNode.set(r.node_run_id, arr);
+        }
+      }
       const nodeRuns = nodeRunRepo.listByGraphRun(current.id);
       const edgeEvents = threadEventRepo.listByThreadAndTypes(current.thread_id, [ThreadEventType.GraphEdgeTraversed]);
       return { current: projectGraphRun(current, nodeRuns, runsByNode, edgeEvents), history };
@@ -127,7 +213,13 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
 
     const allRuns = runRepo.listByIssue(gr.issue_id);
     const runsByNode = new Map<string, typeof allRuns>();
-    for (const r of allRuns) { if (r.node_run_id) { const arr = runsByNode.get(r.node_run_id) ?? []; arr.push(r); runsByNode.set(r.node_run_id, arr); } }
+    for (const r of allRuns) {
+      if (r.node_run_id) {
+        const arr = runsByNode.get(r.node_run_id) ?? [];
+        arr.push(r);
+        runsByNode.set(r.node_run_id, arr);
+      }
+    }
     const edgeEvents = threadEventRepo.listByThreadAndTypes(gr.thread_id, [ThreadEventType.GraphEdgeTraversed]);
     return projectGraphRun(gr, nodeRunRepo.listByGraphRun(gr.id), runsByNode, edgeEvents);
   });
@@ -153,8 +245,11 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
     if (!workspace) throw new AppError(ErrorCode.WORKSPACE_NOT_FOUND, "Workspace not found.");
 
     const result = await deps.graphRuntimeService.start(
-      issueId, thread.id, workspace.id,
-      workspace.local_path, requireLegacyProjectId(issue),
+      issueId,
+      thread.id,
+      workspace.id,
+      workspace.local_path,
+      requireLegacyProjectId(issue),
       {
         definitionId: body.definitionId,
         definitionVersion: body.definitionVersion,
@@ -171,8 +266,10 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
     const { graphRunId, nodeKey } = request.params as { graphRunId: string; nodeKey: string };
     const gr = graphRunRepo.getById(graphRunId);
     if (!gr) throw new AppError(ErrorCode.GRAPH_RUN_NOT_FOUND, "Graph run not found.");
-    if (gr.status === "cancelling" as never) throw new AppError(ErrorCode.GRAPH_RUN_CANCELLING, "Graph is cancelling.");
-    if (gr.status === "completed" as never || gr.status === "cancelled" as never) throw new AppError(ErrorCode.GRAPH_RUN_TERMINAL, "Graph is terminal.");
+    if (gr.status === ("cancelling" as never))
+      throw new AppError(ErrorCode.GRAPH_RUN_CANCELLING, "Graph is cancelling.");
+    if (gr.status === ("completed" as never) || gr.status === ("cancelled" as never))
+      throw new AppError(ErrorCode.GRAPH_RUN_TERMINAL, "Graph is terminal.");
 
     const nr = nodeRunRepo.getByGraphRunAndKey(graphRunId, nodeKey);
     if (!nr) throw new AppError(ErrorCode.NODE_RUN_NOT_FOUND, "Node run not found.");
@@ -181,50 +278,53 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
     }
 
     const casResult = nodeRunRepo.compareAndSetStatus(nr.id, nr.status as never, NodeRunStatus.Ready);
-    if (!casResult.success) throw new AppError(ErrorCode.NODE_RUN_ATTEMPT_IN_PROGRESS, "Node already has an active attempt.");
+    if (!casResult.success)
+      throw new AppError(ErrorCode.NODE_RUN_ATTEMPT_IN_PROGRESS, "Node already has an active attempt.");
 
     const existingRuns = runRepo.listByIssue(gr.issue_id).filter((r) => r.node_run_id === nr.id);
-    const lastAttempt = existingRuns.sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-    const instructions = lastAttempt?.instructions ?? "retry";
-
-    const newRun = runRepo.create({
-      issue_id: gr.issue_id,
-      thread_id: gr.thread_id,
-      workspace_id: gr.workspace_id,
-      adapter_config_id: nr.assigned_adapter_config_id,
-      instructions,
-      status: RunStatus.Queued,
-      role: RunRole.GraphNode,
-      node_run_id: nr.id,
-      purpose: RunPurpose.WorkflowBound,
-    });
 
     graphRunRepo.compareAndSetStatus(gr.id, gr.status as never, GraphRunStatus.Running, {
-      blocked_reason_code: null, blocked_node_keys: null,
+      blocked_reason_code: null,
+      blocked_node_keys: null,
     });
     issueRepo.compareAndSetStatus(gr.issue_id, IssueStatus.Blocked, IssueStatus.Running);
 
-    deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphNodeQueued, ActorType.System, null, {
-      graph_run_id: gr.id, node_key: nodeKey, run_id: newRun.id, attempt_index: existingRuns.length,
-      required_capabilities: [],
-    });
+    const runId = await dispatchGraphNode(
+      deps,
+      gr.id,
+      nr.id,
+      nr.assigned_adapter_config_id!,
+      gr.issue_id,
+      existingRuns.length,
+      "graph-retry",
+    );
+
+    if (runId) {
+      deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphNodeQueued, ActorType.System, null, {
+        graph_run_id: gr.id,
+        node_key: nodeKey,
+        run_id: runId,
+        attempt_index: existingRuns.length,
+        required_capabilities: [],
+      });
+    }
 
     await deps.runDispatchService.drainWorkspace(gr.workspace_id);
 
     reply.code(202);
-    return { node_run_id: nr.id, run_id: newRun.id, status: NodeRunStatus.Ready };
+    return { node_run_id: nr.id, run_id: runId, status: NodeRunStatus.Ready };
   });
 
   app.post("/api/graph-runs/:graphRunId/cancel", async (request, reply) => {
     const { graphRunId } = request.params as { graphRunId: string };
     const gr = graphRunRepo.getById(graphRunId);
     if (!gr) throw new AppError(ErrorCode.GRAPH_RUN_NOT_FOUND, "Graph run not found.");
-    if (gr.status === "completed" as never || gr.status === "cancelled" as never) {
+    if (gr.status === ("completed" as never) || gr.status === ("cancelled" as never)) {
       throw new AppError(ErrorCode.GRAPH_RUN_TERMINAL, "Graph is already terminal.");
     }
 
     const nodeRuns = nodeRunRepo.listByGraphRun(graphRunId);
-    const hasRunning = nodeRuns.some((nr) => nr.status === "running" as never);
+    const hasRunning = nodeRuns.some((nr) => nr.status === ("running" as never));
     const newStatus = hasRunning ? "cancelling" : "cancelled";
 
     // The graph's own cancelling/cancelled intent must be persisted BEFORE
@@ -241,27 +341,51 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
     const activeRunIds: string[] = [];
     const runningNodes: typeof nodeRuns = [];
 
+    // F012 (T016): graph cancellation goes through the intervention surface
+    // (DispatchService.cancelAttempt), which owns the Attempt/Run transition
+    // and delegates a running process to the same run cancel hook.
+    const attemptIdForRun = (runId: string): string | null =>
+      (
+        deps.db.prepare("SELECT id FROM attempts WHERE run_id = ? ORDER BY seq ASC LIMIT 1").get(runId) as
+          | { id: string }
+          | undefined
+      )?.id ?? null;
+
     for (const nr of nodeRuns) {
-      if (nr.status === "running" as never) {
+      if (nr.status === ("running" as never)) {
         runningNodes.push(nr);
-      } else if (nr.status !== "completed" as never && nr.status !== "failed" as never) {
+      } else if (nr.status !== ("completed" as never) && nr.status !== ("failed" as never)) {
         // No live process for this one — safe to cancel DB-first. Doing
         // this before awaiting the running nodes below ensures that by the
         // time the last running Attempt's cancellation resolves and checks
         // "is everything terminal now", these are already there.
         nodeRunRepo.compareAndSetStatus(nr.id, nr.status as never, "cancelled" as never);
-        const queuedRuns = runRepo.listByIssue(gr.issue_id).filter((r) => r.node_run_id === nr.id && r.status === "queued" as never);
+        const queuedRuns = runRepo
+          .listByIssue(gr.issue_id)
+          .filter((r) => r.node_run_id === nr.id && r.status === ("queued" as never));
         for (const qr of queuedRuns) {
-          runRepo.transitionStatus(qr.id, "queued" as never, "cancelled" as never, {});
+          const attemptId = attemptIdForRun(qr.id);
+          if (attemptId) {
+            await deps.dispatchService.cancelAttempt(attemptId, "graph-cancel");
+          } else {
+            runRepo.transitionStatus(qr.id, "queued" as never, "cancelled" as never, {});
+          }
         }
       }
     }
 
     for (const nr of runningNodes) {
-      const runs = runRepo.listByIssue(gr.issue_id).filter((r) => r.node_run_id === nr.id && r.status === "running" as never);
+      const runs = runRepo
+        .listByIssue(gr.issue_id)
+        .filter((r) => r.node_run_id === nr.id && r.status === ("running" as never));
       for (const r of runs) {
         activeRunIds.push(r.id);
-        await deps.runDispatchService.cancel(r.id);
+        const attemptId = attemptIdForRun(r.id);
+        if (attemptId) {
+          await deps.dispatchService.cancelAttempt(attemptId, "graph-cancel");
+        } else {
+          await deps.runDispatchService.cancel(r.id);
+        }
       }
     }
 
@@ -270,15 +394,27 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
       // triggered tryFinalizeCancellingGraph on our behalf — finalize here.
       const issueExpected = gr.status === "blocked" ? IssueStatus.Blocked : IssueStatus.Running;
       deps.issueRepo.compareAndSetStatus(gr.issue_id, issueExpected as never, IssueStatus.Ready as never);
-      const terminalEvent = deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphTerminal, ActorType.System, null, {
-        graph_run_id: gr.id, status: "cancelled",
-        node_summary: nodeRuns.map((n) => ({ node_key: n.node_key, status: n.status })),
-      });
+      const terminalEvent = deps.threadEventService.write(
+        gr.thread_id,
+        ThreadEventType.GraphTerminal,
+        ActorType.System,
+        null,
+        {
+          graph_run_id: gr.id,
+          status: "cancelled",
+          node_summary: nodeRuns.map((n) => ({ node_key: n.node_key, status: n.status })),
+        },
+      );
       deps.threadEventService.broadcast(terminalEvent);
     }
 
     reply.code(hasRunning ? 202 : 200);
-    return { graph_run_id: graphRunId, status: newStatus, cancelled_node_keys: nodeRuns.filter((n) => n.status !== "completed" as never).map((n) => n.node_key), active_run_ids: activeRunIds };
+    return {
+      graph_run_id: graphRunId,
+      status: newStatus,
+      cancelled_node_keys: nodeRuns.filter((n) => n.status !== ("completed" as never)).map((n) => n.node_key),
+      active_run_ids: activeRunIds,
+    };
   });
 
   const resolveExecutorsSchema = z.object({
@@ -310,36 +446,45 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
     if (!issue) throw new AppError(ErrorCode.ISSUE_NOT_FOUND, "Issue not found.");
 
     const targetKeys = gr.blocked_node_keys;
-    if (targetKeys.length === 0) throw new AppError(ErrorCode.RECOVERY_ACTION_NOT_APPLICABLE, "No blocked nodes to resolve.");
-
-    const adapterDeps = {
-      agentConfigRepo: deps.agentConfigRepo,
-      projectRepo: deps.projectRepo,
-      adapterWorkspaceStatusRepo: deps.adapterWorkspaceStatusRepo,
-    };
+    if (targetKeys.length === 0)
+      throw new AppError(ErrorCode.RECOVERY_ACTION_NOT_APPLICABLE, "No blocked nodes to resolve.");
 
     // Validate every target up front — a partial success (some nodes fixed,
     // others not) would leave the caller unable to tell which adapter is
     // still wrong, so the whole request is rejected atomically instead.
     const targets = targetKeys.map((nodeKey) => {
       const newAdapterId = body.node_assignments[nodeKey];
-      if (!newAdapterId) throw new AppError(ErrorCode.GRAPH_PLAN_INCOMPLETE, `Missing adapter assignment for node '${nodeKey}'.`);
+      if (!newAdapterId)
+        throw new AppError(ErrorCode.GRAPH_PLAN_INCOMPLETE, `Missing adapter assignment for node '${nodeKey}'.`);
       const node = definition.nodes.find((n) => n.key === nodeKey);
       if (!node) throw new AppError(ErrorCode.NODE_RUN_NOT_FOUND, `Unknown node '${nodeKey}' in definition.`);
       const nodeRun = nodeRunRepo.getByGraphRunAndKey(graphRunId, nodeKey);
       if (!nodeRun) throw new AppError(ErrorCode.NODE_RUN_NOT_FOUND, `Node run for '${nodeKey}' not found.`);
 
-      const eligibility = resolveEligibleAdapter(adapterDeps, requireLegacyProjectId(issue), gr.workspace_id, {
-        explicitAdapterId: newAdapterId,
-        requiredCapabilities: node.requiredCapabilities,
+      const roomId = deps.sessionService.ensureRoomForIssue(gr.issue_id).id;
+      const eligibility = deps.eligibilityEvaluator.evaluate({
+        roomId,
+        purpose: DispatchPurpose.Execute,
+        skillRefs: [],
+        contextScope: ContextScope.All,
       });
-      if (!eligibility.ok) throw new AppError(ErrorCode.NO_CAPABLE_ADAPTER, `Adapter is still not eligible for node '${nodeKey}'.`);
+      const stillEligible = eligibility.candidates.some(
+        (entry) => entry.identity.adapter_config_id === newAdapterId && entry.tier !== "blocked",
+      );
+      if (!stillEligible)
+        throw new AppError(ErrorCode.NO_CAPABLE_ADAPTER, `Adapter is still not eligible for node '${nodeKey}'.`);
 
       return { nodeKey, node, nodeRun, newAdapterId, from: nodeRun.assigned_adapter_config_id };
     });
 
     const reassigned: Array<{ node_key: string; from: string | null; to: string }> = [];
-    const queuedRunIds: string[] = [];
+    const toDispatch: Array<{
+      nodeRunId: string;
+      nodeKey: string;
+      adapterId: string;
+      attemptIndex: number;
+      requiredCapabilities: string[];
+    }> = [];
     const pendingBroadcasts: ThreadEvent[] = [];
 
     deps.db.transaction(() => {
@@ -347,22 +492,31 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
         nodeRunRepo.updateAssignedAdapter(target.nodeRun.id, target.newAdapterId);
         reassigned.push({ node_key: target.nodeKey, from: target.from, to: target.newAdapterId });
 
-        const reassignEvent = deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphExecutorReassigned, ActorType.System, null, {
-          node_key: target.nodeKey, from: target.from, to: target.newAdapterId, reason: "resolve_executors",
-        });
+        const reassignEvent = deps.threadEventService.write(
+          gr.thread_id,
+          ThreadEventType.GraphExecutorReassigned,
+          ActorType.System,
+          null,
+          {
+            node_key: target.nodeKey,
+            from: target.from,
+            to: target.newAdapterId,
+            reason: "resolve_executors",
+          },
+        );
         pendingBroadcasts.push(reassignEvent);
 
         const existingRuns = runRepo.listByIssue(gr.issue_id).filter((r) => r.node_run_id === target.nodeRun.id);
-        const hasActiveAttempt = existingRuns.some((r) => r.status === RunStatus.Queued || r.status === RunStatus.Running);
+        const hasActiveAttempt = existingRuns.some(
+          (r) => r.status === RunStatus.Queued || r.status === RunStatus.Running,
+        );
         if (hasActiveAttempt) continue;
 
         // Never create a downstream Attempt whose join isn't actually
         // satisfied — a node in blocked_node_keys can in principle still be
         // waiting on a sibling precursor (design.md §9 T051e2 regression).
         const incomingEdges = definition.edges.filter((e) => e.to === target.nodeKey);
-        let inputPayloads: Record<string, string> | undefined;
         if (incomingEdges.length > 0) {
-          const payloads: Record<string, string> = {};
           let joinSatisfied = true;
           for (const edge of incomingEdges) {
             const predNodeRun = nodeRunRepo.getByGraphRunAndKey(graphRunId, edge.from);
@@ -370,12 +524,12 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
               joinSatisfied = false;
               break;
             }
-            const resultEvent = threadEventRepo.getById(predNodeRun.result_event_id);
-            if (!resultEvent) { joinSatisfied = false; break; }
-            payloads[edge.inputSlot] = JSON.stringify(resultEvent.payload_json);
+            if (!threadEventRepo.getById(predNodeRun.result_event_id)) {
+              joinSatisfied = false;
+              break;
+            }
           }
           if (!joinSatisfied) continue;
-          inputPayloads = payloads;
         }
 
         const casResult = nodeRunRepo.compareAndSetStatus(
@@ -386,49 +540,81 @@ export default async function graphRoutes(app: FastifyInstance, deps: GraphRoute
         );
         if (!casResult.success) continue;
 
-        // retry reuses the prior Attempt's instructions verbatim; the first
-        // Attempt for a node has none yet and must generate them (design §9:
-        // "首个 synthesis Attempt 属于后者，没有历史指令可抄").
-        const lastAttempt = existingRuns.sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-        const instructions = lastAttempt?.instructions ?? new GraphNodeInstructionBuilder().build({
-          node: target.node, definition, graphRun: gr, inputPayloads,
+        toDispatch.push({
+          nodeRunId: target.nodeRun.id,
+          nodeKey: target.nodeKey,
+          adapterId: target.newAdapterId,
+          attemptIndex: existingRuns.length,
+          requiredCapabilities: target.node.requiredCapabilities,
         });
-
-        const run = runRepo.create({
-          issue_id: gr.issue_id, thread_id: gr.thread_id, workspace_id: gr.workspace_id,
-          adapter_config_id: target.newAdapterId, instructions,
-          status: RunStatus.Queued, role: RunRole.GraphNode, node_run_id: target.nodeRun.id,
-          purpose: RunPurpose.WorkflowBound,
-        });
-        queuedRunIds.push(run.id);
-
-        const queuedEvent = deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphNodeQueued, ActorType.System, null, {
-          graph_run_id: gr.id, node_key: target.nodeKey, run_id: run.id, attempt_index: existingRuns.length,
-          required_capabilities: target.node.requiredCapabilities,
-        });
-        pendingBroadcasts.push(queuedEvent);
 
         if (incomingEdges.length > 0) {
-          const joinEvent = deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphJoinSatisfied, ActorType.System, null, {
-            to_node_key: target.nodeKey, satisfied_by: incomingEdges.map((e) => e.from), join_policy: "all_required",
-          });
+          const joinEvent = deps.threadEventService.write(
+            gr.thread_id,
+            ThreadEventType.GraphJoinSatisfied,
+            ActorType.System,
+            null,
+            {
+              to_node_key: target.nodeKey,
+              satisfied_by: incomingEdges.map((e) => e.from),
+              join_policy: "all_required",
+            },
+          );
           pendingBroadcasts.push(joinEvent);
 
           for (const edge of incomingEdges) {
             const predNodeRun = nodeRunRepo.getByGraphRunAndKey(graphRunId, edge.from);
-            const edgeRefs = predNodeRun?.result_event_id ? [buildEvidenceRef("event", predNodeRun.result_event_id)] : [];
-            const edgeEvent = deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphEdgeTraversed, ActorType.System, null,
-              { from_node_key: edge.from, to_node_key: target.nodeKey, outcome: "completed", decided_by: "deterministic_join" }, edgeRefs);
+            const edgeRefs = predNodeRun?.result_event_id
+              ? [buildEvidenceRef("event", predNodeRun.result_event_id)]
+              : [];
+            const edgeEvent = deps.threadEventService.write(
+              gr.thread_id,
+              ThreadEventType.GraphEdgeTraversed,
+              ActorType.System,
+              null,
+              {
+                from_node_key: edge.from,
+                to_node_key: target.nodeKey,
+                outcome: "completed",
+                decided_by: "deterministic_join",
+              },
+              edgeRefs,
+            );
             pendingBroadcasts.push(edgeEvent);
           }
         }
       }
 
       graphRunRepo.compareAndSetStatus(gr.id, GraphRunStatus.Blocked, GraphRunStatus.Running, {
-        blocked_reason_code: null, blocked_node_keys: null,
+        blocked_reason_code: null,
+        blocked_node_keys: null,
       });
       issueRepo.compareAndSetStatus(gr.issue_id, IssueStatus.Blocked, IssueStatus.Running);
     })();
+
+    const queuedRunIds: string[] = [];
+    for (const target of toDispatch) {
+      const runId = await dispatchGraphNode(
+        deps,
+        gr.id,
+        target.nodeRunId,
+        target.adapterId,
+        gr.issue_id,
+        target.attemptIndex,
+        "graph-resolve-executors",
+      );
+      if (!runId) continue;
+      queuedRunIds.push(runId);
+      pendingBroadcasts.push(
+        deps.threadEventService.write(gr.thread_id, ThreadEventType.GraphNodeQueued, ActorType.System, null, {
+          graph_run_id: gr.id,
+          node_key: target.nodeKey,
+          run_id: runId,
+          attempt_index: target.attemptIndex,
+          required_capabilities: target.requiredCapabilities,
+        }),
+      );
+    }
 
     for (const event of pendingBroadcasts) {
       deps.threadEventService.broadcast(event);

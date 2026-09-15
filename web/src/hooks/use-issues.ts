@@ -32,3 +32,13 @@ export function useCreateIssue(projectId: string | null) {
     },
   });
 }
+
+export function useEnsureIssueSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (issueId: string) => apiClient.issues.ensureSession(issueId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
+  });
+}

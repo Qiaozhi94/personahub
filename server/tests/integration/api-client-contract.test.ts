@@ -8,7 +8,7 @@ import {
   cleanupTempDir,
   type TestServices,
 } from "../helpers.js";
-import { runRoutes } from "../../src/api/routes/runs.js";
+import { spaceRoutes } from "../../src/api/routes/spaces.js";
 import { AppError, getErrorStatus, buildErrorResponse } from "../../src/api/errors.js";
 import { ErrorCode } from "@personahub/shared/errors";
 // The real browser client, imported across workspaces on purpose: api-client.ts
@@ -59,9 +59,8 @@ describe("api-client <-> Fastify request contract", () => {
     app.addHook("onRequest", async (request) => {
       contentTypes.set(request.url, request.headers["content-type"]);
     });
-    await app.register(runRoutes, {
-      runDispatchService: services.runDispatchService,
-      runService: services.runService,
+    await app.register(spaceRoutes, {
+      spaceService: services.spaceService,
     });
     await app.listen({ port: 0, host: "127.0.0.1" });
     origin = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
@@ -80,16 +79,16 @@ describe("api-client <-> Fastify request contract", () => {
     // produced its own domain error. A Content-Type/body mismatch never gets
     // that far — Fastify rejects it as FST_ERR_CTP_EMPTY_JSON_BODY (400/500)
     // before any route code executes.
-    await expect(apiClient.runs.cancel("run_does_not_exist")).rejects.toMatchObject({
-      code: ErrorCode.RUN_NOT_FOUND,
+    await expect(apiClient.spaces.select("space_does_not_exist")).rejects.toMatchObject({
+      code: ErrorCode.SPACE_NOT_FOUND,
     });
   });
 
   it("sends no Content-Type on a bodyless POST", async () => {
     // Belt-and-braces on the exact header that caused BUG-002, observed on the
     // server side rather than asserted against the client's own expectation.
-    const url = "/api/runs/run_header_probe/cancel";
-    await expect(apiClient.runs.cancel("run_header_probe")).rejects.toBeDefined();
+    const url = "/api/spaces/space_header_probe/select";
+    await expect(apiClient.spaces.select("space_header_probe")).rejects.toBeDefined();
     expect(contentTypes.has(url)).toBe(true);
     expect(contentTypes.get(url)).toBeUndefined();
   });

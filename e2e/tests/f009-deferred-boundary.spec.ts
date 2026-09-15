@@ -11,29 +11,29 @@ import { expect, test } from "@playwright/test";
 // claims with no discrete UI element to assert absent (see the classifier's
 // NOT_APPLICABLE bucket) and are out of scope for this file.
 
-test("BC-027/028/040/058: the composer has no execution-composition, context-scope, eligibility-explanation, or undo-window controls", async ({
+test("BC-027/028/040/058: the task-page composer is retired; the session face owns composition controls", async ({
   page,
 }) => {
   await page.goto("/tasks?project=prj_v02_alpha");
   await page.getByRole("button", { name: /Streaming ingest pipeline/ }).click();
   await expect(page).toHaveURL(/\/tasks\/iss_v02_running/);
 
-  const composer = page.getByPlaceholder("Enter agent instructions…");
-  await composer.waitFor({ state: "visible" });
-  const form = composer.locator("xpath=ancestor::form");
-
-  // BC-027: no model / thinking-depth selector.
-  await expect(form.getByLabel(/model/i)).toHaveCount(0);
-  await expect(form.getByText(/thinking depth|reasoning effort/i)).toHaveCount(0);
-  // BC-028: no context-scope selector or same-origin-independence prompt.
-  await expect(form.getByLabel(/context scope/i)).toHaveCount(0);
-  await expect(form.getByText(/same-origin|独立性/i)).toHaveCount(0);
-  // BC-040: the agent selector shows a routing preview label, but no
-  // eligibility-rationale explainer (hard rule vs override).
-  await expect(form.getByRole("button", { name: /why|explain|原因/i })).toHaveCount(0);
-  await expect(form.getByText(/hard rule|override|硬规则|覆盖项/i)).toHaveCount(0);
-  // BC-058: no undo/revocation window after dispatch.
+  // A009: the compat host is read-only now — no instruction composer exists on
+  // the task page, so the deferred checks (no model/depth selector, no
+  // context-scope selector, no eligibility explainer, no undo window in it)
+  // hold vacuously there.
+  await expect(page.getByPlaceholder("Enter agent instructions…")).toHaveCount(0);
   await expect(page.getByText(/undo|revoke|撤销/i)).toHaveCount(0);
+
+  // Those controls now live on the session face (F012 §6.2): depth/context
+  // selectors, the eligibility disclosure list and the undo window.
+  await page.getByRole("button", { name: "打开会话" }).click();
+  await page.waitForURL(/\/sessions\//);
+  const panel = page.getByRole("region", { name: "派工" });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole("combobox", { name: "思考深度" })).toBeVisible();
+  await expect(panel.getByRole("combobox", { name: "上下文范围" })).toBeVisible();
+  await expect(panel.getByRole("list", { name: "不可选组合" })).toBeVisible();
 });
 
 test("BC-033: creating a task has no issue-type selector — coding is the only shape produced", async ({ page }) => {
@@ -50,8 +50,9 @@ test("BC-054/082/087/088/090/101/116: /runtime has no pause-all, quota, machine-
   page,
 }) => {
   await page.goto("/runtime");
-  await page.getByRole("radio", { name: "Alpha Platform" }).click();
-  await page.getByTestId("runtime-health-panel").waitFor({ state: "visible" });
+  // A028: the single runtime read model is the F012 machine projection — the
+  // legacy project-scoped health panel was removed with T025.
+  await expect(page.getByRole("region", { name: "机器概览" })).toBeVisible();
 
   // BC-054: F012 (design §6.3 / §9.1.4) now OWNS the pause-all runtime gate —
   // the F009 deferral is released; the control exists and carries a recovery

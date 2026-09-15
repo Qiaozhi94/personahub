@@ -1,7 +1,14 @@
-import type { GraphExecutionPlan, GraphPreflight, GraphDefinitionV1 } from "../runtime/graph/types.js";
-import type { GraphRun, NodeRun } from "@personahub/shared/types";
+import type { GraphExecutionPlan, GraphPreflight } from "../runtime/graph/types.js";
 import type { ThreadEvent } from "@personahub/shared/types";
-import { GraphRunStatus, NodeRunStatus, RunStatus, IssueStatus, ThreadEventType, ActorType, RunRole, RunPurpose } from "@personahub/shared/types";
+import {
+  GraphRunStatus,
+  NodeRunStatus,
+  IssueStatus,
+  ThreadEventType,
+  ActorType,
+  DispatchPurpose,
+  ContextScope,
+} from "@personahub/shared/types";
 import { ErrorCode } from "@personahub/shared/errors";
 import { AppError } from "../api/errors.js";
 import type { GraphRunRepository } from "../repositories/graph-run.js";
@@ -11,13 +18,14 @@ import type { IssueRepository } from "../repositories/issue.js";
 import type { ThreadEventService } from "./thread-event.js";
 import { getDefinition } from "../runtime/graph/definitions.js";
 import { GraphNodeInstructionBuilder } from "../runtime/graph/instruction-builder.js";
-import type { InstructionBuilderInput } from "../runtime/graph/instruction-builder.js";
 import type { AdapterResolverDeps } from "./adapter-resolver.js";
-import { resolveEligibleAdapter } from "./adapter-eligibility.js";
 import type { GraphConstraintContext } from "../db/sqlite-errors.js";
 import { mapGraphConstraint, isNonTerminalGraphConflict } from "../db/sqlite-errors.js";
 import type Database from "better-sqlite3";
 import { prepareGraph } from "../runtime/graph/preflight.js";
+import type { SessionService } from "./session-service.js";
+import type { EligibilityEvaluator } from "./eligibility-evaluator.js";
+import type { DispatchService } from "./dispatch-service.js";
 
 export interface GraphCreateResult {
   graphRunId: string;
@@ -34,27 +42,12 @@ export interface GraphRuntimeDeps {
   adapterDeps: AdapterResolverDeps;
   instructionBuilder: GraphNodeInstructionBuilder;
   drainWorkspace: (workspaceId: string) => Promise<void>;
+  sessionService: SessionService;
+  eligibilityEvaluator: EligibilityEvaluator;
+  dispatchService: DispatchService;
 }
 
-const instructionBuilder = new GraphNodeInstructionBuilder();
-
-function buildNodeInstructions(
-  nodeKey: string,
-  definition: GraphDefinitionV1,
-  graphRun: GraphRun,
-  inputPayloads?: Record<string, string>,
-): string {
-  const node = definition.nodes.find((n) => n.key === nodeKey);
-  if (!node) throw new Error(`Node ${nodeKey} not found in definition`);
-
-  const input: InstructionBuilderInput = {
-    node,
-    definition,
-    graphRun,
-    inputPayloads,
-  };
-  return instructionBuilder.build(input);
-}
+const SYNTHESIZE_NODE_KEY = "synthesize_findings";
 
 export function createGraph(
   deps: GraphRuntimeDeps,
@@ -67,7 +60,10 @@ export function createGraph(
 ): GraphCreateResult {
   const definition = getDefinition(plan.definitionId, plan.definitionVersion);
   if (!definition) {
-    throw new AppError(ErrorCode.GRAPH_DEFINITION_UNAVAILABLE, `Graph definition '${plan.definitionId}' v${plan.definitionVersion} not found.`);
+    throw new AppError(
+      ErrorCode.GRAPH_DEFINITION_UNAVAILABLE,
+      `Graph definition '${plan.definitionId}' v${plan.definitionVersion} not found.`,
+    );
   }
 
   const issue = deps.issueRepo.getById(issueId);
@@ -97,13 +93,8 @@ export function createGraph(
     if (!nodeKeys.includes(nodeKey)) {
       throw new AppError(ErrorCode.GRAPH_PLAN_INCOMPLETE, `Unknown node '${nodeKey}' in nodeAssignments.`);
     }
-    const node = definition.nodes.find((n) => n.key === nodeKey)!;
-    const eligibility = resolveEligibleAdapter(deps.adapterDeps, projectId, workspaceId, {
-      explicitAdapterId: adapterId,
-      requiredCapabilities: node.requiredCapabilities,
-    });
-    if (!eligibility.ok) {
-      throw new AppError(eligibility.errorCode, `Adapter '${adapterId}' is not eligible for node '${nodeKey}'.`);
+    if (!adapterId) {
+      throw new AppError(ErrorCode.GRAPH_PLAN_INCOMPLETE, `Node '${nodeKey}' has no adapter assignment.`);
     }
   }
 
@@ -122,47 +113,13 @@ export function createGraph(
         target_files_dropped_count: preflight.droppedCount,
       });
 
-      const createdNodeRuns: NodeRun[] = [];
       for (const node of definition.nodes) {
-        const nodeRun = deps.nodeRunRepo.create({
+        deps.nodeRunRepo.create({
           graph_run_id: graphRun.id,
           node_key: node.key,
           status: node.inputSlots.length === 0 ? NodeRunStatus.Ready : NodeRunStatus.Pending,
           assigned_adapter_config_id: plan.nodeAssignments[node.key],
         });
-        createdNodeRuns.push(nodeRun);
-      }
-
-      const graphRunEntity = deps.graphRunRepo.getById(graphRun.id)!;
-      const precursorNodes = definition.nodes.filter((n) => n.key !== "synthesize_findings");
-      const queuedRunIds: string[] = [];
-      const pendingEvents: ThreadEvent[] = [];
-
-      for (const node of precursorNodes) {
-        const nodeRun = createdNodeRuns.find((nr) => nr.node_key === node.key)!;
-        const instructions = buildNodeInstructions(node.key, definition, graphRunEntity);
-
-        const run = deps.runRepo.create({
-          issue_id: issueId,
-          thread_id: threadId,
-          workspace_id: workspaceId,
-          adapter_config_id: plan.nodeAssignments[node.key],
-          instructions,
-          status: RunStatus.Queued,
-          role: RunRole.GraphNode,
-          node_run_id: nodeRun.id,
-          purpose: RunPurpose.WorkflowBound,
-        });
-        queuedRunIds.push(run.id);
-
-        const event = deps.threadEventService.write(threadId, ThreadEventType.GraphNodeQueued, ActorType.System, null, {
-          graph_run_id: graphRun.id,
-          node_key: node.key,
-          run_id: run.id,
-          attempt_index: 0,
-          required_capabilities: node.requiredCapabilities,
-        });
-        pendingEvents.push(event);
       }
 
       const issueMoved = deps.issueRepo.compareAndSetStatus(issueId, IssueStatus.Inbox, IssueStatus.Running);
@@ -170,7 +127,7 @@ export function createGraph(
         throw new AppError(ErrorCode.INVALID_ISSUE_TRANSITION, "Issue is not in Inbox state, cannot start graph.");
       }
 
-      return { graphRunId: graphRun.id, queuedRunIds, pendingEvents };
+      return { graphRunId: graphRun.id, queuedRunIds: [] as string[], pendingEvents: [] as ThreadEvent[] };
     } catch (error) {
       if (isNonTerminalGraphConflict(error)) {
         const constraintCtx: GraphConstraintContext = { issueId, graphRunRepo: deps.graphRunRepo };
@@ -187,9 +144,10 @@ export function createGraph(
 }
 
 export class GraphRuntimeService {
-  private instructionBuilder = new GraphNodeInstructionBuilder();
-
-  constructor(private deps: GraphRuntimeDeps, private db: Database.Database) {}
+  constructor(
+    private deps: GraphRuntimeDeps,
+    private db: Database.Database,
+  ) {}
 
   async start(
     issueId: string,
@@ -201,32 +159,89 @@ export class GraphRuntimeService {
   ): Promise<{ graphRunId: string }> {
     const definition = getDefinition(plan.definitionId, plan.definitionVersion);
     if (!definition) {
-      throw new AppError(ErrorCode.GRAPH_DEFINITION_UNAVAILABLE, `Graph definition '${plan.definitionId}' v${plan.definitionVersion} not found.`);
+      throw new AppError(
+        ErrorCode.GRAPH_DEFINITION_UNAVAILABLE,
+        `Graph definition '${plan.definitionId}' v${plan.definitionVersion} not found.`,
+      );
     }
 
     const preflight = prepareGraph(workspacePath, workspaceId, definition, plan.definitionId, plan.definitionVersion);
 
-    const result = this.db.transaction(() => {
-      return createGraph(this.deps, issueId, threadId, workspaceId, projectId, plan, preflight);
-    })();
+    const roomId = this.deps.sessionService.ensureRoomForIssue(issueId).id;
+    const eligibility = this.deps.eligibilityEvaluator.evaluate({
+      roomId,
+      purpose: DispatchPurpose.Execute,
+      skillRefs: [],
+      contextScope: ContextScope.All,
+    });
+    const precursorNodes = definition.nodes.filter((n) => n.key !== SYNTHESIZE_NODE_KEY);
+    const identities = new Map(
+      precursorNodes.map((node) => {
+        const adapterId = plan.nodeAssignments[node.key];
+        const candidate = eligibility.candidates.find(
+          (entry) => entry.identity.adapter_config_id === adapterId && entry.tier !== "blocked",
+        );
+        if (!candidate) {
+          throw new AppError(
+            ErrorCode.NO_CAPABLE_ADAPTER,
+            `Adapter '${adapterId}' has no eligible identity for node '${node.key}'.`,
+          );
+        }
+        return [node.key, candidate.identity] as const;
+      }),
+    );
 
-    for (const event of result.pendingEvents) {
+    const result = this.db.transaction(() =>
+      createGraph(this.deps, issueId, threadId, workspaceId, projectId, plan, preflight),
+    )();
+
+    const nodeRuns = this.deps.nodeRunRepo.listByGraphRun(result.graphRunId);
+    const pendingEvents: ThreadEvent[] = [];
+    for (const node of precursorNodes) {
+      const nodeRun = nodeRuns.find((nr) => nr.node_key === node.key);
+      if (!nodeRun) continue;
+      const identity = identities.get(node.key)!;
+      const outcome = await this.deps.dispatchService.confirmGraphNode(
+        {
+          roomId,
+          clientRequestId: `graph:${result.graphRunId}:${node.key}:0`,
+          purpose: DispatchPurpose.Execute,
+          identity,
+          identitySnapshotJson: JSON.stringify({
+            adapter_config_id: identity.adapter_config_id,
+            runtime_id: identity.runtime_id,
+          }),
+          contextScope: ContextScope.All,
+          skillRevisionRefs: [],
+          effectiveRequirementsJson: JSON.stringify(eligibility.requirements.items),
+          effectiveRequirementsHash: eligibility.requirements.hash,
+          handoffRefs: [],
+          taskScopeJson: null,
+          requirementOverride: null,
+          actor: "graph-scheduler",
+          graphNodeRunId: nodeRun.id,
+        },
+        "graph-scheduler",
+      );
+      if (outcome.runId) {
+        pendingEvents.push(
+          this.deps.threadEventService.write(threadId, ThreadEventType.GraphNodeQueued, ActorType.System, null, {
+            graph_run_id: result.graphRunId,
+            node_key: node.key,
+            run_id: outcome.runId,
+            attempt_index: 0,
+            required_capabilities: node.requiredCapabilities,
+          }),
+        );
+      }
+    }
+
+    for (const event of pendingEvents) {
       this.deps.threadEventService.broadcast(event);
     }
 
     await this.deps.drainWorkspace(workspaceId);
 
     return { graphRunId: result.graphRunId };
-  }
-
-  enqueueSequential(
-    issueId: string,
-    threadId: string,
-    workspaceId: string,
-    projectId: string,
-    plan: GraphExecutionPlan,
-    preflight: GraphPreflight,
-  ): GraphCreateResult {
-    return createGraph(this.deps, issueId, threadId, workspaceId, projectId, plan, preflight);
   }
 }

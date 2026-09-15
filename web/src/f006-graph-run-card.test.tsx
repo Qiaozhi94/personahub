@@ -4,7 +4,7 @@ import {
   AdapterStatus, AgentCapability, GraphRunStatus, NodeRunStatus, GraphBlockReason,
   type ProjectedGraphRun, type ProjectedNodeRun, type AdapterConfig,
 } from "@personahub/shared";
-import { GraphRunCard, StartGraphDialog } from "@/components/thread/ThreadView";
+import { GraphRunCard, StartGraphDialog } from "@/components/graph/GraphRunPanel";
 import { renderWithQuery } from "@/test/ui-flow-helpers";
 
 vi.mock("@/lib/api-client", () => import("@/test/api-client-mock"));

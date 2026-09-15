@@ -13,13 +13,11 @@ import {
   GraphBlockReason,
   type IssueWithThread,
 } from "@personahub/shared";
-import { useRuns, useCancelRun } from "@/hooks/use-runs";
+import { useRuns } from "@/hooks/use-runs";
 import { useThreadEvents } from "@/hooks/use-thread";
-import { apiClient, toApiError } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { runPurposeLabel } from "@/lib/run-display";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EvidenceSection } from "./EvidenceSection.js";
 import { ValidationInspectorSection } from "./ValidationInspectorSection.js";
 import { UnblockDialog } from "./UnblockDialog.js";
@@ -261,7 +259,6 @@ function GraphInspectorSection({ issueId }: { issueId: string }) {
 
 export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
   const runsQuery = useRuns(issue.id);
-  const cancelRun = useCancelRun();
 
   const runs = runsQuery.data?.runs ?? [];
   const latestRun = runs.length > 0 ? runs[0] : null;
@@ -283,8 +280,6 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
     if (container) container.scrollTop = container.scrollHeight;
   }, [runLogs.length]);
 
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [cancelTargetRunId, setCancelTargetRunId] = useState<string | null>(null);
   const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
   const [resetRoundsDialogOpen, setResetRoundsDialogOpen] = useState(false);
   // These dialogs open via a window CustomEvent from a trigger button that
@@ -294,7 +289,6 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
   // a `DialogTrigger`, which these dialogs don't use).
   const unblockTriggerRef = useRef<HTMLElement | null>(null);
   const resetRoundsTriggerRef = useRef<HTMLElement | null>(null);
-  const cancelTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     function handleUnblockEvent(e: CustomEvent) {
@@ -316,22 +310,6 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
       window.removeEventListener("personahub:reset-rounds", handleResetRoundsEvent as EventListener);
     };
   }, [issue.id]);
-
-  function openCancelDialog(runId: string) {
-    cancelTriggerRef.current = document.activeElement as HTMLElement | null;
-    setCancelTargetRunId(runId);
-    setCancelDialogOpen(true);
-  }
-
-  function handleCancelConfirm() {
-    if (cancelTargetRunId) {
-      cancelRun.mutate(cancelTargetRunId, {
-        onSuccess: () => setCancelDialogOpen(false),
-      });
-    }
-  }
-
-  const cancelError = cancelRun.isError ? toApiError(cancelRun.error).message : null;
 
   return (
     <>
@@ -456,20 +434,6 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
               </div>
             </div>
           ) : null}
-
-          {latestRun.status === RunStatus.Queued || latestRun.status === RunStatus.Running ? (
-            <div className="border-t border-border pt-1.5">
-              <Button
-                variant="destructive"
-                size="sm"
-                className="w-full"
-                disabled={cancelRun.isPending}
-                onClick={() => openCancelDialog(latestRun.id)}
-              >
-                {cancelRun.isPending ? "Cancelling…" : "Cancel Run"}
-              </Button>
-            </div>
-          ) : null}
         </section>
       ) : (
         <section className="grid min-w-0 gap-2 rounded-lg border border-dashed border-border bg-card p-3.5">
@@ -497,26 +461,6 @@ export function IssueInspector({ issue, workspacePath }: IssueInspectorProps) {
         onOpenChange={() => setResetRoundsDialogOpen(false)}
         restoreFocusRef={resetRoundsTriggerRef}
       />
-
-      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent restoreFocusRef={cancelTriggerRef}>
-          <DialogHeader>
-            <DialogTitle>Cancel Run</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to cancel this run? This action cannot be undone.
-          </p>
-          {cancelError ? <p className="text-xs text-destructive">{cancelError}</p> : null}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setCancelDialogOpen(false)} disabled={cancelRun.isPending}>
-              Keep running
-            </Button>
-            <Button variant="destructive" onClick={handleCancelConfirm} disabled={cancelRun.isPending}>
-              {cancelRun.isPending ? "Cancelling…" : "Yes, cancel run"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

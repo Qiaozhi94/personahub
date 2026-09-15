@@ -35,6 +35,10 @@ import type { DispatchGateService } from "./dispatch-gate-service.js";
 import type { ContextAssembler, AssembledContext } from "./context-assembler.js";
 import type { AgentConfigRepository } from "../repositories/agent-config.js";
 import type { RunRepository } from "../repositories/run.js";
+import type { NodeRunRepository } from "../repositories/node-run.js";
+import type { GraphRunRepository } from "../repositories/graph-run.js";
+import { getDefinition } from "../runtime/graph/definitions.js";
+import { GraphNodeInstructionBuilder } from "../runtime/graph/instruction-builder.js";
 import { decideStartMode, DispatchContextError } from "./context-assembler.js";
 
 export interface DispatchConfirmInput {
@@ -56,6 +60,10 @@ export interface DispatchConfirmInput {
   actor: string;
   /** ADR 0009 §4 cold-start condition #1 — user explicitly restarts. */
   userRequestedRestart?: boolean;
+  /** design §2.1: a graph node execution is one Dispatch — set when the
+   *  scheduler (not a user) confirms, so the run joins the node's machinery
+   *  and its instructions are rebuilt from the persisted node/graph rows. */
+  graphNodeRunId?: string | null;
 }
 
 export interface StartOutcome {
@@ -89,6 +97,8 @@ export class DispatchService {
     private assembler: ContextAssembler,
     private agentConfigRepo: AgentConfigRepository,
     private runRepo: RunRepository,
+    private nodeRunRepo: NodeRunRepository,
+    private graphRunRepo: GraphRunRepository,
     private options: DispatchServiceOptions = {},
   ) {}
 
@@ -113,9 +123,7 @@ export class DispatchService {
   }
 
   getContextSnapshot(dispatchId: string): unknown {
-    return (
-      this.db.prepare("SELECT * FROM dispatch_context_snapshots WHERE dispatch_id = ?").get(dispatchId) ?? null
-    );
+    return this.db.prepare("SELECT * FROM dispatch_context_snapshots WHERE dispatch_id = ?").get(dispatchId) ?? null;
   }
 
   listAttempts(dispatchId: string): Attempt[] {
@@ -138,8 +146,7 @@ export class DispatchService {
     if (existing) return existing;
 
     const room = this.db.prepare("SELECT * FROM rooms WHERE id = ?").get(input.roomId) as
-      | { id: string; issue_id: string | null; state: string }
-      | undefined;
+      { id: string; issue_id: string | null; state: string } | undefined;
     if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, `Room not found: ${input.roomId}`);
     if (room.state === "ended") throw new AppError(ErrorCode.ROOM_ENDED, "Room has ended.");
 
@@ -155,25 +162,42 @@ export class DispatchService {
     const insert = this.db.transaction(() => {
       this.db
         .prepare(
-          `INSERT INTO dispatches (id, room_id, issue_id, client_request_id, state, purpose, runtime_id, adapter_config_id, access_ref, model, depth_raw, depth_normalized, identity_snapshot_json, context_scope, skill_revision_refs_json, effective_requirements_json, effective_requirements_hash, handoff_refs_json, task_scope_json, requirement_override_json, grace_deadline_at, created_at)
-           VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO dispatches (id, room_id, issue_id, client_request_id, state, purpose, runtime_id, adapter_config_id, access_ref, model, depth_raw, depth_normalized, identity_snapshot_json, context_scope, skill_revision_refs_json, effective_requirements_json, effective_requirements_hash, handoff_refs_json, task_scope_json, requirement_override_json, grace_deadline_at, created_at, graph_node_run_id)
+           VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
-          id, input.roomId, room.issue_id, input.clientRequestId, input.purpose,
-          input.identity.runtime_id, input.identity.adapter_config_id, input.identity.access_ref,
-          input.identity.model, input.identity.depth_raw, input.identity.depth_normalized,
-          input.identitySnapshotJson, input.contextScope, JSON.stringify(input.skillRevisionRefs),
-          input.effectiveRequirementsJson, input.effectiveRequirementsHash, JSON.stringify(input.handoffRefs),
+          id,
+          input.roomId,
+          room.issue_id,
+          input.clientRequestId,
+          input.purpose,
+          input.identity.runtime_id,
+          input.identity.adapter_config_id,
+          input.identity.access_ref,
+          input.identity.model,
+          input.identity.depth_raw,
+          input.identity.depth_normalized,
+          input.identitySnapshotJson,
+          input.contextScope,
+          JSON.stringify(input.skillRevisionRefs),
+          input.effectiveRequirementsJson,
+          input.effectiveRequirementsHash,
+          JSON.stringify(input.handoffRefs),
           input.taskScopeJson,
           input.requirementOverride ? JSON.stringify(input.requirementOverride) : null,
-          this.graceDeadline(now, input.graceWindowMs), now,
+          this.graceDeadline(now, input.graceWindowMs),
+          now,
+          input.graphNodeRunId ?? null,
         );
       this.outbox.enqueue(this.db, {
         topic: "dispatch.drafted",
         dedupeKey: `dispatch:${id}:drafted`,
         payload: {
-          dispatch_id: id, room_id: input.roomId, issue_id: room.issue_id,
-          identity: input.identity, context_scope: input.contextScope,
+          dispatch_id: id,
+          room_id: input.roomId,
+          issue_id: room.issue_id,
+          identity: input.identity,
+          context_scope: input.contextScope,
           grace_deadline_at: this.graceDeadline(now, input.graceWindowMs),
           requirements_hash: input.effectiveRequirementsHash,
         },
@@ -204,6 +228,15 @@ export class DispatchService {
       throw error;
     }
     return this.get(id);
+  }
+
+  /** design §2.1: the graph scheduler's dispatch entry — one node execution is
+   *  one Dispatch with grace 0 (the graph start already carries the user's
+   *  confirmation), claimed and started inside the caller's request so the
+   *  node's Run is created by this service, never by the route. */
+  async confirmGraphNode(input: Omit<DispatchConfirmInput, "graceWindowMs">, worker: string): Promise<StartOutcome> {
+    const draft = this.confirm({ ...input, graceWindowMs: 0 });
+    return this.claimAndStart(draft.id, worker);
   }
 
   private assertAcceptanceUnlocked(issueId: string): void {
@@ -260,7 +293,9 @@ export class DispatchService {
   async claimDue(worker: string): Promise<string[]> {
     const now = this.now();
     const due = this.db
-      .prepare("SELECT id FROM dispatches WHERE state = 'draft' AND grace_deadline_at <= ? ORDER BY grace_deadline_at ASC")
+      .prepare(
+        "SELECT id FROM dispatches WHERE state = 'draft' AND grace_deadline_at <= ? ORDER BY grace_deadline_at ASC",
+      )
       .all(now) as Array<{ id: string }>;
     const claimed: string[] = [];
     for (const row of due) {
@@ -283,7 +318,8 @@ export class DispatchService {
       // next scan instead of a missed start.
       gatePaused = this.gates.isPausedFor(current.issue_id, current.graph_node_run_id);
       if (gatePaused) return null;
-      acceptanceBlocked = current.issue_id !== null && (this.options.acceptanceLock?.(current.issue_id)?.locked ?? false);
+      acceptanceBlocked =
+        current.issue_id !== null && (this.options.acceptanceLock?.(current.issue_id)?.locked ?? false);
       const result = this.db
         .prepare(
           "UPDATE dispatches SET state = 'starting', lease_owner = ?, lease_expires_at = ? WHERE id = ? AND state = 'draft'",
@@ -293,7 +329,11 @@ export class DispatchService {
       this.outbox.enqueue(this.db, {
         topic: "dispatch.starting",
         dedupeKey: `dispatch:${dispatchId}:starting`,
-        payload: { dispatch_id: dispatchId, lease_owner: worker, lease_expires_at: new Date(Date.parse(now) + leaseMs).toISOString() },
+        payload: {
+          dispatch_id: dispatchId,
+          lease_owner: worker,
+          lease_expires_at: new Date(Date.parse(now) + leaseMs).toISOString(),
+        },
       });
       return this.get(dispatchId);
     })();
@@ -360,7 +400,15 @@ export class DispatchService {
           `INSERT INTO attempts (id, dispatch_id, seq, run_id, state, start_mode, resumed_from_attempt_id, provider_session_id, cold_start_reason, created_at)
            VALUES (?, ?, 1, ?, 'queued', ?, ?, NULL, ?, ?)`,
         )
-        .run(attemptId, dispatch.id, runId, mode.startMode, mode.resumedFromAttemptId, mode.coldStartReason, this.now());
+        .run(
+          attemptId,
+          dispatch.id,
+          runId,
+          mode.startMode,
+          mode.resumedFromAttemptId,
+          mode.coldStartReason,
+          this.now(),
+        );
 
       this.db
         .prepare(
@@ -368,17 +416,24 @@ export class DispatchService {
         )
         .run(dispatch.id, assembled.scope, JSON.stringify(assembled.items), assembled.contentHash, this.now());
 
-      this.assembler.recordConsumptions({ dispatch, runId, taskScope: null }, assembled, this.dispatchThreadId(dispatch));
+      this.assembler.recordConsumptions(
+        { dispatch, runId, taskScope: null },
+        assembled,
+        this.dispatchThreadId(dispatch),
+      );
 
       this.db
-        .prepare("UPDATE dispatches SET state = 'dispatched', started_at = ?, lease_owner = NULL, lease_expires_at = NULL WHERE id = ?")
+        .prepare(
+          "UPDATE dispatches SET state = 'dispatched', started_at = ?, lease_owner = NULL, lease_expires_at = NULL WHERE id = ?",
+        )
         .run(this.now(), dispatch.id);
 
       this.outbox.enqueue(this.db, {
         topic: "dispatch.context_filtered",
         dedupeKey: `dispatch:${dispatch.id}:context_filtered`,
         payload: {
-          dispatch_id: dispatch.id, scope: assembled.scope,
+          dispatch_id: dispatch.id,
+          scope: assembled.scope,
           filtered: assembled.items.filter((item) => item.decision === "filtered"),
           content_hash: assembled.contentHash,
         },
@@ -387,8 +442,11 @@ export class DispatchService {
         topic: "dispatch.dispatched",
         dedupeKey: `dispatch:${dispatch.id}:dispatched`,
         payload: {
-          dispatch_id: dispatch.id, attempt_id: attemptId, run_id: runId,
-          start_mode: mode.startMode, cold_start_reason: mode.coldStartReason,
+          dispatch_id: dispatch.id,
+          attempt_id: attemptId,
+          run_id: runId,
+          start_mode: mode.startMode,
+          cold_start_reason: mode.coldStartReason,
         },
       });
     })();
@@ -472,37 +530,50 @@ export class DispatchService {
 
   private createQueuedRun(dispatch: Dispatch, runId: string) {
     const room = this.db.prepare("SELECT * FROM rooms WHERE id = ?").get(dispatch.room_id) as
-      | { issue_id: string | null }
-      | undefined;
+      { issue_id: string | null } | undefined;
     const issue = room?.issue_id
       ? (this.db.prepare("SELECT * FROM issues WHERE id = ?").get(room.issue_id) as
-          | { workspace_id: string | null; goal: string }
-          | undefined)
+          { workspace_id: string | null; goal: string } | undefined)
       : undefined;
     if (!issue || !issue.workspace_id) {
       // Recorded v0.3 boundary (design §9.3): no workspace, no Run.
       throw new DispatchServiceWorkspaceError();
     }
-    const thread = this.db
-      .prepare("SELECT * FROM threads WHERE room_id = ? LIMIT 1")
-      .get(dispatch.room_id) as { id: string } | undefined;
+    const thread = this.db.prepare("SELECT * FROM threads WHERE room_id = ? LIMIT 1").get(dispatch.room_id) as
+      { id: string } | undefined;
     if (!thread) throw new AppError(ErrorCode.RUNTIME_CONTEXT_UNAVAILABLE, "Room has no thread event stream.");
+    const nodeRunId = dispatch.graph_node_run_id ?? null;
     const run = {
       id: runId,
       issue_id: room!.issue_id!,
       thread_id: thread.id,
       workspace_id: issue.workspace_id,
       adapter_config_id: dispatch.adapter_config_id,
-      instructions: issue.goal ?? dispatch.model,
+      instructions: nodeRunId ? this.nodeInstructions(nodeRunId) : (issue.goal ?? dispatch.model),
       status: RunStatus.Queued,
-      role: RunRole.Implementation,
+      role: nodeRunId ? RunRole.GraphNode : RunRole.Implementation,
       purpose: RunPurpose.WorkflowBound,
-      dispatch_source: "user_explicit" as RunDispatchSource,
+      node_run_id: nodeRunId ?? undefined,
+      dispatch_source: nodeRunId ? undefined : ("user_explicit" as RunDispatchSource),
       adapter_identity: JSON.parse(dispatch.identity_snapshot_json),
       context_source_run_id: null,
     };
     this.runRepo.create(run as never);
     return run;
+  }
+
+  /** Rebuilds a node's instructions from its persisted node/graph rows so a
+   *  draft that survives a restart still starts with the right prompt. */
+  private nodeInstructions(nodeRunId: string): string {
+    const nodeRun = this.nodeRunRepo.getById(nodeRunId);
+    if (!nodeRun) throw new AppError(ErrorCode.NODE_RUN_NOT_FOUND, `Node run not found: ${nodeRunId}`);
+    const graphRun = this.graphRunRepo.getById(nodeRun.graph_run_id);
+    if (!graphRun) throw new AppError(ErrorCode.GRAPH_RUN_NOT_FOUND, "Graph run not found.");
+    const definition = getDefinition(graphRun.definition_id, graphRun.definition_version);
+    if (!definition) throw new AppError(ErrorCode.GRAPH_DEFINITION_UNAVAILABLE, "Graph definition not found.");
+    const node = definition.nodes.find((n) => n.key === nodeRun.node_key);
+    if (!node) throw new AppError(ErrorCode.NODE_RUN_NOT_FOUND, `Node '${nodeRun.node_key}' not in definition.`);
+    return new GraphNodeInstructionBuilder().build({ node, definition, graphRun });
   }
 
   /** Resume key (ADR 0009 §2): 执行组合 + Issue + Room + 上下文范围 all equal,
@@ -521,8 +592,13 @@ export class DispatchService {
            ORDER BY a.created_at DESC LIMIT 1`,
         )
         .get(
-          dispatch.room_id, dispatch.issue_id, dispatch.adapter_config_id, dispatch.model,
-          dispatch.depth_raw, dispatch.runtime_id, dispatch.context_scope,
+          dispatch.room_id,
+          dispatch.issue_id,
+          dispatch.adapter_config_id,
+          dispatch.model,
+          dispatch.depth_raw,
+          dispatch.runtime_id,
+          dispatch.context_scope,
         ) as Attempt | undefined) ?? null
     );
   }
@@ -548,12 +624,10 @@ export class DispatchService {
 
   private dispatchThreadId(dispatch: Dispatch): string | null {
     const room = this.db.prepare("SELECT issue_id FROM rooms WHERE id = ?").get(dispatch.room_id) as
-      | { issue_id: string | null }
-      | undefined;
+      { issue_id: string | null } | undefined;
     if (!room?.issue_id) return null;
-    const thread = this.db
-      .prepare("SELECT id FROM threads WHERE room_id = ? LIMIT 1")
-      .get(dispatch.room_id) as { id: string } | undefined;
+    const thread = this.db.prepare("SELECT id FROM threads WHERE room_id = ? LIMIT 1").get(dispatch.room_id) as
+      { id: string } | undefined;
     return thread?.id ?? null;
   }
 }

@@ -159,9 +159,6 @@ function buildApp(services: TestServices) {
     agentConfigRepo: services.agentConfigRepo,
     projectRepo: services.projectRepo,
     adapterWorkspaceStatusRepo: services.adapterWorkspaceStatusRepo,
-    recommendationService: services.recommendationService,
-    intakeService: services.intakeService,
-    intakeConfirmationRepo: services.intakeConfirmationRepo,
     db: services.db,
   });
   return app;

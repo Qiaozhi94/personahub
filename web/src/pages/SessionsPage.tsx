@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PageFrame } from "@/pages/page-frame";
 import { DispatchPanel, UndoBanner } from "@/components/session/DispatchPanel";
 import { useConvertToTask, useSendMessage, useSession } from "@/hooks/use-f012";
+import { GraphRunPanel } from "@/components/graph/GraphRunPanel";
 
 // F012 T015: the session surface at /sessions/:sessionId (§6.3). Reuses the
 // F009 message skeleton conventions: user messages right, execution combos
@@ -117,7 +118,13 @@ export function SessionsPage({ sessionId }: { sessionId: string }) {
       ) : null}
 
       {room.issue_id && room.state === "active" ? (
-        <DispatchPanel sessionId={sessionId} purpose="execute" onDispatched={(d) => setActiveDispatch(d)} />
+        <>
+          <section aria-label="协作图" className="grid gap-2 rounded-md border border-border p-3">
+            <p className="text-sm font-medium">协作图</p>
+            <GraphRunPanel issueId={room.issue_id} />
+          </section>
+          <DispatchPanel sessionId={sessionId} purpose="execute" onDispatched={(d) => setActiveDispatch(d)} />
+        </>
       ) : null}
     </PageFrame>
   );
