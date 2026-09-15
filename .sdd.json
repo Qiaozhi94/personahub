@@ -1,0 +1,8 @@
+{
+  "$comment": "SDD Flow (sdd-flow skill) 项目适配。缺省字段自动探测；规范见 ~/.config/opencode/skills/sdd-flow/references/project-adapter.md",
+  "verify": "npm run verify",
+  "release": "npm run verify:release",
+  "test": "npm test",
+  "gates": { "G1": true, "G2": false, "G3": false, "G4": true },
+  "quick_max_files": 3
+}
