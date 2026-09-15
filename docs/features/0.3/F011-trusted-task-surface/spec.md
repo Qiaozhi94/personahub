@@ -2,14 +2,14 @@
 kind: feature
 id: F011
 version: "0.3"
-status: draft
+status: ready-for-development
 gate_version: 1
 eval_contract: required
 related_features: [F006, F009, F010, F012, F013, F014]
 topics: [task-surface, claims, evidence, resources, trace]
 doc_kind: spec
 created: 2026-08-09
-updated: 2026-09-13
+updated: 2026-09-15
 ---
 
 # F011：Trusted Task Surface
@@ -227,4 +227,4 @@ F011 可以在 F010 检视尾声完成文档设计，但实现必须等待 F012 
 
 ## 8. 待确认问题
 
-无。
+无

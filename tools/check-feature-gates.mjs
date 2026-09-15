@@ -19,12 +19,19 @@ const LEGACY_GATE_ZERO_IDS = new Set([
   'F001', 'F002', 'F003', 'F004', 'F005', 'F006', 'F007', 'F008',
 ]);
 const LEGAL_STATUSES = [
+  // v4（sdd-flow）：doc-reviewing / developing / code-reviewing。
+  // 旧词 in-progress / review 保留兼容至 2026-10-15，读取时归一化。
   'draft',
+  'doc-reviewing',
   'ready-for-development',
+  'developing',
+  'code-reviewing',
   'in-progress',
   'review',
   'done',
 ];
+const STATUS_ALIASES = { 'in-progress': 'developing', review: 'code-reviewing' };
+const normalizeStatus = (status) => STATUS_ALIASES[status] ?? status;
 const INCOMPLETE_MARKERS = ['TODO', 'TBD', '待补', '未补', 'pending'];
 
 /**
@@ -136,7 +143,7 @@ export function checkEvalContract(specText, status, relDir) {
   const subSection = sec6
     ? extractSubSections(sec6.content).find((sub) => sub.title.trim() === EVAL_CONTRACT_HEADING)
     : null;
-  const contentRequired = status !== 'draft';
+  const contentRequired = ['ready-for-development', 'developing', 'code-reviewing', 'done'].includes(normalizeStatus(status));
 
   if (declaration !== undefined && declaration !== 'required' && declaration !== 'exempt') {
     errors.push(
@@ -1266,7 +1273,7 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
   errors.push(...checkEvalContract(specText, status, relDir));
 
   // --- tests: path validation (review/done states) ---
-  if (status === 'review' || status === 'done') {
+  if (normalizeStatus(status) === 'code-reviewing' || status === 'done') {
     for (const ac of acLines) {
       if (ac.testPaths.length === 0) {
         errors.push(
@@ -1336,10 +1343,10 @@ export function checkFeatureGateV1(featureDir, repoRoot, baseFeature) {
   // --- open questions check (ready-for-development and above) ---
   const needsClosedQuestions = [
     'ready-for-development',
-    'in-progress',
-    'review',
+    'developing',
+    'code-reviewing',
     'done',
-  ].includes(status);
+  ].includes(normalizeStatus(status));
 
   if (needsClosedQuestions) {
     const specSec8 = getSectionByNum(specSections, 8);
@@ -1435,7 +1442,7 @@ export function checkBacklogConsistency(features, backlogText, repoRoot) {
           );
         }
         // Check status
-        if (row.status !== f.status) {
+        if (normalizeStatus(row.status) !== normalizeStatus(f.status)) {
           errors.push(
             `BACKLOG.md: ${f.id} status mismatch — BACKLOG "${row.status}", spec "${f.status}"`,
           );
