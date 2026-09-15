@@ -53,7 +53,14 @@ updated: YYYY-MM-DD
 - [ ] T006 (`AC-001`): 运行对应单元/集成测试 — verify: `path/to/test.ts`
 - [ ] T007 (`AC-002`): 运行 UI/E2E 或真实环境验证 — verify: <命令或证据路径>
 - [ ] T008 (`AC-001`, `AC-002`): 运行项目统一质量门 — verify: `<project verify command>`
-- [ ] T009: 回写 spec 验收证据、活跃索引和状态 — verify: `<feature gate command>`
+
+### [TEST] 组：层 2 旅程验收轨（必填）
+
+- [ ] T009 [TEST] (`AC-001`): <旅程场景>，先立红灯夹具、收尾全量跑 — verify: <E2E 命令/证据路径>
+
+从体验旅程派生（每旅程步骤 ≥1 条可执行断言）；**编写早、执行晚**——夹具在里程碑早期以红灯立起，收尾全量执行作为验收。开工门禁（SDD Flow T3）要求本组存在，缺失将拒绝流转。
+
+- [ ] T010: 回写 spec 验收证据、活跃索引和状态 — verify: `<feature gate command>`
 
 仅保留与本 Feature 适用的验证层级；客观无法执行的真实环境验证必须记录原因与补跑方式。
 

@@ -7,6 +7,10 @@ updated: 2026-09-08
 
 # F014：Trusted Task Journey Closure - 设计
 
+> **开发前置约束（2026-09-16）**：进入代码开发前，`tasks.md` 必须补齐 `[TEST]` 组——
+> 从体验旅程派生的可执行验收（编写早、执行晚，每旅程步骤 ≥1 条断言）。
+> 开工门禁（SDD Flow T3）会拒绝缺失该组的流转。
+
 ## 0. 输入与约束
 
 输入为 `spec.md`、J1–J5、F009–F013 contracts、V3.44 设计和现有 release verification。不得拥有新的领域表或直接写入其他模块表。
