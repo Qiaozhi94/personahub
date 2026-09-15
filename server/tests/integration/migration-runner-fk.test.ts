@@ -28,7 +28,10 @@ function buildV10FileDb(): Database.Database {
   return db;
 }
 
-describe("F013 migration orchestration (FK switch / failure recovery / atomic version)", () => {
+// The full v10 → head chain rebuilds several tables (12-step migrations), and
+// Windows CI file I/O for the temp database pushes the two heavier cases past
+// vitest's 20s default under parallel load — give the file an explicit budget.
+describe("F013 migration orchestration (FK switch / failure recovery / atomic version)", { timeout: 120_000 }, () => {
   it("keeps foreign_keys ON before and after the upgrade", () => {
     const db = buildV10FileDb();
     try {

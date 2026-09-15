@@ -4,6 +4,7 @@
 // every one of them must degrade to `unverified`, never to supported.
 
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   CAPABILITY_EVIDENCE_MAX_AGE_MS,
@@ -14,7 +15,7 @@ import {
   type CapabilityEvidenceFixture,
 } from "../../src/services/capability-evidence.js";
 
-const FIXTURE_PATH = new URL("../fixtures/f012/capability-evidence.json", import.meta.url).pathname;
+const FIXTURE_PATH = fileURLToPath(new URL("../fixtures/f012/capability-evidence.json", import.meta.url));
 
 function loadFixture(): CapabilityEvidenceFixture {
   const raw: unknown = JSON.parse(readFileSync(FIXTURE_PATH, "utf-8"));
