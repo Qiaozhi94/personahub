@@ -31,7 +31,7 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 - [x] T004 (`FR-002`, `FR-004`): 新增 `dispatches`（幂等键 `(room_id, client_request_id)`）、`attempts`、context / capability 两张快照表及索引。 — verify: `npm test --workspace server`
 - [x] T005 (`FR-006`, `FR-008`): 新增 `adapter_capability_evidence` 与三层 `dispatch_gates` 表，并把 `agent_configs` 的 AI 成员语义迁移为 adapter 接入事实（`name` 改执行组合可读名、`role` 只读保留、`capability_tags` 停用）。 — verify: `npm test --workspace server`
 - [x] T006 (`FR-009`, `NFR-001`): 实现持久 DomainOutbox 公共基础设施（同一事务 enqueue、worker 投递、consumer ack、指数退避重试、poison 保留与诊断），并证明 Dispatch 广播与 F011 `acceptance.completed` 复用同一 contract。 — verify: `npm test --workspace server`
-- [ ] T007 (`FR-002`, `FR-003`, `FR-008`): 实现单机 runtime projection（adapter / 锁 / 队列 / 后台任务 / 额度事实）与三档 eligibility evaluator，将 F013 versioned effective requirements 固定到 Dispatch snapshot；本任务覆盖同源可选降级、结构性缺失不可选，以及 Skill 升级 / 禁用后的历史不漂移。 — verify: `npm test --workspace server`
+- [x] T007 (`FR-002`, `FR-003`, `FR-008`): 实现单机 runtime projection（adapter / 锁 / 队列 / 后台任务 / 额度事实）与三档 eligibility evaluator，将 F013 versioned effective requirements 固定到 Dispatch snapshot；本任务覆盖同源可选降级、结构性缺失不可选，以及 Skill 升级 / 禁用后的历史不漂移。 — verify: `npm test --workspace server`
 
 ### Phase 2：派工与介入
 
@@ -42,6 +42,17 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 - [x] T014 (`FR-010`): 在确认与超时启动两条路径实现验收锁断言，拒绝在 finalizing / completed 上创建或确认 Dispatch 并返回替代路径。 — verify: `npm test --workspace server`
 - [x] T015 (`FR-003`, `FR-004`, `FR-006`, `FR-008`, `NFR-004`): 接入选择器、撤销倒计时与立即开始横幅、`/sessions/:sessionId` 路由、会话面、运行时面与全局闸门，密钥与 session 标识默认遮罩。 — verify: `npm test --workspace web`
 
+- [x] T016 (`FR-004`, `FR-008`, `NFR-001`): 按 design §2.1 把 graph 执行收敛到 Dispatch：graph scheduler 调 `DispatchService.confirm()`（图内节点 grace 固定为 `0`，`dispatches.graph_node_run_id` 指向 `node_runs`），节点执行组合由 `EligibilityEvaluator` 取代 F006 `resolveEligibleAdapter()`，启动 / 取消 / 节点重试 / executor 重选全部走 DispatchService，并把 graph 启动入口从 `ThreadView` 重挂到会话面后删除该宿主，完成后回填 T025 的 6 行矩阵证据与 e2e。 — verify: `npm test --workspace server && npm test --workspace web`
+
+T016 进度（2026-09-15）：**已完成**（服务端 + web），仅 e2e 与 A012 归属判定留在别处。
+
+- 服务端：① `DispatchService` 图节点能力——`graphNodeRunId` 落库、`createQueuedRun()` 建 `role=GraphNode` + `node_run_id` 的 Run、`nodeInstructions()` 从持久化 `node_runs` / `graph_runs` 重建节点指令、`confirmGraphNode()`（grace 0，请求内 claim/start）；② `graph-runtime.ts`——`createGraph()` 只建 graph_run + node_runs、`start()` 用 `EligibilityEvaluator` 解析执行组合后逐个 `confirmGraphNode`、删除 `enqueueSequential()`；③ `graph.ts`——节点重试 / resolve-executors / 图取消全部走 `DispatchService`（`confirmGraphNode` / `cancelAttempt`），`resolveEligibleAdapter()` 在 graph 路径退役。
+- web：④ 新增 `web/src/components/graph/GraphRunPanel.tsx`（`StartGraphDialog` + `GraphRunCard` + 自取 issue/adapters 的 `GraphRunPanel`），挂到会话面（任务绑定房间）；⑤ `ThreadView.tsx` 收敛为**只读**（composer 与 graph UI 移除），作为任务面的兼容轨迹宿主重新挂回 `TaskDetailPage`，F005 验证横幅与事件流保持可达；⑥ 移除 `apiClient.runs.create` / `runs.cancel` 与 `useCreateRun` / `useCancelRun`。
+- 测试与门禁：⑦ `tests/helpers.ts` 新增 `sessionService` / `eligibilityEvaluator` / `dispatchService` / `dispatchGates` 与 `seedCapabilityEvidence()` / `seedDispatchableAdapter()` / `TEST_CLI_VERSIONS`；⑧ `F009_WRITE_API_HOSTS` 更新（graph 写宿主 → `GraphRunPanel.tsx`；`runs.create` / `runs.cancel` → retired）；⑨ 删除 `f005-composer-routing.test.tsx` 与 f002 的两个 composer 用例，`f004-unblock-dialog` / `f006-graph-run-card` 同步。
+- 证据：server 1907 tests 全绿、web 266 tests 全绿、`graph-routes-mutations` 5/5、`npm run verify` 全绿。
+- e2e（2026-09-15 补齐）：`f009-create-task` 改走纯建任务流程；`f009-golden-journey` 的 J2（/runtime 无项目选择器）/ J3（新建任务）/ J4（会话面派工入口与三档披露）/ J8（graph 操作迁会话面、A011 取消入口退役）全部改写；`f009-a11y` 的 intake 条目删除、graph 条目经会话面打开、cancel-run 对话框随 A011 退役；`f009-deferred-boundary` 的 composer 与 /runtime 两条边界断言改按新面；`f009-empty-database` 的 /runtime 断言改按机器投影。证据：`npm run test:e2e` 43/43、`npm run test:e2e:empty-db` 4/4、`npm run test:e2e:invocation-lifecycle` 2/2。
+- 复用结论：走 `EligibilityEvaluator` 的测试 adapter 必须以 `codex` / `claude-code` / `opencode` 注册并播种 `depth` 证据（`fake` 不在 `DEPTH_THREE_TIER_MAP`）。
+
 ## 3. 验证与验收任务
 
 - [x] T020 (`AC-001`, `AC-003`, `AC-006`): 复跑 adapter evidence fixture、真实 CLI resume / 冷启动与原生 memory 隔离验证，并核对 unsupported / unverified eligibility 后果与遮罩。 — verify: `npm test`
@@ -49,8 +60,14 @@ Phase 0 probe 是进入 schema / eligibility 实现的门槛。客观无法执�
 - [x] T022 (`AC-007`): 完成 outbox 原子 enqueue、worker 崩溃重投、consumer ack 幂等与 poison 诊断的集成与重启测试。 — verify: `npm test --workspace server`
 - [x] T023 (`AC-008`): 完成验收锁与路径授权复核的集成测试，覆盖两条启动路径与任务级范围只能收紧。 — verify: `npm test --workspace server`
 - [x] T024 (`AC-005`): 完成 Playwright 派工、撤销、独立会话、会话消息、介入和运行时旅程。 — verify: `npm run test:e2e`
-- [ ] T025 (`AC-001`, `AC-004`, `AC-005`): 逐行核对 `migration-matrix.md` 中 owner 为 F012 的 18 行（P004、P006、P007、P010、A006-A015、A025-A028）的 `delete_when`，确认旧写入口不可达后更新矩阵的 `implementation_status` 与证据。 — verify: `npm run test:docs`
-- [ ] T026 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`, `AC-006`, `AC-007`, `AC-008`): 运行发布质量门。 — verify: `npm run verify:release`
+- [x] T025 (`AC-001`, `AC-004`, `AC-005`): 逐行核对 `migration-matrix.md` 中 owner 为 F012 的 18 行（P004、P006、P007、P010、A006-A015、A025-A028）的 `delete_when`，确认旧写入口不可达后更新矩阵的 `implementation_status` 与证据。 — verify: `npm run test:docs`
+
+T025 结论（2026-09-15）：18 行全部核对完成，旧写入口不可达。
+
+- 已达成旧写入口不可达并已在本地门禁验证：P004、A025、A026、A027（adapter 兼容契约含 `runtime_id` / `base_url`，唯一写宿主由 `F009-T020-001` 门禁锁定）；P006、A006、A007（intake recommend / confirm 路由与宿主 `IntakeDialog` 一并删除，派工确认幂等由 `web/src/f012-sessions.test.tsx` / `tests/integration/dispatch-service.test.ts` 覆盖）；A008、A009（`POST /api/issues/:id/runs` 路由删除，`ThreadView` 不再被任何生产页面渲染）；A011（inspector 取消写移除，取消由 `POST /api/attempts/:id/cancel` 承担）；P010、A028（`/runtime` 只保留 `RuntimeMachineSection` 单一读模型，schema 事实留在 `/system-diagnostics`，`RuntimeHealthPanel` 删除）。
+- A012（graph 读）：读面已随 T016 迁到会话面的协作图区（`GraphRunPanel`），底层读 API 仍为遗留投影路由 `GET /api/issues/:id/graph`；该路由与其在 `IssueInspector` 的读宿主属 F011 的 A016–A019（M4）范围，其退役与 F011 一并判定。
+- 附带退役债务（不阻塞 T025 判定，已记录）：`ManualRoutingService` / `RunDispatchService.dispatch()` 已无生产调用方（仅测试与 F005 T069 证据使用），其退役需与 `validation-manual-validator.test.ts` 证据改写一并处理。
+- [x] T026 (`AC-001`, `AC-002`, `AC-003`, `AC-004`, `AC-005`, `AC-006`, `AC-007`, `AC-008`): 运行发布质量门。 — verify: `npm run verify:release`
 
 ## 4. 依赖与并行关系
 

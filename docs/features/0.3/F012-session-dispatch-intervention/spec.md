@@ -2,7 +2,7 @@
 kind: feature
 id: F012
 version: "0.3"
-status: in-progress
+status: review
 gate_version: 1
 eval_contract: exempt
 eval_contract_exempt_reason: "本 Feature 改变用户旅程（派工选择、撤销窗口、会话与介入），但交付的是执行语义与可追溯契约（Dispatch / Attempt / DomainOutbox / capability evidence），不提出需用效用数据决定保留或退役的不确定主张；退役条件已由 migration-matrix 的 18 行 delete_when 与 v0.7 多机运行时接管显式登记"
@@ -10,7 +10,7 @@ related_features: [F005, F006, F009, F010, F011, F013, F014]
 topics: [session, dispatch, runtime, context, intervention]
 doc_kind: spec
 created: 2026-08-09
-updated: 2026-09-14
+updated: 2026-09-15
 ---
 
 # F012：Session, Dispatch & Intervention
@@ -119,14 +119,14 @@ Dispatch 有三条合法路径：`draft → cancelled`、`draft → starting →
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-002`, `FR-003`): 四维组合、要求来源和三档 eligibility 在派工前可核对；同源组合可选且声明降级，结构性缺失不可选；Dispatch 固定 Skill revision 与 effective requirements，Skill 升级 / 禁用不改已提交 Dispatch。
-- [ ] **AC-002** (`FR-004`, `NFR-001`): 撤销期取消保留一个 cancelled Dispatch 且零 Run；默认窗口、零窗口与立即开始三种配置行为一致；超时、重复确认、cancel / claim 竞态和重启只产生一个 Dispatch 与首个 Attempt / Run，每个事件恰好对应其 commit 点。
-- [ ] **AC-003** (`FR-005`, `NFR-002`): resume / 冷启动与三档上下文组装、过滤披露正确；五种强制冷启动条件各自可触发并记录原因，恢复失败不改写上一个 Attempt。
-- [ ] **AC-004** (`FR-006`, `NFR-001`): 任务、图与运行时三层 pause 与 claim 并发、取消、改派和 restart 恢复正确。
-- [ ] **AC-005** (`FR-001`, `FR-007`, `FR-008`): 独立 / 任务会话、会话消息和单机运行时基础完成浏览器旅程。
-- [ ] **AC-006** (`FR-003`, `FR-008`, `NFR-003`, `NFR-004`): Codex / Claude Code / OpenCode 的模型、深度、session 与原生 memory probe 均有版本化证据；unsupported / unverified 的候选、后果和独立性降级可观察且不可旁路；密钥与 session 标识在界面和导出中均已遮罩。
-- [ ] **AC-007** (`FR-009`, `NFR-001`): Dispatch 广播与 F011 `acceptance.completed` 共用同一持久 outbox；enqueue 与领域事务原子提交，worker 崩溃 / 重启后重投递不丢不重，consumer ack 幂等，poison event 保留稳定错误与诊断。
-- [ ] **AC-008** (`FR-010`, `FR-011`): 验收 finalizing / completed 时确认与超时启动两条路径都拒绝新 Dispatch 并给出替代路径；路径授权复核取三层交集，任务级范围只能收紧，未授权时零 Run 并保留诊断。
+- [ ] **AC-001** (`FR-002`, `FR-003`): 四维组合、要求来源和三档 eligibility 在派工前可核对；同源组合可选且声明降级，结构性缺失不可选；Dispatch 固定 Skill revision 与 effective requirements，Skill 升级 / 禁用不改已提交 Dispatch。 - tests: `server/tests/integration/eligibility-evaluator.test.ts` `server/tests/integration/dispatch-service.test.ts`
+- [ ] **AC-002** (`FR-004`, `NFR-001`): 撤销期取消保留一个 cancelled Dispatch 且零 Run；默认窗口、零窗口与立即开始三种配置行为一致；超时、重复确认、cancel / claim 竞态和重启只产生一个 Dispatch 与首个 Attempt / Run，每个事件恰好对应其 commit 点。 - tests: `server/tests/integration/dispatch-service.test.ts` `server/tests/integration/f012-concurrency-outbox.test.ts`
+- [ ] **AC-003** (`FR-005`, `NFR-002`): resume / 冷启动与三档上下文组装、过滤披露正确；五种强制冷启动条件各自可触发并记录原因，恢复失败不改写上一个 Attempt。 - tests: `server/tests/unit/context-assembler.test.ts` `server/tests/integration/f012-concurrency-outbox.test.ts`
+- [ ] **AC-004** (`FR-006`, `NFR-001`): 任务、图与运行时三层 pause 与 claim 并发、取消、改派和 restart 恢复正确。 - tests: `server/tests/integration/dispatch-recovery.test.ts` `server/tests/integration/f012-concurrency-outbox.test.ts`
+- [ ] **AC-005** (`FR-001`, `FR-007`, `FR-008`): 独立 / 任务会话、会话消息和单机运行时基础完成浏览器旅程。 - tests: `e2e/tests/f012-sessions.spec.ts`
+- [ ] **AC-006** (`FR-003`, `FR-008`, `NFR-003`, `NFR-004`): Codex / Claude Code / OpenCode 的模型、深度、session 与原生 memory probe 均有版本化证据；unsupported / unverified 的候选、后果和独立性降级可观察且不可旁路；密钥与 session 标识在界面和导出中均已遮罩。 - tests: `server/tests/integration/eligibility-evaluator.test.ts` `server/tests/unit/capability-evidence.test.ts`
+- [ ] **AC-007** (`FR-009`, `NFR-001`): Dispatch 广播与 F011 `acceptance.completed` 共用同一持久 outbox；enqueue 与领域事务原子提交，worker 崩溃 / 重启后重投递不丢不重，consumer ack 幂等，poison event 保留稳定错误与诊断。 - tests: `server/tests/integration/f012-concurrency-outbox.test.ts` `server/tests/unit/domain-outbox.test.ts`
+- [ ] **AC-008** (`FR-010`, `FR-011`): 验收 finalizing / completed 时确认与超时启动两条路径都拒绝新 Dispatch 并给出替代路径；路径授权复核取三层交集，任务级范围只能收紧，未授权时零 Run 并保留诊断。 - tests: `server/tests/integration/dispatch-service.test.ts` `server/tests/integration/authorization-recheck.test.ts`
 
 ## 7. 测试、依赖与决策
 
