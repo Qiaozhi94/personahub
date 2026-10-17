@@ -10,7 +10,7 @@ topics:
   ]
 doc_kind: review
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-08
 ---
 
 # PersonaHub 量化因子研究与 TradingView 回测承载能力评估
@@ -20,6 +20,11 @@ updated: 2026-09-04
 > [`personahub-architecture.md`](personahub-architecture.md) 与
 > [`personahub-system-design.md`](personahub-system-design.md) 为准。本文中的建议只有经过确认并回写
 > PRD、ADR 和 Feature Spec 后，才构成实施承诺。
+
+> **V3.44 定稿修订（2026-09-08）**：本专题保留为首个非 coding 垂直切片的候选输入，
+> 最早进入 PRD 的 v0.5 评估，不占用 v0.3–v0.4。下文统一按“任务 / 会话 / Skill / Dispatch /
+> Attempt / Artifact / 主张—论证—证据”理解；旧的独立 Room、Squad、Workflow 和 Validation
+> Policy 不再构成产品对象。量化实验仍需独立领域模型，这一核心判断不变。
 
 ## 1. 执行摘要
 
@@ -44,7 +49,7 @@ updated: 2026-09-04
 
 ### 1.2 三条必须提前冻结的架构边界
 
-1. **Agent Run 与 Experiment Attempt 分离**：Agent Run 表达“哪个 Agent 接受了什么指令”；Experiment Attempt 表达“哪个固定实验配置在什么计算环境中运行并产生了什么结果”。
+1. **PersonaHub Attempt 与 Experiment Attempt 分离**：前者表达“哪个执行组合接受了什么派工”；后者表达“哪个固定实验配置在什么计算环境中运行并产生了什么结果”。
 2. **SQLite 元数据与列式研究数据分离**：SQLite 保留为控制面；K 线、因子矩阵、持仓、成交和净值序列进入 Parquet/DuckDB 等研究数据层。
 3. **PersonaHub 自有回测与 TradingView 验证分离**：TradingView 不作为因子挖掘和组合回测的唯一计算后端。
 
@@ -59,10 +64,10 @@ updated: 2026-09-04
 | 已实现产品 | `web/`、`server/`、`shared/`，当前 schema version 11，coding-first |
 | 已实现编排底座 | Project / Workspace / Issue / Thread / Run / Validation / Graph Run / Node Run / Event / Evidence Summary |
 | 目标形态设计 | `ui-reference/personahub-draft/personahub-v3.1/` 的静态交互原型，不是可交付 React 实现 |
-| 规划中能力 | F009–F012 的 Artifact / Artifact-centered coding / Room / Squad，仍处于规格与设计阶段 |
+| 规划中能力 | F009–F014 的前端迁移、Artifact、可信任务面、会话 / 派工与项目 / Skills，仍处于规格与设计阶段 |
 
 目标原型自己也明确声明“不进 `web/`，不作为实现代码”，见
-`ui-reference/personahub-draft/README.md`。因此本文对“当前能否承载”的判断以实际源码为底线，以 V3 原型判断未来交互方向是否合适。
+`ui-reference/personahub-draft/personahub-v3.1/README.md`。因此本文对“当前能否承载”的判断以实际源码为底线，以 V3.44 原型判断未来交互方向是否合适。
 
 ## 3. 当前可复用能力
 
@@ -74,9 +79,8 @@ updated: 2026-09-04
 | --- | --- |
 | Project | 一个策略研究项目、市场或组合研究空间 |
 | Issue / 任务 | 一个研究目标，例如“验证低波动因子在港股是否稳定” |
-| Thread / 会话 | 假设、约束、指派、决策和结果解释的纵向记录 |
-| Room / 协作现场 | 数据审计、因子研究、综合、实现、验证等阶段性协作 |
-| Agent Run | 研究员、实现者或验证者的一次 AI 执行 |
+| Session / 会话 | 假设、约束、派工、决策和结果解释的纵向记录 |
+| Dispatch / Attempt | 数据审计、因子研究、综合、实现或验证的一次可追溯派工与执行 |
 | Artifact | 研究结论、因子定义、实验报告、Pine 脚本、验证报告 |
 | Evidence | 命令、文件、数据版本、实验结果和外部验证的依据 |
 
@@ -110,9 +114,9 @@ pine-strategy:tv_momentum@4
 一个历史结论必须永久解析到当时使用的精确内容，而不是随着因子或数据更新漂移。F010 的 revision/CAS/hash/provenance 设计可以复用，见
 [`features/0.3/F010-artifact-foundation-provenance/spec.md`](features/0.3/F010-artifact-foundation-provenance/spec.md)。
 
-### 3.4 V3 成果面适合作为量化研究的外壳
+### 3.4 V3.44 任务面适合作为量化研究的外壳
 
-V3 目标原型把主舞台定义为“现在做成什么样、可不可信”，并把任务、协作、产物、证据、记忆和执行计划组织在同一个工作台中。这个信息架构适合量化研究的决策过程。
+V3.44 把任务固定为概览 / 会话 / 验收 / 资源四个视图，并用主张—论证—证据回答“做成什么、为何可信”。这个信息架构适合量化研究的决策过程。
 
 可保留的结构是：
 
@@ -127,7 +131,7 @@ V3 目标原型把主舞台定义为“现在做成什么样、可不可信”�
 
 ## 4. 现有架构无法直接承载的部分
 
-### 4.1 当前 Run 不是实验
+### 4.1 PersonaHub Attempt 不是实验
 
 当前 `runs` 主要保存：
 
@@ -192,7 +196,7 @@ V3 目标原型把主舞台定义为“现在做成什么样、可不可信”�
 - regime robustness；
 - Walk-forward / rolling validation。
 
-这不是增加几个 `accepted_verification_kinds` 就能解决，需要独立的 Quant Research Validation Policy 和输出契约。
+这不是增加几个 `accepted_verification_kinds` 就能解决，需要量化 Skill 的领域完成要求与专用输出契约；不恢复独立 Validation Policy 产品对象。
 
 ### 4.3 当前 Graph Definition 与输出契约是 coding-specific
 
@@ -257,7 +261,7 @@ PersonaHub 当前同一 Workspace 的执行基线是排他串行，且没有跨 
 
 ### 4.6 当前 Artifact 设计需要扩展大结果存储
 
-F009 首批 Artifact 偏向 inline Markdown 和受控本地文件，这适合计划、结论和报告，但量化结果还会包含：
+F010 首批 Artifact 偏向 inline Markdown 和受控本地文件，这适合计划、结论和报告，但量化结果还会包含：
 
 - Parquet 因子暴露；
 - 每日收益和净值序列；
@@ -363,7 +367,7 @@ Human / Agent Collaboration
         |
         v
 PersonaHub Control Plane
-  Project / Issue / Thread / Room / Workflow / Evidence
+  Project / Task / Session / Skill / Dispatch / Claim-Evidence
         |
         +-----------------------+
         |                       |
@@ -513,12 +517,12 @@ ExternalValidation
 
 TradingView 结果是外部验证证据，不是自有回测结果的原地更新。
 
-### 6.3 Research Job 不应复用 Agent Run
+### 6.3 Research Job 不应复用 PersonaHub Attempt
 
 建议分成两个生命周期：
 
 ```text
-Agent Run
+PersonaHub Attempt
   queued -> running -> completed / failed / interrupted / cancelled
 
 Research Job
@@ -576,8 +580,8 @@ Hypothesis
 ### 8.1 可以保留的 V3 交互原则
 
 - 任务仍是顶层工作对象；
-- Thread 保留为用户下目标、改约束、指派下一步的主控制线；
-- Room 用于阶段性多 Agent 协作；
+- 会话保留为用户下目标、改约束、派工下一步的主控制线；
+- 同一任务可有多个会话，但不建立独立协作 Dock 或 Room 状态机；
 - 主舞台展示结果和可信度，不展示无组织的日志；
 - 结论可以下钻到实验、数据、命令和原始结果；
 - 右栏承载定位和元数据，不承担复杂分析；
@@ -599,7 +603,7 @@ Hypothesis
 | TradingView | Pine 版本、导出状态、CSV 导入、信号对齐 |
 | Provenance | 数据、代码、参数、环境和验证来源 |
 
-复杂图表必须在主舞台，不进入 440px Dock 或窄 Inspector。
+复杂图表必须在任务主栏，不进入窄副栏。
 
 ### 8.3 一个任务不应对应一个实验
 
@@ -614,11 +618,9 @@ Hypothesis
 
 参数扫描时不能为每个参数组合创建一个 Issue，否则任务列表会被运行实例淹没。Issue 管理人的目标；Experiment 管理机器执行。
 
-### 8.4 “只有任务占 tab”可以暂时保留
+### 8.4 保持九个一级工作面，不增加实体级全局 tab
 
-V3 当前规定只有任务占顶层 tab。量化场景下可以先保持这条规则：Factor、Experiment 和 Backtest 都作为任务内子视图，不占全局 tab。
-
-但需要观察一个信号：如果用户经常跨任务并排比较多个实验，单任务 tab 会成为限制。届时应增加“比较工作区”，而不是让每个 Experiment 都进入全局 tab。
+Factor、Experiment 和 Backtest 先作为任务内的领域数据与分析 surface，不新增一级导航，也不恢复 IDE 式标签排。如果跨任务比较成为高频目标，再单独论证“比较工作区”，不能让每个 Experiment 直接升级为全局导航对象。
 
 ## 9. 数据与统计可信度要求
 
@@ -695,7 +697,7 @@ output_manifest_hash
 
 ## 11. 分阶段落地建议
 
-### Phase 0：边界验证，不改核心架构
+### Phase 0：v0.5 前的边界验证，不改核心架构
 
 目标：验证真实个人工作流是否成立。
 
@@ -704,7 +706,7 @@ output_manifest_hash
 - Python 本地回测；
 - 用户手动在 TradingView 运行 Pine；
 - 导出 CSV；
-- PersonaHub 以现有文件和 Thread 保存过程；
+- PersonaHub 以普通任务、会话、文件和 Artifact 保存过程；
 - 人工比较两边信号与主要指标。
 
 本阶段允许使用脚本和文件，不把临时结构写进正式 schema。成功判据是发现真实需求，而不是把临时流程包装成平台能力。
@@ -718,7 +720,7 @@ output_manifest_hash
 - FactorRevision；
 - ExperimentSpec / Attempt；
 - BacktestResult metadata；
-- Quant validation policy；
+- 量化 Skill 与领域完成要求；
 - Quant Research Surface；
 - Python 本地 compute runner；
 - Pine artifact 导出与 CSV 导入。
@@ -765,7 +767,7 @@ output_manifest_hash
 - TradingView CSV import；
 - 信号对齐；
 - Artifact/Evidence/Provenance；
-- V3 成果面是否能表达结果。
+- V3.44 任务四视图是否能承载结果与证据。
 
 首个用例暂不验证横截面、多因子合成和实盘，因为这些会一次引入过多变量。
 
@@ -817,7 +819,7 @@ AI 提议
 
 - 已确认 PersonaHub/计算引擎/TradingView 三者边界；
 - 已选定首期市场、数据源、频率和研究范式；
-- 已同意 Agent Run 与 Experiment Attempt 分离；
+- 已同意 PersonaHub Attempt 与 Experiment Attempt 分离；
 - 已同意 SQLite 不存大规模时序数据；
 - 已定义最小可复现 fingerprint；
 - 已定义 TradingView 结果如何导入和绑定版本；
@@ -826,7 +828,7 @@ AI 提议
 ### 不应进入实现，如果仍存在以下任一假设
 
 - “TradingView 应该有一个 API 能自动跑 Strategy Tester，之后再确认”；
-- “先把实验参数塞进 ThreadEvent JSON”；
+- “先把实验参数塞进会话事件 JSON”；
 - “每个参数组合建一个 Issue”；
 - “行情先存 SQLite，以后再迁”；
 - “Agent 说回测通过就算 Evidence”；
@@ -835,7 +837,7 @@ AI 提议
 
 ## 15. 最终建议
 
-这个方向与 PersonaHub 并不冲突，反而能检验它是否真的从 coding assistant 走向通用 Agent Team OS。但正确的扩展方式不是给现有 coding workflow 换一套提示词，也不是在 V3 工作台加一张净值图。
+这个方向与 PersonaHub 并不冲突，反而能检验它是否真的从 coding assistant 走向通用 Agent Team OS。但正确的扩展方式不是给现有 coding Skill 换一套提示词，也不是在 V3.44 任务面加一张净值图。
 
 推荐的演进路径是：
 
@@ -848,4 +850,4 @@ AI 提议
   -> 把 TradingView 作为外部验证与告警适配器
 ```
 
-在这个前提下，当前设计和架构**有能力演进过去，且核心 Project/Issue/Thread/Room/Artifact/Evidence 模型无需推倒重来**；但 Experiment、Dataset、Compute Runtime 和 TradingView Integration 必须作为新的垂直切片正式设计，不能假装已经被通用字段覆盖。
+在这个前提下，当前设计和架构**有能力演进过去，且核心 Project/Task/Session/Dispatch/Artifact/Claim-Evidence 模型无需推倒重来**；但 Experiment、Dataset、Compute Runtime 和 TradingView Integration 必须作为 v0.5 或之后的新垂直切片正式设计，不能假装已经被通用字段覆盖。
